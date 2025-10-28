@@ -115,6 +115,11 @@ func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(
 	json := jsonInput
 	for _, pathElem := range pathArray {
 		res := gjson.GetBytes(jsonInput, pathElem)
+
+		if !res.Exists() {
+			continue
+		}
+
 		json, err = sjson.SetBytesOptions(json, pathElem, matcher(res), &sjson.Options{Optimistic: true})
 		if err != nil {
 			t.Fatalf("failed to set element")

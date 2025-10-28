@@ -112,6 +112,21 @@ func Test_replaceJSONInput(t *testing.T) {
       }`,
 		},
 		{
+			name: "simple json replacement when field does not exist",
+			args: args{
+				jsonInput: simpleStruct,
+				path:      "test.not.field",
+				matcher: func(_ gjson.Result) any {
+					return "<Any Value>"
+				},
+			},
+			want: `{
+        "test": {
+          "field": "original value"
+        }
+      }`,
+		},
+		{
 			name: "nested json array element replacement",
 			args: args{
 				jsonInput: nestedArray,

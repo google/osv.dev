@@ -216,8 +216,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2022-33068",
@@ -453,8 +452,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2023-25193",
@@ -722,8 +720,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "OSV-2020-484",
@@ -765,8 +762,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
-      "database_specific": "<Any value>"
+      "schema_version": "1.7.3"
     }
   ]
 }
@@ -2329,8 +2325,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-11053",
@@ -2439,8 +2434,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-2004",
@@ -2555,8 +2549,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:N/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-2398",
@@ -2734,8 +2727,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-2466",
@@ -2824,8 +2816,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-6874",
@@ -3091,8 +3082,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-7264",
@@ -3375,8 +3365,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-8096",
@@ -3530,8 +3519,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2024-9681",
@@ -3633,8 +3621,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:L"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2025-0167",
@@ -3731,8 +3718,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2025-0665",
@@ -4008,8 +3994,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2025-0725",
@@ -4299,8 +4284,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     },
     {
       "id": "CVE-2025-5025",
@@ -4367,8 +4351,7 @@
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
         }
-      ],
-      "database_specific": "<Any value>"
+      ]
     }
   ]
 }

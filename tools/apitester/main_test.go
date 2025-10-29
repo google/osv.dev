@@ -13,32 +13,24 @@ import (
 func jsonReplaceRules(t *testing.T, resp *http.Response) []JSONReplaceRule {
 	t.Helper()
 
-	if strings.Contains(t.Name(), "/Invalid") {
+	if resp.Request.URL.Path != "/v1/query" || strings.Contains(t.Name(), "/Invalid") {
 		return nil
 	}
 
-	if resp.Request.URL.Path == "/v1/query" {
-		return []JSONReplaceRule{
-			{
-				Path: "vulns.#.affected.#.database_specific",
-				ReplaceFunc: func(_ gjson.Result) any {
-					return "<Any value>"
-				},
+	return []JSONReplaceRule{
+		{
+			Path: "vulns.#.affected.#.database_specific",
+			ReplaceFunc: func(_ gjson.Result) any {
+				return "<Any value>"
 			},
-			{
-				Path: "vulns.#.database_specific",
-				ReplaceFunc: func(_ gjson.Result) any {
-					return "<Any value>"
-				},
+		},
+		{
+			Path: "vulns.#.database_specific",
+			ReplaceFunc: func(_ gjson.Result) any {
+				return "<Any value>"
 			},
-		}
+		},
 	}
-
-	if resp.Request.URL.Path == "v1/querybulk" {
-		return []JSONReplaceRule{}
-	}
-
-	return []JSONReplaceRule{}
 }
 
 func normalizeJSONBody(t *testing.T, resp *http.Response) string {

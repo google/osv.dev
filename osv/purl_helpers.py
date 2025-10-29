@@ -56,7 +56,7 @@ ECOSYSTEM_PURL_DATA = {
     'Hackage':
         EcosystemPURL('hackage', None),
     'Hex':
-        EcosystemPURL('hex', None),
+        EcosystemPURL('hex', 'hex'),
     'Julia':
         EcosystemPURL('julia', None),
     # Linux

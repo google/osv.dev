@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	cloud.google.com/go/datastore v1.21.0
-	cloud.google.com/go/pubsub/v2 v2.2.1
+	cloud.google.com/go/pubsub/v2 v2.3.0
 	cloud.google.com/go/storage v1.57.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20251023235818-d5eaee79a3a5

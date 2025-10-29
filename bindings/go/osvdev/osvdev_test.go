@@ -253,13 +253,13 @@ func TestOSVClient_Query(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		query   api.Query
+		query   *api.Query
 		wantIDs []string
 		wantErr error
 	}{
 		{
 			name: "npm Package lookup",
-			query: api.Query{
+			query: &api.Query{
 				Package: &osvschema.Package{
 					// Use a deleted package as it is less likely new vulns will be published for it
 					Name:      "faker",
@@ -275,7 +275,7 @@ func TestOSVClient_Query(t *testing.T) {
 		},
 		{
 			name: "commit lookup",
-			query: api.Query{
+			query: &api.Query{
 				Param: &api.Query_Commit{
 					Commit: "60e572dbf7b4ded66b488f54773f66aaf6184321",
 				},
@@ -287,7 +287,7 @@ func TestOSVClient_Query(t *testing.T) {
 		},
 		{
 			name: "unknown package lookup",
-			query: api.Query{
+			query: &api.Query{
 				Package: &osvschema.Package{
 					Name:      "abcd-definitely-does-not-exist",
 					Ecosystem: string(osvconstants.EcosystemNPM),
@@ -300,7 +300,7 @@ func TestOSVClient_Query(t *testing.T) {
 		},
 		{
 			name: "invalid query",
-			query: api.Query{
+			query: &api.Query{
 				Package: &osvschema.Package{
 					Name: "abcd-definitely-does-not-exist",
 				},
@@ -318,7 +318,7 @@ func TestOSVClient_Query(t *testing.T) {
 			c := osvdev.DefaultClient()
 			c.Config.UserAgent = "osv-scanner-api-test"
 
-			got, err := c.Query(context.Background(), &tt.query)
+			got, err := c.Query(context.Background(), tt.query)
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
 				t.Fatalf("Unexpected error (-want +got):\n%s", diff)
@@ -345,13 +345,13 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		query   api.Query
+		query   *api.Query
 		wantIDs []string
 		wantErr error
 	}{
 		{
 			name: "linux Package lookup",
-			query: api.Query{
+			query: &api.Query{
 				Package: &osvschema.Package{
 					// Use a deleted package as it is less likely new vulns will be published for it
 					Name:      "linux",
@@ -373,7 +373,7 @@ func TestOSVClient_QueryDeadline(t *testing.T) {
 			c.Config.UserAgent = "osv-scanner-api-test"
 
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second*1))
-			got, err := c.Query(ctx, &tt.query)
+			got, err := c.Query(ctx, tt.query)
 			cancel()
 
 			if diff := cmp.Diff(tt.wantErr, err, cmpopts.EquateErrors()); diff != "" {
@@ -401,12 +401,12 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		query    api.DetermineVersionParameters
+		query    *api.DetermineVersionParameters
 		wantPkgs []string
 	}{
 		{
 			name: "Simple non existent package query",
-			query: api.DetermineVersionParameters{
+			query: &api.DetermineVersionParameters{
 				Query: &api.VersionQuery{
 					Name: "test file",
 					FileHashes: []*api.FileHash{
@@ -429,7 +429,7 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 			c := osvdev.DefaultClient()
 			c.Config.UserAgent = "osv-scanner-api-test"
 
-			got, err := c.ExperimentalDetermineVersion(context.Background(), &tt.query)
+			got, err := c.ExperimentalDetermineVersion(context.Background(), tt.query)
 			if err != nil {
 				t.Fatalf("Unexpected error %v", err)
 			}

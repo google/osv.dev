@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -314,6 +315,21 @@ func TestFromCVE5(t *testing.T) {
 					vuln.Modified = time.Time{}
 				}
 			}
+			sort.Slice(vuln.References, func(i, j int) bool {
+				if vuln.References[i].URL != vuln.References[j].URL {
+					return vuln.References[i].URL < vuln.References[j].URL
+				}
+
+				return vuln.References[i].Type < vuln.References[j].Type
+			})
+
+			sort.Slice(tc.expectedVuln.References, func(i, j int) bool {
+				if tc.expectedVuln.References[i].URL != tc.expectedVuln.References[j].URL {
+					return tc.expectedVuln.References[i].URL < tc.expectedVuln.References[j].URL
+				}
+
+				return tc.expectedVuln.References[i].Type < tc.expectedVuln.References[j].Type
+			})
 
 			if diff := cmp.Diff(tc.expectedVuln, vuln); diff != "" {
 				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)

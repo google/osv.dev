@@ -146,5 +146,19 @@
       "enabled": false
     }
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "deployment/terraform/environments/oss-vdb/main.tf",
+        "deployment/terraform/environments/oss-vdb-test/main.tf"
+      ],
+      "matchStrings": [
+        "esp_version\\s*=\\s*\"(?<currentValue>.*)\""
+      ],
+      "depNameTemplate": "gcr.io/endpoints-release/endpoints-runtime-serverless",
+      "datasourceTemplate": "docker"
+    }
+  ],
   "ignorePaths": ["docker/poetry/requirements.txt"]
 }

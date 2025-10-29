@@ -1,23 +1,26 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/google/apitester/internal/jsonreplace"
+	"github.com/google/apitester/internal/vcr"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
 )
 
-func jsonReplaceRules(t *testing.T, resp *http.Response) []JSONReplaceRule {
+func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 	t.Helper()
 
 	if resp.Request.URL.Path != "/v1/query" || strings.Contains(t.Name(), "/Invalid") {
 		return nil
 	}
 
-	return []JSONReplaceRule{
+	return []jsonreplace.Rule{
 		{
 			Path: "vulns.#.affected.#.database_specific",
 			ReplaceFunc: func(_ gjson.Result) any {
@@ -36,11 +39,15 @@ func jsonReplaceRules(t *testing.T, resp *http.Response) []JSONReplaceRule {
 func normalizeJSONBody(t *testing.T, resp *http.Response) string {
 	t.Helper()
 
-	body := readBody(t, resp)
+	defer resp.Body.Close()
 
-	for _, rule := range jsonReplaceRules(t, resp) {
-		body = replaceJSONInput(t, body, rule.Path, rule.ReplaceFunc)
+	body, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	body = jsonreplace.DoBytes(t, body, jsonReplaceRules(t, resp))
 
 	return string(pretty.Pretty(body))
 }
@@ -48,20 +55,20 @@ func normalizeJSONBody(t *testing.T, resp *http.Response) string {
 func Test(t *testing.T) {
 	t.Parallel()
 
-	cassettes := LoadCassettes(t)
+	cassettes := vcr.Load(t)
 
 	for _, cas := range cassettes {
-		t.Run(determineCassetteName(cas), func(t *testing.T) {
+		t.Run(vcr.DetermineCassetteName(cas), func(t *testing.T) {
 			t.Parallel()
 			for _, interaction := range cas.Interactions {
-				t.Run(determineInteractionName(interaction), func(t *testing.T) {
+				t.Run(vcr.DetermineInteractionName(interaction), func(t *testing.T) {
 					t.Parallel()
 
-					resp := PlayInteraction(t, interaction)
+					resp := vcr.Play(t, interaction)
 					body := normalizeJSONBody(t, resp)
 
 					snaps.
-						WithConfig(snaps.Filename(determineCassetteName(cas))).
+						WithConfig(snaps.Filename(vcr.DetermineCassetteName(cas))).
 						MatchSnapshot(t, body)
 				})
 			}

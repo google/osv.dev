@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/google/apitester/internal/vcr"
 )
 
 func TestMain(m *testing.M) {
-	err := CleanCassettes()
+	err := vcr.CleanCassettes()
 	if err != nil {
 		fmt.Println("Error cleaning cassettes:", err)
 		os.Exit(1)

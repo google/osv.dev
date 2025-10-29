@@ -1,4 +1,5 @@
-package main
+// Package jsonreplace handles replacing parts of JSON with placeholders based on rules
+package jsonreplace
 
 import (
 	"strconv"
@@ -9,9 +10,19 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-type JSONReplaceRule struct {
+type Rule struct {
 	Path        string
 	ReplaceFunc func(toReplace gjson.Result) any
+}
+
+func DoBytes(t *testing.T, json []byte, rules []Rule) []byte {
+	t.Helper()
+
+	for _, rule := range rules {
+		json = replaceJSONInput(t, json, rule.Path, rule.ReplaceFunc)
+	}
+
+	return json
 }
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,82 +13,6 @@ type JSONReplaceRule struct {
 	Path        string
 	ReplaceFunc func(toReplace gjson.Result) any
 }
-
-var (
-	// OnlyIDVulnsRule simplifies vulnerabilities to only their ID
-	OnlyIDVulnsRule = JSONReplaceRule{
-		Path: "results.#.packages.#.vulnerabilities",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			return toReplace.Get("#.id").Value()
-		},
-	}
-	// GroupsAsArrayLen replaces the groups array with its length
-	GroupsAsArrayLen = JSONReplaceRule{
-		Path: "results.#.packages.#.groups",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			if toReplace.IsArray() {
-				return len(toReplace.Array())
-			}
-
-			return 0
-		},
-	}
-	// OnlyFirstBaseImage simplifies the array of base images to only the first one
-	OnlyFirstBaseImage = JSONReplaceRule{
-		Path: "image_metadata.base_images.#",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			if toReplace.IsArray() && len(toReplace.Array()) >= 1 {
-				return toReplace.Array()[0].Value()
-			}
-
-			return struct{}{}
-		},
-	}
-	// AnyDiffID truncates diff ids in image layer metadata to just `sha256:...`
-	AnyDiffID = JSONReplaceRule{
-		Path: "image_metadata.layer_metadata.#.diff_id",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			if len(toReplace.String()) > 7 {
-				return toReplace.String()[:7] + "..."
-			}
-
-			return ""
-		},
-	}
-	// ShortenHistoryCommandLength truncates COMMAND data to 28 characters
-	ShortenHistoryCommandLength = JSONReplaceRule{
-		Path: "image_metadata.layer_metadata.#.command",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			if len(toReplace.String()) > 28 {
-				return toReplace.String()[:25] + "..."
-			}
-
-			return toReplace.String()
-		},
-	}
-	// NormalizeHistoryCommand replaces COMMAND data to be consistent
-	// across different versions of docker
-	NormalizeHistoryCommand = JSONReplaceRule{
-		Path: "image_metadata.layer_metadata.#.command",
-		ReplaceFunc: func(toReplace gjson.Result) any {
-			str := toReplace.String()
-			nopMatcher := regexp.MustCompile(`^/bin/sh -c #\(nop\)\s+`)
-			runMatcher := regexp.MustCompile(`^/bin/sh -c\s+`)
-			str = nopMatcher.ReplaceAllLiteralString(str, "")
-			str = runMatcher.ReplaceAllString(str, "RUN \\0")
-
-			return str
-		},
-	}
-
-	// NormalizeCreateDateSPDX replaces the created date with a placeholder date
-	NormalizeCreateDateSPDX = JSONReplaceRule{
-		Path: "creationInfo.created",
-		ReplaceFunc: func(_ gjson.Result) any {
-			return "2025-01-01T01:01:01Z"
-		},
-	}
-)
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher
 func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {

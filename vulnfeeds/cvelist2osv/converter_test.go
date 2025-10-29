@@ -3,12 +3,13 @@ package cvelist2osv
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gkampitakis/go-snaps/snaps"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gkampitakis/go-snaps/snaps"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"

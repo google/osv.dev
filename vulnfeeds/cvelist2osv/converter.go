@@ -183,10 +183,8 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	return &v
 }
 
-// WriteOSVToFile saves the generated OSV vulnerability record to a JSON file.
-// The file is named after the vulnerability ID and placed in a subdirectory
-// named after the assigning CNA.
-func WriteOSVToFile(id cves.CVEID, vulnDir string) (*os.File, error) {
+// CreateOSVFile creates the initial file for the OSV record.
+func CreateOSVFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 	outputFile := filepath.Join(vulnDir, string(id)+extension)
 	f, err := os.Create(outputFile)
 	if err != nil {
@@ -197,10 +195,10 @@ func WriteOSVToFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 	return f, err
 }
 
-// WriteMetricToFile saves the collected conversion metrics to a JSON file.
+// CreateMetricsFile saves the collected conversion metrics to a JSON file.
 // This file provides data for analyzing the success and characteristics of the
 // conversion process for a given CVE.
-func WriteMetricToFile(id cves.CVEID, vulnDir string) (*os.File, error) {
+func CreateMetricsFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
 	f, err := os.Create(metricsFile)
 	if err != nil {
@@ -251,14 +249,19 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 	err := v.ToJSON(vulnSink)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
-	} else {
-		logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cnaAssigner))
+		return err
 	}
+	logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cnaAssigner))
 
 	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
+	if err != nil {
+		logger.Info("Failed to marshal", slog.Any("err", err))
+		return err
+	}
 	_, err = metricsSink.Write(marshalledMetrics)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
+		return err
 	}
 
 	return nil

@@ -44,3 +44,6 @@ Before the test suite is actually run, the cassettes will be "cleaned" so that
 - the `body` of each `request` will be formatted as a multi-line string, to make
   it easier to understand what the query parameters are
 - the `response` is property is not present, to reduce the size of each cassette
+
+By default, requests are made against the local instance of the API, but you can
+use the `OSV_API_BASE_URL` to point it against other instances.

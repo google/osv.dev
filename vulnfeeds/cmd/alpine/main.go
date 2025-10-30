@@ -35,12 +35,12 @@ func main() {
 	logger.InitGlobalLogger()
 
 	alpineOutputPath := flag.String(
-		"output_path",
+		"output-path",
 		alpineOutputPathDefault,
 		"path to output general alpine affected package information")
-	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
-	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
 	flag.Parse()
 
 	err := os.MkdirAll(*alpineOutputPath, 0755)

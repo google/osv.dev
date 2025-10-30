@@ -158,6 +158,20 @@
       ],
       "depNameTemplate": "gcr.io/endpoints-release/endpoints-runtime-serverless",
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "gcp/workers/linter/Dockerfile"
+      ],
+      "matchStrings": [
+        "git clone https://github\\.com/ossf/osv-schema\\.git.*checkout (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "currentValueTemplate": "main",
+      "depNameTemplate": "osv-schema",
+      "packageNameTemplate": "https://github.com/ossf/osv-schema",
+      "datasourceTemplate": "git-refs",
+      "versioningTemplate": "git"
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

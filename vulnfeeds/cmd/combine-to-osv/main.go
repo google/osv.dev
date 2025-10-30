@@ -32,13 +32,13 @@ const (
 func main() {
 	logger.InitGlobalLogger()
 
-	cve5Path := flag.String("cve5Path", defaultCVE5Path, "Path to CVE5 OSV files")
-	nvdPath := flag.String("nvdPath", defaultNVDOSVPath, "Path to NVD OSV files")
-	osvOutputPath := flag.String("osvOutputPath", defaultOSVOutputPath, "Local output path of combined OSV files, or GCS prefix if uploading.")
-	outputBucketName := flag.String("output_bucket", "cve-osv-conversion", "The GCS bucket to write to.")
-	overridesBucketName := flag.String("overrides_bucket", "cve-osv-conversion", "The GCS bucket to read overrides from.")
-	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, upload to GCS bucket instead of writing to local disk.")
-	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
+	cve5Path := flag.String("cve5-path", defaultCVE5Path, "Path to CVE5 OSV files")
+	nvdPath := flag.String("nvd-path", defaultNVDOSVPath, "Path to NVD OSV files")
+	osvOutputPath := flag.String("osv-output-path", defaultOSVOutputPath, "Local output path of combined OSV files, or GCS prefix if uploading.")
+	outputBucketName := flag.String("output-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to write to.")
+	overridesBucketName := flag.String("overrides-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to read overrides from.")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
+	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)

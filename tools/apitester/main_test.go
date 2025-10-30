@@ -49,8 +49,6 @@ func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 func normalizeJSONBody(t *testing.T, resp *http.Response) string {
 	t.Helper()
 
-	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
@@ -76,6 +74,8 @@ func Test(t *testing.T) {
 
 					resp := vcr.Play(t, interaction)
 					body := normalizeJSONBody(t, resp)
+
+					resp.Body.Close()
 
 					snaps.
 						WithConfig(snaps.Filename(vcr.DetermineCassetteName(cas))).

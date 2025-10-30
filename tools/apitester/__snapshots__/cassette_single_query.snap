@@ -5,7 +5,7 @@
     {
       "id": "CVE-2021-45931",
       "details": "HarfBuzz 2.9.0 has an out-of-bounds write in hb_bit_set_invertible_t::set (called from hb_sparseset_t\u003chb_bit_set_invertible_t\u003e::set and hb_set_copy).",
-      "modified": "2025-10-28T04:08:24.391075Z",
+      "modified": "2025-10-30T16:06:18.247283Z",
       "published": "2022-01-01T01:15:08Z",
       "references": [
         {
@@ -38,6 +38,20 @@
         }
       ],
       "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ]
+            }
+          ],
+          "database_specific": "<Any value>"
+        },
         {
           "ranges": [
             {
@@ -192,20 +206,6 @@
             "ng-start",
             "pango-extractpoint",
             "pango-start"
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
           ],
           "database_specific": "<Any value>"
         }
@@ -457,7 +457,7 @@
     {
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
-      "modified": "2025-10-26T12:04:45.177125Z",
+      "modified": "2025-10-29T13:50:56.312379Z",
       "published": "2023-02-04T20:15:08Z",
       "related": [
         "ALSA-2023:4158",

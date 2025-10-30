@@ -33,6 +33,16 @@ func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 				return "<Any value>"
 			},
 		},
+		{
+			Path: "vulns.#.affected.#.versions",
+			ReplaceFunc: func(toReplace gjson.Result) any {
+				if toReplace.IsArray() {
+					return len(toReplace.Array())
+				}
+
+				return 0
+			},
+		},
 	}
 }
 

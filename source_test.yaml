@@ -279,6 +279,21 @@
   repo_username: 'git'
   strict_validation: True
 
+- name: 'julia'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!JLSEC-).*$']
+  repo_branch: 'generated/osv'
+  repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['JLSEC-']
+  ignore_git: False
+  link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
 - name: 'mageia'
   versions_from_repo: False
   rest_api_url: 'https://advisories.mageia.org/vulns.json'

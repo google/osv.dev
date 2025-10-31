@@ -6,7 +6,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func cpeVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) ([]osvschema.Range, error) {
+func cpeVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) ([]*osvschema.Range, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 	if err == nil && len(cpeRanges) > 0 {
 		metrics.VersionSources = append(metrics.VersionSources, VersionSourceCPE)
@@ -21,7 +21,7 @@ func cpeVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) ([]osvschem
 }
 
 // textVersionExtraction is a helper function for CPE and description extraction.
-func textVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) []osvschema.Range {
+func textVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) []*osvschema.Range {
 	// As a last resort, try extracting versions from the description text.
 	versions, extractNotes := cves.ExtractVersionsFromText(nil, cves.EnglishDescription(cve.Containers.CNA.Descriptions))
 	for _, note := range extractNotes {
@@ -33,11 +33,11 @@ func textVersionExtraction(cve cves.CVE5, metrics *ConversionMetrics) []osvschem
 		metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
 	}
 
-	return []osvschema.Range{}
+	return []*osvschema.Range{}
 }
 
 // initialNormalExtraction handles an expected case of version ranges in the affected field of CVE5
-func initialNormalExtraction(vers cves.Versions, metrics *ConversionMetrics, versionTypesCount map[VersionRangeType]int) ([]osvschema.Range, VersionRangeType, bool) {
+func initialNormalExtraction(vers cves.Versions, metrics *ConversionMetrics, versionTypesCount map[VersionRangeType]int) ([]*osvschema.Range, VersionRangeType, bool) {
 	if vers.Status != "affected" {
 		return nil, VersionRangeTypeUnknown, true
 	}
@@ -75,7 +75,7 @@ func initialNormalExtraction(vers cves.Versions, metrics *ConversionMetrics, ver
 			lastaffected = vers.LessThanOrEqual
 			metrics.AddNote("%s - LastAffected from LessThanOrEqual value- %s", vLTOEQual.String(), vers.LessThanOrEqual)
 		}
-		var versionRanges []osvschema.Range
+		var versionRanges []*osvschema.Range
 		if fixed != "" {
 			versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, "", fixed))
 		} else if lastaffected != "" {

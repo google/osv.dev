@@ -13,9 +13,10 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20250926044009-f6ae0b6bae32
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251027003933-3d1fb541b2bf
 	github.com/sethvargo/go-retry v0.3.0
 	google.golang.org/api v0.247.0
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.5
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -108,6 +109,5 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/grpc v1.74.3 // indirect
-	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

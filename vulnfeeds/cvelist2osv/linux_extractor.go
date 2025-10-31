@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -23,7 +24,7 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 	hasGit := false
 	gotVersions := false
 	for _, cveAff := range affected {
-		var versionRanges []osvschema.Range
+		var versionRanges []*osvschema.Range
 		var versionType VersionRangeType
 		if cveAff.DefaultStatus == "affected" {
 			versionRanges, versionType = findInverseAffectedRanges(cveAff, metrics)
@@ -62,32 +63,32 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerab
 	}
 }
 
-func createLinuxAffected(versionRanges []osvschema.Range, versionType VersionRangeType, repo string) osvschema.Affected {
+func createLinuxAffected(versionRanges []*osvschema.Range, versionType VersionRangeType, repo string) *osvschema.Affected {
 	var aff osvschema.Affected
 	for _, vr := range versionRanges {
 		if versionType == VersionRangeTypeGit {
-			vr.Type = osvschema.RangeGit
+			vr.Type = osvschema.Range_GIT
 			vr.Repo = repo
 		} else {
-			vr.Type = osvschema.RangeEcosystem
+			vr.Type = osvschema.Range_ECOSYSTEM
 		}
 		aff.Ranges = append(aff.Ranges, vr)
 	}
 	if versionType != VersionRangeTypeGit {
-		aff.Package = osvschema.Package{
-			Ecosystem: string(osvschema.EcosystemLinux),
+		aff.Package = &osvschema.Package{
+			Ecosystem: string(osvconstants.EcosystemLinux),
 			Name:      "Kernel",
 		}
 	}
 
-	return aff
+	return &aff
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
 // It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics) (ranges []osvschema.Range, versType VersionRangeType) {
+func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics) (ranges []*osvschema.Range, versType VersionRangeType) {
 	var introduced []string
 	fixed := make([]string, 0, len(cveAff.Versions))
 	for _, vers := range cveAff.Versions {
@@ -148,9 +149,9 @@ func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics)
 	return nil, VersionRangeTypeUnknown
 }
 
-func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]osvschema.Range, VersionRangeType) {
+func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []osvschema.Range
+	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {
 		ranges, currentVersionType, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
 		versionRanges = append(versionRanges, ranges...)

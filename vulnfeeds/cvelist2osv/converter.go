@@ -4,10 +4,12 @@ package cvelist2osv
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -157,6 +159,15 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 		v.DatabaseSpecific.Fields["isDisputed"] = structpb.NewBoolValue(true)
 	}
 
+	// Sort references for deterministic output
+	sort.Slice(v.References, func(i, j int) bool {
+		if v.References[i].URL != v.References[j].URL {
+			return v.References[i].URL < v.References[j].URL
+		}
+
+		return v.References[i].Type < v.References[j].Type
+	})
+
 	// Combine severity metrics from both CNA and ADP containers.
 	var severity []cves.Metrics
 	if len(cve.Containers.CNA.Metrics) != 0 {
@@ -179,49 +190,31 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	return &v
 }
 
-// writeOSVToFile saves the generated OSV vulnerability record to a JSON file.
-// The file is named after the vulnerability ID and placed in a subdirectory
-// named after the assigning CNA.
-func writeOSVToFile(id cves.CVEID, cnaAssigner string, vulnDir string, v *vulns.Vulnerability) error {
-	err := os.MkdirAll(vulnDir, 0755)
-	if err != nil {
-		logger.Warn("Failed to create dir", slog.Any("err", err))
-		return fmt.Errorf("failed to create dir: %w", err)
-	}
-	outputFile := filepath.Join(vulnDir, v.Id+extension)
+// CreateOSVFile creates the initial file for the OSV record.
+func CreateOSVFile(id cves.CVEID, vulnDir string) (*os.File, error) {
+	outputFile := filepath.Join(vulnDir, string(id)+extension)
+
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
-		return err
-	}
-	defer f.Close()
-
-	err = v.ToJSON(f)
-	if err != nil {
-		logger.Info("Failed to write "+outputFile, slog.String("path", outputFile), slog.Any("err", err))
-	} else {
-		logger.Info("Generated OSV record for "+string(id), slog.String("cve", string(id)), slog.String("cna", cnaAssigner))
+		return nil, err
 	}
 
-	return err
+	return f, err
 }
 
-// writeMetricToFile saves the collected conversion metrics to a JSON file.
+// CreateMetricsFile saves the collected conversion metrics to a JSON file.
 // This file provides data for analyzing the success and characteristics of the
 // conversion process for a given CVE.
-func writeMetricToFile(id cves.CVEID, vulnDir string, metrics *ConversionMetrics) error {
+func CreateMetricsFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
-	marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
+	f, err := os.Create(metricsFile)
 	if err != nil {
-		logger.Warn("Failed to marshal metrics for "+string(id), slog.String("cve", string(id)), slog.Any("err", err))
-		return err
-	}
-	if err = os.WriteFile(metricsFile, marshalledMetrics, 0600); err != nil {
-		logger.Warn("Failed to write "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
-		return err
+		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
+		return nil, err
 	}
 
-	return nil
+	return f, nil
 }
 
 func determineOutcome(metrics *ConversionMetrics) {
@@ -243,7 +236,7 @@ func determineOutcome(metrics *ConversionMetrics) {
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
+func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
@@ -261,15 +254,21 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, directory string) error {
 
 	determineOutcome(&metrics)
 
-	vulnDir := filepath.Join(directory, cnaAssigner)
-
-	// Save the OSV record to a file.
-	if err := writeOSVToFile(cveID, cnaAssigner, vulnDir, v); err != nil {
+	err := v.ToJSON(vulnSink)
+	if err != nil {
+		logger.Info("Failed to write", slog.Any("err", err))
 		return err
 	}
+	logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cnaAssigner))
 
-	// Save the conversion metrics to a file.
-	if err := writeMetricToFile(cveID, vulnDir, &metrics); err != nil {
+	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
+	if err != nil {
+		logger.Info("Failed to marshal", slog.Any("err", err))
+		return err
+	}
+	_, err = metricsSink.Write(marshalledMetrics)
+	if err != nil {
+		logger.Info("Failed to write", slog.Any("err", err))
 		return err
 	}
 

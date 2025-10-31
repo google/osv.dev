@@ -773,7 +773,9 @@ def should_collapse(affected):
   total_text_length_ecosystem = sum(
       len(entry.get('package', {}).get('ecosystem', '')) for entry in affected)
   total_text_length_package = sum(
-      len(entry.get('package', {}).get('name', '')) for entry in affected)
+      len(entry.get('package', {}).get('name', '')) +
+      (len(ranges[0].get('repo', '')) if (ranges := entry.get('ranges')) else 0)
+      for entry in affected)
 
   max_total_length = max(total_text_length_ecosystem, total_text_length_package)
 

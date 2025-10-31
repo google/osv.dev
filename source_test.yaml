@@ -224,8 +224,8 @@
   type: 2
   rest_api_url: 'https://cna.erlef.org/osv/all.json'
   db_prefix: ['EEF-']
-  human_link: 'https://cna.erlef.org/cves/{{ CVE_ID }}.html'
-  link:  'https://cna.erlef.org/cves/'
+  human_link: 'https://cna.erlef.org/cves/{{ BUG_ID }}.html'
+  link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'
   extension: '.json'
   ignore_patterns: ['^(?!EEF-).*$']

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/api/iterator"
 )
 
 const (
@@ -185,6 +187,7 @@ func Upload(
 	numWorkers int,
 	osvOutputPath string,
 	vulnerabilities []*osvschema.Vulnerability,
+	doDeletions bool,
 ) {
 	var outBkt, overridesBkt *storage.BucketHandle
 	if uploadToGCS {
@@ -196,8 +199,11 @@ func Upload(
 		if overridesBucketName != "" {
 			overridesBkt = storageClient.Bucket(overridesBucketName)
 		}
-	}
 
+		if doDeletions {
+			handleDeletion(ctx, outBkt, osvOutputPath, vulnerabilities)
+		}
+	}
 	var wg sync.WaitGroup
 	vulnChan := make(chan *osvschema.Vulnerability, numWorkers)
 
@@ -216,4 +222,47 @@ func Upload(
 	close(vulnChan)
 	wg.Wait()
 	logger.Info("Successfully processed "+jobName, slog.Int("count", len(vulnerabilities)))
+}
+
+func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {
+	// Check if any need to be deleted
+	bucketObjects, err := listBucketObjects(ctx, outBkt, osvOutputPath)
+	if err != nil {
+		logger.Error("Failed to list bucket objects for deletion check, skipping deletion.", slog.Any("err", err))
+		return
+	}
+	vulnFilenames := make(map[string]bool)
+	for _, v := range vulnerabilities {
+		filename := v.ID + ".json"
+		filePath := path.Join(osvOutputPath, filename)
+		vulnFilenames[filePath] = true
+	}
+	for _, objName := range bucketObjects {
+		if !vulnFilenames[objName] {
+			logger.Info("Deleting stale object from bucket", slog.String("name", objName))
+			obj := outBkt.Object(objName)
+			if err := obj.Delete(ctx); err != nil {
+				logger.Error("Failed to delete object", slog.String("name", objName), slog.Any("err", err))
+			}
+		}
+	}
+}
+
+// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
+// It does not download the file contents.
+func listBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
+	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+	var filenames []string
+	for {
+		attrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break // All objects have been listed.
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bucket.Objects: %w", err)
+		}
+		filenames = append(filenames, attrs.Name)
+	}
+
+	return filenames, nil
 }

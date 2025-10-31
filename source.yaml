@@ -220,6 +220,20 @@
   editable: False
   strict_validation: True
 
+- name: 'eef'
+  type: 2
+  rest_api_url: 'https://cna.erlef.org/osv/all.json'
+  db_prefix: ['EEF-']
+  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
+  link:  'https://cna.erlef.org/osv/'
+  directory_path: 'osv'
+  extension: '.json'
+  ignore_patterns: ['^(?!EEF-).*$']
+  # Not directly editable, but we're happy to take suggestions:
+  # https://cna.erlef.org/contact
+  editable: False
+  versions_from_repo: True
+
 - name: 'ghsa'
   versions_from_repo: False
   type: 0

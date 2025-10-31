@@ -287,14 +287,14 @@ def push_source_changes(repo,
     except pygit2.GitError as e:
       logging.warning('Failed to push: %s', e)
       if retry_num == PUSH_RETRIES:
-        repos.reset_repo(repo, git_callbacks)
+        repos.reset_repo(repo, git_callbacks, True)
         return False
 
       time.sleep(PUSH_RETRY_SLEEP_SECONDS)
 
       # Try rebasing.
       commit = repo.head.peel()
-      repos.reset_repo(repo, git_callbacks)
+      repos.reset_repo(repo, git_callbacks, True)
 
       for path, expected_hash in expected_hashes.items():
         current_hash = sha256(path)
@@ -310,7 +310,7 @@ def push_source_changes(repo,
       if repo.index.conflicts is not None:
         # Conflict. Don't try to resolve.
         repo.state_cleanup()
-        repos.reset_repo(repo, git_callbacks)
+        repos.reset_repo(repo, git_callbacks, True)
         return False
 
       # Success, commit and try pushing again.
@@ -346,7 +346,10 @@ def source_path(source_repo, bug):
   """Get the source path for an osv.Bug."""
   source_name, source_id = parse_source_id(bug.source_id)
   if source_name == 'oss-fuzz' and len(bug.project) > 0:
-    path = os.path.join(bug.project[0], bug.id() + source_repo.extension)
+    # Because we populate the Github link for matching, the shortest
+    # name is the package name.
+    project = sorted(bug.project, key=len)[0]
+    path = os.path.join(project, bug.id() + source_repo.extension)
     if source_repo.directory_path:
       path = os.path.join(source_repo.directory_path, path)
 

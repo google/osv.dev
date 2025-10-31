@@ -17,29 +17,34 @@ steps:
   id: 'init'
   args: ['submodule', 'update', '--init']
 
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'lib-tests'
-  args: ['builds', 'submit', '--region=${LOCATION}', '--config=osv/cloudbuild.yaml', '.']
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=osv/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'worker-tests'
-  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/workers/cloudbuild.yaml', '.']
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/workers/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'website-tests'
-  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/website/cloudbuild.yaml', '.']
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/website/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'api-tests'
-  args: ['builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
   waitFor: ['init']
 
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'vulnfeeds-tests'
-  args: ['builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
+  waitFor: ['init']
+
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  id: 'bindings-tests'
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=bindings/cloudbuild.yaml', '.']
   waitFor: ['init']
 
 timeout: 7200s

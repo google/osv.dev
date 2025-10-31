@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"slices"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"golang.org/x/exp/slices"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 func loadTestData2(cveName string) Vulnerability {
@@ -33,6 +34,7 @@ func loadTestData2(cveName string) Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return Vulnerability{}
 }
 
@@ -470,7 +472,6 @@ func TestRepo(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
@@ -510,7 +511,7 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
-			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a a LastAffected commit
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a LastAffected commit
 			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
 			inputCommitType: models.Fixed,
 			expectFailure:   true,
@@ -686,20 +687,20 @@ func TestExtractGitCommit(t *testing.T) {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Skipf("test %q: extractGitAffectedCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Logf("test %q: extractGitAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := ExtractGitCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
 			if err == nil && tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
 			}
 			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
-				t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
+				t.Errorf("test %q: extractGitAffectedCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
 			}
 		})
 	}
@@ -944,7 +945,6 @@ func TestCPEs(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			gotCPEs := CPEs(tc.inputCVEItem.CVE)
@@ -995,7 +995,6 @@ func TestVersionInfoDuplicateDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
@@ -1148,7 +1147,6 @@ func TestInvalidRangeDetection(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
 			result := tc.inputAffectedCommit.InvalidRange()
@@ -1305,7 +1303,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1321,7 +1319,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1337,7 +1335,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1354,7 +1352,7 @@ func TestReposFromReferences(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1365,8 +1363,7 @@ func TestReposFromReferences(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			var Logger utility.LoggerWrapper
-			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1396,11 +1393,11 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
-			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
 		},
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
@@ -1412,7 +1409,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
-						Url:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1428,7 +1425,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
-						Url:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1445,7 +1442,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
 					},
 				},
 				tagDenyList: RefTagDenyList,
@@ -1461,7 +1458,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
-						Url:    "https://github.com/stitionai/devika"},
+						URL:    "https://github.com/stitionai/devika"},
 				},
 				tagDenyList: RefTagDenyList,
 			},
@@ -1471,8 +1468,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			var Logger utility.LoggerWrapper
-			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList, Logger); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1552,6 +1548,65 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
 				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestBuildVersionRange(t *testing.T) {
+	tests := []struct {
+		name    string
+		intro   string
+		lastAff string
+		fixed   string
+		want    osvschema.Range
+	}{
+		{
+			name:  "intro and fixed",
+			intro: "1.0.0",
+			fixed: "1.0.1",
+			want: osvschema.Range{
+				Events: []osvschema.Event{
+					{Introduced: "1.0.0"},
+					{Fixed: "1.0.1"},
+				},
+			},
+		},
+		{
+			name:    "intro and last_affected",
+			intro:   "1.0.0",
+			lastAff: "1.0.0",
+			want: osvschema.Range{
+				Events: []osvschema.Event{
+					{Introduced: "1.0.0"},
+					{LastAffected: "1.0.0"},
+				},
+			},
+		},
+		{
+			name:  "only intro",
+			intro: "1.0.0",
+			want: osvschema.Range{
+				Events: []osvschema.Event{
+					{Introduced: "1.0.0"},
+				},
+			},
+		},
+		{
+			name: "empty intro",
+			want: osvschema.Range{
+				Events: []osvschema.Event{
+					{Introduced: "0"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := BuildVersionRange(tt.intro, tt.lastAff, tt.fixed)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("cves.BuildVersionRange() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

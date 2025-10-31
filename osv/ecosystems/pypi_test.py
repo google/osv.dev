@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 """PyPI ecosystem helper tests."""
 
 import vcr.unittest
+import warnings
 
 from .. import ecosystems
 
@@ -24,14 +25,26 @@ class PyPIEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('PyPI')
-    self.assertEqual('1.36.0rc1', ecosystem.next_version('grpcio', '1.35.0'))
-    self.assertEqual('1.36.1', ecosystem.next_version('grpcio', '1.36.0'))
-    self.assertEqual('0.3.0', ecosystem.next_version('grpcio', '0'))
-    with self.assertRaises(ecosystems.EnumerateError):
-      ecosystem.next_version('doesnotexist123456', '1')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
+      self.assertEqual('1.36.0rc1', ecosystem.next_version('grpcio', '1.35.0'))
+      self.assertEqual('1.36.1', ecosystem.next_version('grpcio', '1.36.0'))
+      self.assertEqual('0.3.0', ecosystem.next_version('grpcio', '0'))
+      with self.assertRaises(ecosystems.EnumerateError):
+        ecosystem.next_version('doesnotexist123456', '1')
 
   def test_sort_key(self):
     """Test sort_key"""
     ecosystem = ecosystems.get('PyPI')
     self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
-    self.assertLess(ecosystem.sort_key('invalid'), ecosystem.sort_key('0'))
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('legacy'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.dev0'))
+
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('1.10.0'), ecosystem.sort_key('1.2.0'))
+    self.assertLessEqual(
+        ecosystem.sort_key('1.2.0'), ecosystem.sort_key('1.10.0'))

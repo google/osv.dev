@@ -32,6 +32,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
+from google.protobuf import json_format
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -40,6 +41,8 @@ import osv.cache
 import osv.logs
 from osv import vulnerability_pb2
 import oss_fuzz
+
+from vanir import vulnerability_manager
 
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
@@ -288,18 +291,18 @@ def maybe_normalize_package_names(vulnerability):
   return vulnerability
 
 
-def filter_unsupported_ecosystems(vulnerability):
-  """Remove unsupported ecosystems from vulnerability."""
+def filter_unknown_ecosystems(vulnerability):
+  """Remove unknown ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
     # CVE-converted OSV records have no package information.
     if not affected.HasField('package'):
       filtered.append(affected)
-    elif osv.ecosystems.get(affected.package.ecosystem):
+    elif osv.ecosystems.is_known(affected.package.ecosystem):
       filtered.append(affected)
     else:
-      logging.warning('%s contains unsupported ecosystem "%s"',
-                      vulnerability.id, affected.package.ecosystem)
+      logging.error('%s contains unknown ecosystem "%s"', vulnerability.id,
+                    affected.package.ecosystem)
   del vulnerability.affected[:]
   vulnerability.affected.extend(filtered)
 
@@ -486,6 +489,36 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
+  def _generate_vanir_signatures(self, vulnerability):
+    """Generates Vanir signatures for a vulnerability."""
+    if not any(r.type == vulnerability_pb2.Range.GIT
+               for affected in vulnerability.affected
+               for r in affected.ranges):
+      logging.info(
+          'Skipping Vanir signature generation for %s as it has no '
+          'GIT affected ranges.', vulnerability.id)
+      return vulnerability
+
+    logging.info('Generating Vanir signatures for %s', vulnerability.id)
+    try:
+      vuln_manager = vulnerability_manager.generate_from_json_string(
+          content=json.dumps([
+              json_format.MessageToDict(
+                  vulnerability, preserving_proto_field_name=True)
+          ]),)
+      vuln_manager.generate_signatures()
+
+      if not vuln_manager.vulnerabilities:
+        logging.warning('Vanir signature generation resulted in no '
+                        'vulnerabilities.')
+        return vulnerability
+
+      return vuln_manager.vulnerabilities[0].to_proto()
+    except Exception:
+      logging.exception('Failed to generate Vanir signatures for %s',
+                        vulnerability.id)
+      return vulnerability
+
   def _do_update(self, source_repo, repo, vulnerability, relative_path,
                  original_sha256):
     """Process updates on a vulnerability."""
@@ -496,7 +529,10 @@ class TaskRunner:
       logging.warning('%s has an encoding error, skipping.', vulnerability.id)
       return
 
-    filter_unsupported_ecosystems(vulnerability)
+    filter_unknown_ecosystems(vulnerability)
+
+    # Generate Vanir signatures.
+    vulnerability = self._generate_vanir_signatures(vulnerability)
 
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
     try:
@@ -583,6 +619,20 @@ class TaskRunner:
         _state.bug_id = message.attributes.get('allocated_bug_id', None)
 
         task_type = message.attributes['type']
+
+        # Validating that oss-fuzz-related tasks are only sent by oss-fuzz and
+        # the non-oss-fuzz task is not used by oss-fuzz.
+        if not source_id:
+          logging.error('got message without source_id: %s', message)
+        elif source_id.startswith('oss-fuzz'):
+          if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
+                               'update-oss-fuzz'):
+            logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
+                          task_type, source_id)
+        elif task_type != 'update':
+          logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
+                        task_type, source_id)
+
         if task_type in ('regressed', 'fixed'):
           oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
                                        message)
@@ -593,6 +643,9 @@ class TaskRunner:
             logging.exception('Failed to process impact: ')
         elif task_type == 'invalid':
           mark_bug_invalid(message)
+        elif task_type == 'update-oss-fuzz':
+          # TODO(michaelkedar): create separate _source_update for oss-fuzz.
+          self._source_update(message)
         elif task_type == 'update':
           self._source_update(message)
 

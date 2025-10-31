@@ -17,15 +17,18 @@ FROM gcr.io/oss-vdb/worker
 RUN apt-get update && \
     apt-get install -y \
     wget \
+    google-cloud-cli-firestore-emulator \
     google-cloud-sdk-datastore-emulator \
     openjdk-21-jre  # Needed for Datastore emulator.
+
+# TODO(michaelkedar): remove datastore emulator after firestore changes are merged.
 
 COPY daemon.json /etc/docker/daemon.json
 COPY install_go.sh /tmp/install_go.sh
 
 RUN "/tmp/install_go.sh"
 # root/go/bin is needed here in order to install Hugo.
-ENV PATH "$PATH:/usr/local/go/bin:/root/go/bin" 
+ENV PATH="$PATH:/usr/local/go/bin:/root/go/bin"
 
 RUN go install -tags extended github.com/gohugoio/hugo@v0.111.3
 

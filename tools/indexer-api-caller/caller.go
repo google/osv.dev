@@ -18,14 +18,14 @@ var (
 	repoDir   = flag.String("lib", "", "library directory")
 	repoDir2  = flag.String("lib2", "", "specify another directory to compare file hashes to the first")
 	searchDir = flag.String("dir", "", "third party directory containing multiple libraries")
-	fileExts  = []string{
-		".hpp",
-		".h",
-		".hh",
-		".cc",
-		".c",
-		".cpp",
-	}
+	//fileExts  = []string{
+	//	".hpp",
+	//	".h",
+	//	".hh",
+	//	".cc",
+	//	".c",
+	//	".cpp",
+	//}
 )
 
 type Hash = [16]byte
@@ -139,7 +139,7 @@ func buildGit(repoDir string) ([]*FileResult, error) {
 
 	res, err := http.Post("https://api.osv.dev/v1experimental/determineversion", "application/json", strings.NewReader(b.String()))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to make request: %v", err)
+		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 
 	output, err := io.ReadAll(res.Body)

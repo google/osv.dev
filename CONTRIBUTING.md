@@ -39,11 +39,11 @@ You must install:
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/) >= 2.1.3
+1.  [Poetry](https://python-poetry.org/) >= 2.2.1
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.5 (for infrastructure changes)
+5.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.
@@ -62,11 +62,11 @@ poetry shell
 ### Running tests
 
 Certain tests require you to auth with the Google Cloud SDK and to install the
-Datastore Emulator:
+Firestore Emulator:
 
 ```shell
 gcloud auth login --update-adc
-gcloud components install beta cloud-datastore-emulator
+gcloud components install cloud-firestore-emulator
 ```
 
 To run tests:

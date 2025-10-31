@@ -34,6 +34,12 @@
       "enabled": false
     },
     {
+      "matchDepNames": [
+        "gcp/workers/worker/osv-test"
+      ],
+      "enabled": false
+    },
+    {
       "matchFileNames": [
         "gcp/website/**"
       ],
@@ -134,6 +140,38 @@
         "python"
       ],
       "enabled": false
+    },
+    {
+      "matchDepTypes": ["uses-with"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "deployment/terraform/environments/oss-vdb/main.tf",
+        "deployment/terraform/environments/oss-vdb-test/main.tf"
+      ],
+      "matchStrings": [
+        "esp_version\\s*=\\s*\"(?<currentValue>.*)\""
+      ],
+      "depNameTemplate": "gcr.io/endpoints-release/endpoints-runtime-serverless",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "gcp/workers/linter/Dockerfile"
+      ],
+      "matchStrings": [
+        "git clone https://github\\.com/ossf/osv-schema\\.git.*checkout (?<currentDigest>[a-f0-9]{40})"
+      ],
+      "currentValueTemplate": "main",
+      "depNameTemplate": "osv-schema",
+      "packageNameTemplate": "https://github.com/ossf/osv-schema",
+      "datasourceTemplate": "git-refs",
+      "versioningTemplate": "git"
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

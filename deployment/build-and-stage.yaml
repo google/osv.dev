@@ -62,7 +62,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
-# Build/push core worker/importer/exporter/alias images.
+# Build/push core worker/importer/alias images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
   id: 'build-worker'
@@ -81,15 +81,6 @@ steps:
   waitFor: ['build-importer', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/exporter'
-  id: 'build-exporter'
-  waitFor: ['build-worker']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
-  waitFor: ['build-exporter', 'cloud-build-queue']
-
-- name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/alias-computation:latest', '-t', 'gcr.io/oss-vdb/alias-computation:$COMMIT_SHA', '.']
   dir: 'gcp/workers/alias'
   id: 'build-alias-computation'
@@ -106,6 +97,35 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']
+
+# Build/push exporter/record-checker go images
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/exporter:latest || exit 0']
+  id: 'pull-exporter'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '-f', 'cmd/exporter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/exporter:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-exporter'
+  waitFor: ['pull-exporter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
+  waitFor: ['build-exporter', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/record-checker:latest || exit 0']
+  id: 'pull-record-checker'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/record-checker:latest', '-t', 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA', '-f', 'cmd/recordchecker/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-record-checker'
+  waitFor: ['pull-record-checker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/record-checker']
+  waitFor: ['build-record-checker', 'cloud-build-queue']
 
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
@@ -179,6 +199,20 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
   waitFor: ['build-combine-to-osv', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/cve5-to-osv:latest || exit 0']
+  id: 'pull-cve5-to-osv'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '-f', 'cmd/cve-bulk-converter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/cve5-to-osv:latest', '--pull', '.']
+  dir: 'vulnfeeds'
+  id: 'build-cve5-to-osv'
+  waitFor: ['pull-cve5-to-osv']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/cve5-to-osv']
+  waitFor: ['build-cve5-to-osv', 'cloud-build-queue']
 
 # Build/push indexer image
 - name: 'gcr.io/cloud-builders/docker'
@@ -301,7 +335,9 @@ steps:
      cpe-repo-gen=gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA,\
      nvd-cve-osv=gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA,\
      nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA,\
-     recoverer=gcr.io/oss-vdb/recoverer:$COMMIT_SHA"
+     recoverer=gcr.io/oss-vdb/recoverer:$COMMIT_SHA,\
+     cve5-to-osv=gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA,\
+     record-checker=gcr.io/oss-vdb/record-checker:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -358,3 +394,5 @@ images:
 - 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA'
 - 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA'

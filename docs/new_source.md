@@ -21,7 +21,7 @@ The step by step instructions are as follows:
 
 - [ ] Prepare and publish your records via a public Git repository ([example](https://github.com/AlmaLinux/osv-database/tree/master)). If this method isn’t ideal, we also support publishing records through [REST API](./rest-api.md) or GCS buckets ([example](https://storage.googleapis.com/android-osv/)).  
         
-- [ ] To support API querying, if you are contributing a new ecosystem, please create a PR to extend [purl\_helpers.py](https://github.com/google/osv.dev/blob/master/osv/purl_helpers.py) and create a new ecosystem in [\_ecosystems.py](https://github.com/google/osv.dev/blob/master/osv/ecosystems/_ecosystems.py). You can refer to existing examples showing how to implement support for [Semver](https://github.com/google/osv.dev/blob/139de7b69a2ea39e2113309b3a0a47aab920ddcf/osv/ecosystems/_ecosystems.py#L45) and [non-Semver](https://github.com/google/osv.dev/pull/3430) ecosystems.  
+- [ ] To support API querying, if you are contributing a new ecosystem, please create a PR to extend [purl\_helpers.py](https://github.com/google/osv.dev/blob/master/osv/purl_helpers.py) and create a new ecosystem in [\_ecosystems.py](https://github.com/google/osv.dev/blob/master/osv/ecosystems/_ecosystems.py). You can refer to existing examples showing how to implement support for Semver and non-Semver ecosystems.  
         
 - [ ] Create a PR to start [importing the records you are publishing into our test instance of OSV.dev](https://github.com/google/osv.dev/blob/master/source_test.yaml) and validate everything is working as intended there.
 

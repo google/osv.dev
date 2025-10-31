@@ -34,7 +34,6 @@ from . import pubsub
 from . import purl_helpers
 from . import semver_index
 from . import sources
-from . import utils
 from . import vulnerability_pb2
 
 SCHEMA_VERSION = '1.7.3'
@@ -195,6 +194,8 @@ class AffectedRange2(ndb.Model):
   # Events.
   events: list[AffectedEvent] = ndb.LocalStructuredProperty(
       AffectedEvent, repeated=True)
+  # Database specific metadata.
+  database_specific: dict = ndb.JsonProperty()
 
 
 class SourceOfTruth(enum.IntEnum):
@@ -453,7 +454,7 @@ class Bug(ndb.Model):
     for affected_package in self.affected_packages:
       # Indexes used for querying by exact version.
       ecosystem_helper = ecosystems.get(affected_package.package.ecosystem)
-      if ecosystem_helper and ecosystem_helper.supports_ordering:
+      if ecosystem_helper is not None:
         # No need to normalize if the ecosystem is supported.
         self.affected_fuzzy.extend(affected_package.versions)
       else:
@@ -586,6 +587,11 @@ class Bug(ndb.Model):
                 AffectedEvent(type='limit', value=evt.limit))
             continue
 
+        if affected_range.database_specific:
+          current_range.database_specific = json_format.MessageToDict(
+              affected_range.database_specific,
+              preserving_proto_field_name=True)
+
         current.ranges.append(current_range)
 
       current.versions = list(affected_package.versions)
@@ -695,6 +701,10 @@ class Bug(ndb.Model):
               type=vulnerability_pb2.Range.Type.Value(affected_range.type),
               repo=affected_range.repo_url,
               events=events)
+
+          if affected_range.database_specific:
+            current_range.database_specific.update(
+                affected_range.database_specific)
 
           ranges.append(current_range)
 
@@ -876,13 +886,6 @@ class Bug(ndb.Model):
 
   def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
     """Post-put hook for writing new entities for database migration."""
-    # TODO(michaelkedar): Currently, only want to run this on the test instance
-    # (or when running tests). Remove this check when we're ready for prod.
-    project = utils.get_google_cloud_project()
-    if not project:
-      logging.error('failed to get GCP project')
-    if project not in ('oss-vdb-test', 'test-osv'):
-      return
     if future.exception():
       logging.error("Not writing new entities for %s since Bug.put() failed",
                     self.db_id)
@@ -1168,14 +1171,11 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
 
     # Ecosystem helper for sorting the events.
     e_helper = ecosystems.get(pkg_ecosystem)
-    if e_helper is not None and not (e_helper.supports_comparing or
-                                     e_helper.is_semver):
-      e_helper = None
-
     # TODO(michaelkedar): I am matching the current behaviour of the API,
     # where GIT tags match to the first git repo in the ranges list, even if
     # there are non-git ranges or multiple git repos in a range.
     repo_url = ''
+    pkg_has_affected = False
     for r in affected.ranges:
       if r.type == 'GIT':
         if not repo_url:
@@ -1184,8 +1184,10 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
       if r.type not in ('SEMVER', 'ECOSYSTEM'):
         logging.warning('Unknown range type "%s" in %s', r.type, entity.db_id)
         continue
-
       events = r.events
+      if not events:
+        continue
+      pkg_has_affected = True
       if e_helper is not None:
         # If we have an ecosystem helper sort the events to help with querying.
         events.sort(key=lambda e, sort_key=e_helper.sort_key:
@@ -1201,24 +1203,43 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
             ))
 
     # Add the enumerated versions
-    if affected.versions:
-      if pkg_name:  # We need at least a package name to perform matching.
-        for e in all_pkg_ecosystems:
-          affected_versions.append(
-              AffectedVersions(
-                  vuln_id=entity.db_id,
-                  ecosystem=e,
-                  name=pkg_name,
-                  versions=affected.versions,
-              ))
-      if repo_url:
+    # We need at least a package name to perform matching.
+    if pkg_name and affected.versions:
+      pkg_has_affected = True
+      for e in all_pkg_ecosystems:
         affected_versions.append(
             AffectedVersions(
                 vuln_id=entity.db_id,
-                ecosystem='GIT',
-                name=repo_url,
+                ecosystem=e,
+                name=pkg_name,
                 versions=affected.versions,
             ))
+    if pkg_name and not pkg_has_affected:
+      # We have a package that does not have any affected ranges or versions,
+      # which doesn't really make sense.
+      # Add an empty AffectedVersions entry so that this vuln is returned when
+      # querying the API with no version specified.
+      logging.warning('Vuln has empty affected ranges and versions: %s, %s/%s',
+                      entity.db_id, pkg_ecosystem, pkg_name)
+      for e in all_pkg_ecosystems:
+        affected_versions.append(
+            AffectedVersions(
+                vuln_id=entity.db_id,
+                ecosystem=e,
+                name=pkg_name,
+            ))
+
+    if repo_url:
+      # If we have a repository, always add a GIT entry.
+      # Even if affected.versions is empty, we still want to return this vuln
+      # for the API queries with no versions specified.
+      affected_versions.append(
+          AffectedVersions(
+              vuln_id=entity.db_id,
+              ecosystem='GIT',
+              name=normalize_repo_package(repo_url),
+              versions=affected.versions,
+          ))
 
   # Deduplicate and sort the affected_versions
   unique_affected_dict = {av.sort_key(): av for av in affected_versions}
@@ -1247,6 +1268,36 @@ def diff_affected_versions(
   removed = [all_dict[k] for k in removed_keys]
 
   return added, removed
+
+
+def normalize_repo_package(repo_url: str) -> str:
+  """Normalize the repo_url for use with GIT AffectedVersions entities.
+  
+  Removes the scheme/protocol and the .git extension, and trailing slashes.
+  
+  For example:
+    - 'http://git.musl-libc.org/git/musl' (e.g. CVE-2017-15650)
+      and 'https://git.musl-libc.org/git/musl' (e.g. CVE-2025-26519)
+      both become 'git.musl-libc.org/git/musl'
+    - 'https://github.com/curl/curl.git' (e.g. CURL-CVE-2024-2004)
+      and 'https://github.com/curl/curl' (e.g. CVE-2025-5025)
+      both become 'github.com/curl/curl'
+  """
+  if not repo_url:
+    return repo_url
+
+  try:
+    parsed = urlparse(repo_url)
+    # Remove scheme and reconstruct without it
+    # Keep netloc (hostname) and path
+    normalized = parsed.netloc + parsed.path
+
+    # Remove trailing slash
+    normalized = normalized.rstrip('/')
+    normalized = normalized.removesuffix('.git')
+    return normalized
+  except Exception:
+    return repo_url
 
 
 # --- Indexer entities ---
@@ -1465,7 +1516,7 @@ def sorted_events(ecosystem, range_type, events) -> list[AffectedEvent]:
   else:
     ecosystem_helper = ecosystems.get(ecosystem)
 
-  if ecosystem_helper is None or not ecosystem_helper.supports_ordering:
+  if ecosystem_helper is None:
     raise ValueError('Unsupported ecosystem ' + ecosystem)
 
   # Remove any magic '0' values.

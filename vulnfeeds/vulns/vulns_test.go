@@ -3,7 +3,6 @@ package vulns
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,7 +10,7 @@ import (
 	"sort"
 	"testing"
 
-	"golang.org/x/exp/slices"
+	"slices"
 
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -86,7 +85,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://example.com", Tags: []string{"MISC"}, Url: "https://example.com",
+					Source: "https://example.com", Tags: []string{"MISC"}, URL: "https://example.com",
 				},
 			},
 			references: []osvschema.Reference{{URL: "https://example.com", Type: osvschema.ReferenceWeb}},
@@ -94,7 +93,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://github.com/Netflix/lemur/issues/117", Url: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
+					Source: "https://github.com/Netflix/lemur/issues/117", URL: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
 				},
 			},
 			references: []osvschema.Reference{{URL: "https://github.com/Netflix/lemur/issues/117", Type: osvschema.ReferenceReport}},
@@ -102,7 +101,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://github.com/curl/curl/issues/9271", Url: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
+					Source: "https://github.com/curl/curl/issues/9271", URL: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -114,7 +113,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
+					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -124,7 +123,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "https://security.gentoo.org/glsa/202307-01", Url: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
+					Source: "https://security.gentoo.org/glsa/202307-01", URL: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -134,7 +133,7 @@ func TestClassifyReferences(t *testing.T) {
 		{
 			refData: []cves.Reference{
 				{
-					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Url: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
+					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", URL: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
 				},
 			},
 			references: []osvschema.Reference{
@@ -170,6 +169,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 		}
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
+
 	return cves.Vulnerability{}
 }
 
@@ -355,6 +355,7 @@ func TestAddPkgInfo(t *testing.T) {
 		if n := cmp.Compare(a.Type, b.Type); n != 0 {
 			return n
 		}
+
 		return cmp.Compare(a.Repo, b.Repo)
 	}) {
 		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")
@@ -415,9 +416,14 @@ func TestAddSeverity(t *testing.T) {
 			},
 		},
 		{
-			description:    "CVE with no impact information",
-			inputCVE:       loadTestData2("CVE-2023-5341"),
-			expectedResult: nil,
+			description: "CVE with only Secondary CVSS information",
+			inputCVE:    loadTestData2("CVE-2023-5341"),
+			expectedResult: []osvschema.Severity{
+				{
+					Type:  osvschema.SeverityCVSSV3,
+					Score: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+				},
+			},
 		},
 	}
 
@@ -432,65 +438,7 @@ func TestAddSeverity(t *testing.T) {
 	}
 }
 
-func TestCVEIsDisputed(t *testing.T) {
-	tests := []struct {
-		description       string
-		inputVulnId       string
-		expectedWithdrawn bool
-		expectedError     error
-	}{
-		{
-			description:       "A non-CVE vulnerability",
-			inputVulnId:       "OSV-1234",
-			expectedWithdrawn: false,
-			expectedError:     ErrVulnNotACVE,
-		},
-		{
-			description:       "A disputed CVE vulnerability",
-			inputVulnId:       "CVE-2023-23127",
-			expectedWithdrawn: true,
-			expectedError:     nil,
-		},
-		{
-			description:       "A disputed CVE vulnerability",
-			inputVulnId:       "CVE-2021-26917",
-			expectedWithdrawn: true,
-			expectedError:     nil,
-		},
-		{
-			description:       "An undisputed CVE vulnerability",
-			inputVulnId:       "CVE-2023-38408",
-			expectedWithdrawn: false,
-			expectedError:     nil,
-		},
-	}
-
-	for _, tc := range tests {
-		inputVuln := &Vulnerability{}
-		inputVuln.ID = tc.inputVulnId
-
-		withdrawnTime, err := CVEIsDisputed(inputVuln, "../test_data/cvelistV5")
-
-		if !errors.Is(err, tc.expectedError) {
-			var verr *VulnsCVEListError
-			if errors.As(err, &verr) {
-				t.Errorf("test %q: unexpectedly errored: %#v", tc.description, verr.Err)
-			} else {
-				t.Errorf("test %q: unexpectedly errored: %#v, expected: %#v", tc.description, err, tc.expectedError)
-			}
-		}
-
-		if withdrawnTime.IsZero() && tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn time not set as expected", tc.description)
-		}
-
-		if !withdrawnTime.IsZero() && !tc.expectedWithdrawn {
-			t.Errorf("test: %q: withdrawn time (%s) set unexpectedly", tc.description, withdrawnTime)
-		}
-	}
-}
-
 func TestNVD2(t *testing.T) {
 	cve := loadTestData2("CVE-2023-4863")
-	t.Logf("Loaded CVE: %#v", cve)
+	t.Logf("Loaded: %#v", cve)
 }

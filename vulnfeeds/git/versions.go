@@ -21,20 +21,18 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/models"
-	"golang.org/x/exp/maps"
 )
 
 var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
 
-// Take an already normalized version, repo and the mapping of repo tags
-// normalized tags and commits and do fuzzy matching version, returning a
-// GitCommit and a bool if successful.
-func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, b bool) {
+// findFuzzyCommit takes an already normalized version and the mapping of repo tags to
+// normalized tags and commits, and performs fuzzy matching to find a commit hash.
+func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]NormalizedTag) (string, bool) {
 	candidateTags := []string{} // the subset of normalizedTags tags that might be appropriate to use as a fuzzy match for normalizedVersion.
 	// Keep in sync with the regex in models.NormalizeVersion()
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for _, k := range maps.Keys(normalizedTags) {
+	for k := range normalizedTags {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
 		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
@@ -48,77 +46,54 @@ func fuzzyVersionToCommit(normalizedVersion string, repo string, commitType mode
 
 	// Nothing even looked like it started with normalizedVersion, fail.
 	if len(candidateTags) == 0 {
-		return ac, false
+		return "", false
 	}
 
 	if len(candidateTags) == 1 {
-		ac.SetRepo(repo)
-		switch commitType {
-		case models.Introduced:
-			ac.SetIntroduced(normalizedTags[candidateTags[0]].Commit)
-		case models.LastAffected:
-			ac.SetLastAffected(normalizedTags[candidateTags[0]].Commit)
-		case models.Limit:
-			ac.SetLimit(normalizedTags[candidateTags[0]].Commit)
-		case models.Fixed:
-			ac.SetFixed(normalizedTags[candidateTags[0]].Commit)
-		}
-		return ac, true
+		return normalizedTags[candidateTags[0]].Commit, true
 	}
 
 	// Find the most suitable tag from multiple.
-	for i, t := range candidateTags {
-		// Handle the case where where the
+	for _, t := range candidateTags {
+		// Handle the case where the
 		// normalizedVersion is "12-0" (i.e. was "12.0") but the normalizedTags
 		// has "12-0-0" (i.e. the repo had "12.0.0")
 		if strings.TrimPrefix(t, normalizedVersion) == "-0" {
-			ac.SetRepo(repo)
-			switch commitType {
-			case models.Introduced:
-				ac.SetIntroduced(normalizedTags[candidateTags[i]].Commit)
-			case models.LastAffected:
-				ac.SetLastAffected(normalizedTags[candidateTags[i]].Commit)
-			case models.Limit:
-				ac.SetLimit(normalizedTags[candidateTags[i]].Commit)
-			case models.Fixed:
-				ac.SetFixed(normalizedTags[candidateTags[i]].Commit)
-			}
-			return ac, true
+			return normalizedTags[t].Commit, true
 		}
 	}
 
 	// All fuzzy matching attempts have failed.
-	return ac, false
+	return "", false
 }
 
-// Take an unnormalized version string, a repo, the pre-normalized mapping of tags to commits and return an AffectedCommit.
-func VersionToCommit(version string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, e error) {
-	normalizedVersion, err := NormalizeVersion(version)
+func VersionToAffectedCommit(version string, repo string, commitType models.CommitType, normalizedTags map[string]NormalizedTag) (ac models.AffectedCommit, e error) {
+	commitHash, err := VersionToCommit(version, normalizedTags)
 	if err != nil {
 		return ac, err
 	}
-	// Try a straight out (case-insensitive) match first.
-	normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]
-	if !ok {
-		// Then try to fuzzy-match.
-		ac, ok = fuzzyVersionToCommit(normalizedVersion, repo, commitType, normalizedTags)
-		if !ok {
-			return ac, fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
-		}
-		return ac, nil
-	}
 	ac.SetRepo(repo)
-	switch commitType {
-	case models.Introduced:
-		ac.SetIntroduced(normalizedTag.Commit)
-	case models.LastAffected:
-		ac.SetLastAffected(normalizedTag.Commit)
-	case models.Limit:
-		ac.SetLimit(normalizedTag.Commit)
-	case models.Fixed:
-		ac.SetFixed(normalizedTag.Commit)
-	}
+	models.SetCommitByType(&ac, commitType, commitHash)
+
 	return ac, nil
+}
+
+// Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
+func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
+	normalizedVersion, err := NormalizeVersion(version)
+	if err != nil {
+		return "", err
+	}
+	// Try a straight out (case-insensitive) match first.
+	if normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]; ok {
+		return normalizedTag.Commit, nil
+	}
+	// Then try to fuzzy-match.
+	if commitHash, ok := findFuzzyCommit(normalizedVersion, normalizedTags); ok {
+		return commitHash, nil
+	}
+
+	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 }
 
 // Normalize version strings found in CVE CPE Match data or Git tags.
@@ -137,6 +112,7 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 		components = slices.Delete(components, 0, 1)
 	}
 	normalizedVersion = strings.Join(components, "-")
+
 	return normalizedVersion, e
 }
 

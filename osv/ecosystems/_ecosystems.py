@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,78 +15,80 @@
 
 import re
 
-from osv.ecosystems.chainguard import Chainguard
-from osv.ecosystems.wolfi import Wolfi
-from .helper_base import Ecosystem, OrderingUnsupportedEcosystem
-from .alma_linux import AlmaLinux
-from .alpaquita import Alpaquita
-from .alpine import Alpine
+from .ecosystems_base import EnumerableEcosystem, OrderedEcosystem
+from .alpine import Alpine, APK
 from .bioconductor import Bioconductor
 from .cran import CRAN
-from .debian import Debian
-from .echo import Echo
+from .debian import Debian, DPKG
 from .haskell import Hackage, GHC
-from .mageia import Mageia
 from .maven import Maven
-from .minimos import MinimOS
 from .nuget import NuGet
-from .openeuler import OpenEuler
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
-from .rocky_linux import RockyLinux
-from .redhat import RedHat
+from .redhat import RPM
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem
 from .ubuntu import Ubuntu
-from .suse import SUSE
-from .opensuse import OpenSUSE
 
 _ecosystems = {
-    # SemVer-based ecosystems (remember keep synced with SEMVER_ECOSYSTEMS):
-    'Bitnami': SemverEcosystem(),
-    'crates.io': SemverEcosystem(),
-    'Go': SemverEcosystem(),
-    'Hex': SemverEcosystem(),
-    'npm': SemverEcosystem(),
-    'SwiftURL': SemverEcosystem(),
-    # Non SemVer-based ecosystems
-    'Bioconductor': Bioconductor(),
-    'CRAN': CRAN(),
-    'Chainguard': Chainguard(),
-    'Echo': Echo(),
-    'GHC': GHC(),
-    'Hackage': Hackage(),
-    'Maven': Maven(),
-    'MinimOS': MinimOS(),
-    'NuGet': NuGet(),
-    'Packagist': Packagist(),
-    'Pub': Pub(),
-    'PyPI': PyPI(),
-    'RubyGems': RubyGems(),
-    'Wolfi': Wolfi(),
-    # Ecosystems which require a release version for enumeration, which is
-    # handled separately in get().
-    # Ecosystems missing implementations:
-    'Android': OrderingUnsupportedEcosystem(),
-    'ConanCenter': OrderingUnsupportedEcosystem(),
-    'GitHub Actions': OrderingUnsupportedEcosystem(),
-    'Linux': OrderingUnsupportedEcosystem(),
-    'OSS-Fuzz': OrderingUnsupportedEcosystem(),
-    'Photon OS': OrderingUnsupportedEcosystem(),
-    'GIT': OrderingUnsupportedEcosystem(),
+    'AlmaLinux': RPM,
+    'Alpaquita': APK,
+    'Alpine': Alpine,
+    'BellSoft Hardened Containers': APK,
+    'Bioconductor': Bioconductor,
+    'Bitnami': SemverEcosystem,
+    'Chainguard': APK,
+    'CRAN': CRAN,
+    'crates.io': SemverEcosystem,
+    'Debian': Debian,
+    'Echo': DPKG,
+    'GHC': GHC,
+    'Go': SemverEcosystem,
+    'Hackage': Hackage,
+    'Hex': SemverEcosystem,
+    'Julia': SemverEcosystem,
+    'Mageia': RPM,
+    'Maven': Maven,
+    'MinimOS': APK,
+    'npm': SemverEcosystem,
+    'NuGet': NuGet,
+    'openEuler': RPM,
+    'openSUSE': RPM,
+    'Packagist': Packagist,
+    'Pub': Pub,
+    'PyPI': PyPI,
+    'Red Hat': RPM,
+    'Rocky Linux': RPM,
+    'RubyGems': RubyGems,
+    'SUSE': RPM,
+    'SwiftURL': SemverEcosystem,
+    'Ubuntu': Ubuntu,
+    'Wolfi': APK,
+
+    # Ecosystems known in the schema, but without implementations.
+    # Must be kept in sync with osv-schema.
+    'Android': None,
+    'ConanCenter': None,
+    'GIT': None,
+    'GitHub Actions': None,
+    'Linux': None,
+    'OSS-Fuzz': None,
+    'Photon OS': None,
 }
 
-# Semver-based ecosystems, should correspond to _ecosystems above.
-# TODO(michaelkedar): Avoid need to keep in sync with above.
-SEMVER_ECOSYSTEMS = {
-    'Bitnami',
-    'crates.io',
-    'Go',
-    'Hex',
-    'npm',
-    'SwiftURL',
-}
+
+def is_semver(ecosystem: str) -> bool:
+  """Returns whether an ecosystem uses 'SEMVER' range types"""
+  return isinstance(get(ecosystem), SemverEcosystem)
+
+
+def is_known(ecosystem: str) -> bool:
+  """Returns whether an ecosystem is known to OSV
+  (even if ordering is not supported)."""
+  name, _, _ = ecosystem.partition(':')
+  return name in _ecosystems
+
 
 package_urls = {
     'Android': 'https://android.googlesource.com/',
@@ -117,50 +119,13 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
 }
 
 
-def get(name: str) -> Ecosystem:
+def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   """Get ecosystem helpers for a given ecosystem."""
-
-  if name.startswith('Debian'):
-    return Debian(name.partition(':')[2])
-
-  if name.startswith('AlmaLinux'):
-    return AlmaLinux()
-
-  if name.startswith('Alpaquita'):
-    return Alpaquita()
-
-  if name.startswith('Alpine'):
-    return Alpine(name.partition(':')[2])
-
-  if name.startswith('BellSoft Hardened Containers'):
-    return Alpaquita()
-
-  if name.startswith('Mageia'):
-    return Mageia()
-
-  if name.startswith('Red Hat'):
-    return RedHat()
-
-  if name.startswith('Rocky Linux'):
-    return RockyLinux()
-
-  if name.startswith('Photon OS:'):
-    # TODO(unassigned)
-    return OrderingUnsupportedEcosystem()
-
-  if name.startswith('Ubuntu'):
-    return Ubuntu()
-
-  if name.startswith('openSUSE'):
-    return OpenSUSE()
-
-  if name.startswith('openEuler'):
-    return OpenEuler()
-
-  if name.startswith('SUSE'):
-    return SUSE()
-
-  return _ecosystems.get(normalize(name))
+  name, _, suffix = name.partition(':')
+  ecosys = _ecosystems.get(name)
+  if ecosys is None:
+    return None
+  return ecosys(suffix)
 
 
 def normalize(ecosystem_name: str):
@@ -205,7 +170,7 @@ def is_supported_in_deps_dev(ecosystem_name: str) -> bool:
   return ecosystem_name in _OSV_TO_DEPS_ECOSYSTEMS_MAP
 
 
-def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str:
+def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str | None:
   return _OSV_TO_DEPS_ECOSYSTEMS_MAP.get(ecosystem_name)
 
 

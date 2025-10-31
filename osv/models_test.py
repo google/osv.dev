@@ -118,6 +118,12 @@ class ModelsTest(unittest.TestCase):
                         type='GIT', repo_url='https://github.com/test/test')
                 ],
                 versions=['v1', 'v2']),
+            models.AffectedPackage(
+                package=models.Package(ecosystem='', name=''),
+                ranges=[
+                    models.AffectedRange2(
+                        type='GIT', repo_url='https://github.com/test/test2')
+                ]),
         ],
     ).put()
     put_bug = models.Bug.get_by_id(vuln_id)
@@ -149,7 +155,7 @@ class ModelsTest(unittest.TestCase):
     self.assertListEqual(['GIT', 'Ubuntu', 'npm'], listed_vuln.ecosystems)
     self.assertListEqual([
         'Ubuntu:24.04:LTS/test', 'Ubuntu:25.04/test', 'github.com/test/test',
-        'npm/testjs'
+        'github.com/test/test2', 'npm/testjs'
     ], listed_vuln.packages)
     self.assertEqual('This is a vuln', listed_vuln.summary)
     self.assertTrue(listed_vuln.is_fixed)
@@ -158,9 +164,10 @@ class ModelsTest(unittest.TestCase):
         models.Severity(type='Ubuntu', score='High'),
         models.Severity(type='Ubuntu', score='Low')
     ], listed_vuln.severities)
-    self.assertListEqual(
-        ['https://github.com/test/test', 'test', 'test-123', 'testjs'],
-        listed_vuln.autocomplete_tags)
+    self.assertListEqual([
+        'https://github.com/test/test', 'https://github.com/test/test2', 'test',
+        'test-123', 'testjs'
+    ], listed_vuln.autocomplete_tags)
     # search_indices should include all the original search indices,
     # plus the transitive alias & upstream ids
     search_indices = sorted(put_bug.search_indices +
@@ -174,8 +181,10 @@ class ModelsTest(unittest.TestCase):
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='GIT',
-            name='https://github.com/test/test',
+            name='github.com/test/test',
             versions=['v1', 'v2']),
+        models.AffectedVersions(
+            vuln_id=vuln_id, ecosystem='GIT', name='github.com/test/test2'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu',
@@ -375,17 +384,44 @@ class ModelsTest(unittest.TestCase):
     blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, f'{vuln_id}.pb'))
     self.assertIsNone(blob)
 
+  def test_normalize_repo(self):
+    """Test normalize_repo_package function."""
+    test_cases = [
+        # protocol normalization
+        ('http://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+        ('https://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+        ('git://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+
+        # github examples
+        ('http://github.com/user/repo', 'github.com/user/repo'),
+        ('https://github.com/user/repo', 'github.com/user/repo'),
+        ('git://github.com/user/repo', 'github.com/user/repo'),
+
+        # trailing slash
+        ('https://github.com/user/repo/', 'github.com/user/repo'),
+        ('http://git.example.com/path/', 'git.example.com/path'),
+
+        # .git suffix removed
+        ('https://github.com/user/repo.git', 'github.com/user/repo'),
+        ('http://git.example.com/repo.git', 'git.example.com/repo'),
+
+        # edge cases
+        ('', ''),
+        ('invalid-url', 'invalid-url'),
+        ('http://', ''),
+        ('https://hostname', 'hostname'),
+    ]
+
+    for repo_url, expected in test_cases:
+      with self.subTest(repo_url=repo_url):
+        self.assertEqual(expected, models.normalize_repo_package(repo_url))
+
 
 def setUpModule():
   """Set up the test module."""
-  tests.start_datastore_emulator()
-  ndb_client = ndb.Client()
-  unittest.enterModuleContext(ndb_client.context(cache_policy=False))
-
-
-def tearDownModule():
-  """Tear down the test module."""
-  tests.stop_emulator()
+  # Start the emulator BEFORE creating the ndb client
+  unittest.enterModuleContext(tests.datastore_emulator())
+  unittest.enterModuleContext(ndb.Client().context(cache_policy=False))
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 import unittest
 import vcr.unittest
+import warnings
 
 from . import pub
 from .. import ecosystems
@@ -28,6 +29,7 @@ class PubVersionTest(unittest.TestCase):
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
+    self.ecosystem = pub.Pub()
 
   def test_comparison(self):
     """Test version comparisons."""
@@ -41,8 +43,8 @@ class PubVersionTest(unittest.TestCase):
 
     for i, a_str in enumerate(versions):
       for j, b_str in enumerate(versions):
-        a = pub.Version.from_string(a_str)
-        b = pub.Version.from_string(b_str)
+        a = self.ecosystem.sort_key(a_str)
+        b = self.ecosystem.sort_key(b_str)
         self.assertEqual(a < b, i < j)
         self.assertEqual(a == b, i == j)
 
@@ -50,7 +52,7 @@ class PubVersionTest(unittest.TestCase):
     """Test version equality."""
 
     def check_version_equals(v1, v2):
-      self.assertEqual(pub.Version.from_string(v1), pub.Version.from_string(v2))
+      self.assertEqual(self.ecosystem.sort_key(v1), self.ecosystem.sort_key(v2))
 
     check_version_equals('01.2.3', '1.2.3')
     check_version_equals('1.02.3', '1.2.3')
@@ -58,17 +60,29 @@ class PubVersionTest(unittest.TestCase):
     check_version_equals('1.2.3-01', '1.2.3-1')
     check_version_equals('1.2.3+01', '1.2.3+1')
 
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.assertGreaterEqual(
+        self.ecosystem.sort_key('1.10.0'), self.ecosystem.sort_key('1.2.0'))
+    self.assertLessEqual(
+        self.ecosystem.sort_key('1.2.0'), self.ecosystem.sort_key('1.10.0'))
+
+  def test_zero_sentinel(self):
+    """Test the 0 sentinel value."""
+    self.assertLess(
+        self.ecosystem.sort_key('0'), self.ecosystem.sort_key('0.0.0-0'))
+
   def test_parse(self):
     """Test versions can be parsed."""
-    pub.Version.from_string('0.0.0')
-    pub.Version.from_string('12.34.56')
-    pub.Version.from_string('1.2.3-alpha.1')
-    pub.Version.from_string('1.2.3-x.7.z-92')
-    pub.Version.from_string('1.2.3+build.1')
-    pub.Version.from_string('1.2.3+x.7.z-92')
-    pub.Version.from_string('1.0.0-rc-1+build-1')
+    self.ecosystem.sort_key('0.0.0')
+    self.ecosystem.sort_key('12.34.56')
+    self.ecosystem.sort_key('1.2.3-alpha.1')
+    self.ecosystem.sort_key('1.2.3-x.7.z-92')
+    self.ecosystem.sort_key('1.2.3+build.1')
+    self.ecosystem.sort_key('1.2.3+x.7.z-92')
+    self.ecosystem.sort_key('1.0.0-rc-1+build-1')
     # Tests invalid versions
-    pub.Version.from_string('3.4.0rc3-invalid')
+    self.ecosystem.sort_key('3.4.0rc3-invalid')
 
   def test_empty_identifier(self):
     """Test parsing versions with empty identifiers.
@@ -78,20 +92,20 @@ class PubVersionTest(unittest.TestCase):
 
     This test is probably unnecessary."""
 
-    pub.Version.from_string('1.0.0-a..b')
-    pub.Version.from_string('1.0.0-.a.b')
-    pub.Version.from_string('1.0.0-a.b.')
-    pub.Version.from_string('1.0.0+a..b')
-    pub.Version.from_string('1.0.0+.a.b')
-    pub.Version.from_string('1.0.0+a.b.')
-    pub.Version.from_string('1.0.0-+')
-    pub.Version.from_string('1.0.0-.+.')
-    pub.Version.from_string('1.0.0-....+....')
+    self.ecosystem.sort_key('1.0.0-a..b')
+    self.ecosystem.sort_key('1.0.0-.a.b')
+    self.ecosystem.sort_key('1.0.0-a.b.')
+    self.ecosystem.sort_key('1.0.0+a..b')
+    self.ecosystem.sort_key('1.0.0+.a.b')
+    self.ecosystem.sort_key('1.0.0+a.b.')
+    self.ecosystem.sort_key('1.0.0-+')
+    self.ecosystem.sort_key('1.0.0-.+.')
+    self.ecosystem.sort_key('1.0.0-....+....')
 
     # Basic test for ordering.
-    v_empty = pub.Version.from_string('1.0.0-a..b')
-    v_number = pub.Version.from_string('1.0.0-a.0.b')
-    v_str = pub.Version.from_string('1.0.0-a.a.b')
+    v_empty = self.ecosystem.sort_key('1.0.0-a..b')
+    v_number = self.ecosystem.sort_key('1.0.0-a.0.b')
+    v_str = self.ecosystem.sort_key('1.0.0-a.a.b')
     self.assertLess(v_number, v_empty)
     self.assertLess(v_empty, v_str)
 
@@ -106,28 +120,32 @@ class PubEcosystemTest(vcr.unittest.VCRTestCase):
   def test_next_version(self):
     """Test next_version."""
     ecosystem = ecosystems.get('Pub')
+    with warnings.catch_warnings():
+      # Filter the DeprecationWarning from next_version
+      warnings.filterwarnings('ignore', 'Avoid using this method')
 
-    self.assertEqual('2.0.0-nullsafety.0',
-                     ecosystem.next_version('pub_semver', '1.4.4'))
-    self.assertEqual('2.0.0',
-                     ecosystem.next_version('pub_semver', '2.0.0-nullsafety.0'))
-    self.assertEqual('2.1.0', ecosystem.next_version('pub_semver', '2.0.0'))
-    self.assertEqual('2.1.1', ecosystem.next_version('pub_semver', '2.1.0'))
+      self.assertEqual('2.0.0-nullsafety.0',
+                       ecosystem.next_version('pub_semver', '1.4.4'))
+      self.assertEqual(
+          '2.0.0', ecosystem.next_version('pub_semver', '2.0.0-nullsafety.0'))
+      self.assertEqual('2.1.0', ecosystem.next_version('pub_semver', '2.0.0'))
+      self.assertEqual('2.1.1', ecosystem.next_version('pub_semver', '2.1.0'))
 
-    # Versions with pre-release and build suffixes.
-    self.assertEqual('3.0.0-alpha+2',
-                     ecosystem.next_version('mockito', '3.0.0-alpha'))
-    self.assertEqual('3.0.0-alpha+3',
-                     ecosystem.next_version('mockito', '3.0.0-alpha+2'))
-    self.assertEqual('3.0.0-beta',
-                     ecosystem.next_version('mockito', '3.0.0-alpha+5'))
-    self.assertEqual('3.0.0', ecosystem.next_version('mockito', '3.0.0-beta+3'))
-    self.assertEqual('4.1.1+1', ecosystem.next_version('mockito', '4.1.1'))
-    self.assertEqual('4.1.2', ecosystem.next_version('mockito', '4.1.1+1'))
+      # Versions with pre-release and build suffixes.
+      self.assertEqual('3.0.0-alpha+2',
+                       ecosystem.next_version('mockito', '3.0.0-alpha'))
+      self.assertEqual('3.0.0-alpha+3',
+                       ecosystem.next_version('mockito', '3.0.0-alpha+2'))
+      self.assertEqual('3.0.0-beta',
+                       ecosystem.next_version('mockito', '3.0.0-alpha+5'))
+      self.assertEqual('3.0.0', ecosystem.next_version('mockito',
+                                                       '3.0.0-beta+3'))
+      self.assertEqual('4.1.1+1', ecosystem.next_version('mockito', '4.1.1'))
+      self.assertEqual('4.1.2', ecosystem.next_version('mockito', '4.1.1+1'))
 
-    # Version marked as retracted (go_router 4.2.1)
-    self.assertEqual('4.2.1', ecosystem.next_version('go_router', '4.2.0'))
-    self.assertEqual('4.2.2', ecosystem.next_version('go_router', '4.2.1'))
+      # Version marked as retracted (go_router 4.2.1)
+      self.assertEqual('4.2.1', ecosystem.next_version('go_router', '4.2.0'))
+      self.assertEqual('4.2.2', ecosystem.next_version('go_router', '4.2.1'))
 
 
 if __name__ == '__main__':

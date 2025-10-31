@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,22 +18,22 @@ import requests
 from ..third_party.univers.gem import GemVersion, InvalidVersionError
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 
 
-class RubyGems(Ecosystem):
+class RubyGems(EnumerableEcosystem):
   """RubyGems ecosystem."""
 
   _API_PACKAGE_URL = 'https://rubygems.org/api/v1/versions/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # If version is not valid, it is most likely an invalid input
     # version then sort it to the last/largest element
     try:
       return GemVersion(version)
     except InvalidVersionError:
-      return GemVersion('999999')
+      return GemVersion('9999999999')
 
   def enumerate_versions(self,
                          package,
@@ -57,7 +57,3 @@ class RubyGems(Ecosystem):
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
-
-  @property
-  def supports_comparing(self):
-    return True

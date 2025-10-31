@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import re
 from typing import List
 
 from . import config
-from .helper_base import Ecosystem, EnumerateError
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 from ..request_helper import RequestError, RequestHelper
 
 
@@ -69,7 +69,7 @@ class PackagistVersion:
   def __eq__(self, other):
     if not isinstance(other, self.__class__):
       return NotImplemented
-    return self.canonicalized_version == other.canonicalized_version
+    return self.__cmp__(other) == 0
 
   def __lt__(self, other):
     return self.__cmp__(other) < 0
@@ -194,12 +194,12 @@ class PackagistVersion:
     return 0
 
 
-class Packagist(Ecosystem):
+class Packagist(EnumerableEcosystem):
   """Packagist ecosystem"""
 
   _API_PACKAGE_URL = 'https://repo.packagist.org/p2/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     return PackagistVersion(version)
 
   def enumerate_versions(self,

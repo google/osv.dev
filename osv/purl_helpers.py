@@ -57,6 +57,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('hackage', None),
     'Hex':
         EcosystemPURL('hex', None),
+    'Julia':
+        EcosystemPURL('julia', None),
     # Linux
     'Mageia':
         EcosystemPURL('rpm', 'mageia'),
@@ -102,6 +104,9 @@ PURL_ECOSYSTEM_MAP = {
     purl_data: ecosystem
     for ecosystem, purl_data in ECOSYSTEM_PURL_DATA.items()
 }
+
+# Add Gradle PURL support - Gradle packages should map to Maven ecosystem
+PURL_ECOSYSTEM_MAP[EcosystemPURL('gradle', None)] = 'Maven'
 
 
 def _url_encode(package_name):
@@ -177,7 +182,7 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
         package = package + '/' + purl.subpath
     elif purl.type in ('composer', 'hex', 'npm', 'swift'):
       package = purl.namespace + '/' + purl.name
-    elif purl.type == 'maven':
+    elif purl.type in ('maven', 'gradle'):
       package = purl.namespace + ':' + purl.name
     else:
       # Handle the case where the ecosystem shouldn't have a namespace.

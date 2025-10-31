@@ -7,7 +7,7 @@
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/external-link.svg" type="image/webp">
 <!-- Defer offscreen images on mobile screens -->
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/footer-decoration.webp" type="image/webp"
-  media="(min-width: 768px)" onload="this.media='all'">
+      media="(min-width: 768px)" onload="this.media='all'">
 <noscript>
   <link rel="stylesheet" href="/static/img/footer-decoration.webp" type="image/webp">
 </noscript>
@@ -19,9 +19,10 @@
     <div class="mdc-layout-grid__cell--span-12 hero">
       <h1 class="title">A distributed vulnerability database for Open Source</h1>
       <div class="explainer">
-        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for open
+        <p>An open, precise, and distributed approach to producing and consuming vulnerability information for
+          open
           source.
-          </p>
+        </p>
       </div>
       <div class="cta">
         <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">
@@ -129,7 +130,8 @@
       <div class="cta">
         <a class="cta-primary link-button" href="https://ossf.github.io/osv-schema/">OSV Schema</a>
         <a class="cta-primary link-button"
-          href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog post</a>
+           href="https://security.googleblog.com/2021/06/announcing-unified-vulnerability-schema.html">Blog
+          post</a>
       </div>
     </div>
     <div class="mdc-layout-grid__cell--span-12 text-info data-sources">
@@ -145,7 +147,7 @@
       </p>
       <div class="cta">
         <a class="cta-primary link-button" href="https://google.github.io/osv.dev/data/#current-data-sources"
-          aria-label="Learn more about our data sources">Learn more</a>
+           aria-label="Learn more about our data sources">Learn more</a>
       </div>
     </div>
     <div id="use-the-api" class="mdc-layout-grid__cell--span-12 usage-examples">
@@ -161,7 +163,9 @@
   '{"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}' \
   "https://api.osv.dev/v1/query"</pre>
           <clipboard-copy class="code-card-copy" for="example-commit-hash">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
@@ -171,13 +175,16 @@
     "package": {"name": "jinja2", "ecosystem": "PyPI"}}' \
   "https://api.osv.dev/v1/query"</pre>
           <clipboard-copy class="code-card-copy" for="example-version-number">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
       </div>
       <div class="mdc-layout-grid__cell--span-12">
         <div class="cta">
-          <a class="cta-primary link-button" href="https://google.github.io/osv.dev/api/">API Documentation</a>
+          <a class="cta-primary link-button" href="https://google.github.io/osv.dev/api/">API
+            Documentation</a>
         </div>
       </div>
     </div>
@@ -192,7 +199,9 @@
 go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2
           </pre>
           <clipboard-copy class="code-card-copy" for="example-scanner-install">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
         <div class="mobile-spacer mdc-layout-grid__cell--span-3"></div>
@@ -203,7 +212,9 @@ osv-scanner --sbom=cycloned-or-spdx-sbom.json
 osv-scanner --lockfile=package-lock.json
           </pre>
           <clipboard-copy class="code-card-copy" for="example-sbom-scan">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
@@ -212,7 +223,9 @@ osv-scanner --lockfile=package-lock.json
 osv-scanner -r path/to/your/project
           </pre>
           <clipboard-copy class="code-card-copy" for="example-dir-scan">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
       </div>
@@ -233,7 +246,9 @@ osv-scanner fix --non-interactive --strategy=in-place -L path/to/package-lock.js
 osv-scanner fix --non-interactive --strategy=relock -M path/to/package.json -L path/to/package-lock.json
           </pre>
           <clipboard-copy class="code-card-copy" for="example-guided-remediation-basic">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
         <div class="code-card mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet">
@@ -242,15 +257,18 @@ osv-scanner fix --non-interactive --strategy=relock -M path/to/package.json -L p
 osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
           </pre>
           <clipboard-copy class="code-card-copy" for="example-guided-remediation-advanced">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
-        
+
 
       </div>
       <div class="mdc-layout-grid__cell--span-12">
         <div class="cta">
-          <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/experimental/guided-remediation/">More details</a>
+          <a class="cta-primary link-button"
+             href="https://google.github.io/osv-scanner/experimental/guided-remediation/">More details</a>
         </div>
       </div>
     </div>
@@ -261,7 +279,7 @@ osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
         <a href="https://github.com/google/osv-scanner" target="_blank" rel="noopener">OSV-Scanner</a>
         to scan your container images for known vulnerabilities.
       </p>
-    
+
       <!-- Command box (same look as 'Use the API' cards, centered) -->
       <div class="code-card-container mdc-layout-grid__inner">
         <div class="mobile-spacer mdc-layout-grid__cell--span-3"></div>
@@ -271,50 +289,61 @@ osv-scanner fix -M path/to/package.json -L path/to/package-lock.json
 osv-scanner scan image --serve alpine:3.12
           </pre>
           <clipboard-copy class="code-card-copy" for="example-container-scan-serve">
-            <md-icon-button class="icon"><md-icon>content_copy</md-icon></md-icon-button>
+            <md-icon-button class="icon">
+              <md-icon>content_copy</md-icon>
+            </md-icon-button>
           </clipboard-copy>
         </div>
         <div class="mobile-spacer mdc-layout-grid__cell--span-3"></div>
       </div>
-    
+
       <!-- Big screenshot (same size/markup as GitHub Workflows) -->
-<div class="image-container" style="margin-top: 16px;">
-  <img
-    src="/static/img/container-scan-html.png"
-    alt="Screenshot of container scan HTML output"
-    loading="lazy"
-    style="
-      max-width: 1000px;
-      width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      border: none;
-      /* crop 2px from the TOP only */
-      clip-path: inset(2px 0 0 0);
-    "
-  >
-</div>
+      <div class="image-container" style="margin-top: 16px;">
+        <img
+            src="/static/img/container-scan-html.png"
+            alt="Screenshot of container scan HTML output"
+            loading="lazy"
+            style="
+            max-width: 1000px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border: none;
+            /* crop 2px from the TOP only */
+            clip-path: inset(2px 0 0 0);
+          "
+        >
+      </div>
 
 
-    
-  <div id="use-the-github-workflows" 
-    class="mdc-layout-grid__cell--span-12 github-action"> 
-    <h2 class="heading">GitHub Workflows</h2>
-    <p class="description"> OSV-Scanner also provides reusable GitHub workflows that can be easily integrated into CI/CD pipelines to provide continuous vulnerability scanning coverage. This can scan newly added dependencies in pull requests for introduced vulnerabilities, as well as perform regular vulnerability scans for the entire project.</p> 
-    <div class="image-container"> <img src="/static/img/github-action-scan-output.webp" alt="Screenshot of OSV-Scanner GitHub Action" loading="lazy"> </div> 
-    <div class="cta"> <a class="cta-primary link-button" href="https://google.github.io/osv-scanner/github-action/" aria-label="Learn more about osv scanner github action">Learn more</a> </div> 
-  </div> 
-  
-  <div class="mdc-layout-grid__cell--span-12 open-source-banner"> 
-  <h2 class="heading">Open source</h2> 
-  <p class="description"> This project is <a href="https://github.com/google/osv">open source</a>. If you have any ideas or questions, please feel free to reach out by <a href="https://github.com/google/osv/issues/new/choose">creating an issue</a>! </p> 
-  
-  <div class="cta">
-  <a class="cta-primary link-button" href="https://google.github.io/osv.dev/faq/" aria-label="Learn more on our FAQ">Learn more</a>
- </div> 
- </div> 
-</div> 
-<footer>
-</footer> 
+      <div id="use-the-github-workflows"
+           class="mdc-layout-grid__cell--span-12 github-action">
+        <h2 class="heading">GitHub Workflows</h2>
+        <p class="description"> OSV-Scanner also provides reusable GitHub workflows that can be easily
+          integrated into CI/CD pipelines to provide continuous vulnerability scanning coverage. This can scan
+          newly added dependencies in pull requests for introduced vulnerabilities, as well as perform regular
+          vulnerability scans for the entire project.</p>
+        <div class="image-container"><img src="/static/img/github-action-scan-output.webp"
+                                          alt="Screenshot of OSV-Scanner GitHub Action" loading="lazy"></div>
+        <div class="cta"><a class="cta-primary link-button"
+                            href="https://google.github.io/osv-scanner/github-action/"
+                            aria-label="Learn more about osv scanner github action">Learn more</a></div>
+      </div>
+
+      <div class="mdc-layout-grid__cell--span-12 open-source-banner">
+        <h2 class="heading">Open source</h2>
+        <p class="description"> This project is <a href="https://github.com/google/osv">open source</a>. If you
+          have any ideas or questions, please feel free to reach out by <a
+              href="https://github.com/google/osv/issues/new/choose">creating an issue</a>! </p>
+
+        <div class="cta">
+          <a class="cta-primary link-button" href="https://google.github.io/osv.dev/faq/"
+             aria-label="Learn more on our FAQ">Learn more</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>
+  </footer>
 </div> {% endblock %}

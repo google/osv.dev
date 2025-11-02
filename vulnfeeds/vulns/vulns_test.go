@@ -206,8 +206,11 @@ func TestEnglishDescription(t *testing.T) {
 
 func TestAddPkgInfo(t *testing.T) {
 	cveItem := loadTestData2("CVE-2022-36037")
-	vuln := Vulnerability{}
-	vuln.Id = string(cveItem.CVE.ID)
+	vuln := &Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: string(cveItem.CVE.ID),
+		},
+	}
 
 	testPkgInfoNameEco := PackageInfo{
 		PkgName:   "TestName",

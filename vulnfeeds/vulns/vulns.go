@@ -29,6 +29,7 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
@@ -204,7 +205,7 @@ func (pi *PackageInfo) ToJSON(w io.Writer) error {
 }
 
 type Vulnerability struct {
-	osvschema.Vulnerability
+	*osvschema.Vulnerability
 }
 
 // AddPkgInfo converts a PackageInfo struct to the corresponding Affected and adds it to the OSV vulnerability object.
@@ -364,10 +365,15 @@ func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
 
 // ToJSON serializes the Vulnerability to JSON.
 func (v *Vulnerability) ToJSON(w io.Writer) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-
-	return encoder.Encode(v)
+	ma := protojson.MarshalOptions{
+		Indent: "  ",
+	}
+	b, err := ma.Marshal(v.Vulnerability)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(b)
+	return err
 }
 
 // ToYAML serializes the Vulnerability to YAML.
@@ -687,17 +693,20 @@ func ClassifyReferences(refs []cves.Reference) []*osvschema.Reference {
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
 func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
-	v := Vulnerability{}
-	v.Id = string(id)
-	v.Details = cves.EnglishDescription(cve.Descriptions)
-	v.Aliases = aliases
-	v.Related = related
-	v.Published = timestamppb.New(cve.Published.Time)
-	v.Modified = timestamppb.New(cve.LastModified.Time)
-	v.References = ClassifyReferences(cve.References)
+	v := &Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id:         string(id),
+			Details:    cves.EnglishDescription(cve.Descriptions),
+			Aliases:    aliases,
+			Related:    related,
+			Published:  timestamppb.New(cve.Published.Time),
+			Modified:   timestamppb.New(cve.LastModified.Time),
+			References: ClassifyReferences(cve.References),
+		},
+	}
 	v.AddSeverity(cve.Metrics)
 
-	return &v
+	return v
 }
 
 // GetCPEs extracts CPE strings from a slice of cves.CPE.

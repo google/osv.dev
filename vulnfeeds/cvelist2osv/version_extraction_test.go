@@ -511,7 +511,9 @@ func TestExtractVersions(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := &ConversionMetrics{}
-			var v vulns.Vulnerability
+			v := vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{},
+			}
 			extractor := GetVersionExtractor(tc.cnaAssigner)
 			extractor.ExtractVersions(tc.cve, &v, metrics, tc.repos)
 

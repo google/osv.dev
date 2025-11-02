@@ -121,7 +121,7 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) *vulns.Vulnerability {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	v := vulns.Vulnerability{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			SchemaVersion: osvconstants.SchemaVersion,
 			Id:            string(cve.Metadata.CVEID),
 			Summary:       cve.Containers.CNA.Title,
@@ -161,8 +161,8 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 
 	// Sort references for deterministic output
 	sort.Slice(v.References, func(i, j int) bool {
-		if v.References[i].URL != v.References[j].URL {
-			return v.References[i].URL < v.References[j].URL
+		if v.References[i].Url != v.References[j].Url {
+			return v.References[i].Url < v.References[j].Url
 		}
 
 		return v.References[i].Type < v.References[j].Type

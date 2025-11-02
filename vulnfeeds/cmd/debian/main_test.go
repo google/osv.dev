@@ -87,7 +87,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 	// Define the expected OSV entries.
 	want := map[string]*vulns.Vulnerability{
 		"CVE-2014-1424": {
-			Vulnerability: osvschema.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
 				Id:         "DEBIAN-CVE-2014-1424",
 				Upstream:   []string{"CVE-2014-1424"},
 				Modified:   timestamppb.New(now),
@@ -98,7 +98,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 			},
 		},
 		"CVE-2016-1585": {
-			Vulnerability: osvschema.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
 				Id:        "DEBIAN-CVE-2016-1585",
 				Upstream:  []string{"CVE-2016-1585"},
 				Modified:  timestamppb.New(now),
@@ -147,7 +147,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 			},
 		},
 		"CVE-2017-6507": {
-			Vulnerability: osvschema.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
 				Id:        "DEBIAN-CVE-2017-6507",
 				Upstream:  []string{"CVE-2017-6507"},
 				Modified:  timestamppb.New(now),

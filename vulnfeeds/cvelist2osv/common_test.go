@@ -11,7 +11,7 @@ import (
 
 func TestAddAffected(t *testing.T) {
 	v := &vulns.Vulnerability{
-		Vulnerability: osvschema.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
 			Affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{

@@ -60,7 +60,7 @@ func main() {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("id", v.Id))
 			continue
 		}
-		vulnerabilities = append(vulnerabilities, &v.Vulnerability)
+		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
 
 	ctx := context.Background()
@@ -172,7 +172,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 		}
 
 		v := &vulns.Vulnerability{
-			Vulnerability: osvschema.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
 				Id:        "ALPINE-" + cveID,
 				Upstream:  []string{cveID},
 				Published: timestamppb.New(published),

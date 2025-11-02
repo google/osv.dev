@@ -233,7 +233,7 @@ func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutput
 	}
 	vulnFilenames := make(map[string]bool)
 	for _, v := range vulnerabilities {
-		filename := v.ID + ".json"
+		filename := v.Id + ".json"
 		filePath := path.Join(osvOutputPath, filename)
 		vulnFilenames[filePath] = true
 	}

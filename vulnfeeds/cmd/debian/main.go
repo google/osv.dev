@@ -66,7 +66,7 @@ func main() {
 			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("id", v.Id))
 			continue
 		}
-		vulnerabilities = append(vulnerabilities, &v.Vulnerability)
+		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
 
 	ctx := context.Background()
@@ -110,7 +110,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			currentNVDCVE := allCVEs[cves.CVEID(cveID)]
 			if !ok {
 				v = &vulns.Vulnerability{
-					Vulnerability: osvschema.Vulnerability{
+					Vulnerability: &osvschema.Vulnerability{
 						Id:        "DEBIAN-" + cveID,
 						Upstream:  []string{cveID},
 						Published: timestamppb.New(currentNVDCVE.CVE.Published.Time),

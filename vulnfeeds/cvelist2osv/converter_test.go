@@ -348,19 +348,19 @@ func TestFromCVE5(t *testing.T) {
 				}
 			}
 			sort.Slice(vuln.References, func(i, j int) bool {
-				if vuln.References[i].Url != vuln.References[j].Url {
-					return vuln.References[i].Url < vuln.References[j].Url
+				if vuln.References[i].GetUrl() != vuln.References[j].GetUrl() {
+					return vuln.References[i].GetUrl() < vuln.References[j].GetUrl()
 				}
 
-				return vuln.References[i].Type < vuln.References[j].Type
+				return vuln.References[i].GetType() < vuln.References[j].GetType()
 			})
 
 			sort.Slice(tc.expectedVuln.References, func(i, j int) bool {
-				if tc.expectedVuln.References[i].Url != tc.expectedVuln.References[j].Url {
-					return tc.expectedVuln.References[i].Url < tc.expectedVuln.References[j].Url
+				if tc.expectedVuln.References[i].GetUrl() != tc.expectedVuln.References[j].GetUrl() {
+					return tc.expectedVuln.References[i].GetUrl() < tc.expectedVuln.References[j].GetUrl()
 				}
 
-				return tc.expectedVuln.References[i].Type < tc.expectedVuln.References[j].Type
+				return tc.expectedVuln.References[i].GetType() < tc.expectedVuln.References[j].GetType()
 			})
 
 			// Sort references for deterministic comparison.

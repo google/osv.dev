@@ -16,10 +16,11 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/api/iterator"
 )
 
 const (
@@ -233,7 +234,7 @@ func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutput
 	}
 	vulnFilenames := make(map[string]bool)
 	for _, v := range vulnerabilities {
-		filename := v.Id + ".json"
+		filename := v.GetId() + ".json"
 		filePath := path.Join(osvOutputPath, filename)
 		vulnFilenames[filePath] = true
 	}

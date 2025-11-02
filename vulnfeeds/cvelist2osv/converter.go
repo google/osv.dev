@@ -161,11 +161,11 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 
 	// Sort references for deterministic output
 	sort.Slice(v.References, func(i, j int) bool {
-		if v.References[i].Url != v.References[j].Url {
-			return v.References[i].Url < v.References[j].Url
+		if v.References[i].GetUrl() != v.References[j].GetUrl() {
+			return v.References[i].GetUrl() < v.References[j].GetUrl()
 		}
 
-		return v.References[i].Type < v.References[j].Type
+		return v.References[i].GetType() < v.References[j].GetType()
 	})
 
 	// Combine severity metrics from both CNA and ADP containers.

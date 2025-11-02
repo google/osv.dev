@@ -373,6 +373,7 @@ func (v *Vulnerability) ToJSON(w io.Writer) error {
 		return err
 	}
 	_, err = w.Write(b)
+
 	return err
 }
 

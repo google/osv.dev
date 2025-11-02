@@ -682,6 +682,15 @@ md-icon-button.mdc-data-table__sort-icon-button {
     box-shadow: 0 0 2px white;
   }
 
+  pre code {
+    display: block;
+    background: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
@@ -1754,6 +1763,15 @@ div.highlight {
     margin: 0 2px;
     border-radius: $osv-border-radius-small;
     box-shadow: 0 0 2px white;
+  }
+
+  pre code {
+    display: block;
+    background: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   img {

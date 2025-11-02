@@ -1,0 +1,108 @@
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "2023-12-06T01:01:11.322262Z"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "2024-05-20T16:03:47Z"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-2h6c-j3gf-xp9r",
+          "modified": "2023-11-08T04:11:41.796349Z"
+        },
+        {
+          "id": "GO-2023-1558",
+          "modified": "2024-05-20T16:03:47Z"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9phm-fm57-rhg8",
+          "modified": "2024-08-02T15:50:53Z"
+        },
+        {
+          "id": "GHSA-j3p8-6mrq-6g7h",
+          "modified": "2024-05-20T21:54:17Z"
+        },
+        {
+          "id": "GHSA-qgc7-mgm3-q253",
+          "modified": "2024-05-20T21:46:58Z"
+        },
+        {
+          "id": "GHSA-x92r-3vfx-4cv3",
+          "modified": "2024-05-20T21:54:21Z"
+        },
+        {
+          "id": "GO-2023-1572",
+          "modified": "2024-05-20T16:03:47Z"
+        },
+        {
+          "id": "GO-2023-1989",
+          "modified": "2024-05-20T16:03:47Z"
+        },
+        {
+          "id": "GO-2023-1990",
+          "modified": "2024-05-20T16:03:47Z"
+        },
+        {
+          "id": "GO-2024-2937",
+          "modified": "2024-07-15T22:12:27.099111Z"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "2023-12-06T01:01:11.322262Z"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "2024-05-20T16:03:47Z"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled_but_enabled_all-vulns_flag - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "2023-12-06T01:01:11.322262Z"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "2024-05-20T16:03:47Z"
+        }
+      ]
+    }
+  ]
+}
+
+---

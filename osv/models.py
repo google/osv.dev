@@ -536,8 +536,6 @@ class Bug(ndb.Model):
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
 
-    print(len(self.upstream_raw), len(self.search_indices), len(self.search_tags), len(self.related))
-
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""
     self.summary = vulnerability.summary

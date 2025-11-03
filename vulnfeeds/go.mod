@@ -1,6 +1,6 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.24.6
+go 1.24.8
 
 require (
 	cloud.google.com/go/secretmanager v1.15.0

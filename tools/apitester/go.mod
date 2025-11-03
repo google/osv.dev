@@ -1,6 +1,6 @@
 module github.com/google/apitester
 
-go 1.24.6
+go 1.24.8
 
 require (
 	github.com/gkampitakis/go-snaps v0.5.15

@@ -384,7 +384,7 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"versions": eventsToStructValue(
+							"versions": eventsToStructValueManual(
 								[]*osvschema.Event{
 									{Introduced: "18.0"},
 									{Fixed: "18.0.1"},
@@ -409,7 +409,7 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"versions": eventsToStructValue(
+							"versions": eventsToStructValueManual(
 								[]*osvschema.Event{
 									{Introduced: "0"},
 									{Fixed: "1.10.5"},

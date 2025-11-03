@@ -420,13 +420,15 @@ class Bug(ndb.Model):
     for ecosystem in self.ecosystem:
       search_indices.update(_tokenize(ecosystem))
 
+    extra_search_indices = set()
+
     for alias in self.aliases:
-      search_indices.update(_tokenize(alias))
+      extra_search_indices.update(_tokenize(alias))
 
     # Please note this will not include exhaustive transitive upstream
     # so may not appear for all cases.
     for upstream in self.upstream_raw:
-      search_indices.update(_tokenize(upstream))
+      extra_search_indices.update(_tokenize(upstream))
 
     for affected_package in self.affected_packages:
       for affected_range in affected_package.ranges:
@@ -438,6 +440,11 @@ class Bug(ndb.Model):
           search_indices.update(repo_url_indices)
 
     self.search_indices = list(set(search_indices))
+    # Excessive amounts of search indices cause the record to have too many
+    # indexed properties to store in the database. Arbitrarily limit the number
+    # of search indices from aliases/upstream to curb this.
+    # TODO(michaelkedar): handle this more gracefully.
+    self.search_indices.extend(list(extra_search_indices)[:5000])
     self.search_indices.sort()
 
     search_tags = set()
@@ -528,6 +535,8 @@ class Bug(ndb.Model):
 
     if self.withdrawn:
       self.status = bug.BugStatus.INVALID
+
+    print(len(self.upstream_raw), len(self.search_indices), len(self.search_tags), len(self.related))
 
   def update_from_vulnerability(self, vulnerability):
     """Set fields from vulnerability. Does not set the ID."""

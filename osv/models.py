@@ -439,12 +439,12 @@ class Bug(ndb.Model):
           repo_url_indices.append(url_no_https)  # add url without https://
           search_indices.update(repo_url_indices)
 
-    self.search_indices = list(set(search_indices))
     # Excessive amounts of search indices cause the record to have too many
     # indexed properties to store in the database. Arbitrarily limit the number
     # of search indices from aliases/upstream to curb this.
     # TODO(michaelkedar): handle this more gracefully.
-    self.search_indices.extend(list(extra_search_indices)[:5000])
+    search_indices.update(list(extra_search_indices)[:5000])
+    self.search_indices = list(search_indices)
     self.search_indices.sort()
 
     search_tags = set()

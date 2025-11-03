@@ -1,0 +1,310 @@
+---
+version: 2
+interactions:
+- id: 0
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 87
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/absolute_paths_are_automatically_escaped_on_windows
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 1
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 87
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "balanced-match",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/absolute_paths_work_with_explicit_escaping
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 2
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 89
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "sentry/sdk",
+              "ecosystem": "Packagist"
+            },
+            "version": "2.0.4"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/empty_is_default
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 3
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 502
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/multiple,_+_output_order_is_deterministic
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 4
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 502
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/multiple,_+_output_order_is_deterministic_2
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 5
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 14
+    host: api.osv.dev
+    body: |
+      {
+        "queries": []
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/one_lockfile_with_local_path
+    url: https://api.osv.dev/v1/querybatch
+    method: POST
+- id: 6
+  request:
+    proto: HTTP/1.1
+    proto_major: 1
+    proto_minor: 1
+    content_length: 433
+    host: api.osv.dev
+    body: |
+      {
+        "queries": [
+          {
+            "package": {
+              "name": "ansi-html",
+              "ecosystem": "npm"
+            },
+            "version": "0.0.1"
+          },
+          {
+            "package": {
+              "name": "has-flag",
+              "ecosystem": "npm"
+            },
+            "version": "4.0.0"
+          },
+          {
+            "package": {
+              "name": "league/flysystem",
+              "ecosystem": "Packagist"
+            },
+            "version": "1.0.8"
+          },
+          {
+            "package": {
+              "name": "stdlib",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "toolchain",
+              "ecosystem": "Go"
+            },
+            "version": "1.99.9"
+          },
+          {
+            "package": {
+              "name": "wrappy",
+              "ecosystem": "npm"
+            },
+            "version": "1.0.2"
+          }
+        ]
+      }
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - osv-scanner_scan/2.2.3
+      X-Test-Name:
+      - TestCommand_LockfileWithExplicitParseAs/when_an_explicit_parse-as_is_given,_it's_applied_to_that_file
+    url: https://api.osv.dev/v1/querybatch
+    method: POST

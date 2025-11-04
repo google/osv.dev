@@ -130,7 +130,7 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		return structpb.NewStringValue(val.String()), nil
 	case reflect.Slice:
 		var anyList []any
-		for i := 0; i < val.Len(); i++ {
+		for i := range val.Len() {
 			anyList = append(anyList, val.Index(i).Interface())
 		}
 
@@ -162,6 +162,7 @@ func structpbValueFromList[T any](list []T) (*structpb.Value, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new structpb.Value from list: %w", err)
 	}
+
 	return val, nil
 }
 
@@ -178,6 +179,7 @@ func protoToPlain(p proto.Message) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("json.Unmarshal: %w", err)
 	}
+
 	return result, nil
 }
 

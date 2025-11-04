@@ -28,37 +28,40 @@ func DoBytes(t *testing.T, json []byte, rules []Rule) []byte {
 func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 	t.Helper()
 
-	// split on the first # for array items
-	pathToArray, restOfPath, match := strings.Cut(path, ".#.")
+	// split on the first intermediate #, if present
+	pathToArray, restOfPath, hasArrayPlaceholder := strings.Cut(path, ".#.")
 
-	if !match {
-		if !strings.HasSuffix(path, ".#") {
-			return []string{path}
-		}
+	// if there is no intermediate placeholder, check for (and cut) a terminal one
+	if !hasArrayPlaceholder {
+		pathToArray, hasArrayPlaceholder = strings.CutSuffix(path, ".#")
+	}
 
-		pathToArray = strings.TrimSuffix(path, ".#")
+	// if there are no array placeholders in the path, just return it
+	if !hasArrayPlaceholder {
+		return []string{path}
 	}
 
 	r := gjson.GetBytes(jsonInput, pathToArray)
 
-	// if property exists and is actually an array, build out the path to each item
-	// within that array
-	if r.IsArray() {
-		paths := make([]string, 0, len(r.Array()))
-
-		for i := range r.Array() {
-			static := pathToArray + "." + strconv.Itoa(i)
-
-			if restOfPath != "" {
-				static += "." + restOfPath
-			}
-			paths = append(paths, expandArrayPaths(t, jsonInput, static)...)
-		}
-
-		return paths
+	// skip properties that are not arrays
+	if !r.IsArray() {
+		return []string{}
 	}
 
-	return []string{}
+	// if property exists and is actually an array, build out the path to each item
+	// within that array
+	paths := make([]string, 0, len(r.Array()))
+
+	for i := range r.Array() {
+		static := pathToArray + "." + strconv.Itoa(i)
+
+		if restOfPath != "" {
+			static += "." + restOfPath
+		}
+		paths = append(paths, expandArrayPaths(t, jsonInput, static)...)
+	}
+
+	return paths
 }
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher

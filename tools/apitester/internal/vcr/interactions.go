@@ -3,6 +3,7 @@ package vcr
 import (
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
@@ -34,8 +35,9 @@ func Play(t *testing.T, interaction *cassette.Interaction) *http.Response {
 	req.URL.Host = fetchAPIBaseURL()
 	req.Header.Set("User-Agent", "osv.dev/apitester")
 	req.ContentLength = -1
+	baseHost, _, _ := strings.Cut(req.URL.Host, ":")
 
-	if req.URL.Host == "localhost" || req.URL.Host == "127.0.0.1" {
+	if baseHost == "localhost" || baseHost == "127.0.0.1" {
 		req.URL.Scheme = "http"
 	}
 

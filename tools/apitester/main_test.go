@@ -16,34 +16,52 @@ import (
 func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 	t.Helper()
 
-	if resp.Request.URL.Path != "/v1/query" || strings.Contains(t.Name(), "/Invalid") {
+	if strings.Contains(t.Name(), "/Invalid") {
 		return nil
 	}
+	if resp.Request.URL.Path == "/v1/query" {
+		return []jsonreplace.Rule{
+			{
+				Path: "vulns.#.affected.#.database_specific",
+				ReplaceFunc: func(_ gjson.Result) any {
+					return "<Any value>"
+				},
+			},
+			{
+				Path: "vulns.#.database_specific",
+				ReplaceFunc: func(_ gjson.Result) any {
+					return "<Any value>"
+				},
+			},
+			{
+				Path: "vulns.#.affected.#.versions",
+				ReplaceFunc: func(toReplace gjson.Result) any {
+					if toReplace.IsArray() {
+						return len(toReplace.Array())
+					}
 
-	return []jsonreplace.Rule{
-		{
-			Path: "vulns.#.affected.#.database_specific",
-			ReplaceFunc: func(_ gjson.Result) any {
-				return "<Any value>"
+					return 0
+				},
 			},
-		},
-		{
-			Path: "vulns.#.database_specific",
-			ReplaceFunc: func(_ gjson.Result) any {
-				return "<Any value>"
-			},
-		},
-		{
-			Path: "vulns.#.affected.#.versions",
-			ReplaceFunc: func(toReplace gjson.Result) any {
-				if toReplace.IsArray() {
-					return len(toReplace.Array())
-				}
-
-				return 0
-			},
-		},
+		}
 	}
+
+	if resp.Request.URL.Path == "/v1/querybatch" {
+		return []jsonreplace.Rule{
+			{
+				Path: "results.#.vulns.#.modified",
+				ReplaceFunc: func(toReplace gjson.Result) any {
+					if len(toReplace.String()) < 5 {
+						return toReplace.String()
+					}
+
+					return toReplace.String()[:5] + "..."
+				},
+			},
+		}
+	}
+
+	return nil
 }
 
 func normalizeJSONBody(t *testing.T, resp *http.Response) string {

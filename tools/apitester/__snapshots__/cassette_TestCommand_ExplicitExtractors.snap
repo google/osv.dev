@@ -6,7 +6,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     },
@@ -23,7 +23,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     },
@@ -40,7 +40,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }
@@ -67,7 +67,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "2025-10-14T04:20:58.312543Z"
+          "modified": "<RFC3339 date with the year 2025>"
         }
       ]
     },
@@ -88,7 +88,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }
@@ -104,7 +104,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }

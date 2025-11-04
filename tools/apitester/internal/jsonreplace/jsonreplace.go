@@ -47,7 +47,6 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 		}
 
 		pathToArray = strings.TrimSuffix(path, ".#")
-		restOfPath = ""
 	}
 
 	r := gjson.GetBytes(jsonInput, pathToArray)

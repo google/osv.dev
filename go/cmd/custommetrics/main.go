@@ -66,7 +66,7 @@ func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project 
 		return int64(lookbackDuration / time.Second), nil
 	}
 	val := points[0].GetValue().GetDoubleValue()
-	
+
 	return time.Now().Unix() - int64(val), nil
 }
 

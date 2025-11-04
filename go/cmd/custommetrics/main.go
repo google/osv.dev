@@ -36,11 +36,11 @@ func main() {
 	defer cl.Close()
 
 	// exporter seconds since last success
-	time_since, err := getCronFreshness(ctx, cl, project, "exporter")
+	timeSince, err := getCronFreshness(ctx, cl, project, "exporter")
 	if err != nil {
 		logger.Fatal("error getting freshness", slog.String("cronjob", "exporter"), slog.Any("err", err))
 	}
-	if err := writeCronFreshness(ctx, cl, project, "exporter", time_since); err != nil {
+	if err := writeCronFreshness(ctx, cl, project, "exporter", timeSince); err != nil {
 		logger.Fatal("error writing freshness", slog.String("cronjob", "exporter"), slog.Any("err", err))
 	}
 }

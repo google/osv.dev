@@ -399,8 +399,8 @@ func Test_repaceJSONInput_2(t *testing.T) {
 				var wantPretty bytes.Buffer
 				var gotPretty bytes.Buffer
 
-				_ = json.Indent(&wantPretty, []byte(tt.outputs[path]), "", "\t")
-				_ = json.Indent(&gotPretty, got, "", "\t")
+				_ = json.Indent(&wantPretty, []byte(tt.outputs[path]), "", "  ")
+				_ = json.Indent(&gotPretty, got, "", "  ")
 
 				if diff := cmp.Diff(wantPretty.String(), gotPretty.String()); diff != "" {
 					t.Errorf("replaceJSONInput() diff (-want +got): %s", diff)
@@ -626,8 +626,8 @@ func Test_replaceJSONInput(t *testing.T) {
 			var wantPretty bytes.Buffer
 			var gotPretty bytes.Buffer
 
-			_ = json.Indent(&wantPretty, []byte(tt.want), "", "\t")
-			_ = json.Indent(&gotPretty, got, "", "\t")
+			_ = json.Indent(&wantPretty, []byte(tt.want), "", "  ")
+			_ = json.Indent(&gotPretty, got, "", "  ")
 
 			if diff := cmp.Diff(wantPretty.String(), gotPretty.String()); diff != "" {
 				t.Errorf("replaceJSONInput() diff (-want +got): %s", diff)

@@ -15,7 +15,7 @@ import (
 func Test_repaceJSONInput(t *testing.T) {
 	t.Parallel()
 
-	matcher := func(toReplace gjson.Result) any {
+	matcher := func(_ gjson.Result) any {
 		return "<replaced>"
 	}
 

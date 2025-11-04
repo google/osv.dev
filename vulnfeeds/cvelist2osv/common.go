@@ -112,6 +112,7 @@ func newDatabaseSpecific(v map[string]any) (*structpb.Struct, error) {
 			return nil, err
 		}
 	}
+
 	return x, nil
 }
 
@@ -128,15 +129,15 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 	case reflect.String:
 		return structpb.NewStringValue(val.String()), nil
 	case reflect.Slice:
-		anyList := make([]any, 0, val.Len())
+		var anyList []any
 		for i := 0; i < val.Len(); i++ {
-			element := val.Index(i).Interface()
-			anyList = append(anyList, element)
+			anyList = append(anyList, val.Index(i).Interface())
 		}
-		return structpbValueFromList(anyList)
-	}
 
-	return nil, fmt.Errorf("unsupported type: %T", v)
+		return structpbValueFromList(anyList)
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", v)
+	}
 }
 
 // structpbValueFromList converts a generic slice into a *structpb.Value that
@@ -256,7 +257,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 	if len(unresolvedRanges) > 0 {
 		databaseSpecific, err := newDatabaseSpecific(map[string]any{"unresolved_ranges": unresolvedRanges})
 		if err != nil {
-
+			logger.Warn("failed to make database specific: %v", err)
 		} else {
 			newAff.DatabaseSpecific = databaseSpecific
 		}

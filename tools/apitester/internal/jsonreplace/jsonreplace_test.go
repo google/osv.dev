@@ -32,6 +32,8 @@ func Test_repaceJSONInput_2(t *testing.T) {
 			outputs: map[string]string{
 				"does.not.exist": `{ "foo": "bar" }`,
 				"foo.is.string":  `{ "foo": "bar" }`,
+				"foo.#":          `{ "foo": "bar" }`,
+				"#":              `{ "foo": "bar" }`,
 				"foo":            `{ "foo": "<replaced>" }`,
 			},
 		},
@@ -47,6 +49,10 @@ func Test_repaceJSONInput_2(t *testing.T) {
 				"arr":   `{ "arr": "<replaced>" }`,
 				"arr.1": `{ "arr": [1, "<replaced>", 3] }`,
 				"arr.#": `{ "arr": ["<replaced>", "<replaced>", "<replaced>"] }`,
+
+				"arr.#(>2)":  `{ "arr": [1, 2, "<replaced>"] }`,
+				"arr.#(>1)":  `{ "arr": [1, "<replaced>", 3] }`,
+				"arr.#(>1)#": `{ "arr": [1, "<replaced>", "<replaced>"] }`,
 			},
 		},
 		{
@@ -57,6 +63,10 @@ func Test_repaceJSONInput_2(t *testing.T) {
 				"arr.1.v": `{ "arr": [{"v": 1}, {"v": "<replaced>"}, {"v": 3}] }`,
 				"arr.#":   `{ "arr": ["<replaced>", "<replaced>", "<replaced>"] }`,
 				"arr.#.v": `{ "arr": [{"v": "<replaced>"}, {"v": "<replaced>"}, {"v": "<replaced>"}] }`,
+
+				"arr.#.v.#": `{ "arr": [{"v": 1}, {"v": 2}, {"v": 3}] }`,
+				"arr.#.#.#": `{ "arr": [{"v": 1}, {"v": 2}, {"v": 3}] }`,
+				"arr.#.#":   `{ "arr": [{"v": 1}, {"v": 2}, {"v": 3}] }`,
 			},
 		},
 		{

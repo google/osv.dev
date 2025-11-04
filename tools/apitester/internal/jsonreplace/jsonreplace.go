@@ -25,16 +25,6 @@ func DoBytes(t *testing.T, json []byte, rules []Rule) []byte {
 	return json
 }
 
-// func replaceJSONInput2(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
-// 	t.Helper()
-//
-// 	allPaths := []string{}
-//
-// 	// gjson.GetBytes(jsonInput, "").Raw
-//
-// 	return jsonInput
-// }
-
 func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 	t.Helper()
 
@@ -68,43 +58,8 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 		return paths
 	}
 
-	// can this ever happen...?
 	return []string{}
-
-	// // x.#.y.#.z
-	// // x.#.y.#.z -> [x.#, y.#.z]
-	//
-	// // x.#.y.#.z
-	// //  -> x.#.y.0.z
-	// //  -> x.#.y.1.z
-	// //  -> x.#.y.2.z
-	// // x.#.y.#
-	// // x.#.y
-	// expandedPaths := []string{}
-	//
-	// // x.#.y -> x.0.y
-	//
-	// i := 0
-	//
-	// for {
-	// 	static := strings.Replace(path, "#", strconv.Itoa(i), 1)
-	//
-	// 	if !gjson.GetBytes(jsonInput, static).Exists() {
-	// 		break
-	// 	}
-	//
-	// 	expandedPaths = append(expandedPaths, static)
-	// 	i++
-	// }
-	//
-	// return expandedPaths
 }
-
-// func replace(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
-// 	t.Helper()
-//
-//
-// }
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher
 func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
@@ -113,22 +68,6 @@ func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(
 	pathArray := []string{}
 
 	pathArray = expandArrayPaths(t, jsonInput, path)
-
-	// if path == "items.#.subStruct.subitems.#"
-
-	// // If there are more than 2 #, sjson cannot replace them directly. Iterate out all individual entries
-	// if strings.Contains(path, "#") {
-	// 	// Get the path ending with #
-	// 	// E.g. results.#.packages.#.vulnerabilities => results.#.packages.#
-	// 	numOfEntriesPath := path[:strings.LastIndex(path, "#")+1]
-	// 	// This returns a potentially nested array of array lengths
-	// 	numOfEntries := gjson.GetBytes(jsonInput, numOfEntriesPath)
-	//
-	// 	// Use it to build up a list of concrete paths
-	// 	buildSJSONPaths(t, &pathArray, path, numOfEntries)
-	// } else {
-	// 	pathArray = append(pathArray, path)
-	// }
 
 	var err error
 	json := jsonInput
@@ -146,30 +85,4 @@ func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(
 	}
 
 	return json
-}
-
-func buildSJSONPaths(t *testing.T, pathToBuild *[]string, path string, structure gjson.Result) {
-	t.Helper()
-
-	if structure.IsArray() {
-		// More nesting to go
-		for i, res := range structure.Array() {
-			buildSJSONPaths(
-				t,
-				pathToBuild,
-				// Replace the first # with actual index
-				strings.Replace(path, "#", strconv.Itoa(i), 1),
-				res,
-			)
-		}
-	} else {
-		// Otherwise assume it is a number
-		if strings.Count(path, "#") != 1 {
-			t.Errorf("programmer error: there should only be 1 # left")
-		}
-		for i2 := range int(structure.Int()) {
-			newPath := strings.Replace(path, "#", strconv.Itoa(i2), 1)
-			*pathToBuild = append(*pathToBuild, newPath)
-		}
-	}
 }

@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -97,72 +101,83 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 	return commit
 }
 
-// eventsToStructValueManual manually converts a slice of osvschema.Event into a
-// protobuf ListValue.
-func eventsToStructValueManual(events []*osvschema.Event) *structpb.Value {
-	// Create a slice to hold the protobuf Value representation of each Event.
-	eventListValues := make([]*structpb.Value, 0, len(events))
-
-	for _, event := range events {
-		// For each Event, create a map for its fields. The values must be *structpb.Value.
-		fields := make(map[string]*structpb.Value)
-
-		// Manually check and convert each field from a Go string to a protobuf StringValue.
-		if event.GetIntroduced() != "" {
-			fields["introduced"] = structpb.NewStringValue(event.GetIntroduced())
+// newDatabaseSpecific converts a map[string]any to a *structpb.Struct,
+// which is suitable for OSV's database_specific field.
+func newDatabaseSpecific(v map[string]any) (*structpb.Struct, error) {
+	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
+	for k, v := range v {
+		var err error
+		x.Fields[k], err = newStructpbValue(v)
+		if err != nil {
+			return nil, err
 		}
-		if event.GetFixed() != "" {
-			fields["fixed"] = structpb.NewStringValue(event.GetFixed())
-		}
-		if event.GetLastAffected() != "" {
-			fields["last_affected"] = structpb.NewStringValue(event.GetLastAffected())
-		}
-		if event.GetLimit() != "" {
-			fields["limit"] = structpb.NewStringValue(event.GetLimit())
-		}
-
-		// Create a protobuf Struct from the map of fields.
-		eventStruct := &structpb.Struct{Fields: fields}
-
-		// Wrap the Struct in a Value and append it to our list.
-		eventListValues = append(eventListValues, structpb.NewStructValue(eventStruct))
 	}
-
-	// Wrap the list of Value objects into a single ListValue.
-	return structpb.NewListValue(&structpb.ListValue{Values: eventListValues})
+	return x, nil
 }
 
-// rangesToStructValueManual manually converts a slice of osvschema.Range into a
-// protobuf ListValue.
-func rangesToStructValueManual(ranges []*osvschema.Range) *structpb.Value {
-	rangeListValues := make([]*structpb.Value, 0, len(ranges))
-
-	for _, r := range ranges {
-		fields := make(map[string]*structpb.Value)
-
-		// The Type is an enum, so we use its string representation.
-		fields["type"] = structpb.NewStringValue(r.GetType().String())
-
-		if r.GetRepo() != "" {
-			fields["repo"] = structpb.NewStringValue(r.GetRepo())
-		}
-
-		// The Events field is itself a list of structs, so we can reuse our
-		// manual event converter.
-		if len(r.GetEvents()) > 0 {
-			fields["events"] = eventsToStructValueManual(r.GetEvents())
-		}
-
-		// The original range's DatabaseSpecific is preserved if it exists.
-		if r.GetDatabaseSpecific() != nil {
-			fields["database_specific"] = structpb.NewStructValue(r.GetDatabaseSpecific())
-		}
-
-		rangeStruct := &structpb.Struct{Fields: fields}
-		rangeListValues = append(rangeListValues, structpb.NewStructValue(rangeStruct))
+// newStructpbValue is a generic converter that takes any Go type and returns a *structpb.Value.
+func newStructpbValue(v any) (*structpb.Value, error) {
+	if v == nil {
+		return structpb.NewNullValue(), nil
 	}
 
-	return structpb.NewListValue(&structpb.ListValue{Values: rangeListValues})
+	val := reflect.ValueOf(v)
+	switch val.Kind() {
+	case reflect.Bool:
+		return structpb.NewBoolValue(val.Bool()), nil
+	case reflect.String:
+		return structpb.NewStringValue(val.String()), nil
+	case reflect.Slice:
+		anyList := make([]any, 0, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			element := val.Index(i).Interface()
+			anyList = append(anyList, element)
+		}
+		return structpbValueFromList(anyList)
+	}
+
+	return nil, fmt.Errorf("unsupported type: %T", v)
+}
+
+// structpbValueFromList converts a generic slice into a *structpb.Value that
+// represents a list.
+// It iterates through the list, converting any proto.Message elements into
+// any type via JSON marshalling, while other elements are included as-is.
+func structpbValueFromList[T any](list []T) (*structpb.Value, error) {
+	anyList := make([]any, 0, len(list))
+	for i, v := range list {
+		if msg, ok := any(v).(proto.Message); ok {
+			val, err := protoToPlain(msg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert proto message for item %d: %w", i, err)
+			}
+			anyList = append(anyList, val)
+		} else {
+			anyList = append(anyList, v)
+		}
+	}
+
+	val, err := structpb.NewValue(anyList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new structpb.Value from list: %w", err)
+	}
+	return val, nil
+}
+
+// protoToPlain converts a proto.Message to an any type by marshalling to JSON
+// with protojson and then unmarshalling into an `any`.
+func protoToPlain(p proto.Message) (any, error) {
+	b, err := protojson.Marshal(p)
+	if err != nil {
+		return nil, fmt.Errorf("protojson.Marshal: %w", err)
+	}
+
+	var result any
+	err = json.Unmarshal(b, &result)
+	if err != nil {
+		return nil, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+	return result, nil
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
@@ -220,12 +235,15 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
-				// Use the manual converter to store the original version info.
-				newVR.DatabaseSpecific = &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"versions": eventsToStructValueManual(vr.GetEvents()),
-					},
+				if len(vr.GetEvents()) > 0 {
+					databaseSpecific, err := newDatabaseSpecific(map[string]any{"versions": vr.GetEvents()})
+					if err != nil {
+						logger.Warn("failed to make database specific: %v", err)
+					} else {
+						newVR.DatabaseSpecific = databaseSpecific
+					}
 				}
+
 				newVersionRanges = append(newVersionRanges, newVR)
 			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
@@ -236,12 +254,13 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 
 	var err error
 	if len(unresolvedRanges) > 0 {
-		// Use the manual converter to store the unresolved ranges.
-		newAff.DatabaseSpecific = &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"unresolved_ranges": rangesToStructValueManual(unresolvedRanges),
-			},
+		databaseSpecific, err := newDatabaseSpecific(map[string]any{"unresolved_ranges": unresolvedRanges})
+		if err != nil {
+
+		} else {
+			newAff.DatabaseSpecific = databaseSpecific
 		}
+
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 	}
 

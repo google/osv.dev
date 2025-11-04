@@ -384,12 +384,32 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"versions": eventsToStructValueManual(
-								[]*osvschema.Event{
-									{Introduced: "18.0"},
-									{Fixed: "18.0.1"},
+							"versions": {
+								Kind: &structpb.Value_ListValue{
+									ListValue: &structpb.ListValue{
+										Values: []*structpb.Value{
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"introduced": structpb.NewStringValue("18.0"),
+														},
+													},
+												},
+											},
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"fixed": structpb.NewStringValue("18.0.1"),
+														},
+													},
+												},
+											},
+										},
+									},
 								},
-							),
+							},
 						},
 					},
 				}},
@@ -409,12 +429,32 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"versions": eventsToStructValueManual(
-								[]*osvschema.Event{
-									{Introduced: "0"},
-									{Fixed: "1.10.5"},
+							"versions": {
+								Kind: &structpb.Value_ListValue{
+									ListValue: &structpb.ListValue{
+										Values: []*structpb.Value{
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"introduced": structpb.NewStringValue("0"),
+														},
+													},
+												},
+											},
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"fixed": structpb.NewStringValue("1.10.5"),
+														},
+													},
+												},
+											},
+										},
+									},
 								},
-							),
+							},
 						},
 					},
 				}},

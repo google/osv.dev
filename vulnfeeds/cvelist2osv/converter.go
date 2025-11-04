@@ -18,7 +18,6 @@ import (
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -101,16 +100,13 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
-	if v.DatabaseSpecific == nil {
-		v.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+	databaseSpecific, err := newDatabaseSpecific(map[string]any{"cwe_ids": cwes})
+	if err != nil {
+		logger.Warn("Failed to convert database specific: %v", err)
+	} else {
+		// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
+		v.DatabaseSpecific = databaseSpecific
 	}
-
-	// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
-	cweList := make([]*structpb.Value, 0, len(cwes))
-	for _, cwe := range cwes {
-		cweList = append(cweList, structpb.NewStringValue(cwe))
-	}
-	v.DatabaseSpecific.Fields["cwe_ids"] = structpb.NewListValue(&structpb.ListValue{Values: cweList})
 
 	metrics.AddNote("Extracted CWEIDs: %v", cwes)
 }
@@ -153,10 +149,12 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	metrics.Repos = repos
 
 	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
-		if v.DatabaseSpecific == nil {
-			v.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		databaseSpecific, err := newDatabaseSpecific(map[string]any{"isDisputed": true})
+		if err != nil {
+			metrics.AddNote("Failed to convert database specific: %v", err)
+		} else {
+			v.DatabaseSpecific = databaseSpecific
 		}
-		v.DatabaseSpecific.Fields["isDisputed"] = structpb.NewBoolValue(true)
 	}
 
 	// Sort references for deterministic output

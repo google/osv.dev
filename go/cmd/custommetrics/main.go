@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"cloud.google.com/go/monitoring/apiv3/v2"
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/api/iterator"

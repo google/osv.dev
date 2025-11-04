@@ -46,7 +46,7 @@ func Test_repaceJSONInput_2(t *testing.T) {
 			outputs: map[string]string{
 				"arr":   `{ "arr": "<replaced>" }`,
 				"arr.1": `{ "arr": [1, "<replaced>", 3] }`,
-				"arr.#": "", // ??? what should this do?
+				"arr.#": `{ "arr": ["<replaced>", "<replaced>", "<replaced>"] }`,
 			},
 		},
 		{
@@ -55,6 +55,7 @@ func Test_repaceJSONInput_2(t *testing.T) {
 				"arr":     `{ "arr": "<replaced>" }`,
 				"arr.0.v": `{ "arr": [{"v": "<replaced>"}, {"v": 2}, {"v": 3}] }`,
 				"arr.1.v": `{ "arr": [{"v": 1}, {"v": "<replaced>"}, {"v": 3}] }`,
+				"arr.#":   `{ "arr": ["<replaced>", "<replaced>", "<replaced>"] }`,
 				"arr.#.v": `{ "arr": [{"v": "<replaced>"}, {"v": "<replaced>"}, {"v": "<replaced>"}] }`,
 			},
 		},
@@ -87,6 +88,28 @@ func Test_repaceJSONInput_2(t *testing.T) {
 						{ "v": [{"v": 1}, {"v": 2}] },
 						{ "v": [{"v": 3}, {"v": 4}] },
 						{ "v": [{"v": 5}, {"v": 6}] }
+					]
+				}`,
+
+				"arr.#": `{
+					"arr": [
+						"<replaced>",
+						"<replaced>",
+						"<replaced>"
+					]
+				}`,
+				"arr.1.v.#": `{
+					"arr": [
+						{ "v": [{"v": 1}, {"v": 2}] },
+						{ "v": ["<replaced>", "<replaced>"] },
+						{ "v": [{"v": 5}, {"v": 6}] }
+					]
+				}`,
+				"arr.#.v.#": `{
+					"arr": [
+						{ "v": ["<replaced>", "<replaced>"] },
+						{ "v": ["<replaced>", "<replaced>"] },
+						{ "v": ["<replaced>", "<replaced>"] }
 					]
 				}`,
 
@@ -219,6 +242,40 @@ func Test_repaceJSONInput_2(t *testing.T) {
 						{ "v": [] },
 						{ "v": [{"foo": "bar"}] },
 						{ "v": [{"v": 7}] }
+					]
+				}`,
+
+				"arr.#": `{
+					"arr": [
+						"<replaced>",
+						"<replaced>",
+						"<replaced>",
+						"<replaced>",
+						"<replaced>",
+						"<replaced>",
+						"<replaced>"
+					]
+				}`,
+				"arr.#.v": `{
+					"arr": [
+						{ "v": "<replaced>" },
+						{},
+						{ "v": "<replaced>" },
+						{ "foo": "bar" },
+						{ "v": "<replaced>" },
+						{ "v": "<replaced>" },
+						{ "v": "<replaced>" }
+					]
+				}`,
+				"arr.#.v.#": `{
+					"arr": [
+						{ "v": ["<replaced>", "<replaced>"] },
+						{},
+						{ "v": ["<replaced>", "<replaced>"] },
+						{ "foo": "bar" },
+						{ "v": [] },
+						{ "v": ["<replaced>"] },
+						{ "v": ["<replaced>"] }
 					]
 				}`,
 			},

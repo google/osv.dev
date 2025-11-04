@@ -548,7 +548,7 @@ func Test_replaceJSONInput(t *testing.T) {
       }`,
 		},
 		{
-			name: "nested json array element replacement with missing",
+			name: "nested json array element replacement with matcher using field that does not exist",
 			args: args{
 				jsonInput: `{
 					"items": [
@@ -581,16 +581,16 @@ func Test_replaceJSONInput(t *testing.T) {
           {
             "subStruct": {
               "subitems": [
-                "original value 1",
-                "original value 2"
+                null,
+                null
               ]
             }
           },
           {
             "subStruct": {
               "subitems": [
-                "original value 3",
-                "original value 4"
+                null,
+                null
               ]
             }
           },

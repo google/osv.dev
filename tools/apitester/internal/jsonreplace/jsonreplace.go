@@ -68,13 +68,9 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
 	t.Helper()
 
-	pathArray := []string{}
-
-	pathArray = expandArrayPaths(t, jsonInput, path)
-
 	var err error
 	json := jsonInput
-	for _, pathElem := range pathArray {
+	for _, pathElem := range expandArrayPaths(t, jsonInput, path) {
 		res := gjson.GetBytes(jsonInput, pathElem)
 
 		if !res.Exists() {

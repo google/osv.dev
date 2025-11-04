@@ -42,7 +42,12 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 	pathToArray, restOfPath, match := strings.Cut(path, ".#.")
 
 	if !match {
-		return []string{path}
+		if !strings.HasSuffix(path, ".#") {
+			return []string{path}
+		}
+
+		pathToArray = strings.TrimSuffix(path, ".#")
+		restOfPath = ""
 	}
 
 	r := gjson.GetBytes(jsonInput, pathToArray)
@@ -53,7 +58,11 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 		paths := make([]string, 0, len(r.Array()))
 
 		for i := range r.Array() {
-			static := pathToArray + "." + strconv.Itoa(i) + "." + restOfPath
+			static := pathToArray + "." + strconv.Itoa(i)
+
+			if restOfPath != "" {
+				static += "." + restOfPath
+			}
 			paths = append(paths, expandArrayPaths(t, jsonInput, static)...)
 		}
 
@@ -92,6 +101,11 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 	// return expandedPaths
 }
 
+// func replace(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
+// 	t.Helper()
+//
+//
+// }
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher
 func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {

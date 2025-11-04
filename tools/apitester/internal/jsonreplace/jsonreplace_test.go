@@ -12,7 +12,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func Test_repaceJSONInput_2(t *testing.T) {
+func Test_repaceJSONInput(t *testing.T) {
 	t.Parallel()
 
 	matcher := func(toReplace gjson.Result) any {
@@ -410,7 +410,7 @@ func Test_repaceJSONInput_2(t *testing.T) {
 	}
 }
 
-func Test_replaceJSONInput(t *testing.T) {
+func Test_replaceJSONInput_More(t *testing.T) {
 	t.Parallel()
 
 	// A nested JSON structure with arrays

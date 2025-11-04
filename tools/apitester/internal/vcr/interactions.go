@@ -35,7 +35,7 @@ func Play(t *testing.T, interaction *cassette.Interaction) *http.Response {
 	req.Header.Set("User-Agent", "osv.dev/apitester")
 	req.ContentLength = -1
 
-	if req.URL.Host == "localhost" || req.URL.Host == "127.0.0.1" {
+	if req.URL.Hostname() == "localhost" || req.URL.Hostname() == "127.0.0.1" {
 		req.URL.Scheme = "http"
 	}
 

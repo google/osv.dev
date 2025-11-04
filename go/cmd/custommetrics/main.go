@@ -46,27 +46,32 @@ func main() {
 }
 
 func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string) (int64, error) {
+	const lookbackDuration = 24 * time.Hour
 	req := &monitoringpb.ListTimeSeriesRequest{
 		Name:     "projects/" + project,
 		Filter:   fmt.Sprintf("metric.type = %q AND metric.labels.cronjob = %q", kubeStateMetricLastRun, cronjob),
-		Interval: &monitoringpb.TimeInterval{EndTime: timestamppb.Now(), StartTime: timestamppb.New(time.Now().Add(-24 * time.Hour))},
+		Interval: &monitoringpb.TimeInterval{EndTime: timestamppb.Now(), StartTime: timestamppb.New(time.Now().Add(-lookbackDuration))},
 	}
 	it := cl.ListTimeSeries(ctx, req)
 	ts, err := it.Next()
 	if errors.Is(err, iterator.Done) {
 		logger.Warn("last_successful_time was not found for past day", slog.String("cronjob", cronjob))
-		return int64(24 * time.Hour / time.Second), nil
+		return int64(lookbackDuration / time.Second), nil
 	} else if err != nil {
 		return 0, err
 	}
-	val := ts.GetPoints()[0].GetValue().GetDoubleValue()
+	points := ts.GetPoints()
+	if len(points) == 0 { // I'm pretty sure iterator.Done would be returned instead.
+		logger.Warn("time series has no points", slog.String("cronjob", cronjob))
+		return int64(lookbackDuration / time.Second), nil
+	}
+	val := points[0].GetValue().GetDoubleValue()
+	
 	return time.Now().Unix() - int64(val), nil
 }
 
 func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string, value int64) error {
-	now := &timestamppb.Timestamp{
-		Seconds: time.Now().Unix(),
-	}
+	now := timestamppb.Now()
 	req := &monitoringpb.CreateTimeSeriesRequest{
 		Name: "projects/" + project,
 		TimeSeries: []*monitoringpb.TimeSeries{{

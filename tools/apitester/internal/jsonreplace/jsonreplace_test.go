@@ -293,9 +293,31 @@ func Test_repaceJSONInput_2(t *testing.T) {
 				]
 			}`,
 			outputs: map[string]string{
-				"arr.#.v.#.v": `{
+				"arr.#.v.#(v>=3).v": `{
 					"arr": [
-						{ "v": [{"v": "<replaced>"}, {"v": "<replaced>"}] },
+						{ "v": [{"v": 1}, {"v": 2}] },
+						{},
+						{ "v": [{"v": "<replaced>"}, {"v": 6}] },
+						{ "foo": "bar" },
+						{ "v": [] },
+						{ "v": [{"foo": "bar"}] },
+						{ "v": [{"v": "<replaced>"}] }
+					]
+				}`,
+				"arr.#.v.#(v>=3)#": `{
+					"arr": [
+						{ "v": [{"v": 1}, {"v": 2}] },
+						{},
+						{ "v": ["<replaced>", "<replaced>"] },
+						{ "foo": "bar" },
+						{ "v": [] },
+						{ "v": [{"foo": "bar"}] },
+						{ "v": ["<replaced>"] }
+					]
+				}`,
+				"arr.#.v.#(v>=3)#.v": `{
+					"arr": [
+						{ "v": [{"v": 1}, {"v": 2}] },
 						{},
 						{ "v": [{"v": "<replaced>"}, {"v": "<replaced>"}] },
 						{ "foo": "bar" },

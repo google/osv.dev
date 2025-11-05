@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -100,7 +101,7 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
-	databaseSpecific, err := newDatabaseSpecific(map[string]any{"cwe_ids": cwes})
+	databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"cwe_ids": cwes})
 	if err != nil {
 		logger.Warn("Failed to convert database specific: %v", err)
 	} else {
@@ -149,7 +150,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	metrics.Repos = repos
 
 	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
-		databaseSpecific, err := newDatabaseSpecific(map[string]any{"isDisputed": true})
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"isDisputed": true})
 		if err != nil {
 			metrics.AddNote("Failed to convert database specific: %v", err)
 		} else {

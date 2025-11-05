@@ -30,12 +30,12 @@ import (
 	"sync"
 
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -312,12 +312,11 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		return cmp.Compare(a.GetRepo(), b.GetRepo())
 	})
 
-	b, err := json.Marshal(pkgInfo.EcosystemSpecific)
-	if err == nil {
-		pbst := &structpb.Struct{}
-		if json.Unmarshal(b, pbst) == nil {
-			affected.EcosystemSpecific = pbst
-		}
+	spec, err := utility.NewStructpbFromMap(pkgInfo.EcosystemSpecific)
+	if err != nil {
+		logger.Warn("Failed to create EcosystemSpecific struct: %v", err)
+	} else {
+		affected.EcosystemSpecific = spec
 	}
 	v.Affected = append(v.Affected, affected)
 }

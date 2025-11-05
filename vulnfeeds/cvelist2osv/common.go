@@ -4,20 +4,16 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // VersionRangeType represents the type of versioning scheme for a range.
@@ -101,88 +97,6 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 	return commit
 }
 
-// newDatabaseSpecific converts a map[string]any to a *structpb.Struct,
-// which is suitable for OSV's database_specific field.
-func newDatabaseSpecific(v map[string]any) (*structpb.Struct, error) {
-	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
-	for k, v := range v {
-		var err error
-		x.Fields[k], err = newStructpbValue(v)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return x, nil
-}
-
-// newStructpbValue is a generic converter that takes any Go type and returns a *structpb.Value.
-func newStructpbValue(v any) (*structpb.Value, error) {
-	if v == nil {
-		return structpb.NewNullValue(), nil
-	}
-
-	val := reflect.ValueOf(v)
-	switch val.Kind() {
-	case reflect.Bool:
-		return structpb.NewBoolValue(val.Bool()), nil
-	case reflect.String:
-		return structpb.NewStringValue(val.String()), nil
-	case reflect.Slice:
-		var anyList []any
-		for i := range val.Len() {
-			anyList = append(anyList, val.Index(i).Interface())
-		}
-
-		return structpbValueFromList(anyList)
-	default:
-		return nil, fmt.Errorf("unsupported type: %T", v)
-	}
-}
-
-// structpbValueFromList converts a generic slice into a *structpb.Value that
-// represents a list.
-// It iterates through the list, converting any proto.Message elements into
-// any type via JSON marshalling, while other elements are included as-is.
-func structpbValueFromList[T any](list []T) (*structpb.Value, error) {
-	anyList := make([]any, 0, len(list))
-	for i, v := range list {
-		if msg, ok := any(v).(proto.Message); ok {
-			val, err := protoToPlain(msg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert proto message for item %d: %w", i, err)
-			}
-			anyList = append(anyList, val)
-		} else {
-			anyList = append(anyList, v)
-		}
-	}
-
-	val, err := structpb.NewValue(anyList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new structpb.Value from list: %w", err)
-	}
-
-	return val, nil
-}
-
-// protoToPlain converts a proto.Message to an any type by marshalling to JSON
-// with protojson and then unmarshalling into an `any`.
-func protoToPlain(p proto.Message) (any, error) {
-	b, err := protojson.Marshal(p)
-	if err != nil {
-		return nil, fmt.Errorf("protojson.Marshal: %w", err)
-	}
-
-	var result any
-	err = json.Unmarshal(b, &result)
-	if err != nil {
-		return nil, fmt.Errorf("json.Unmarshal: %w", err)
-	}
-
-	return result, nil
-}
-
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
@@ -239,7 +153,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
 				if len(vr.GetEvents()) > 0 {
-					databaseSpecific, err := newDatabaseSpecific(map[string]any{"versions": vr.GetEvents()})
+					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
 					if err != nil {
 						logger.Warn("failed to make database specific: %v", err)
 					} else {
@@ -257,7 +171,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 
 	var err error
 	if len(unresolvedRanges) > 0 {
-		databaseSpecific, err := newDatabaseSpecific(map[string]any{"unresolved_ranges": unresolvedRanges})
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
 		if err != nil {
 			logger.Warn("failed to make database specific: %v", err)
 		} else {

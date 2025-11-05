@@ -175,7 +175,7 @@ func (c *OSVClient) Query(ctx context.Context, query *api.Query) (*api.Vulnerabi
 
 func (c *OSVClient) ExperimentalDetermineVersion(ctx context.Context, query *api.DetermineVersionParameters) (*api.VersionMatchList, error) {
 	var result api.VersionMatchList
-	err := c.makeRequest(ctx, DetermineVersionEndpoint, query.Query, &result)
+	err := c.makeRequest(ctx, DetermineVersionEndpoint, query.GetQuery(), &result)
 	if err != nil {
 		return nil, err
 	}

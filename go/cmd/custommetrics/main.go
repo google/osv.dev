@@ -35,13 +35,16 @@ func main() {
 	}
 	defer cl.Close()
 
-	// exporter seconds since last success
-	timeSince, err := getCronFreshness(ctx, cl, project, "exporter")
-	if err != nil {
-		logger.Fatal("error getting freshness", slog.String("cronjob", "exporter"), slog.Any("err", err))
-	}
-	if err := writeCronFreshness(ctx, cl, project, "exporter", timeSince); err != nil {
-		logger.Fatal("error writing freshness", slog.String("cronjob", "exporter"), slog.Any("err", err))
+	// cronjob seconds since last success
+	crons := []string{"exporter"}
+	for _, cron := range crons {
+		timeSince, err := getCronFreshness(ctx, cl, project, cron)
+		if err != nil {
+			logger.Fatal("error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
+		}
+		if err := writeCronFreshness(ctx, cl, project, cron, timeSince); err != nil {
+			logger.Fatal("error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
+		}
 	}
 }
 

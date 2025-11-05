@@ -81,6 +81,7 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		for i := range val.Len() {
 			anyList = append(anyList, val.Index(i).Interface())
 		}
+
 		return structpbValueFromList(anyList)
 	default:
 		return structpb.NewValue(v)
@@ -94,7 +95,7 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 func structpbValueFromList(list []any) (*structpb.Value, error) {
 	anyList := make([]any, 0, len(list))
 	for i, v := range list {
-		if msg, ok := any(v).(proto.Message); ok {
+		if msg, ok := v.(proto.Message); ok {
 			val, err := protoToAny(msg)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert proto message for item %d: %w", i, err)

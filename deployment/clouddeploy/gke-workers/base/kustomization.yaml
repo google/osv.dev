@@ -27,3 +27,5 @@ resources:
 - recoverer.yaml
 - record-checker.yaml
 - cve5-to-osv.yaml
+- custommetrics.yaml
+

@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: exporter
   labels:
-    cronLastSuccessfulTimeMins: "180"
+    cronLastSuccessfulTimeMins: "30"
 spec:
   schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid

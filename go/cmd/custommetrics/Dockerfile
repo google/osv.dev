@@ -12,29 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: recoverer
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      name: recoverer
-  template:
-    metadata:
-      labels:
-        name: recoverer
-    spec:
-      containers:
-      - name: recoverer
-        image: recoverer
-        imagePullPolicy: Always
-      resources:
-        requests:
-          cpu: "10m"
-          memory: "256Mi"
-        limits:
-          cpu: "200m"
-          memory: "512Mi"
+FROM golang:1.25.3-alpine@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS build
 
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download && go mod verify
+
+
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o custommetrics ./cmd/custommetrics
+
+FROM gcr.io/distroless/static-debian12@sha256:87bce11be0af225e4ca761c40babb06d6d559f5767fbf7dc3c47f0f1a466b92c
+
+COPY --from=build /src/custommetrics /
+
+ENTRYPOINT ["/custommetrics"]

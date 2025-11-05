@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: custommetrics
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: custommetrics
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test
+

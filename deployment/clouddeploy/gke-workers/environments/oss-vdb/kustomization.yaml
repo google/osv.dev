@@ -22,3 +22,5 @@ patches:
 - path: recoverer.yaml
 - path: record-checker.yaml
 - path: cve5-to-osv.yaml
+- path: custommetrics.yaml
+

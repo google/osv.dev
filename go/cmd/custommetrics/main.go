@@ -47,10 +47,11 @@ func main() {
 
 func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string) (int64, error) {
 	const lookbackDuration = 24 * time.Hour
+	now := time.Now()
 	req := &monitoringpb.ListTimeSeriesRequest{
 		Name:     "projects/" + project,
 		Filter:   fmt.Sprintf("metric.type = %q AND metric.labels.cronjob = %q", kubeStateMetricLastRun, cronjob),
-		Interval: &monitoringpb.TimeInterval{EndTime: timestamppb.Now(), StartTime: timestamppb.New(time.Now().Add(-lookbackDuration))},
+		Interval: &monitoringpb.TimeInterval{EndTime: timestamppb.New(now), StartTime: timestamppb.New(now.Add(-lookbackDuration))},
 	}
 	it := cl.ListTimeSeries(ctx, req)
 	ts, err := it.Next()

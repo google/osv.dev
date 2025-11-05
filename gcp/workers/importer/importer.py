@@ -195,10 +195,14 @@ class Importer:
                                  source_repo,
                                  original_sha256,
                                  path,
-                                 deleted=False):
+                                 deleted=False,
+                                 source_timestamp=None):
     """Request analysis."""
     # TODO(michaelkedar): Making a distinction for oss-fuzz updates so we can
     # track the logic flow for our eventual decoupling of the special logic.
+    src_ts = ''
+    if source_timestamp is not None:
+      src_ts = str(int(source_timestamp.timestamp()))
     task_type = 'update'
     if source_repo.name == 'oss-fuzz':
       task_type = 'update-oss-fuzz'
@@ -210,7 +214,8 @@ class Importer:
         path=path,
         original_sha256=original_sha256,
         deleted=str(deleted).lower(),
-        req_timestamp=str(int(time.time())))
+        req_timestamp=str(int(time.time())),
+        src_timestamp=src_ts)
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -434,10 +439,11 @@ class Importer:
       vuln_ids.append(vuln.id)
     return vuln_ids
 
-  def _convert_blob_to_vuln(
-      self, storage_client: storage.Client, ndb_client: ndb.Client,
-      source_repo: osv.SourceRepository, blob: storage.Blob,
-      ignore_last_import_time: bool) -> Optional[Tuple[str]]:
+  def _convert_blob_to_vuln(self, storage_client: storage.Client,
+                            ndb_client: ndb.Client,
+                            source_repo: osv.SourceRepository,
+                            blob: storage.Blob,
+                            ignore_last_import_time: bool) -> Optional[Tuple]:
     """Parse a GCS blob into a tuple of hash and Vulnerability
 
     Criteria for returning a tuple:
@@ -463,7 +469,7 @@ class Importer:
       input fails OSV JSON Schema validation
 
     Returns:
-      a list of one or more tuples of (hash, vulnerability) (from the
+      a list of one or more tuples of (hash, vulnerability, updated) (from the
       Vulnerability proto) or None when the blob has an unexpected name
     """
     if not _is_vulnerability_file(source_repo, blob.name):
@@ -499,7 +505,7 @@ class Importer:
 
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
-      return blob_hash, blob.name
+      return blob_hash, blob.name, None  # do not log updated date for reimports
 
     # If being run under test, reuse existing NDB client.
     ndb_ctx = ndb.context.get_context(False)
@@ -518,11 +524,9 @@ class Importer:
         # The bug already exists and has been modified since last import
         if (bug is None or
             bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC)):
-          return blob_hash, blob.name
+          return blob_hash, blob.name, blob.updated
 
       return None
-
-    return None
 
   def _sync_from_previous_commit(self, source_repo, repo):
     """Sync the repository from the previous commit.
@@ -535,11 +539,11 @@ class Importer:
       repo: the checked out Git source repository.
 
     Returns:
-      changed_entries: the set of repository paths that have changed.
-      deleted_entries: the set of repository paths that have been deleted.
+      changed_entries: the dict of {path: timestamp} that have changed.
+      deleted_entries: the dict of {path: timestamp} that have been deleted.
     """
-    changed_entries = set()
-    deleted_entries = set()
+    changed_entries = {}
+    deleted_entries = {}
 
     walker = repo.walk(repo.head.target, pygit2.enums.SortMode.TOPOLOGICAL)
     walker.hide(source_repo.last_synced_hash)
@@ -561,14 +565,20 @@ class Importer:
           if delta.old_file and _is_vulnerability_file(source_repo,
                                                        delta.old_file.path):
             if delta.status == pygit2.enums.DeltaStatus.DELETED:
-              deleted_entries.add(delta.old_file.path)
+              deleted_entries[
+                  delta.old_file.path] = datetime.datetime.fromtimestamp(
+                      commit.commit_time, datetime.UTC)
               continue
 
-            changed_entries.add(delta.old_file.path)
+            changed_entries[
+                delta.old_file.path] = datetime.datetime.fromtimestamp(
+                    commit.commit_time, datetime.UTC)
 
           if delta.new_file and _is_vulnerability_file(source_repo,
                                                        delta.new_file.path):
-            changed_entries.add(delta.new_file.path)
+            changed_entries[
+                delta.new_file.path] = datetime.datetime.fromtimestamp(
+                    commit.commit_time, datetime.UTC)
 
     return changed_entries, deleted_entries
 
@@ -579,7 +589,7 @@ class Importer:
     repo = self.checkout(source_repo)
 
     # Get list of changed files since last sync.
-    changed_entries = set()
+    changed_entries = {}
 
     if source_repo.last_synced_hash:
       # Syncing from a previous commit.
@@ -593,11 +603,12 @@ class Importer:
           path = os.path.join(root, filename)
           rel_path = os.path.relpath(path, osv.repo_path(repo))
           if _is_vulnerability_file(source_repo, rel_path):
-            changed_entries.add(rel_path)
+            # set the timestamp to None when syncing from scratch
+            changed_entries[rel_path] = None
 
     import_failure_logs = []
     # Create tasks for changed files.
-    for changed_entry in changed_entries:
+    for changed_entry, ts in changed_entries.items():
       path = os.path.join(osv.repo_path(repo), changed_entry)
       if not os.path.exists(path):
         # Path no longer exists. It must have been deleted in another commit.
@@ -627,8 +638,8 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      self._request_analysis_external(source_repo, original_sha256,
-                                      changed_entry)
+      self._request_analysis_external(
+          source_repo, original_sha256, changed_entry, source_timestamp=ts)
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
@@ -714,7 +725,8 @@ class Importer:
         if cv:
           logging.info('Requesting analysis of bucket entry: %s/%s',
                        source_repo.bucket, cv[1])
-          self._request_analysis_external(source_repo, cv[0], cv[1])
+          self._request_analysis_external(
+              source_repo, cv[0], cv[1], source_timestamp=cv[2])
 
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
@@ -870,7 +882,8 @@ class Importer:
     last_update_date = (
         source_repo.last_update_date or
         datetime.datetime.min.replace(tzinfo=datetime.UTC))
-    if source_repo.ignore_last_import_time:
+    ignore_last_import = source_repo.ignore_last_import_time
+    if ignore_last_import:
       last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
       source_repo.ignore_last_import_time = False
       source_repo.put()
@@ -954,9 +967,12 @@ class Importer:
           self._record_quality_finding(source_repo.name, bug_id)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
+        ts = None if ignore_last_import else vuln_modified
         self._request_analysis_external(
-            source_repo, osv.sha256_bytes(single_vuln.text.encode()),
-            vuln.id + source_repo.extension)
+            source_repo,
+            osv.sha256_bytes(single_vuln.text.encode()),
+            vuln.id + source_repo.extension,
+            source_timestamp=ts)
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.

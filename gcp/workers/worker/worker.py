@@ -411,6 +411,18 @@ class TaskRunner:
           path, original_sha256, current_sha256)
       return
 
+    if len(vulnerabilities) > 1:
+      # While the code allows for having multiple vulnerabilities in a file,
+      # it's not really documented anywhere, and no one seems to be doing this.
+      # I (michaelkedar) think we should stop supporting this, so adding this
+      # log here to verify if it's okay to remove.
+      logging.error(
+          'file has multiple vulnerabilities',
+          extra={'json_fields': {
+              'source': source,
+              'path': path,
+          }})
+
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
@@ -675,14 +687,30 @@ class TaskRunner:
     Log how long it took to be serviced."""
     request_time = message.attributes.get('req_timestamp')
     if request_time:
+      now = int(time.time())
       request_time = int(request_time)
-      latency = int(time.time()) - request_time
+      latency = now - request_time
+
+      json_fields = {
+          'source': message.attributes.get('source'),
+          'path': message.attributes.get('path'),
+          'latency': latency,
+      }
+      if source_time := message.attributes.get('src_timestamp'):
+        source_time = int(source_time)
+        src_latency = now - source_time
+        json_fields['src_latency'] = src_latency
+
       task_type = message.attributes['type']
       source_id = get_source_id(message) or message.attributes.get(
           'source', None)
 
-      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
-                   latency)
+      logging.info(
+          'Task %s (source_id=%s) latency %d',
+          task_type,
+          source_id,
+          latency,
+          extra={'json_fields': json_fields})
 
   def loop(self):
     """Task loop."""

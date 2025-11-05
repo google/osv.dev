@@ -289,6 +289,7 @@
   extension: '.json'
   db_prefix: ['JLSEC-']
   ignore_git: False
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
   link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
   editable: False
   repo_username: 'git'

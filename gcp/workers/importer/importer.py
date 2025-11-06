@@ -707,8 +707,8 @@ class Importer:
       for future in concurrent.futures.as_completed(future_to_blob):
         blob = future_to_blob[future]
         try:
-          if future.result():
-            converted_vulns.append(([vuln for vuln in future.result() if vuln]))
+          if result := future.result():
+            converted_vulns.append(result)
         except Exception as e:
           # Don't include error stack trace as that might leak sensitive info
           logging.error('Failed to parse vulnerability %s: %s', blob.name, e)

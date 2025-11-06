@@ -203,7 +203,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='2021-111.yaml',
             source='oss-fuzz',
             type='update-oss-fuzz',
-            req_timestamp='12345')
+            req_timestamp='12345',
+            src_timestamp='')
     ])
     bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
@@ -358,7 +359,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
             type='update-oss-fuzz',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp=''),
         mock.call(
             self.tasks_topic,
             allocated_id='OSV-2021-1339',
@@ -610,7 +612,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('12453f85cd87bc1d465e0d013db572c0'
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1645053056'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -620,7 +623,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('62966a80f6f9f54161803211069216177'
                              '37340a47f43356ee4a1cabe8f089869'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1683180616'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -630,7 +634,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('a4060cb842363cb6ae7669057402ccddc'
                              'e21a94ed6cad98234e73305816a86d3'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1671420222'),
     ],
                                   any_order=True)
 
@@ -702,7 +707,8 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/CVE-2018-1000030.json',
         original_sha256='',
         deleted='true',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
     mock_publish.assert_has_calls([deletion_call])
 
     # Test existing record in Datastore with an ID containing a colon and no
@@ -716,7 +722,8 @@ class BucketImporterTest(unittest.TestCase):
         path='RXSA-2023:0101.json',
         original_sha256='',
         deleted='true',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
     mock_publish.assert_has_calls([deletion_call])
 
     # Run again with a 10% threshold and confirm the safeguards work as
@@ -769,7 +776,8 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
@@ -865,7 +873,7 @@ class BucketImporterTest(unittest.TestCase):
     self.assertEqual(
         result,
         ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3',
-         'a/b/CVE-2022-0128.json'))
+         'a/b/CVE-2022-0128.json', None))
 
 
 class BucketImporterMassDeletionTest(unittest.TestCase):
@@ -1082,7 +1090,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='dd4766773f12e14912d7c930669a2650'
             '2a83c80151815cb49400462067ab704e',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1701684728'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1092,7 +1101,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='ed5d9ee8fad738687254138fdbfd6da0'
             'f6a3eccbc9ffcda12fb484d63448a22f',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1701684985'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1102,7 +1112,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='61425ff4651524a71daa90c66235a2af'
             'b09a06faa839fe4af010a5a02f3dafb7',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1697013410'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1112,7 +1123,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='f76bcb2dedf63b51b3195f2f27942dc2'
             '3c87f2bc3a93dec79ea838b4c1ffb412',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1700412273'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1122,7 +1134,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='fcac007c2f0d2685fa56c5910a0e24bc'
             '0587efc409878fcb0df5b096db5d205f',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1694717842'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1132,7 +1145,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='f8bf8e7e18662ca0c1ddd4a3f90ac4a9'
             '6fc730f09e3bff00c63d99d61b0697b2',
             deleted='false',
-            req_timestamp='12345')
+            req_timestamp='12345',
+            src_timestamp='1696205251')
     ])
     self.assertEqual(
         repo.get().last_update_date,

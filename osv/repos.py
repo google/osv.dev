@@ -124,7 +124,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
     subprocess.run(cmd, env=env, capture_output=True, check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
-    stderr = e.stderr.decode()
+    stderr = e.stderr.decode(errors='ignore')
     if ('could not read Username' in stderr or
         ('fatal: repository' in stderr and 'not found' in stderr) or
         'Authentication failed' in stderr):

@@ -764,8 +764,8 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
                               new_git_versions, commits, new_introduced,
                               new_fixed)
         except repos.RepoInaccessibleError:
-          logging.warning('Repository inaccessible for vulnerability %s',
-                          vulnerability.id)
+          logging.warning('Repository %s inaccessible for vulnerability %s',
+                          affected_range.repo, vulnerability.id)
         except Exception as e:
           e.add_note(f'Happened analyzing {vulnerability.id}')
           raise

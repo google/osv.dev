@@ -469,8 +469,8 @@ class Importer:
       input fails OSV JSON Schema validation
 
     Returns:
-      a list of one or more tuples of (hash, vulnerability, updated) (from the
-      Vulnerability proto) or None when the blob has an unexpected name
+      a tuple of (hash, path, updated) or None when the blob has an
+      unexpected name or doesn't meet the import criteria.
     """
     if not _is_vulnerability_file(source_repo, blob.name):
       return None

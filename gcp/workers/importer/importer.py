@@ -439,11 +439,11 @@ class Importer:
       vuln_ids.append(vuln.id)
     return vuln_ids
 
-  def _convert_blob_to_vuln(self, storage_client: storage.Client,
-                            ndb_client: ndb.Client,
-                            source_repo: osv.SourceRepository,
-                            blob: storage.Blob,
-                            ignore_last_import_time: bool) -> Optional[Tuple]:
+  def _convert_blob_to_vuln(
+      self, storage_client: storage.Client, ndb_client: ndb.Client,
+      source_repo: osv.SourceRepository, blob: storage.Blob,
+      ignore_last_import_time: bool
+  ) -> None | Tuple[str, str, None | datetime.datetime]:
     """Parse a GCS blob into a tuple of hash and Vulnerability
 
     Criteria for returning a tuple:

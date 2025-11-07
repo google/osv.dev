@@ -82,29 +82,27 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-def _setup_logging_extra_info():
-  """Set up extra GCP logging information."""
+class _ContextFilter(logging.Filter):
+  """Context filter to add extra GCP logging information."""
 
-  old_factory = logging.getLogRecordFactory()
-
-  def record_factory(*args, **kwargs):
-    """Insert jsonPayload fields to all logs."""
-
-    record = old_factory(*args, **kwargs)
-    if not hasattr(record, 'json_fields'):
-      record.json_fields = {}
+  def filter(self, record):
+    """Add extra fields to the log record."""
+    json_fields = getattr(record, 'json_fields', {})
 
     if getattr(_state, 'source_id', None):
-      record.json_fields['source_id'] = _state.source_id
+      json_fields['source_id'] = _state.source_id
 
     if getattr(_state, 'bug_id', None):
-      record.json_fields['bug_id'] = _state.bug_id
+      json_fields['bug_id'] = _state.bug_id
 
-    record.json_fields['thread'] = record.thread
+    json_fields['thread'] = record.thread
+    record.json_fields = json_fields
+    return True
 
-    return record
 
-  logging.setLogRecordFactory(record_factory)
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
+  logging.getLogger().addFilter(_ContextFilter())
 
 
 class _PubSubLeaserThread(threading.Thread):

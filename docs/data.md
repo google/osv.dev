@@ -123,7 +123,7 @@ Individual vulnerability records can be found at `gs://osv-vulnerabilities/<ECOS
 E.g. for PyPI vulnerabilities:
 
 ```bash
-# Or download over HTTP via https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip
+# Or download over HTTP via https://storage.googleapis.com/osv-vulnerabilities/PyPI/all.zip
 gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
@@ -153,7 +153,7 @@ The CSV files are sorted in reverse chronological order. This allows you to stre
 Some ecosystems contain a `:` separator in the name (e.g. `Alpine:v3.17`). For these ecosystems, the data dump will always contain an ecosystem directory without the `:.*` suffix (e.g. `Alpine`). This will contain all the advisories of the ecosystem with the same prefix (e.g. All `Alpine:.*`).
 
 A list of all current ecosystems is available at
-[`gs://osv-vulnerabilities/ecosystems.txt`](https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt)
+[`gs://osv-vulnerabilities/ecosystems.txt`](https://storage.googleapis.com/osv-vulnerabilities/ecosystems.txt)
 
 **Note:**
 OSV.dev has stopped exporting entries for ecosystems with prefixes (e.g. All `Alpine:.*`). Please refer only to the main ecosystem, the one without the `:.*` suffix, for all vulnerabilities of that ecosystem.

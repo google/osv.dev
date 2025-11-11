@@ -224,7 +224,7 @@ def linter():
 
 @blueprint.route('/ecosystems')
 def ecosystems():
-  return redirect('https://osv-vulnerabilities.storage.googleapis.com/ecosystems.txt')  # pylint: disable=line-too-long
+  return redirect('https://storage.googleapis.com/osv-vulnerabilities/ecosystems.txt')  # pylint: disable=line-too-long
 
 
 _LIST_ARGS = ['q', 'ecosystem', 'page']

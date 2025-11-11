@@ -369,7 +369,7 @@ func (v *Vulnerability) ToJSON(w io.Writer) error {
 		return err
 	}
 
-	var vuln interface{}
+	var vuln any
 	if err := json.Unmarshal(unstableJSON, &vuln); err != nil {
 		return err
 	}

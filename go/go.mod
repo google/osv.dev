@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	cloud.google.com/go/datastore v1.21.0
-	cloud.google.com/go/monitoring v1.24.2
+	cloud.google.com/go/monitoring v1.24.3
 	cloud.google.com/go/pubsub/v2 v2.3.0
 	cloud.google.com/go/storage v1.57.1
 	github.com/charmbracelet/lipgloss v1.1.0

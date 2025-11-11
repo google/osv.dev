@@ -364,10 +364,17 @@ func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
 
 // ToJSON serializes the Vulnerability to JSON.
 func (v *Vulnerability) ToJSON(w io.Writer) error {
-	ma := protojson.MarshalOptions{
-		Indent: "  ",
+	unstableJSON, err := protojson.Marshal(v.Vulnerability)
+	if err != nil {
+		return err
 	}
-	b, err := ma.Marshal(v.Vulnerability)
+
+	var vuln interface{}
+	if err := json.Unmarshal(unstableJSON, &vuln); err != nil {
+		return err
+	}
+
+	b, err := json.MarshalIndent(vuln, "", "  ")
 	if err != nil {
 		return err
 	}

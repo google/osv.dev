@@ -82,29 +82,27 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-def _setup_logging_extra_info():
-  """Set up extra GCP logging information."""
+class _ContextFilter(logging.Filter):
+  """Context filter to add extra GCP logging information."""
 
-  old_factory = logging.getLogRecordFactory()
-
-  def record_factory(*args, **kwargs):
-    """Insert jsonPayload fields to all logs."""
-
-    record = old_factory(*args, **kwargs)
-    if not hasattr(record, 'json_fields'):
-      record.json_fields = {}
+  def filter(self, record):
+    """Add extra fields to the log record."""
+    json_fields = getattr(record, 'json_fields', {})
 
     if getattr(_state, 'source_id', None):
-      record.json_fields['source_id'] = _state.source_id
+      json_fields['source_id'] = _state.source_id
 
     if getattr(_state, 'bug_id', None):
-      record.json_fields['bug_id'] = _state.bug_id
+      json_fields['bug_id'] = _state.bug_id
 
-    record.json_fields['thread'] = record.thread
+    json_fields['thread'] = record.thread
+    record.json_fields = json_fields
+    return True
 
-    return record
 
-  logging.setLogRecordFactory(record_factory)
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
+  logging.getLogger().addFilter(_ContextFilter())
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -411,6 +409,18 @@ class TaskRunner:
           path, original_sha256, current_sha256)
       return
 
+    if len(vulnerabilities) > 1:
+      # While the code allows for having multiple vulnerabilities in a file,
+      # it's not really documented anywhere, and no one seems to be doing this.
+      # I (michaelkedar) think we should stop supporting this, so adding this
+      # log here to verify if it's okay to remove.
+      logging.error(
+          'file has multiple vulnerabilities',
+          extra={'json_fields': {
+              'source': source,
+              'path': path,
+          }})
+
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
@@ -675,14 +685,30 @@ class TaskRunner:
     Log how long it took to be serviced."""
     request_time = message.attributes.get('req_timestamp')
     if request_time:
+      now = int(time.time())
       request_time = int(request_time)
-      latency = int(time.time()) - request_time
+      latency = now - request_time
+
+      json_fields = {
+          'source': message.attributes.get('source'),
+          'path': message.attributes.get('path'),
+          'latency': latency,
+      }
+      if source_time := message.attributes.get('src_timestamp'):
+        source_time = int(source_time)
+        src_latency = now - source_time
+        json_fields['src_latency'] = src_latency
+
       task_type = message.attributes['type']
       source_id = get_source_id(message) or message.attributes.get(
           'source', None)
 
-      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
-                   latency)
+      logging.info(
+          'Task %s (source_id=%s) latency %d',
+          task_type,
+          source_id,
+          latency,
+          extra={'json_fields': json_fields})
 
   def loop(self):
     """Task loop."""

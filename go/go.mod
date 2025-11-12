@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20251029033743-5e05f9d00d92
 	google.golang.org/api v0.256.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20251103181224-f26f9409b101
+	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba
 	google.golang.org/protobuf v1.36.10
 )
 

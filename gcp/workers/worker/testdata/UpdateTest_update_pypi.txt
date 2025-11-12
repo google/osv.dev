@@ -112,7 +112,7 @@
     'import_last_modified': DatetimeWithNanoseconds(2022, 10, 7, 18, 59, tzinfo=datetime.timezone.utc),
     'is_fixed': True,
     'issue_id': None,
-    'last_modified': DatetimeWithNanoseconds(2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'last_modified': DatetimeWithNanoseconds(3000, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'project': ['grpcio'],
     'public': True,
     'purl': ['pkg:pypi/grpcio'],
@@ -137,6 +137,6 @@
     'source_of_truth': 2,
     'status': 1,
     'summary': 'A vulnerability',
-    'timestamp': DatetimeWithNanoseconds(2021, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'timestamp': DatetimeWithNanoseconds(3000, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
     'upstream_raw': [],
     'withdrawn': None}

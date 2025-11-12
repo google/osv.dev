@@ -1207,11 +1207,12 @@ def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
                          source: str, path: str):
   """Updates a Bug entity from a vulnerabliity as the worker would.
   Special handling to check if the raw affected packages has changed."""
-  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+  import_modified = vuln.modified.ToDatetime(datetime.UTC)
+  prev_modified = bug.last_modified
   prev_affected = bug.affected_packages
   bug.update_from_vulnerability(vuln)
   bug.public = True
-  bug.import_last_modified = orig_modified
+  bug.import_last_modified = import_modified
   if source != 'oss-fuzz' or not bug.source_id:
     bug.source_id = f'{source}:{path}'
   if bug.withdrawn:
@@ -1223,6 +1224,11 @@ def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
     logging.info('%s does not affect any packages. Marking as invalid.',
                  vuln.id)
     bug.status = osv.BugStatus.INVALID
+
+  if bug.last_modified < prev_modified:
+    # Prevent the modified date going backwards,
+    # e.g. if source updated the bug again before the worker finished
+    bug.last_modified = osv.utcnow()
 
   new_checksum = compute_raw_affected_checksum(vuln)
   if bug.affected_checksum == new_checksum:

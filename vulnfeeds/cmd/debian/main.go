@@ -69,7 +69,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities)
+	upload.Upload(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Debian CVE conversion succeeded.")
 }
 

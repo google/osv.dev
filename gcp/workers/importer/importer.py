@@ -646,6 +646,7 @@ class Importer:
       if bug is None:
         bug = new_bug_from_vuln(vuln, source_repo.name, changed_entry)
         bug.put()
+        log_update_latency(bug)
       else:
         # Only update if the incoming vulnerability is newer.
         orig_modified = vuln.modified.ToDatetime(datetime.UTC)
@@ -658,6 +659,7 @@ class Importer:
         else:
           update_bug_from_vuln(bug, vuln, source_repo.name, changed_entry)
           bug.put()
+          log_update_latency(bug)
 
       self._request_analysis_external(
           source_repo, original_sha256, changed_entry, source_timestamp=ts)
@@ -754,6 +756,7 @@ class Importer:
             if bug is None:
               bug = new_bug_from_vuln(vuln, source_repo.name, blob_name)
               bug.put()
+              log_update_latency(bug)
             else:
               # Only update if the incoming vulnerability is newer.
               orig_modified = vuln.modified.ToDatetime(datetime.UTC)
@@ -1018,6 +1021,7 @@ class Importer:
           bug = new_bug_from_vuln(v, source_repo.name,
                                   v.id + source_repo.extension)
           bug.put()
+          log_update_latency(bug)
         else:
           # Only update if the incoming vulnerability is newer.
           orig_modified = v.modified.ToDatetime(datetime.UTC)
@@ -1031,6 +1035,7 @@ class Importer:
             update_bug_from_vuln(bug, v, source_repo.name,
                                  v.id + source_repo.extension)
             bug.put()
+            log_update_latency(bug)
 
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
@@ -1260,6 +1265,19 @@ def compute_raw_affected_checksum(vuln: vulnerability_pb2.Vulnerability):
   aff.sort()
   b = json.dumps(aff).encode()
   return osv.sha256_bytes(b)
+
+
+def log_update_latency(bug: osv.Bug):
+  now = int(time.time())
+  source_time = int(bug.import_last_modified.timestamp())
+  logging.info(
+      'Importer put Bug',
+      extra={
+          'json_fields': {
+              'vuln_id': bug.db_id,
+              'latency': str(now - source_time),
+          }
+      })
 
 
 def main():

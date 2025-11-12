@@ -1,4 +1,5 @@
 {   'affected': [],
+    'affected_checksum': None,
     'affected_fuzzy': [   '10.0.21-r0',
                           '10.0.21-r1',
                           '10.0.21-r2',

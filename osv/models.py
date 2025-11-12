@@ -323,6 +323,9 @@ class Bug(ndb.Model):
   # Affected packages and versions.
   affected_packages: list[AffectedPackage] = ndb.LocalStructuredProperty(
       AffectedPackage, repeated=True)
+  # A checksum of the Affected packages and versions for the importer.
+  # TODO(michaelkedar): move this to Vulnerability entity
+  affected_checksum: str = ndb.TextProperty()
   # The source of this Bug.
   source: str = ndb.StringProperty()
 

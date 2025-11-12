@@ -1,4 +1,5 @@
 {   'affected': [],
+    'affected_checksum': None,
     'affected_fuzzy': [],
     'affected_packages': [   {   'database_specific': None,
                                  'ecosystem_specific': None,

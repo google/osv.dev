@@ -1,4 +1,5 @@
 {   'affected': [],
+    'affected_checksum': None,
     'affected_fuzzy': [   'branch-v0.1.1',
                           'branch_1_cherrypick_regress',
                           'v0.1.1'],

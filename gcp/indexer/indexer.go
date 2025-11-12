@@ -33,7 +33,7 @@ import (
 var (
 	configsBucket = flag.String("configs", "", "bucket containing the textproto configs")
 	reposBucket   = flag.String("repos", "", "bucket for storing the repository data")
-	projectID     = flag.String("project_id", "", "the gcp project ID")
+	projectID     = flag.String("project-id", "", "the gcp project ID")
 	worker        = flag.Bool("worker", false, "makes this a worker node reading from pubsub to process the data")
 	pubsubTopic   = flag.String("topic", "", "sets the pubsub topic to publish to or to read from")
 	subName       = flag.String("subscription", "", "sets the pubsub subscription name for workers")

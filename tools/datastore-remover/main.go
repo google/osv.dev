@@ -15,9 +15,9 @@ import (
 
 var (
 	kind       = flag.String("kind", "", "kind to delete")
-	projectID  = flag.String("project_id", "", "the gcp project ID")
-	batchSize  = flag.Int("batch_size", 500, "batch size for deletions")
-	waitTimeMS = flag.Int("wait_ms", 500, "wait time in between batch deletions")
+	projectID  = flag.String("project-id", "", "the gcp project ID")
+	batchSize  = flag.Int("batch-size", 500, "batch size for deletions")
+	waitTimeMS = flag.Int("wait-ms", 500, "wait time in between batch deletions")
 	total      = 0
 )
 

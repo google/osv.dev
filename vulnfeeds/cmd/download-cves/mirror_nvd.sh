@@ -31,7 +31,7 @@ set -e
 
 echo "Downloading the entire NVD"
 mkdir -p "${WORK_DIR}/nvd"
-/usr/local/bin/download-cves --cvePath "${WORK_DIR}/nvd"
+/usr/local/bin/download-cves --cve-path "${WORK_DIR}/nvd"
 
 echo "Copying files to GCS bucket"
 gcloud config set storage/parallel_composite_upload_enabled True

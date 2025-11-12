@@ -10,13 +10,13 @@ Usage:
 
 The flags are:
 
-	  --cpe_dictionary_dir
+	  --cpe-dictionary-dir
 		The path to the directory of NVD CPE Dictionary JSON files, see https://nvd.nist.gov/products/cpe
 
-	  --debian_metadata_path
+	  --debian-metadata-path
 	        The path to a directory containing a local mirror of Debian copyright metadata, see README.md
 
-	  --output_dir
+	  --output-dir
 	        The directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in
 
 	  --validate
@@ -116,10 +116,10 @@ const (
 var (
 	// These repos should never be considered authoritative for a product.
 	// Match repos with "CVE", "CVEs" or a pure CVE number in their name, anything from GitHubAssessments
-	CPEDictionaryDir   = flag.String("cpe_dictionary_dir", "cve_json/nvdcpe-2.0-chunks", "Directory of CPE dictionary JSON files to parse")
-	OutputDir          = flag.String("output_dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
-	GCPLoggingProject  = flag.String("gcp_logging_project", projectID, "GCP project ID to use for logging, set to an empty string to log locally only")
-	DebianMetadataPath = flag.String("debian_metadata_path", "", "Path to Debian copyright metadata")
+	CPEDictionaryDir   = flag.String("cpe-dictionary-dir", "cve_json/nvdcpe-2.0-chunks", "Directory of CPE dictionary JSON files to parse")
+	OutputDir          = flag.String("output-dir", OutputDirDefault, "Directory to output cpe_product_to_repo.json and cpe_reference_description_frequency.csv in")
+	GCPLoggingProject  = flag.String("gcp-logging-project", projectID, "GCP project ID to use for logging, set to an empty string to log locally only")
+	DebianMetadataPath = flag.String("debian-metadata-path", "", "Path to Debian copyright metadata")
 	Validate           = flag.Bool("validate", true, "Attempt to validate the repository is communicable")
 	Verbose            = flag.Bool("verbose", false, "Output some telemetry to stdout during execution")
 )

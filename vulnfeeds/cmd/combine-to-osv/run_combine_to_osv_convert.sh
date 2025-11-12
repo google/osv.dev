@@ -39,12 +39,12 @@ echo "Successfully synced from GCS bucket"
 
 echo "Run combine-to-osv"
 ./combine-to-osv \
-    -cve5Path "$CVE5_OSV_OUTPUT" \
-    -nvdPath "$NVD_OSV_OUTPUT" \
-    -osvOutputPath "$OSV_OUTPUT" \
-    -uploadToGCS \
-    -output_bucket "${OUTPUT_BUCKET}" \
-    -overrides_bucket "${INPUT_BUCKET}" \
-    -num_workers "${NUM_WORKERS}"
+    -cve5-path "$CVE5_OSV_OUTPUT" \
+    -nvd-path "$NVD_OSV_OUTPUT" \
+    -osv-output-path "$OSV_OUTPUT" \
+    -upload-to-gcs \
+    -output-bucket "${OUTPUT_BUCKET}" \
+    -overrides-bucket "${INPUT_BUCKET}" \
+    -workers "${NUM_WORKERS}"
 
 echo "Successfully generated and uploaded OSV records."

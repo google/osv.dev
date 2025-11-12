@@ -14,13 +14,13 @@
 
 
 # Stage 1: Build the Go linter binary
-FROM golang:1.25.3-alpine AS go_builder
+FROM golang:1.25.3-alpine@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS go_builder
 
 RUN apk add --no-cache git
 WORKDIR /src
 
 # Using osv-schema v1.7.3+
-RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 35f46861449085fe92183bf8802ee6796c0e204c
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 5e05f9d00d92c3d1dae7e90e4511c533a2c561d9
 
 WORKDIR /src/osv-schema/tools/osv-linter
 

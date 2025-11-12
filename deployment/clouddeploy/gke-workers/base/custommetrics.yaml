@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: custommetrics
+  labels:
+    cronLastSuccessfulTimeMins: "5"
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: custommetrics
+            image: custommetrics
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "1"
+                memory: "256Mi"
+              limits:
+                cpu: "2"
+                memory: "512Mi"
+          restartPolicy: Never

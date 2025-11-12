@@ -39,6 +39,7 @@ func main() {
 	overridesBucketName := flag.String("overrides-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to read overrides from.")
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
 	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
+	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)
@@ -89,7 +90,7 @@ func main() {
 		vulnerabilities = append(vulnerabilities, &v)
 	}
 
-	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities)
+	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.

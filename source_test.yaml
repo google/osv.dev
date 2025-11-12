@@ -224,7 +224,7 @@
   type: 2
   rest_api_url: 'https://cna.erlef.org/osv/all.json'
   db_prefix: ['EEF-']
-  human_link: 'https://cna.erlef.org/cves/{{ BUG_ID }}.html'
+  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
   link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'
   extension: '.json'
@@ -275,6 +275,22 @@
   db_prefix: ['HSEC-']
   ignore_git: False
   link: 'https://github.com/haskell/security-advisories/blob/generated/osv-export/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
+- name: 'julia'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!JLSEC-).*$']
+  repo_branch: 'generated/osv'
+  repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['JLSEC-']
+  ignore_git: False
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
+  link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
   editable: False
   repo_username: 'git'
   strict_validation: True

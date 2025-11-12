@@ -1,0 +1,67 @@
+---
+version: 2
+interactions:
+- request:
+    host: api.osv.dev
+    body: |
+      { "package": { "name": "jinja2", "ecosystem": "PyPI" }, "version": "3.1.4" }
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/Valid1
+    url: https://api.osv.dev/v1/query
+    method: POST
+- request:
+    host: api.osv.dev
+    body: |
+      { "package": { "purl": "pkg:pypi/jinja2@3.1.4" } }
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/Valid2
+    url: https://api.osv.dev/v1/query
+    method: POST
+- request:
+    host: api.osv.dev
+    body: |
+      { "package": { "purl": "pkg:pypi/jinja2" }, "version": "3.1.4" }
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/Valid3
+    url: https://api.osv.dev/v1/query
+    method: POST
+- request:
+    host: api.osv.dev
+    body: |
+      { "package": { "purl": "pkg:pypi/jinja2@3.1.4" }, "version": "3.1.4" }
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/Invalid1
+    url: https://api.osv.dev/v1/query
+    method: POST
+
+- request:
+    host: api.osv.dev
+    body: |
+      {"commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"}
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/CommitQuery
+    url: https://api.osv.dev/v1/query
+    method: POST
+- request:
+    host: api.osv.dev
+    body: |
+      {"package": {"name": "nokogiri", "ecosystem": "RubyGems"}, "version": "1.18.2"}
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/PackageAndVersionQuery
+    url: https://api.osv.dev/v1/query
+    method: POST
+- request:
+    host: api.osv.dev
+    body: |
+      {"package": {"name": "https://github.com/curl/curl.git", "ecosystem": "GIT"}, "version": "8.5.0"}
+    headers:
+      X-Test-Name:
+        - TestQueryEndpoint/GitQueryByTag
+    url: https://api.osv.dev/v1/query
+    method: POST

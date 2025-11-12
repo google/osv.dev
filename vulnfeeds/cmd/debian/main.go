@@ -36,8 +36,9 @@ func main() {
 
 	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.Int("num-workers", 64, "Number of workers to process records")
+	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)

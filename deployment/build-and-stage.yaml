@@ -98,7 +98,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']
 
-# Build/push exporter/record-checker go images
+# Build/push go images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/exporter:latest || exit 0']
@@ -126,6 +126,20 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/record-checker']
   waitFor: ['build-record-checker', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/custommetrics:latest || exit 0']
+  id: 'pull-custommetrics'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/custommetrics:latest', '-t', 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA', '-f', 'cmd/custommetrics/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/custommetrics:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-custommetrics'
+  waitFor: ['pull-custommetrics']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/custommetrics']
+  waitFor: ['build-custommetrics', 'cloud-build-queue']
 
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
@@ -337,7 +351,8 @@ steps:
      nvd-mirror=gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA,\
      recoverer=gcr.io/oss-vdb/recoverer:$COMMIT_SHA,\
      cve5-to-osv=gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA,\
-     record-checker=gcr.io/oss-vdb/record-checker:$COMMIT_SHA"
+     record-checker=gcr.io/oss-vdb/record-checker:$COMMIT_SHA,\
+     custommetrics=gcr.io/oss-vdb/custommetrics:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -396,3 +411,4 @@ images:
 - 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA'

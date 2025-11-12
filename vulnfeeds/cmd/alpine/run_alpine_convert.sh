@@ -23,5 +23,5 @@ echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
 gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
 echo "Successfully synced from GCS bucket"
 
-./alpine-osv -output-bucket "$OUTPUT_BUCKET" -output-path "$OSV_OUTPUT_PATH" -workers "$WORKERS" -upload-to-gcs
+./alpine-osv -output-bucket "$OUTPUT_BUCKET" -output-path "$OSV_OUTPUT_PATH" -workers "$WORKERS" -upload-to-gcs -sync-deletions
 echo "Successfully converted and uploaded to cloud"

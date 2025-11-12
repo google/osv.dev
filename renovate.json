@@ -144,6 +144,10 @@
     {
       "matchDepTypes": ["uses-with"],
       "enabled": false
+    },
+    {
+      "matchDatasources": ["golang-version"],
+      "rangeStrategy": "bump"
     }
   ],
   "customManagers": [

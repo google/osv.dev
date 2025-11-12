@@ -41,6 +41,7 @@ func main() {
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
 
 	err := os.MkdirAll(*alpineOutputPath, 0755)
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities)
+	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

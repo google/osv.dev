@@ -641,25 +641,7 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      preprocess_vuln(vuln)
-      bug = osv.Bug.get_by_id(vuln.id)
-      if bug is None:
-        bug = new_bug_from_vuln(vuln, source_repo.name, changed_entry)
-        bug.put()
-        log_update_latency(bug)
-      else:
-        # Only update if the incoming vulnerability is newer.
-        orig_modified = vuln.modified.ToDatetime(datetime.UTC)
-        if (bug.import_last_modified and
-            orig_modified <= bug.import_last_modified):
-          logging.info(
-              'Skipping update for %s because incoming modification time (%s)'
-              ' is not newer than existing record (%s)', vuln.id, orig_modified,
-              bug.import_last_modified)
-        else:
-          update_bug_from_vuln(bug, vuln, source_repo.name, changed_entry)
-          bug.put()
-          log_update_latency(bug)
+      maybe_add_to_database(vuln, source_repo.name, path)
 
       self._request_analysis_external(
           source_repo, original_sha256, changed_entry, source_timestamp=ts)
@@ -751,24 +733,7 @@ class Importer:
                        source_repo.bucket, blob_name)
 
           for vuln in vulns:
-            preprocess_vuln(vuln)
-            bug = osv.Bug.get_by_id(vuln.id)
-            if bug is None:
-              bug = new_bug_from_vuln(vuln, source_repo.name, blob_name)
-              bug.put()
-              log_update_latency(bug)
-            else:
-              # Only update if the incoming vulnerability is newer.
-              orig_modified = vuln.modified.ToDatetime(datetime.UTC)
-              if (bug.import_last_modified and
-                  orig_modified <= bug.import_last_modified):
-                logging.info(
-                    'Skipping update for %s because incoming modification time'
-                    ' (%s) is not newer than existing record (%s)', vuln.id,
-                    orig_modified, bug.import_last_modified)
-              else:
-                update_bug_from_vuln(bug, vuln, source_repo.name, blob_name)
-                bug.put()
+            maybe_add_to_database(vuln, source_repo.name, blob_name)
 
           self._request_analysis_external(
               source_repo,
@@ -1015,28 +980,7 @@ class Importer:
           self._record_quality_finding(source_repo.name, bug_id)
           continue
 
-        preprocess_vuln(v)
-        bug = osv.Bug.get_by_id(v.id)
-        if bug is None:
-          bug = new_bug_from_vuln(v, source_repo.name,
-                                  v.id + source_repo.extension)
-          bug.put()
-          log_update_latency(bug)
-        else:
-          # Only update if the incoming vulnerability is newer.
-          orig_modified = v.modified.ToDatetime(datetime.UTC)
-          if (bug.import_last_modified and
-              orig_modified <= bug.import_last_modified):
-            logging.info(
-                'Skipping update for %s because incoming modification time (%s)'
-                ' is not  newer than existing record (%s)', v.id, orig_modified,
-                bug.import_last_modified)
-          else:
-            update_bug_from_vuln(bug, v, source_repo.name,
-                                 v.id + source_repo.extension)
-            bug.put()
-            log_update_latency(bug)
-
+        maybe_add_to_database(v, source_repo.name, v.id + source_repo.extension)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
         ts = None if ignore_last_import else vuln_modified
@@ -1278,6 +1222,33 @@ def log_update_latency(bug: osv.Bug):
               'latency': str(now - source_time),
           }
       })
+
+
+def maybe_add_to_database(vuln: vulnerability_pb2.Vulnerability, source: str,
+                          path: str):
+  """Try to write vulnerability to datastore, keeping enumerated versions if
+  unchanged. Does not write if vuln's modified date is older than what's already
+  in datastore.
+  """
+  preprocess_vuln(vuln)
+  bug = osv.Bug.get_by_id(vuln.id)
+  if bug is None:
+    bug = new_bug_from_vuln(vuln, source, path)
+    bug.put()
+    log_update_latency(bug)
+    return
+
+  # Only update if the incoming vulnerability is newer.
+  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+  if bug.import_last_modified and orig_modified <= bug.import_last_modified:
+    logging.info(
+        'Skipping update for %s because incoming modification time'
+        ' (%s) is not newer than existing record (%s)', vuln.id, orig_modified,
+        bug.import_last_modified)
+    return
+  update_bug_from_vuln(bug, vuln, source, path)
+  bug.put()
+  log_update_latency(bug)
 
 
 def main():

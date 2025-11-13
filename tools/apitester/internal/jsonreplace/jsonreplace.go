@@ -65,7 +65,7 @@ func expandArrayPaths(t *testing.T, jsonInput []byte, path string) []string {
 }
 
 // replaceJSONInput takes a gjson path and replaces all elements the path matches with the output of matcher
-func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(toReplace gjson.Result) any) []byte {
+func replaceJSONInput(t *testing.T, jsonInput []byte, path string, replacer func(toReplace gjson.Result) any) []byte {
 	t.Helper()
 
 	var err error
@@ -77,7 +77,7 @@ func replaceJSONInput(t *testing.T, jsonInput []byte, path string, matcher func(
 			continue
 		}
 
-		json, err = sjson.SetBytesOptions(json, pathElem, matcher(res), &sjson.Options{Optimistic: true})
+		json, err = sjson.SetBytesOptions(json, pathElem, replacer(res), &sjson.Options{Optimistic: true})
 		if err != nil {
 			t.Fatalf("failed to set element")
 		}

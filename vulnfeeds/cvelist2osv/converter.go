@@ -14,9 +14,12 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -25,16 +28,16 @@ const (
 
 // ConversionMetrics holds the collected data about the conversion process for a single CVE.
 type ConversionMetrics struct {
-	CVEID                 cves.CVEID                      `json:"id"`              // The CVE ID
-	CNA                   string                          `json:"cna"`             // The CNA that assigned the CVE.
-	Outcome               ConversionOutcome               `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
-	Repos                 []string                        `json:"repos"`           // A list of repositories extracted from the CVE's references.
-	RefTypesCount         map[osvschema.ReferenceType]int `json:"ref_types_count"` // A count of each type of reference found.
-	VersionSources        []VersionSource                 `json:"version_sources"` // A list of the ways the versions were extracted
-	Notes                 []string                        `json:"notes"`           // A collection of notes and warnings generated during conversion.
-	CPEs                  []string                        `json:"cpes"`
-	UnresolvedRangesCount int                             `json:"unresolved_ranges_count"`
-	ResolvedRangesCount   int                             `json:"resolved_ranges_count"`
+	CVEID                 cves.CVEID                       `json:"id"`              // The CVE ID
+	CNA                   string                           `json:"cna"`             // The CNA that assigned the CVE.
+	Outcome               ConversionOutcome                `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
+	Repos                 []string                         `json:"repos"`           // A list of repositories extracted from the CVE's references.
+	RefTypesCount         map[osvschema.Reference_Type]int `json:"ref_types_count"` // A count of each type of reference found.
+	VersionSources        []VersionSource                  `json:"version_sources"` // A list of the ways the versions were extracted
+	Notes                 []string                         `json:"notes"`           // A collection of notes and warnings generated during conversion.
+	CPEs                  []string                         `json:"cpes"`
+	UnresolvedRangesCount int                              `json:"unresolved_ranges_count"`
+	ResolvedRangesCount   int                              `json:"resolved_ranges_count"`
 }
 
 // AddNote adds a formatted note to the ConversionMetrics.
@@ -60,15 +63,15 @@ var RefTagDenyList = []string{
 // extractConversionMetrics examines a CVE and its generated OSV references to populate
 // the ConversionMetrics struct with heuristics about the conversion process.
 // It captures the assigning CNA and counts the occurrences of each reference type.
-func extractConversionMetrics(cve cves.CVE5, refs []osvschema.Reference, metrics *ConversionMetrics) {
+func extractConversionMetrics(cve cves.CVE5, refs []*osvschema.Reference, metrics *ConversionMetrics) {
 	// Capture the CNA for heuristic analysis.
 	metrics.CNA = cve.Metadata.AssignerShortName
 	// TODO(jesslowe): more CNA based analysis
 
 	// Count number of references of each type
-	refTypeCounts := make(map[osvschema.ReferenceType]int)
+	refTypeCounts := make(map[osvschema.Reference_Type]int)
 	for _, ref := range refs {
-		refTypeCounts[ref.Type]++
+		refTypeCounts[ref.GetType()]++
 	}
 	metrics.RefTypesCount = refTypeCounts
 	for refType, count := range refTypeCounts {
@@ -98,12 +101,13 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
-	if v.DatabaseSpecific == nil {
-		v.DatabaseSpecific = make(map[string]any)
+	databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"cwe_ids": cwes})
+	if err != nil {
+		logger.Warn("Failed to convert database specific: %v", err)
+	} else {
+		// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
+		v.DatabaseSpecific = databaseSpecific
 	}
-
-	// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
-	v.DatabaseSpecific["cwe_ids"] = cwes
 
 	metrics.AddNote("Extracted CWEIDs: %v", cwes)
 }
@@ -114,9 +118,9 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) *vulns.Vulnerability {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	v := vulns.Vulnerability{
-		Vulnerability: osvschema.Vulnerability{
-			SchemaVersion: osvschema.SchemaVersion,
-			ID:            string(cve.Metadata.CVEID),
+		Vulnerability: &osvschema.Vulnerability{
+			SchemaVersion: osvconstants.SchemaVersion,
+			Id:            string(cve.Metadata.CVEID),
 			Summary:       cve.Containers.CNA.Title,
 			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
 			Aliases:       aliases,
@@ -129,14 +133,14 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 		metrics.AddNote("[%s]: Published date failed to parse, setting time to now", cve.Metadata.CVEID)
 		published = time.Now()
 	}
-	v.Published = published
+	v.Published = timestamppb.New(published)
 
 	modified, err := cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
 		metrics.AddNote("[%s]: Modified date failed to parse, setting time to now", cve.Metadata.CVEID)
 		modified = time.Now()
 	}
-	v.Modified = modified
+	v.Modified = timestamppb.New(modified)
 
 	// Try to extract repository URLs from references.
 	repos, repoNotes := cves.ReposFromReferencesCVEList(string(cve.Metadata.CVEID), refs, RefTagDenyList)
@@ -146,19 +150,21 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	metrics.Repos = repos
 
 	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
-		if v.DatabaseSpecific == nil {
-			v.DatabaseSpecific = make(map[string]any)
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"isDisputed": true})
+		if err != nil {
+			metrics.AddNote("Failed to convert database specific: %v", err)
+		} else {
+			v.DatabaseSpecific = databaseSpecific
 		}
-		v.DatabaseSpecific["isDisputed"] = true
 	}
 
 	// Sort references for deterministic output
 	sort.Slice(v.References, func(i, j int) bool {
-		if v.References[i].URL != v.References[j].URL {
-			return v.References[i].URL < v.References[j].URL
+		if v.References[i].GetUrl() != v.References[j].GetUrl() {
+			return v.References[i].GetUrl() < v.References[j].GetUrl()
 		}
 
-		return v.References[i].Type < v.References[j].Type
+		return v.References[i].GetType() < v.References[j].GetType()
 	})
 
 	// Combine severity metrics from both CNA and ADP containers.
@@ -172,8 +178,8 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 		}
 	}
 	if len(severity) > 0 {
-		if sev := vulns.FindSeverity(severity); sev != (osvschema.Severity{}) {
-			v.Severity = []osvschema.Severity{sev}
+		if sev := vulns.FindSeverity(severity); sev != nil {
+			v.Severity = []*osvschema.Severity{sev}
 		}
 	}
 
@@ -186,6 +192,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 // CreateOSVFile creates the initial file for the OSV record.
 func CreateOSVFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 	outputFile := filepath.Join(vulnDir, string(id)+extension)
+
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))

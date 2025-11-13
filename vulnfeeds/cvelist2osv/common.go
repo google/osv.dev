@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -100,9 +101,9 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (osvschema.Affected, error) {
+func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
-	var newVersionRanges []osvschema.Range
+	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
 
 	for _, repo := range repos {
@@ -116,18 +117,18 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			continue
 		}
 
-		var stillUnresolvedRanges []osvschema.Range
+		var stillUnresolvedRanges []*osvschema.Range
 		for _, vr := range unresolvedRanges {
 			var introduced, fixed, lastAffected string
-			for _, e := range vr.Events {
-				if e.Introduced != "" {
-					introduced = e.Introduced
+			for _, e := range vr.GetEvents() {
+				if e.GetIntroduced() != "" {
+					introduced = e.GetIntroduced()
 				}
-				if e.Fixed != "" {
-					fixed = e.Fixed
+				if e.GetFixed() != "" {
+					fixed = e.GetFixed()
 				}
-				if e.LastAffected != "" {
-					lastAffected = e.LastAffected
+				if e.GetLastAffected() != "" {
+					lastAffected = e.GetLastAffected()
 				}
 			}
 
@@ -141,7 +142,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
 
 			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
-				var newVR osvschema.Range
+				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
 					newVR = cves.BuildVersionRange(introducedCommit, "", fixedCommit)
@@ -150,9 +151,16 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 				}
 
 				newVR.Repo = repo
-				newVR.Type = osvschema.RangeGit
-				newVR.DatabaseSpecific = make(map[string]any)
-				newVR.DatabaseSpecific["versions"] = vr.Events
+				newVR.Type = osvschema.Range_GIT
+				if len(vr.GetEvents()) > 0 {
+					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
+					if err != nil {
+						logger.Warn("failed to make database specific: %v", err)
+					} else {
+						newVR.DatabaseSpecific = databaseSpecific
+					}
+				}
+
 				newVersionRanges = append(newVersionRanges, newVR)
 			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
@@ -163,8 +171,13 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 
 	var err error
 	if len(unresolvedRanges) > 0 {
-		newAff.DatabaseSpecific = make(map[string]any)
-		newAff.DatabaseSpecific["unresolved_versions"] = unresolvedRanges
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+		if err != nil {
+			logger.Warn("failed to make database specific: %v", err)
+		} else {
+			newAff.DatabaseSpecific = databaseSpecific
+		}
+
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 	}
 
@@ -175,12 +188,12 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []osvschema.Range, rep
 		err = errors.New("was not able to get git version ranges")
 	}
 
-	return newAff, err
+	return &newAff, err
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve cves.CVE5) (versionRanges []osvschema.Range, cpes []string, err error) {
+func findCPEVersionRanges(cve cves.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
 	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {
@@ -260,10 +273,10 @@ func compareSemverLike(a, b string) int {
 }
 
 // addAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
-func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *ConversionMetrics) {
+func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *ConversionMetrics) {
 	allExistingRanges := make(map[string]struct{})
 	for _, existingAff := range v.Affected {
-		for _, r := range existingAff.Ranges {
+		for _, r := range existingAff.GetRanges() {
 			rangeBytes, err := json.Marshal(r)
 			if err == nil {
 				allExistingRanges[string(rangeBytes)] = struct{}{}
@@ -271,8 +284,8 @@ func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *Conver
 		}
 	}
 
-	uniqueRanges := []osvschema.Range{}
-	for _, r := range aff.Ranges {
+	uniqueRanges := []*osvschema.Range{}
+	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
 			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
@@ -290,10 +303,10 @@ func addAffected(v *vulns.Vulnerability, aff osvschema.Affected, metrics *Conver
 	}
 
 	if len(uniqueRanges) > 0 {
-		newAff := osvschema.Affected{
-			Package:          aff.Package,
+		newAff := &osvschema.Affected{
+			Package:          aff.GetPackage(),
 			Ranges:           uniqueRanges,
-			DatabaseSpecific: aff.DatabaseSpecific,
+			DatabaseSpecific: aff.GetDatabaseSpecific(),
 		}
 		v.Affected = append(v.Affected, newAff)
 	}

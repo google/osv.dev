@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -62,10 +63,10 @@ func main() {
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))
 	for _, v := range osvCVEs {
 		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("id", v.Id))
 			continue
 		}
-		vulnerabilities = append(vulnerabilities, &v.Vulnerability)
+		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
 
 	ctx := context.Background()
@@ -109,15 +110,15 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			currentNVDCVE := allCVEs[cves.CVEID(cveID)]
 			if !ok {
 				v = &vulns.Vulnerability{
-					Vulnerability: osvschema.Vulnerability{
-						ID:        "DEBIAN-" + cveID,
+					Vulnerability: &osvschema.Vulnerability{
+						Id:        "DEBIAN-" + cveID,
 						Upstream:  []string{cveID},
-						Published: currentNVDCVE.CVE.Published.Time,
+						Published: timestamppb.New(currentNVDCVE.CVE.Published.Time),
 						Details:   cveData.Description,
-						References: []osvschema.Reference{
+						References: []*osvschema.Reference{
 							{
-								Type: "ADVISORY",
-								URL:  "https://security-tracker.debian.org/tracker/" + cveID,
+								Type: osvschema.Reference_ADVISORY,
+								Url:  "https://security-tracker.debian.org/tracker/" + cveID,
 							},
 						},
 					},

@@ -1080,7 +1080,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 
 // BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
 // events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func BuildVersionRange(intro string, lastAff string, fixed string) osvschema.Range {
+func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
 	var versionRange osvschema.Range
 	var i string
 	if intro == "" {
@@ -1088,17 +1088,17 @@ func BuildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 	} else {
 		i = intro
 	}
-	versionRange.Events = append(versionRange.Events, osvschema.Event{
+	versionRange.Events = append(versionRange.Events, &osvschema.Event{
 		Introduced: i})
 
 	if fixed != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
 			Fixed: fixed})
 	} else if lastAff != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
 			LastAffected: lastAff,
 		})
 	}
 
-	return versionRange
+	return &versionRange
 }

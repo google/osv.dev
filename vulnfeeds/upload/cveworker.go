@@ -2,6 +2,7 @@
 package upload
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -17,6 +18,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -65,11 +67,17 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 
 	// Object does not exist or hash differs, upload.
 	v.Modified = timestamppb.New(time.Now().UTC())
-	postModifiedBuf, err := json.MarshalIndent(v, "", "  ")
+	postModifiedBuf, err := protojson.Marshal(v)
 	if err != nil {
 		logger.Error("failed to marshal vulnerability with modified time", slog.String("id", vulnID), slog.Any("err", err))
 		return
 	}
+	var indentBuf bytes.Buffer
+	if err := json.Indent(&indentBuf, postModifiedBuf, "", "  "); err != nil {
+		logger.Error("failed to indent marshalled vulnerability", slog.String("id", vulnID), slog.Any("err", err))
+		return
+	}
+	postModifiedBuf = indentBuf.Bytes()
 
 	logger.Info("Uploading", slog.String("id", vulnID))
 	wc := obj.NewWriter(ctx)

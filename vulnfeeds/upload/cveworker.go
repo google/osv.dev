@@ -18,10 +18,10 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -67,17 +67,13 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 
 	// Object does not exist or hash differs, upload.
 	v.Modified = timestamppb.New(time.Now().UTC())
-	postModifiedBuf, err := protojson.Marshal(v)
-	if err != nil {
+	vuln := vulns.Vulnerability{Vulnerability: v}
+	var buf bytes.Buffer
+	if err := vuln.ToJSON(&buf); err != nil {
 		logger.Error("failed to marshal vulnerability with modified time", slog.String("id", vulnID), slog.Any("err", err))
 		return
 	}
-	var indentBuf bytes.Buffer
-	if err := json.Indent(&indentBuf, postModifiedBuf, "", "  "); err != nil {
-		logger.Error("failed to indent marshalled vulnerability", slog.String("id", vulnID), slog.Any("err", err))
-		return
-	}
-	postModifiedBuf = indentBuf.Bytes()
+	postModifiedBuf := buf.Bytes()
 
 	logger.Info("Uploading", slog.String("id", vulnID))
 	wc := obj.NewWriter(ctx)
@@ -169,11 +165,13 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 
 		if preModifiedBuf == nil {
 			// Marshal before setting modified time to generate hash.
-			preModifiedBuf, err = json.MarshalIndent(vulnToProcess, "", "  ")
-			if err != nil {
+			vuln := vulns.Vulnerability{Vulnerability: v}
+			var buf bytes.Buffer
+			if err := vuln.ToJSON(&buf); err != nil {
 				logger.Error("failed to marshal vulnerability", slog.String("id", vulnID), slog.Any("err", err))
 				continue
 			}
+			preModifiedBuf = buf.Bytes()
 		}
 
 		if outBkt == nil {

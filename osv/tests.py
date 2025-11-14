@@ -218,7 +218,7 @@ def mock_datetime(test):
     patcher = mock.patch(to_mock)
     mock_utcnow = patcher.start()
     mock_utcnow.return_value = datetime.datetime(
-        2021, 1, 1, tzinfo=datetime.UTC)
+        3000, 1, 1, tzinfo=datetime.UTC)
     test.addCleanup(patcher.stop)
 
 

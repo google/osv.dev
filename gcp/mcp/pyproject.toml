@@ -1,0 +1,18 @@
+[project]
+name = "mcp-server"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.13,<4.0"
+fastmcp = "2.13.0.2"
+requests = "2.32.5"
+
+[tool.poetry.group.dev.dependencies]
+yapf = "*"
+pylint = "*"
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -119,7 +119,7 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 // Parse a version range string into an models.AffectedVersion struct,
 // which aligns with the structure used by GitHub CNA feeds.
 func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
-	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
+	matches := versionRangeRegex.FindStringSubmatch(strings.ReplaceAll(versionRange, " ", ""))
 
 	if len(matches) == 0 {
 		return models.AffectedVersion{}, fmt.Errorf("invalid version range format: %s", versionRange)

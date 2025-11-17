@@ -476,15 +476,20 @@ document.addEventListener("DOMContentLoaded", function () {
   function formatFindings(details) {
     const table = document.createElement('table');
     table.className = 'findings-table';
-    table.innerHTML = '<thead><tr><th>Code</th><th>Message</th></tr></thead>';
-    const tbody = table.createTBody();
 
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    ['Code', 'Message'].forEach(headerText => {
+      const th = document.createElement('th');
+      th.textContent = headerText;
+      headerRow.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
     details.forEach((finding) => {
       const row = tbody.insertRow();
-      const codeCell = row.insertCell();
-      codeCell.textContent = finding.Code || '';
-      const messageCell = row.insertCell();
-      messageCell.textContent = finding.Message || '';
+      row.insertCell().textContent = finding.Code || '';
+      row.insertCell().textContent = finding.Message || '';
     });
 
     return table;

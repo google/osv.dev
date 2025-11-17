@@ -14,3 +14,8 @@ poetry run python -m unittest discover osv/ecosystems/ "*_test.py" .
 
 # Run the validation for the go/python datastore models
 cd ./go/models/internal/validate/ && ./run_validate.sh
+
+# Run the API tester
+url="localhost:${DATASTORE_EMULATOR_PORT}"
+
+cd ./tools/apitester/ && OSV_API_BASE_URL="$url" go test ./...

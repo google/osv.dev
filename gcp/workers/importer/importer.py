@@ -641,7 +641,7 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      maybe_add_to_database(vuln, source_repo.name, path)
+      put_if_newer(vuln, source_repo.name, path)
 
       self._request_analysis_external(
           source_repo, original_sha256, changed_entry, source_timestamp=ts)
@@ -727,19 +727,20 @@ class Importer:
               blob.name + '"')
 
       for cv_result in converted_vulns:
-        if cv_result:
-          blob_hash, blob_name, source_timestamp, vulns = cv_result
-          logging.info('Requesting analysis of bucket entry: %s/%s',
-                       source_repo.bucket, blob_name)
+        if not cv_result:
+          continue
+        blob_hash, blob_name, source_timestamp, vulns = cv_result
+        logging.info('Requesting analysis of bucket entry: %s/%s',
+                     source_repo.bucket, blob_name)
 
-          for vuln in vulns:
-            maybe_add_to_database(vuln, source_repo.name, blob_name)
+        for vuln in vulns:
+          put_if_newer(vuln, source_repo.name, blob_name)
 
-          self._request_analysis_external(
-              source_repo,
-              blob_hash,
-              blob_name,
-              source_timestamp=source_timestamp)
+        self._request_analysis_external(
+            source_repo,
+            blob_hash,
+            blob_name,
+            source_timestamp=source_timestamp)
 
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
@@ -980,7 +981,7 @@ class Importer:
           self._record_quality_finding(source_repo.name, bug_id)
           continue
 
-        maybe_add_to_database(v, source_repo.name, v.id + source_repo.extension)
+        put_if_newer(v, source_repo.name, v.id + source_repo.extension)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
         ts = None if ignore_last_import else vuln_modified
@@ -1125,7 +1126,8 @@ def preprocess_vuln(vuln: vulnerability_pb2.Vulnerability):
 
 def new_bug_from_vuln(vuln: vulnerability_pb2.Vulnerability, source: str,
                       path: str) -> osv.Bug:
-  """Create a new Bug entity from a vulnerability as the worker does."""
+  """Create a new Bug entity from a vulnerability, following similar logic to
+  worker._do_update()"""
   orig_modified = vuln.modified.ToDatetime(datetime.UTC)
   bug = osv.Bug(
       db_id=vuln.id,
@@ -1154,8 +1156,9 @@ def new_bug_from_vuln(vuln: vulnerability_pb2.Vulnerability, source: str,
 
 def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
                          source: str, path: str):
-  """Updates a Bug entity from a vulnerabliity as the worker would.
-  Special handling to check if the raw affected packages has changed."""
+  """Updates a Bug entity from a vulnerability, following similar logic to 
+  worker._do_update(), with special handling to check if the raw affected
+  packages has changed."""
   import_modified = vuln.modified.ToDatetime(datetime.UTC)
   prev_modified = bug.last_modified
   prev_affected = bug.affected_packages
@@ -1181,6 +1184,9 @@ def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
 
   new_checksum = compute_raw_affected_checksum(vuln)
   if bug.affected_checksum == new_checksum:
+    # The checksum of the raw affected packages is unchanged (so no change has
+    # been made to the affected packages). Restore the previously enriched,
+    # affected_packages from the workers.
     bug.affected_packages = prev_affected
   bug.affected_checksum = new_checksum
 
@@ -1224,8 +1230,7 @@ def log_update_latency(bug: osv.Bug):
       })
 
 
-def maybe_add_to_database(vuln: vulnerability_pb2.Vulnerability, source: str,
-                          path: str):
+def put_if_newer(vuln: vulnerability_pb2.Vulnerability, source: str, path: str):
   """Try to write vulnerability to datastore, keeping enumerated versions if
   unchanged. Does not write if vuln's modified date is older than what's already
   in datastore.

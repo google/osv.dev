@@ -464,27 +464,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const details = findingDetails[bugId];
     const findingsEl = document.getElementById(findingsJsonId);
     if (details && details.length > 0) {
-      findingsEl.innerHTML = formatFindings(details);
+      findingsEl.textContent = ''; // Clear "Loading..."
+      findingsEl.appendChild(formatFindings(details));
       findingsEl.classList.remove("json-pre");
     } else {
       findingsEl.textContent =
-        "No linter findings available for this vulnerability.";
+          "No linter findings available for this vulnerability.";
     }
   }
 
   function formatFindings(details) {
-    let tableHTML = '<table class="findings-table">';
-    tableHTML += '<thead><tr><th>Code</th><th>Message</th></tr></thead>';
-    tableHTML += '<tbody>';
+    const table = document.createElement('table');
+    table.className = 'findings-table';
+    table.innerHTML = '<thead><tr><th>Code</th><th>Message</th></tr></thead>';
+    const tbody = table.createTBody();
 
     details.forEach((finding) => {
-      const code = finding.Code || '';
-      const message = finding.Message || '';
-      tableHTML += `<tr><td>${code}</td><td>${message}</td></tr>`;
+      const row = tbody.insertRow();
+      const codeCell = row.insertCell();
+      codeCell.textContent = finding.Code || '';
+      const messageCell = row.insertCell();
+      messageCell.textContent = finding.Message || '';
     });
 
-    tableHTML += '</tbody></table>';
-    return tableHTML;
+    return table;
   }
 
   function handleTabClick(e) {

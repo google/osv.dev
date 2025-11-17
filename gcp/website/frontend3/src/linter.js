@@ -463,7 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Display finding data
     const details = findingDetails[bugId];
     const findingsEl = document.getElementById(findingsJsonId);
-    if (details && details.length > 0) {
+    if (details?.length) {
       findingsEl.textContent = ''; // Clear "Loading..."
       findingsEl.appendChild(formatFindings(details));
       findingsEl.classList.remove("json-pre");

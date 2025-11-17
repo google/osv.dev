@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", function () {
       paginatedIssues.forEach((issue) => {
         let row = tableBody.insertRow();
         row.classList.add("clickable");
-        row.addEventListener("click", (e) => {
+        row.addEventListener("click", () => {
           openCombinedView(issue.bug_id);
         });
 
@@ -437,7 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
           <div class="details-column">
               <h2>Linter Findings</h2>
-              <pre id="${findingsJsonId}" class="json-pre">Loading...</pre>
+              <div id="${findingsJsonId}" class="json-pre">Loading...</div>
           </div>
       </div>
                 `;
@@ -462,13 +462,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Display finding data
     const details = findingDetails[bugId];
-    const findingsPre = document.getElementById(findingsJsonId);
-    if (details) {
-      findingsPre.textContent = JSON.stringify(details, null, 2);
+    const findingsEl = document.getElementById(findingsJsonId);
+    if (details && details.length > 0) {
+      findingsEl.innerHTML = formatFindings(details);
+      findingsEl.classList.remove("json-pre");
     } else {
-      findingsPre.textContent =
+      findingsEl.textContent =
         "No linter findings available for this vulnerability.";
     }
+  }
+
+  function formatFindings(details) {
+    let tableHTML = '<table class="findings-table">';
+    tableHTML += '<thead><tr><th>Code</th><th>Message</th></tr></thead>';
+    tableHTML += '<tbody>';
+
+    details.forEach((finding) => {
+      const code = finding.Code || '';
+      const message = finding.Message || '';
+      tableHTML += `<tr><td>${code}</td><td>${message}</td></tr>`;
+    });
+
+    tableHTML += '</tbody></table>';
+    return tableHTML;
   }
 
   function handleTabClick(e) {

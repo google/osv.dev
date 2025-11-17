@@ -926,12 +926,14 @@ def literal_backticks(value: str | None) -> Markup:
   # TODO: This should be no longer needed if the Overpass font bug is fixed
   # (https://github.com/google/osv.dev/issues/4345#issuecomment-3541453203)
   # Summary fields render '`' characters as diacritics because of a bug
-  # with the Overpass font. This escapes them to the mono variant so they render correctly.
+  # with the Overpass font. This escapes them to the mono variant
+  # so they render correctly.
   if not value:
     return Markup('')
 
   escaped = escape(value)
-  if '`' not in (escaped_str := str(escaped)):
+  escaped_str = str(escaped)
+  if '`' not in escaped_str:
     return escaped
 
   replacement = '<span class="literal-backtick">`</span>'

@@ -14,8 +14,8 @@ import (
 // DefaultVersionExtractor provides the default version extraction logic.
 type DefaultVersionExtractor struct{}
 
-func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metrics *ConversionMetrics) []osvschema.Range {
-	var ranges []osvschema.Range
+func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metrics *ConversionMetrics) []*osvschema.Range {
+	var ranges []*osvschema.Range
 	for _, cveAff := range affected {
 		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
 
@@ -76,9 +76,9 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 	}
 }
 
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]osvschema.Range, VersionRangeType) {
+func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []osvschema.Range
+	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {
 		ranges, _, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
 		if len(ranges) > 0 {

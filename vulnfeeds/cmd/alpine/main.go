@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -56,10 +57,10 @@ func main() {
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvVulnerabilities))
 	for _, v := range osvVulnerabilities {
 		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("id", v.Id))
 			continue
 		}
-		vulnerabilities = append(vulnerabilities, &v.Vulnerability)
+		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
 
 	ctx := context.Background()
@@ -171,15 +172,15 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 		}
 
 		v := &vulns.Vulnerability{
-			Vulnerability: osvschema.Vulnerability{
-				ID:        "ALPINE-" + cveID,
+			Vulnerability: &osvschema.Vulnerability{
+				Id:        "ALPINE-" + cveID,
 				Upstream:  []string{cveID},
-				Published: published,
+				Published: timestamppb.New(published),
 				Details:   details,
-				References: []osvschema.Reference{
+				References: []*osvschema.Reference{
 					{
-						Type: "ADVISORY",
-						URL:  "https://security.alpinelinux.org/vuln/" + cveID,
+						Type: osvschema.Reference_ADVISORY,
+						Url:  "https://security.alpinelinux.org/vuln/" + cveID,
 					},
 				},
 			},
@@ -198,7 +199,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 		}
 
 		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("cveID", cveID))
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("cveID", cveID))
 			continue
 		}
 		if cve.CVE.Metrics != nil {

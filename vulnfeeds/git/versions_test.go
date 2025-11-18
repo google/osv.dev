@@ -297,6 +297,15 @@ func TestParseVersionRange(t *testing.T) {
 			input:       "< 1.0, < 2.0",
 			expectErr:   true,
 		},
+		{
+			description: "too many spaces",
+			input:       ">= 7.65.0 , < 7.71.0",
+			expectedResult: models.AffectedVersion{
+				Introduced: "7.65.0",
+				Fixed:      "7.71.0",
+			},
+			expectErr: false,
+		},
 	}
 
 	for _, tc := range tests {

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.3-alpine@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS GO_BUILD
+FROM golang:1.25.4-alpine@sha256:d3f0cf7723f3429e3f9ed846243970b20a2de7bae6a5b66fc5914e228d831bbb AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN go build -o download-cves ./cmd/download-cves/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cdac858d976cb0e6bfdc3288fee5a0a7bf6348a009089be130b2009e28463c52
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:080b442ad8ade79dd3c159fd89319dcccdb2d868e1c4e548267f3006fb0268f4
 
 WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./

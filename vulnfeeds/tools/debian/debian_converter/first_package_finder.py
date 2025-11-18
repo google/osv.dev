@@ -71,7 +71,7 @@ def retrieve_codename_to_version() -> pd.DataFrame:
     df = pd.read_csv(csv, dtype=str)
     # `series` appears to be `codename` but with no caps
     df['sources'] = ''
-    df.dropna(subset=['version'], inplace=True)
+    df['version'].fillna(df['series'], inplace=True)
     # Set `release` to `created` if not yet released
     df['release'] = df['release'].fillna(df['created'])
     codename_to_version = df.set_index('series')

@@ -42,20 +42,6 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -68,6 +54,20 @@
             }
           ],
           "versions": 138,
+          "database_specific": "<Any value>"
+        },
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ]
+            }
+          ],
           "database_specific": "<Any value>"
         }
       ],
@@ -123,6 +123,20 @@
           "ranges": [
             {
               "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ]
+            }
+          ],
+          "database_specific": "<Any value>"
+        },
+        {
+          "ranges": [
+            {
+              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -135,20 +149,6 @@
             }
           ],
           "versions": 154,
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
           "database_specific": "<Any value>"
         }
       ],
@@ -825,6 +825,57 @@
       ]
     },
     {
+      "id": "CURL-CVE-2025-10966",
+      "summary": "missing SFTP host verification with wolfSSH",
+      "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
+      "aliases": ["CVE-2025-10966"],
+      "modified": "<RFC3339 date with the year 2025>",
+      "published": "2025-11-05T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.17.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6773c7ca65cf2183295e56603f9b86a5ce816a06"
+                },
+                {
+                  "fixed": "b011e3fcfb06d6c0278595ee2ee297036fbe9793"
+                }
+              ]
+            }
+          ],
+          "versions": 53,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2025-5025",
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
@@ -1029,6 +1080,10 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250131-0003/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
         }
       ],
       "affected": [
@@ -1440,6 +1495,14 @@
           "url": "https://security.netapp.com/advisory/ntap-20240828-0008/"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241025-0006/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
+        },
+        {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
         },
@@ -1578,6 +1641,38 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         }
       ],
       "affected": [

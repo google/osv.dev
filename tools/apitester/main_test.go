@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/apitester/internal/jsonreplace"
@@ -13,14 +15,39 @@ import (
 	"github.com/tidwall/pretty"
 )
 
+var (
+	replaceModifiedTimeFunc = func(toReplace gjson.Result) any {
+		tim, err := time.Parse(time.RFC3339, toReplace.String())
+
+		if err != nil {
+			return fmt.Sprintf("<invalid date: %s>", err)
+		}
+
+		return fmt.Sprintf("<RFC3339 date with the year %d>", tim.Year())
+	}
+)
+
 func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 	t.Helper()
+
+	if resp.Request.URL.Path == "/v1/querybatch" {
+		return []jsonreplace.Rule{
+			{
+				Path:        "results.#.vulns.#.modified",
+				ReplaceFunc: replaceModifiedTimeFunc,
+			},
+		}
+	}
 
 	if resp.Request.URL.Path != "/v1/query" || strings.Contains(t.Name(), "/Invalid") {
 		return nil
 	}
 
 	return []jsonreplace.Rule{
+		{
+			Path:        "vulns.#.modified",
+			ReplaceFunc: replaceModifiedTimeFunc,
+		},
 		{
 			Path: "vulns.#.affected.#.database_specific",
 			ReplaceFunc: func(_ gjson.Result) any {

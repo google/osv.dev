@@ -95,6 +95,10 @@ a {
   text-decoration: underline;
 }
 
+.literal-backtick {
+  font-family: $osv-heading-font-family;
+}
+
 .home-page,
 .vulnerability-page {
   a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"])::after {

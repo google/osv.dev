@@ -258,7 +258,6 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 		logger.Info("Failed to write", slog.Any("err", err))
 		return err
 	}
-	logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cnaAssigner))
 
 	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
 	if err != nil {

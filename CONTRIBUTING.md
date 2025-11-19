@@ -22,9 +22,10 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
-For any new feature, please create an issue first to discuss the proposed
-changes before proceeding to make a pull request. This helps ensure that your
-contribution is aligned with the project's goals and avoids duplicate work.
+For any new feature, please [create an issue first](https://github.com/google/osv.dev/issues/new?template=feature_request.md)
+to discuss the proposed changes before proceeding to make a pull request. This
+helps ensure that your contribution is aligned with the project's goals and
+avoids duplicate work.
 
 ## Community Guidelines
 

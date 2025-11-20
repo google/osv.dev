@@ -15,14 +15,49 @@
 // Package models contains definitions of Datastore entities for OSV.dev.
 package models
 
-import "time"
+import (
+	"time"
+
+	"cloud.google.com/go/datastore"
+)
 
 type Vulnerability struct {
-	SourceID    string    `datastore:"source_id"`
-	Modified    time.Time `datastore:"modified"`
-	IsWithdrawn bool      `datastore:"is_withdrawn"`
-	ModifiedRaw time.Time `datastore:"modified_raw"`
-	AliasRaw    []string  `datastore:"alias_raw"`
-	RelatedRaw  []string  `datastore:"related_raw"`
-	UpstreamRaw []string  `datastore:"upstream_raw"`
+	Key         *datastore.Key `datastore:"__key__"`
+	SourceID    string         `datastore:"source_id"`
+	Modified    time.Time      `datastore:"modified"`
+	IsWithdrawn bool           `datastore:"is_withdrawn"`
+	ModifiedRaw time.Time      `datastore:"modified_raw"`
+	AliasRaw    []string       `datastore:"alias_raw"`
+	RelatedRaw  []string       `datastore:"related_raw"`
+	UpstreamRaw []string       `datastore:"upstream_raw"`
+}
+
+type AliasGroup struct {
+	VulnIDs  []string  `datastore:"bug_ids"`
+	Modified time.Time `datastore:"last_modified"`
+}
+
+type AliasAllowListEntry struct {
+	VulnID string `datastore:"bug_id"`
+}
+
+type AliasDenyListEntry struct {
+	VulnID string `datastore:"bug_id"`
+}
+
+type Severity struct {
+	Type  string `datastore:"type"`
+	Score string `datastore:"score"`
+}
+
+type ListedVulnerability struct {
+	Key              *datastore.Key `datastore:"__key__"`
+	Published        time.Time      `datastore:"published"`
+	Ecosystems       []string       `datastore:"ecosystems"`
+	Packages         []string       `datastore:"packages,noindex"`
+	Summary          string         `datastore:"summary,noindex"`
+	IsFixed          bool           `datastore:"is_fixed,noindex"`
+	Severities       []Severity     `datastore:"severities"`
+	AutocompleteTags []string       `datastore:"autocomplete_tags"`
+	SearchIndices    []string       `datastore:"search_indices"`
 }

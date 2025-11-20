@@ -19,7 +19,8 @@ import sys
 from google.cloud import ndb
 
 import osv.tests
-from osv import Vulnerability
+from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
+        AliasDenyListEntry, ListedVulnerability, Severity
 
 
 def main() -> int:
@@ -36,6 +37,39 @@ def main() -> int:
       upstream_raw=['CVE-123-000', 'OSV-123-000'],
   ).put()
 
+  print('(Python) Putting AliasGroup')
+  AliasGroup(
+      id='1',
+      bug_ids=['CVE-123-456', 'OSV-123-456', 'TEST-123-456'],
+      last_modified=datetime.datetime(
+          2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
+  ).put()
+
+  print('(Python) Putting AliasAllowListEntry')
+  AliasAllowListEntry(
+      id='1',
+      bug_id='GOOD-VULN',
+  ).put()
+
+  print('(Python) Putting AlaisDenyListEntry')
+  AliasDenyListEntry(
+      id='1',
+      bug_id='BAD-VULN',
+  ).put()
+
+  print('(Python) Putting ListedVulnerability')
+  ListedVulnerability(
+      id='CVE-123-456',
+      published=datetime.datetime(2025, 1, 2, 3, 4, 5, tzinfo=datetime.UTC),
+      ecosystems=['Go', 'PyPI'],
+      packages=['stdlib', 'requests'],
+      summary='A vulnerability',
+      is_fixed=True,
+      severities=[Severity(type='CVSS_V3', score='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')],
+      autocomplete_tags=['cve-123-456', 'stdlib', 'requests'],
+      search_indices=['cve-123-456', 'stdlib', 'requests'],
+  ).put()
+
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
   result = subprocess.run(['go', 'run', './validate.go'], check=False)
@@ -46,6 +80,19 @@ def main() -> int:
   print('(Python) Getting Vulnerability')
   if Vulnerability.get_by_id('CVE-987-654') is None:
     return 1
+  print('(Python) Getting AliasGroup')
+  if AliasGroup.get_by_id('2') is None:
+    return 1
+  print('(Python) Getting AliasAllowListEntry')
+  if AliasAllowListEntry.get_by_id('2') is None:
+    return 1
+  print('(Python) Getting AliasDenyListEntry')
+  if AliasDenyListEntry.get_by_id('2') is None:
+    return 1
+  print('(Python) Getting ListedVulnerability')
+  if ListedVulnerability.get_by_id('CVE-987-654') is None:
+    return 1
+
   return 0
 
 

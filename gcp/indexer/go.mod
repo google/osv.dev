@@ -5,7 +5,7 @@ go 1.25.4
 require (
 	cloud.google.com/go/datastore v1.21.0
 	cloud.google.com/go/pubsub v1.50.1
-	cloud.google.com/go/storage v1.57.1
+	cloud.google.com/go/storage v1.57.2
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0

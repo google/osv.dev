@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/storage v1.57.1
+	cloud.google.com/go/storage v1.57.2
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.20.0
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -13,7 +13,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251112210320-9fb6c8870ac1
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251118012949-3d4ec5f63794
 	github.com/sethvargo/go-retry v0.3.0
 	google.golang.org/api v0.256.0
 	google.golang.org/protobuf v1.36.10

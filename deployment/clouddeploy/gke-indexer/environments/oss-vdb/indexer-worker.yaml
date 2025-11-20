@@ -24,7 +24,7 @@ spec:
         args: [
           "--configs=osv-indexer-configs",
           "--repos=osv-indexer-repos",
-          "--project_id=oss-vdb",
+          "--project-id=oss-vdb",
           "--topic=indexer-work",
           "--subscription=indexer-work-sub",
           "--worker",

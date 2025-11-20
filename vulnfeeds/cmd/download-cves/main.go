@@ -36,7 +36,7 @@ const (
 // source of data. API code here will remain just in case.
 
 // var apiKey = flag.String("api_key", "", "API key for accessing NVD API 2.0")
-var cvePath = flag.String("cvePath", CVEPathDefault, "Where to download CVEs to")
+var cvePath = flag.String("cve-path", CVEPathDefault, "Where to download CVEs to")
 
 func main() {
 	logger.InitGlobalLogger()

@@ -12,7 +12,7 @@ import (
 // OR condition, rather than AND.
 func groupAffectedRanges(affected []*osvschema.Affected) {
 	for _, aff := range affected {
-		if len(aff.Ranges) <= 1 {
+		if len(aff.GetRanges()) <= 1 {
 			continue
 		}
 
@@ -26,12 +26,12 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 		groups := make(map[groupKey]*osvschema.Range)
 		var order []groupKey // To maintain deterministic order of first appearance
 
-		for _, r := range aff.Ranges {
+		for _, r := range aff.GetRanges() {
 			// Find the introduced event
 			var introduced string
-			for _, e := range r.Events {
-				if e.Introduced != "" {
-					introduced = e.Introduced
+			for _, e := range r.GetEvents() {
+				if e.GetIntroduced() != "" {
+					introduced = e.GetIntroduced()
 					break
 				}
 			}
@@ -40,30 +40,30 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 			// This effectively groups ranges with no introduced event together, provided
 			// they share the same type and repo.
 			key := groupKey{
-				RangeType:  r.Type,
-				Repo:       r.Repo,
+				RangeType:  r.GetType(),
+				Repo:       r.GetRepo(),
 				Introduced: introduced,
 			}
 
 			if _, exists := groups[key]; !exists {
 				groups[key] = &osvschema.Range{
-					Type:             r.Type,
-					Repo:             r.Repo,
+					Type:             r.GetType(),
+					Repo:             r.GetRepo(),
 					Events:           []*osvschema.Event{},
-					DatabaseSpecific: r.DatabaseSpecific,
+					DatabaseSpecific: r.GetDatabaseSpecific(),
 				}
 				order = append(order, key)
 			}
 
 			// Add all events to the group. Deduplication happens later in cleanEvents.
-			groups[key].Events = append(groups[key].Events, r.Events...)
+			groups[key].Events = append(groups[key].Events, r.GetEvents()...)
 		}
 
 		// Reconstruct ranges from groups
 		var newRanges []*osvschema.Range
 		for _, key := range order {
 			r := groups[key]
-			r.Events = cleanEvents(r.Events)
+			r.Events = cleanEvents(r.GetEvents())
 			newRanges = append(newRanges, r)
 		}
 		aff.Ranges = newRanges
@@ -77,7 +77,7 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 
 	for _, e := range events {
 		// Create a unique key for the event to check for duplicates
-		key := fmt.Sprintf("%v|%v|%v|%v", e.Introduced, e.Fixed, e.Limit, e.LastAffected)
+		key := fmt.Sprintf("%v|%v|%v|%v", e.GetIntroduced(), e.GetFixed(), e.GetLimit(), e.GetLastAffected())
 		if seen[key] {
 			continue
 		}
@@ -88,10 +88,10 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 	// Sort: Introduced events come first.
 	sort.SliceStable(uniqueEvents, func(i, j int) bool {
 		// Introduced comes before everything else
-		if uniqueEvents[i].Introduced != "" && uniqueEvents[j].Introduced == "" {
+		if uniqueEvents[i].GetIntroduced() != "" && uniqueEvents[j].GetIntroduced() == "" {
 			return true
 		}
-		if uniqueEvents[i].Introduced == "" && uniqueEvents[j].Introduced != "" {
+		if uniqueEvents[i].GetIntroduced() == "" && uniqueEvents[j].GetIntroduced() != "" {
 			return false
 		}
 		// If both are introduced or both are not, keep original order (stable)
@@ -103,7 +103,7 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 	var finalEvents []*osvschema.Event
 	hasIntroduced := false
 	for _, e := range uniqueEvents {
-		if e.Introduced != "" {
+		if e.GetIntroduced() != "" {
 			if !hasIntroduced {
 				finalEvents = append(finalEvents, e)
 				hasIntroduced = true

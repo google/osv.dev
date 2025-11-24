@@ -514,7 +514,7 @@ class Importer:
     ndb_ctx = ndb.context.get_context(False)
     if ndb_ctx is None:
       # Production. Use the NDB client passed in.
-      ndb_ctx = ndb_client.context()
+      ndb_ctx = ndb_client.context(cache_policy=False)
     else:
       # Unit testing. Reuse the unit test's existing NDB client to avoid
       # "RuntimeError: Context is already created for this thread."
@@ -1306,5 +1306,5 @@ if __name__ == '__main__':
   atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  with _ndb_client.context():
+  with _ndb_client.context(cache_policy=False):
     main()

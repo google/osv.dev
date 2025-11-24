@@ -202,8 +202,8 @@ func TestFromCVE5(t *testing.T) {
 					Details:       "A disputed vulnerability.",
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"isDisputed": structpb.NewBoolValue(true),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"isDisputed":         structpb.NewBoolValue(true),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -228,8 +228,8 @@ func TestFromCVE5(t *testing.T) {
 					Related:       nil,
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"cna_assigner": structpb.NewStringValue("GitLab"),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"cna_assigner":       structpb.NewStringValue("GitLab"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 							"cwe_ids": structpb.NewListValue(&structpb.ListValue{
 								Values: []*structpb.Value{
 									structpb.NewStringValue("CWE-1220"),
@@ -287,7 +287,7 @@ func TestFromCVE5(t *testing.T) {
 									},
 								},
 							),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -308,18 +308,18 @@ func TestFromCVE5(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
-					Id:               "CVE-2025-21772",
-					SchemaVersion:    "1.7.3",
-					Published:        timestamppb.New(cve21772Pub),
-					Modified:         timestamppb.New(cve21772Mod),
-					Summary:          "partitions: mac: fix handling of bogus partition table",
-					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
-					Aliases:          nil,
-					Related:          nil,
+					Id:            "CVE-2025-21772",
+					SchemaVersion: "1.7.3",
+					Published:     timestamppb.New(cve21772Pub),
+					Modified:      timestamppb.New(cve21772Mod),
+					Summary:       "partitions: mac: fix handling of bogus partition table",
+					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:       nil,
+					Related:       nil,
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"cna_assigner": structpb.NewStringValue("Linux"),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"cna_assigner":       structpb.NewStringValue("Linux"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 					References: []*osvschema.Reference{
@@ -439,9 +439,9 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					Details:       "A disputed vulnerability.",
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"isDisputed": structpb.NewBoolValue(true),
-							"cna_assigner": structpb.NewStringValue("GitLab"),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"isDisputed":         structpb.NewBoolValue(true),
+							"cna_assigner":       structpb.NewStringValue("GitLab"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -474,7 +474,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 									},
 								},
 							),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 					References: []*osvschema.Reference{
@@ -527,7 +527,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 									},
 								},
 							),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -548,18 +548,18 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
-					Id:               "CVE-2025-21772",
-					SchemaVersion:    osvconstants.SchemaVersion,
-					Published:        timestamppb.New(cve21772Pub),
-					Modified:         timestamppb.New(cve21772Mod),
-					Summary:          "partitions: mac: fix handling of bogus partition table",
-					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
-					Aliases:          nil,
-					Related:          nil,
+					Id:            "CVE-2025-21772",
+					SchemaVersion: osvconstants.SchemaVersion,
+					Published:     timestamppb.New(cve21772Pub),
+					Modified:      timestamppb.New(cve21772Mod),
+					Summary:       "partitions: mac: fix handling of bogus partition table",
+					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:       nil,
+					Related:       nil,
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"cna_assigner": structpb.NewStringValue("Linux"),
-							"osv_generated_from": structpb.NewStringValue("cvelistv5"),
+							"cna_assigner":       structpb.NewStringValue("Linux"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 					References: []*osvschema.Reference{

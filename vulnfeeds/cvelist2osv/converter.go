@@ -305,7 +305,7 @@ func populateDBSpecific(cve cves.CVE5, metrics *ConversionMetrics, sourceLink st
 	if sourceLink != "" {
 		dbSpecific["osv_generated_from"] = sourceLink
 	} else {
-		dbSpecific["osv_generated_from"] = "cvelistv5"
+		dbSpecific["osv_generated_from"] = "unknown"
 	}
 
 	if cve.Metadata.AssignerShortName != "" {

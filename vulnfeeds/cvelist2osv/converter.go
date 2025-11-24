@@ -144,7 +144,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics, 
 	metrics.Repos = repos
 
 	// Create a map to hold DatabaseSpecific fields
-	dbSpecific := populateDBSpecific(cve, metrics, sourceLink)
+	dbSpecific := buildDBSpecific(cve, metrics, sourceLink)
 
 	if len(dbSpecific) > 0 {
 		databaseSpecific, err := utility.NewStructpbFromMap(dbSpecific)
@@ -299,7 +299,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	return refs
 }
 
-func populateDBSpecific(cve cves.CVE5, metrics *ConversionMetrics, sourceLink string) map[string]any {
+func buildDBSpecific(cve cves.CVE5, metrics *ConversionMetrics, sourceLink string) map[string]any {
 	dbSpecific := make(map[string]any)
 
 	if sourceLink != "" {

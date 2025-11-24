@@ -251,6 +251,8 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
 	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
 
+	groupAffectedRanges(v.Affected)
+
 	determineOutcome(&metrics)
 
 	err := v.ToJSON(vulnSink)

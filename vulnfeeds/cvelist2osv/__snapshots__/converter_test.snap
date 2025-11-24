@@ -2,7 +2,8 @@
 [TestConvertAndExportCVEToOSV/disputed_record - 1]
 {
   "database_specific": {
-    "isDisputed": true
+    "isDisputed": true,
+    "osv_generated_from": "cvelistv5"
   },
   "details": "A disputed vulnerability.",
   "id": "CVE-2025-9999",
@@ -43,9 +44,11 @@
     }
   ],
   "database_specific": {
+    "cna_assigner": "GitLab",
     "cwe_ids": [
       "CWE-1220"
-    ]
+    ],
+    "osv_generated_from": "cvelistv5"
   },
   "details": "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
   "id": "CVE-2025-1110",
@@ -118,9 +121,11 @@
     "GHSA-264p-99wq-f4j6"
   ],
   "database_specific": {
+    "cna_assigner": "GitHub_M",
     "cwe_ids": [
       "CWE-770"
-    ]
+    ],
+    "osv_generated_from": "cvelistv5"
   },
   "details": "Amazon Ion is a Java implementation of the Ion data notation. Prior to version 1.10.5, a potential denial-of-service issue exists in `ion-java` for applications that use `ion-java` to deserialize Ion text encoded data, or deserialize Ion text or binary encoded data into the `IonValue` model and then invoke certain `IonValue` methods on that in-memory representation. An actor could craft Ion data that, when loaded by the affected application and/or processed using the `IonValue` model, results in a `StackOverflowError` originating from the `ion-java` library. The patch is included in `ion-java` 1.10.5. As a workaround, do not load data which originated from an untrusted source or that could have been tampered with.",
   "id": "CVE-2024-21634",
@@ -332,6 +337,10 @@
       ]
     }
   ],
+  "database_specific": {
+    "cna_assigner": "Linux",
+    "osv_generated_from": "cvelistv5"
+  },
   "details": "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
   "id": "CVE-2025-21772",
   "modified": "2025-05-04T07:20:46.575Z",

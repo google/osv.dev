@@ -81,8 +81,8 @@ func extractConversionMetrics(cve cves.CVE5, refs []*osvschema.Reference, metric
 	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
 }
 
-// attachCWEs extracts and adds CWE IDs from the CVE5 problem-types
-func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics) {
+// getCWEs extracts and adds CWE IDs from the CVE5 problem-types
+func getCWEs(cna cves.CNA, metrics *ConversionMetrics) []string {
 	var cwes []string
 
 	for _, pt := range cna.ProblemTypes {
@@ -94,28 +94,22 @@ func attachCWEs(v *vulns.Vulnerability, cna cves.CNA, metrics *ConversionMetrics
 		}
 	}
 	if len(cwes) == 0 {
-		return
+		return nil
 	}
 
 	// Sort and remove duplicates
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
-	databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"cwe_ids": cwes})
-	if err != nil {
-		logger.Warn("Failed to convert database specific: %v", err)
-	} else {
-		// Add CWEs to DatabaseSpecific for consistency with GHSA schema.
-		v.DatabaseSpecific = databaseSpecific
-	}
-
 	metrics.AddNote("Extracted CWEIDs: %v", cwes)
+
+	return cwes
 }
 
 // FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
-func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) *vulns.Vulnerability {
+func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics, sourceLink string) *vulns.Vulnerability {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	v := vulns.Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
@@ -149,8 +143,11 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 	}
 	metrics.Repos = repos
 
-	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
-		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"isDisputed": true})
+	// Create a map to hold DatabaseSpecific fields
+	dbSpecific := populateDBSpecific(cve, metrics, sourceLink)
+
+	if len(dbSpecific) > 0 {
+		databaseSpecific, err := utility.NewStructpbFromMap(dbSpecific)
 		if err != nil {
 			metrics.AddNote("Failed to convert database specific: %v", err)
 		} else {
@@ -182,9 +179,6 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics) 
 			v.Severity = []*osvschema.Severity{sev}
 		}
 	}
-
-	// attachCWEs extract and adds the cwes from the CVE5 Problem-types
-	attachCWEs(&v, cve.Containers.CNA, metrics)
 
 	return &v
 }
@@ -235,14 +229,14 @@ func determineOutcome(metrics *ConversionMetrics) {
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer) error {
+func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
 	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner, UnresolvedRangesCount: 0, ResolvedRangesCount: 0}
 
 	// Create a base OSV record from the CVE.
-	v := FromCVE5(cve, references, &metrics)
+	v := FromCVE5(cve, references, &metrics, sourceLink)
 
 	// Collect metrics about the conversion.
 	extractConversionMetrics(cve, v.References, &metrics)
@@ -303,4 +297,29 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	})
 
 	return refs
+}
+
+func populateDBSpecific(cve cves.CVE5, metrics *ConversionMetrics, sourceLink string) map[string]any {
+	dbSpecific := make(map[string]any)
+
+	if sourceLink != "" {
+		dbSpecific["osv_generated_from"] = sourceLink
+	} else {
+		dbSpecific["osv_generated_from"] = "cvelistv5"
+	}
+
+	if cve.Metadata.AssignerShortName != "" {
+		dbSpecific["cna_assigner"] = cve.Metadata.AssignerShortName
+	}
+
+	if slices.Contains(cve.Containers.CNA.Tags, "disputed") {
+		dbSpecific["isDisputed"] = true
+	}
+
+	cwes := getCWEs(cve.Containers.CNA, metrics)
+	if len(cwes) > 0 {
+		dbSpecific["cwe_ids"] = cwes
+	}
+
+	return dbSpecific
 }

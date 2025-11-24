@@ -409,10 +409,11 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			name: "disputed record",
 			cve: cves.CVE5{
 				Metadata: cves.CVE5Metadata{
-					CVEID:         "CVE-2025-9999",
-					State:         "PUBLISHED",
-					DatePublished: "2025-05-04T07:20:46.575Z",
-					DateUpdated:   "2025-05-04T07:20:46.575Z",
+					CVEID:             "CVE-2025-9999",
+					State:             "PUBLISHED",
+					DatePublished:     "2025-05-04T07:20:46.575Z",
+					DateUpdated:       "2025-05-04T07:20:46.575Z",
+					AssignerShortName: "unknown",
 				},
 				Containers: struct {
 					CNA cves.CNA   `json:"cna"`
@@ -440,7 +441,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							"isDisputed":         structpb.NewBoolValue(true),
-							"cna_assigner":       structpb.NewStringValue("GitLab"),
+							"cna_assigner":       structpb.NewStringValue("unknown"),
 							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},

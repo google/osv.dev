@@ -85,11 +85,11 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 		return
 	}
 
-	if target.DatabaseSpecific == nil {
+	if target.GetDatabaseSpecific() == nil {
 		target.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
 	}
-	
-	targetFields := target.DatabaseSpecific.GetFields()
+
+	targetFields := target.GetDatabaseSpecific().GetFields()
 	if targetFields == nil {
 		targetFields = make(map[string]*structpb.Value)
 		target.DatabaseSpecific.Fields = targetFields
@@ -105,13 +105,13 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 	// Assuming versions is a ListValue
 	if targetVersions.GetListValue() != nil && sourceVersions.GetListValue() != nil {
 		// Append source versions to target versions
-		targetVersions.GetListValue().Values = append(targetVersions.GetListValue().Values, sourceVersions.GetListValue().Values...)
-		
+		targetVersions.GetListValue().Values = append(targetVersions.GetListValue().GetValues(), sourceVersions.GetListValue().GetValues()...)
+
 		// Deduplicate versions
-		uniqueVersions := make([]*structpb.Value, 0, len(targetVersions.GetListValue().Values))
+		uniqueVersions := make([]*structpb.Value, 0, len(targetVersions.GetListValue().GetValues()))
 		seenVersions := make(map[string]bool)
-		
-		for _, v := range targetVersions.GetListValue().Values {
+
+		for _, v := range targetVersions.GetListValue().GetValues() {
 			// Serialize to string for comparison
 			// This might be expensive but robust for structpb.Value
 			b, _ := protojson.Marshal(v)

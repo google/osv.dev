@@ -5,6 +5,8 @@ import (
 	"sort"
 
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // groupAffectedRanges groups ranges that share the same introduced value, type, and repo.
@@ -37,8 +39,6 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 			}
 
 			// If no introduced event is found, we use an empty string as the introduced value.
-			// This effectively groups ranges with no introduced event together, provided
-			// they share the same type and repo.
 			key := groupKey{
 				RangeType:  r.GetType(),
 				Repo:       r.GetRepo(),
@@ -46,13 +46,19 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 			}
 
 			if _, exists := groups[key]; !exists {
+				// Initialize with a deep copy of the first range found for this group
+				// We need to be careful about DatabaseSpecific.
+				// We want to keep the "versions" from this first range.
 				groups[key] = &osvschema.Range{
 					Type:             r.GetType(),
 					Repo:             r.GetRepo(),
 					Events:           []*osvschema.Event{},
-					DatabaseSpecific: r.GetDatabaseSpecific(),
+					DatabaseSpecific: r.GetDatabaseSpecific(), // Start with this one's DS
 				}
 				order = append(order, key)
+			} else {
+				// Merge DatabaseSpecific "versions"
+				mergeDatabaseSpecificVersions(groups[key], r.GetDatabaseSpecific())
 			}
 
 			// Add all events to the group. Deduplication happens later in cleanEvents.
@@ -67,6 +73,56 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 			newRanges = append(newRanges, r)
 		}
 		aff.Ranges = newRanges
+	}
+}
+
+func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Struct) {
+	if source == nil {
+		return
+	}
+	sourceVersions := source.GetFields()["versions"]
+	if sourceVersions == nil {
+		return
+	}
+
+	if target.DatabaseSpecific == nil {
+		target.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+	}
+	
+	targetFields := target.DatabaseSpecific.GetFields()
+	if targetFields == nil {
+		targetFields = make(map[string]*structpb.Value)
+		target.DatabaseSpecific.Fields = targetFields
+	}
+
+	targetVersions := targetFields["versions"]
+	if targetVersions == nil {
+		targetFields["versions"] = sourceVersions
+		return
+	}
+
+	// Both have versions, merge them
+	// Assuming versions is a ListValue
+	if targetVersions.GetListValue() != nil && sourceVersions.GetListValue() != nil {
+		// Append source versions to target versions
+		targetVersions.GetListValue().Values = append(targetVersions.GetListValue().Values, sourceVersions.GetListValue().Values...)
+		
+		// Deduplicate versions
+		uniqueVersions := make([]*structpb.Value, 0, len(targetVersions.GetListValue().Values))
+		seenVersions := make(map[string]bool)
+		
+		for _, v := range targetVersions.GetListValue().Values {
+			// Serialize to string for comparison
+			// This might be expensive but robust for structpb.Value
+			b, _ := protojson.Marshal(v)
+			key := string(b)
+			if seenVersions[key] {
+				continue
+			}
+			seenVersions[key] = true
+			uniqueVersions = append(uniqueVersions, v)
+		}
+		targetVersions.GetListValue().Values = uniqueVersions
 	}
 }
 

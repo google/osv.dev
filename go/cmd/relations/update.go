@@ -2,13 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"slices"
 	"sync"
 	"time"
 
+	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/google/osv.dev/go/osv/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -28,13 +34,25 @@ type Update struct {
 }
 
 type Updater struct {
-	Ch chan Update
-	wg sync.WaitGroup
+	Ch        chan Update
+	wg        sync.WaitGroup
+	dsClient  *datastore.Client
+	gcsClient clients.CloudStorage
+	publisher clients.Publisher
 }
 
-func NewUpdater(ctx context.Context) *Updater {
-	u := &Updater{Ch: make(chan Update)}
-	u.wg.Go(func() { u.run(ctx) })
+func NewUpdater(ctx context.Context, dsClient *datastore.Client, gcsClient clients.CloudStorage, publisher clients.Publisher) *Updater {
+	u := &Updater{
+		Ch:        make(chan Update),
+		dsClient:  dsClient,
+		gcsClient: gcsClient,
+		publisher: publisher,
+	}
+	u.wg.Add(1)
+	go func() {
+		defer u.wg.Done()
+		u.run(ctx)
+	}()
 
 	return u
 }
@@ -53,9 +71,43 @@ func (u *Updater) run(ctx context.Context) {
 			}
 			// Channel was closed, collate updates and write
 			for id, updates := range allUpdates {
-				// TODO: Get the vulnerability from GCS
+				// Get the vulnerability from GCS
+				path := id + ".pb"
+				data, err := u.gcsClient.ReadObject(ctx, path)
+				if err != nil {
+					if errors.Is(err, clients.ErrNotFound) {
+						// Check if it exists in Datastore. If it does, it's an error that it's missing from GCS.
+						// If it doesn't exist in Datastore either, it's likely just an alias ID that isn't a full OSV record,
+						// which is expected and we can safely skip it.
+						var vuln models.Vulnerability
+						key := datastore.NameKey("Vulnerability", id, nil)
+						if err := u.dsClient.Get(ctx, key, &vuln); err == nil {
+							logger.Error("vulnerability exists in Datastore but missing from GCS", slog.String("id", id))
+							msg := &pubsub.Message{
+								Attributes: map[string]string{
+									"type": "gcs_missing",
+									"id":   id,
+								},
+							}
+							u.publisher.Publish(ctx, msg)
+						}
+						continue
+					}
+					logger.Error("failed to read vuln from GCS", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+				attrs, err := u.gcsClient.ReadObjectAttrs(ctx, path)
+				if err != nil {
+					logger.Error("failed to read vuln attrs from GCS", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+
 				v := &osvschema.Vulnerability{}
-				v.Id = id
+				if err := proto.Unmarshal(data, v); err != nil {
+					logger.Error("failed to unmarshal vuln", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+
 				hasUpdates := false
 				var modified time.Time
 				for _, u := range updates {
@@ -84,7 +136,64 @@ func (u *Updater) run(ctx context.Context) {
 					continue
 				}
 				v.Modified = timestamppb.New(modified)
-				logger.Info("updating vuln", slog.Any("vuln", v))
+
+				// Update Datastore
+				tx, err := u.dsClient.NewTransaction(ctx)
+				if err != nil {
+					logger.Error("failed to start transaction", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+				var vuln models.Vulnerability
+				key := datastore.NameKey("Vulnerability", id, nil)
+				if err := tx.Get(key, &vuln); err != nil {
+					logger.Error("failed to get vuln from Datastore", slog.String("id", id), slog.Any("err", err))
+					tx.Rollback()
+					continue
+				}
+				vuln.Modified = modified
+				if _, err := tx.Put(key, &vuln); err != nil {
+					logger.Error("failed to put vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+					tx.Rollback()
+					continue
+				}
+				listedVuln := models.NewListedVulnerabilityFromProto(v)
+				listedKey := datastore.NameKey("ListedVulnerability", id, nil)
+				if _, err := tx.Put(listedKey, listedVuln); err != nil {
+					logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+					tx.Rollback()
+					continue
+				}
+				if _, err := tx.Commit(); err != nil {
+					logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+
+				// Update GCS
+				newData, err := proto.Marshal(v)
+				if err != nil {
+					logger.Error("failed to marshal vuln", slog.String("id", id), slog.Any("err", err))
+					continue
+				}
+				opts := &clients.WriteOptions{
+					IfGenerationMatches: &attrs.Generation,
+				}
+				if err := clients.WriteObject(ctx, u.gcsClient, path, newData, opts); err != nil {
+					logger.Error("failed to write vuln to GCS", slog.String("id", id), slog.Any("err", err))
+					msg := &pubsub.Message{
+						Attributes: map[string]string{},
+					}
+					if errors.Is(err, clients.ErrPreconditionFailed) {
+						msg.Attributes["type"] = "gcs_gen_mismatch"
+						msg.Attributes["id"] = id
+						msg.Attributes["field"] = "aliases" // TODO: Make this dynamic if we support other fields
+					} else {
+						msg.Data = newData
+						msg.Attributes["type"] = "gcs_retry"
+					}
+					u.publisher.Publish(ctx, msg)
+					continue
+				}
+				logger.Info("updated vuln", slog.String("id", id))
 			}
 			return
 		}

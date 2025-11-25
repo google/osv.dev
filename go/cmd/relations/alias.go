@@ -24,7 +24,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/logger"
-	"github.com/google/osv.dev/go/models"
+	"github.com/google/osv.dev/go/osv/models"
 	"google.golang.org/api/iterator"
 )
 
@@ -56,7 +56,7 @@ func updateGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string,
 
 	group.VulnIDs = vulnIDs
 	group.Modified = time.Now().UTC()
-	if _, err := cl.Put(ctx, key, group); err != nil {
+	if _, err := cl.Put(ctx, key, &group); err != nil {
 		return err
 	}
 	for _, vID := range vulnIDs {

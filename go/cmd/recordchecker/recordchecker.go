@@ -15,7 +15,8 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
-	"github.com/google/osv.dev/go/models"
+	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/google/osv.dev/go/osv/models"
 	"google.golang.org/api/iterator"
 )
 
@@ -131,7 +132,7 @@ func run(ctx context.Context, env *appEnv) error {
 		go func() {
 			defer workerWg.Done()
 			for task := range tasksChan {
-				resultsChan <- checkRecord(ctx, env.ds, env.bucket, task.id, task.vuln)
+				resultsChan <- checkRecord(ctx, env.ds, env.storage, task.id, task.vuln)
 			}
 		}()
 	}
@@ -182,7 +183,7 @@ func run(ctx context.Context, env *appEnv) error {
 // handleResult handles logging and sending pub/sub message to the recoverer.
 // Returns true if a pub/sub message was sent to the recoverer,
 // to indicate that we need to verify that the recoverer fixes the problem on the next run.
-func handleResult(ctx context.Context, publisher *pubsub.Publisher, result checkRecordResult) bool {
+func handleResult(ctx context.Context, publisher clients.Publisher, result checkRecordResult) bool {
 	if result.err != nil {
 		logger.Error("failed to process record", slog.String("id", result.id), slog.Any("err", result.err))
 	}
@@ -202,9 +203,9 @@ func handleResult(ctx context.Context, publisher *pubsub.Publisher, result check
 
 // appEnv holds the clients and other environment-specific resources.
 type appEnv struct {
-	bucket     *storage.BucketHandle
+	storage    clients.CloudStorage
 	ds         *datastore.Client
-	publisher  *pubsub.Publisher
+	publisher  clients.Publisher
 	numWorkers int
 }
 
@@ -221,12 +222,16 @@ func setup(ctx context.Context) (*appEnv, error) {
 		err := errors.New("OSV_VULNERABILITIES_BUCKET must be set")
 		return nil, err
 	}
-	stClient, err := storage.NewClient(ctx)
+	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
-		err = fmt.Errorf("failed to create storage client: %w", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create storage client: %w", err)
 	}
-	bucket := stClient.Bucket(bucketName)
+	// We don't close the storage client here because it's passed to appEnv and used throughout the application.
+	// In a real application, we might want to manage its lifecycle more carefully, but for this tool it's acceptable.
+	// However, to be correct, we should probably add it to appEnv and close it on shutdown.
+	// For now, we will just use it.
+
+	gcsClient := clients.NewGCSClient(storageClient, bucketName)
 
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
@@ -251,9 +256,9 @@ func setup(ctx context.Context) (*appEnv, error) {
 	}
 
 	return &appEnv{
-		bucket:     bucket,
+		storage:    gcsClient,
 		ds:         dsClient,
-		publisher:  publisher,
+		publisher:  &clients.GCPPublisher{Publisher: publisher},
 		numWorkers: numWorkers,
 	}, nil
 }
@@ -264,7 +269,7 @@ type checkRecordResult struct {
 	err        error
 }
 
-func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.BucketHandle, id string, vuln *models.Vulnerability) checkRecordResult {
+func checkRecord(ctx context.Context, cl *datastore.Client, storage clients.CloudStorage, id string, vuln *models.Vulnerability) checkRecordResult {
 	res := checkRecordResult{id: id}
 
 	if vuln == nil {
@@ -285,15 +290,13 @@ func checkRecord(ctx context.Context, cl *datastore.Client, bucket *storage.Buck
 		vuln = &fetchedVuln
 	}
 
-	obj := bucket.Object(fmt.Sprintf("all/pb/%s.pb", id))
-	attrs, err := obj.Attrs(ctx)
+	attrs, err := storage.ReadObjectAttrs(ctx, fmt.Sprintf("all/pb/%s.pb", id))
 	if err != nil {
 		res.needsRetry = true
-		if !errors.Is(err, storage.ErrObjectNotExist) {
+		if !errors.Is(err, clients.ErrNotFound) {
 			// Log the error if it's not the expected "not found" error.
-			res.err = fmt.Errorf("failed to get GCS attributes for %s: %w", id, err)
+			res.err = fmt.Errorf("failed to read object for %s: %w", id, err)
 		}
-
 		return res
 	}
 

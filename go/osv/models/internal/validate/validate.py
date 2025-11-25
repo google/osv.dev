@@ -72,7 +72,10 @@ def main() -> int:
 
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
-  result = subprocess.run(['go', 'run', './validate.go'], check=False)
+  result = subprocess.run(
+      ['go', 'run', './validate.go'],
+      check=False,
+      cwd='.')
   if result.returncode != 0:
     return result.returncode
 

@@ -6,10 +6,22 @@
       "id": "CVE-2021-45931",
       "details": "HarfBuzz 2.9.0 has an out-of-bounds write in hb_bit_set_invertible_t::set (called from hb_sparseset_t\u003chb_bit_set_invertible_t\u003e::set and hb_set_copy).",
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2022-01-01T01:15:08Z",
+      "published": "2022-01-01T01:15:08.477Z",
       "references": [
         {
-          "type": "REPORT",
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/4EAIZKL4O67FN2CWJYHYKZEMNYWNWO3D/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/5A7TCR2MY46YK3NHQZB3SLESUH354IEA/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
+        },
+        {
+          "type": "EVIDENCE",
           "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
         },
         {
@@ -23,35 +35,9 @@
         {
           "type": "ADVISORY",
           "url": "https://security.gentoo.org/glsa/202209-11"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/4EAIZKL4O67FN2CWJYHYKZEMNYWNWO3D/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/5A7TCR2MY46YK3NHQZB3SLESUH354IEA/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -69,73 +55,6 @@
           ],
           "versions": 138,
           "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2022-33068",
-      "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-      "modified": "<RFC3339 date with the year 2025>",
-      "published": "2022-06-23T17:15:14Z",
-      "related": [
-        "ALSA-2022:8384",
-        "RLSA-2022:8384",
-        "SUSE-SU-2022:2663-1",
-        "SUSE-SU-2022:2664-1",
-        "openSUSE-SU-2022:2663-1",
-        "openSUSE-SU-2024:12168-1"
-      ],
-      "references": [
-        {
-          "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202209-11"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
-                }
-              ]
-            }
-          ],
-          "versions": 154,
-          "database_specific": "<Any value>"
         },
         {
           "ranges": [
@@ -156,6 +75,87 @@
       "severity": [
         {
           "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2022-33068",
+      "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
+      "modified": "<RFC3339 date with the year 2025>",
+      "published": "2022-06-23T17:15:14.350Z",
+      "related": [
+        "ALSA-2022:8384",
+        "RLSA-2022:8384",
+        "SUSE-SU-2022:2663-1",
+        "SUSE-SU-2022:2664-1",
+        "openSUSE-SU-2022:2663-1",
+        "openSUSE-SU-2024:12168-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202209-11"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ]
+            }
+          ],
+          "database_specific": "<Any value>"
+        },
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                }
+              ]
+            }
+          ],
+          "versions": 154,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
         }
       ]
@@ -164,7 +164,7 @@
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2023-02-04T20:15:08Z",
+      "published": "2023-02-04T20:15:08.027Z",
       "related": [
         "ALSA-2023:4158",
         "ALSA-2023:4159",
@@ -198,6 +198,14 @@
       ],
       "references": [
         {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/KWCHWSICWVZSAXP2YAXM65JC2GR53547/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
+        },
+        {
           "type": "FIX",
           "url": "https://chromium.googlesource.com/chromium/src/+/e1f324aa681af54101c1f2d173d92adb80e37088/DEPS#361"
         },
@@ -212,14 +220,6 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20230725-0006/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/KWCHWSICWVZSAXP2YAXM65JC2GR53547/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
         }
       ],
       "affected": [
@@ -825,6 +825,57 @@
       ]
     },
     {
+      "id": "CURL-CVE-2025-10966",
+      "summary": "missing SFTP host verification with wolfSSH",
+      "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
+      "aliases": ["CVE-2025-10966"],
+      "modified": "<RFC3339 date with the year 2025>",
+      "published": "2025-11-05T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.17.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6773c7ca65cf2183295e56603f9b86a5ce816a06"
+                },
+                {
+                  "fixed": "b011e3fcfb06d6c0278595ee2ee297036fbe9793"
+                }
+              ]
+            }
+          ],
+          "versions": 53,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2025-5025",
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
@@ -931,7 +982,7 @@
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even when the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh, which then skipped the verify status check.",
       "aliases": ["CURL-CVE-2024-0853"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-02-03T14:15:50Z",
+      "published": "2024-02-03T14:15:50.850Z",
       "related": ["CGA-w4px-x37v-694c", "openSUSE-SU-2024:13637-1"],
       "references": [
         {
@@ -955,7 +1006,7 @@
           "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2298922"
         }
       ],
@@ -992,7 +1043,7 @@
       "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits just the password or\nomits both login and password.",
       "aliases": ["CURL-CVE-2024-11053"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-12-11T08:15:05Z",
+      "published": "2024-12-11T08:15:05.307Z",
       "related": [
         "ALSA-2025:1671",
         "ALSA-2025:1673",
@@ -1015,7 +1066,7 @@
           "url": "https://curl.se/docs/CVE-2024-11053.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2829063"
         },
         {
@@ -1029,6 +1080,10 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250131-0003/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
         }
       ],
       "affected": [
@@ -1064,7 +1119,7 @@
       "details": "When a protocol selection parameter option disables all protocols without adding any then the default set of protocols would remain in the allowed set due to an error in the logic for removing protocols. The below command would perform a request to curl.se with a plaintext protocol which has been explicitly disabled.      curl --proto -all,-http http://curl.se  The flaw is only present if the set of selected protocols disables the entire set of available protocols, in itself a command with no practical use and therefore unlikely to be encountered in real situations. The curl security team has thus assessed this to be low severity bug.",
       "aliases": ["CURL-CVE-2024-2004"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-03-27T08:15:41Z",
+      "published": "2024-03-27T08:15:41.173Z",
       "related": [
         "CGA-jqm4-7q66-4rv5",
         "MGASA-2024-0099",
@@ -1101,7 +1156,7 @@
           "url": "https://curl.se/docs/CVE-2024-2004.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2384833"
         },
         {
@@ -1162,7 +1217,7 @@
       "details": "When an application tells libcurl it wants to allow HTTP/2 server push, and the amount of received headers for the push surpasses the maximum allowed limit (1000), libcurl aborts the server push. When aborting, libcurl inadvertently does not free all the previously allocated headers and instead leaks the memory.  Further, this error condition fails silently and is therefore not easily detected by an application.",
       "aliases": ["CURL-CVE-2024-2398"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-03-27T08:15:41Z",
+      "published": "2024-03-27T08:15:41.283Z",
       "related": [
         "ALSA-2024:5529",
         "ALSA-2024:5654",
@@ -1201,7 +1256,7 @@
           "url": "https://curl.se/docs/CVE-2024-2398.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2402845"
         },
         {
@@ -1262,13 +1317,17 @@
       "details": "libcurl did not check the server certificate of TLS connections done to a host specified as an IP address, when built to use mbedTLS.  libcurl would wrongly avoid using the set hostname function when the specified hostname was given as an IP address, therefore completely skipping the certificate check. This affects all uses of TLS protocols (HTTPS, FTPS, IMAPS, POPS3, SMTPS, etc).",
       "aliases": ["CURL-CVE-2024-2466"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-03-27T08:15:41Z",
+      "published": "2024-03-27T08:15:41.343Z",
       "related": [
         "CGA-hx4m-3q2w-96wj",
         "MGASA-2024-0099",
         "openSUSE-SU-2024:13805-1"
       ],
       "references": [
+        {
+          "type": "EVIDENCE",
+          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
+        },
         {
           "type": "ARTICLE",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
@@ -1294,7 +1353,7 @@
           "url": "https://curl.se/docs/CVE-2024-2466.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2416725"
         },
         {
@@ -1312,10 +1371,6 @@
         {
           "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
-          "type": "WEB",
-          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
         }
       ],
       "affected": [
@@ -1351,7 +1406,7 @@
       "details": "libcurl's URL API function\n[curl_url_get()](https://curl.se/libcurl/c/curl_url_get.html) offers punycode\nconversions, to and from IDN. Asking to convert a name that is exactly 256\nbytes, libcurl ends up reading outside of a stack based buffer when built to\nuse the *macidn* IDN backend. The conversion function then fills up the\nprovided buffer exactly - but does not null terminate the string.\n\nThis flaw can lead to stack contents accidently getting returned as part of\nthe converted string.",
       "aliases": ["CURL-CVE-2024-6874"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-07-24T08:15:03Z",
+      "published": "2024-07-24T08:15:03.413Z",
       "related": ["openSUSE-SU-2024:14225-1"],
       "references": [
         {
@@ -1371,7 +1426,7 @@
           "url": "https://security.netapp.com/advisory/ntap-20240822-0004/"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2604391"
         }
       ],
@@ -1408,7 +1463,7 @@
       "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
       "aliases": ["CURL-CVE-2024-7264"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-07-31T08:15:02Z",
+      "published": "2024-07-31T08:15:02.657Z",
       "related": [
         "ALSA-2025:1671",
         "ALSA-2025:1673",
@@ -1432,7 +1487,7 @@
           "url": "https://curl.se/docs/CVE-2024-7264.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2629968"
         },
         {
@@ -1440,12 +1495,20 @@
           "url": "https://security.netapp.com/advisory/ntap-20240828-0008/"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241025-0006/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
         },
         {
           "type": "FIX",
           "url": "https://github.com/curl/curl/commit/27959ecce75cdb2809c0bdb3286e60e08fadb519"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
         }
       ],
       "affected": [
@@ -1481,7 +1544,7 @@
       "details": "When curl is told to use the Certificate Status Request TLS extension, often referred to as OCSP stapling, to verify that the server certificate is valid, it might fail to detect some OCSP problems and instead wrongly consider the response as fine.  If the returned status reports another error than 'revoked' (like for example 'unauthorized') it is not treated as a bad certficate.",
       "aliases": ["CURL-CVE-2024-8096"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-09-11T10:15:02Z",
+      "published": "2024-09-11T10:15:02.883Z",
       "related": [
         "CGA-g55g-qx76-5fjj",
         "SUSE-SU-2024:3202-1",
@@ -1500,7 +1563,7 @@
           "url": "https://curl.se/docs/CVE-2024-8096.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2669852"
         },
         {
@@ -1549,7 +1612,7 @@
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
       "aliases": ["CURL-CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2024-11-06T08:15:03Z",
+      "published": "2024-11-06T08:15:03.740Z",
       "related": [
         "MGASA-2024-0360",
         "SUSE-SU-2024:3925-1",
@@ -1560,6 +1623,38 @@
       ],
       "references": [
         {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
+        },
+        {
           "type": "FIX",
           "url": "https://curl.se/docs/CVE-2024-9681.html"
         },
@@ -1568,11 +1663,11 @@
           "url": "https://curl.se/docs/CVE-2024-9681.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2764830"
         },
         {
-          "type": "FIX",
+          "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
         },
         {
@@ -1613,7 +1708,7 @@
       "details": "When asked to use a `.netrc` file for credentials **and** to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has a `default` entry that\nomits both login and password. A rare circumstance.",
       "aliases": ["CURL-CVE-2025-0167"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-02-05T10:15:22Z",
+      "published": "2025-02-05T10:15:22.710Z",
       "related": [
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
@@ -1631,7 +1726,7 @@
           "url": "https://curl.se/docs/CVE-2025-0167.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2917232"
         },
         {
@@ -1672,7 +1767,7 @@
       "details": "libcurl would wrongly close the same eventfd file descriptor twice when taking\ndown a connection channel after having completed a threaded name resolve.",
       "aliases": ["CURL-CVE-2025-0665"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-02-05T10:15:22Z",
+      "published": "2025-02-05T10:15:22.857Z",
       "related": ["MGASA-2025-0123", "openSUSE-SU-2025:14809-1"],
       "references": [
         {
@@ -1684,7 +1779,7 @@
           "url": "https://curl.se/docs/CVE-2025-0665.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2954286"
         },
         {
@@ -1733,7 +1828,7 @@
       "details": "When libcurl is asked to perform automatic gzip decompression of\ncontent-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option,\n**using zlib 1.2.0.3 or older**, an attacker-controlled integer overflow would\nmake libcurl perform a buffer overflow.",
       "aliases": ["CURL-CVE-2025-0725"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-02-05T10:15:22Z",
+      "published": "2025-02-05T10:15:22.980Z",
       "related": [
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
@@ -1755,6 +1850,14 @@
           "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
         },
         {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2956023"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/curl/curl/commit/76f83f0db23846e254d940ec7"
+        },
+        {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/05/3"
         },
@@ -1765,14 +1868,6 @@
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/4"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2956023"
-        },
-        {
-          "type": "FIX",
-          "url": "https://github.com/curl/curl/commit/76f83f0db23846e254d940ec7"
         }
       ],
       "affected": [
@@ -1808,7 +1903,7 @@
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS transfers. Due to an omission, this check is not performed when connecting with QUIC for HTTP/3, when the TLS backend is wolfSSL. Documentation says the option works with wolfSSL, failing to specify that it does not for QUIC and HTTP/3. Since pinning makes the transfer succeed if the pin is fine, users could unwittingly connect to an impostor server without noticing.",
       "aliases": ["CURL-CVE-2025-5025"],
       "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-05-28T07:15:24Z",
+      "published": "2025-05-28T07:15:24.910Z",
       "references": [
         {
           "type": "ADVISORY",
@@ -1819,7 +1914,7 @@
           "url": "https://curl.se/docs/CVE-2025-5025.json"
         },
         {
-          "type": "REPORT",
+          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/3153497"
         },
         {

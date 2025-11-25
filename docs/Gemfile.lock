@@ -232,9 +232,9 @@ GEM
       jekyll (>= 3.5, < 5.0)
       jekyll-feed (~> 0.9)
       jekyll-seo-tag (~> 2.1)
-    minitest (5.26.1)
-    net-http (0.7.0)
-      uri
+    minitest (5.26.2)
+    net-http (0.8.0)
+      uri (>= 0.11.1)
     nokogiri (1.18.10-x86_64-linux-gnu)
       racc (~> 1.4)
     octokit (4.25.1)

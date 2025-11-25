@@ -35,11 +35,11 @@ const (
 func main() {
 	logger.InitGlobalLogger()
 
-	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
-	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
-	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
-	syncDeletions := flag.Bool("sync_deletions", false, "If false, do not delete files in bucket that are not local")
+	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
+	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)

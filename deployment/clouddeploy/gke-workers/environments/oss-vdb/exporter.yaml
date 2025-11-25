@@ -13,8 +13,8 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb
             args:
-              - "--uploadToGCS=true"
-              - "--num_workers=400"
+              - "--upload-to-gcs=true"
+              - "--workers=400"
               - "--bucket=osv-vulnerabilities"
-              - "--osv_vulns_bucket=osv-vulnerabilities"
+              - "--osv-vulns-bucket=osv-vulnerabilities"
 

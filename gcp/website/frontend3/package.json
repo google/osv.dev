@@ -21,13 +21,13 @@
   "devDependencies": {
     "copy-webpack-plugin": "10.2.4",
     "css-loader": "6.11.0",
-    "html-webpack-plugin": "5.6.4",
+    "html-webpack-plugin": "5.6.5",
     "mini-css-extract-plugin": "2.9.4",
     "raw-loader": "4.0.2",
-    "sass": "1.94.0",
+    "sass": "1.94.2",
     "sass-loader": "12.6.0",
     "style-loader": "3.3.4",
-    "webpack": "5.102.1",
+    "webpack": "5.103.0",
     "webpack-bundle-analyzer": "4.10.2",
     "webpack-cli": "4.10.0",
     "webpack-dev-server": "5.2.2"

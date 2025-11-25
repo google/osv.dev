@@ -541,10 +541,11 @@ class TaskRunner:
 
     filter_unknown_ecosystems(vulnerability)
 
-    # Generate Vanir signatures.
-    vulnerability = self._generate_vanir_signatures(vulnerability)
-
+    # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
+
+    # Fully enrich the vulnerability object in memory.
+    vulnerability = self._generate_vanir_signatures(vulnerability)
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)
@@ -552,9 +553,13 @@ class TaskRunner:
       # Discard changes due to conflict.
       return
 
-    # Update datastore with new information.
+    # Fetch the current state from Datastore.
     bug = osv.Bug.get_by_id(vulnerability.id)
-    if not bug:
+    is_new_bug = bug is None
+
+    has_changed = False
+    if is_new_bug:
+      has_changed = True
       if source_repo.name == 'oss-fuzz':
         logging.warning('%s not found for OSS-Fuzz source.', vulnerability.id)
         return
@@ -564,8 +569,29 @@ class TaskRunner:
           timestamp=osv.utcnow(),
           status=osv.BugStatus.PROCESSED,
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
+    else:
+      # Compare the newly enriched vulnerability with the stored one.
+      # Create a 'pure' vulnerability object from the existing bug for
+      # comparison, excluding external data that would cause false positives.
+      old_vulnerability = bug.to_vulnerability(
+          include_source=False, include_alias=False, include_upstream=False)
 
-    bug.update_from_vulnerability(vulnerability)
+      # Clear modified timestamps for a clean comparison.
+      old_vulnerability.modified.Clear()
+      vulnerability.modified.Clear()
+
+      if old_vulnerability != vulnerability:
+        has_changed = True
+
+    # Update the bug entity based on the comparison.
+    if has_changed:
+      bug.update_from_vulnerability(vulnerability)
+      bug.last_modified = osv.utcnow()
+    else:
+      # If no meaningful change, ensure last_modified reflects the source file's
+      # modified date, as only metadata might have changed.
+      bug.last_modified = orig_modified_date
+
     bug.public = True
     bug.import_last_modified = orig_modified_date
     # OSS-Fuzz sourced bugs use a different format for source_id.

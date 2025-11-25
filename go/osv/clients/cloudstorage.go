@@ -18,7 +18,6 @@ package clients
 import (
 	"context"
 	"errors"
-	"io"
 	"iter"
 	"time"
 )
@@ -26,10 +25,8 @@ import (
 var (
 	// ErrNotFound is returned when a storage object is not found.
 	ErrNotFound = errors.New("object not found")
-	// ErrPre preconditionFailed is returned when a generation precondition fails.
+	// ErrPreconditionFailed is returned when a generation precondition fails.
 	ErrPreconditionFailed = errors.New("precondition failed")
-	// ErrNotImplemented is returned when a CloudStorage method is not implemented.
-	ErrNotImplemented = errors.New("not implemented")
 )
 
 // WriteOptions specifies options for a write operation.
@@ -63,9 +60,8 @@ type CloudStorage interface {
 	// It must return ErrNotFound if the object does not exist.
 	ReadObjectAttrs(ctx context.Context, path string) (*Attrs, error)
 
-	// NewWriter returns a writer that writes to a storage object.
-	// The caller must call Close on the returned writer to commit the write.
-	NewWriter(ctx context.Context, path string, opts *WriteOptions) (io.WriteCloser, error)
+	// WriteObject writes a complete byte slice to a storage object.
+	WriteObject(ctx context.Context, path string, data []byte, opts *WriteOptions) error
 
 	// Objects returns an iterator over objects that match the prefix.
 	Objects(ctx context.Context, prefix string) iter.Seq2[string, error]
@@ -74,15 +70,3 @@ type CloudStorage interface {
 	Close() error
 }
 
-// WriteObject is a convenience helper that uses NewWriter to write a complete byte slice.
-func WriteObject(ctx context.Context, client CloudStorage, path string, data []byte, opts *WriteOptions) error {
-	w, err := client.NewWriter(ctx, path, opts)
-	if err != nil {
-		return err
-	}
-	if _, err := w.Write(data); err != nil {
-		_ = w.Close() // Attempt to close and clean up on error
-		return err
-	}
-	return w.Close()
-}

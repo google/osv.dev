@@ -1,6 +1,6 @@
 // Copyright 2025 Google LLC
 //
-// Licensed under the Apache-Version 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -18,11 +18,14 @@ import (
 	"errors"
 	"io"
 	"iter"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 )
+
+const numRetries = 3
 
 // GCSClient is a concrete implementation of CloudStorage for Google Cloud Storage.
 type GCSClient struct {
@@ -67,7 +70,27 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 	return &Attrs{Generation: attrs.Generation, CustomTime: attrs.CustomTime}, nil
 }
 
-func (c *GCSClient) NewWriter(ctx context.Context, path string, opts *WriteOptions) (io.WriteCloser, error) {
+func (c *GCSClient) WriteObject(ctx context.Context, path string, data []byte, opts *WriteOptions) error {
+	var err error
+	for i := range numRetries {
+		if i > 0 {
+			// Exponential backoff: 1s, 2s, 4s
+			time.Sleep(time.Duration(1<<uint(i-1)) * time.Second)
+		}
+		err = c.writeObjectOnce(ctx, path, data, opts)
+		if err == nil {
+			return nil
+		}
+		// Check if error is not transient and should not be retried
+		var apiErr *googleapi.Error
+		if !errors.As(err, &apiErr) || !(apiErr.Code >= 500 || apiErr.Code == 429) {
+			return err
+		}
+	}
+	return err
+}
+
+func (c *GCSClient) writeObjectOnce(ctx context.Context, path string, data []byte, opts *WriteOptions) error {
 	obj := c.bucket.Object(path)
 
 	if opts != nil && opts.IfGenerationMatches != nil {
@@ -88,28 +111,16 @@ func (c *GCSClient) NewWriter(ctx context.Context, path string, opts *WriteOptio
 		}
 	}
 
-	return &gcsWriter{Writer: writer}, nil
+	if _, err := writer.Write(data); err != nil {
+		return err
+	}
+	return writer.Close()
 }
 
 func (c *GCSClient) Close() error {
 	return c.client.Close()
 }
 
-type gcsWriter struct {
-	*storage.Writer
-}
-
-func (w *gcsWriter) Close() error {
-	err := w.Writer.Close()
-	if err != nil {
-		var googleErr *googleapi.Error
-		if errors.As(err, &googleErr) && googleErr.Code == 412 {
-			return ErrPreconditionFailed
-		}
-		return err
-	}
-	return nil
-}
 
 func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[string, error] {
 	return func(yield func(string, error) bool) {

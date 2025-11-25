@@ -1,9 +1,7 @@
 package testutils
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"iter"
 	"slices"
 	"strings"
@@ -23,13 +21,16 @@ type mockObject struct {
 // MockStorage implements osv.CloudStorage for testing.
 type MockStorage struct {
 	mu      sync.RWMutex
-	objects map[string]*mockObject // object path -> object data
+	objects     map[string]*mockObject // object path -> object data
+	WriteError  error                  // Global error to return on WriteObject
+	WriteErrors map[string]error       // Per-path error to return on WriteObject
 }
 
 // NewMockStorage creates a new mock storage client.
 func NewMockStorage() *MockStorage {
 	return &MockStorage{
-		objects: make(map[string]*mockObject),
+		objects:     make(map[string]*mockObject),
+		WriteErrors: make(map[string]error),
 	}
 }
 
@@ -61,34 +62,16 @@ func (c *MockStorage) ReadObjectAttrs(ctx context.Context, path string) (*client
 	return &clients.Attrs{Generation: obj.generation, CustomTime: obj.customTime}, nil
 }
 
-// mockWriter implements io.WriteCloser for the mock storage.
-type mockWriter struct {
-	client *MockStorage
-	path   string
-	opts   *clients.WriteOptions
-	buf    bytes.Buffer
-}
-
-func (w *mockWriter) Write(p []byte) (n int, err error) {
-	return w.buf.Write(p)
-}
-
-func (w *mockWriter) Close() error {
-	return w.client.commitWrite(w.path, w.buf.Bytes(), w.opts)
-}
-
-func (c *MockStorage) NewWriter(ctx context.Context, path string, opts *clients.WriteOptions) (io.WriteCloser, error) {
-	return &mockWriter{
-		client: c,
-		path:   path,
-		opts:   opts,
-	}, nil
-}
-
-// commitWrite is the internal method that performs the transactional write.
-func (c *MockStorage) commitWrite(path string, data []byte, opts *clients.WriteOptions) error {
+func (c *MockStorage) WriteObject(ctx context.Context, path string, data []byte, opts *clients.WriteOptions) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	if err, ok := c.WriteErrors[path]; ok {
+		return err
+	}
+	if c.WriteError != nil {
+		return c.WriteError
+	}
 
 	existingObj, exists := c.objects[path]
 

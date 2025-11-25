@@ -1,3 +1,17 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -70,6 +84,7 @@ func (u *Updater) run(ctx context.Context) {
 				continue
 			}
 			// Channel was closed, collate updates and write
+			// TODO: Parallelize these updates using a worker pool.
 			for id, updates := range allUpdates {
 				// Get the vulnerability from GCS
 				path := id + ".pb"
@@ -177,7 +192,7 @@ func (u *Updater) run(ctx context.Context) {
 				opts := &clients.WriteOptions{
 					IfGenerationMatches: &attrs.Generation,
 				}
-				if err := clients.WriteObject(ctx, u.gcsClient, path, newData, opts); err != nil {
+				if err := u.gcsClient.WriteObject(ctx, path, newData, opts); err != nil {
 					logger.Error("failed to write vuln to GCS", slog.String("id", id), slog.Any("err", err))
 					msg := &pubsub.Message{
 						Attributes: map[string]string{},

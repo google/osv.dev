@@ -93,8 +93,7 @@ func main() {
 MainLoop:
 	for path, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
 		if err != nil {
-			logger.Error("failed to list objects", slog.Any("err", err))
-			break
+			logger.Fatal("failed to list objects", slog.Any("err", err))
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
 		prefix := filepath.Base(path)

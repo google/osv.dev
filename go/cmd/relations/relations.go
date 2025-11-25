@@ -1,3 +1,17 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -29,6 +43,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	defer dsClient.Close()
 
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
@@ -41,12 +56,15 @@ func main() {
 		os.Exit(1)
 	}
 	gcsClient := clients.NewGCSClient(storageClient, bucketName)
+	defer gcsClient.Close()
 
 	pubsubClient, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	defer pubsubClient.Close()
+
 	topicName, ok := os.LookupEnv("OSV_FAILED_TASKS_TOPIC")
 	if !ok {
 		fmt.Println("OSV_FAILED_TASKS_TOPIC not set")
@@ -57,13 +75,11 @@ func main() {
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := ComputeAliasGroups(ctx, dsClient, updater.Ch); err != nil {
 			logger.Error("failed to compute alias groups", slog.Any("err", err))
 		}
-	}()
+	})
 	wg.Wait()
 	updater.Finish()
 }

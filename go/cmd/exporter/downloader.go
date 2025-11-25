@@ -38,7 +38,7 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 		}
 		vuln := &osvschema.Vulnerability{}
 		if err := proto.Unmarshal(data, vuln); err != nil {
-			logger.Error("failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
+			logger.Error("failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))
 			continue
 		}
 

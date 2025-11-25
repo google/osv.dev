@@ -2,8 +2,10 @@ package cvelist2osv
 
 import (
 	"fmt"
-	"sort"
+	"log/slog"
+	"slices"
 
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -86,7 +88,11 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 	}
 
 	if target.GetDatabaseSpecific() == nil {
-		target.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		var err error
+		target.DatabaseSpecific, err = structpb.NewStruct(nil)
+		if err != nil {
+			logger.Fatal("Failed to create DatabaseSpecific", slog.Any("error", err))
+		}
 	}
 
 	targetFields := target.GetDatabaseSpecific().GetFields()
@@ -128,6 +134,7 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 
 // cleanEvents deduplicates events and ensures there is only one Introduced event per group.
 func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
+
 	uniqueEvents := make([]*osvschema.Event, 0, len(events))
 	seen := make(map[string]bool)
 
@@ -142,29 +149,29 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 	}
 
 	// Sort: Introduced events come first.
-	sort.SliceStable(uniqueEvents, func(i, j int) bool {
+	slices.SortStableFunc(uniqueEvents, func(a, b *osvschema.Event) int {
 		// Introduced comes before everything else
-		if uniqueEvents[i].GetIntroduced() != "" && uniqueEvents[j].GetIntroduced() == "" {
-			return true
+		if a.GetIntroduced() != "" && b.GetIntroduced() == "" {
+			return -1
 		}
-		if uniqueEvents[i].GetIntroduced() == "" && uniqueEvents[j].GetIntroduced() != "" {
-			return false
+		if a.GetIntroduced() == "" && b.GetIntroduced() != "" {
+			return 1
 		}
-		// If both are introduced or both are not, keep original order (stable)
-		return i < j
+		return 0
 	})
 
 	// Ensure only one Introduced event remains.
 	// Since we grouped by Introduced value, all Introduced events in this group are identical.
 	var finalEvents []*osvschema.Event
-	hasIntroduced := false
+	introduced := ""
 	for _, e := range uniqueEvents {
 		if e.GetIntroduced() != "" {
-			if !hasIntroduced {
+			if introduced == "" {
 				finalEvents = append(finalEvents, e)
-				hasIntroduced = true
+				introduced = e.GetIntroduced()
+			} else if introduced != e.GetIntroduced() {
+				logger.Error("Found multiple introduced values in the same group", slog.Any("introduced", introduced), slog.Any("event", e.GetIntroduced()))
 			}
-			// Skip subsequent Introduced events as they are duplicates
 		} else {
 			finalEvents = append(finalEvents, e)
 		}

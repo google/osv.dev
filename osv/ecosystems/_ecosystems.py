@@ -47,6 +47,7 @@ _ecosystems = {
     'Go': SemverEcosystem,
     'Hackage': Hackage,
     'Hex': SemverEcosystem,
+    'Julia': SemverEcosystem,
     'Mageia': RPM,
     'Maven': Maven,
     'MinimOS': APK,

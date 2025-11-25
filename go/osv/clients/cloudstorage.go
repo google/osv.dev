@@ -69,6 +69,9 @@ type CloudStorage interface {
 
 	// Objects returns an iterator over objects that match the prefix.
 	Objects(ctx context.Context, prefix string) iter.Seq2[string, error]
+
+	// Close closes the CloudStorage client.
+	Close() error
 }
 
 // WriteObject is a convenience helper that uses NewWriter to write a complete byte slice.

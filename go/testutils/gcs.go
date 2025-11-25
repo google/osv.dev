@@ -141,3 +141,7 @@ func (c *MockStorage) Objects(ctx context.Context, prefix string) iter.Seq2[stri
 		}
 	}
 }
+
+func (c *MockStorage) Close() error {
+	return nil
+}

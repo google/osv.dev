@@ -26,13 +26,14 @@ import (
 
 // GCSClient is a concrete implementation of CloudStorage for Google Cloud Storage.
 type GCSClient struct {
+	client *storage.Client
 	bucket *storage.BucketHandle
 }
 
 // NewGCSClient creates a new GCSClient.
 func NewGCSClient(client *storage.Client, bucketName string) *GCSClient {
 	bucket := client.Bucket(bucketName)
-	return &GCSClient{bucket: bucket}
+	return &GCSClient{client: client, bucket: bucket}
 }
 
 func (c *GCSClient) ReadObject(ctx context.Context, path string) ([]byte, error) {
@@ -88,6 +89,10 @@ func (c *GCSClient) NewWriter(ctx context.Context, path string, opts *WriteOptio
 	}
 
 	return &gcsWriter{Writer: writer}, nil
+}
+
+func (c *GCSClient) Close() error {
+	return c.client.Close()
 }
 
 type gcsWriter struct {

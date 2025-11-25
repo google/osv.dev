@@ -226,21 +226,19 @@ func setup(ctx context.Context) (*appEnv, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create storage client: %w", err)
 	}
-	// We don't close the storage client here because it's passed to appEnv and used throughout the application.
-	// In a real application, we might want to manage its lifecycle more carefully, but for this tool it's acceptable.
-	// However, to be correct, we should probably add it to appEnv and close it on shutdown.
-	// For now, we will just use it.
-
 	gcsClient := clients.NewGCSClient(storageClient, bucketName)
 
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
+		gcsClient.Close()
 		err = fmt.Errorf("failed to create datastore client: %w", err)
 		return nil, err
 	}
 
 	pubsubClient, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
+		gcsClient.Close()
+		dsClient.Close()
 		err = fmt.Errorf("failed to create pubsub client: %w", err)
 		return nil, err
 	}
@@ -313,6 +311,8 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed setting up environment", slog.Any("err", err))
 	}
+	defer env.storage.Close()
+	defer env.ds.Close()
 	logger.Info("starting record checker")
 	if err := run(ctx, env); err != nil {
 		logger.Fatal("failed running record checker", slog.Any("err", err))

@@ -905,6 +905,8 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 	dsClient := testutils.MustNewDatastoreClientForTesting(t)
 	gcsClient := testutils.NewMockStorage()
 	publisher := &testutils.MockPublisher{}
+	defer gcsClient.Close()
+	defer dsClient.Close()
 
 	// Create a group with ALIAS_GROUP_VULN_LIMIT bugs
 	const limit = 32

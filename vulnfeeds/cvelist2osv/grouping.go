@@ -134,7 +134,6 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 
 // cleanEvents deduplicates events and ensures there is only one Introduced event per group.
 func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
-
 	uniqueEvents := make([]*osvschema.Event, 0, len(events))
 	seen := make(map[string]bool)
 
@@ -157,6 +156,7 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 		if a.GetIntroduced() == "" && b.GetIntroduced() != "" {
 			return 1
 		}
+		
 		return 0
 	})
 

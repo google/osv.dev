@@ -28,7 +28,7 @@ from .pub import Pub
 from .pypi import PyPI
 from .redhat import RPM
 from .rubygems import RubyGems
-from .semver_ecosystem_helper import SemverEcosystem
+from .semver_ecosystem_helper import SemverEcosystem, SemverLike
 from .ubuntu import Ubuntu
 
 _ecosystems = {
@@ -64,6 +64,7 @@ _ecosystems = {
     'SUSE': RPM,
     'SwiftURL': SemverEcosystem,
     'Ubuntu': Ubuntu,
+    'VSCode': SemverLike,
     'Wolfi': APK,
 
     # Ecosystems known in the schema, but without implementations.
@@ -72,6 +73,7 @@ _ecosystems = {
     'ConanCenter': None,
     'GIT': None,
     'GitHub Actions': None,
+    'Kubernetes': None,
     'Linux': None,
     'OSS-Fuzz': None,
     'Photon OS': None,

@@ -443,8 +443,10 @@ class Importer:
       self, storage_client: storage.Client, ndb_client: ndb.Client,
       source_repo: osv.SourceRepository, blob: storage.Blob,
       ignore_last_import_time: bool
-  ) -> None | Tuple[str, str, None | datetime.datetime]:
-    """Parse a GCS blob into a tuple of hash and Vulnerability
+  ) -> None | Tuple[str, str, None | datetime.datetime,
+                    List[vulnerability_pb2.Vulnerability]]:
+    """Parse a GCS blob into a tuple of hash, path, updated, and Vulnerability
+    list.
 
     Criteria for returning a tuple:
     - any record in the blob is new (i.e. a new ID) or modified since last run,
@@ -469,8 +471,8 @@ class Importer:
       input fails OSV JSON Schema validation
 
     Returns:
-      a tuple of (hash, path, updated) or None when the blob has an
-      unexpected name or doesn't meet the import criteria.
+      a tuple of (hash, path, updated, vulnerability_list) or None when the blob
+      has an unexpected name or doesn't meet the import criteria.
     """
     if not _is_vulnerability_file(source_repo, blob.name):
       return None
@@ -505,13 +507,14 @@ class Importer:
 
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
-      return blob_hash, blob.name, None  # do not log updated date for reimports
+      # do not log updated date for reimports
+      return blob_hash, blob.name, None, vulns
 
     # If being run under test, reuse existing NDB client.
     ndb_ctx = ndb.context.get_context(False)
     if ndb_ctx is None:
       # Production. Use the NDB client passed in.
-      ndb_ctx = ndb_client.context()
+      ndb_ctx = ndb_client.context(cache_policy=False)
     else:
       # Unit testing. Reuse the unit test's existing NDB client to avoid
       # "RuntimeError: Context is already created for this thread."
@@ -524,7 +527,7 @@ class Importer:
         # The bug already exists and has been modified since last import
         if (bug is None or
             bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC)):
-          return blob_hash, blob.name, blob.updated
+          return blob_hash, blob.name, blob.updated, vulns
 
       return None
 
@@ -615,7 +618,7 @@ class Importer:
         continue
 
       try:
-        _ = osv.parse_vulnerability(
+        vuln = osv.parse_vulnerability(
             path,
             key_path=source_repo.key_path,
             strict=source_repo.strict_validation and self._strict_validation)
@@ -638,6 +641,8 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
+      put_if_newer(vuln, source_repo.name, path)
+
       self._request_analysis_external(
           source_repo, original_sha256, changed_entry, source_timestamp=ts)
 
@@ -721,12 +726,21 @@ class Importer:
               'Failed to parse vulnerability (when considering for import) "' +
               blob.name + '"')
 
-      for cv in converted_vulns:
-        if cv:
-          logging.info('Requesting analysis of bucket entry: %s/%s',
-                       source_repo.bucket, cv[1])
-          self._request_analysis_external(
-              source_repo, cv[0], cv[1], source_timestamp=cv[2])
+      for cv_result in converted_vulns:
+        if not cv_result:
+          continue
+        blob_hash, blob_name, source_timestamp, vulns = cv_result
+        logging.info('Requesting analysis of bucket entry: %s/%s',
+                     source_repo.bucket, blob_name)
+
+        for vuln in vulns:
+          put_if_newer(vuln, source_repo.name, blob_name)
+
+        self._request_analysis_external(
+            source_repo,
+            blob_hash,
+            blob_name,
+            source_timestamp=source_timestamp)
 
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
@@ -952,9 +966,9 @@ class Importer:
         single_vuln = s.get(
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
-        # Validate the individual request
+        # Validate the individual request and parse the vulnerability.
         try:
-          _ = osv.parse_vulnerability_from_dict(
+          v = osv.parse_vulnerability_from_dict(
               single_vuln.json(),
               source_repo.key_path,
               strict=source_repo.strict_validation and self._strict_validation)
@@ -965,6 +979,9 @@ class Importer:
               source_repo.link + vuln.id + source_repo.extension,
               single_vuln.content)
           self._record_quality_finding(source_repo.name, bug_id)
+          continue
+
+        put_if_newer(v, source_repo.name, v.id + source_repo.extension)
         logging.info('Requesting analysis of REST record: %s',
                      vuln.id + source_repo.extension)
         ts = None if ignore_last_import else vuln_modified
@@ -1083,6 +1100,162 @@ class Importer:
                         bug.issue_id)
 
 
+def preprocess_vuln(vuln: vulnerability_pb2.Vulnerability):
+  """Do preprocessing steps on vulnerability that the worker does."""
+  # Duplicating parts of _do_update() in worker.py
+  # maybe_normalize_package_names:
+  for affected in vuln.affected:
+    if not affected.package.ecosystem:
+      continue
+    affected.package.name = osv.ecosystems.maybe_normalize_package_names(
+        affected.package.name, affected.package.ecosystem)
+  # skipping fix_invalid_ghsa because I don't think it's a problem anymore.
+  # filter_unknown_ecoystems:
+  filtered = []
+  for affected in vuln.affected:
+    if not affected.HasField('package'):
+      filtered.append(affected)
+    elif osv.ecosystems.is_known(affected.package.ecosystem):
+      filtered.append(affected)
+    else:
+      logging.error('%s contains unknown ecosystem "%s"', vuln.id,
+                    affected.package.ecosystem)
+  del vuln.affected[:]
+  vuln.affected.extend(filtered)
+
+
+def new_bug_from_vuln(vuln: vulnerability_pb2.Vulnerability, source: str,
+                      path: str) -> osv.Bug:
+  """Create a new Bug entity from a vulnerability, following similar logic to
+  worker._do_update()"""
+  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+  bug = osv.Bug(
+      db_id=vuln.id,
+      timestamp=osv.utcnow(),
+      status=osv.BugStatus.PROCESSED,
+      source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
+  bug.update_from_vulnerability(vuln)
+  bug.public = True
+  bug.import_last_modified = orig_modified
+  if source != 'oss-fuzz' or not bug.source_id:
+    bug.source_id = f'{source}:{path}'
+  if bug.withdrawn:
+    bug.status = osv.BugStatus.INVALID
+  else:
+    bug.status = osv.BugStatus.PROCESSED
+
+  if not vuln.affected:
+    logging.info('%s does not affect any packages. Marking as invalid.',
+                 vuln.id)
+    bug.status = osv.BugStatus.INVALID
+
+  bug.affected_checksum = compute_raw_affected_checksum(vuln)
+
+  return bug
+
+
+def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
+                         source: str, path: str):
+  """Updates a Bug entity from a vulnerability, following similar logic to 
+  worker._do_update(), with special handling to check if the raw affected
+  packages has changed."""
+  import_modified = vuln.modified.ToDatetime(datetime.UTC)
+  prev_modified = bug.last_modified
+  prev_affected = bug.affected_packages
+  bug.update_from_vulnerability(vuln)
+  bug.public = True
+  bug.import_last_modified = import_modified
+  if source != 'oss-fuzz' or not bug.source_id:
+    bug.source_id = f'{source}:{path}'
+  if bug.withdrawn:
+    bug.status = osv.BugStatus.INVALID
+  else:
+    bug.status = osv.BugStatus.PROCESSED
+
+  if not vuln.affected:
+    logging.info('%s does not affect any packages. Marking as invalid.',
+                 vuln.id)
+    bug.status = osv.BugStatus.INVALID
+
+  if bug.last_modified < prev_modified:
+    # Prevent the modified date going backwards,
+    # e.g. if source updated the bug again before the worker finished
+    bug.last_modified = osv.utcnow()
+
+  new_checksum = compute_raw_affected_checksum(vuln)
+  if bug.affected_checksum == new_checksum:
+    # The checksum of the raw affected packages is unchanged (so no change has
+    # been made to the affected packages). Restore the previously enriched,
+    # affected_packages from the workers.
+    bug.affected_packages = prev_affected
+  bug.affected_checksum = new_checksum
+
+
+def compute_raw_affected_checksum(vuln: vulnerability_pb2.Vulnerability):
+  """Computes a checksum of the affected array from a vulnerability."""
+  # Grab the minimum information out of afftected and sort.
+  #TODO(michaelkedar): This should be in models.py
+  aff = []
+  # (ecocystem, package, [
+  #   (type, repo, [(introduced, fixed, last_affected, limit)])
+  # ], [versions])
+  for affected in vuln.affected:
+    ecosystem = affected.package.ecosystem
+    package = affected.package.name
+    versions = sorted(affected.versions)
+    ranges = []
+    for r in affected.ranges:
+      t = r.type
+      repo = r.repo
+      events = sorted(
+          (e.introduced, e.fixed, e.last_affected, e.limit) for e in r.events)
+      ranges.append((t, repo, events))
+    ranges.sort()
+    aff.append((ecosystem, package, ranges, versions))
+  aff.sort()
+  b = json.dumps(aff).encode()
+  return osv.sha256_bytes(b)
+
+
+def log_update_latency(bug: osv.Bug):
+  now = int(time.time())
+  source_time = int(bug.import_last_modified.timestamp())
+  logging.info(
+      'Importer put Bug',
+      extra={
+          'json_fields': {
+              'vuln_id': bug.db_id,
+              'latency': str(now - source_time),
+          }
+      })
+
+
+def put_if_newer(vuln: vulnerability_pb2.Vulnerability, source: str, path: str):
+  """Try to write vulnerability to datastore, keeping enumerated versions if
+  unchanged. Does not write if vuln's modified date is older than what's already
+  in datastore.
+  """
+  preprocess_vuln(vuln)
+  bug = osv.Bug.get_by_id(vuln.id)
+  if bug is None:
+    bug = new_bug_from_vuln(vuln, source, path)
+    bug.put()
+    log_update_latency(bug)
+    return
+
+  # Only update if the incoming vulnerability is newer.
+  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+  if bug.import_last_modified and orig_modified <= bug.import_last_modified:
+    logging.info(
+        'Skipping update for %s because incoming modification time'
+        ' (%s) is not newer than existing record (%s)', vuln.id, orig_modified,
+        bug.import_last_modified)
+    return
+  update_bug_from_vuln(bug, vuln, source, path)
+  bug.put()
+  log_update_latency(bug)
+
+
 def main():
   parser = argparse.ArgumentParser(description='Importer')
   parser.add_argument(
@@ -1133,5 +1306,5 @@ if __name__ == '__main__':
   atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  with _ndb_client.context():
+  with _ndb_client.context(cache_policy=False):
     main()

@@ -159,7 +159,7 @@ func TestNormalizeVersion(t *testing.T) {
 		{
 			description:               "Valid supported version #4",
 			inputVersion:              ".1",
-			expectedNormalizedVersion: "1",
+			expectedNormalizedVersion: "0-1",
 			expectedOk:                true,
 		},
 		{
@@ -296,6 +296,15 @@ func TestParseVersionRange(t *testing.T) {
 			description: "Invalid operator in first part",
 			input:       "< 1.0, < 2.0",
 			expectErr:   true,
+		},
+		{
+			description: "too many spaces",
+			input:       ">= 7.65.0 , < 7.71.0",
+			expectedResult: models.AffectedVersion{
+				Introduced: "7.65.0",
+				Fixed:      "7.71.0",
+			},
+			expectErr: false,
 		},
 	}
 

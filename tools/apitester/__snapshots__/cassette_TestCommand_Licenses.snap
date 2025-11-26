@@ -78,7 +78,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     },
@@ -94,7 +94,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "2025-10-14T04:20:58.312543Z"
+          "modified": "<RFC3339 date with the year 2025>"
         }
       ]
     },
@@ -118,7 +118,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     },
@@ -134,7 +134,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "2025-10-14T04:20:58.312543Z"
+          "modified": "<RFC3339 date with the year 2025>"
         }
       ]
     },
@@ -186,7 +186,7 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
-          "modified": "2024-02-16T08:21:35.601880Z"
+          "modified": "<RFC3339 date with the year 2024>"
         }
       ]
     },
@@ -197,7 +197,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "2025-10-14T04:20:58.312543Z"
+          "modified": "<RFC3339 date with the year 2025>"
         }
       ]
     },
@@ -221,7 +221,7 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
-          "modified": "2024-02-16T08:21:35.601880Z"
+          "modified": "<RFC3339 date with the year 2024>"
         }
       ]
     },
@@ -264,7 +264,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }
@@ -280,7 +280,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }
@@ -296,7 +296,7 @@
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "2023-11-08T04:05:08.868477Z"
+          "modified": "<RFC3339 date with the year 2023>"
         }
       ]
     }

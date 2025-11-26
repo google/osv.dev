@@ -40,13 +40,13 @@ MAYBE_USE_DEBIAN_COPYRIGHT_METADATA=""
 if [[ -n "${DEBIAN_COPYRIGHT_GCS_PATH}" ]]; then
   gsutil ${BE_VERBOSE="-q"} cp "${DEBIAN_COPYRIGHT_GCS_PATH}" "${WORK_DIR}"
   tar -C "${WORK_DIR}" -xf "${WORK_DIR}/$(basename ${DEBIAN_COPYRIGHT_GCS_PATH})"
-  MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian_metadata_path ${WORK_DIR}/metadata.ftp-master.debian.org"
+  MAYBE_USE_DEBIAN_COPYRIGHT_METADATA="--debian-metadata-path ${WORK_DIR}/metadata.ftp-master.debian.org"
 fi
 
 ./cpe-repo-gen \
-  --cpe_dictionary_dir="${CPE_JSON_DIR}/nvdcpe-2.0-chunks" \
+  --cpe-dictionary-dir="${CPE_JSON_DIR}/nvdcpe-2.0-chunks" \
   ${MAYBE_USE_DEBIAN_COPYRIGHT_METADATA} \
-  --output_dir="${WORK_DIR}"
+  --output-dir="${WORK_DIR}"
 
 
 gsutil ${BE_VERBOSE="-q"} cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"

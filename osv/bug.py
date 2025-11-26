@@ -34,6 +34,8 @@ VERSION_COMPONENT_REGEX = re.compile(
 
 def normalize_tag(tag):
   """Normalize a single tag for fuzzy version searching."""
+  if tag.startswith('.'):
+    tag = '0' + tag
   components = VERSION_COMPONENT_REGEX.findall(tag)
   return '-'.join(components)
 

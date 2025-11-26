@@ -80,6 +80,7 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 
 // Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
 func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
+	// TODO: try unnormalized version first.
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
 		return "", err
@@ -99,6 +100,9 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 // Normalize version strings found in CVE CPE Match data or Git tags.
 // Use the same logic and behaviour as normalize_tag() osv/bug.py for consistency.
 func NormalizeVersion(version string) (normalizedVersion string, e error) {
+	if strings.HasPrefix(version, ".") {
+		version = "0" + version
+	}
 	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
 	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
 	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)

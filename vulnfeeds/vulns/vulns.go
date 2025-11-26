@@ -425,6 +425,10 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 	// Index 0 will always be "", so the length must be at least 2 to be relevant
 	if len(pathParts) >= 2 {
 		if u.Host == "github.com" {
+			if len(pathParts) >= 3 && pathParts[1] == "CVEProject" {
+				return osvschema.Reference_ADVISORY
+			}
+
 			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
 				return osvschema.Reference_FIX

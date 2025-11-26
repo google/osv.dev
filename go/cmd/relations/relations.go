@@ -95,6 +95,7 @@ func setupClients(ctx context.Context) (gClients, error) {
 	if err != nil {
 		dsClient.Close()
 		gcsClient.Close()
+
 		return gClients{}, fmt.Errorf("failed to create pubsub client: %w", err)
 	}
 	publisher := &clients.GCPPublisher{Publisher: pubsubClient.Publisher(topicName)}

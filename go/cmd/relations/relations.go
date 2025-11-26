@@ -66,41 +66,38 @@ func main() {
 }
 
 func setupClients(ctx context.Context) (gClients, error) {
+	// Check necessary environment variables
 	projectID, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !ok {
 		return gClients{}, errors.New("GOOGLE_CLOUD_PROJECT not set")
 	}
+	bucketName, ok := os.LookupEnv("OSV_VULNERABILITIES_BUCKET")
+	if !ok {
+		return gClients{}, errors.New("OSV_VULNERABILITIES_BUCKET not set")
+	}
+	topicName, ok := os.LookupEnv("OSV_FAILED_TASKS_TOPIC")
+	if !ok {
+		return gClients{}, errors.New("OSV_FAILED_TASKS_TOPIC not set")
+	}
+
+	// Initialize clients
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
 		return gClients{}, fmt.Errorf("failed to create datastore client: %w", err)
 	}
-
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
+		dsClient.Close()
 		return gClients{}, fmt.Errorf("failed to create storage client: %w", err)
 	}
-	bucketName, ok := os.LookupEnv("OSV_VULNERABILITIES_BUCKET")
-	if !ok {
-		storageClient.Close()
-		return gClients{}, errors.New("OSV_VULNERABILITIES_BUCKET not set")
-	}
 	gcsClient := clients.NewGCSClient(storageClient, bucketName)
-
 	pubsubClient, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
+		dsClient.Close()
 		gcsClient.Close()
 		return gClients{}, fmt.Errorf("failed to create pubsub client: %w", err)
 	}
-
-	topicName, ok := os.LookupEnv("OSV_FAILED_TASKS_TOPIC")
-	if !ok {
-		gcsClient.Close()
-		pubsubClient.Close()
-
-		return gClients{}, errors.New("OSV_FAILED_TASKS_TOPIC not set")
-	}
 	publisher := &clients.GCPPublisher{Publisher: pubsubClient.Publisher(topicName)}
-
 	closeAll := func() {
 		dsClient.Close()
 		gcsClient.Close()

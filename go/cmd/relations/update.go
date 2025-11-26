@@ -19,6 +19,7 @@ import (
 	"errors"
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,6 +126,7 @@ func (u *Updater) run(ctx context.Context) {
 
 				hasUpdates := false
 				var modified time.Time
+				updatedFields := []string{}
 				for _, u := range updates {
 					switch u.Field {
 					case updateFieldAlias:
@@ -139,6 +141,7 @@ func (u *Updater) run(ctx context.Context) {
 						}
 						hasUpdates = true
 						v.Aliases = val
+						updatedFields = append(updatedFields, "aliases")
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp
 						}
@@ -153,6 +156,7 @@ func (u *Updater) run(ctx context.Context) {
 						}
 						hasUpdates = true
 						v.Upstream = val
+						updatedFields = append(updatedFields, "upstream")
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp
 						}
@@ -222,7 +226,7 @@ func (u *Updater) run(ctx context.Context) {
 					if errors.Is(err, clients.ErrPreconditionFailed) {
 						msg.Attributes["type"] = "gcs_gen_mismatch"
 						msg.Attributes["id"] = id
-						msg.Attributes["field"] = "aliases" // TODO: Make this dynamic if we support other fields
+						msg.Attributes["field"] = strings.Join(updatedFields, ",")
 					} else {
 						msg.Data = newData
 						msg.Attributes["type"] = "gcs_retry"

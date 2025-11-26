@@ -1,2 +1,2 @@
 #!/bin/bash
-poetry run python validate.py
+poetry sync && poetry run python validate.py

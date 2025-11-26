@@ -38,6 +38,7 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 				if err != nil {
 					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
 					cancel()
+
 					break
 				}
 			} else {

@@ -104,9 +104,11 @@ func (u *Updater) run(ctx context.Context) {
 							}
 							u.publisher.Publish(ctx, msg)
 						}
+
 						continue
 					}
 					logger.Error("failed to read vuln from GCS", slog.String("id", id), slog.Any("err", err))
+
 					continue
 				}
 				attrs, err := u.gcsClient.ReadObjectAttrs(ctx, path)
@@ -131,7 +133,7 @@ func (u *Updater) run(ctx context.Context) {
 							logger.Error("updated aliases are not []string", slog.String("id", id))
 							continue
 						}
-						if slices.Compare(v.Aliases, val) == 0 {
+						if slices.Compare(v.GetAliases(), val) == 0 {
 							// No actual changes, do not update
 							continue
 						}
@@ -146,7 +148,7 @@ func (u *Updater) run(ctx context.Context) {
 							logger.Error("updated upstreams are not []string", slog.String("id", id))
 							continue
 						}
-						if slices.Compare(v.Upstream, val) == 0 {
+						if slices.Compare(v.GetUpstream(), val) == 0 {
 							continue
 						}
 						hasUpdates = true
@@ -156,7 +158,6 @@ func (u *Updater) run(ctx context.Context) {
 						}
 					default:
 						logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
-
 					}
 				}
 				if !hasUpdates {
@@ -174,20 +175,29 @@ func (u *Updater) run(ctx context.Context) {
 				key := datastore.NameKey("Vulnerability", id, nil)
 				if err := tx.Get(key, &vuln); err != nil {
 					logger.Error("failed to get vuln from Datastore", slog.String("id", id), slog.Any("err", err))
-					tx.Rollback()
+					if err := tx.Rollback(); err != nil {
+						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+					}
+
 					continue
 				}
 				vuln.Modified = modified
 				if _, err := tx.Put(key, &vuln); err != nil {
 					logger.Error("failed to put vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-					tx.Rollback()
+					if err := tx.Rollback(); err != nil {
+						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+					}
+
 					continue
 				}
 				listedVuln := models.NewListedVulnerabilityFromProto(v)
 				listedKey := datastore.NameKey("ListedVulnerability", id, nil)
 				if _, err := tx.Put(listedKey, listedVuln); err != nil {
 					logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-					tx.Rollback()
+					if err := tx.Rollback(); err != nil {
+						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+					}
+
 					continue
 				}
 				if _, err := tx.Commit(); err != nil {
@@ -218,10 +228,12 @@ func (u *Updater) run(ctx context.Context) {
 						msg.Attributes["type"] = "gcs_retry"
 					}
 					u.publisher.Publish(ctx, msg)
+
 					continue
 				}
 				logger.Info("updated vuln", slog.String("id", id))
 			}
+
 			return
 		}
 	}

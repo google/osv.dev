@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package osv provides core OSV logic and clients.
+// Package clients provides clients for google cloud services.
 package clients
 
 import (
@@ -69,4 +69,3 @@ type CloudStorage interface {
 	// Close closes the CloudStorage client.
 	Close() error
 }
-

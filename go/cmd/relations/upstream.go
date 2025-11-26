@@ -54,6 +54,7 @@ func computeUpstream(targetBugUpstream []string, bugs map[string][]string) []str
 		}
 	}
 	slices.Sort(result)
+
 	return result
 }
 
@@ -70,6 +71,7 @@ func createUpstreamGroup(ctx context.Context, cl *datastore.Client, vulnID strin
 	}
 	group.Key = key
 	updateVulnWithUpstream(ch, vulnID, group)
+
 	return group, nil
 }
 
@@ -80,11 +82,12 @@ func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *model
 			return nil, err
 		}
 		updateVulnWithUpstream(ch, group.VulnID, nil)
-		return nil, nil
+
+		return nil, nil //nolint:nilnil
 	}
 
 	if slices.Equal(upstreamIDs, group.UpstreamIDs) {
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 
 	group.UpstreamIDs = upstreamIDs
@@ -93,6 +96,7 @@ func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *model
 		return nil, err
 	}
 	updateVulnWithUpstream(ch, group.VulnID, group)
+
 	return group, nil
 }
 
@@ -179,6 +183,7 @@ func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetU
 	}
 	targetUpstreamGroup.UpstreamHierarchy = upstreamJSON
 	_, err = cl.Put(ctx, targetUpstreamGroup.Key, targetUpstreamGroup)
+
 	return err
 }
 

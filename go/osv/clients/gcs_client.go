@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package clients
 
 import (
@@ -46,6 +47,7 @@ func (c *GCSClient) ReadObject(ctx context.Context, path string) ([]byte, error)
 		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil, ErrNotFound
 		}
+
 		return nil, err
 	}
 	defer reader.Close()
@@ -65,8 +67,10 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil, ErrNotFound
 		}
+
 		return nil, err
 	}
+
 	return &Attrs{Generation: attrs.Generation, CustomTime: attrs.CustomTime}, nil
 }
 
@@ -75,7 +79,7 @@ func (c *GCSClient) WriteObject(ctx context.Context, path string, data []byte, o
 	for i := range numRetries {
 		if i > 0 {
 			// Exponential backoff: 1s, 2s, 4s
-			time.Sleep(time.Duration(1<<uint(i-1)) * time.Second)
+			time.Sleep(time.Duration(1<<(i-1)) * time.Second)
 		}
 		err = c.writeObjectOnce(ctx, path, data, opts)
 		if err == nil {
@@ -83,10 +87,11 @@ func (c *GCSClient) WriteObject(ctx context.Context, path string, data []byte, o
 		}
 		// Check if error is not transient and should not be retried
 		var apiErr *googleapi.Error
-		if !errors.As(err, &apiErr) || !(apiErr.Code >= 500 || apiErr.Code == 429) {
+		if !errors.As(err, &apiErr) || (apiErr.Code < 500 && apiErr.Code != 429) {
 			return err
 		}
 	}
+
 	return err
 }
 
@@ -114,13 +119,13 @@ func (c *GCSClient) writeObjectOnce(ctx context.Context, path string, data []byt
 	if _, err := writer.Write(data); err != nil {
 		return err
 	}
+
 	return writer.Close()
 }
 
 func (c *GCSClient) Close() error {
 	return c.client.Close()
 }
-
 
 func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[string, error] {
 	return func(yield func(string, error) bool) {
@@ -131,6 +136,7 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[string
 				if !errors.Is(err, iterator.Done) {
 					yield("", err)
 				}
+
 				return
 			}
 			if !yield(attrs.Name, nil) {

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ func updateAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []strin
 		for _, vID := range vulnIDs {
 			changedVulns[vID] = nil
 		}
+
 		return cl.Delete(ctx, key)
 	}
 	if len(vulnIDs) > aliasGroupVulnLimit {
@@ -47,6 +48,7 @@ func updateAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []strin
 		for _, vID := range vulnIDs {
 			changedVulns[vID] = nil
 		}
+
 		return cl.Delete(ctx, key)
 	}
 
@@ -62,6 +64,7 @@ func updateAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []strin
 	for _, vID := range vulnIDs {
 		changedVulns[vID] = &group
 	}
+
 	return nil
 }
 
@@ -176,13 +179,13 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 		if _, ok := allowList[vulnID]; len(vuln.AliasRaw) > vulnAliasesLimit && !ok {
 			logger.Warn("Skipping computation of vuln with too many aliases",
 				slog.String("id", vulnID), slog.Any("aliases", vuln.AliasRaw))
+
 			continue
 		}
 		for _, alias := range vuln.AliasRaw {
 			addToSet(vulnAliases, vulnID, alias)
 			addToSet(vulnAliases, alias, vulnID)
 		}
-
 	}
 
 	visited := make(map[string]struct{})
@@ -216,6 +219,7 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 			if err := cl.Delete(ctx, key); err != nil {
 				return err
 			}
+
 			continue
 		}
 		vulnIDs := computeAliases(vulnID, visited, vulnAliases)

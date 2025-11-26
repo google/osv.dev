@@ -74,17 +74,18 @@ def main() -> int:
       packages=['stdlib', 'requests'],
       summary='A vulnerability',
       is_fixed=True,
-      severities=[Severity(type='CVSS_V3', score='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')],
+      severities=[
+          Severity(
+              type='CVSS_V3',
+              score='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')
+      ],
       autocomplete_tags=['cve-123-456', 'stdlib', 'requests'],
       search_indices=['cve-123-456', 'stdlib', 'requests'],
   ).put()
 
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
-  result = subprocess.run(
-      ['go', 'run', './validate.go'],
-      check=False,
-      cwd='.')
+  result = subprocess.run(['go', 'run', './validate.go'], check=False, cwd='.')
   if result.returncode != 0:
     return result.returncode
 

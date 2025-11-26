@@ -232,6 +232,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 	if err != nil {
 		gcsClient.Close()
 		err = fmt.Errorf("failed to create datastore client: %w", err)
+
 		return nil, err
 	}
 
@@ -240,6 +241,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 		gcsClient.Close()
 		dsClient.Close()
 		err = fmt.Errorf("failed to create pubsub client: %w", err)
+
 		return nil, err
 	}
 	publisher := pubsubClient.Publisher(pubsubTopic)
@@ -267,7 +269,7 @@ type checkRecordResult struct {
 	err        error
 }
 
-func checkRecord(ctx context.Context, cl *datastore.Client, storage clients.CloudStorage, id string, vuln *models.Vulnerability) checkRecordResult {
+func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.CloudStorage, id string, vuln *models.Vulnerability) checkRecordResult {
 	res := checkRecordResult{id: id}
 
 	if vuln == nil {
@@ -288,13 +290,14 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storage clients.Clou
 		vuln = &fetchedVuln
 	}
 
-	attrs, err := storage.ReadObjectAttrs(ctx, fmt.Sprintf("all/pb/%s.pb", id))
+	attrs, err := storageCl.ReadObjectAttrs(ctx, fmt.Sprintf("all/pb/%s.pb", id))
 	if err != nil {
 		res.needsRetry = true
 		if !errors.Is(err, clients.ErrNotFound) {
 			// Log the error if it's not the expected "not found" error.
 			res.err = fmt.Errorf("failed to read object for %s: %w", id, err)
 		}
+
 		return res
 	}
 

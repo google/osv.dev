@@ -13,7 +13,7 @@ type MockPublishResult struct {
 	err   error
 }
 
-func (r *MockPublishResult) Get(ctx context.Context) (string, error) {
+func (r *MockPublishResult) Get(_ context.Context) (string, error) {
 	return r.msgID, r.err
 }
 
@@ -22,9 +22,10 @@ type MockPublisher struct {
 	Messages []*pubsub.Message
 }
 
-func (p *MockPublisher) Publish(ctx context.Context, msg *pubsub.Message) clients.PublishResult {
+func (p *MockPublisher) Publish(_ context.Context, msg *pubsub.Message) clients.PublishResult {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.Messages = append(p.Messages, msg)
+
 	return &MockPublishResult{msgID: "mock-msg-id", err: nil}
 }

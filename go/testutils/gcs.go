@@ -20,7 +20,7 @@ type mockObject struct {
 
 // MockStorage implements osv.CloudStorage for testing.
 type MockStorage struct {
-	mu      sync.RWMutex
+	mu          sync.RWMutex
 	objects     map[string]*mockObject // object path -> object data
 	WriteError  error                  // Global error to return on WriteObject
 	WriteErrors map[string]error       // Per-path error to return on WriteObject
@@ -34,7 +34,7 @@ func NewMockStorage() *MockStorage {
 	}
 }
 
-func (c *MockStorage) ReadObject(ctx context.Context, path string) ([]byte, error) {
+func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -50,7 +50,7 @@ func (c *MockStorage) ReadObject(ctx context.Context, path string) ([]byte, erro
 	return dataCopy, nil
 }
 
-func (c *MockStorage) ReadObjectAttrs(ctx context.Context, path string) (*clients.Attrs, error) {
+func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.Attrs, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -62,7 +62,7 @@ func (c *MockStorage) ReadObjectAttrs(ctx context.Context, path string) (*client
 	return &clients.Attrs{Generation: obj.generation, CustomTime: obj.customTime}, nil
 }
 
-func (c *MockStorage) WriteObject(ctx context.Context, path string, data []byte, opts *clients.WriteOptions) error {
+func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, opts *clients.WriteOptions) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -104,7 +104,7 @@ func (c *MockStorage) WriteObject(ctx context.Context, path string, data []byte,
 	return nil
 }
 
-func (c *MockStorage) Objects(ctx context.Context, prefix string) iter.Seq2[string, error] {
+func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[string, error] {
 	// Create a snapshot of the keys to iterate over, so we don't hold the lock.
 	c.mu.RLock()
 	var keys []string

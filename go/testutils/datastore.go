@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testutils provides utilities for testing.
 package testutils
 
 import (
@@ -22,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -39,7 +41,7 @@ var (
 	emulatorCmd  *exec.Cmd
 	emulatorPort string
 	emulatorOnce sync.Once
-	emulatorErr  error
+	emulatorErr  error //nolint:errname // This is error state of the emulator, not an error type
 )
 
 func getFreePort() (string, error) {
@@ -52,10 +54,12 @@ func getFreePort() (string, error) {
 		return "", err
 	}
 	defer listener.Close()
-	return fmt.Sprintf("%d", listener.Addr().(*net.TCPAddr).Port), nil
+
+	return strconv.Itoa(listener.Addr().(*net.TCPAddr).Port), nil
 }
 
 func resetEmulator(t *testing.T) {
+	t.Helper()
 	resetURL := fmt.Sprintf("http://%s/reset", net.JoinHostPort(datastoreEmulatorHost, emulatorPort))
 	req, err := http.NewRequest(http.MethodPost, resetURL, nil)
 	if err != nil {
@@ -73,6 +77,7 @@ func resetEmulator(t *testing.T) {
 
 // StartDatastoreEmulator ensures the Datastore emulator is running once per test execution.
 func StartDatastoreEmulator(t *testing.T) {
+	t.Helper()
 	emulatorOnce.Do(func() {
 		port, err := getFreePort()
 		if err != nil {
@@ -81,6 +86,7 @@ func StartDatastoreEmulator(t *testing.T) {
 		}
 		emulatorPort = port
 
+		//nolint:gosec
 		emulatorCmd = exec.Command("gcloud", "emulators", "firestore", "start",
 			"--database-mode=datastore-mode",
 			fmt.Sprintf("--host-port=%s:%s", datastoreEmulatorHost, emulatorPort))
@@ -110,6 +116,7 @@ func StartDatastoreEmulator(t *testing.T) {
 				if err == nil {
 					conn.Close()
 					close(ready)
+
 					return
 				}
 				time.Sleep(100 * time.Millisecond)
@@ -135,15 +142,14 @@ func StartDatastoreEmulator(t *testing.T) {
 			os.Unsetenv("DATASTORE_EMULATOR_HOST")
 			os.Unsetenv("DATASTORE_PROJECT_ID")
 		})
-
 	})
 
 	if emulatorErr != nil {
 		t.Fatalf("Datastore emulator setup failed: %v", emulatorErr)
 	}
 
-	os.Setenv("DATASTORE_EMULATOR_HOST", net.JoinHostPort(datastoreEmulatorHost, emulatorPort))
-	os.Setenv("DATASTORE_PROJECT_ID", datastoreEmulatorProjectID)
+	t.Setenv("DATASTORE_EMULATOR_HOST", net.JoinHostPort(datastoreEmulatorHost, emulatorPort))
+	t.Setenv("DATASTORE_PROJECT_ID", datastoreEmulatorProjectID)
 	resetEmulator(t)
 }
 

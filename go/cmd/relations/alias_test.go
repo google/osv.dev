@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -94,8 +95,8 @@ func TestBasic(t *testing.T) {
 	if err := proto.Unmarshal(data, &updatedV1); err != nil {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
-	if len(updatedV1.Aliases) != 1 || updatedV1.Aliases[0] != "aaa-124" {
-		t.Errorf("expected aliases [aaa-124], got %v", updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != 1 || updatedV1.GetAliases()[0] != "aaa-124" {
+		t.Errorf("expected aliases [aaa-124], got %v", updatedV1.GetAliases())
 	}
 }
 
@@ -148,13 +149,13 @@ func TestMissingVuln(t *testing.T) {
 	if err := proto.Unmarshal(data, &updatedV1); err != nil {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
-	if len(updatedV1.Aliases) != 1 || updatedV1.Aliases[0] != "non-existent-123" {
-		t.Errorf("expected aliases [non-existent-123], got %v", updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != 1 || updatedV1.GetAliases()[0] != "non-existent-123" {
+		t.Errorf("expected aliases [non-existent-123], got %v", updatedV1.GetAliases())
 	}
 
 	// Verify non-existent-123 was not created in GCS
 	_, err = gcsClient.ReadObject(ctx, "non-existent-123.pb")
-	if err != clients.ErrNotFound {
+	if !errors.Is(err, clients.ErrNotFound) {
 		t.Errorf("expected non-existent-123.pb to not exist, got err: %v", err)
 	}
 }
@@ -329,8 +330,8 @@ func TestBugReachesLimit(t *testing.T) {
 	if err := proto.Unmarshal(data, &updatedV1); err != nil {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
-	if len(updatedV1.Aliases) != 0 {
-		t.Errorf("expected 0 aliases, got %v", updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != 0 {
+		t.Errorf("expected 0 aliases, got %v", updatedV1.GetAliases())
 	}
 }
 
@@ -428,12 +429,12 @@ func TestUpdateAliasGroup(t *testing.T) {
 	}
 
 	expectedAliases := []string{"bbb-234", "bbb-345", "bbb-456", "bbb-789"}
-	if len(updatedV1.Aliases) != len(expectedAliases) {
-		t.Errorf("expected %d aliases, got %d: %v", len(expectedAliases), len(updatedV1.Aliases), updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != len(expectedAliases) {
+		t.Errorf("expected %d aliases, got %d: %v", len(expectedAliases), len(updatedV1.GetAliases()), updatedV1.GetAliases())
 	}
 	for i, alias := range expectedAliases {
-		if updatedV1.Aliases[i] != alias {
-			t.Errorf("expected alias at %d to be %s, got %s", i, alias, updatedV1.Aliases[i])
+		if updatedV1.GetAliases()[i] != alias {
+			t.Errorf("expected alias at %d to be %s, got %s", i, alias, updatedV1.GetAliases()[i])
 		}
 	}
 }
@@ -518,12 +519,12 @@ func TestCreateAliasGroup(t *testing.T) {
 	}
 
 	expectedAliases := []string{"test-124", "test-222"}
-	if len(updatedV1.Aliases) != len(expectedAliases) {
-		t.Errorf("expected %d aliases, got %d: %v", len(expectedAliases), len(updatedV1.Aliases), updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != len(expectedAliases) {
+		t.Errorf("expected %d aliases, got %d: %v", len(expectedAliases), len(updatedV1.GetAliases()), updatedV1.GetAliases())
 	}
 	for i, alias := range expectedAliases {
-		if updatedV1.Aliases[i] != alias {
-			t.Errorf("expected alias at %d to be %s, got %s", i, alias, updatedV1.Aliases[i])
+		if updatedV1.GetAliases()[i] != alias {
+			t.Errorf("expected alias at %d to be %s, got %s", i, alias, updatedV1.GetAliases()[i])
 		}
 	}
 }
@@ -585,8 +586,8 @@ func TestDeleteAliasGroup(t *testing.T) {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
 
-	if len(updatedV1.Aliases) != 0 {
-		t.Errorf("expected 0 aliases, got %v", updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != 0 {
+		t.Errorf("expected 0 aliases, got %v", updatedV1.GetAliases())
 	}
 }
 
@@ -660,8 +661,8 @@ func TestSplitAliasGroup(t *testing.T) {
 	if err := proto.Unmarshal(data, &updatedV1); err != nil {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
-	if len(updatedV1.Aliases) != 0 {
-		t.Errorf("expected 0 aliases for ddd-123, got %v", updatedV1.Aliases)
+	if len(updatedV1.GetAliases()) != 0 {
+		t.Errorf("expected 0 aliases for ddd-123, got %v", updatedV1.GetAliases())
 	}
 
 	data, err = gcsClient.ReadObject(ctx, "ddd-124.pb")
@@ -672,8 +673,8 @@ func TestSplitAliasGroup(t *testing.T) {
 	if err := proto.Unmarshal(data, &updatedV2); err != nil {
 		t.Fatalf("failed to unmarshal GCS object: %v", err)
 	}
-	if len(updatedV2.Aliases) != 0 {
-		t.Errorf("expected 0 aliases for ddd-124, got %v", updatedV2.Aliases)
+	if len(updatedV2.GetAliases()) != 0 {
+		t.Errorf("expected 0 aliases for ddd-124, got %v", updatedV2.GetAliases())
 	}
 }
 
@@ -947,8 +948,8 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 
 	// Create a group with ALIAS_GROUP_VULN_LIMIT bugs
 	const limit = 32
-	var bugIDs []string
-	for i := 0; i < limit; i++ {
+	bugIDs := make([]string, 0, limit)
+	for i := range limit {
 		bugIDs = append(bugIDs, fmt.Sprintf("iii-%d", i))
 	}
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -341,6 +342,11 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	for _, aff := range newRepoAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}
+
+	// sort by repo
+	slices.SortFunc(combinedAffected, func(a, b *osvschema.Affected) int {
+		return cmp.Compare(a.GetRanges()[0].GetRepo(), b.GetRanges()[0].GetRepo())
+	})
 
 	return combinedAffected
 }

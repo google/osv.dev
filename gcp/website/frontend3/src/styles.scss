@@ -1071,7 +1071,7 @@ dl.vulnerability-details,
     }
 
     $last-ecosystem-border-offset: 12px;
-    $last-ecosystem-border-gap: 8px;
+    $last-ecosystem-border-gap: 16px;
     $last-ecosystem-border-thickness: 1px;
 
     .ecosystem-content-panel--last {
@@ -1110,10 +1110,7 @@ dl.vulnerability-details,
 
     .package-accordion--last {
       margin-bottom: 0;
-
-      .package-details-card {
-        margin-bottom: $last-ecosystem-border-gap;
-      }
+      padding-bottom: $last-ecosystem-border-gap;
     }
 
     .package-accordion h3.package-name-title {

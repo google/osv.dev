@@ -37,6 +37,14 @@ type AliasGroup struct {
 	Modified time.Time `datastore:"last_modified"`
 }
 
+type UpstreamGroup struct {
+	Key               *datastore.Key `datastore:"__key__"`
+	VulnID            string         `datastore:"db_id"`
+	UpstreamIDs       []string       `datastore:"upstream_ids"`
+	Modified          time.Time      `datastore:"last_modified"`
+	UpstreamHierarchy []byte         `datastore:"upstream_hierarchy,noindex"`
+}
+
 type AliasAllowListEntry struct {
 	VulnID string `datastore:"bug_id"`
 }

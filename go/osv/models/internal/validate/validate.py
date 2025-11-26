@@ -20,7 +20,7 @@ from google.cloud import ndb
 
 import osv.tests
 from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
-        AliasDenyListEntry, ListedVulnerability, Severity
+        AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup
 
 
 def main() -> int:
@@ -57,6 +57,15 @@ def main() -> int:
       bug_id='BAD-VULN',
   ).put()
 
+  print('(Python) Putting UpstreamGroup')
+  UpstreamGroup(
+      id='1',
+      upstream_ids=['U-1', 'U-2'],
+      last_modified=datetime.datetime(
+          2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
+      upstream_hierarchy='{"A": ["B"]}',
+  ).put()
+
   print('(Python) Putting ListedVulnerability')
   ListedVulnerability(
       id='CVE-123-456',
@@ -91,6 +100,9 @@ def main() -> int:
     return 1
   print('(Python) Getting AliasDenyListEntry')
   if AliasDenyListEntry.get_by_id('2') is None:
+    return 1
+  print('(Python) Getting UpstreamGroup')
+  if UpstreamGroup.get_by_id('2') is None:
     return 1
   print('(Python) Getting ListedVulnerability')
   if ListedVulnerability.get_by_id('CVE-987-654') is None:

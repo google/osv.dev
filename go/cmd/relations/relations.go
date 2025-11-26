@@ -30,7 +30,6 @@ import (
 
 func main() {
 	// Set up logging / other clients
-	// Query all Vulnerabilities with raw_aliases, _upstreams or _related
 	logger.InitGlobalLogger()
 	ctx := context.Background()
 	projectID, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
@@ -78,6 +77,11 @@ func main() {
 	wg.Go(func() {
 		if err := ComputeAliasGroups(ctx, dsClient, updater.Ch); err != nil {
 			logger.Error("failed to compute alias groups", slog.Any("err", err))
+		}
+	})
+	wg.Go(func() {
+		if err := ComputeUpstreamGroups(ctx, dsClient, updater.Ch); err != nil {
+			logger.Error("failed to compute upstream groups", slog.Any("err", err))
 		}
 	})
 	wg.Wait()

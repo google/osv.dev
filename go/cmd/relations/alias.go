@@ -33,7 +33,7 @@ const (
 	vulnAliasesLimit    = 5
 )
 
-func updateGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string,
+func updateAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string,
 	key *datastore.Key, group models.AliasGroup, changedVulns map[string]*models.AliasGroup) error {
 	if len(vulnIDs) <= 1 {
 		logger.Info("Deleting alias group due to too few vulns", slog.Any("ids", vulnIDs))
@@ -115,7 +115,7 @@ func computeAliases(vulnID string, visited map[string]struct{}, vulnAliases map[
 	return vulnIDs
 }
 
-func updateVulnWithGroup(ch chan<- Update, vulnID string, aliasGroup *models.AliasGroup) {
+func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *models.AliasGroup) {
 	update := Update{ID: vulnID, Field: updateFieldAlias}
 	if aliasGroup == nil {
 		update.Timestamp = time.Now().UTC()
@@ -219,7 +219,7 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 			continue
 		}
 		vulnIDs := computeAliases(vulnID, visited, vulnAliases)
-		if err := updateGroup(ctx, cl, vulnIDs, key, aliasGroup, changedVulns); err != nil {
+		if err := updateAliasGroup(ctx, cl, vulnIDs, key, aliasGroup, changedVulns); err != nil {
 			return fmt.Errorf("failed to update AliasGroup: %w", err)
 		}
 	}
@@ -236,7 +236,7 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 
 	// For each updated vulnerability, update them in Datastore & GCS
 	for vulnID, aliasGroup := range changedVulns {
-		updateVulnWithGroup(ch, vulnID, aliasGroup)
+		updateVulnWithAliasGroup(ch, vulnID, aliasGroup)
 	}
 
 	return nil

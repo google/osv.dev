@@ -62,11 +62,9 @@ func NewUpdater(ctx context.Context, dsClient *datastore.Client, gcsClient clien
 		gcsClient: gcsClient,
 		publisher: publisher,
 	}
-	u.wg.Add(1)
-	go func() {
-		defer u.wg.Done()
+	u.wg.Go(func() {
 		u.run(ctx)
-	}()
+	})
 
 	return u
 }
@@ -139,6 +137,20 @@ func (u *Updater) run(ctx context.Context) {
 						}
 						hasUpdates = true
 						v.Aliases = val
+						if u.Timestamp.After(modified) {
+							modified = u.Timestamp
+						}
+					case updateFieldUpstream:
+						val, ok := u.Value.([]string)
+						if !ok {
+							logger.Error("updated upstreams are not []string", slog.String("id", id))
+							continue
+						}
+						if slices.Compare(v.Upstream, val) == 0 {
+							continue
+						}
+						hasUpdates = true
+						v.Upstream = val
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp
 						}

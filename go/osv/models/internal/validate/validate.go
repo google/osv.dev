@@ -60,6 +60,14 @@ func readRecords(ctx context.Context, client *datastore.Client) {
 		os.Exit(1)
 	}
 
+	fmt.Println("(Go) Getting UpstreamGroup")
+	key = datastore.NameKey("UpstreamGroup", "1", nil)
+	var upstreamGroup models.UpstreamGroup
+	if err := client.Get(ctx, key, &upstreamGroup); err != nil {
+		fmt.Printf("(Go) Failed getting UpstreamGroup: %v\n", err)
+		os.Exit(1)
+	}
+
 	fmt.Println("(Go) Getting ListedVulnerability")
 	key = datastore.NameKey("ListedVulnerability", "CVE-123-456", nil)
 	var listedVulnerability models.ListedVulnerability
@@ -114,6 +122,18 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 	}
 	if _, err := client.Put(ctx, key, &aliasDenyListEntry); err != nil {
 		fmt.Printf("(Go) Failed writing AliasDenyListEntry %v: %v\n", key, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing UpstreamGroup")
+	key = datastore.NameKey("UpstreamGroup", "2", nil)
+	upstreamGroup := models.UpstreamGroup{
+		UpstreamIDs:       []string{"U-1", "U-2"},
+		Modified:          time.Date(2025, time.January, 1, 1, 1, 1, 1, time.UTC),
+		UpstreamHierarchy: []byte(`{"A": ["B"]}`),
+	}
+	if _, err := client.Put(ctx, key, &upstreamGroup); err != nil {
+		fmt.Printf("(Go) Failed writing UpstreamGroup %v: %v\n", key, err)
 		os.Exit(1)
 	}
 

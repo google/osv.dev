@@ -290,6 +290,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 	newRepoAffectedMap := make(map[string]*osvschema.Affected)
 
+	// Finds ranges with the same repo and merges them into one affected set.
 	for repo, cveRanges := range cve5RepoMap {
 		if nvdRanges, ok := nvdRepoMap[repo]; ok {
 			var newAffectedRanges []*osvschema.Range
@@ -298,8 +299,6 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			if len(nvdRanges) > len(cveRanges) {
 				// just use  the nvd ranges
 				newAffectedRanges = nvdRanges
-			} else if len(nvdRanges) < len(cveRanges) {
-				newAffectedRanges = cveRanges
 			} else if len(cveRanges) == 1 && len(nvdRanges) == 1 {
 				c5Intro, c5Fixed := getRangeBoundaryVersions(cveRanges[0].GetEvents())
 				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].GetEvents())
@@ -318,7 +317,10 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 					newRange.Type = osvschema.Range_GIT // Preserve the repo
 					newAffectedRanges = append(newAffectedRanges, newRange)
 				}
+			} else {
+				newAffectedRanges = cveRanges
 			}
+
 			// Remove from map so we know which NVD packages are left.
 			delete(nvdRepoMap, repo)
 			newRepoAffectedMap[repo] = &osvschema.Affected{

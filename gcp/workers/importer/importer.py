@@ -651,9 +651,9 @@ class Importer:
       put_if_newer_batch(
           [(v, p) for v, p, _, _, _ in changed_entries_to_process],
           source_repo.name)
-      for vuln, path, ts, original_sha256, changed_entry in changed_entries_to_process:
+      for vuln, path, ts, orig_sha256, entry in changed_entries_to_process:
         self._request_analysis_external(
-            source_repo, original_sha256, changed_entry, source_timestamp=ts)
+            source_repo, orig_sha256, entry, source_timestamp=ts)
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)

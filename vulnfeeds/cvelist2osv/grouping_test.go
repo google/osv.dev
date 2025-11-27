@@ -237,7 +237,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 			},
 		},
 		{
-			name: "Different DatabaseSpecific (non-versions) - merge",
+			name: "Different DatabaseSpecific (non-versions) - merge, second gets overwritten",
 			affected: []*osvschema.Affected{
 				{
 					Ranges: []*osvschema.Range{

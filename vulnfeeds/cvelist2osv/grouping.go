@@ -14,6 +14,7 @@ import (
 // groupAffectedRanges groups ranges that share the same introduced value, type, and repo.
 // This is because having multiple ranges with the same introduced value would act like an
 // OR condition, rather than AND.
+// This function modifies in-place
 func groupAffectedRanges(affected []*osvschema.Affected) {
 	for _, aff := range affected {
 		if len(aff.GetRanges()) <= 1 {
@@ -33,11 +34,16 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 		for _, r := range aff.GetRanges() {
 			// Find the introduced event
 			var introduced string
+			var introducedCount int
 			for _, e := range r.GetEvents() {
 				if e.GetIntroduced() != "" {
 					introduced = e.GetIntroduced()
-					break
+					introducedCount++
 				}
+			}
+
+			if introducedCount > 1 {
+				logger.Error("Multiple 'introduced' events found in a single range", slog.Any("range", r))
 			}
 
 			// If no introduced event is found, we use an empty string as the introduced value.
@@ -78,6 +84,20 @@ func groupAffectedRanges(affected []*osvschema.Affected) {
 	}
 }
 
+// mergeDatabaseSpecificVersions merges the "versions" field from the source DatabaseSpecific
+// into the target DatabaseSpecific.
+//
+// Examples:
+//  1. Target: nil, Source: {"versions": ["v1", "v2"]}
+//     Result: Target becomes {"versions": ["v1", "v2"]}
+//  2. Target: {}, Source: {"versions": ["v1", "v2"]}
+//     Result: Target becomes {"versions": ["v1", "v2"]}
+//  3. Target: {"versions": ["v1", "v3"]}, Source: {"versions": ["v1", "v2"]}
+//     Result: Target becomes {"versions": ["v1", "v3", "v2"]} (order might vary for new additions, but existing order is preserved)
+//  4. Target: {"other": "data"}, Source: {"versions": ["v1", "v2"]}
+//     Result: Target becomes {"other": "data", "versions": ["v1", "v2"]}
+//  5. Target: {"versions": ["v1", "v2"]}, Source: nil
+//     Result: Target remains {"versions": ["v1", "v2"]}
 func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Struct) {
 	if source == nil {
 		return
@@ -156,7 +176,7 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 		if a.GetIntroduced() == "" && b.GetIntroduced() != "" {
 			return 1
 		}
-		
+
 		return 0
 	})
 

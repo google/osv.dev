@@ -284,11 +284,7 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 
 	for _, adp := range cve.Containers.ADP {
 		if adp.References != nil {
-			for _, ref := range adp.References {
-				if ref.URL != "" {
-					refs = append(refs, ref)
-				}
-			}
+			refs = append(refs, adp.References...)
 		}
 	}
 

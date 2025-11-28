@@ -161,87 +161,24 @@
             },
             {
               "fixed": "a3e77da9f843e4ab93917d30c314f0283e28c124"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "92527100be38ede924768f4277450dfe8a40e16b"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "6578717ebca91678131d2b1f4ba4258e60536e9f"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "7fa9706722882f634090bfc9af642bf9ed719e27"
-            }
-          ],
-          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-          "type": "GIT"
-        },
-        {
-          "events": [
-            {
-              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
             },
             {
               "fixed": "80e648042e512d5a767da251d44132553fe04ae0"

@@ -87,6 +87,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('rpm', 'redhat'),
     'Rocky Linux':
         EcosystemPURL('rpm', 'rocky-linux'),
+    'Root':
+        EcosystemPURL('generic', 'root'),
     'RubyGems':
         EcosystemPURL('gem', None),
     'SUSE':

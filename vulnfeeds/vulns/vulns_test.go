@@ -33,6 +33,7 @@ func TestClassifyReferenceLink(t *testing.T) {
 		{"https://github.com/Netflix/lemur/issues/117", "", osvschema.Reference_REPORT},
 		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "", osvschema.Reference_ADVISORY},
 		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "", osvschema.Reference_ADVISORY},
+		{"https://github.com/CVEProject/cvelistV5/blob/545d1041e7c903230240d4c5f86550d266784f99/cves/2025/10xxx/CVE-2025-10316.json", "", osvschema.Reference_ADVISORY},
 		{"https://www.debian.org/security/2021/dsa-4878", "", osvschema.Reference_ADVISORY},
 		{"https://usn.ubuntu.com/usn/usn-4661-1", "", osvschema.Reference_ADVISORY},
 		{"http://www.ubuntu.com/usn/USN-2915-2", "", osvschema.Reference_ADVISORY},

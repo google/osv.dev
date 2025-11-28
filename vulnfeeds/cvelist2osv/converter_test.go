@@ -85,7 +85,9 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 				{URL: "http://a.com"},
 				{URL: "http://b.com"},
 				{URL: "http://c.com"},
+				{URL: "http://a.com"},
 				{URL: "http://d.com"},
+				{URL: "http://b.com"},
 			},
 		},
 		{
@@ -100,7 +102,7 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					},
 				},
 			},
-			expectedRefs: nil,
+			expectedRefs: []cves.Reference{},
 		},
 		{
 			name: "no references and CNA refs is empty slice",
@@ -137,7 +139,6 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 				},
 			},
 			expectedRefs: []cves.Reference{
-				{URL: ""},
 				{URL: "http://a.com"},
 			},
 		},
@@ -202,7 +203,8 @@ func TestFromCVE5(t *testing.T) {
 					Details:       "A disputed vulnerability.",
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"isDisputed": {Kind: &structpb.Value_BoolValue{BoolValue: true}},
+							"isDisputed":         structpb.NewBoolValue(true),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -227,15 +229,13 @@ func TestFromCVE5(t *testing.T) {
 					Related:       nil,
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"cwe_ids": {
-								Kind: &structpb.Value_ListValue{
-									ListValue: &structpb.ListValue{
-										Values: []*structpb.Value{
-											{Kind: &structpb.Value_StringValue{StringValue: "CWE-1220"}},
-										},
-									},
+							"cna_assigner":       structpb.NewStringValue("GitLab"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+							"cwe_ids": structpb.NewListValue(&structpb.ListValue{
+								Values: []*structpb.Value{
+									structpb.NewStringValue("CWE-1220"),
 								},
-							},
+							}),
 						},
 					},
 					References: []*osvschema.Reference{
@@ -280,15 +280,15 @@ func TestFromCVE5(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"cwe_ids": {
-								Kind: &structpb.Value_ListValue{
-									ListValue: &structpb.ListValue{
-										Values: []*structpb.Value{
-											{Kind: &structpb.Value_StringValue{StringValue: "CWE-770"}},
-										},
+							"cna_assigner": structpb.NewStringValue("GitHub_M"),
+							"cwe_ids": structpb.NewListValue(
+								&structpb.ListValue{
+									Values: []*structpb.Value{
+										structpb.NewStringValue("CWE-770"),
 									},
 								},
-							},
+							),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -309,15 +309,20 @@ func TestFromCVE5(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
-					Id:               "CVE-2025-21772",
-					SchemaVersion:    "1.7.3",
-					Published:        timestamppb.New(cve21772Pub),
-					Modified:         timestamppb.New(cve21772Mod),
-					Summary:          "partitions: mac: fix handling of bogus partition table",
-					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
-					Aliases:          nil,
-					Related:          nil,
-					DatabaseSpecific: nil,
+					Id:            "CVE-2025-21772",
+					SchemaVersion: "1.7.3",
+					Published:     timestamppb.New(cve21772Pub),
+					Modified:      timestamppb.New(cve21772Mod),
+					Summary:       "partitions: mac: fix handling of bogus partition table",
+					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:       nil,
+					Related:       nil,
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"cna_assigner":       structpb.NewStringValue("Linux"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
+					},
 					References: []*osvschema.Reference{
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
@@ -336,7 +341,7 @@ func TestFromCVE5(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := &ConversionMetrics{}
-			vuln := FromCVE5(tc.cve, tc.refs, metrics)
+			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {
@@ -405,10 +410,11 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			name: "disputed record",
 			cve: cves.CVE5{
 				Metadata: cves.CVE5Metadata{
-					CVEID:         "CVE-2025-9999",
-					State:         "PUBLISHED",
-					DatePublished: "2025-05-04T07:20:46.575Z",
-					DateUpdated:   "2025-05-04T07:20:46.575Z",
+					CVEID:             "CVE-2025-9999",
+					State:             "PUBLISHED",
+					DatePublished:     "2025-05-04T07:20:46.575Z",
+					DateUpdated:       "2025-05-04T07:20:46.575Z",
+					AssignerShortName: "unknown",
 				},
 				Containers: struct {
 					CNA cves.CNA   `json:"cna"`
@@ -435,7 +441,9 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					Details:       "A disputed vulnerability.",
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"isDisputed": structpb.NewBoolValue(true),
+							"isDisputed":         structpb.NewBoolValue(true),
+							"cna_assigner":       structpb.NewStringValue("unknown"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -460,6 +468,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					Related:       nil,
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
+							"cna_assigner": structpb.NewStringValue("GitLab"),
 							"cwe_ids": structpb.NewListValue(
 								&structpb.ListValue{
 									Values: []*structpb.Value{
@@ -467,6 +476,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 									},
 								},
 							),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 					References: []*osvschema.Reference{
@@ -511,6 +521,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
+							"cna_assigner": structpb.NewStringValue("GitHub_M"),
 							"cwe_ids": structpb.NewListValue(
 								&structpb.ListValue{
 									Values: []*structpb.Value{
@@ -518,6 +529,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 									},
 								},
 							),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
 				},
@@ -538,15 +550,20 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
-					Id:               "CVE-2025-21772",
-					SchemaVersion:    osvconstants.SchemaVersion,
-					Published:        timestamppb.New(cve21772Pub),
-					Modified:         timestamppb.New(cve21772Mod),
-					Summary:          "partitions: mac: fix handling of bogus partition table",
-					Details:          "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
-					Aliases:          nil,
-					Related:          nil,
-					DatabaseSpecific: nil,
+					Id:            "CVE-2025-21772",
+					SchemaVersion: osvconstants.SchemaVersion,
+					Published:     timestamppb.New(cve21772Pub),
+					Modified:      timestamppb.New(cve21772Mod),
+					Summary:       "partitions: mac: fix handling of bogus partition table",
+					Details:       "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+					Aliases:       nil,
+					Related:       nil,
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"cna_assigner":       structpb.NewStringValue("Linux"),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
+					},
 					References: []*osvschema.Reference{
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
@@ -566,7 +583,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			vWriter := bytes.NewBuffer(nil)
 			mWriter := bytes.NewBuffer(nil)
-			err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter)
+			err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter, "")
 			if err != nil {
 				t.Errorf("Unexpected error from ConvertAndExportCVEToOSV: %v", err)
 			}

@@ -47,4 +47,9 @@ steps:
   args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=bindings/cloudbuild.yaml', '.']
   waitFor: ['init']
 
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  id: 'go-tests'
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=go/cloudbuild.yaml', '.']
+  waitFor: ['init']
+
 timeout: 7200s

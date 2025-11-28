@@ -13,4 +13,4 @@ poetry run python -m unittest osv.models_test
 poetry run python -m unittest discover osv/ecosystems/ "*_test.py" .
 
 # Run the validation for the go/python datastore models
-cd ./go/models/internal/validate/ && ./run_validate.sh
+cd ./go/osv/models/internal/validate/ && ./run_validate.sh

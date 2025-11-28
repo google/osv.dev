@@ -233,6 +233,15 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
+
+	// Add NVD and computed source link to references
+	references = append(references, cves.Reference{URL: fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID)})
+	if sourceLink != "" {
+		references = append(references, cves.Reference{URL: sourceLink})
+	}
+
+	references = deduplicateRefs(references)
+
 	metrics := ConversionMetrics{CVEID: cveID, CNA: cnaAssigner, UnresolvedRangesCount: 0, ResolvedRangesCount: 0}
 
 	// Create a base OSV record from the CVE.
@@ -269,7 +278,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 	return nil
 }
 
-// identifyPossibleURLs extracts and deduplicates all URLs from a CVE object.
+// identifyPossibleURLs extracts all URLs from a CVE object.
 // It searches for URLs in the CNA and ADP reference sections, as well as in
 // the 'collectionUrl' and 'repo' fields of the 'affected' entries.
 func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
@@ -290,6 +299,19 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 		}
 	}
 
+	// Filter out empty URLs from CNA references if any
+	filteredRefs := make([]cves.Reference, 0, len(refs))
+	for _, ref := range refs {
+		if ref.URL != "" {
+			filteredRefs = append(filteredRefs, ref)
+		}
+	}
+	refs = filteredRefs
+
+	return refs
+}
+
+func deduplicateRefs(refs []cves.Reference) []cves.Reference {
 	// Deduplicate references by URL.
 	slices.SortStableFunc(refs, func(a, b cves.Reference) int {
 		return strings.Compare(a.URL, b.URL)

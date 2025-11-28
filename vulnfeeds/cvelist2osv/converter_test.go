@@ -85,7 +85,9 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 				{URL: "http://a.com"},
 				{URL: "http://b.com"},
 				{URL: "http://c.com"},
+				{URL: "http://a.com"},
 				{URL: "http://d.com"},
+				{URL: "http://b.com"},
 			},
 		},
 		{
@@ -100,7 +102,7 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					},
 				},
 			},
-			expectedRefs: nil,
+			expectedRefs: []cves.Reference{},
 		},
 		{
 			name: "no references and CNA refs is empty slice",
@@ -137,7 +139,6 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 				},
 			},
 			expectedRefs: []cves.Reference{
-				{URL: ""},
 				{URL: "http://a.com"},
 			},
 		},

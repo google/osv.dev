@@ -10,6 +10,12 @@
   "id": "CVE-2025-9999",
   "modified": "2025-05-04T07:20:46.575Z",
   "published": "2025-05-04T07:20:46.575Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-9999"
+    }
+  ],
   "schema_version": "1.7.3"
 }
 ---
@@ -75,6 +81,10 @@
     {
       "type": "EVIDENCE",
       "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-1110"
     }
   ],
   "schema_version": "1.7.3",
@@ -136,6 +146,10 @@
     {
       "type": "ADVISORY",
       "url": "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-21634"
     }
   ],
   "schema_version": "1.7.3",
@@ -319,6 +333,10 @@
     {
       "type": "WEB",
       "url": "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-21772"
     }
   ],
   "schema_version": "1.7.3",

@@ -24,7 +24,7 @@ information on using pull requests.
 
 When creating a pull request, please use the provided
 [pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
-checklist to ensure a smooth review process.
+sections to ensure a smooth review process.
 
 For any new feature, please [create an issue first](https://github.com/google/osv.dev/issues/new?template=feature_request.md)
 to discuss the proposed changes before proceeding to make a pull request.

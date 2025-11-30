@@ -33,8 +33,14 @@ const (
 	vulnAliasesLimit    = 5
 )
 
-func updateAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string,
-	key *datastore.Key, group models.AliasGroup, changedVulns map[string]*models.AliasGroup) error {
+func updateAliasGroup(
+	ctx context.Context,
+	cl *datastore.Client,
+	vulnIDs []string,
+	key *datastore.Key,
+	group models.AliasGroup,
+	changedVulns map[string]*models.AliasGroup,
+) error {
 	if len(vulnIDs) <= 1 {
 		logger.Info("Deleting alias group due to too few vulns", slog.Any("ids", vulnIDs))
 		for _, vID := range vulnIDs {

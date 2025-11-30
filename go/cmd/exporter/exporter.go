@@ -61,7 +61,7 @@ func main() {
 	}
 
 	// The exporter uses a pipeline of channels and worker pools. The data flow is as follows:
-	// 1. The main goroutine lists GCS objects and sends them to `gcsObjToDownloaderCh`.
+	// 1. The main goroutine lists GCS objects and sends them to `gcsPathToDownloaderCh`.
 	// 2. A pool of `downloader` workers receive GCS objects, downloads and unmarshals them into
 	//    OSV vulnerabilities, and send them to `downloaderToRouterCh`.
 	// 3. The `ecosystemRouter` receives vulnerabilities and dispatches them. It creates a new
@@ -70,14 +70,14 @@ func main() {
 	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
 	//    generate the final files, sending the data to be written to `routerToWriteCh`.
 	// 5. A pool of `writer` workers receive the file data and write it to the output.
-	gcsObjToDownloaderCh := make(chan string)
+	gcsPathToDownloaderCh := make(chan string)
 	downloaderToRouterCh := make(chan *osvschema.Vulnerability)
 	routerToWriteCh := make(chan writeMsg)
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		downloaderWg.Add(1)
-		go downloader(ctx, vulnClient, gcsObjToDownloaderCh, downloaderToRouterCh, &downloaderWg)
+		go downloader(ctx, vulnClient, gcsPathToDownloaderCh, downloaderToRouterCh, &downloaderWg)
 	}
 
 	var writerWg sync.WaitGroup
@@ -103,13 +103,13 @@ MainLoop:
 			prevPrefix = prefix
 		}
 		select {
-		case gcsObjToDownloaderCh <- path:
+		case gcsPathToDownloaderCh <- path:
 		case <-ctx.Done():
 			break MainLoop
 		}
 	}
 
-	close(gcsObjToDownloaderCh)
+	close(gcsPathToDownloaderCh)
 	downloaderWg.Wait()
 	close(downloaderToRouterCh)
 	routerWg.Wait()

@@ -1255,6 +1255,9 @@ def put_if_newer_batch(
   versions if unchanged. Does not write if vuln's modified date is older than
   what's already in datastore.
   """
+  # TODO(michaelkedar): Putting so many records is causing slowdowns on the
+  # importer, need to reconsider the approach.
+  return
   if not vulns_and_paths:
     return
 

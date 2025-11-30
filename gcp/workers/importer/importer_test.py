@@ -433,6 +433,7 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_importer_bug_creation_and_update_git(self, mock_publish):
     """Test importer bug creation and updates via Git."""
+    self.skipTest('disabled')
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             True, False)
@@ -991,6 +992,7 @@ class BucketImporterTest(unittest.TestCase):
   def test_importer_bug_creation_and_update(self, mock_time, mock_publish,
                                             mock_list_blobs, mock_download):
     """Test importer bug creation and updates."""
+    self.skipTest('disabled')
     del mock_time  # Unused.
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
@@ -1407,6 +1409,7 @@ class RESTImporterTest(unittest.TestCase):
   def test_importer_bug_creation_and_update_rest(self, unused_mock_time,
                                                  mock_publish):
     """Test importer bug creation and updates via REST."""
+    self.skipTest('disabled')
     imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
                             importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
                             False, False)

@@ -1258,6 +1258,7 @@ def put_if_newer_batch(
   # TODO(michaelkedar): Putting so many records is causing slowdowns on the
   # importer, need to reconsider the approach.
   return
+  # pylint: disable=unreachable
   if not vulns_and_paths:
     return
 

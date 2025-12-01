@@ -99,6 +99,9 @@ func (c *GCSClient) writeObjectOnce(ctx context.Context, path string, data []byt
 	obj := c.bucket.Object(path)
 
 	if opts != nil && opts.IfGenerationMatches != nil {
+		// Use generation matching to ensure we don't overwrite the object
+		// if it has been modified by another process since we last read it.
+		// If the conditions are not met, the write will fail.
 		conds := storage.Conditions{GenerationMatch: *opts.IfGenerationMatches}
 		if *opts.IfGenerationMatches == 0 {
 			conds = storage.Conditions{DoesNotExist: true}

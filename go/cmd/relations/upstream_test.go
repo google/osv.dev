@@ -27,34 +27,34 @@ import (
 
 func TestComputeUpstream(t *testing.T) {
 	vulns := map[string][]string{
-		"CVE-1": {},
-		"CVE-2": {"CVE-1"},
-		"CVE-3": {"CVE-1", "CVE-2"},
+		"CVE-1":                 {},
+		"CVE-2":                 {"CVE-1"},
+		"CVE-3":                 {"CVE-1", "CVE-2"},
+		"UBUNTU-CVE-2023-21400": {"CVE-2023-21400"},
+		"USN-7234-3": {
+			"CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
+			"CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
+			"UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
+			"UBUNTU-CVE-2024-53141", "UBUNTU-CVE-2024-53164",
+		},
+		"VULN-1": {},
+		"VULN-2": {"VULN-1"},
+		"VULN-3": {"VULN-1"},
+		"VULN-4": {"VULN-3"},
 	}
-
 	tests := []struct {
 		name     string
-		input    []string
+		input    string
 		expected []string
 	}{
 		{
 			name:     "Basic transitive",
-			input:    []string{"CVE-1", "CVE-2"},
+			input:    "CVE-3",
 			expected: []string{"CVE-1", "CVE-2"},
 		},
 		{
-			name:     "Basic transitive from CVE-3",
-			input:    []string{"CVE-1", "CVE-2"}, // CVE-3's direct upstreams
-			expected: []string{"CVE-1", "CVE-2"},
-		},
-		{
-			name: "Example complex",
-			input: []string{
-				"CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103",
-				"CVE-2024-53141", "CVE-2024-53164", "UBUNTU-CVE-2023-21400",
-				"UBUNTU-CVE-2024-40967", "UBUNTU-CVE-2024-53103",
-				"UBUNTU-CVE-2024-53141", "UBUNTU-CVE-2024-53164",
-			},
+			name:  "Example complex",
+			input: "USN-7234-3",
 			expected: []string{
 				"CVE-2023-21400", "CVE-2024-40967", "CVE-2024-53103", "CVE-2024-53141",
 				"CVE-2024-53164", "UBUNTU-CVE-2023-21400", "UBUNTU-CVE-2024-40967",
@@ -64,17 +64,10 @@ func TestComputeUpstream(t *testing.T) {
 		},
 		{
 			name:     "Incomplete upstream",
-			input:    []string{"VULN-3"}, // VULN-4's direct upstream
+			input:    "VULN-4",
 			expected: []string{"VULN-1", "VULN-3"},
 		},
 	}
-
-	// Add data for complex example and incomplete upstream
-	vulns["UBUNTU-CVE-2023-21400"] = []string{"CVE-2023-21400"}
-	vulns["VULN-1"] = []string{}
-	vulns["VULN-2"] = []string{"VULN-1"}
-	vulns["VULN-3"] = []string{"VULN-1"}
-	vulns["VULN-4"] = []string{"VULN-3"}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

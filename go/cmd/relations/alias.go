@@ -33,6 +33,7 @@ const (
 	vulnAliasesLimit    = 5
 )
 
+// updateAliasGroup updates the alias group in the datastore.
 func updateAliasGroup(
 	ctx context.Context,
 	cl *datastore.Client,
@@ -74,6 +75,7 @@ func updateAliasGroup(
 	return nil
 }
 
+// createAliasGroup creates a new alias group in the datastore.
 func createAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string, changedVulns map[string]*models.AliasGroup) error {
 	if len(vulnIDs) <= 1 {
 		logger.Info("Skipping alias group creation due to too few vulns", slog.Any("vulnIDs", vulnIDs))
@@ -100,6 +102,9 @@ func createAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []strin
 	return nil
 }
 
+// computeAliases computes all aliases for the given vuln ID.
+// The returned slice contains the vuln ID itself, all the IDs from the vuln's raw aliases, all the IDs of vulns that have
+// the current vuln as an alias, and repeat for every vuln encountered.
 func computeAliases(vulnID string, visited map[string]struct{}, vulnAliases map[string]map[string]struct{}) []string {
 	toVisit := []string{vulnID}
 	var vulnIDs []string
@@ -124,6 +129,8 @@ func computeAliases(vulnID string, visited map[string]struct{}, vulnAliases map[
 	return vulnIDs
 }
 
+// updateVulnWithAliasGroup sends an update for the vuln in Datastore and GCS with the new alias group.
+// if aliasGroup is nil, assumes a preexisting AliasGroup was just deleted.
 func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *models.AliasGroup) {
 	update := Update{ID: vulnID, Field: updateFieldAlias}
 	if aliasGroup == nil {
@@ -139,6 +146,8 @@ func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *model
 	ch <- update
 }
 
+// ComputeAliasGroups updates all alias groups in the datastore by re-computing existing AliasGroups
+// and creating new AliasGroups for un-computed vulns.
 func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update) error {
 	query := datastore.NewQuery("AliasAllowListEntry")
 	var allowListEntries []models.AliasAllowListEntry

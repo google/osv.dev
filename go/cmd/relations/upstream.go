@@ -30,9 +30,12 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func computeUpstream(targetVulnUpstream []string, vulns map[string][]string) []string {
+// computeUpstream computes all upstream vulnerabilities for the given vuln ID.
+// The returned slice contains all of the vuln IDs that are upstream of the
+// target vuln ID, including transitive upstreams.
+func computeUpstream(vulnID string, rawUpstreams map[string][]string) []string {
 	visited := make(map[string]struct{})
-	toVisit := slices.Clone(targetVulnUpstream)
+	toVisit := slices.Clone(rawUpstreams[vulnID])
 
 	var result []string
 	for len(toVisit) > 0 {
@@ -45,7 +48,7 @@ func computeUpstream(targetVulnUpstream []string, vulns map[string][]string) []s
 		visited[vulnID] = struct{}{}
 		result = append(result, vulnID)
 
-		if upstreams, ok := vulns[vulnID]; ok {
+		if upstreams, ok := rawUpstreams[vulnID]; ok {
 			for _, upstream := range upstreams {
 				if _, ok := visited[upstream]; !ok {
 					toVisit = append(toVisit, upstream)
@@ -58,6 +61,7 @@ func computeUpstream(targetVulnUpstream []string, vulns map[string][]string) []s
 	return result
 }
 
+// createUpstreamGroup creates a new upstream group in the datastore and sends it to the updater.
 func createUpstreamGroup(ctx context.Context, cl *datastore.Client, vulnID string, upstreamIDs []string, ch chan<- Update) (*models.UpstreamGroup, error) {
 	key := datastore.IncompleteKey("UpstreamGroup", nil)
 	group := &models.UpstreamGroup{
@@ -75,6 +79,7 @@ func createUpstreamGroup(ctx context.Context, cl *datastore.Client, vulnID strin
 	return group, nil
 }
 
+// updateUpstreamGroup updates the upstream group in the datastore, and sends it to the updater.
 func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *models.UpstreamGroup, upstreamIDs []string, ch chan<- Update) (*models.UpstreamGroup, error) {
 	if len(upstreamIDs) == 0 {
 		logger.Info("Deleting upstream group due to no upstream vulns", slog.String("id", group.VulnID))
@@ -100,11 +105,13 @@ func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *model
 	return group, nil
 }
 
+// updateVulnWithUpstream sends an update for the vuln in Datastore & GCS with the new upstream group.
+// If group is nil, assumes a preexisting UpstreamGroup was just deleted.
 func updateVulnWithUpstream(ch chan<- Update, vulnID string, group *models.UpstreamGroup) {
 	update := Update{ID: vulnID, Field: updateFieldUpstream}
-	if group == nil {
+	if group == nil { // group was deleted
 		update.Timestamp = time.Now().UTC()
-		update.Value = []string(nil)
+		update.Value = nil
 	} else {
 		update.Timestamp = group.Modified
 		update.Value = group.UpstreamIDs
@@ -112,6 +119,17 @@ func updateVulnWithUpstream(ch chan<- Update, vulnID string, group *models.Upstr
 	ch <- update
 }
 
+// computeUpstreamHierarchy computes all upstream vulnerabilities for the given vuln ID.
+// It puts into Datastore a list containing all of the vuln IDs that are upstream of the target vuln ID,
+// including transitive upstreams in a map hierarchy.
+// UpstreamGroup:
+//
+//	{
+//	   db_id: vuln id
+//	   upstream_ids: list of upstream vuln ids
+//	   last_modified_date: date
+//	   upstream_hierarchy: JSON string of upstream hierarchy
+//	}
 func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetUpstreamGroup *models.UpstreamGroup, allUpstreamGroups map[string]*models.UpstreamGroup) error {
 	visited := make(map[string]struct{})
 	upstreamMap := make(map[string][]string)
@@ -166,10 +184,10 @@ func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetU
 		upstreamMap[targetUpstreamGroup.VulnID] = newGroup
 	}
 
-	// Update the datastore entry if hierarchy has changed
 	if len(upstreamMap) == 0 {
 		return nil
 	}
+	// Update the datastore entry if hierarchy has changed
 	// Sort the upstreams to ensure consistent ordering
 	for _, v := range upstreamMap {
 		slices.Sort(v)
@@ -194,7 +212,7 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 	query := datastore.NewQuery("Vulnerability").FilterField("upstream_raw", ">", "")
 	it := cl.Run(ctx, query)
 
-	vulns := make(map[string][]string)
+	rawUpstreams := make(map[string][]string)
 	for {
 		var vuln models.Vulnerability
 		_, err := it.Next(&vuln)
@@ -207,9 +225,9 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 		upstream := slices.Clone(vuln.UpstreamRaw)
 		slices.Sort(upstream)
 		upstream = slices.Compact(upstream)
-		vulns[vuln.Key.Name] = upstream
+		rawUpstreams[vuln.Key.Name] = upstream
 	}
-	logger.Info("Vulns successfully retrieved", slog.Int("count", len(vulns)))
+	logger.Info("Vulns successfully retrieved", slog.Int("count", len(rawUpstreams)))
 
 	logger.Info("Retrieving upstream groups...")
 	query = datastore.NewQuery("UpstreamGroup")
@@ -228,15 +246,12 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 	}
 	logger.Info("Upstream groups successfully retrieved", slog.Int("count", len(upstreamGroups)))
 
-	for vulnID, upstreams := range vulns {
+	for vulnID := range rawUpstreams {
 		// Get the specific upstream existingUpstreamGroup ID
 		existingUpstreamGroup, exists := upstreamGroups[vulnID]
 		// Recompute the transitive upstreams and compare with the existing group
-		newUpstreamIDs := computeUpstream(upstreams, vulns)
+		newUpstreamIDs := computeUpstream(vulnID, rawUpstreams)
 		if exists {
-			if slices.Equal(newUpstreamIDs, existingUpstreamGroup.UpstreamIDs) {
-				continue
-			}
 			// Update the existing UpstreamGroup
 			var err error
 			existingUpstreamGroup, err = updateUpstreamGroup(ctx, cl, existingUpstreamGroup, newUpstreamIDs, ch)

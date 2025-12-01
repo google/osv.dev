@@ -9,6 +9,8 @@ assignees: ''
 
 ## Overview
 
+**Please create an issue to discuss the proposed changes before sending a pull request.**
+
 A brief description of the changes in this pull request. What is the purpose of this PR? What issue does it fix?
 
 Fixes # (issue)

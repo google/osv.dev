@@ -163,20 +163,9 @@ def _get_nested_vulnerability(data, key_path=None):
   return data
 
 
-def _sanitize_anchor_tags(text):
-  if not text or not isinstance(text, str):
-    return text
-  pattern = r'<a\s+[^>]*name=["\'][^"\']*["\'][^>]*>\s*</a>|<a\s+[^>]*name=["\'][^"\']*["\'][^>]*/>'
-  return re.sub(pattern, '', text, flags=re.IGNORECASE)
-
-
 def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
-
-  # Sanitize anchor tags from details field if present
-  if isinstance(data, dict) and 'details' in data and data['details']:
-    data['details'] = _sanitize_anchor_tags(data['details'])
 
   try:
     jsonschema.validate(data, load_schema())

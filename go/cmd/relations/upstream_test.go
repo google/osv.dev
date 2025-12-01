@@ -26,7 +26,7 @@ import (
 )
 
 func TestComputeUpstream(t *testing.T) {
-	bugs := map[string][]string{
+	vulns := map[string][]string{
 		"CVE-1": {},
 		"CVE-2": {"CVE-1"},
 		"CVE-3": {"CVE-1", "CVE-2"},
@@ -70,17 +70,17 @@ func TestComputeUpstream(t *testing.T) {
 	}
 
 	// Add data for complex example and incomplete upstream
-	bugs["UBUNTU-CVE-2023-21400"] = []string{"CVE-2023-21400"}
-	bugs["VULN-1"] = []string{}
-	bugs["VULN-2"] = []string{"VULN-1"}
-	bugs["VULN-3"] = []string{"VULN-1"}
-	bugs["VULN-4"] = []string{"VULN-3"}
+	vulns["UBUNTU-CVE-2023-21400"] = []string{"CVE-2023-21400"}
+	vulns["VULN-1"] = []string{}
+	vulns["VULN-2"] = []string{"VULN-1"}
+	vulns["VULN-3"] = []string{"VULN-1"}
+	vulns["VULN-4"] = []string{"VULN-3"}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Sort expected for comparison, as computeUpstream returns sorted list
 			slices.Sort(tt.expected)
-			actual := computeUpstream(tt.input, bugs)
+			actual := computeUpstream(tt.input, vulns)
 			if !slices.Equal(actual, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, actual)
 			}

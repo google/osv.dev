@@ -30,22 +30,22 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func computeUpstream(targetBugUpstream []string, bugs map[string][]string) []string {
+func computeUpstream(targetVulnUpstream []string, vulns map[string][]string) []string {
 	visited := make(map[string]struct{})
-	toVisit := slices.Clone(targetBugUpstream)
+	toVisit := slices.Clone(targetVulnUpstream)
 
 	var result []string
 	for len(toVisit) > 0 {
-		bugID := toVisit[0]
+		vulnID := toVisit[0]
 		toVisit = toVisit[1:]
 
-		if _, ok := visited[bugID]; ok {
+		if _, ok := visited[vulnID]; ok {
 			continue
 		}
-		visited[bugID] = struct{}{}
-		result = append(result, bugID)
+		visited[vulnID] = struct{}{}
+		result = append(result, vulnID)
 
-		if upstreams, ok := bugs[bugID]; ok {
+		if upstreams, ok := vulns[vulnID]; ok {
 			for _, upstream := range upstreams {
 				if _, ok := visited[upstream]; !ok {
 					toVisit = append(toVisit, upstream)
@@ -77,7 +77,7 @@ func createUpstreamGroup(ctx context.Context, cl *datastore.Client, vulnID strin
 
 func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *models.UpstreamGroup, upstreamIDs []string, ch chan<- Update) (*models.UpstreamGroup, error) {
 	if len(upstreamIDs) == 0 {
-		logger.Info("Deleting upstream group due to too few bugs", slog.String("id", group.VulnID))
+		logger.Info("Deleting upstream group due to no upstream vulns", slog.String("id", group.VulnID))
 		if err := cl.Delete(ctx, group.Key); err != nil {
 			return nil, err
 		}
@@ -229,29 +229,29 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 	logger.Info("Upstream groups successfully retrieved", slog.Int("count", len(upstreamGroups)))
 
 	for vulnID, upstreams := range vulns {
-		// Get the specific upstream group ID
-		group, exists := upstreamGroups[vulnID]
+		// Get the specific upstream existingUpstreamGroup ID
+		existingUpstreamGroup, exists := upstreamGroups[vulnID]
 		// Recompute the transitive upstreams and compare with the existing group
-		upstreamIDs := computeUpstream(upstreams, vulns)
+		newUpstreamIDs := computeUpstream(upstreams, vulns)
 		if exists {
-			if slices.Equal(upstreamIDs, group.UpstreamIDs) {
+			if slices.Equal(newUpstreamIDs, existingUpstreamGroup.UpstreamIDs) {
 				continue
 			}
 			// Update the existing UpstreamGroup
 			var err error
-			group, err = updateUpstreamGroup(ctx, cl, group, upstreamIDs, ch)
+			existingUpstreamGroup, err = updateUpstreamGroup(ctx, cl, existingUpstreamGroup, newUpstreamIDs, ch)
 			if err != nil {
 				return fmt.Errorf("failed to update upstream group: %w", err)
 			}
-			if group == nil {
+			if existingUpstreamGroup == nil {
 				continue
 			}
-			updatedGroups = append(updatedGroups, group)
-			upstreamGroups[vulnID] = group
+			updatedGroups = append(updatedGroups, existingUpstreamGroup)
+			upstreamGroups[vulnID] = existingUpstreamGroup
 			logger.Info("Upstream group updated", slog.String("id", vulnID))
 		} else {
 			// Create a new UpstreamGroup
-			newGroup, err := createUpstreamGroup(ctx, cl, vulnID, upstreamIDs, ch)
+			newGroup, err := createUpstreamGroup(ctx, cl, vulnID, newUpstreamIDs, ch)
 			if err != nil {
 				return fmt.Errorf("failed to create upstream group: %w", err)
 			}

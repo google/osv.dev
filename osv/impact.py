@@ -216,6 +216,9 @@ class RepoAnalyzer:
         for regress_commit in regress_commits:
           branches.extend(_branches_with_commit(repo, regress_commit))
 
+    # Deduplicate branches
+    branches = sorted(set(branches))
+
     # Optimization: pre-compute branches with specified commits in them if
     # we're not doing cherrypick detection.
     branches_with_commits = {}

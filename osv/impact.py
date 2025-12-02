@@ -354,6 +354,17 @@ class RepoAnalyzer:
       target_patch_id = None
 
     search = repo.revparse_single(to_search)
+
+    if not detect_cherrypicks:
+      try:
+        if str(repo.merge_base(search.id, target.id)) == target_commit:
+          return target_commit
+      except (ValueError, KeyError):
+        # Invalid commit or no merge base
+        pass
+
+      return None
+
     try:
       commits = repo.walk(search.id)
     except ValueError:
@@ -363,9 +374,6 @@ class RepoAnalyzer:
     for commit in commits:
       if commit.id == target.id:
         return target_commit
-
-      if not detect_cherrypicks:
-        continue
 
       # Ignore commits without parents and merge commits with multiple parents.
       if not commit.parents or len(commit.parents) > 1:

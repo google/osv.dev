@@ -219,6 +219,13 @@ class RepoAnalyzer:
     # Deduplicate branches
     branches = sorted(set(branches))
 
+    if len(branches) > 500:
+      logging.warning('Too many branches (%d), limiting to master/main',
+                      len(branches))
+      branches = [
+          b for b in branches if b.endswith('/master') or b.endswith('/main')
+      ]
+      
     # Optimization: pre-compute branches with specified commits in them if
     # we're not doing cherrypick detection.
     branches_with_commits = {}

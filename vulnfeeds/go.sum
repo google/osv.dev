@@ -88,8 +88,8 @@ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/gkampitakis/ciinfo v0.3.2 h1:JcuOPk8ZU7nZQjdUhctuhQofk7BGHuIy0c9Ez8BNhXs=
 github.com/gkampitakis/ciinfo v0.3.2/go.mod h1:1NIwaOcFChN4fa/B0hEBdAb6npDlFL8Bwx4dfRLRqAo=
-github.com/gkampitakis/go-snaps v0.5.16 h1:tihmwY3YMe+kv0hohos2AB4yM1SiRUE9VFleGEnKt1Q=
-github.com/gkampitakis/go-snaps v0.5.16/go.mod h1:gC3YqxQTPyIXvQrw/Vpt3a8VqR1MO8sVpZFWN4DGwNs=
+github.com/gkampitakis/go-snaps v0.5.17 h1:CaUQUoYrmALOcHTtlKx6ZTfpN3P1qRASu6BN4AY9YQY=
+github.com/gkampitakis/go-snaps v0.5.17/go.mod h1:gC3YqxQTPyIXvQrw/Vpt3a8VqR1MO8sVpZFWN4DGwNs=
 github.com/gliderlabs/ssh v0.3.8 h1:a4YXD1V7xMF9g5nTkdfnja3Sxy1PVDCj1Zg4Wb8vY6c=
 github.com/gliderlabs/ssh v0.3.8/go.mod h1:xYoytBv1sV0aL3CavoDuJIQNURXkkfPA/wxQ1pL1fAU=
 github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 h1:+zs/tPmkDkHx3U66DAb0lQFJrpS6731Oaa12ikc+DiI=
@@ -152,8 +152,8 @@ github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251125233227-74be9c8acf38 h1:fpNUrf9L0nfVWoeoNjFyfJPsMioYyax4SmizeRW6qZs=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251125233227-74be9c8acf38/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251202081329-61505a9c2319 h1:G7EOoJ4vHoI0j8vH8eY7c1OvrxYYxugjvJDb0WqgD38=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251202081329-61505a9c2319/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
 github.com/package-url/packageurl-go v0.1.3 h1:4juMED3hHiz0set3Vq3KeQ75KD1avthoXLtmE3I0PLs=
 github.com/package-url/packageurl-go v0.1.3/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
 github.com/pjbgf/sha1cd v0.3.2 h1:a9wb0bp1oC2TGwStyn0Umc/IGKQnEgF0vVaZ8QF8eo4=

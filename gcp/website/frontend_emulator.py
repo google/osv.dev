@@ -90,9 +90,9 @@ if __name__ == '__main__':
         if not vuln_id:
           return None
 
+        vulnerability = vulnerability_pb2.Vulnerability()
         try:
-          vulnerability = sources.parse_vulnerability_from_dict(
-              data, strict=False)
+          json_format.ParseDict(data, vulnerability, ignore_unknown_fields=True)
         except Exception as error:
           print(f'[emulator] Failed to convert entry in {path}: {error}')
           return None

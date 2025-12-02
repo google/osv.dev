@@ -43,6 +43,7 @@ _DATASTORE_BATCH_SIZE = 5000
 # to leave some more breathing room.
 _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
+_MAX_BRANCHES = 500
 
 
 @dataclass
@@ -219,13 +220,13 @@ class RepoAnalyzer:
     # Deduplicate branches
     branches = sorted(set(branches))
 
-    if len(branches) > 500:
+    if len(branches) > _MAX_BRANCHES:
       logging.warning('Too many branches (%d), limiting to master/main',
                       len(branches))
       branches = [
           b for b in branches if b.endswith('/master') or b.endswith('/main')
       ]
-      
+
     # Optimization: pre-compute branches with specified commits in them if
     # we're not doing cherrypick detection.
     branches_with_commits = {}

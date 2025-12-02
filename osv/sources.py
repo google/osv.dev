@@ -17,7 +17,6 @@ import json
 import hashlib
 import logging
 import os
-import re
 
 import jsonschema
 import pygit2
@@ -166,7 +165,6 @@ def _get_nested_vulnerability(data, key_path=None):
 def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
-
   try:
     jsonschema.validate(data, load_schema())
   except jsonschema.exceptions.ValidationError as e:

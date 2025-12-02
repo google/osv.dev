@@ -855,8 +855,8 @@ def markdown(text):
     # space rather than %2B
     # See: https://github.com/trentm/python-markdown2/issues/621
     md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
-    # Remove empty anchor tags that cause visual artifacts in rendered markdown.
-    # See: https://github.com/google/osv.dev/issues/<issue-number>
+    # Removes empty anchor tags that cause visual artifacts in rendered markdown
+    # See: https://github.com/google/osv.dev/issues/4237
     md = _ANCHOR_TAG_REPLACER.sub('', md)
 
     return md

@@ -223,9 +223,7 @@ class RepoAnalyzer:
     if len(branches) > _MAX_BRANCHES:
       logging.warning('Too many branches (%d), limiting to master/main',
                       len(branches))
-      branches = [
-          b for b in branches if b.endswith(('/master', '/main'))
-      ]
+      branches = [b for b in branches if b.endswith(('/master', '/main'))]
 
     # Optimization: pre-compute branches with specified commits in them if
     # we're not doing cherrypick detection.

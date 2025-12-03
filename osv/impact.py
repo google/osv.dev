@@ -224,7 +224,7 @@ class RepoAnalyzer:
       logging.warning('Too many branches (%d), limiting to master/main',
                       len(branches))
       branches = [
-          b for b in branches if b.endswith('/master') or b.endswith('/main')
+          b for b in branches if b.endswith(('/master', '/main'))
       ]
 
     # Optimization: pre-compute branches with specified commits in them if

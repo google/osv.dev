@@ -368,7 +368,7 @@ class RepoAnalyzer:
 
     if not detect_cherrypicks:
       try:
-        if str(repo.merge_base(search.id, target.id)) == target_commit:
+        if repo.merge_base(search.id, target.id) == target.id:
           return target_commit
       except (ValueError, KeyError):
         # Invalid commit or no merge base

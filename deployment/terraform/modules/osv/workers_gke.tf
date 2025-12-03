@@ -137,7 +137,7 @@ resource "google_container_node_pool" "importer_pool" {
   }
 
   node_config {
-    machine_type    = "n2-standard-2"
+    machine_type    = "n2-highmem-2"
     disk_type       = "pd-ssd"
     disk_size_gb    = 64
     local_ssd_count = 1

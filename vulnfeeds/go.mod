@@ -1,6 +1,6 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.25.4
+go 1.25.5
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
@@ -8,12 +8,12 @@ require (
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.20.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/gkampitakis/go-snaps v0.5.16
+	github.com/gkampitakis/go-snaps v0.5.17
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251125233227-74be9c8acf38
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251202081329-61505a9c2319
 	github.com/sethvargo/go-retry v0.3.0
 	google.golang.org/api v0.256.0
 	google.golang.org/protobuf v1.36.10

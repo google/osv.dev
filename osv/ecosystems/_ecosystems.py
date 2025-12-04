@@ -21,6 +21,7 @@ from .bioconductor import Bioconductor
 from .cran import CRAN
 from .debian import Debian, DPKG
 from .haskell import Hackage, GHC
+from .hex import Hex
 from .maven import Maven
 from .nuget import NuGet
 from .packagist import Packagist
@@ -46,7 +47,7 @@ _ecosystems = {
     'GHC': GHC,
     'Go': SemverEcosystem,
     'Hackage': Hackage,
-    'Hex': SemverEcosystem,
+    'Hex': Hex,
     'Julia': SemverEcosystem,
     'Mageia': RPM,
     'Maven': Maven,

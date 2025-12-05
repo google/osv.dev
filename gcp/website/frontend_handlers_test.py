@@ -115,6 +115,48 @@ class FrontendHandlerTest(unittest.TestCase):
     self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
 
 
+class MarkdownFilterTest(unittest.TestCase):
+  """Tests for markdown template filter."""
+
+  def test_removes_empty_anchor_tags(self):
+    """Test removal of empty anchor tags."""
+    result = frontend_handlers.markdown(
+        'Text <a name="test"></a> <a name="foo"/> more')
+    self.assertNotIn('name="test"', result)
+    self.assertNotIn('name="foo"', result)
+    self.assertIn('Text', result)
+
+  def test_removes_anchor_with_multiple_attributes(self):
+    """Test anchor tags with name and other attributes are removed."""
+    result = frontend_handlers.markdown('<a name="x" id="y" class="z"></a>')
+    self.assertNotIn('name="x"', result)
+
+  def test_preserves_anchor_with_content(self):
+    """Test anchor tags with content are preserved."""
+    result = frontend_handlers.markdown('[Link](http://example.com)')
+    self.assertIn('href', result)
+    self.assertIn('Link', result)
+
+  def test_sanitizes_urls_and_escapes_comments(self):
+    """Test URL sanitization and HTML comment escaping."""
+    result = frontend_handlers.markdown(
+        '<a href="http://ex.com/ /branch">x</a><!-- comment -->')
+    self.assertIn('/+/', result)
+    self.assertNotIn('/ /', result)
+    self.assertIn('&lt;!--', result)
+
+  def test_handles_empty_and_none(self):
+    """Test empty string and None inputs."""
+    self.assertEqual('', frontend_handlers.markdown(None))
+    self.assertEqual('', frontend_handlers.markdown(''))
+
+  def test_escapes_xss(self):
+    """Test XSS attempts are escaped."""
+    result = frontend_handlers.markdown('<script>alert(1)</script>')
+    self.assertNotIn('<script>', result)
+    self.assertIn('&lt;script&gt;', result)
+
+
 def setUpModule():
   """Set up the test module."""
   # Start the emulator BEFORE creating the ndb client

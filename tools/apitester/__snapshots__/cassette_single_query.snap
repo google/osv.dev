@@ -123,20 +123,6 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -149,6 +135,20 @@
             }
           ],
           "versions": 154,
+          "database_specific": "<Any value>"
+        },
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                }
+              ]
+            }
+          ],
           "database_specific": "<Any value>"
         }
       ],

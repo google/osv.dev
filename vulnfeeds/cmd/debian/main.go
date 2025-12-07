@@ -13,15 +13,15 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -35,10 +35,11 @@ const (
 func main() {
 	logger.InitGlobalLogger()
 
-	debianOutputPath := flag.String("output_path", debianOutputPathDefault, "Path to output OSV files.")
-	outputBucketName := flag.String("output_bucket", outputBucketDefault, "The GCS bucket to write to.")
-	numWorkers := flag.Int("num_workers", 64, "Number of workers to process records")
-	uploadToGCS := flag.Bool("uploadToGCS", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
+	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
+	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
@@ -57,40 +58,19 @@ func main() {
 	}
 
 	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
-
-	ctx := context.Background()
-	var bkt *storage.BucketHandle
-	if *uploadToGCS {
-		storageClient, err := storage.NewClient(ctx)
-		if err != nil {
-			logger.Fatal("Failed to create storage client", slog.Any("err", err))
-		}
-		bkt = storageClient.Bucket(*outputBucketName)
-	}
-
-	var wg sync.WaitGroup
-	vulnChan := make(chan *vulns.Vulnerability)
-
-	for range *numWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			vulns.Worker(ctx, vulnChan, bkt, *debianOutputPath)
-		}()
-	}
-
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))
 	for _, v := range osvCVEs {
 		if len(v.Affected) == 0 {
-			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.ID), slog.String("id", v.ID))
+			logger.Warn(fmt.Sprintf("Skipping %s as no affected versions found.", v.Id), slog.String("id", v.Id))
 			continue
 		}
-		vulnChan <- v
+		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
-	close(vulnChan)
-	wg.Wait()
 
+	ctx := context.Background()
+	upload.Upload(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Debian CVE conversion succeeded.")
 }
 
@@ -130,15 +110,15 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			currentNVDCVE := allCVEs[cves.CVEID(cveID)]
 			if !ok {
 				v = &vulns.Vulnerability{
-					Vulnerability: osvschema.Vulnerability{
-						ID:        "DEBIAN-" + cveID,
+					Vulnerability: &osvschema.Vulnerability{
+						Id:        "DEBIAN-" + cveID,
 						Upstream:  []string{cveID},
-						Published: currentNVDCVE.CVE.Published.Time,
+						Published: timestamppb.New(currentNVDCVE.CVE.Published.Time),
 						Details:   cveData.Description,
-						References: []osvschema.Reference{
+						References: []*osvschema.Reference{
 							{
-								Type: "ADVISORY",
-								URL:  "https://security-tracker.debian.org/tracker/" + cveID,
+								Type: osvschema.Reference_ADVISORY,
+								Url:  "https://security-tracker.debian.org/tracker/" + cveID,
 							},
 						},
 					},

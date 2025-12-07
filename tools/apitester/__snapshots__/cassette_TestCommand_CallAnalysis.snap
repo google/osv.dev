@@ -1,0 +1,108 @@
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-2h6c-j3gf-xp9r",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "GO-2023-1558",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9phm-fm57-rhg8",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j3p8-6mrq-6g7h",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qgc7-mgm3-q253",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-x92r-3vfx-4cv3",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GO-2023-1572",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GO-2023-1989",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GO-2023-1990",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GO-2024-2937",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled_but_enabled_all-vulns_flag - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c3h9-896r-86jm",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "GO-2021-0053",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    }
+  ]
+}
+
+---

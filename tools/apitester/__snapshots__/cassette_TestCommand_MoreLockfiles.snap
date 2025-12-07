@@ -1,0 +1,147 @@
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/cabal.project.freeze - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "HSEC-2024-0009",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/depsjson - 1]
+{
+  "results": [
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-4cv2-4hjh-77rx",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/gems.locked - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9m3q-rhmv-5q44",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-353f-x4gh-cqq8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-5w6v-399v-w3cc",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-mrxw-mxhj-p664",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-vvfq-8hwr-qm4m",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/packages.config - 1]
+{
+  "results": [
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/packages.lock.json - 1]
+{
+  "results": [
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/stack.yaml.lock - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/uv.lock - 1]
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-8qvm-5x2c-j2w7",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
+  ]
+}
+
+---

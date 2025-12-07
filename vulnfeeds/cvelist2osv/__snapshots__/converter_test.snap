@@ -1,0 +1,345 @@
+
+[TestConvertAndExportCVEToOSV/disputed_record - 1]
+{
+  "database_specific": {
+    "cna_assigner": "unknown",
+    "isDisputed": true,
+    "osv_generated_from": "unknown"
+  },
+  "details": "A disputed vulnerability.",
+  "id": "CVE-2025-9999",
+  "modified": "2025-05-04T07:20:46.575Z",
+  "published": "2025-05-04T07:20:46.575Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-9999"
+    }
+  ],
+  "schema_version": "1.7.3"
+}
+---
+
+[TestConvertAndExportCVEToOSV/CVE-2025-1110 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "versions": [
+              {
+                "introduced": "18.0"
+              },
+              {
+                "fixed": "18.0.1"
+              }
+            ]
+          },
+          "events": [
+            {
+              "introduced": "504fd9e5236e13d674e051c6b8a1e9892b371c58"
+            },
+            {
+              "fixed": "3426be1b93852c5358240c5df40970c0ddfbdb2a"
+            }
+          ],
+          "repo": "https://gitlab.com/gitlab-org/gitlab",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "GitLab",
+    "cwe_ids": [
+      "CWE-1220"
+    ],
+    "osv_generated_from": "unknown"
+  },
+  "details": "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
+  "id": "CVE-2025-1110",
+  "modified": "2025-05-22T14:17:44.379Z",
+  "published": "2025-05-22T14:02:31.385Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "git://git@gitlab.com:gitlab-org/gitlab.git"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-1110"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "Insufficient Granularity of Access Control in GitLab"
+}
+---
+
+[TestConvertAndExportCVEToOSV/CVE-2024-21634 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "versions": [
+              {
+                "introduced": "0"
+              },
+              {
+                "fixed": "1.10.5"
+              }
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "019a6117fb99131f74f92ecf462169613234abbf"
+            }
+          ],
+          "repo": "https://github.com/amazon-ion/ion-java",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    "GHSA-264p-99wq-f4j6"
+  ],
+  "database_specific": {
+    "cna_assigner": "GitHub_M",
+    "cwe_ids": [
+      "CWE-770"
+    ],
+    "osv_generated_from": "unknown"
+  },
+  "details": "Amazon Ion is a Java implementation of the Ion data notation. Prior to version 1.10.5, a potential denial-of-service issue exists in `ion-java` for applications that use `ion-java` to deserialize Ion text encoded data, or deserialize Ion text or binary encoded data into the `IonValue` model and then invoke certain `IonValue` methods on that in-memory representation. An actor could craft Ion data that, when loaded by the affected application and/or processed using the `IonValue` model, results in a `StackOverflowError` originating from the `ion-java` library. The patch is included in `ion-java` 1.10.5. As a workaround, do not load data which originated from an untrusted source or that could have been tampered with.",
+  "id": "CVE-2024-21634",
+  "modified": "2025-06-16T19:45:37.088Z",
+  "published": "2024-01-03T22:46:03.585Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-21634"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "Ion Java StackOverflow vulnerability"
+}
+---
+
+[TestConvertAndExportCVEToOSV/CVE-2025-21772 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
+            },
+            {
+              "fixed": "a3e77da9f843e4ab93917d30c314f0283e28c124"
+            },
+            {
+              "fixed": "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"
+            },
+            {
+              "fixed": "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"
+            },
+            {
+              "fixed": "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"
+            },
+            {
+              "fixed": "92527100be38ede924768f4277450dfe8a40e16b"
+            },
+            {
+              "fixed": "6578717ebca91678131d2b1f4ba4258e60536e9f"
+            },
+            {
+              "fixed": "7fa9706722882f634090bfc9af642bf9ed719e27"
+            },
+            {
+              "fixed": "80e648042e512d5a767da251d44132553fe04ae0"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        }
+      ]
+    },
+    {
+      "package": {
+        "ecosystem": "Linux",
+        "name": "Kernel"
+      },
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "5.4.291"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.5.0"
+            },
+            {
+              "fixed": "5.10.235"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.11.0"
+            },
+            {
+              "fixed": "5.15.179"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.16.0"
+            },
+            {
+              "fixed": "6.1.129"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.2.0"
+            },
+            {
+              "fixed": "6.6.79"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.7.0"
+            },
+            {
+              "fixed": "6.12.16"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.13.0"
+            },
+            {
+              "fixed": "6.13.4"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "Linux",
+    "osv_generated_from": "unknown"
+  },
+  "details": "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+  "id": "CVE-2025-21772",
+  "modified": "2025-05-04T07:20:46.575Z",
+  "published": "2025-02-27T02:18:19.528Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-21772"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "summary": "partitions: mac: fix handling of bogus partition table"
+}
+---

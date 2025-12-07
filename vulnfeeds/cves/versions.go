@@ -1057,7 +1057,8 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		if strings.HasSuffix(ref.URL, ".md") {
 			continue
 		}
-		repo, err := Repo(ref.URL)
+		repoURL := strings.ToLower(ref.URL)
+		repo, err := Repo(repoURL)
 		if err != nil {
 			// Failed to parse as a valid repo.
 			continue
@@ -1069,7 +1070,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
-		notes = append(notes, "[%s]: Failed to identify any repos using references")
+		notes = append(notes, fmt.Sprintf("[%s]: Failed to identify any repos using references", cve))
 	} else {
 		notes = append(notes, fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
 	}
@@ -1079,7 +1080,7 @@ func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []stri
 
 // BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
 // events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func BuildVersionRange(intro string, lastAff string, fixed string) osvschema.Range {
+func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
 	var versionRange osvschema.Range
 	var i string
 	if intro == "" {
@@ -1087,17 +1088,17 @@ func BuildVersionRange(intro string, lastAff string, fixed string) osvschema.Ran
 	} else {
 		i = intro
 	}
-	versionRange.Events = append(versionRange.Events, osvschema.Event{
+	versionRange.Events = append(versionRange.Events, &osvschema.Event{
 		Introduced: i})
 
 	if fixed != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
 			Fixed: fixed})
 	} else if lastAff != "" {
-		versionRange.Events = append(versionRange.Events, osvschema.Event{
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
 			LastAffected: lastAff,
 		})
 	}
 
-	return versionRange
+	return &versionRange
 }

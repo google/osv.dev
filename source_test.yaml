@@ -206,6 +206,20 @@
   editable: False
   strict_validation: True
 
+- name: 'drupal'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!DRUPAL-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DRUPAL-']
+  ignore_git: True
+  link: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'echo'
   versions_from_repo: False
   rest_api_url: 'https://advisory.echohq.com/osv/all.json'
@@ -219,6 +233,20 @@
   link: 'https://advisory.echohq.com/osv/'
   editable: False
   strict_validation: True
+
+- name: 'eef'
+  type: 2
+  rest_api_url: 'https://cna.erlef.org/osv/all.json'
+  db_prefix: ['EEF-']
+  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
+  link:  'https://cna.erlef.org/osv/'
+  directory_path: 'osv'
+  extension: '.json'
+  ignore_patterns: ['^(?!EEF-).*$']
+  # Not directly editable, but we're happy to take suggestions:
+  # https://cna.erlef.org/contact
+  editable: False
+  versions_from_repo: True
 
 - name: 'ghsa'
   versions_from_repo: False
@@ -261,6 +289,22 @@
   db_prefix: ['HSEC-']
   ignore_git: False
   link: 'https://github.com/haskell/security-advisories/blob/generated/osv-export/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
+- name: 'julia'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!JLSEC-).*$']
+  repo_branch: 'generated/osv'
+  repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['JLSEC-']
+  ignore_git: False
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
+  link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
   editable: False
   repo_username: 'git'
   strict_validation: True

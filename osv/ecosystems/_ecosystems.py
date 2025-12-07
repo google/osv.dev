@@ -21,6 +21,7 @@ from .bioconductor import Bioconductor
 from .cran import CRAN
 from .debian import Debian, DPKG
 from .haskell import Hackage, GHC
+from .hex import Hex
 from .maven import Maven
 from .nuget import NuGet
 from .packagist import Packagist
@@ -28,7 +29,7 @@ from .pub import Pub
 from .pypi import PyPI
 from .redhat import RPM
 from .rubygems import RubyGems
-from .semver_ecosystem_helper import SemverEcosystem
+from .semver_ecosystem_helper import SemverEcosystem, SemverLike
 from .ubuntu import Ubuntu
 
 _ecosystems = {
@@ -46,7 +47,8 @@ _ecosystems = {
     'GHC': GHC,
     'Go': SemverEcosystem,
     'Hackage': Hackage,
-    'Hex': SemverEcosystem,
+    'Hex': Hex,
+    'Julia': SemverEcosystem,
     'Mageia': RPM,
     'Maven': Maven,
     'MinimOS': APK,
@@ -63,6 +65,7 @@ _ecosystems = {
     'SUSE': RPM,
     'SwiftURL': SemverEcosystem,
     'Ubuntu': Ubuntu,
+    'VSCode': SemverLike,
     'Wolfi': APK,
 
     # Ecosystems known in the schema, but without implementations.
@@ -71,6 +74,7 @@ _ecosystems = {
     'ConanCenter': None,
     'GIT': None,
     'GitHub Actions': None,
+    'Kubernetes': None,
     'Linux': None,
     'OSS-Fuzz': None,
     'Photon OS': None,

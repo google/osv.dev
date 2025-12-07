@@ -1,6 +1,6 @@
 ('diff --git a/file/OSV-2017-134.yaml b/file/OSV-2017-134.yaml\n'
  'new file mode 100644\n'
- 'index 0000000..3ebf9a3\n'
+ 'index 0000000..0b8032d\n'
  '--- /dev/null\n'
  '+++ b/file/OSV-2017-134.yaml\n'
  '@@ -0,0 +1,44 @@\n'
@@ -39,7 +39,7 @@
  '+  cdf_file_summary_info\n'
  '+  cdf_check_summary_info\n'
  '+id: OSV-2017-134\n'
- "+modified: '2021-01-01T00:00:00Z'\n"
+ "+modified: '3000-01-01T00:00:00Z'\n"
  "+published: '2021-01-15T00:00:24.559102Z'\n"
  '+references:\n'
  '+- type: REPORT\n'

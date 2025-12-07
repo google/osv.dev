@@ -98,6 +98,12 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    self.assertEqual('pkg:julia/Example',
+                     purl_helpers.package_to_purl('Julia', 'Example'))
+
+    self.assertEqual('pkg:julia/Dates',
+                     purl_helpers.package_to_purl('Julia', 'Dates'))
+
     self.assertEqual('pkg:npm/test-package',
                      purl_helpers.package_to_purl('npm', 'test-package'))
 
@@ -118,8 +124,8 @@ class PurlHelpersTest(unittest.TestCase):
         purl_helpers.package_to_purl('Packagist',
                                      'spencer14420/sp-php-email-handler'))
 
-    self.assertEqual('pkg:pub/test-package',
-                     purl_helpers.package_to_purl('Pub', 'test-package'))
+    self.assertEqual('pkg:pub/test_package',
+                     purl_helpers.package_to_purl('Pub', 'test_package'))
 
     self.assertEqual('pkg:rpm/redhat/test-package',
                      purl_helpers.package_to_purl('Red Hat', 'test-package'))
@@ -204,6 +210,23 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Hex', 'acme/foo', '2.3.'),
                      purl_helpers.parse_purl('pkg:hex/acme/foo@2.3.'))
 
+    self.assertEqual(('Julia', 'Example', None),
+                     purl_helpers.parse_purl('pkg:julia/Example'))
+
+    self.assertEqual(
+        ('Julia', 'Example', None),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example?uuid=7876af07-990d-54b4-ab0e-23690620f79a'))
+
+    self.assertEqual(('Julia', 'Example', '0.5.5'),
+                     purl_helpers.parse_purl('pkg:julia/Example@0.5.5'))
+
+    self.assertEqual(
+        ('Julia', 'Example', '0.5.5'),
+        purl_helpers.parse_purl(
+            'pkg:julia/Example@0.5.5?uuid=7876af07-990d-54b4-ab0e-23690620f79a')
+    )
+
     self.assertEqual(('Mageia', 'python-aiohttp', None),
                      purl_helpers.parse_purl(
                          'pkg:rpm/mageia/python-aiohttp?distro=mageia-9'))
@@ -211,6 +234,14 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Maven', 'org.apache.struts:struts2-core', '1.0.0'),
                      purl_helpers.parse_purl(
                          'pkg:maven/org.apache.struts/struts2-core@1.0.0'))
+
+    self.assertEqual(('Maven', 'org.apache.struts:struts2-core', '1.0.0'),
+                     purl_helpers.parse_purl(
+                         'pkg:gradle/org.apache.struts/struts2-core@1.0.0'))
+
+    self.assertEqual(
+        ('Maven', 'org.apache.struts:struts2-core', None),
+        purl_helpers.parse_purl('pkg:gradle/org.apache.struts/struts2-core'))
 
     self.assertEqual(('MinimOS', 'nginx', None),
                      purl_helpers.parse_purl('pkg:apk/minimos/nginx'))
@@ -240,8 +271,8 @@ class PurlHelpersTest(unittest.TestCase):
         purl_helpers.parse_purl(
             'pkg:composer/spencer14420/sp-php-email-handler@1.2.3'))
 
-    self.assertEqual(('Pub', 'test-package', '1.2.3'),
-                     purl_helpers.parse_purl('pkg:pub/test-package@1.2.3'))
+    self.assertEqual(('Pub', 'test_package', '1.2.3'),
+                     purl_helpers.parse_purl('pkg:pub/test_package@1.2.3'))
 
     self.assertEqual(('PyPI', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:pypi/test-package@1.2.3'))

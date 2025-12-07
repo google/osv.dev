@@ -127,39 +127,41 @@ def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:
         return
       modified = vuln.modified
 
-      if field == 'aliases':
-        alias_group = osv.AliasGroup.query(
-            osv.AliasGroup.bug_ids == vuln_id).get()
-        if alias_group is None:
-          aliases = []
-          aliases_modified = datetime.datetime.now(datetime.UTC)
-        else:
-          aliases = sorted(set(alias_group.bug_ids) - {vuln_id})
-          aliases_modified = alias_group.last_modified
-        # Only update the modified time if it's actually being modified
-        if vuln_proto.aliases != aliases:
-          vuln_proto.aliases[:] = aliases
-          if aliases_modified > modified:
-            modified = aliases_modified
+      fields = field.split(',')
+      for f in fields:
+        if f == 'aliases':
+          alias_group = osv.AliasGroup.query(
+              osv.AliasGroup.bug_ids == vuln_id).get()
+          if alias_group is None:
+            aliases = []
+            aliases_modified = datetime.datetime.now(datetime.UTC)
           else:
-            modified = datetime.datetime.now(datetime.UTC)
+            aliases = sorted(set(alias_group.bug_ids) - {vuln_id})
+            aliases_modified = alias_group.last_modified
+          # Only update the modified time if it's actually being modified
+          if vuln_proto.aliases != aliases:
+            vuln_proto.aliases[:] = aliases
+            if aliases_modified > modified:
+              modified = aliases_modified
+            else:
+              modified = datetime.datetime.now(datetime.UTC)
 
-      elif field == 'upstream':
-        upstream_group = osv.UpstreamGroup.query(
-            osv.UpstreamGroup.db_id == vuln_id).get()
-        if upstream_group is None:
-          upstream = []
-          upstream_modified = datetime.datetime.now(datetime.UTC)
-        else:
-          upstream = upstream_group.upstream_ids
-          upstream_modified = upstream_group.last_modified
-        # Only update the modified time if it's actually being modified
-        if vuln_proto.upstream != upstream:
-          vuln_proto.upstream[:] = upstream
-          if upstream_modified > modified:
-            modified = upstream_modified
+        elif f == 'upstream':
+          upstream_group = osv.UpstreamGroup.query(
+              osv.UpstreamGroup.db_id == vuln_id).get()
+          if upstream_group is None:
+            upstream = []
+            upstream_modified = datetime.datetime.now(datetime.UTC)
           else:
-            modified = datetime.datetime.now(datetime.UTC)
+            upstream = upstream_group.upstream_ids
+            upstream_modified = upstream_group.last_modified
+          # Only update the modified time if it's actually being modified
+          if vuln_proto.upstream != upstream:
+            vuln_proto.upstream[:] = upstream
+            if upstream_modified > modified:
+              modified = upstream_modified
+            else:
+              modified = datetime.datetime.now(datetime.UTC)
 
       vuln_proto.modified.FromDatetime(modified)
       osv.ListedVulnerability.from_vulnerability(vuln_proto).put()

@@ -1,0 +1,632 @@
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/does_not_scan_transitive_dependencies_for_pom.xml_with_no-resolve - 1]
+{
+  "results": [
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/does_not_scan_transitive_dependencies_for_requirements.txt_with_no-resolve - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-68w8-qjq3-2gfm",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2021-98",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9hjg-9r4m-mvj7",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-74",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/fall_back_to_the_offline_extractor_if_resolution_failed - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-43qf-4rqw-9q2g",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-7rxf-gvfg-47g4",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-84pr-m4jr-85g5",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8vgw-p6qm-5gr7",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-hxwh-jpp2-84pm",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-xc3p-ff3m-f46v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-43",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2024-71",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "PYSEC-2020-73",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/resolves_transitive_dependencies_with_native_data_source - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-cm6r-892j-jv2g",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7rjr-3q55-vv33",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-jfh8-c2jp-5v3q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-p6xc-xr62-6r2g",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/scan_local_disk_transitive_dependencies - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-68w8-qjq3-2gfm",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2021-98",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9hjg-9r4m-mvj7",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-74",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/scans_dependencies_from_multiple_registries - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-cm6r-892j-jv2g",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7rjr-3q55-vv33",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-jfh8-c2jp-5v3q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-p6xc-xr62-6r2g",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/scans_pom.xml_with_non_UTF-8_encoding - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-269g-pwp5-87pp",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/scans_transitive_dependencies_by_specifying_pom.xml - 1]
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7rjr-3q55-vv33",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-jfh8-c2jp-5v3q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-p6xc-xr62-6r2g",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/scans_transitive_dependencies_for_pom.xml_by_default - 1]
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7rjr-3q55-vv33",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-jfh8-c2jp-5v3q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-p6xc-xr62-6r2g",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Transitive/TestCommand_Transitive/uses_native_data_source_for_requirements.txt - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-68w8-qjq3-2gfm",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2021-98",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-jjg7-2v4v-x38h",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2024-60",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-9hjg-9r4m-mvj7",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2023-74",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-34jh-p97f-mpxf",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-g4mx-q9vg-27p4",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-pq67-6m6q-mj2v",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-wqvq-5m8c-6g24",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-148",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2021-108",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-192",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
+  ]
+}
+
+---

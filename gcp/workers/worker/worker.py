@@ -82,29 +82,27 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-def _setup_logging_extra_info():
-  """Set up extra GCP logging information."""
+class _ContextFilter(logging.Filter):
+  """Context filter to add extra GCP logging information."""
 
-  old_factory = logging.getLogRecordFactory()
-
-  def record_factory(*args, **kwargs):
-    """Insert jsonPayload fields to all logs."""
-
-    record = old_factory(*args, **kwargs)
-    if not hasattr(record, 'json_fields'):
-      record.json_fields = {}
+  def filter(self, record):
+    """Add extra fields to the log record."""
+    json_fields = getattr(record, 'json_fields', {})
 
     if getattr(_state, 'source_id', None):
-      record.json_fields['source_id'] = _state.source_id
+      json_fields['source_id'] = _state.source_id
 
     if getattr(_state, 'bug_id', None):
-      record.json_fields['bug_id'] = _state.bug_id
+      json_fields['bug_id'] = _state.bug_id
 
-    record.json_fields['thread'] = record.thread
+    json_fields['thread'] = record.thread
+    record.json_fields = json_fields
+    return True
 
-    return record
 
-  logging.setLogRecordFactory(record_factory)
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
+  logging.getLogger().addFilter(_ContextFilter())
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -411,6 +409,18 @@ class TaskRunner:
           path, original_sha256, current_sha256)
       return
 
+    if len(vulnerabilities) > 1:
+      # While the code allows for having multiple vulnerabilities in a file,
+      # it's not really documented anywhere, and no one seems to be doing this.
+      # I (michaelkedar) think we should stop supporting this, so adding this
+      # log here to verify if it's okay to remove.
+      logging.error(
+          'file has multiple vulnerabilities',
+          extra={'json_fields': {
+              'source': source,
+              'path': path,
+          }})
+
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
@@ -498,6 +508,13 @@ class TaskRunner:
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
       return vulnerability
+    if any(affected.package.name == "Kernel" and
+           affected.package.ecosystem == "Linux"
+           for affected in vulnerability.affected):
+      logging.info(
+          'Skipping Vanir signature generation for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+      return vulnerability
 
     logging.info('Generating Vanir signatures for %s', vulnerability.id)
     try:
@@ -531,10 +548,11 @@ class TaskRunner:
 
     filter_unknown_ecosystems(vulnerability)
 
-    # Generate Vanir signatures.
-    vulnerability = self._generate_vanir_signatures(vulnerability)
-
+    # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
+
+    # Fully enrich the vulnerability object in memory.
+    vulnerability = self._generate_vanir_signatures(vulnerability)
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)
@@ -542,9 +560,13 @@ class TaskRunner:
       # Discard changes due to conflict.
       return
 
-    # Update datastore with new information.
+    # Fetch the current state from Datastore.
     bug = osv.Bug.get_by_id(vulnerability.id)
-    if not bug:
+    is_new_bug = bug is None
+
+    has_changed = False
+    if is_new_bug:
+      has_changed = True
       if source_repo.name == 'oss-fuzz':
         logging.warning('%s not found for OSS-Fuzz source.', vulnerability.id)
         return
@@ -554,8 +576,29 @@ class TaskRunner:
           timestamp=osv.utcnow(),
           status=osv.BugStatus.PROCESSED,
           source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
+    else:
+      # Compare the newly enriched vulnerability with the stored one.
+      # Create a 'pure' vulnerability object from the existing bug for
+      # comparison, excluding external data that would cause false positives.
+      old_vulnerability = bug.to_vulnerability(
+          include_source=False, include_alias=False, include_upstream=False)
 
-    bug.update_from_vulnerability(vulnerability)
+      # Clear modified timestamps for a clean comparison.
+      old_vulnerability.modified.Clear()
+      vulnerability.modified.Clear()
+
+      if old_vulnerability != vulnerability:
+        has_changed = True
+
+    # Update the bug entity based on the comparison.
+    if has_changed:
+      bug.update_from_vulnerability(vulnerability)
+      bug.last_modified = osv.utcnow()
+    else:
+      # If no meaningful change, ensure last_modified reflects the source file's
+      # modified date, as only metadata might have changed.
+      bug.last_modified = orig_modified_date
+
     bug.public = True
     bug.import_last_modified = orig_modified_date
     # OSS-Fuzz sourced bugs use a different format for source_id.
@@ -675,14 +718,30 @@ class TaskRunner:
     Log how long it took to be serviced."""
     request_time = message.attributes.get('req_timestamp')
     if request_time:
+      now = int(time.time())
       request_time = int(request_time)
-      latency = int(time.time()) - request_time
+      latency = now - request_time
+
+      json_fields = {
+          'source': message.attributes.get('source'),
+          'path': message.attributes.get('path'),
+          'latency': latency,
+      }
+      if source_time := message.attributes.get('src_timestamp'):
+        source_time = int(source_time)
+        src_latency = now - source_time
+        json_fields['src_latency'] = src_latency
+
       task_type = message.attributes['type']
       source_id = get_source_id(message) or message.attributes.get(
           'source', None)
 
-      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
-                   latency)
+      logging.info(
+          'Task %s (source_id=%s) latency %d',
+          task_type,
+          source_id,
+          latency,
+          extra={'json_fields': json_fields})
 
   def loop(self):
     """Task loop."""

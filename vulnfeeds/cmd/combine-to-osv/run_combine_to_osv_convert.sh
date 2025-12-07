@@ -18,6 +18,7 @@ set -eu
 
 INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
 OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
+NUM_WORKERS="${NUM_WORKERS:=64}"
 
 OSV_OUTPUT="osv-output"
 NVD_OSV_OUTPUT="nvd"
@@ -37,11 +38,13 @@ gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/cve5/CVE-???
 echo "Successfully synced from GCS bucket"
 
 echo "Run combine-to-osv"
-./combine-to-osv -cve5Path "$CVE5_OSV_OUTPUT" -nvdPath "$NVD_OSV_OUTPUT" -osvOutputPath "$OSV_OUTPUT" 
+./combine-to-osv \
+    -cve5-path "$CVE5_OSV_OUTPUT" \
+    -nvd-path "$NVD_OSV_OUTPUT" \
+    -osv-output-path "$OSV_OUTPUT" \
+    -upload-to-gcs \
+    -output-bucket "${OUTPUT_BUCKET}" \
+    -overrides-bucket "${INPUT_BUCKET}" \
+    -workers "${NUM_WORKERS}"
 
-echo "Override"
-gcloud --no-user-output-enabled storage rsync "gs://${INPUT_BUCKET}/osv-output-overrides/" $OSV_OUTPUT
-
-echo "Begin syncing output to GCS bucket ${OUTPUT_BUCKET}"
-gsutil -q -m rsync -c -d "${OSV_OUTPUT}" "gs://${OUTPUT_BUCKET}/osv-output/"
-echo "Successfully synced to GCS bucket"
+echo "Successfully generated and uploaded OSV records."

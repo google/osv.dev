@@ -203,7 +203,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='2021-111.yaml',
             source='oss-fuzz',
             type='update-oss-fuzz',
-            req_timestamp='12345')
+            req_timestamp='12345',
+            src_timestamp='')
     ])
     bug = osv.Bug.get_by_id('OSV-2017-134')
     self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
@@ -358,7 +359,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
             path='proj/OSV-2021-1337.yaml',
             source='oss-fuzz',
             type='update-oss-fuzz',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp=''),
         mock.call(
             self.tasks_topic,
             allocated_id='OSV-2021-1339',
@@ -426,6 +428,115 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         source_repo_ignore_multiple.ignore_file('/tmp/foo/CVE-2024-1234.json'))
     self.assertTrue(
         source_repo_ignore_multiple.ignore_file('/tmp/foo/MAL-0000-0001.json'))
+
+  @mock.patch('osv.repos.FETCH_CACHE_SECONDS', 0)
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_importer_bug_creation_and_update_git(self, mock_publish):
+    """Test importer bug creation and updates via Git."""
+    self.skipTest('disabled')
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+
+    # 1. Start with bug not in db.
+    test_id = 'OSV-TEST-GIT-1'
+    self.assertIsNone(osv.Bug.get_by_id(test_id))
+
+    # 2. Run importer for one Git record.
+    vuln_v1 = f'''
+id: {test_id}
+modified: '2023-01-01T00:00:00Z'
+schema_version: '1.3.0'
+summary: Summary v1
+affected:
+- package:
+    name: package-a
+    ecosystem: PyPI
+  versions:
+  - 1.0.0
+'''
+    self.mock_repo.add_file(f'{test_id}.yaml', vuln_v1)
+    self.mock_repo.commit('User', 'user@email')
+    imp.run()
+
+    # 3. Check that record is now in db.
+    mock_publish.assert_called_once()
+    bug_v1 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v1)
+    self.assertEqual('Summary v1', bug_v1.summary)
+    self.assertEqual(1, len(bug_v1.affected_packages))
+    self.assertEqual('package-a', bug_v1.affected_packages[0].package.name)
+    self.assertIsNotNone(bug_v1.affected_checksum)
+    v1_checksum = bug_v1.affected_checksum
+
+    mock_publish.reset_mock()
+
+    # 4. Rerun import for record w/ modified affected[].
+    vuln_v2 = f'''
+id: {test_id}
+modified: '2023-01-02T00:00:00Z'
+schema_version: '1.3.0'
+summary: Summary v1
+affected:
+- package:
+    name: package-b
+    ecosystem: PyPI
+  versions:
+  - 2.0.0
+'''
+    self.mock_repo.add_file(f'{test_id}.yaml', vuln_v2)
+    self.mock_repo.commit('User', 'user@email')
+    imp.run()
+
+    # 5. Check that modified affected now in datastore.
+    mock_publish.assert_called_once()
+    bug_v2 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v2)
+    self.assertEqual('Summary v1', bug_v2.summary)
+    self.assertEqual(1, len(bug_v2.affected_packages))
+    self.assertEqual('package-b', bug_v2.affected_packages[0].package.name)
+    self.assertNotEqual(v1_checksum, bug_v2.affected_checksum)
+    v2_checksum = bug_v2.affected_checksum
+
+    mock_publish.reset_mock()
+
+    # 6. Manually modify the Bug.affected (to pretend it's been enriched).
+    enriched_package = osv.AffectedPackage(
+        package=osv.Package(name='package-b', ecosystem='PyPI'),
+        ecosystem_specific={'extra_data': 'enriched'})
+    bug_v2.affected_packages = [enriched_package]
+    bug_v2.put()
+
+    # 7. Rerun import for record w/ modified summary (but affected the same).
+    vuln_v3 = f'''
+id: {test_id}
+modified: '2023-01-03T00:00:00Z'
+schema_version: '1.3.0'
+summary: Summary v3
+affected:
+- package:
+    name: package-b
+    ecosystem: PyPI
+  versions:
+  - 2.0.0
+'''
+    self.mock_repo.add_file(f'{test_id}.yaml', vuln_v3)
+    self.mock_repo.commit('User', 'user@email')
+    imp.run()
+
+    # 8. Check that summary has been updated, but not affected.
+    mock_publish.assert_called_once()
+    bug_v3 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v3)
+    self.assertEqual('Summary v3', bug_v3.summary)
+    self.assertEqual(1, len(bug_v3.affected_packages))
+    self.assertEqual('package-b', bug_v3.affected_packages[0].package.name)
+    # This is the key check: the enriched data should still be there.
+    self.assertEqual({'extra_data': 'enriched'},
+                     bug_v3.affected_packages[0].ecosystem_specific)
+    # The checksum should be the same as before enrichment, as it's based on
+    # the raw vuln.
+    self.assertEqual(v2_checksum, bug_v3.affected_checksum)
 
 
 @mock.patch('importer.utcnow',
@@ -610,7 +721,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('12453f85cd87bc1d465e0d013db572c0'
                              '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1645053056'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -620,7 +732,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('62966a80f6f9f54161803211069216177'
                              '37340a47f43356ee4a1cabe8f089869'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1683180616'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -630,7 +743,8 @@ class BucketImporterTest(unittest.TestCase):
             original_sha256=('a4060cb842363cb6ae7669057402ccddc'
                              'e21a94ed6cad98234e73305816a86d3'),
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1671420222'),
     ],
                                   any_order=True)
 
@@ -702,7 +816,8 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/CVE-2018-1000030.json',
         original_sha256='',
         deleted='true',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
     mock_publish.assert_has_calls([deletion_call])
 
     # Test existing record in Datastore with an ID containing a colon and no
@@ -716,7 +831,8 @@ class BucketImporterTest(unittest.TestCase):
         path='RXSA-2023:0101.json',
         original_sha256='',
         deleted='true',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
     mock_publish.assert_has_calls([deletion_call])
 
     # Run again with a 10% threshold and confirm the safeguards work as
@@ -769,7 +885,8 @@ class BucketImporterTest(unittest.TestCase):
         path='a/b/DSA-3029-1.json',
         original_sha256=mock.ANY,
         deleted='false',
-        req_timestamp='12345')
+        req_timestamp='12345',
+        src_timestamp='')
 
     with self.assertLogs(level='WARNING') as logs:
       imp.run()
@@ -858,6 +975,7 @@ class BucketImporterTest(unittest.TestCase):
         'a/b/CVE-2022-0128.json',
         storage.Bucket(storage_client, TEST_BUCKET),
         generation=None)
+    vs = osv.parse_vulnerabilities_from_data(blob.download_as_bytes(), '.json')
 
     # pylint: disable-next=protected-access
     result = imp._convert_blob_to_vuln(storage_client, datastore_client,
@@ -865,7 +983,141 @@ class BucketImporterTest(unittest.TestCase):
     self.assertEqual(
         result,
         ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3',
-         'a/b/CVE-2022-0128.json'))
+         'a/b/CVE-2022-0128.json', None, vs))
+
+  @mock.patch('google.cloud.storage.Blob.download_as_bytes')
+  @mock.patch('google.cloud.storage.Client.list_blobs')
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_importer_bug_creation_and_update(self, mock_time, mock_publish,
+                                            mock_list_blobs, mock_download):
+    """Test importer bug creation and updates."""
+    self.skipTest('disabled')
+    del mock_time  # Unused.
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+
+    # 1. Start with bug not in db.
+    test_id = 'OSV-TEST-1'
+    self.assertIsNone(osv.Bug.get_by_id(test_id))
+
+    # 2. Run importer for one GCS record.
+    vuln_v1 = f'''{{
+       "id": "{test_id}",
+       "modified": "2023-01-01T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v1",
+       "affected": [
+         {{
+           "package": {{ "name": "package-a", "ecosystem": "PyPI" }},
+           "versions": [ "1.0.0" ]
+         }}
+       ]
+    }}'''
+
+    mock_blob_v1 = mock.MagicMock(spec=storage.Blob)
+    mock_blob_v1.name = f'a/b/{test_id}.json'
+    mock_blob_v1.updated = datetime.datetime(
+        2023, 1, 1, 0, 0, 1, tzinfo=datetime.UTC)
+
+    mock_list_blobs.return_value = [mock_blob_v1]
+    mock_download.return_value = vuln_v1.encode()
+
+    imp.run()
+
+    # 3. Check that record is now in db.
+    mock_publish.assert_called_once()
+    bug_v1 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v1)
+    self.assertEqual('Summary v1', bug_v1.summary)
+    self.assertEqual(1, len(bug_v1.affected_packages))
+    self.assertEqual('package-a', bug_v1.affected_packages[0].package.name)
+    self.assertIsNotNone(bug_v1.affected_checksum)
+    v1_checksum = bug_v1.affected_checksum
+
+    mock_publish.reset_mock()
+    mock_list_blobs.reset_mock()
+    mock_download.reset_mock()
+
+    # 4. Rerun import for record w/ modified affected[].
+    vuln_v2 = f'''{{
+       "id": "{test_id}",
+       "modified": "2023-01-02T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v1",
+       "affected": [
+         {{
+           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
+           "versions": [ "2.0.0" ]
+         }}
+       ]
+    }}'''
+    mock_blob_v2 = mock.MagicMock(spec=storage.Blob)
+    mock_blob_v2.name = f'a/b/{test_id}.json'
+    mock_blob_v2.updated = datetime.datetime(
+        2023, 1, 2, 0, 0, 1, tzinfo=datetime.UTC)
+    mock_list_blobs.return_value = [mock_blob_v2]
+    mock_download.return_value = vuln_v2.encode()
+
+    imp.run()
+
+    # 5. Check that modified affected now in datastore.
+    mock_publish.assert_called_once()
+    bug_v2 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v2)
+    self.assertEqual('Summary v1', bug_v2.summary)
+    self.assertEqual(1, len(bug_v2.affected_packages))
+    self.assertEqual('package-b', bug_v2.affected_packages[0].package.name)
+    self.assertNotEqual(v1_checksum, bug_v2.affected_checksum)
+    v2_checksum = bug_v2.affected_checksum
+
+    mock_publish.reset_mock()
+    mock_list_blobs.reset_mock()
+    mock_download.reset_mock()
+
+    # 6. Manually modify the Bug.affected (to pretend it's been enriched).
+    enriched_package = osv.AffectedPackage(
+        package=osv.Package(name='package-b', ecosystem='PyPI'),
+        ecosystem_specific={'extra_data': 'enriched'})
+    bug_v2.affected_packages = [enriched_package]
+    bug_v2.put()
+
+    # 7. Rerun import for record w/ modified summary (but affected the same).
+    vuln_v3 = f'''{{
+       "id": "{test_id}",
+       "modified": "2023-01-03T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v3",
+       "affected": [
+         {{
+           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
+           "versions": [ "2.0.0" ]
+         }}
+       ]
+    }}'''
+    mock_blob_v3 = mock.MagicMock(spec=storage.Blob)
+    mock_blob_v3.name = f'a/b/{test_id}.json'
+    mock_blob_v3.updated = datetime.datetime(
+        2023, 1, 3, 0, 0, 1, tzinfo=datetime.UTC)
+    mock_list_blobs.return_value = [mock_blob_v3]
+    mock_download.return_value = vuln_v3.encode()
+
+    imp.run()
+
+    # 8. Check that summary has been updated, but not affected.
+    mock_publish.assert_called_once()
+    bug_v3 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v3)
+    self.assertEqual('Summary v3', bug_v3.summary)
+    self.assertEqual(1, len(bug_v3.affected_packages))
+    self.assertEqual('package-b', bug_v3.affected_packages[0].package.name)
+    # This is the key check: the enriched data should still be there.
+    self.assertEqual({'extra_data': 'enriched'},
+                     bug_v3.affected_packages[0].ecosystem_specific)
+    # The checksum should be the same as before enrichment, as it's based on
+    # the raw vuln.
+    self.assertEqual(v2_checksum, bug_v3.affected_checksum)
 
 
 class BucketImporterMassDeletionTest(unittest.TestCase):
@@ -968,7 +1220,7 @@ class RESTImporterTest(unittest.TestCase):
         name='curl',
         link=MOCK_ADDRESS_FORMAT,
         rest_api_url=MOCK_ADDRESS_FORMAT,
-        db_prefix=['CURL-'],
+        db_prefix=['CURL-', 'RHSA-', 'OSV-'],
         extension='.json',
         editable=False,
         strict_validation=True)
@@ -1082,7 +1334,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='dd4766773f12e14912d7c930669a2650'
             '2a83c80151815cb49400462067ab704e',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1701684728'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1092,7 +1345,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='ed5d9ee8fad738687254138fdbfd6da0'
             'f6a3eccbc9ffcda12fb484d63448a22f',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1701684985'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1102,7 +1356,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='61425ff4651524a71daa90c66235a2af'
             'b09a06faa839fe4af010a5a02f3dafb7',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1697013410'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1112,7 +1367,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='f76bcb2dedf63b51b3195f2f27942dc2'
             '3c87f2bc3a93dec79ea838b4c1ffb412',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1700412273'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1122,7 +1378,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='fcac007c2f0d2685fa56c5910a0e24bc'
             '0587efc409878fcb0df5b096db5d205f',
             deleted='false',
-            req_timestamp='12345'),
+            req_timestamp='12345',
+            src_timestamp='1694717842'),
         mock.call(
             self.tasks_topic,
             data=b'',
@@ -1132,7 +1389,8 @@ class RESTImporterTest(unittest.TestCase):
             original_sha256='f8bf8e7e18662ca0c1ddd4a3f90ac4a9'
             '6fc730f09e3bff00c63d99d61b0697b2',
             deleted='false',
-            req_timestamp='12345')
+            req_timestamp='12345',
+            src_timestamp='1696205251')
     ])
     self.assertEqual(
         repo.get().last_update_date,
@@ -1145,6 +1403,123 @@ class RESTImporterTest(unittest.TestCase):
                    mock_publish: mock.MagicMock):
     """Test invalid records are treated correctly."""
     # TODO(apollock): implement
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_importer_bug_creation_and_update_rest(self, unused_mock_time,
+                                                 mock_publish):
+    """Test importer bug creation and updates via REST."""
+    self.skipTest('disabled')
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            False, False)
+
+    # 1. Start with bug not in db.
+    test_id = 'OSV-TEST-REST-1'
+    self.assertIsNone(osv.Bug.get_by_id(test_id))
+
+    # 2. Run importer for one REST record.
+    vuln_v1 = f'''[{{
+       "id": "{test_id}",
+       "modified": "2023-01-01T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v1",
+       "affected": [
+         {{
+           "package": {{ "name": "package-a", "ecosystem": "PyPI" }},
+           "versions": [ "1.0.0" ]
+         }}
+       ]
+    }}]'''
+    data_handler = MockDataHandler
+    data_handler.last_modified = 'Mon, 01 Jan 2023 00:00:00 GMT'
+    data_handler.load_data(data_handler, vuln_v1)
+
+    with self.server(data_handler):
+      imp.run()
+
+    # 3. Check that record is now in db.
+    mock_publish.assert_called_once()
+    bug_v1 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v1)
+    self.assertEqual('Summary v1', bug_v1.summary)
+    self.assertEqual(1, len(bug_v1.affected_packages))
+    self.assertEqual('package-a', bug_v1.affected_packages[0].package.name)
+    self.assertIsNotNone(bug_v1.affected_checksum)
+    v1_checksum = bug_v1.affected_checksum
+
+    mock_publish.reset_mock()
+
+    # 4. Rerun import for record w/ modified affected[].
+    vuln_v2 = f'''[{{
+       "id": "{test_id}",
+       "modified": "2023-01-02T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v1",
+       "affected": [
+         {{
+           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
+           "versions": [ "2.0.0" ]
+         }}
+       ]
+    }}]'''
+    data_handler.last_modified = 'Mon, 02 Jan 2023 00:00:00 GMT'
+    data_handler.load_data(data_handler, vuln_v2)
+
+    with self.server(data_handler):
+      imp.run()
+
+    # 5. Check that modified affected now in datastore.
+    mock_publish.assert_called_once()
+    bug_v2 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v2)
+    self.assertEqual('Summary v1', bug_v2.summary)
+    self.assertEqual(1, len(bug_v2.affected_packages))
+    self.assertEqual('package-b', bug_v2.affected_packages[0].package.name)
+    self.assertNotEqual(v1_checksum, bug_v2.affected_checksum)
+    v2_checksum = bug_v2.affected_checksum
+
+    mock_publish.reset_mock()
+
+    # 6. Manually modify the Bug.affected (to pretend it's been enriched).
+    enriched_package = osv.AffectedPackage(
+        package=osv.Package(name='package-b', ecosystem='PyPI'),
+        ecosystem_specific={'extra_data': 'enriched'})
+    bug_v2.affected_packages = [enriched_package]
+    bug_v2.put()
+
+    # 7. Rerun import for record w/ modified summary (but affected the same).
+    vuln_v3 = f'''[{{
+       "id": "{test_id}",
+       "modified": "2023-01-03T00:00:00Z",
+       "schema_version": "1.3.0",
+       "summary": "Summary v3",
+       "affected": [
+         {{
+           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
+           "versions": [ "2.0.0" ]
+         }}
+       ]
+    }}]'''
+    data_handler.last_modified = 'Mon, 03 Jan 2023 00:00:00 GMT'
+    data_handler.load_data(data_handler, vuln_v3)
+
+    with self.server(data_handler):
+      imp.run()
+
+    # 8. Check that summary has been updated, but not affected.
+    mock_publish.assert_called_once()
+    bug_v3 = osv.Bug.get_by_id(test_id)
+    self.assertIsNotNone(bug_v3)
+    self.assertEqual('Summary v3', bug_v3.summary)
+    self.assertEqual(1, len(bug_v3.affected_packages))
+    self.assertEqual('package-b', bug_v3.affected_packages[0].package.name)
+    # This is the key check: the enriched data should still be there.
+    self.assertEqual({'extra_data': 'enriched'},
+                     bug_v3.affected_packages[0].ecosystem_specific)
+    # The checksum should be the same as before enrichment, as it's based on
+    # the raw vuln.
+    self.assertEqual(v2_checksum, bug_v3.affected_checksum)
 
 
 @mock.patch('importer.utcnow',
@@ -1190,6 +1565,7 @@ class ImportFindingsTest(unittest.TestCase):
 
 def setUpModule():
   """Set up the test module."""
+  logging.getLogger().setLevel(logging.ERROR)
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
       logging.DEBUG)
 

@@ -12,7 +12,7 @@ resources:
 - debian-copyright-mirror.yaml
 - cpe-repo-gen.yaml
 - nvd-cve-osv.yaml
-- alias-computation.yaml
+- relations.yaml
 - nvd-mirror.yaml
 - backup.yaml
 - generate-sitemap.yaml
@@ -27,3 +27,5 @@ resources:
 - recoverer.yaml
 - record-checker.yaml
 - cve5-to-osv.yaml
+- custommetrics.yaml
+

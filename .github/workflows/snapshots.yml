@@ -1,0 +1,46 @@
+name: Snapshots
+
+on:
+  schedule:
+    - cron: "47 18 * * *"
+  workflow_dispatch:
+concurrency:
+  # Pushing new changes to a branch will cancel any in-progress CI runs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
+jobs:
+  update:
+    permissions:
+      contents: write # to fetch and commit code
+      actions: write # to manually dispatch checks on the pull request
+      pull-requests: write # Create pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: stable
+          check-latest: true
+      - run: go test ./...
+        working-directory: tools/apitester
+        env:
+          OSV_API_BASE_URL: api.test.osv.dev
+          UPDATE_SNAPS: always
+      - uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+        with:
+          token: ${{ secrets.PR_TOKEN_BOT }}
+          title: "test: update apitester snapshots"
+          body: >
+            The snapshots have changed, probably due to OSV advisories being changed.
+
+            Please review the differences to make sure that they're expected!
+          branch: "bot/update-snapshots"
+          author: "osv-robot <osv-robot@google.com>"
+          commit-message: "test: update snapshots"

@@ -95,6 +95,10 @@ a {
   text-decoration: underline;
 }
 
+.literal-backtick {
+  font-family: $osv-heading-font-family;
+}
+
 .home-page,
 .vulnerability-page {
   a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"])::after {
@@ -682,6 +686,15 @@ md-icon-button.mdc-data-table__sort-icon-button {
     box-shadow: 0 0 2px white;
   }
 
+  pre code {
+    display: block;
+    background: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   @media (max-width: $osv-mobile-breakpoint) {
     .title {
       font-size: $osv-heading-size-mobile;
@@ -948,6 +961,46 @@ dl.vulnerability-details,
     overflow: auto;
   }
 
+  .database-specific-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .database-specific-section {
+    --const-mq-affordances: [screen] collapse;
+
+    h2.database-specific-header {
+      background: none;
+      font-family: $osv-heading-font-family;
+      color: #fff;
+      padding-left: 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        margin-right: 8px;
+        background: url(/static/img/filled-triangle.svg);
+        background-position: center;
+        background-repeat: no-repeat;
+        transform: rotate(0deg);
+        filter: invert(100%);
+      }
+
+      &[expanded]::before {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .database-specific-content {
+    padding: 8px 0 0 24px;
+  }
+
   .spicy-sections-workaround {
     // https://github.com/tabvengers/spicy-sections/issues/64.
     pointer-events: none;
@@ -1018,7 +1071,7 @@ dl.vulnerability-details,
     }
 
     $last-ecosystem-border-offset: 12px;
-    $last-ecosystem-border-gap: 8px;
+    $last-ecosystem-border-gap: 16px;
     $last-ecosystem-border-thickness: 1px;
 
     .ecosystem-content-panel--last {
@@ -1057,10 +1110,7 @@ dl.vulnerability-details,
 
     .package-accordion--last {
       margin-bottom: 0;
-
-      .package-details-card {
-        margin-bottom: $last-ecosystem-border-gap;
-      }
+      padding-bottom: $last-ecosystem-border-gap;
     }
 
     .package-accordion h3.package-name-title {
@@ -1714,6 +1764,15 @@ div.highlight {
     margin: 0 2px;
     border-radius: $osv-border-radius-small;
     box-shadow: 0 0 2px white;
+  }
+
+  pre code {
+    display: block;
+    background: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   img {

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.1-alpine@sha256:b6ed3fd0452c0e9bcdef5597f29cc1418f61672e9d3a2f55bf02e7222c014abd AS GO_BUILD
+FROM golang:1.25.5-alpine@sha256:3587db7cc96576822c606d119729370dbf581931c5f43ac6d3fa03ab4ed85a10 AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -25,7 +25,7 @@ COPY ./ /src/
 RUN go build -o debian ./cmd/debian/
 
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:cdac858d976cb0e6bfdc3288fee5a0a7bf6348a009089be130b2009e28463c52
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:554691b9f70191a0403713a2cd4079b5f425fe27d607a476a42a4853aded84ea
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/debian ./

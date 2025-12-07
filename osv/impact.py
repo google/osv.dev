@@ -43,6 +43,7 @@ _DATASTORE_BATCH_SIZE = 5000
 # to leave some more breathing room.
 _DATASTORE_LARGE_BATCH_SIZE = 8
 _DATASTORE_BATCH_SLEEP = 10
+_MAX_BRANCHES = 500
 
 
 @dataclass
@@ -216,6 +217,14 @@ class RepoAnalyzer:
         for regress_commit in regress_commits:
           branches.extend(_branches_with_commit(repo, regress_commit))
 
+    # Deduplicate branches
+    branches = sorted(set(branches))
+
+    if len(branches) > _MAX_BRANCHES:
+      logging.warning('Too many branches (%d), limiting to master/main',
+                      len(branches))
+      branches = [b for b in branches if b.endswith(('/master', '/main'))]
+
     # Optimization: pre-compute branches with specified commits in them if
     # we're not doing cherrypick detection.
     branches_with_commits = {}
@@ -354,6 +363,17 @@ class RepoAnalyzer:
       target_patch_id = None
 
     search = repo.revparse_single(to_search)
+
+    if not detect_cherrypicks:
+      try:
+        if repo.merge_base(search.id, target.id) == target.id:
+          return target_commit
+      except (ValueError, KeyError):
+        # Invalid commit or no merge base
+        pass
+
+      return None
+
     try:
       commits = repo.walk(search.id)
     except ValueError:
@@ -363,9 +383,6 @@ class RepoAnalyzer:
     for commit in commits:
       if commit.id == target.id:
         return target_commit
-
-      if not detect_cherrypicks:
-        continue
 
       # Ignore commits without parents and merge commits with multiple parents.
       if not commit.parents or len(commit.parents) > 1:
@@ -763,6 +780,9 @@ def analyze(vulnerability: vulnerability_pb2.Vulnerability,
           _analyze_git_ranges(repo_analyzer, checkout_path, affected_range,
                               new_git_versions, commits, new_introduced,
                               new_fixed)
+        except repos.RepoInaccessibleError:
+          logging.warning('Repository %s inaccessible for vulnerability %s',
+                          affected_range.repo, vulnerability.id)
         except Exception as e:
           e.add_note(f'Happened analyzing {vulnerability.id}')
           raise

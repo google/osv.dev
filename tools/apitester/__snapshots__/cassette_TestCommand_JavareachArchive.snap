@@ -1,0 +1,578 @@
+
+[Test/cassette_TestCommand_JavareachArchive/TestCommand_JavareachArchive/jars_can_be_scanned_with_call_analysis - 1]
+{
+  "results": [
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c28r-hw5m-5gv3",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-h46c-h94j-95f3",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-288c-cq4h-88gq",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-4gq5-ch57-c2mg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-4w82-r329-3q67",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-57j2-w4cx-62h2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-5949-rw7g-wx7w",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-5r5r-6hpj-8gg9",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-5ww9-j83m-q7qx",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-645p-88qh-w398",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6fpp-rgj9-8rwc",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-85cw-hj65-qqv9",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-89qr-369f-5m5x",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-8c4j-34r4-xr8g",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-8w26-6f25-cm9x",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-9gph-22xh-8x98",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-9m6f-7xcq-8vf8",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-c8hm-7hpq-7jhg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cf6r-3wgc-h863",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cggj-fvv3-cqwv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cjjf-94ff-43w7",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cmfg-87vq-g5g4",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cvm9-fjm9-3572",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-f3j5-rmmp-3fc5",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-f9xh-2qgp-cq57",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-fmmc-742q-jg75",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-fqwf-pjwf-7vqv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gjmw-vf9h-g25v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gwp4-hfv6-p7hw",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gww7-p5w4-wrfv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h3cw-g4mq-c5x2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h592-38cm-4ggp",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h822-r4r5-v8jg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-jjjh-jjxp-wpff",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-m6x4-97wx-4q27",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-mph4-vhrx-mv67",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-mx7p-6679-8g3q",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-p43x-xfjf-5jhr",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-q93h-jc49-78gg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qjw2-hr98-qgfh",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qr7j-h6gg-jmgc",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-r3gr-cxrf-hg25",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-r695-7vr9-jgc2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rfx6-vp9g-rh7v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rgv9-q543-rqg4",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rpr3-cw39-3pxh",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-v585-23hc-c647",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-vfqx-33qm-g869",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-w3f4-3q6j-rh82",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-wh8g-3j2c-rqj5",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-j288-q9x7-2f5v",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7r82-7xv7-xcpj",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-cj7v-27pg-wf7q",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-hmr7-m48g-48f6",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qh8g-58pp-2wxh",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3gh6-v5v9-6v9j",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-gwcr-j4wh-j3cq",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j26w-f9rq-mr2q",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-264p-99wq-f4j6",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_JavareachArchive/TestCommand_JavareachArchive/jars_can_be_scanned_without_call_analysis - 1]
+{
+  "results": [
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-c28r-hw5m-5gv3",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-h46c-h94j-95f3",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-288c-cq4h-88gq",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-4gq5-ch57-c2mg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-4w82-r329-3q67",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-57j2-w4cx-62h2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-5949-rw7g-wx7w",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-5r5r-6hpj-8gg9",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-5ww9-j83m-q7qx",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-645p-88qh-w398",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6fpp-rgj9-8rwc",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-85cw-hj65-qqv9",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-89qr-369f-5m5x",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-8c4j-34r4-xr8g",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-8w26-6f25-cm9x",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-9gph-22xh-8x98",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-9m6f-7xcq-8vf8",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-c8hm-7hpq-7jhg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cf6r-3wgc-h863",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cggj-fvv3-cqwv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cjjf-94ff-43w7",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cmfg-87vq-g5g4",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cvm9-fjm9-3572",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-f3j5-rmmp-3fc5",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-f9xh-2qgp-cq57",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-fmmc-742q-jg75",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-fqwf-pjwf-7vqv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gjmw-vf9h-g25v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gwp4-hfv6-p7hw",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-gww7-p5w4-wrfv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h3cw-g4mq-c5x2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h592-38cm-4ggp",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-h822-r4r5-v8jg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-jjjh-jjxp-wpff",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-m6x4-97wx-4q27",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-mph4-vhrx-mv67",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-mx7p-6679-8g3q",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-p43x-xfjf-5jhr",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-q93h-jc49-78gg",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qjw2-hr98-qgfh",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qr7j-h6gg-jmgc",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-r3gr-cxrf-hg25",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-r695-7vr9-jgc2",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rfx6-vp9g-rh7v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rgv9-q543-rqg4",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-rpr3-cw39-3pxh",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-v585-23hc-c647",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-vfqx-33qm-g869",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-w3f4-3q6j-rh82",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-wh8g-3j2c-rqj5",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-j288-q9x7-2f5v",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-7r82-7xv7-xcpj",
+          "modified": "<RFC3339 date with the year 2024>"
+        }
+      ]
+    },
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-cj7v-27pg-wf7q",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-hmr7-m48g-48f6",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qh8g-58pp-2wxh",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3gh6-v5v9-6v9j",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-gwcr-j4wh-j3cq",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-j26w-f9rq-mr2q",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-264p-99wq-f4j6",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
+  ]
+}
+
+---

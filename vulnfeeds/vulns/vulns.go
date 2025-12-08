@@ -110,7 +110,14 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		}
 	}
 
-	for repo, commits := range repoToCommits {
+	repos := make([]string, 0, len(repoToCommits))
+	for r := range repoToCommits {
+		repos = append(repos, r)
+	}
+	sort.Strings(repos)
+
+	for _, repo := range repos {
+		commits := repoToCommits[repo]
 		gitRange := osvschema.Range{
 			Type: osvschema.Range_GIT,
 			Repo: repo,
@@ -139,6 +146,8 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 			gitRange.Events = append([]*osvschema.Event{{Introduced: "0"}}, gitRange.GetEvents()...)
 		}
 		v.Affected = append(v.Affected, &osvschema.Affected{Ranges: []*osvschema.Range{&gitRange}})
+
+		
 	}
 
 	if len(version.AffectedVersions) == 0 {

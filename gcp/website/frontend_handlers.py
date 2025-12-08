@@ -663,7 +663,8 @@ def osv_query(search_string, page, ecosystem):
     sorting_vulns = list(listed_vulns)
     listed_vulns = sorted(
         sorting_vulns,
-        key=lambda v: (0 if v.key.id() == search_string else -v.published.timestamp()))
+        key=lambda v:
+        (0 if v.key.id() == search_string else -v.published.timestamp()))
   result_items = [listed_vuln_response(v) for v in listed_vulns]
   # FIXME(michaelkedar): This logic isn't currently possible with the
   # ListedVulnerability entity.

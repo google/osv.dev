@@ -1093,9 +1093,6 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
   output_lines = []
   root_nodes = hierarchy.root_nodes
   graph = hierarchy.graph
-  print(target_bug_id)
-  print(hierarchy)
-  print(known_ids)
 
   def print_subtree(vuln_id: str) -> None:
     """

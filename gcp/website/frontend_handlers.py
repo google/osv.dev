@@ -374,15 +374,18 @@ def add_known_osv_bugs(response: dict[str, Any]):
 
 def add_stream_info(response: dict[str, Any]):
   """Add upstream hierarchy information to `response`."""
+  vuln_id = response.get('id')
+  if not vuln_id:
+    return
   # Check whether there are upstreams
-  upstreams = get_upstreams_of_vulnerability(response.get('id', ''))
+  upstreams = get_upstreams_of_vulnerability(vuln_id)
   if upstreams:
     response['computed_upstream'] = upstreams
   # Check whether there are downstreams
-  downstreams = _get_downstreams_of_bug_query(response.get('id', ''))
+  downstreams = _get_downstreams_of_bug_query(vuln_id)
   if downstreams:
     response['computed_downstream'] = compute_downstream_hierarchy(
-        response.get('id', ''), downstreams)
+        vuln_id, downstreams)
 
 
 def add_stream_strings(response: dict[str, Any]):
@@ -660,7 +663,7 @@ def osv_query(search_string, page, ecosystem):
     sorting_vulns = list(listed_vulns)
     listed_vulns = sorted(
         sorting_vulns,
-        key=lambda v: (0 if v.key.id() == search_string else -v.published))
+        key=lambda v: (0 if v.key.id() == search_string else -v.published.timestamp()))
   result_items = [listed_vuln_response(v) for v in listed_vulns]
   # FIXME(michaelkedar): This logic isn't currently possible with the
   # ListedVulnerability entity.

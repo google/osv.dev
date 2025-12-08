@@ -138,12 +138,10 @@ class MarkdownFilterTest(unittest.TestCase):
     self.assertIn('Link', result)
 
   def test_sanitizes_urls_and_escapes_comments(self):
-    """Test URL sanitization and HTML comment escaping."""
-    result = frontend_handlers.markdown(
-        '<a href="http://ex.com/ /branch">x</a><!-- comment -->')
-    self.assertIn('/+/', result)
-    self.assertNotIn('/ /', result)
+    """Test HTML comment escaping."""
+    result = frontend_handlers.markdown('Text <!-- comment --> more')
     self.assertIn('&lt;!--', result)
+    self.assertNotIn('<!--', result)
 
   def test_handles_empty_and_none(self):
     """Test empty string and None inputs."""

@@ -835,7 +835,7 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
 _URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
 _ANCHOR_TAG_REPLACER = re.compile(
-    r'<a\s+[^>]*name=["\'][^"\']*["\'][^>]*>\s*</a>|<a\s+[^>]*name=["\'][^"\']*["\'][^>]*/>',  # pylint: disable=line-too-long
+    r'&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^&gt;]*&gt;\s*&lt;/a&gt;|&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^/]*/?&gt;',  # pylint: disable=line-too-long
     re.IGNORECASE)
 
 

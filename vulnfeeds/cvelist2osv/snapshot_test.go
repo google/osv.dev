@@ -61,7 +61,7 @@ func TestSnapshotConversion(t *testing.T) {
 	}
 
 	// Sort keys for deterministic output
-	var keys []string
+	keys := make([]string, 0, len(stats))
 	for k := range stats {
 		keys = append(keys, k)
 	}

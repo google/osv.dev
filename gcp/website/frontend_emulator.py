@@ -15,7 +15,6 @@
 import os
 import json
 import yaml
-from google.protobuf import json_format
 from osv import tests
 from osv import sources
 from osv import vulnerability_pb2

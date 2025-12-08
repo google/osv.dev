@@ -146,8 +146,6 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 			gitRange.Events = append([]*osvschema.Event{{Introduced: "0"}}, gitRange.GetEvents()...)
 		}
 		v.Affected = append(v.Affected, &osvschema.Affected{Ranges: []*osvschema.Range{&gitRange}})
-
-		
 	}
 
 	if len(version.AffectedVersions) == 0 {

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"net/url"
 	"os"
 	"path"
@@ -110,13 +111,7 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		}
 	}
 
-	repos := make([]string, 0, len(repoToCommits))
-	for r := range repoToCommits {
-		repos = append(repos, r)
-	}
-	sort.Strings(repos)
-
-	for _, repo := range repos {
+	for _, repo := range slices.Sorted(maps.Keys(repoToCommits)) {
 		commits := repoToCommits[repo]
 		gitRange := osvschema.Range{
 			Type: osvschema.Range_GIT,

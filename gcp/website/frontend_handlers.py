@@ -434,6 +434,10 @@ def add_cvss_score(record: dict):
   severity_rating = None
   severity_type = None
 
+  # The OSV record (vulnerability page) has the list of severities under the
+  # 'severity' field, while the ListedVulnerability (/list page) has it under
+  # the 'severities' field.
+  # This function is used for both, so check both.
   sev = ''
   if 'severity' in record:
     sev = 'severity'

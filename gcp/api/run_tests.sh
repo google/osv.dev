@@ -27,3 +27,6 @@ set -e
 poetry install
 poetry run python server_test.py
 poetry run python integration_tests.py "$1"
+
+# Run the API tester
+cd ../../tools/apitester/ && go test ./...

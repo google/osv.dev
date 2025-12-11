@@ -383,3 +383,60 @@ func TestInvalidRepos(t *testing.T) {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}
 }
+
+func TestBuildGenericRepoPURL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc      string
+		inputURL  string
+		wantPURL  string
+		wantError bool
+	}{
+		{
+			desc:     "GitHub repo",
+			inputURL: "https://github.com/eclipse-openj9/openj9",
+			wantPURL: "pkg:generic/github.com/eclipse-openj9/openj9",
+		},
+		{
+			desc:     "GitHub repo with .git suffix",
+			inputURL: "https://github.com/torvalds/linux.git",
+			wantPURL: "pkg:generic/github.com/torvalds/linux",
+		},
+		{
+			desc:     "GitLab subgroup repo",
+			inputURL: "https://gitlab.com/group/subgroup/repo",
+			wantPURL: "pkg:generic/gitlab.com/group/subgroup/repo",
+		},
+		{
+			desc:     "Self-hosted cgit repo with .git",
+			inputURL: "https://git.libssh.org/projects/libssh.git",
+			wantPURL: "pkg:generic/git.libssh.org/projects/libssh",
+		},
+		{
+			desc:      "Insufficient path segments",
+			inputURL:  "https://github.com/onlyowner",
+			wantError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+			got, err := BuildGenericRepoPURL(tc.inputURL)
+			if tc.wantError {
+				if err == nil {
+					t.Fatalf("BuildGenericRepoPURL(%q) = %q, want error", tc.inputURL, got)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("BuildGenericRepoPURL(%q) unexpected error: %v", tc.inputURL, err)
+			}
+			if got != tc.wantPURL {
+				t.Fatalf("BuildGenericRepoPURL(%q) = %q, want %q", tc.inputURL, got, tc.wantPURL)
+			}
+		})
+	}
+}

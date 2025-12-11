@@ -45,8 +45,8 @@ consists of:
 | `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
 | `gcp/indexer`   | The determine version `indexer` |
 | `gcp/website`   | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) |
-| `gcp/workers/`  | Workers for bisection and impact analysis (`worker`, `importer`, `alias`) <br /> `cron/` jobs for database backups and processing oss-fuzz records |
-| `go/`           | Go module for shared libraries and commands (`cmd/exporter`, `cmd/recordchecker`) |
+| `gcp/workers/`  | Workers for bisection and impact analysis (`worker`, `importer`) <br /> `cron/` jobs for database backups and processing oss-fuzz records |
+| `go/`           | Go module for shared libraries and commands (`cmd/exporter`, `cmd/recordchecker`, `cmd/relations`) |
 | `osv/`          | The core OSV Python library, used in basically all Python services <br /> OSV ecosystem package versioning helpers in `ecosystems/` <br /> Datastore model definitions in `models.py` |
 | `tools/`        | Misc scripts/tools, mostly intended for development (datastore stuff, linting) <br /> The `indexer-api-caller` for indexer calling |
 | `vulnfeeds/`    | Go module for (mostly) the NVD CVE conversion <br /> The Alpine feed converter (`cmd/alpine`) <br /> The Debian feed converter (`tools/debian`, which is written in Python) |

@@ -52,14 +52,6 @@ steps:
   waitFor: ['init', 'sync']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'alias-tests'
-  dir: gcp/workers/alias
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    - DATASTORE_EMULATOR_PORT=8002
-  waitFor: ['init', 'sync']
-
-- name: 'gcr.io/oss-vdb/ci'
   id: 'recoverer-tests'
   dir: gcp/workers/recoverer
   args: ['bash', '-ex', 'run_tests.sh']

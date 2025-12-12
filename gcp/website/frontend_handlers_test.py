@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Frontend handler tests."""
+from datetime import datetime, UTC
 import shutil
 import tempfile
 import unittest
@@ -90,6 +91,7 @@ class FrontendHandlerTest(unittest.TestCase):
         db_id='OSV-3',
         status=2,
         public=True,
+        withdrawn=datetime(2020, 1, 1, tzinfo=UTC),
         source='test',
         affected_packages=[{
             'package': {

@@ -447,3 +447,35 @@ func TestNVD2(t *testing.T) {
 	cve := loadTestData2("CVE-2023-4863")
 	t.Logf("Loaded: %#v", cve)
 }
+
+func TestAttachExtractedVersionInfo_Determinism(t *testing.T) {
+	// Create a VersionInfo with multiple repositories to trigger map iteration randomness
+	versionInfo := models.VersionInfo{
+		AffectedCommits: []models.AffectedCommit{
+			{Repo: "https://github.com/repo/A", Fixed: "fixA"},
+			{Repo: "https://github.com/repo/B", Fixed: "fixB"},
+			{Repo: "https://github.com/repo/C", Fixed: "fixC"},
+			{Repo: "https://github.com/repo/D", Fixed: "fixD"},
+			{Repo: "https://github.com/repo/E", Fixed: "fixE"},
+		},
+	}
+
+	// Run multiple times and compare with the first result
+	var firstResult *Vulnerability
+
+	for i := range 100 {
+		v := &Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		AttachExtractedVersionInfo(v, versionInfo)
+
+		if i == 0 {
+			firstResult = v
+			continue
+		}
+
+		if diff := gocmp.Diff(firstResult, v, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different result:\n%s", i, diff)
+		}
+	}
+}

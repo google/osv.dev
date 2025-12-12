@@ -834,6 +834,9 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # with
 # <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
 _URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
+_ANCHOR_TAG_REPLACER = re.compile(
+    r'&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^&gt;]*&gt;\s*&lt;/a&gt;|&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^/]*/?&gt;',  # pylint: disable=line-too-long
+    re.IGNORECASE)
 
 
 @blueprint.app_template_filter('markdown')
@@ -852,6 +855,9 @@ def markdown(text):
     # space rather than %2B
     # See: https://github.com/trentm/python-markdown2/issues/621
     md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+    # Removes empty anchor tags that cause visual artifacts in rendered markdown
+    # See: https://github.com/google/osv.dev/issues/4237
+    md = _ANCHOR_TAG_REPLACER.sub('', md)
 
     return md
 
@@ -1118,24 +1124,25 @@ def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
   """
   target_bug_group = osv.UpstreamGroup.query(
       osv.UpstreamGroup.db_id == bug.db_id).get()
-  upstream_hierarchy_json = target_bug_group.upstream_hierarchy
+  upstream_hierarchy = target_bug_group.upstream_hierarchy
 
-  if upstream_hierarchy_json:
-    upstream_hierarchy = json.loads(upstream_hierarchy_json)
+  if isinstance(upstream_hierarchy, str):
+    upstream_hierarchy = json.loads(upstream_hierarchy)
 
-    reversed_graph = reverse_tree(upstream_hierarchy)
-    if has_cycle(reversed_graph):
-      logging.error("Cycle detected in upstream hierarchy for %s", bug.db_id)
-      return None
-    all_children = set()
-    for children in upstream_hierarchy.values():
-      all_children.update(children)
+  if not upstream_hierarchy:
+    return None
 
-    root_nodes = set(all_children - set(upstream_hierarchy.keys()))
+  reversed_graph = reverse_tree(upstream_hierarchy)
+  if has_cycle(reversed_graph):
+    logging.error("Cycle detected in upstream hierarchy for %s", bug.db_id)
+    return None
+  all_children = set()
+  for children in upstream_hierarchy.values():
+    all_children.update(children)
 
-    return ComputedHierarchy(root_nodes=root_nodes, graph=reversed_graph)
+  root_nodes = set(all_children - set(upstream_hierarchy.keys()))
 
-  return None
+  return ComputedHierarchy(root_nodes=root_nodes, graph=reversed_graph)
 
 
 def has_cycle(graph: dict[str, set[str]]) -> bool:

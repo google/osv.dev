@@ -618,7 +618,14 @@
         }
       ]
     },
-    {}
+    {
+      "vulns": [
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    }
   ]
 }
 

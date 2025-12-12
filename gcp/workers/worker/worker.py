@@ -508,6 +508,13 @@ class TaskRunner:
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
       return vulnerability
+    if any(affected.package.name == "Kernel" and
+           affected.package.ecosystem == "Linux"
+           for affected in vulnerability.affected):
+      logging.info(
+          'Skipping Vanir signature generation for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+      return vulnerability
 
     logging.info('Generating Vanir signatures for %s', vulnerability.id)
     try:

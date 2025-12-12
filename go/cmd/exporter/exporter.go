@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"log/slog"
 	"os"
@@ -14,8 +13,8 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/api/iterator"
 )
 
 const gcsProtoPrefix = "all/pb/"
@@ -45,22 +44,24 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cl, err := storage.NewClient(ctx)
+	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		logger.Fatal("failed to create storage client", slog.Any("err", err))
 	}
+	defer storageClient.Close()
 
-	vulnBucket := cl.Bucket(*vulnBucketName)
-	var outBucket *storage.BucketHandle
+	vulnClient := clients.NewGCSClient(storageClient, *vulnBucketName)
+
+	var outClient clients.CloudStorage
 	var outPrefix string
-	if *uploadToGCS {
-		outBucket = cl.Bucket(*outBucketName)
+	if *outBucketName != "" && *uploadToGCS { // Added *uploadToGCS check to match original logic
+		outClient = clients.NewGCSClient(storageClient, *outBucketName)
 	} else {
 		outPrefix = *outBucketName
 	}
 
 	// The exporter uses a pipeline of channels and worker pools. The data flow is as follows:
-	// 1. The main goroutine lists GCS objects and sends them to `gcsObjToDownloaderCh`.
+	// 1. The main goroutine lists GCS objects and sends them to `gcsPathToDownloaderCh`.
 	// 2. A pool of `downloader` workers receive GCS objects, downloads and unmarshals them into
 	//    OSV vulnerabilities, and send them to `downloaderToRouterCh`.
 	// 3. The `ecosystemRouter` receives vulnerabilities and dispatches them. It creates a new
@@ -69,51 +70,46 @@ func main() {
 	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
 	//    generate the final files, sending the data to be written to `routerToWriteCh`.
 	// 5. A pool of `writer` workers receive the file data and write it to the output.
-	gcsObjToDownloaderCh := make(chan *storage.ObjectHandle)
+	gcsPathToDownloaderCh := make(chan string)
 	downloaderToRouterCh := make(chan *osvschema.Vulnerability)
 	routerToWriteCh := make(chan writeMsg)
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		downloaderWg.Add(1)
-		go downloader(ctx, gcsObjToDownloaderCh, downloaderToRouterCh, &downloaderWg)
+		go downloader(ctx, vulnClient, gcsPathToDownloaderCh, downloaderToRouterCh, &downloaderWg)
 	}
 
 	var writerWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		writerWg.Add(1)
-		go writer(ctx, cancel, routerToWriteCh, outBucket, outPrefix, &writerWg)
+		go writer(ctx, cancel, routerToWriteCh, outClient, outPrefix, &writerWg)
 	}
 	var routerWg sync.WaitGroup
 	routerWg.Add(1)
 	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, &routerWg)
 
-	it := vulnBucket.Objects(ctx, &storage.Query{Prefix: gcsProtoPrefix})
 	prevPrefix := ""
 MainLoop:
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
+	for path, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
 		if err != nil {
 			logger.Fatal("failed to list objects", slog.Any("err", err))
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(attrs.Name)
+		prefix := filepath.Base(path)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.Info("iterating vulnerabilities", slog.String("now_at", attrs.Name))
+			logger.Info("iterating vulnerabilities", slog.String("now_at", path))
 			prevPrefix = prefix
 		}
 		select {
-		case gcsObjToDownloaderCh <- vulnBucket.Object(attrs.Name):
+		case gcsPathToDownloaderCh <- path:
 		case <-ctx.Done():
 			break MainLoop
 		}
 	}
 
-	close(gcsObjToDownloaderCh)
+	close(gcsPathToDownloaderCh)
 	downloaderWg.Wait()
 	close(downloaderToRouterCh)
 	routerWg.Wait()

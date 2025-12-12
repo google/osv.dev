@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"sync"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/proto"
 )
@@ -15,15 +14,15 @@ import (
 // downloader is a worker that receives GCS object handles from inCh, downloads
 // the raw protobuf data, unmarshals it into a Vulnerability, and sends the
 // result to outCh.
-func downloader(ctx context.Context, inCh <-chan *storage.ObjectHandle, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
+func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan string, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
-		var obj *storage.ObjectHandle
+		var path string
 		var ok bool
 
-		// Wait to receive an object, or be cancelled.
+		// Wait to receive an object path, or be cancelled.
 		select {
-		case obj, ok = <-inCh:
+		case path, ok = <-inCh:
 			if !ok {
 				return // Channel closed.
 			}
@@ -32,20 +31,14 @@ func downloader(ctx context.Context, inCh <-chan *storage.ObjectHandle, outCh ch
 		}
 
 		// Process object.
-		r, err := obj.NewReader(ctx)
+		data, err := client.ReadObject(ctx, path)
 		if err != nil {
-			logger.Error("failed to open vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
-			continue
-		}
-		data, err := io.ReadAll(r)
-		r.Close()
-		if err != nil {
-			logger.Error("failed to read vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
+			logger.Error("failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
 			continue
 		}
 		vuln := &osvschema.Vulnerability{}
 		if err := proto.Unmarshal(data, vuln); err != nil {
-			logger.Error("failed to unmarshal vulnerability", slog.String("obj", obj.ObjectName()), slog.Any("err", err))
+			logger.Error("failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))
 			continue
 		}
 

@@ -834,6 +834,9 @@ def sort_versions(versions: list[str], ecosystem: str) -> list[str]:
 # with
 # <a href="https://chromium.googlesource.com/v8/v8.git/+/refs/heads/beta">
 _URL_MARKDOWN_REPLACER = re.compile(r'(<a href=\".*?)(/ /)(.*?\">)')
+_ANCHOR_TAG_REPLACER = re.compile(
+    r'&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^&gt;]*&gt;\s*&lt;/a&gt;|&lt;a\s+[^&gt;]*name=["\'][^"\']*["\'][^/]*/?&gt;',  # pylint: disable=line-too-long
+    re.IGNORECASE)
 
 
 @blueprint.app_template_filter('markdown')
@@ -852,6 +855,9 @@ def markdown(text):
     # space rather than %2B
     # See: https://github.com/trentm/python-markdown2/issues/621
     md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+    # Removes empty anchor tags that cause visual artifacts in rendered markdown
+    # See: https://github.com/google/osv.dev/issues/4237
+    md = _ANCHOR_TAG_REPLACER.sub('', md)
 
     return md
 

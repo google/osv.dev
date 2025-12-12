@@ -1,0 +1,85 @@
+
+[TestSnapshotConversion/CVE-2022-25929.json - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "versions": [
+              {
+                "introduced": "0"
+              },
+              {
+                "last_affected": "1.31.0"
+              },
+              {
+                "fixed": "1.36.1"
+              }
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "last_affected": "18155960fee032ea7a7059d08e2667a612dbfd92"
+            },
+            {
+              "fixed": "e9d6c5f579232d6cbacaf9eeca07e0408fd20e33"
+            }
+          ],
+          "repo": "https://github.com/joewalnes/smoothie",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "snyk",
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "The package smoothie from 1.31.0 and before 1.36.1 are vulnerable to Cross-site Scripting (XSS) due to improper user input sanitization in strokeStyle and tooltipLabel properties. Exploiting this vulnerability is possible when the user can control these properties.",
+  "id": "CVE-2022-25929",
+  "modified": "2025-04-16T18:32:19.005Z",
+  "published": "2022-12-21T23:14:33.786Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/joewalnes/smoothie/commit/8e0920d50da82f4b6e605d56f41b69fbb9606a98"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/joewalnes/smoothie/pull/147"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-25929"
+    },
+    {
+      "type": "WEB",
+      "url": "https://security.snyk.io/vuln/SNYK-JAVA-ORGWEBJARS-3177369"
+    },
+    {
+      "type": "WEB",
+      "url": "https://security.snyk.io/vuln/SNYK-JAVA-ORGWEBJARSBOWER-3177368"
+    },
+    {
+      "type": "WEB",
+      "url": "https://security.snyk.io/vuln/SNYK-JS-SMOOTHIE-3177364"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N/E:P",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "Cross-site Scripting (XSS)"
+}
+---

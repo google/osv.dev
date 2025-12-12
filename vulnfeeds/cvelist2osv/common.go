@@ -53,6 +53,27 @@ const (
 	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
 )
 
+func (c ConversionOutcome) String() string {
+	switch c {
+	case Successful:
+		return "Successful"
+	case Rejected:
+		return "Rejected"
+	case NoSoftware:
+		return "NoSoftware"
+	case NoRepos:
+		return "NoRepos"
+	case NoCommitRanges:
+		return "NoCommitRanges"
+	case NoRanges:
+		return "NoRanges"
+	case FixUnresolvable:
+		return "FixUnresolvable"
+	default:
+		return "Unknown"
+	}
+}
+
 // String returns the string representation of a VersionRangeType.
 func (vrt VersionRangeType) String() string {
 	switch vrt {

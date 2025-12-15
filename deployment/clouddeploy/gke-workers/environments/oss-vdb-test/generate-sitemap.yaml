@@ -13,7 +13,7 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test
             args:
-              - "--base-url='https://test.osv.dev'"
+              - "--base-url=https://test.osv.dev"
               - "--osv-vulns-bucket=osv-test-vulnerabilities"
               - "--upload-to-gcs=true"
               - "--bucket=test-osv-dev-sitemap"

@@ -27,7 +27,6 @@ const (
 	sitemapPrefix   = "sitemap_"
 )
 
-
 // SitemapEntry represents a single URL entry in the sitemap.
 type SitemapEntry struct {
 	XMLName      xml.Name `xml:"url"`

@@ -75,7 +75,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		// Archive
 		// tar --zstd -cf <archivePath> -C <gitStorePath> <repoDirName>
 		// using -C to archive the relative path so it unzips nicely
-		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", gitStorePath, repoDirName)
+		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %v, output: %s", err, out)
 		}

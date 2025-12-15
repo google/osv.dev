@@ -115,20 +115,21 @@ class RepoInaccessibleError(Exception):
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
   try:
-    cmd = ['curl', "https://gitter:8888/getgit?url="+ _git_mirror(git_url), "-o", checkout_dir+".zst", "-s"]
+    os.makedirs(checkout_dir, exist_ok=True)
+    cmd = ['curl', "http://localhost:8889/getgit?url="+ _git_mirror(git_url), "-o", checkout_dir+".zst", "-s"]
     subprocess.run(cmd, check=True)
     cmd = ['tar', '-xf', checkout_dir+".zst", "-C", checkout_dir]
     subprocess.run(cmd, check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
-    stderr = e.stderr.decode(errors='ignore')
-    if ('could not read Username' in stderr or
-        ('fatal: repository' in stderr and 'not found' in stderr) or
-        'Authentication failed' in stderr):
-      # Git is asking for username/password, the repository doesn't exist, or
-      # authentication failed.
-      raise RepoInaccessibleError() from e
-    raise GitCloneError(f'Failed to clone repo:\n{stderr}') from e
+    # stderr = e.stderr.decode(errors='ignore')
+    # if ('could not read Username' in stderr or
+    #     ('fatal: repository' in stderr and 'not found' in stderr) or
+    #     'Authentication failed' in stderr):
+    #   # Git is asking for username/password, the repository doesn't exist, or
+    #   # authentication failed.
+    #   raise RepoInaccessibleError() from e
+    raise GitCloneError(f'Failed to clone repo:\n{e}') from e
   except pygit2.GitError as e:
     raise GitCloneError('Failed to open cloned repo') from e
 

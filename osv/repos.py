@@ -115,13 +115,10 @@ class RepoInaccessibleError(Exception):
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
   try:
-    # Use 'git' CLI here as it's much faster than libgit2's clone.
-    env = _set_git_callback_env(git_callbacks)
-    cmd = ['git', 'clone']
-    if blobless:
-      cmd.append('--filter=blob:none')
-    cmd.extend([_git_mirror(git_url), checkout_dir])
-    subprocess.run(cmd, env=env, capture_output=True, check=True)
+    cmd = ['curl', "https://gitter:8888/getgit?url="+ _git_mirror(git_url), "-o", checkout_dir+".zst", "-s"]
+    subprocess.run(cmd, check=True)
+    cmd = ['tar', '-xf', checkout_dir+".zst", "-C", checkout_dir]
+    subprocess.run(cmd, check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
     stderr = e.stderr.decode(errors='ignore')

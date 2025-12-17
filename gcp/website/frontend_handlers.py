@@ -139,8 +139,7 @@ def go_bindings_vanity():
   if request.args.get('go-get', 0) == '1':
     return _GO_VANITY_METADATA
 
-  abort(404)
-  return None
+  return redirect('https://pkg.go.dev/osv.dev/bindings/go')
 
 
 @blueprint.route('/')

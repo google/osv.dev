@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -126,6 +127,12 @@ func main() {
 		}
 
 		logger.Info("Received request", slog.String("url", url))
+
+		// Check if url starts with regex [a-zA-Z]+://
+		if match, _ := regexp.MatchString("^[a-zA-Z]+://", url); !match {
+			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
+			return
+		}
 
 		//nolint:contextcheck // I can't change singleflight's interface
 		val, err, _ := g.Do(url, func() (any, error) {

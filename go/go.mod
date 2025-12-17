@@ -8,7 +8,8 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.3.0
 	cloud.google.com/go/storage v1.57.2
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251202081329-61505a9c2319
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20251209024518-c18cb6974477
+	golang.org/x/sync v0.18.0
 	google.golang.org/api v0.257.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251124214823-79d6a2a48846
 	google.golang.org/protobuf v1.36.10
@@ -64,7 +65,6 @@ require (
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect

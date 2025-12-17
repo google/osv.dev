@@ -33,6 +33,7 @@ from werkzeug.security import safe_join
 from werkzeug import exceptions
 from collections import OrderedDict
 from collections import defaultdict
+from google.cloud import exceptions as gexceptions
 from google.cloud import ndb
 from cvss import CVSS2, CVSS3, CVSS4
 
@@ -257,7 +258,7 @@ def list_vulnerabilities():
     args.pop('page', None)
     return redirect(url_for(request.endpoint, **args))
 
-  results = osv_query(query, page, False, ecosystem)
+  results = osv_query(query, page, ecosystem)
 
   # Fetch ecosystems by default. As an optimization, skip when rendering page
   # fragments.
@@ -332,27 +333,20 @@ def vulnerability_json_redirector(potential_vuln_id):
   return redirect(f'https://{api_url}/v1/vulns/{bug["id"]}')
 
 
-def bug_to_response(bug, detailed=True):
-  """Convert a Bug entity to a response object."""
-  response = osv.vulnerability_to_dict(
-      bug.to_vulnerability(include_alias=detailed))
-  response.update({
-      'isFixed': bug.is_fixed,
-      'invalid': bug.status == osv.BugStatus.INVALID
-  })
+def vuln_to_response(vuln):
+  """Convert a Vulnerability proto to a response object."""
+  response = osv.vulnerability_to_dict(vuln)
   add_cvss_score(response)
-
-  if detailed:
-    add_links(response)
-    add_source_info(bug, response)
-    add_stream_info(bug, response)
-    add_known_osv_bugs(response)
-    add_stream_strings(bug, response)
+  add_links(response)
+  add_source_info(response)
+  add_stream_info(response)
+  add_known_osv_bugs(response)
+  add_stream_strings(response)
   return response
 
 
 def add_known_osv_bugs(response: dict[str, Any]):
-  """Compute which bugs in aliases/related/upstream/downstream exist in OSV,
+  """Compute which vulns in aliases/related/upstream/downstream exist in OSV,
   in order to add links to them.
 
   Note: This must be called after add_stream_info().
@@ -373,35 +367,37 @@ def add_known_osv_bugs(response: dict[str, Any]):
 
   # Somewhat asynchronously query all of the found IDs to check their existence.
   # This is written to mimic how ndb.get_multi() is implemented.
-  exist_futures = [
-      (bug_id, osv.Bug.query(osv.Bug.db_id == bug_id).get_async(keys_only=True))
-      for bug_id in ids
-  ]
-  exist_ids = set(bug_id for bug_id, f in exist_futures if f.result())
+  exist_futures = [(vid, osv.Vulnerability.get_by_id_async(vid)) for vid in ids]
+  exist_ids = set(vid for vid, f in exist_futures if f.result())
   response['known_ids'] = exist_ids
 
 
-def add_stream_info(bug: osv.Bug, response: dict[str, Any]):
+def add_stream_info(response: dict[str, Any]):
   """Add upstream hierarchy information to `response`."""
+  vuln_id = response.get('id')
+  if not vuln_id:
+    return
   # Check whether there are upstreams
-  if bug.upstream_raw and 'upstream' in response:
-    response['computed_upstream'] = get_upstreams_of_vulnerability(bug)
+  upstreams = get_upstreams_of_vulnerability(vuln_id)
+  if upstreams:
+    response['computed_upstream'] = upstreams
   # Check whether there are downstreams
-  downstreams = _get_downstreams_of_bug_query(bug.db_id)
+  downstreams = _get_downstreams_of_bug_query(vuln_id)
   if downstreams:
     response['computed_downstream'] = compute_downstream_hierarchy(
-        bug.db_id, downstreams)
+        vuln_id, downstreams)
 
 
-def add_stream_strings(bug: osv.Bug, response: dict[str, Any]):
+def add_stream_strings(response: dict[str, Any]):
   """Add upstream hierarchy html strings to `response`."""
+  vuln_id = response.get('id', '')
   known_ids = response.get('known_ids', set())
   if computed := response.get('computed_upstream'):
     response['upstream_hierarchy'] = construct_hierarchy_string(
-        bug.db_id, computed, known_ids)
+        vuln_id, computed, known_ids)
   if computed := response.get('computed_downstream'):
     response['downstream_hierarchy'] = construct_hierarchy_string(
-        bug.db_id, computed, known_ids)
+        vuln_id, computed, known_ids)
 
 
 cvss_calculator = {
@@ -432,13 +428,22 @@ def calculate_severity_details(
   return severity_score, severity_rating
 
 
-def add_cvss_score(bug):
+def add_cvss_score(record: dict):
   """Add severity score where possible."""
   severity_score = None
   severity_rating = None
   severity_type = None
 
-  for severity in bug.get('severity', []):
+  # The OSV record (vulnerability page) has the list of severities under the
+  # 'severity' field, while the ListedVulnerability (/list page) has it under
+  # the 'severities' field.
+  # This function is used for both, so check both.
+  sev = ''
+  if 'severity' in record:
+    sev = 'severity'
+  elif 'severities' in record:
+    sev = 'severities'
+  for severity in record.get(sev, []):
     if not is_cvss(severity):
       continue
     type_ = severity.get('type')
@@ -446,16 +451,16 @@ def add_cvss_score(bug):
       severity_type = type_
       severity_score, severity_rating = calculate_severity_details(severity)
 
-  bug['severity_score'] = severity_score
-  bug['severity_rating'] = severity_rating
+  record['severity_score'] = severity_score
+  record['severity_rating'] = severity_rating
 
 
-def add_links(bug):
+def add_links(record: dict):
   """Add VCS links where possible."""
 
   first_repo_url = None
 
-  for entry in bug.get('affected', []):
+  for entry in record.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
       if affected_range['type'] != 'GIT':
@@ -488,30 +493,64 @@ def add_links(bug):
           continue
 
   if first_repo_url:
-    bug['repo'] = first_repo_url
+    record['repo'] = first_repo_url
 
 
-def add_source_info(bug, response):
+def add_source_info(response: dict):
   """Add upstream provenance information to `response`."""
-  if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
-    response['source'] = 'INTERNAL'
+  # if bug.source_of_truth == osv.SourceOfTruth.INTERNAL:
+  #   response['source'] = 'INTERNAL'
+  #   return
+  vuln_id = response.get('id')
+  if not vuln_id:
+    logging.error('vulnerability does not have an id')
     return
-
-  source_repo = osv.get_source_repository(bug.source)
+  vuln = osv.Vulnerability.get_by_id(vuln_id)
+  if vuln is None:
+    logging.error('vulnerability %s in GCS but no Vulnerability entity exists',
+                  vuln_id)
+    return
+  if vuln.source_id is None:
+    logging.error('Unexpected state for "%s": source_id is None', vuln_id)
+    return
+  source, _, source_path = vuln.source_id.partition(':')
+  source_repo = osv.get_source_repository(source)
   if not source_repo or not source_repo.link:
     logging.error(
         'Unexpected state for "%s": source repository/link not found for "%s"',
-        bug.id, bug.source)
+        vuln_id, source)
     return
 
-  source_path = osv.source_path(source_repo, bug)
+  if source == 'oss-fuzz':
+    source_path = oss_fuzz_source_path(source_repo, response)
   response['source'] = source_repo.link + source_path
   response['source_link'] = response['source']
   if source_repo.human_link:
-    bug_ecosystems = bug.ecosystem
-    bug_id = bug.id()
+    ecosystem_version = ''
+    if source.startswith('almalinux'):
+      source_path: str
+      splits = source_path.split('/')
+      if len(splits) >= 2:
+        ecosystem_version = splits[1].removeprefix('almalinux')
     response['human_source_link'] = render_template_string(
-        source_repo.human_link, ECOSYSTEMS=bug_ecosystems, BUG_ID=bug_id)
+        source_repo.human_link, ECOSYSTEM_VER=ecosystem_version, BUG_ID=vuln_id)
+
+
+def oss_fuzz_source_path(source_repo, response):
+  """Get the source path for an oss-fuzz vuln."""
+  for aff in response.get('affected', []):
+    pkg = aff.get('package', {})
+    if pkg.get('ecosystem') == 'OSS-Fuzz':
+      project = pkg.get('name')
+      if not project:
+        continue
+      path = os.path.join(project,
+                          response.get('id', '') + source_repo.extension)
+      if source_repo.directory_path:
+        path = os.path.join(source_repo.directory_path, path)
+      return path
+
+  return ''
 
 
 def _commit_to_link(repo_url, commit):
@@ -536,8 +575,9 @@ def _commit_to_link(repo_url, commit):
 
 def osv_get_ecosystems():
   """Get list of ecosystems."""
-  query = osv.Bug.query(projection=[osv.Bug.ecosystem], distinct=True)
-  return sorted([bug.ecosystem[0] for bug in query if bug.ecosystem],
+  query = osv.ListedVulnerability.query(
+      projection=[osv.ListedVulnerability.ecosystems], distinct=True)
+  return sorted([vuln.ecosystems[0] for vuln in query if vuln.ecosystems],
                 key=str.lower)
 
 
@@ -566,77 +606,85 @@ def osv_get_ecosystem_counts() -> dict[str, int]:
       # Count by the base ecosystem index. Otherwise we'll overcount as a
       # single entry may refer to multiple sub-ecosystems.
       continue
-
-    counts[ecosystem] = osv.Bug.query(
-        osv.Bug.ecosystem == ecosystem,
-        osv.Bug.public == True,  # pylint: disable=singleton-comparison
-        osv.Bug.status == osv.BugStatus.PROCESSED).count()
+    counts[ecosystem] = osv.ListedVulnerability.query(
+        osv.ListedVulnerability.ecosystems == ecosystem).count()
 
   filtered_counts = {key: elem for key, elem in counts.items() if elem > 0}
   return filtered_counts
 
 
-def osv_query(search_string, page, affected_only, ecosystem):
-  """Run an OSV query."""
-  query: ndb.Query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                                   osv.Bug.public == True)  # pylint: disable=singleton-comparison
+def listed_vuln_response(vuln: osv.ListedVulnerability) -> dict:
+  """Convert a ListedVulnerability to a dict for template rendering"""
+  resp = vuln.to_dict()
+  resp['id'] = vuln.key.id()
+  add_cvss_score(resp)
+  return resp
 
+
+def osv_query(search_string, page, ecosystem):
+  """Run an OSV query."""
+  query: ndb.Query = osv.ListedVulnerability.query()
   if search_string and len(search_string) <= 300:
     # Indexed value can only be 1500 bytes at most.
     # The search string length is capped at 300 which should be enough for
     # package names or bug IDs.
-    query = query.filter(osv.Bug.search_indices == search_string.lower())
-
-  if affected_only:
-    query = query.filter(osv.Bug.has_affected == True)  # pylint: disable=singleton-comparison
-
+    query = query.filter(
+        osv.ListedVulnerability.search_indices == search_string.lower())
   if ecosystem:
-    query = query.filter(osv.Bug.ecosystem == ecosystem)
-
-  query = query.order(-osv.Bug.timestamp)
-
-  if not search_string and not affected_only:
-    # If no search string and not affected only, use the cached ecosystem counts
+    query = query.filter(osv.ListedVulnerability.ecosystems == ecosystem)
+  query = query.order(-osv.ListedVulnerability.published)
+  if not search_string:
+    # If no search string, use the cached ecosystem counts
     total_future = ndb.Future()
     total_future.set_result(get_vuln_count_for_ecosystem(ecosystem))
   else:
     total_future = query.count_async()
-
   result_items = []
-
-  bugs, _, _ = query.fetch_page(
+  listed_vulns, _, _ = query.fetch_page(
       page_size=_PAGE_SIZE, offset=(page - 1) * _PAGE_SIZE)
-
+  # FIXME(michaelkedar): This logic isn't currently possible with the
+  # ListedVulnerability entity.
+  # To support this, we'd need to add the alias/upstream/related fields to the
+  # ListedVulnerability entity.
+  # For now, just stick an exact ID match at the top of the list
+  #
   # The following only works 100% as intended if all of these results appear in
   # the first page
+  # if _VALID_VULN_ID.match(search_string):
+  #   sorting_bugs = list(bugs)
+  #   # yapf: disable
+  #   bugs = sorted(
+  #       sorting_bugs,
+  #       key=lambda bug: (
+  #           0 if bug.db_id == search_string else
+  #           1 if search_string in bug.aliases else
+  #           2 if search_string in bug.upstream_raw else
+  #           3 if search_string in bug.related else
+  #           4,  # Default priority for items not matching specific criteria
+  #           -bug.timestamp.timestamp()))
+  #   # yapf: enable
   if _VALID_VULN_ID.match(search_string):
-    sorting_bugs = list(bugs)
-    # yapf: disable
-    bugs = sorted(
-        sorting_bugs,
-        key=lambda bug: (
-            0 if bug.db_id == search_string else
-            1 if search_string in bug.aliases else
-            2 if search_string in bug.upstream_raw else
-            3 if search_string in bug.related else
-            4,  # Default priority for items not matching specific criteria
-            -bug.timestamp.timestamp()))
-    # yapf: enable
-  result_items = [bug_to_response(bug, detailed=False) for bug in bugs]
-
+    sorting_vulns = list(listed_vulns)
+    listed_vulns = sorted(
+        sorting_vulns,
+        key=lambda v:
+        (0 if v.key.id() == search_string else -v.published.timestamp()))
+  result_items = [listed_vuln_response(v) for v in listed_vulns]
+  # FIXME(michaelkedar): This logic isn't currently possible with the
+  # ListedVulnerability entity.
+  # To support this, we'd need change the ListedVulnerability entity to include
+  # the ecosystems it's fixed in.
   # Filter isFixed flag to apply only for selected ecosystem.
-  if ecosystem:
-    eco_variants = osv.ecosystems.add_matching_ecosystems({ecosystem})
-    eco_variants.add(osv.ecosystems.normalize(ecosystem))
-
-    for item, bug_obj in zip(result_items, bugs):
-      item['isFixed'] = _is_fixed_in_ecosystem(bug_obj, eco_variants, ecosystem)
+  # if ecosystem:
+  #   eco_variants = osv.ecosystems.add_matching_ecosystems({ecosystem})
+  #   eco_variants.add(osv.ecosystems.normalize(ecosystem))
+  #   for item, bug_obj in zip(result_items, bugs):
+  #     item['isFixed'] = _is_fixed_in_ecosystem(bug_obj,eco_variants,ecosystem)
 
   results = {
       'total': total_future.get_result(),
       'items': result_items,
   }
-
   return results
 
 
@@ -688,27 +736,21 @@ def osv_get_by_id(vuln_id: str) -> dict:
   """Gets bug details from its id. If invalid, aborts the request."""
   if not vuln_id:
     abort(400)
-
-  bug = osv.Bug.get_by_id(vuln_id)
-  if not bug:
+  try:
+    vuln = osv.gcs.get_by_id(vuln_id)
+  except gexceptions.NotFound as exc:
     alias = check_for_aliases(vuln_id)
     if not alias:
       if osv.ImportFinding.get_by_id(vuln_id):
-        raise VulnerabilityNotImported(vuln_id)
-      raise VulnerabilityNotFound(vuln_id)
-    bug = alias
+        raise VulnerabilityNotImported(vuln_id) from exc
+      raise VulnerabilityNotFound(vuln_id) from exc
+    vuln = alias
 
-  if bug.status == osv.BugStatus.UNPROCESSED:
-    # abort(404) is too simplistic for this.
-    raise VulnerabilityNotFound(vuln_id)
-
-  if not bug.public:
-    abort(403)
-
-  return bug_to_response(bug)
+  return vuln_to_response(vuln)
 
 
-def check_for_aliases(vuln_id: str) -> osv.Bug | None:
+def check_for_aliases(
+    vuln_id: str) -> osv.vulnerability_pb2.Vulnerability | None:
   """ Search for aliases of a vuln if only one exists """
   alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == vuln_id).get()
   if alias_group and len(alias_group.bug_ids) == 2:
@@ -716,10 +758,12 @@ def check_for_aliases(vuln_id: str) -> osv.Bug | None:
     alias = alias_group.bug_ids[0]
     if alias == vuln_id:
       alias = alias_group.bug_ids[1]
-    bug = osv.Bug.get_by_id(alias)
     # Confirm bug exists
-    if bug:
-      return bug
+    try:
+      vuln = osv.gcs.get_by_id(alias)
+    except gexceptions.NotFound:
+      return None
+    return vuln
   return None
 
 
@@ -1111,11 +1155,11 @@ def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:
   return reversed_graph
 
 
-def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
+def get_upstreams_of_vulnerability(vuln_id: str) -> ComputedHierarchy | None:
   """Gets the upstream hierarchy of a vulnerability.
 
   Args:
-    target_bug_id: The ID of the target bug.
+    vuln_id: The ID of the target vuln.
 
   Returns:
     A ComputedHierarchy containing root nodes and a dict representing the tree,
@@ -1123,9 +1167,11 @@ def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
     None if upstreams don't exist or cannot be computed.
   """
   target_bug_group = osv.UpstreamGroup.query(
-      osv.UpstreamGroup.db_id == bug.db_id).get()
-  upstream_hierarchy = target_bug_group.upstream_hierarchy
+      osv.UpstreamGroup.db_id == vuln_id).get()
+  if target_bug_group is None:
+    return None
 
+  upstream_hierarchy = target_bug_group.upstream_hierarchy
   if isinstance(upstream_hierarchy, str):
     upstream_hierarchy = json.loads(upstream_hierarchy)
 
@@ -1134,7 +1180,7 @@ def get_upstreams_of_vulnerability(bug) -> ComputedHierarchy | None:
 
   reversed_graph = reverse_tree(upstream_hierarchy)
   if has_cycle(reversed_graph):
-    logging.error("Cycle detected in upstream hierarchy for %s", bug.db_id)
+    logging.error("Cycle detected in upstream hierarchy for %s", vuln_id)
     return None
   all_children = set()
   for children in upstream_hierarchy.values():
@@ -1244,6 +1290,11 @@ def compute_downstream_hierarchy(
 
   downstream_map[target_bug_id] = root_leaves
 
+  if has_cycle(downstream_map):
+    logging.error('Cycle detected in downstream hierarchy for %s',
+                  target_bug_id)
+    return None
+
   return ComputedHierarchy(root_nodes=root_leaves, graph=downstream_map)
 
 
@@ -1254,20 +1305,19 @@ def search_suggestions():
   if not query or len(query) > 300:
     return json.dumps({'suggestions': []})
 
-  db_query = osv.Bug.query(
-      osv.Bug.status == osv.BugStatus.PROCESSED,
-      osv.Bug.public == True,  # pylint: disable=singleton-comparison
-      osv.Bug.search_tags >= query,
-      osv.Bug.search_tags < query + '\ufffd')
-  db_query = db_query.order(osv.Bug.search_tags)
-  bugs = db_query.fetch(MAX_SUGGESTIONS, projection=[osv.Bug.search_tags])
+  db_query = osv.ListedVulnerability.query(
+      osv.ListedVulnerability.autocomplete_tags >= query,
+      osv.ListedVulnerability.autocomplete_tags < query + '\ufffd')
+  db_query = db_query.order(osv.ListedVulnerability.autocomplete_tags)
+  vulns = db_query.fetch(
+      MAX_SUGGESTIONS, projection=[osv.ListedVulnerability.autocomplete_tags])
 
   # Build suggestion list
   suggestions = sorted(
       list(
           set(tag.upper()
-              for bug in bugs
-              for tag in bug.search_tags
+              for vuln in vulns
+              for tag in vuln.autocomplete_tags
               if tag.lower().startswith(query))))
 
   return json.dumps({'suggestions': suggestions[:MAX_SUGGESTIONS]})

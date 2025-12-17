@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -27,13 +27,13 @@ const gitStoreFileName = "git-store"
 
 var (
 	g               singleflight.Group
-	persistancePath = filepath.Join(defaultGitterWorkDir, persistanceFileName)
-	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
+	persistancePath = path.Join(defaultGitterWorkDir, persistanceFileName)
+	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 )
 
 func getRepoDirName(url string) string {
-	base := filepath.Base(url)
+	base := path.Base(url)
 	base = strings.TrimSuffix(base, ".git")
 	hash := sha256.Sum256([]byte(url))
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))
@@ -41,7 +41,7 @@ func getRepoDirName(url string) string {
 
 func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 	repoDirName := getRepoDirName(url)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
+	repoPath := path.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
 
 	lastFetchMu.Lock()
@@ -51,7 +51,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 	// Check if we need to fetch
 	if !ok || time.Since(accessTime) > fetchTimeout {
 		logger.Info("Fetching git blob", slog.String("url", url), slog.Duration("sinceAccessTime", time.Since(accessTime)))
-		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
+		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			cmd := exec.Command("git", "clone", url, repoPath)
 			if out, err := cmd.CombinedOutput(); err != nil {
@@ -75,7 +75,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		// Archive
 		// tar --zstd -cf <archivePath> -C <gitStorePath> <repoDirName>
 		// using -C to archive the relative path so it unzips nicely
-		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
+		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %v, output: %s", err, out)
 		}
@@ -106,8 +106,8 @@ func main() {
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
 
-	persistancePath = filepath.Join(*workDir, persistanceFileName)
-	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
+	persistancePath = path.Join(*workDir, persistanceFileName)
+	gitStorePath = path.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Error("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))

@@ -101,7 +101,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 }
 
 func main() {
-	port := flag.Int("port", 80, "Listen port")
+	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()

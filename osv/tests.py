@@ -260,9 +260,13 @@ def setup_gitter(env_var):
 
   # Start gitter
   cmd = [
-      'go', 'run', './cmd/gitter',
-      '-port', str(port),
-      '-work_dir', work_dir,
+      'go',
+      'run',
+      './cmd/gitter',
+      '-port',
+      str(port),
+      '-work_dir',
+      work_dir,
   ]
 
   # We use a process group so we can ensure everything is killed

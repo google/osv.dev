@@ -1,3 +1,4 @@
+// Package main is the main package for gitter caching service
 package main
 
 import (
@@ -36,6 +37,7 @@ func getRepoDirName(url string) string {
 	base := path.Base(url)
 	base = strings.TrimSuffix(base, ".git")
 	hash := sha256.Sum256([]byte(url))
+
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))
 }
 
@@ -55,7 +57,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 			// Clone
 			cmd := exec.Command("git", "clone", url, repoPath)
 			if out, err := cmd.CombinedOutput(); err != nil {
-				return nil, fmt.Errorf("git clone failed: %v, output: %s", err, out)
+				return nil, fmt.Errorf("git clone failed: %w, output: %s", err, out)
 			}
 		} else {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
@@ -63,11 +65,11 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
 			cmd := exec.Command("git", "-C", repoPath, "fetch", "origin")
 			if out, err := cmd.CombinedOutput(); err != nil {
-				return nil, fmt.Errorf("git fetch failed: %v, output: %s", err, out)
+				return nil, fmt.Errorf("git fetch failed: %w, output: %s", err, out)
 			}
 			cmd = exec.Command("git", "-C", repoPath, "reset", "--hard", "origin/HEAD")
 			if out, err := cmd.CombinedOutput(); err != nil {
-				return nil, fmt.Errorf("git reset failed: %v, output: %s", err, out)
+				return nil, fmt.Errorf("git reset failed: %w, output: %s", err, out)
 			}
 		}
 
@@ -77,7 +79,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		// using -C to archive the relative path so it unzips nicely
 		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
 		if out, err := cmd.CombinedOutput(); err != nil {
-			return nil, fmt.Errorf("tar zstd failed: %v, output: %s", err, out)
+			return nil, fmt.Errorf("tar zstd failed: %w, output: %s", err, out)
 		}
 
 		updateLastFetch(url)
@@ -94,7 +96,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 			deleteLastFetch(url)
 		}
 
-		return nil, fmt.Errorf("failed to read file: %v", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	return file, nil
@@ -123,27 +125,39 @@ func main() {
 			return
 		}
 
-		logger.Info("Received request for %q", url)
+		logger.Info("Received request", slog.String("url", url))
 
-		val, err, _ := g.Do(url, func() (interface{}, error) {
+		//nolint:contextcheck // I can't change singleflight's interface
+		val, err, _ := g.Do(url, func() (any, error) {
 			return fetchBlob(r.Context(), url)
 		})
-		file := val.(*os.File)
-		defer file.Close()
 
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
 			return
 		}
 
+		file := val.(*os.File)
+		defer file.Close()
+
 		w.Header().Set("Content-Type", "application/zstd")
 		w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 		w.WriteHeader(http.StatusOK)
-		io.Copy(w, file)
+		if _, err := io.Copy(w, file); err != nil {
+			logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
+			http.Error(w, "Error copying file", http.StatusInternalServerError)
+
+			return
+		}
 	})
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil); err != nil {
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", *port),
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		logger.Error("Gitter failed to start", slog.Int("port", *port), slog.Any("error", err))
 		os.Exit(1)
 	}

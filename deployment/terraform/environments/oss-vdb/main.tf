@@ -15,8 +15,8 @@ locals {
     for manifest in flatten([
       for file_path in local.all_resources : [
         # Split content by separator, creating a list of string documents
-        for doc in split("\n---\n", file(file_path)) : 
-        yamldecode(doc) 
+        for doc in split("\n---\n", file(file_path)) :
+        yamldecode(doc)
         # Filter out empty strings caused by trailing separators
         if trimspace(doc) != ""
       ]

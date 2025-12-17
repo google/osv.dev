@@ -47,7 +47,6 @@ SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/'
 # pylint: disable=protected-access,invalid-name
 
-
 _gitter_cleanup = None
 
 

@@ -36,7 +36,7 @@ _GIT_MIRRORS = {
 FETCH_CACHE: dict[tuple, datetime.datetime] = {}
 FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
 
-GITTER_HOST = os.getenv("GITTER_HOST", "http://gitter:8888")
+GITTER_HOST = os.getenv("GITTER_HOST", "http://gitter-service:8888")
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):

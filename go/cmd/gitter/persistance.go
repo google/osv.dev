@@ -59,7 +59,7 @@ func saveMap() {
 		return
 	}
 
-	if err := os.WriteFile(persistancePath, data, 0644); err != nil {
+	if err := os.WriteFile(persistancePath, data, 0600); err != nil {
 		logger.Error("Error writing lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
 	}
 }
@@ -70,6 +70,7 @@ func loadMap() {
 		if !os.IsNotExist(err) {
 			logger.Error("Error reading lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
 		}
+
 		return
 	}
 

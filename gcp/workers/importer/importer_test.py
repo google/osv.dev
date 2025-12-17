@@ -53,7 +53,6 @@ PORT = 8888
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
-
 _gitter_cleanup = None
 
 

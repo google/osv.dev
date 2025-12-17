@@ -35,7 +35,7 @@ spec:
       volumes:
       - name: disk-data
         persistentVolumeClaim:
-          claimName: compute-disk-pvc
+          claimName: gitter-disk-pvc
 
 ---
 apiVersion: v1
@@ -55,7 +55,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: compute-disk-pvc
+  name: gitter-disk-pvc
 spec:
   storageClassName: ""
   volumeName: gitter-disk-pv

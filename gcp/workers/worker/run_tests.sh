@@ -14,6 +14,7 @@
 # limitations under the License.
 
 export GOOGLE_CLOUD_PROJECT=fake-project123
+export GITTER_HOST=http://localhost:8889
 
 poetry install
 poetry run python worker_test.py

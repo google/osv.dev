@@ -16,6 +16,7 @@ import contextlib
 import datetime
 import difflib
 import os
+import shutil
 import pprint
 import signal
 import time
@@ -239,3 +240,58 @@ def mock_clone(test, func=None, return_value=None):
   else:
     mocked.side_effect = func
   test.addCleanup(patcher.stop)
+
+
+def setup_gitter(env_var):
+  """Setup gitter."""
+  address = os.environ.get(env_var)
+  if not address:
+    raise ValueError(f'{env_var} environment variable is not set')
+
+  port = 80
+  if ':' in address:
+    port = int(address.split(':')[-1])
+
+  repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  go_dir = os.path.join(repo_root, 'go')
+
+  # Create a temporary directory for gitter working directory
+  work_dir = tempfile.mkdtemp(prefix='gitter-work-')
+
+  # Start gitter
+  cmd = [
+      'go', 'run', './cmd/gitter',
+      '-port', str(port),
+      '-work_dir', work_dir,
+  ]
+
+  # We use a process group so we can ensure everything is killed
+  proc = subprocess.Popen(
+      cmd,
+      cwd=go_dir,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      start_new_session=True,
+  )
+
+  # Wait a bit for it to start (optional, but good for stability)
+  # Basic check to see if it crashed immediately
+  try:
+    proc.wait(timeout=1.0)
+    # If it returns, it exited
+    raise RuntimeError(f'Gitter exited early: {proc.stderr.read().decode()}')
+  except subprocess.TimeoutExpired:
+    # Process is still running
+    pass
+
+  def cleanup():
+    # Kill the process group
+    try:
+      os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except OSError:
+      pass
+
+    proc.wait()
+    shutil.rmtree(work_dir, ignore_errors=True)
+
+  return cleanup

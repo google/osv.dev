@@ -48,6 +48,9 @@ MOCK_ADDRESS_FORMAT = f'http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/'
 # pylint: disable=protected-access,invalid-name
 
 
+_gitter_cleanup = None
+
+
 def _sha256(test_name):
   """Get sha256 sum."""
   hasher = hashlib.sha256()
@@ -1777,6 +1780,14 @@ def setUpModule():
   ds_emulator = unittest.enterModuleContext(tests.datastore_emulator())
   ndb_client = ndb.Client()
   unittest.enterModuleContext(ndb_client.context(cache_policy=False))
+
+  global _gitter_cleanup
+  _gitter_cleanup = tests.setup_gitter('GITTER_HOST')
+
+
+def tearDownModule():
+  if _gitter_cleanup:
+    _gitter_cleanup()
 
 
 if __name__ == '__main__':

@@ -12,6 +12,8 @@ spec:
       containers:
       - image: osv-website
         env:
+        - name: OSV_VULNERABILITIES_BUCKET
+          value: 'osv-vulnerabilities'
         - name: REDISHOST
           value: '10.85.52.228'
         - name: REDISPORT

@@ -28,7 +28,6 @@ import warnings
 
 from google.cloud import ndb
 from google.cloud import storage
-from google.cloud.storage import retry
 import pygit2
 from gcp.workers.mock_test.mock_test_handler import MockDataHandler
 import importer

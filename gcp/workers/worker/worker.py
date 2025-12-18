@@ -677,7 +677,7 @@ class TaskRunner:
                         task_type, source_id)
 
         if task_type in ('regressed', 'fixed', 'impact', 'invalid',
-                               'update-oss-fuzz'):
+                         'update-oss-fuzz'):
           # TODO(michaelkedar): Remove this once the cutover is complete and the
           # subscription filter is updated.
           logging.info('Ignoring OSS-Fuzz task %s for source %s', task_type,

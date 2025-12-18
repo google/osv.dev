@@ -1,7 +1,5 @@
 resources:
 - ../../base
-- make-bugs-public.yaml
-- process-results.yaml
 patches:
 - path: workers.yaml
 - path: importer.yaml

@@ -23,13 +23,21 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-website', '--to-target=production-website', '--annotations=tag=$TAG_NAME']
 
+# Deploy OSS-Fuzz workers
+- name: gcr.io/cloud-builders/gcloud
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1', '--delivery-pipeline=oss-fuzz-workers', '--images', 'worker=gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA,importer=gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA,cron=gcr.io/oss-vdb/cron:$COMMIT_SHA', '--annotations=tag=$TAG_NAME']
+
 # Tag the deployed images with the git tag
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA', 'gcr.io/oss-vdb/worker-base:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', 'gcr.io/oss-vdb/worker:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', 'gcr.io/oss-vdb/oss-fuzz-worker:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', 'gcr.io/oss-vdb/importer:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA', 'gcr.io/oss-vdb/oss-fuzz-importer:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', 'gcr.io/oss-vdb/exporter:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud

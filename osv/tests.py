@@ -269,8 +269,8 @@ def setup_gitter():
   proc = subprocess.Popen(
       cmd,
       cwd=go_dir,
-      stdout=subprocess.PIPE,
-      stderr=subprocess.PIPE,
+      # stdout=subprocess.PIPE,
+      # stderr=subprocess.PIPE,
       start_new_session=True,
   )
 

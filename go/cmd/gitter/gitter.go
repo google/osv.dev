@@ -42,6 +42,13 @@ func getRepoDirName(url string) string {
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))
 }
 
+func isAuthError(err error) bool {
+	errString := err.Error()
+	return strings.Contains(errString, "could not read Username") ||
+		strings.Contains(errString, "Authentication failed") ||
+		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
+}
+
 func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
@@ -119,44 +126,7 @@ func main() {
 
 	loadMap()
 
-	http.HandleFunc(getGitEndpoint, func(w http.ResponseWriter, r *http.Request) {
-		url := r.URL.Query().Get("url")
-		if url == "" {
-			http.Error(w, "Missing url parameter", http.StatusBadRequest)
-			return
-		}
-
-		logger.Info("Received request", slog.String("url", url))
-
-		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh|s?ftp)://", url); !match {
-			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
-			return
-		}
-
-		//nolint:contextcheck // I can't change singleflight's interface
-		val, err, _ := g.Do(url, func() (any, error) {
-			return fetchBlob(r.Context(), url)
-		})
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		file := val.(*os.File)
-		defer file.Close()
-
-		w.Header().Set("Content-Type", "application/zstd")
-		w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
-		w.WriteHeader(http.StatusOK)
-		if _, err := io.Copy(w, file); err != nil {
-			logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
-			http.Error(w, "Error copying file", http.StatusInternalServerError)
-
-			return
-		}
-	})
+	http.HandleFunc(getGitEndpoint, gitHandler)
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -167,5 +137,48 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		logger.Error("Gitter failed to start", slog.Int("port", *port), slog.Any("error", err))
 		os.Exit(1)
+	}
+}
+
+func gitHandler(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		http.Error(w, "Missing url parameter", http.StatusBadRequest)
+		return
+	}
+
+	logger.Info("Received request", slog.String("url", url))
+
+	// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
+	if match, _ := regexp.MatchString("^(https?|git|ssh|s?ftp)://", url); !match {
+		http.Error(w, "Invalid url parameter", http.StatusBadRequest)
+		return
+	}
+
+	//nolint:contextcheck // I can't change singleflight's interface
+	val, err, _ := g.Do(url, func() (any, error) {
+		return fetchBlob(r.Context(), url)
+	})
+
+	if err != nil {
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	file := val.(*os.File)
+	defer file.Close()
+
+	w.Header().Set("Content-Type", "application/zstd")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, file); err != nil {
+		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, "Error copying file", http.StatusInternalServerError)
+
+		return
 	}
 }

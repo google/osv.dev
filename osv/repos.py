@@ -20,6 +20,8 @@ import subprocess
 import time
 import urllib.parse
 
+import requests
+
 import pygit2
 import pygit2.enums
 
@@ -120,20 +122,23 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   if GITTER_HOST:
     try:
       os.makedirs(checkout_dir, exist_ok=True)
-      git_url_encoded = urllib.parse.quote(_git_mirror(git_url), safe='')
-      cmd = [
-          'curl',
-          f'{GITTER_HOST}/getgit?url={git_url_encoded}',
-          '-o',
-          f'{checkout_dir}.zst',
-          '-s',
-      ]
-      subprocess.run(cmd, check=True)
+      resp = requests.get(
+          f'{GITTER_HOST}/getgit', params={'url': git_url}, stream=True)
+      if resp.status_code == 403:
+        raise RepoInaccessibleError()
+
+      resp.raise_for_status()
+
+      with open(f'{checkout_dir}.zst', 'wb') as f:
+        shutil.copyfileobj(resp.raw, f)
+
       cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
       subprocess.run(cmd, check=True)
       return pygit2.Repository(checkout_dir)
+    except requests.RequestException as e:
+      raise GitCloneError(f'Failed to clone repo: {e}') from e
     except subprocess.CalledProcessError as e:
-      raise GitCloneError(f'Failed to clone repo:\n{e}') from e
+      raise GitCloneError(f'Failed to unarchive repo:\n{e}') from e
     except pygit2.GitError as e:
       raise GitCloneError('Failed to open cloned repo') from e
 

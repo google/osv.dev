@@ -25,7 +25,7 @@ import requests
 import pygit2
 import pygit2.enums
 
-CLONE_TRIES = 3
+CLONE_TRIES = os.getenv('CLONE_TRIES', 3)
 RETRY_SLEEP_SECONDS = 5
 
 # More performant mirrors for large/popular repos.

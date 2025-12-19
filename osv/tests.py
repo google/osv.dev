@@ -262,8 +262,8 @@ def setup_gitter():
             os.kill(int(pid), signal.SIGINT)
         except subprocess.CalledProcessError:
           pass
-  except subprocess.CalledProcessError:
-    # No process found on port, which is good
+  except (subprocess.CalledProcessError, FileNotFoundError):
+    # No process found on port, or lsof is not installed.
     pass
 
   go_dir = os.path.abspath(os.path.join(__file__, '..', '..', 'go'))

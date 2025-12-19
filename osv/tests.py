@@ -250,6 +250,22 @@ def setup_gitter():
   gitter_host = f'http://localhost:{gitter_port}'
   os.environ['GITTER_HOST'] = gitter_host
 
+  # Check if port is already in use and kill the process if so
+  try:
+    pids = subprocess.check_output(['lsof', '-t', '-i', f':{gitter_port}']).decode().split()
+    for pid in pids:
+      pid = pid.strip()
+      if pid:
+        try:
+          cmd = subprocess.check_output(['ps', '-p', pid, '-o', 'command=']).decode().strip()
+          if 'gitter' in cmd:
+            os.kill(int(pid), signal.SIGINT)
+        except subprocess.CalledProcessError:
+          pass
+  except subprocess.CalledProcessError:
+    # No process found on port, which is good
+    pass
+
   go_dir = os.path.abspath(os.path.join(__file__, '..', '..', 'go'))
   # Create a temporary directory for gitter working directory
   work_dir = tempfile.mkdtemp(prefix='gitter-work-')
@@ -269,8 +285,8 @@ def setup_gitter():
   proc = subprocess.Popen(
       cmd,
       cwd=go_dir,
-      # stdout=subprocess.PIPE,
-      # stderr=subprocess.PIPE,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
       start_new_session=True,
   )
 

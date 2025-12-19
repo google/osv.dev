@@ -180,6 +180,6 @@ resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
   name    = "gitter-disk"
   type    = "pd-ssd"
-  zone    = "us-central1-f"
+  zone    = google_container_cluster.workers.location
   size    = 2048
 }

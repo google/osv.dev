@@ -242,15 +242,13 @@ def mock_clone(test, func=None, return_value=None):
   test.addCleanup(patcher.stop)
 
 
-def setup_gitter(env_var):
+@contextlib.contextmanager
+def setup_gitter():
   """Setup gitter."""
-  address = os.environ.get(env_var)
-  if not address:
-    raise ValueError(f'{env_var} environment variable is not set')
 
-  port = 80
-  if ':' in address:
-    port = int(address.split(':')[-1])
+  gitter_port = 8889
+  gitter_host = f'http://localhost:{gitter_port}'
+  os.environ['GITTER_HOST'] = gitter_host
 
   go_dir = os.path.abspath(os.path.join(__file__, '..', '..', 'go'))
   # Create a temporary directory for gitter working directory
@@ -262,7 +260,7 @@ def setup_gitter(env_var):
       'run',
       './cmd/gitter',
       '-port',
-      str(port),
+      str(gitter_port),
       '-work_dir',
       work_dir,
   ]
@@ -276,17 +274,20 @@ def setup_gitter(env_var):
       start_new_session=True,
   )
 
-  # Wait a bit for it to start (optional, but good for stability)
-  # Basic check to see if it crashed immediately
   try:
-    proc.wait(timeout=1.0)
-    # If it returns, it exited
-    raise RuntimeError(f'Gitter exited early: {proc.stderr.read().decode()}')
-  except subprocess.TimeoutExpired:
-    # Process is still running
-    pass
+    # Wait a bit for it to start (optional, but good for stability)
+    # Basic check to see if it crashed immediately
+    try:
+      proc.wait(timeout=1.0)
+      # If it returns, it exited
+      raise RuntimeError(f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n{proc.stderr.read().decode()}')
+    except subprocess.TimeoutExpired:
+      # Process is still running
+      pass
 
-  def cleanup():
+    yield
+
+  finally:
     # Kill the process group
     try:
       os.killpg(os.getpgid(proc.pid), signal.SIGINT)
@@ -295,5 +296,3 @@ def setup_gitter(env_var):
 
     proc.wait()
     shutil.rmtree(work_dir, ignore_errors=True)
-
-  return cleanup

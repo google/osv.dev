@@ -53,8 +53,6 @@ PORT = 8888
 SERVER_ADDRESS = ('localhost', PORT)
 MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
-_gitter_cleanup = None
-
 
 @mock.patch('importer.utcnow',
             lambda: datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
@@ -1571,13 +1569,7 @@ def setUpModule():
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
       logging.DEBUG)
 
-  global _gitter_cleanup
-  _gitter_cleanup = tests.setup_gitter('GITTER_HOST')
-
-
-def tearDownModule():
-  if _gitter_cleanup:
-    _gitter_cleanup()
+  unittest.enterModuleContext(tests.setup_gitter())
 
 
 if __name__ == '__main__':

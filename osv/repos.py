@@ -37,7 +37,7 @@ _GIT_MIRRORS = {
 FETCH_CACHE: dict[tuple, datetime.datetime] = {}
 FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
 
-GITTER_HOST = os.getenv('GITTER_HOST', 'http://gitter-service:8888')
+GITTER_HOST = os.getenv('GITTER_HOST', '')
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -117,23 +117,44 @@ class RepoInaccessibleError(Exception):
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
-  # pylint: disable=unused-argument
+  if GITTER_HOST:
+    try:
+      os.makedirs(checkout_dir, exist_ok=True)
+      git_url_encoded = urllib.parse.quote(_git_mirror(git_url), safe='')
+      cmd = [
+          'curl',
+          f'{GITTER_HOST}/getgit?url={git_url_encoded}',
+          '-o',
+          f'{checkout_dir}.zst',
+          '-s',
+      ]
+      subprocess.run(cmd, check=True)
+      cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
+      subprocess.run(cmd, check=True)
+      return pygit2.Repository(checkout_dir)
+    except subprocess.CalledProcessError as e:
+      raise GitCloneError(f'Failed to clone repo:\n{e}') from e
+    except pygit2.GitError as e:
+      raise GitCloneError('Failed to open cloned repo') from e
+
   try:
-    os.makedirs(checkout_dir, exist_ok=True)
-    git_url_encoded = urllib.parse.quote(_git_mirror(git_url), safe='')
-    cmd = [
-        'curl',
-        f'{GITTER_HOST}/getgit?url={git_url_encoded}',
-        '-o',
-        f'{checkout_dir}.zst',
-        '-s',
-    ]
-    subprocess.run(cmd, check=True)
-    cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
-    subprocess.run(cmd, check=True)
+    # Use 'git' CLI here as it's much faster than libgit2's clone.
+    env = _set_git_callback_env(git_callbacks)
+    cmd = ['git', 'clone']
+    if blobless:
+      cmd.append('--filter=blob:none')
+    cmd.extend([_git_mirror(git_url), checkout_dir])
+    subprocess.run(cmd, env=env, capture_output=True, check=True)
     return pygit2.Repository(checkout_dir)
   except subprocess.CalledProcessError as e:
-    raise GitCloneError(f'Failed to clone repo:\n{e}') from e
+    stderr = e.stderr.decode(errors='ignore')
+    if ('could not read Username' in stderr or
+        ('fatal: repository' in stderr and 'not found' in stderr) or
+        'Authentication failed' in stderr):
+      # Git is asking for username/password, the repository doesn't exist, or
+      # authentication failed.
+      raise RepoInaccessibleError() from e
+    raise GitCloneError(f'Failed to clone repo:\n{stderr}') from e
   except pygit2.GitError as e:
     raise GitCloneError('Failed to open cloned repo') from e
 

@@ -252,9 +252,7 @@ def setup_gitter(env_var):
   if ':' in address:
     port = int(address.split(':')[-1])
 
-  repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-  go_dir = os.path.join(repo_root, 'go')
-
+  go_dir = os.path.abspath(os.path.join(__file__, '..', '..', 'go'))
   # Create a temporary directory for gitter working directory
   work_dir = tempfile.mkdtemp(prefix='gitter-work-')
 
@@ -291,7 +289,7 @@ def setup_gitter(env_var):
   def cleanup():
     # Kill the process group
     try:
-      os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+      os.killpg(os.getpgid(proc.pid), signal.SIGINT)
     except OSError:
       pass
 

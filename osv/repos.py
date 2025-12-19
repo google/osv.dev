@@ -126,6 +126,8 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
           f'{GITTER_HOST}/getgit', params={'url': git_url}, stream=True)
       if resp.status_code == 403:
         raise RepoInaccessibleError()
+      if resp.status_code == 400:
+        raise GitCloneError(f'Failed to clone repo: {resp.text}')
 
       resp.raise_for_status()
 

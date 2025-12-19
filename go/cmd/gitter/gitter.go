@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -33,6 +34,23 @@ var (
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 )
+
+func isLocalRequest(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		// If SplitHostPort fails, it might be a raw IP (though rare in RemoteAddr),
+		// or an empty string. Try parsing the whole string as an IP.
+		host = r.RemoteAddr
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+
+	// Check if it's a loopback address (covers 127.0.0.0/8 and ::1)
+	return ip.IsLoopback()
+}
 
 func getRepoDirName(url string) string {
 	base := path.Base(url)
@@ -147,12 +165,14 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("Received request", slog.String("url", url))
-
-	// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-	if match, _ := regexp.MatchString("^(https?|git|ssh|s?ftp)://", url); !match {
-		http.Error(w, "Invalid url parameter", http.StatusBadRequest)
-		return
+	logger.Info("Received request", slog.String("url", url), slog.String("remoteAddr", r.RemoteAddr))
+	// If request came from a local ip, don't do the check
+	if !isLocalRequest(r) {
+		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
+		if match, _ := regexp.MatchString("^(https?|git|ssh|s?ftp)://", url); !match {
+			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
+			return
+		}
 	}
 
 	//nolint:contextcheck // I can't change singleflight's interface

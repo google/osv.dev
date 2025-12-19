@@ -1,0 +1,15 @@
+apiVersion: skaffold/v3
+kind: Config
+metadata:
+  name: oss-fuzz-workers
+profiles:
+- name: prod
+  manifests:
+    rawYaml:
+    - importer.yaml
+    - workers.yaml
+    - make-bugs-public.yaml
+    - process-results.yaml
+
+deploy:
+  kubectl: {}

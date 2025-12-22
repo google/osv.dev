@@ -58,7 +58,7 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}{
 		{"", http.StatusBadRequest},
 		{"ftp://example.com/repo.git", http.StatusBadRequest}, // ftp is not allowed (it hangs for some reason)
-		{"file:///etc/passwd", http.StatusBadRequest}, // file protocol not allowed
+		{"file:///etc/passwd", http.StatusBadRequest},         // file protocol not allowed
 	}
 
 	for _, tt := range tests {

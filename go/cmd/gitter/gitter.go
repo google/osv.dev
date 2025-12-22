@@ -82,6 +82,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			cmd := exec.Command("git", "clone", "--", url, repoPath)
+			cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
 			if out, err := cmd.CombinedOutput(); err != nil {
 				return nil, fmt.Errorf("git clone failed: %w, output: %s", err, out)
 			}

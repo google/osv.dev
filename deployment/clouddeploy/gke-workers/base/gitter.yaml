@@ -25,13 +25,13 @@ spec:
         volumeMounts:
         - mountPath: /work
           name: disk-data
-      resources:
-        requests:
-          cpu: "28"
-          memory: "200Gi"
-        limits:
-          cpu: "28"
-          memory: "200Gi"
+        resources:
+          requests:
+            cpu: "28"
+            memory: "200Gi"
+          limits:
+            cpu: "28"
+            memory: "200Gi"
       volumes:
       - name: disk-data
         persistentVolumeClaim:

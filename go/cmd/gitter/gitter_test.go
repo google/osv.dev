@@ -57,7 +57,7 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 		expectedCode int
 	}{
 		{"", http.StatusBadRequest},
-		{"ftp://example.com/repo.git", http.StatusOK}, // ftp is allowed by regex provided in gitter.go
+		{"ftp://example.com/repo.git", http.StatusBadRequest}, // ftp is not allowed (it hangs for some reason)
 		{"file:///etc/passwd", http.StatusBadRequest}, // file protocol not allowed
 	}
 

@@ -171,7 +171,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh|s?ftp)://", url); !match {
+		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
 			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
 			return
 		}

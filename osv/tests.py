@@ -273,6 +273,7 @@ def setup_gitter():
   # Create a temporary directory for gitter working directory
   work_dir = tempfile.mkdtemp(prefix='gitter-work-')
 
+  print(f'Starting gitter at: "{gitter_host}". with work_dir: "{work_dir}"')
   # Start gitter
   cmd = [
       'go',

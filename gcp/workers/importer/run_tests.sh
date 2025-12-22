@@ -15,7 +15,5 @@
 
 cd ../worker
 
-export GITTER_HOST=http://localhost:8889
-
 poetry install
 poetry run python ../importer/importer_test.py

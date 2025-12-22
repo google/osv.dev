@@ -18,11 +18,12 @@ import os
 import shutil
 import subprocess
 import time
+import requests
 
 import pygit2
 import pygit2.enums
 
-CLONE_TRIES = 3
+CLONE_TRIES = int(os.getenv('CLONE_TRIES', '3'))
 RETRY_SLEEP_SECONDS = 5
 
 # More performant mirrors for large/popular repos.
@@ -35,6 +36,8 @@ _GIT_MIRRORS = {
 
 FETCH_CACHE: dict[tuple, datetime.datetime] = {}
 FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
+
+GITTER_HOST = os.getenv('GITTER_HOST', '')
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -114,6 +117,35 @@ class RepoInaccessibleError(Exception):
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
+  if GITTER_HOST:
+    try:
+      os.makedirs(checkout_dir, exist_ok=True)
+      resp = requests.get(
+          f'{GITTER_HOST}/getgit',
+          params={'url': git_url},
+          stream=True,
+          timeout=3600
+      )  # Long timeout duration (1hr) because it could be cloning a large repo
+      if resp.status_code == 403:
+        raise RepoInaccessibleError()
+      if resp.status_code == 400:
+        raise GitCloneError(f'Failed to clone repo: {resp.text}')
+
+      resp.raise_for_status()
+
+      with open(f'{checkout_dir}.zst', 'wb') as f:
+        shutil.copyfileobj(resp.raw, f)
+
+      cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
+      subprocess.run(cmd, check=True)
+      return pygit2.Repository(checkout_dir)
+    except requests.RequestException as e:
+      raise GitCloneError(f'Failed to clone repo: {e}') from e
+    except subprocess.CalledProcessError as e:
+      raise GitCloneError(f'Failed to unarchive repo:\n{e}') from e
+    except pygit2.GitError as e:
+      raise GitCloneError('Failed to open cloned repo') from e
+
   try:
     # Use 'git' CLI here as it's much faster than libgit2's clone.
     env = _set_git_callback_env(git_callbacks)

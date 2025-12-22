@@ -11,6 +11,7 @@ resources:
 - debian-first-version.yaml
 - debian-copyright-mirror.yaml
 - cpe-repo-gen.yaml
+- gitter.yaml
 - nvd-cve-osv.yaml
 - relations.yaml
 - nvd-mirror.yaml

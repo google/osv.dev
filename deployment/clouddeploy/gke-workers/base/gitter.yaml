@@ -4,6 +4,11 @@ metadata:
   name: gitter
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       name: gitter
@@ -22,6 +27,10 @@ spec:
       - name: gitter
         image: gitter
         imagePullPolicy: Always
+        args:
+          - "--port=8888"
+          - "--work_dir=/work/gitter"
+          - "--fetch_timeout=1h"
         volumeMounts:
         - mountPath: /work
           name: disk-data

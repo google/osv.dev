@@ -102,7 +102,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 
 		logger.Info("Archiving git blob", slog.String("url", url))
 		// Archive
-		// tar --zstd -cf <archivePath> -C <gitStorePath> <repoDirName>
+		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
 		cmd := exec.Command("tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -183,6 +183,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		logger.Error("Error fetching/archiving blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 			return

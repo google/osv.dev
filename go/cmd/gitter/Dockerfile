@@ -26,7 +26,8 @@ RUN CGO_ENABLED=0 go build -o gitter ./cmd/gitter/
 
 FROM alpine:3.23@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375
 
-RUN apk add --no-cache git zstd
+# Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
+RUN apk add --no-cache git zstd tar
 
 COPY --from=build /src/gitter /
 

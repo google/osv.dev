@@ -26,6 +26,7 @@ LINTER_PREFIX = 'linter-result/'
 
 
 def _get_storage_client():
+  """Get storage client."""
   return storage.Client()
 
 
@@ -34,30 +35,29 @@ def list_sources():
   """List all sources that have linter findings."""
   client = _get_storage_client()
   try:
-    bucket = client.bucket(LINTER_BUCKET)
     # List blobs with the prefix.
     # We want to emulate "directories" here.
     # The structure is linter-result/<source>/result.json
     # So we list with delimiter='/'
     blobs = client.list_blobs(
         LINTER_BUCKET, prefix=LINTER_PREFIX, delimiter='/')
-    
+
     # Iterate to populate prefixes (folders)
-    # Note: list_blobs is lazy, so we must iterate or call list() to populate prefixes
+    # Note: list_blobs is lazy, so we must iterate
+    # or call list() to populate prefixes
     list(blobs)
-    
+
     sources = []
     for prefix in blobs.prefixes:
-      # prefix is something like 'linter-result/source-name/'
-      # we want 'source-name'
       stripped = prefix.removeprefix(LINTER_PREFIX).removesuffix('/')
       if stripped:
         sources.append(stripped)
-        
+
     return jsonify(sources)
   except Exception as e:
     logging.error('Failed to list linter sources: %s', e)
     abort(500, description="Failed to list sources")
+    return None
 
 
 @blueprint.route('/<source>')
@@ -68,18 +68,21 @@ def get_findings(source):
     bucket = client.bucket(LINTER_BUCKET)
     blob_path = f'{LINTER_PREFIX}{source}/result.json'
     blob = bucket.blob(blob_path)
-    
+
     if not blob.exists():
       abort(404, description=f"No findings found for source: {source}")
-      
+      return None
+
     content = blob.download_as_text()
     return jsonify(json.loads(content))
   except json.JSONDecodeError:
     logging.error('Invalid JSON in linter findings for %s', source)
     abort(500, description="Invalid findings data")
+    return None
   except Exception as e:
     # Check if it was an abort(404) from above, re-raise if so
     if hasattr(e, 'code') and e.code == 404:
       raise e
     logging.error('Failed to get linter findings for %s: %s', source, e)
     abort(500, description="Failed to retrieve findings")
+    return None

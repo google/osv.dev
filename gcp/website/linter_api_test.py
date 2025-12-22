@@ -18,7 +18,9 @@ from unittest import mock
 from flask import Flask
 import linter_api
 
+
 class LinterApiTest(unittest.TestCase):
+  """Linter API tests."""
 
   def setUp(self):
     self.app = Flask(__name__)
@@ -27,31 +29,36 @@ class LinterApiTest(unittest.TestCase):
 
   @mock.patch('linter_api._get_storage_client')
   def test_list_sources(self, mock_get_client):
+    """Test list_sources."""
     mock_client = mock.Mock()
     mock_get_client.return_value = mock_client
     mock_bucket = mock.Mock()
     mock_client.bucket.return_value = mock_bucket
-    
+
     # Mock list_blobs to return prefixes
     mock_blobs = mock.Mock()
     mock_blobs.prefixes = {'linter-result/source1/', 'linter-result/source2/'}
-    mock_blobs.__iter__ = mock.Mock(return_value=iter([])) # Emulate empty iterator for blobs themselves
+    # Emulate empty iterator for blobs themselves
+    mock_blobs.__iter__ = mock.Mock(return_value=iter([]))
     mock_client.list_blobs.return_value = mock_blobs
 
     response = self.client.get('/linter-findings/')
     self.assertEqual(response.status_code, 200)
     self.assertCountEqual(response.json, ['source1', 'source2'])
-    
+
     mock_client.list_blobs.assert_called_with(
-        linter_api.LINTER_BUCKET, prefix=linter_api.LINTER_PREFIX, delimiter='/')
+        linter_api.LINTER_BUCKET,
+        prefix=linter_api.LINTER_PREFIX,
+        delimiter='/')
 
   @mock.patch('linter_api._get_storage_client')
   def test_get_findings(self, mock_get_client):
+    """Test get_findings."""
     mock_client = mock.Mock()
     mock_get_client.return_value = mock_client
     mock_bucket = mock.Mock()
     mock_client.bucket.return_value = mock_bucket
-    
+
     mock_blob = mock.Mock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.exists.return_value = True
@@ -60,22 +67,24 @@ class LinterApiTest(unittest.TestCase):
     response = self.client.get('/linter-findings/source1')
     self.assertEqual(response.status_code, 200)
     self.assertEqual(response.json, {'findings': []})
-    
+
     mock_bucket.blob.assert_called_with('linter-result/source1/result.json')
 
   @mock.patch('linter_api._get_storage_client')
   def test_get_findings_not_found(self, mock_get_client):
+    """Test get_findings not found."""
     mock_client = mock.Mock()
     mock_get_client.return_value = mock_client
     mock_bucket = mock.Mock()
     mock_client.bucket.return_value = mock_bucket
-    
+
     mock_blob = mock.Mock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.exists.return_value = False
 
     response = self.client.get('/linter-findings/source1')
     self.assertEqual(response.status_code, 404)
+
 
 if __name__ == '__main__':
   unittest.main()

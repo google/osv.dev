@@ -34,6 +34,7 @@ from . import gcs_mock
 
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = '8002'
+_GITTER_TEST_PORT = '8889'
 TEST_PROJECT_ID = 'test-osv'
 
 
@@ -246,18 +247,20 @@ def mock_clone(test, func=None, return_value=None):
 def setup_gitter():
   """Setup gitter."""
 
-  gitter_port = 8889
+  gitter_port = os.environ.get('GITTER_PORT', _GITTER_TEST_PORT)
   gitter_host = f'http://localhost:{gitter_port}'
   os.environ['GITTER_HOST'] = gitter_host
 
   # Check if port is already in use and kill the process if so
   try:
-    pids = subprocess.check_output(['lsof', '-t', '-i', f':{gitter_port}']).decode().split()
+    pids = subprocess.check_output(['lsof', '-t', '-i',
+                                    f':{gitter_port}']).decode().split()
     for pid in pids:
       pid = pid.strip()
       if pid:
         try:
-          cmd = subprocess.check_output(['ps', '-p', pid, '-o', 'command=']).decode().strip()
+          cmd = subprocess.check_output(['ps', '-p', pid, '-o',
+                                         'command=']).decode().strip()
           if 'gitter' in cmd:
             os.kill(int(pid), signal.SIGINT)
         except subprocess.CalledProcessError:
@@ -296,7 +299,9 @@ def setup_gitter():
     try:
       proc.wait(timeout=1.0)
       # If it returns, it exited
-      raise RuntimeError(f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n{proc.stderr.read().decode()}')
+      raise RuntimeError(
+          f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
+          f'{proc.stderr.read().decode()}')
     except subprocess.TimeoutExpired:
       # Process is still running
       pass

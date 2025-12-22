@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 )
@@ -21,7 +20,7 @@ func TestGetRepoDirName(t *testing.T) {
 
 	for _, tt := range tests {
 		result := getRepoDirName(tt.url)
-		// We can't predict the hash easily in a hardcoded string without re-implementing logic, 
+		// We can't predict the hash easily in a hardcoded string without re-implementing logic,
 		// but we can check the prefix.
 		if len(result) <= len(tt.expectedBase) {
 			t.Errorf("expected result to be longer than base name, got %s", result)
@@ -32,6 +31,7 @@ func TestGetRepoDirName(t *testing.T) {
 	}
 }
 
+//nolint:revive // These error strings are testing for output from git
 func TestIsAuthError(t *testing.T) {
 	tests := []struct {
 		err      error
@@ -58,11 +58,11 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}{
 		{"", http.StatusBadRequest},
 		{"ftp://example.com/repo.git", http.StatusOK}, // ftp is allowed by regex provided in gitter.go
-		{"file:///etc/passwd", http.StatusBadRequest},  // file protocol not allowed
+		{"file:///etc/passwd", http.StatusBadRequest}, // file protocol not allowed
 	}
 
 	for _, tt := range tests {
-		req, err := http.NewRequest("GET", "/getgit?url="+tt.url, nil)
+		req, err := http.NewRequest(http.MethodGet, "/getgit?url="+tt.url, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -83,14 +83,10 @@ func TestGitHandler_Integration(t *testing.T) {
 	}
 
 	// Setup valid workdir
-	tmpDir, err := os.MkdirTemp("", "gitter-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Override global variables for test
-	// Note: In a real app we might want to dependency inject these, 
+	// Note: In a real app we might want to dependency inject these,
 	// but for this simple script we modify package globals.
 	gitStorePath = tmpDir
 	fetchTimeout = time.Minute
@@ -118,7 +114,7 @@ func TestGitHandler_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest("GET", "/getgit?url="+tt.url, nil)
+			req, err := http.NewRequest(http.MethodGet, "/getgit?url="+tt.url, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

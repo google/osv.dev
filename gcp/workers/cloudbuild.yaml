@@ -40,6 +40,7 @@ steps:
   env:
     # Each concurrent test that uses the datastore emulator must have a unique port number
     - DATASTORE_EMULATOR_PORT=8003
+    - GITTER_PORT=8889
   waitFor: ['init', 'sync']
 
 - name: 'gcr.io/oss-vdb/ci'
@@ -49,6 +50,7 @@ steps:
   env:
     - CLOUD_BUILD=1
     - DATASTORE_EMULATOR_PORT=8004
+    - GITTER_PORT=8890
   waitFor: ['init', 'sync']
 
 - name: 'gcr.io/oss-vdb/ci'
@@ -57,6 +59,7 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     - DATASTORE_EMULATOR_PORT=8005
+    - GITTER_PORT=8891
   waitFor: ['init', 'sync']
 
 timeout: 7200s

@@ -18,14 +18,12 @@ import os
 import shutil
 import subprocess
 import time
-import urllib.parse
-
 import requests
 
 import pygit2
 import pygit2.enums
 
-CLONE_TRIES = os.getenv('CLONE_TRIES', 3)
+CLONE_TRIES = int(os.getenv('CLONE_TRIES', '3'))
 RETRY_SLEEP_SECONDS = 5
 
 # More performant mirrors for large/popular repos.
@@ -123,7 +121,11 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
     try:
       os.makedirs(checkout_dir, exist_ok=True)
       resp = requests.get(
-          f'{GITTER_HOST}/getgit', params={'url': git_url}, stream=True)
+          f'{GITTER_HOST}/getgit',
+          params={'url': git_url},
+          stream=True,
+          timeout=3600
+      )  # Long timeout duration (1hr) because it could be cloning a large repo
       if resp.status_code == 403:
         raise RepoInaccessibleError()
       if resp.status_code == 400:

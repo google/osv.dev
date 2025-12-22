@@ -186,6 +186,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 

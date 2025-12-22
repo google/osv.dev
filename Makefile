@@ -46,7 +46,7 @@ api-server-tests:
 	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	$(run-cmd) tools/lint_and_format.sh
+	GOTOOLCHAIN=go1.25.5 $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto

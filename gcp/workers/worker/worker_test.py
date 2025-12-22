@@ -14,7 +14,6 @@
 """Worker tests."""
 # pylint: disable=line-too-long
 import codecs
-import contextlib
 import datetime
 import hashlib
 from gcp.workers.mock_test.mock_test_handler import MockDataHandler

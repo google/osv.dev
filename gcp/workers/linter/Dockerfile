@@ -30,16 +30,20 @@ RUN go generate ./...
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/osv-linter ./cmd/osv
 
-# Stage 2: Run python code
+# Build the worker binary
+WORKDIR /src/osv.dev/go
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/osv-linter-worker ./cmd/osv-linter-worker
+
+# Stage 2: Run worker
 FROM gcr.io/oss-vdb/worker
 
-# Copy the built Go binary from the 'go_builder' stage
+# Copy the built Go binaries from the 'go_builder' stage
 COPY --from=go_builder /usr/local/bin/osv-linter /usr/local/bin/osv-linter
-
-COPY linter.py /usr/local/bin
+COPY --from=go_builder /usr/local/bin/osv-linter-worker /usr/local/bin/osv-linter-worker
 
 WORKDIR /linter
 
-RUN chmod 755 /usr/local/bin/linter.py
-
-ENTRYPOINT ["linter.py"]
+ENTRYPOINT ["osv-linter-worker"]

@@ -112,6 +112,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 	}
 
 	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
+	// As we can still cache the result and reply faster next time.
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

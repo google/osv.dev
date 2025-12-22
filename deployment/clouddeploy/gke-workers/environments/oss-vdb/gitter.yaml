@@ -8,9 +8,9 @@ spec:
       containers:
       - name: gitter
         args:
-          - "port=8888"
-          - "work_dir=/work/gitter"
-          - "fetch_timeout=1h"
+          - "--port=8888"
+          - "--work_dir=/work/gitter"
+          - "--fetch_timeout=1h"
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb

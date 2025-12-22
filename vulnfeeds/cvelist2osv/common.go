@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -99,6 +101,22 @@ func toVersionRangeType(s string) VersionRangeType {
 		// Other version types like "semver" are treated as ecosystem ranges.
 		return VersionRangeTypeEcosystem
 	}
+}
+
+func createConversionsOutput(stats map[string]int) string {
+	keys := make([]string, 0, len(stats))
+	for k := range stats {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	var statsOutput strings.Builder
+
+	statsOutput.WriteString("Conversion Outcomes:\n")
+	for _, k := range keys {
+		statsOutput.WriteString(fmt.Sprintf("%s: %d\n", k, stats[k]))
+	}
+	return statsOutput.String()
 }
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.

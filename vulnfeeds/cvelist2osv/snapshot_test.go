@@ -2,10 +2,8 @@ package cvelist2osv
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
@@ -61,16 +59,6 @@ func TestSnapshotConversion(t *testing.T) {
 	}
 
 	// Sort keys for deterministic output
-	keys := make([]string, 0, len(stats))
-	for k := range stats {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	var statsOutput strings.Builder
-	statsOutput.WriteString("Conversion Outcomes:\n")
-	for _, k := range keys {
-		statsOutput.WriteString(fmt.Sprintf("%s: %d\n", k, stats[k]))
-	}
-	snaps.WithConfig(snaps.Filename("conversion_outcomes")).MatchSnapshot(t, statsOutput.String())
+	statsOutput := createConversionsOutput(stats)
+	snaps.WithConfig(snaps.Filename("conversion_outcomes")).MatchSnapshot(t, statsOutput)
 }

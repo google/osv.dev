@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -67,7 +68,7 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
-func fetchBlob(ctx context.Context, url string) (*os.File, error) {
+func fetchBlob(ctx context.Context, url string) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
@@ -118,7 +119,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		return nil, ctx.Err()
 	}
 
-	file, err := os.Open(archivePath)
+	fileData, err := os.ReadFile(archivePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			deleteLastFetch(url)
@@ -127,7 +128,7 @@ func fetchBlob(ctx context.Context, url string) (*os.File, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	return file, nil
+	return fileData, nil
 }
 
 func main() {
@@ -178,7 +179,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//nolint:contextcheck // I can't change singleflight's interface
-	val, err, _ := g.Do(url, func() (any, error) {
+	fileData, err, _ := g.Do(url, func() (any, error) {
 		return fetchBlob(r.Context(), url)
 	})
 
@@ -193,13 +194,10 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file := val.(*os.File)
-	defer file.Close()
-
 	w.Header().Set("Content-Type", "application/zstd")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 	w.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(w, file); err != nil {
+	if _, err := io.Copy(w, bytes.NewReader(fileData.([]byte))); err != nil {
 		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 

@@ -80,4 +80,6 @@ func loadMap() {
 	if err := json.Unmarshal(data, &lastFetch); err != nil {
 		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
 	}
+
+	logger.Info("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
 }

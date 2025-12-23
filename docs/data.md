@@ -56,8 +56,6 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([Apache 2.0](https://github.com/bitnami/vulndb/blob/main/LICENSE.md))
 -   [Haskell Security Advisory DB](https://github.com/haskell/security-advisories)
     ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
--   [Root](https://api.root.io/external/osv/all.json)
-    (License TBD)
 -   [Ubuntu](https://github.com/canonical/ubuntu-security-notices)
     ([CC-BY-SA 4.0](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
 

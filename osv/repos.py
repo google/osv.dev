@@ -138,6 +138,9 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
 
       cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
       subprocess.run(cmd, check=True)
+      # Remove after extraction.
+      os.remove(f'{checkout_dir}.zst')
+
       return pygit2.Repository(checkout_dir)
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e

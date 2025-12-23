@@ -656,12 +656,14 @@ def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
     # We'd prefer to only download the commit history, but detect_cherrypicks
     # requires having the blobs available to function correctly.
     blobless = not repo_analyzer.detect_cherrypicks
-    if checkout_path:
-      repo_name = os.path.basename(
+    repo_name = os.path.basename(
           affected_range.repo.rstrip('/')).rstrip('.git')
+    if checkout_path:
+      # Repo name is <base-name>-<sha256(affected_range.repo)>.
+      clone_repo_dir = f'{repo_name}-{hashlib.sha256(affected_range.repo.encode()).hexdigest()}'
       package_repo = repos.ensure_updated_checkout(
           affected_range.repo,
-          os.path.join(checkout_path, repo_name),
+          os.path.join(checkout_path, clone_repo_dir),
           blobless=blobless)
     else:
       package_repo = repos.clone_with_retries(

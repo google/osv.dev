@@ -178,6 +178,7 @@ def clone_with_retries(git_url,
                        blobless=False):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
+  os.makedirs(checkout_dir, exist_ok=True)
   for attempt in range(CLONE_TRIES):
     try:
       repo = clone(git_url, checkout_dir, git_callbacks, blobless=blobless)

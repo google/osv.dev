@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -104,11 +105,7 @@ func toVersionRangeType(s string) VersionRangeType {
 }
 
 func createConversionsOutput(stats map[string]int) string {
-	keys := make([]string, 0, len(stats))
-	for k := range stats {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
+	keys := slices.Sorted(maps.Keys(stats))
 
 	var statsOutput strings.Builder
 
@@ -116,6 +113,7 @@ func createConversionsOutput(stats map[string]int) string {
 	for _, k := range keys {
 		statsOutput.WriteString(fmt.Sprintf("%s: %d\n", k, stats[k]))
 	}
+
 	return statsOutput.String()
 }
 

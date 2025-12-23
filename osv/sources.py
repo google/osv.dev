@@ -138,14 +138,35 @@ def parse_vulnerabilities(path, key_path=None, strict=False):
 def parse_vulnerabilities_from_data(data_text,
                                     extension,
                                     key_path=None,
-                                    strict=False):
-  """Parse vulnerabilities from data."""
-  if extension in YAML_EXTENSIONS:
-    data = yaml.load(data_text, Loader=NoDatesSafeLoader)
-  elif extension in JSON_EXTENSIONS:
-    data = json.loads(data_text)
-  else:
-    raise RuntimeError('Unknown format ' + extension)
+                                    strict=False,
+                                    source_name=None):
+  """Parse vulnerabilities from data.
+
+  Args:
+    data_text: The raw vulnerability data.
+    extension: File extension (.json, .yaml, .yml).
+    key_path: Optional key path for nested data.
+    strict: If True, raises on validation errors.
+    source_name: Optional source identifier for error context.
+
+  Returns:
+    List of parsed vulnerabilities.
+
+  Raises:
+    RuntimeError: If parsing fails, includes source_name if provided.
+  """
+  try:
+    if extension in YAML_EXTENSIONS:
+      data = yaml.load(data_text, Loader=NoDatesSafeLoader)
+    elif extension in JSON_EXTENSIONS:
+      data = json.loads(data_text)
+    else:
+      raise RuntimeError('Unknown format ' + extension)
+  except Exception as e:
+    if source_name:
+      raise RuntimeError(
+          f"Failed to parse vulnerability file '{source_name}'") from e
+    raise
 
   return _parse_vulnerabilities(data, key_path, strict)
 

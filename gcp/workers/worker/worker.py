@@ -316,6 +316,7 @@ class TaskRunner:
     self._sources_dir = os.path.join(self._work_dir, 'sources')
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
+    self._checkout_dir = ''
     os.makedirs(self._sources_dir, exist_ok=True)
     logging.info('Created task runner')
 
@@ -331,7 +332,7 @@ class TaskRunner:
     path = message.attributes['path']
     original_sha256 = message.attributes['original_sha256']
     deleted = message.attributes['deleted'] == 'true'
-
+    self._checkout_dir = os.path.join(self._sources_dir, source)
     source_repo = osv.get_source_repository(source)
     if source_repo is None:
       raise ValueError('Failed to get source repository %s' % source)
@@ -339,7 +340,7 @@ class TaskRunner:
     if source_repo.type == osv.SourceRepositoryType.GIT:
       repo = osv.ensure_updated_checkout(
           source_repo.repo_url,
-          os.path.join(self._sources_dir, source),
+          self._checkout_dir,
           git_callbacks=self._git_callbacks(source_repo),
           branch=source_repo.repo_branch)
 
@@ -477,6 +478,7 @@ class TaskRunner:
 
     result = osv.analyze(
         vulnerability,
+        checkout_path=self._checkout_dir,
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo,

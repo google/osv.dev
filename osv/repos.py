@@ -212,7 +212,7 @@ def _use_existing_checkout(git_url,
     # update to the correct URL.
     logging.warning('origin URL updated:\nOld: %s\nNew: %s',
                     repo.remotes['origin'].url, _git_mirror(git_url))
-    repo.remotes['origin'].url = _git_mirror(git_url)
+    repo.remotes.set_url('origin', _git_mirror(git_url))
 
   if branch:
     try:

@@ -608,34 +608,59 @@ func processExtractedVersion(version string) string {
 }
 
 func ExtractVersionsFromText(validVersions []string, text string) ([]models.AffectedVersion, []string) {
-	// Match:
+	// Match patterns where version comes AFTER keyword:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
 	//  - through x.x.x
 	//  - before x.x.x
-	pattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before)\s+(?:version\s+)?([\w.+\-]+)`)
-	matches := pattern.FindAllStringSubmatch(text, -1)
-	if matches == nil {
+	//  - x.x.x up to and including x.x.x
+	//  - prior to x.x.x
+	//  - below x.x.x
+	prefixPattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before|up to and including|prior to|below)\s+(?:version\s+)?([\w.+\-]+)`)
+
+	// Match patterns where version comes BEFORE keyword (trailing patterns):
+	//  - x.x.x and earlier
+	//  - x.x.x or older
+	//  - x.x.x and below
+	trailingPattern := regexp.MustCompile(`(?i)(?:version\s+)?([\w.+\-]+)\s+(and earlier|or older|and below)`)
+
+	prefixMatches := prefixPattern.FindAllStringSubmatch(text, -1)
+	trailingMatches := trailingPattern.FindAllStringSubmatch(text, -1)
+
+	if prefixMatches == nil && trailingMatches == nil {
 		return nil, []string{"Failed to parse versions from text"}
 	}
 
 	var notes []string
-	versions := make([]models.AffectedVersion, 0, len(matches))
+	versions := make([]models.AffectedVersion, 0, len(prefixMatches)+len(trailingMatches))
 
-	for _, match := range matches {
+	// Keywords that imply the version is the last affected (inclusive), not fixed
+	inclusiveKeywords := map[string]bool{
+		"through":             true,
+		"up to and including": true,
+	}
+
+	// Process prefix pattern matches (version comes after keyword)
+	for _, match := range prefixMatches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
 		fixed := processExtractedVersion(match[3])
 		lastaffected := ""
-		if match[2] == "through" {
-			// "Through" implies inclusive range, so the fixed version is the one that comes after.
+		keyword := strings.ToLower(match[2])
+
+		if inclusiveKeywords[keyword] {
+			// These keywords imply inclusive range, so the version is lastAffected.
+			// Try to find the next version as "fixed", otherwise use lastAffected.
 			var err error
-			fixed, err = nextVersion(validVersions, fixed)
+			nextFixed, err := nextVersion(validVersions, fixed)
 			if err != nil {
 				notes = append(notes, err.Error())
 				// if that inference failed, we know this version was definitely still vulnerable.
 				lastaffected = cleanVersion(match[3])
+				fixed = ""
 				notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match[3])))
+			} else {
+				fixed = nextFixed
 			}
 		}
 
@@ -660,6 +685,48 @@ func ExtractVersionsFromText(validVersions []string, text string) ([]models.Affe
 
 		versions = append(versions, models.AffectedVersion{
 			Introduced:   introduced,
+			Fixed:        fixed,
+			LastAffected: lastaffected,
+		})
+	}
+
+	// Process trailing pattern matches (version comes before keyword like "x.x.x and earlier")
+	for _, match := range trailingMatches {
+		// For trailing patterns: match[1] is the version, match[2] is the keyword
+		versionStr := processExtractedVersion(match[1])
+		lastaffected := ""
+		fixed := ""
+
+		if versionStr == "" {
+			notes = append(notes, "Failed to match version from trailing pattern")
+			continue
+		}
+
+		// Try to find the next version as "fixed", otherwise use lastAffected
+		nextFixed, err := nextVersion(validVersions, versionStr)
+		if err != nil {
+			notes = append(notes, err.Error())
+			// if that inference failed, we know this version was definitely still vulnerable.
+			lastaffected = cleanVersion(match[1])
+			notes = append(notes, fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match[1])))
+		} else {
+			fixed = nextFixed
+		}
+
+		if fixed == "" && lastaffected == "" {
+			notes = append(notes, "Failed to match version range from text")
+			continue
+		}
+
+		if fixed != "" && !HasVersion(validVersions, fixed) {
+			notes = append(notes, fmt.Sprintf("Extracted fixed version %s is not a valid version", fixed))
+		}
+		if lastaffected != "" && !HasVersion(validVersions, lastaffected) {
+			notes = append(notes, fmt.Sprintf("Extracted last_affected version %s is not a valid version", lastaffected))
+		}
+
+		versions = append(versions, models.AffectedVersion{
+			Introduced:   "",
 			Fixed:        fixed,
 			LastAffected: lastaffected,
 		})

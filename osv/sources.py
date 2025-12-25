@@ -17,6 +17,7 @@ import json
 import hashlib
 import logging
 import os
+import re
 
 import jsonschema
 import pygit2
@@ -178,6 +179,11 @@ def parse_vulnerability_from_dict(data, key_path=None, strict=False):
   if not vulnerability.id:
     raise ValueError('Missing id field. Invalid vulnerability.')
 
+  if vulnerability.summary:
+    vulnerability.summary = _sanitize_string(vulnerability.summary)
+  if vulnerability.details:
+    vulnerability.details = _sanitize_string(vulnerability.details)
+
   return vulnerability
 
 
@@ -228,6 +234,12 @@ def _write_vulnerability_dict(data, output_path,
       raise RuntimeError('Unknown format ' + ext)
 
   os.utime(output_path, (modified_date_timestamp, modified_date_timestamp))
+
+
+def _sanitize_string(text):
+  """Sanitize string by removing anchor tags."""
+  # Remove <a href="...">text</a> and keep text.
+  return re.sub(r'<a [^>]*>(.*?)</a>', r'\1', text, flags=re.IGNORECASE | re.DOTALL)
 
 
 def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,

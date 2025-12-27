@@ -45,7 +45,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by:
 
-1. Open source consumers: By querying [OSV.dev's API](./api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](/api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Open source projects: By publishing vulnerabilities in the OSV format and having them imported by OSV.dev.
 3. Vulnerability database producers: By making the database available in the OSV format.
 

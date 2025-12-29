@@ -142,7 +142,11 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
                                           'BellSoft Hardened Containers'):
     suffix = '?arch=source'
 
-  return f'pkg:{purl_ecosystem}/{_url_encode(package_name)}{suffix}'
+  # Encode package name: preserve '/' only when no namespace is defined
+  safe_chars = '' if purl_namespace else '/'
+  encoded_name = quote(package_name, safe=safe_chars)
+
+  return f'pkg:{purl_ecosystem}/{encoded_name}{suffix}'
 
 
 def parse_purl(purl_str: str) -> ParsedPURL | None:

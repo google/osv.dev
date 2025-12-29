@@ -71,19 +71,23 @@ class EcosystemTest(unittest.TestCase):
     self.assertIsNotNone(root_alpine)
 
     # Alpine format: -rXXXXX
-    self.assertLess(root_alpine.sort_key('1.0.0-r10071'),
-                    root_alpine.sort_key('1.0.0-r10072'))
-    self.assertLess(root_alpine.sort_key('1.0.0-r10071'),
-                    root_alpine.sort_key('2.0.0-r10071'))
+    self.assertLess(
+        root_alpine.sort_key('1.0.0-r10071'),
+        root_alpine.sort_key('1.0.0-r10072'))
+    self.assertLess(
+        root_alpine.sort_key('1.0.0-r10071'),
+        root_alpine.sort_key('2.0.0-r10071'))
 
     # Python format: +root.io.X
     root_pypi = ecosystems.get('Root:PyPI')
     self.assertIsNotNone(root_pypi)
-    self.assertLess(root_pypi.sort_key('1.0.0+root.io.1'),
-                    root_pypi.sort_key('1.0.0+root.io.2'))
+    self.assertLess(
+        root_pypi.sort_key('1.0.0+root.io.1'),
+        root_pypi.sort_key('1.0.0+root.io.2'))
 
     # Other format: .root.io.X
     root_debian = ecosystems.get('Root:Debian:12')
     self.assertIsNotNone(root_debian)
-    self.assertLess(root_debian.sort_key('1.0.0.root.io.1'),
-                    root_debian.sort_key('1.0.0.root.io.2'))
+    self.assertLess(
+        root_debian.sort_key('1.0.0.root.io.1'),
+        root_debian.sort_key('1.0.0.root.io.2'))

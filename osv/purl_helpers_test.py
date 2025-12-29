@@ -291,11 +291,13 @@ class PurlHelpersTest(unittest.TestCase):
         ('Rocky Linux', 'test-package', '1.2.3'),
         purl_helpers.parse_purl('pkg:rpm/rocky-linux/test-package@1.2.3'))
 
-    self.assertEqual(('Root', 'root-nginx', '1.0.0-r10071'),
-                     purl_helpers.parse_purl('pkg:generic/root/root-nginx@1.0.0-r10071'))
+    self.assertEqual(
+        ('Root', 'root-nginx', '1.0.0-r10071'),
+        purl_helpers.parse_purl('pkg:generic/root/root-nginx@1.0.0-r10071'))
 
-    self.assertEqual(('Root', '@root/lodash', '4.17.21'),
-                     purl_helpers.parse_purl('pkg:generic/root/%40root%2Flodash@4.17.21'))
+    self.assertEqual(
+        ('Root', '@root/lodash', '4.17.21'),
+        purl_helpers.parse_purl('pkg:generic/root/%40root%2Flodash@4.17.21'))
 
     self.assertEqual(('RubyGems', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:gem/test-package@1.2.3'))

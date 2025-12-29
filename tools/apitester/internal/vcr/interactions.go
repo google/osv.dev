@@ -32,6 +32,7 @@ func Play(t *testing.T, interaction *cassette.Interaction) *http.Response {
 	}
 
 	req.URL.Host = fetchAPIBaseURL()
+	req.Host = req.URL.Host
 	req.Header.Set("User-Agent", "osv.dev/apitester")
 	req.ContentLength = -1
 

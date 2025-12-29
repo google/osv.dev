@@ -43,4 +43,12 @@ steps:
     - CLOUDBUILD=1
   waitFor: ['init', 'sync']
 
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'api-snapshot-tests'
+  dir: gcp/api
+  args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
+  env:
+    - CLOUDBUILD=1
+  waitFor: ['init', 'sync']
+
 timeout: 7200s

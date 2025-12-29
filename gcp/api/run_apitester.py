@@ -42,10 +42,7 @@ def main():
 
   try:
     # Determine API URL
-    if os.getenv('CLOUDBUILD'):
-      host = test_server.get_cloudbuild_esp_host()
-    else:
-      host = 'localhost'
+    host = 'localhost'
 
     api_base_url = f"{host}:{_PORT}"
     print(f"Running Go tests against {api_base_url}")

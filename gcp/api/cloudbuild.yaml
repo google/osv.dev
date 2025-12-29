@@ -49,6 +49,7 @@ steps:
   args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
   env:
     - CLOUDBUILD=1
-  waitFor: ['init', 'sync']
+    # Don't run at the same time as api-tests
+  waitFor: ['init', 'sync', 'api-tests']
 
 timeout: 7200s

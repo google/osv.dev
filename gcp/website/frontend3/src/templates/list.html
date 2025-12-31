@@ -43,27 +43,22 @@
             </div>
             <submit-radios>
               {% if ecosystem_counts %}
-              <details class="ecosystem-buttons" open>
-                <summary class="ecosystem-collapse-header">
-                  <input type="radio" name="ecosystem" id="ecosystem-radio-all" value="" {% if not selected_ecosystem %}
-                    checked{% endif %}>
-                  <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
-                    <span class="ecosystem-name">All ecosystems</span>
-                    <span class="ecosystem-count">{{ ecosystem_counts.values() | sum }}</span>
-                  </label>
-                </summary>
-                <div class="ecosystem-content">
-                  <span class="ecosystems-divider"></span>
-                  {% for ecosystem in ecosystem_counts %}
-                  <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}" value="{{ ecosystem }}" {%
-                    if selected_ecosystem==ecosystem %} checked{% endif %}>
-                  <label class="ecosystem-label" for="ecosystem-radio-{{ loop.index }}">
-                    <span class="ecosystem-name">{{ ecosystem }}</span>
-                    <span class="ecosystem-count">{{ ecosystem_counts[ecosystem] }}</span>
-                  </label>
-                  {% endfor %}
-                </div>
-              </details>
+              <div class="ecosystem-buttons">
+                <input type="radio" name="ecosystem" id="ecosystem-radio-all" value="" {% if not selected_ecosystem %}
+                  checked{% endif %}>
+                <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
+                  <span class="ecosystem-name">All ecosystems</span>
+                  <span class="ecosystem-count">{{ ecosystem_counts.values() | sum }}</span>
+                </label>
+                {% for ecosystem in ecosystem_counts %}
+                <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}" value="{{ ecosystem }}" {%
+                  if selected_ecosystem==ecosystem %} checked{% endif %}>
+                <label class="ecosystem-label" for="ecosystem-radio-{{ loop.index }}">
+                  <span class="ecosystem-name">{{ ecosystem }}</span>
+                  <span class="ecosystem-count">{{ ecosystem_counts[ecosystem] }}</span>
+                </label>
+                {% endfor %}
+              </div>
               {% endif %}
             </submit-radios>
             <input type="submit">

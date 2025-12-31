@@ -385,100 +385,44 @@ pre {
 
   .ecosystem-buttons {
     margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
 
-    > summary {
-      list-style: none;
-      &::-webkit-details-marker {
-        display: none;
-      }
-      &::marker {
-        display: none;
+    .ecosystem-label-all {
+      position: relative;
+      margin-right: 20px;
+
+      &::after {
         content: '';
-      }
-    }
-
-    @media (min-width: #{$osv-mobile-breakpoint + 1}) {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-
-      > .ecosystem-collapse-header {
-        display: inline-flex;
-        align-items: center;
-      }
-
-      > .ecosystem-content {
-        display: inline-flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .ecosystem-label-all {
-        position: relative;
-        margin-right: 20px;
-
-        &::after {
-          content: '';
-          position: absolute;
-          right: -16px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 1px;
-          height: 30px;
-          background-color: $osv-grey-600;
-        }
-      }
-
-      .ecosystems-divider {
-        display: none;
+        position: absolute;
+        right: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 30px;
+        background-color: $osv-grey-600;
       }
     }
 
     @media (max-width: #{$osv-mobile-breakpoint}) {
-      display: block;
+      gap: 8px;
 
-      &:not([open]) > .ecosystem-content {
-        display: none;
+      .ecosystem-label {
+        padding: 8px 14px;
+        height: 32px;
+        gap: 12px;
+        font-size: 14px;
       }
 
-      &[open] > .ecosystem-content {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        width: 100%;
-        margin-top: 10px;
-      }
+      .ecosystem-label-all {
+        margin-right: 14px;
 
-      > .ecosystem-collapse-header {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        width: 100%;
-
-        &::before {
-          content: '';
-          display: block;
-          width: 12px;
-          height: 12px;
-          margin-right: 8px;
-          background: url(/static/img/filled-triangle.svg);
-          background-position: center;
-          background-repeat: no-repeat;
-          filter: invert(100%);
-          transform: rotate(0deg);
-          transition: transform 0.2s ease-in-out;
+        &::after {
+          height: 20px;
+          right: -12px;
         }
-      }
-
-      &[open] > .ecosystem-collapse-header::before {
-        transform: rotate(90deg);
-      }
-
-      .ecosystems-divider {
-        display: none;
       }
     }
 

@@ -385,68 +385,117 @@ pre {
 
   .ecosystem-buttons {
     margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
 
-    // We use <spicy-sections> to collapse the ecosystem list only on mobile.
-    // On desktop, display the full list.
-    --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse;
-
-    &::part(tab-bar) {
-      // The tab bar affordance isn't used, so hide it.
-      display: none;
+    > summary {
+      list-style: none;
+      &::-webkit-details-marker {
+        display: none;
+      }
+      &::marker {
+        display: none;
+        content: '';
+      }
     }
 
-    &::part(content-panels) {
-      // Because the shadow root of <spicy-sections> actually wraps our content
-      // we need to use display: contents; in order for flex to apply as if the
-      // child elements are direct descendants of the parent flex container.
-      display: contents;
-    }
-
-    .spicy-content {
-      // Expanded contents also should act as if they were direct descendants
-      // of our flex container.
-      display: contents;
-    }
-
-    // Customizing the collapsing header for <spicy-sections>. We can select it
-    // by looking for the element with affordance="collapse".
-    [affordance=collapse] {
+    @media (min-width: #{$osv-mobile-breakpoint + 1}) {
       display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 10px;
       align-items: center;
 
-      // The ::before on the collapsible is used to display the chevron.
-      &::before {
-        display: block;
-        padding: 0 8px;
-        // HACK: Invert the black chevron to white. The chevron is set using
-        // background-image, so we can't use the CSS fill property on it.
-        filter: invert(100%);
+      > .ecosystem-collapse-header {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      > .ecosystem-content {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .ecosystem-label-all {
+        position: relative;
+        margin-right: 20px;
+
+        &::after {
+          content: '';
+          position: absolute;
+          right: -16px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 1px;
+          height: 30px;
+          background-color: $osv-grey-600;
+        }
+      }
+
+      .ecosystems-divider {
+        display: none;
+      }
+    }
+
+    @media (max-width: #{$osv-mobile-breakpoint}) {
+      display: block;
+
+      &:not([open]) > .ecosystem-content {
+        display: none;
+      }
+
+      &[open] > .ecosystem-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      > .ecosystem-collapse-header {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        width: 100%;
+
+        &::before {
+          content: '';
+          display: block;
+          width: 12px;
+          height: 12px;
+          margin-right: 8px;
+          background: url(/static/img/filled-triangle.svg);
+          background-position: center;
+          background-repeat: no-repeat;
+          filter: invert(100%);
+          transform: rotate(0deg);
+          transition: transform 0.2s ease-in-out;
+        }
+      }
+
+      &[open] > .ecosystem-collapse-header::before {
+        transform: rotate(90deg);
+      }
+
+      .ecosystems-divider {
+        display: none;
       }
     }
 
     .ecosystem-label {
-      display: flex;
+      display: inline-flex;
       gap: 16px;
       font-family: $osv-heading-font-family;
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
       height: 38px;
+      cursor: pointer;
+      align-items: center;
 
       .ecosystem-count {
         font-weight: bold;
       }
-    }
-
-    .ecosystems-divider {
-      display: block;
-      margin: 0 10px;
-      height: 30px;
-      border-right: 1px solid $osv-grey-600;
     }
 
     input[type=radio]:checked+.ecosystem-label {
@@ -878,12 +927,54 @@ dl.vulnerability-details,
     margin-bottom: 16px;
     font-weight: bold;
   }
+}
 
-  // Tab bar styling.
-  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint + 1})] tab-bar;
+osv-tabs-accordion.vulnerability-packages[affordance="tab-bar"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, auto));
+  grid-template-rows: auto 1fr;
 
-  .force-collapse {
-    --const-mq-affordances: [screen] collapse;
+  > h2.package-header {
+    grid-row: 1;
+  }
+
+  > div {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+}
+
+osv-tabs-accordion.vulnerability-packages[affordance="collapse"] {
+  display: block;
+
+  > h2.package-header {
+    display: block;
+    width: 100%;
+    cursor: pointer;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 8px;
+      -webkit-mask-image: url(/static/img/filled-triangle.svg);
+      mask-image: url(/static/img/filled-triangle.svg);
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+      background-color: $osv-grey-800;
+      transform: rotate(0deg);
+      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    }
+
+    &[expanded]::before {
+      transform: rotate(90deg);
+      background-color: $osv-accent-color;
+    }
   }
 }
 
@@ -892,6 +983,7 @@ dl.vulnerability-details,
     background: #aaa;
     color: #000;
     display: inline-block;
+    font-family: $osv-heading-font-family;
     font-size: 14px;
     padding: 16px;
   }
@@ -911,28 +1003,43 @@ dl.vulnerability-details,
   }
 
   .versions-section {
-    --const-mq-affordances: [screen] collapse;
+    > summary {
+      list-style: none;
+      &::-webkit-details-marker {
+        display: none;
+      }
+      &::marker {
+        display: none;
+        content: '';
+      }
+    }
 
-    h2.version-header::before {
+    summary.version-header::before {
       content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
       margin-right: 16px;
       background: url(/static/img/filled-triangle.svg);
       background-position: center;
+      background-repeat: no-repeat;
       transform: rotate(0deg);
+      transition: transform 0.2s ease-in-out;
       // Make the filled triangle white.
       filter: invert(100%);
     }
 
-    h2.version-header[expanded]::before {
+    &[open] > summary.version-header::before {
       transform: rotate(90deg);
     }
 
-    h2.version-header {
+    summary.version-header {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
       padding-left: 0px;
       font-size: 16px;
+      cursor: pointer;
     }
   }
 
@@ -968,9 +1075,18 @@ dl.vulnerability-details,
   }
 
   .database-specific-section {
-    --const-mq-affordances: [screen] collapse;
+    > summary {
+      list-style: none;
+      &::-webkit-details-marker {
+        display: none;
+      }
+      &::marker {
+        display: none;
+        content: '';
+      }
+    }
 
-    h2.database-specific-header {
+    summary.database-specific-header {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
@@ -978,6 +1094,7 @@ dl.vulnerability-details,
       font-size: 16px;
       display: flex;
       align-items: center;
+      cursor: pointer;
 
       &::before {
         content: '';
@@ -988,12 +1105,13 @@ dl.vulnerability-details,
         background-position: center;
         background-repeat: no-repeat;
         transform: rotate(0deg);
+        transition: transform 0.2s ease-in-out;
         filter: invert(100%);
       }
+    }
 
-      &[expanded]::before {
-        transform: rotate(90deg);
-      }
+    &[open] > summary.database-specific-header::before {
+      transform: rotate(90deg);
     }
   }
 
@@ -1001,25 +1119,35 @@ dl.vulnerability-details,
     padding: 8px 0 0 24px;
   }
 
-  .spicy-sections-workaround {
-    // https://github.com/tabvengers/spicy-sections/issues/64.
-    pointer-events: none;
-  }
 
   &.force-collapse {
-    h2.package-header {
+    .ecosystem-accordion > summary {
+      list-style: none;
+      &::-webkit-details-marker {
+        display: none;
+      }
+      &::marker {
+        display: none;
+        content: '';
+      }
+    }
+
+    summary.package-header {
       width: 100%;
       background: #393939;
       color: #fff;
       padding: 16px;
       margin-bottom: 2px;
       border-radius: 0;
+      font-family: $osv-heading-font-family;
       font-weight: normal;
       transition: background-color 0.2s ease-in-out;
       cursor: pointer;
+      display: block;
 
       &::before {
         content: '';
+        display: inline-block;
         width: 12px;
         height: 12px;
         margin-right: 8px;
@@ -1031,26 +1159,23 @@ dl.vulnerability-details,
         filter: invert(100%);
       }
 
-      &[expanded]::before {
-        transform: rotate(90deg);
-      }
-
       &:hover {
         background: #4F4F4F;
       }
+    }
 
-      &[expanded] {
-        background: #fff;
-        color: $osv-accent-color;
-        font-weight: bold;
-        
-        &::before {
-          filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
-        }
-          
-        &:hover {
-          background: #f0f0f0;
-        }
+    .ecosystem-accordion[open] > summary.package-header {
+      background: #fff;
+      color: $osv-accent-color;
+      font-weight: bold;
+
+      &::before {
+        transform: rotate(90deg);
+        filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
+      }
+
+      &:hover {
+        background: #f0f0f0;
       }
     }
 
@@ -1096,6 +1221,17 @@ dl.vulnerability-details,
       position: relative;
       margin-bottom: 8px;
 
+      > summary {
+        list-style: none;
+        &::-webkit-details-marker {
+          display: none;
+        }
+        &::marker {
+          display: none;
+          content: '';
+        }
+      }
+
       // The horizontal "connector" line
       &::before {
         content: '';
@@ -1113,7 +1249,7 @@ dl.vulnerability-details,
       padding-bottom: $last-ecosystem-border-gap;
     }
 
-    .package-accordion h3.package-name-title {
+    .package-accordion summary.package-name-title {
       font-family: $osv-heading-font-family;
       font-size: 1.1rem;
       color: #f1f1f1;
@@ -1122,6 +1258,7 @@ dl.vulnerability-details,
       background: #333333;
       border: 1px solid #444;
       border-radius: 0;
+      display: block;
 
       &::before {
         content: '';
@@ -1137,13 +1274,13 @@ dl.vulnerability-details,
         vertical-align: middle;
         transform: rotate(0deg);
       }
+    }
 
-      &[expanded] {
-        border-bottom: 1px dashed #fff;
-        
-        &::before {
-          transform: rotate(90deg);
-        }
+    .package-accordion[open] > summary.package-name-title {
+      border-bottom: 1px dashed #fff;
+
+      &::before {
+        transform: rotate(90deg);
       }
     }
 
@@ -1213,7 +1350,6 @@ dl.vulnerability-details,
     &[tabindex="0"] {
       background: #fff;
       color: $osv-accent-color;
-      // Override spicy-sections default blue bottom border.
       border-bottom: 1px solid $osv-accent-color;
     }
 

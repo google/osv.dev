@@ -43,16 +43,16 @@
             </div>
             <submit-radios>
               {% if ecosystem_counts %}
-              <spicy-sections class="ecosystem-buttons">
-                <spicy-h>
+              <details class="ecosystem-buttons" open>
+                <summary class="ecosystem-collapse-header">
                   <input type="radio" name="ecosystem" id="ecosystem-radio-all" value="" {% if not selected_ecosystem %}
                     checked{% endif %}>
                   <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
                     <span class="ecosystem-name">All ecosystems</span>
                     <span class="ecosystem-count">{{ ecosystem_counts.values() | sum }}</span>
                   </label>
-                </spicy-h>
-                <div class="spicy-content">
+                </summary>
+                <div class="ecosystem-content">
                   <span class="ecosystems-divider"></span>
                   {% for ecosystem in ecosystem_counts %}
                   <input type="radio" name="ecosystem" id="ecosystem-radio-{{ loop.index }}" value="{{ ecosystem }}" {%
@@ -63,7 +63,7 @@
                   </label>
                   {% endfor %}
                 </div>
-              </spicy-sections>
+              </details>
               {% endif %}
             </submit-radios>
             <input type="submit">

@@ -6,6 +6,47 @@ class OsvTabsAccordion extends HTMLElement {
     this.headers = [];
     this.panels = [];
     this.activeIndex = 0;
+    this.headerListeners = null;
+
+    // shadow DOM for tab-bar layout
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host([affordance="tab-bar"]) {
+          display: block;
+        }
+        :host([affordance="tab-bar"]) .tab-list {
+          display: flex;
+          flex-wrap: wrap;
+        }
+        :host([affordance="tab-bar"]) ::slotted(*) {
+          display: none;
+        }
+        :host([affordance="tab-bar"]) .tab-list ::slotted(h2),
+        :host([affordance="tab-bar"]) .tab-list ::slotted(h3) {
+          display: block;
+        }
+        :host([affordance="tab-bar"]) .panel-container ::slotted(div[data-panel-active]) {
+          display: block;
+        }
+        :host([affordance="collapse"]) .tab-list {
+          display: none;
+        }
+        :host([affordance="collapse"]) .panel-container {
+          display: none;
+        }
+        :host([affordance="collapse"]) ::slotted(*) {
+          display: block;
+        }
+      </style>
+      <div class="tab-list" part="tab-list">
+        <slot name="tab"></slot>
+      </div>
+      <div class="panel-container" part="panel-container">
+        <slot name="panel"></slot>
+      </div>
+      <slot></slot>
+    `;
   }
 
   connectedCallback() {
@@ -20,6 +61,7 @@ class OsvTabsAccordion extends HTMLElement {
     if (this.mediaQuery) {
       this.mediaQuery.removeEventListener("change", this.boundUpdateAffordance);
     }
+    this.removeEventListeners();
   }
 
   collectHeadersAndPanels() {
@@ -48,10 +90,25 @@ class OsvTabsAccordion extends HTMLElement {
   }
 
   setupEventListeners() {
-    this.headers.forEach((header, index) => {
-      header.addEventListener("click", (e) => this.handleHeaderClick(index, e));
-      header.addEventListener("keydown", (e) => this.handleKeydown(index, e));
+    this.headerListeners = this.headers.map((header, index) => {
+      const clickListener = (e) => this.handleHeaderClick(index, e);
+      const keydownListener = (e) => this.handleKeydown(index, e);
+
+      header.addEventListener("click", clickListener);
+      header.addEventListener("keydown", keydownListener);
+
+      return { header, clickListener, keydownListener };
     });
+  }
+
+  removeEventListeners() {
+    if (this.headerListeners) {
+      this.headerListeners.forEach(({ header, clickListener, keydownListener }) => {
+        header.removeEventListener("click", clickListener);
+        header.removeEventListener("keydown", keydownListener);
+      });
+      this.headerListeners = null;
+    }
   }
 
   updateAffordance() {
@@ -69,6 +126,7 @@ class OsvTabsAccordion extends HTMLElement {
   renderTabs() {
     this.headers.forEach((header, index) => {
       const isActive = index === this.activeIndex;
+      header.setAttribute("slot", "tab");
       header.setAttribute("tabindex", isActive ? "0" : "-1");
       header.setAttribute("role", "tab");
       header.setAttribute("aria-selected", isActive ? "true" : "false");
@@ -78,28 +136,35 @@ class OsvTabsAccordion extends HTMLElement {
 
     this.panels.forEach((panel, index) => {
       const isActive = index === this.activeIndex;
+      panel.setAttribute("slot", "panel");
       panel.setAttribute("role", "tabpanel");
+      if (isActive) {
+        panel.setAttribute("data-panel-active", "");
+      } else {
+        panel.removeAttribute("data-panel-active");
+      }
       panel.style.display = isActive ? "" : "none";
-      panel.removeAttribute("aria-hidden");
     });
   }
 
   renderAccordion() {
-    // By default, expand all panels in accordion mode
     this.headers.forEach((header, index) => {
       const panel = this.panels[index];
-      panel.style.display = "";
 
-      header.setAttribute("role", "button");
+      header.removeAttribute("slot");
+      header.removeAttribute("role");
+      header.removeAttribute("aria-selected");
       header.setAttribute("tabindex", "0");
       header.setAttribute("aria-expanded", "true");
       header.setAttribute("expanded", "");
-      header.removeAttribute("aria-selected");
+
+      panel.removeAttribute("slot");
+      panel.removeAttribute("data-panel-active");
+      panel.style.display = "";
     });
 
     this.panels.forEach((panel) => {
       panel.setAttribute("role", "region");
-      panel.removeAttribute("aria-hidden");
     });
   }
 

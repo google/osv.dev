@@ -53,3 +53,41 @@ class EcosystemTest(unittest.TestCase):
 
     actual = ecosystems.maybe_normalize_package_names(package_name, ecosystem)
     self.assertEqual(actual, expected)
+
+  def test_root_ecosystem(self):
+    """Test Root ecosystem"""
+    # Test that Root ecosystem is recognized
+    self.assertTrue(ecosystems.is_known('Root'))
+    self.assertTrue(ecosystems.is_known('Root:Alpine:3.18'))
+    self.assertTrue(ecosystems.is_known('Root:Debian:12'))
+    self.assertTrue(ecosystems.is_known('Root:PyPI'))
+
+    # Test that Root ecosystem can be retrieved
+    root = ecosystems.get('Root')
+    self.assertIsNotNone(root)
+
+    # Test version sorting for different Root version formats
+    root_alpine = ecosystems.get('Root:Alpine:3.18')
+    self.assertIsNotNone(root_alpine)
+
+    # Alpine format: -rXXXXX
+    self.assertLess(
+        root_alpine.sort_key('1.0.0-r10071'),
+        root_alpine.sort_key('1.0.0-r10072'))
+    self.assertLess(
+        root_alpine.sort_key('1.0.0-r10071'),
+        root_alpine.sort_key('2.0.0-r10071'))
+
+    # Python format: +root.io.X
+    root_pypi = ecosystems.get('Root:PyPI')
+    self.assertIsNotNone(root_pypi)
+    self.assertLess(
+        root_pypi.sort_key('1.0.0+root.io.1'),
+        root_pypi.sort_key('1.0.0+root.io.2'))
+
+    # Other format: .root.io.X
+    root_debian = ecosystems.get('Root:Debian:12')
+    self.assertIsNotNone(root_debian)
+    self.assertLess(
+        root_debian.sort_key('1.0.0.root.io.1'),
+        root_debian.sort_key('1.0.0.root.io.2'))

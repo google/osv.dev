@@ -766,6 +766,17 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 					notes = append(notes, fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
 				}
 
+				// Check if introduced version comes after fixed version (invalid range)
+				// This can happen with bad CVE data, e.g., introduced: 1.0, fixed: 1.0b4
+				// where 1.0b4 comes before 1.0 in Python versioning (PEP 440)
+				if introduced != "" && fixed != "" && len(validVersions) > 0 {
+					introducedIdx := versionIndex(validVersions, introduced)
+					fixedIdx := versionIndex(validVersions, fixed)
+					if introducedIdx != -1 && fixedIdx != -1 && introducedIdx >= fixedIdx {
+						notes = append(notes, fmt.Sprintf("Warning: introduced version %s >= fixed version %s", introduced, fixed))
+					}
+				}
+
 				gotVersions = true
 				possibleNewAffectedVersion := models.AffectedVersion{
 					Introduced:   introduced,

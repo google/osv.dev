@@ -14,6 +14,7 @@
 # limitations under the License.
 """OSV Exporter."""
 import argparse
+import base64
 import concurrent.futures
 import csv
 import json
@@ -21,6 +22,8 @@ import logging
 import os
 import zipfile
 from typing import List
+
+import google_crc32c
 
 from google.cloud import ndb
 from google.cloud import storage
@@ -211,10 +214,30 @@ class Exporter:
                         f'{ecosystem}/{filename}')
 
 
+def _calculate_crc32c(file_path: str) -> str:
+  """Calculate CRC32C hash of a file and return as base64 string."""
+  crc = 0
+  with open(file_path, 'rb') as f:
+    while chunk := f.read(8192):
+      crc = google_crc32c.extend(crc, chunk)
+  return base64.b64encode(crc.to_bytes(4, byteorder='big')).decode('utf-8')
+
+
 def upload_single(bucket: Bucket, source_path: str, target_path: str):
-  """Upload a single file to a GCS bucket."""
-  logging.info('Uploading %s', target_path)
+  """Upload a single file to a GCS bucket if content has changed.
+
+  Compares CRC32C hashes to avoid uploading unchanged files.
+  See https://github.com/google/osv.dev/issues/3513
+  """
   try:
+    existing_blob = bucket.get_blob(target_path)
+    if existing_blob and existing_blob.crc32c:
+      local_crc = _calculate_crc32c(source_path)
+      if local_crc == existing_blob.crc32c:
+        logging.debug('Skipping %s (unchanged)', target_path)
+        return
+
+    logging.info('Uploading %s', target_path)
     blob = bucket.blob(target_path)
     blob.upload_from_filename(source_path, retry=retry.DEFAULT_RETRY)
   except Exception as e:

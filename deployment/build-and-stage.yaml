@@ -160,6 +160,20 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/custommetrics']
   waitFor: ['build-custommetrics', 'cloud-build-queue']
 
+- name: gcr.io/cloud-builders/docker
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/gitter:latest || exit 0']
+  id: 'pull-gitter'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/gitter:latest', '-t', 'gcr.io/oss-vdb/gitter:$COMMIT_SHA', '-f', 'cmd/gitter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/gitter:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-gitter'
+  waitFor: ['pull-gitter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/gitter']
+  waitFor: ['build-gitter', 'cloud-build-queue']
+
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
@@ -372,7 +386,8 @@ steps:
      record-checker=gcr.io/oss-vdb/record-checker:$COMMIT_SHA,\
      custommetrics=gcr.io/oss-vdb/custommetrics:$COMMIT_SHA,\
      relations=gcr.io/oss-vdb/relations:$COMMIT_SHA,\
-     generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA"
+     generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA,\
+     gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 
@@ -433,3 +448,4 @@ images:
 - 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/relations:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'

@@ -1569,6 +1569,8 @@ def setUpModule():
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
       logging.DEBUG)
 
+  unittest.enterModuleContext(tests.setup_gitter())
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get the detailed linter results from GCS bucket
     const linterPromise = (async () => {
       const linterPromises = sourceNames.map((sourceName) => {
-        const url = `https://storage.googleapis.com/osv-test-public-import-logs/linter-result/${sourceName}/result.json`;
+        const url = `/linter-findings/${sourceName}`;
         return fetch(url)
           .then((res) => (res.ok ? res.json() : {}))
           .catch(() => ({}));

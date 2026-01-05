@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.5-alpine@sha256:26111811bc967321e7b6f852e914d14bede324cd1accb7f81811929a6a57fea9 AS GO_BUILD
+FROM golang:1.25.5-alpine@sha256:3587db7cc96576822c606d119729370dbf581931c5f43ac6d3fa03ab4ed85a10 AS build
 
-RUN mkdir /src
 WORKDIR /src
 
 COPY ./go.mod /src/go.mod
 COPY ./go.sum /src/go.sum
-RUN go mod download
+RUN go mod download && go mod verify
+
 
 COPY ./ /src/
-RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/cpe-repo-gen
+RUN CGO_ENABLED=0 go build -o gitter ./cmd/gitter/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:09ca9257eea270001fdb49b0b176c0e3018c6858d83e085835c1ef700a457a5d
+FROM alpine:3.23@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375
 
-RUN apk add --no-cache unzip
+# Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
+RUN apk add --no-cache git zstd tar
 
-COPY --from=GO_BUILD /src/cpe-repo-gen ./
-COPY ./cmd/cpe-repo-gen/cpe-repo-gen_map.sh ./
+COPY --from=build /src/gitter /
 
-ENTRYPOINT ["/cpe-repo-gen_map.sh"]
+ENTRYPOINT ["/gitter"]

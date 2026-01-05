@@ -16,6 +16,7 @@ import contextlib
 import datetime
 import difflib
 import os
+import shutil
 import pprint
 import signal
 import time
@@ -33,6 +34,7 @@ from . import gcs_mock
 
 _EMULATOR_TIMEOUT = 30
 _DATASTORE_EMULATOR_PORT = '8002'
+_GITTER_TEST_PORT = '8889'
 TEST_PROJECT_ID = 'test-osv'
 
 
@@ -239,3 +241,80 @@ def mock_clone(test, func=None, return_value=None):
   else:
     mocked.side_effect = func
   test.addCleanup(patcher.stop)
+
+
+@contextlib.contextmanager
+def setup_gitter():
+  """Setup gitter."""
+
+  gitter_port = os.environ.get('GITTER_PORT', _GITTER_TEST_PORT)
+  gitter_host = f'http://localhost:{gitter_port}'
+  os.environ['GITTER_HOST'] = gitter_host
+
+  # Check if port is already in use and kill the process if so
+  try:
+    pids = subprocess.check_output(['lsof', '-t', '-i',
+                                    f':{gitter_port}']).decode().split()
+    for pid in pids:
+      pid = pid.strip()
+      if pid:
+        try:
+          cmd = subprocess.check_output(['ps', '-p', pid, '-o',
+                                         'command=']).decode().strip()
+          if 'gitter' in cmd:
+            os.kill(int(pid), signal.SIGINT)
+        except subprocess.CalledProcessError:
+          pass
+  except (subprocess.CalledProcessError, FileNotFoundError):
+    # No process found on port, or lsof is not installed.
+    pass
+
+  go_dir = os.path.abspath(os.path.join(__file__, '..', '..', 'go'))
+  # Create a temporary directory for gitter working directory
+  work_dir = tempfile.mkdtemp(prefix='gitter-work-')
+
+  print(f'Starting gitter at: "{gitter_host}". with work_dir: "{work_dir}"')
+  # Start gitter
+  cmd = [
+      'go',
+      'run',
+      './cmd/gitter',
+      '-port',
+      str(gitter_port),
+      '-work_dir',
+      work_dir,
+  ]
+
+  # We use a process group so we can ensure everything is killed
+  proc = subprocess.Popen(
+      cmd,
+      cwd=go_dir,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      start_new_session=True,
+  )
+
+  try:
+    # Wait a bit for it to start (optional, but good for stability)
+    # Basic check to see if it crashed immediately
+    try:
+      proc.wait(timeout=1.0)
+      # If it returns, it exited
+      raise RuntimeError(
+          f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
+          f'{proc.stderr.read().decode()}')
+    except subprocess.TimeoutExpired:
+      # Process is still running
+      pass
+
+    yield
+
+  finally:
+    # Kill the process group
+    try:
+      os.killpg(os.getpgid(proc.pid), signal.SIGINT)
+    except OSError:
+      pass
+
+    proc.wait()
+    shutil.rmtree(work_dir, ignore_errors=True)

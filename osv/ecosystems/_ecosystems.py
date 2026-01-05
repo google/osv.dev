@@ -28,6 +28,7 @@ from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .redhat import RPM
+from .root import Root
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem, SemverLike
 from .ubuntu import Ubuntu
@@ -61,6 +62,7 @@ _ecosystems = {
     'PyPI': PyPI,
     'Red Hat': RPM,
     'Rocky Linux': RPM,
+    'Root': Root,
     'RubyGems': RubyGems,
     'SUSE': RPM,
     'SwiftURL': SemverEcosystem,

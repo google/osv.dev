@@ -467,6 +467,21 @@
   editable: False
   strict_validation: True
 
+- name: 'root'
+  versions_from_repo: False
+  type: 2
+  rest_api_url: 'https://api.root.io/external/osv/all.json'
+  ignore_patterns: ['^(?!ROOT-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ROOT-']
+  ignore_git: True
+  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  link: 'https://api.root.io/external/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'rust'
   versions_from_repo: True
   type: 0

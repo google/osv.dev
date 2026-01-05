@@ -122,7 +122,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
       os.makedirs(checkout_dir, exist_ok=True)
       resp = requests.get(
           f'{GITTER_HOST}/getgit',
-          params={'url': git_url},
+          params={'url': _git_mirror(git_url)},
           stream=True,
           timeout=3600
       )  # Long timeout duration (1hr) because it could be cloning a large repo

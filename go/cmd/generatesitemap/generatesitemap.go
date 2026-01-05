@@ -4,8 +4,10 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"flag"
 	"fmt"
+	"hash/crc32"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -101,19 +103,19 @@ func main() {
 	// Channel for parsed entries
 	entryCh := make(chan *osvschema.Vulnerability)
 
-	var wg sync.WaitGroup
-	// Start workers
-	for range *numWorkers {
-		wg.Go(func() { downloader(ctx, vulnClient, gcsPathCh, entryCh) })
-	}
-
-	// Start listing objects
+	// Start listing objects for workers to consume
 	go func() {
 		defer close(gcsPathCh)
 		if err := listObjects(ctx, vulnClient, gcsPathCh); err != nil {
 			logger.Fatal("failed to list objects", slog.Any("err", err))
 		}
 	}()
+
+	var wg sync.WaitGroup
+	// Start workers
+	for range *numWorkers {
+		wg.Go(func() { downloader(ctx, vulnClient, gcsPathCh, entryCh) })
+	}
 
 	// Aggregate entries by ecosystem
 	ecosystemEntries := make(map[string][]Entry)
@@ -318,6 +320,9 @@ func writeSitemapIndex(ctx context.Context, client clients.CloudStorage, path st
 	return writeSitemapFile(ctx, client, path, index)
 }
 
+// crc32Table uses the Castagnoli CRC32 polynomial for checksums to match GCS.
+var crc32Table = crc32.MakeTable(crc32.Castagnoli)
+
 func writeSitemapFile(ctx context.Context, client clients.CloudStorage, path string, v any) error {
 	data, err := xml.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -325,9 +330,22 @@ func writeSitemapFile(ctx context.Context, client clients.CloudStorage, path str
 	}
 	data = append([]byte(xml.Header), data...)
 
-	if client != nil {
-		return client.WriteObject(ctx, path, data, nil)
+	if client == nil {
+		return os.WriteFile(path, data, 0600)
 	}
 
-	return os.WriteFile(path, data, 0600)
+	attrs, err := client.ReadObjectAttrs(ctx, path)
+	if err == nil {
+		checksum := crc32.Checksum(data, crc32Table)
+		if checksum == attrs.CRC32C {
+			logger.Info("skipping upload since checksum is unchanged",
+				slog.String("path", path), slog.Any("crc32c", checksum))
+
+			return nil
+		}
+	} else if !errors.Is(err, clients.ErrNotFound) {
+		return fmt.Errorf("failed getting checksum: %w", err)
+	}
+
+	return client.WriteObject(ctx, path, data, nil)
 }

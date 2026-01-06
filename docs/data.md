@@ -98,6 +98,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Python
 -   R (CRAN and Bioconductor)
 -   Rocky Linux
+-   Root
 -   RubyGems
 -   SwiftURL
 -   Ubuntu OS

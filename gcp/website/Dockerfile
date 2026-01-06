@@ -1,5 +1,5 @@
 # Build the Javascript frontend
-FROM node:20.19@sha256:4b4e58e59c5e042928790c6fccd8ad16da6296bcc2e9924c56fba84a8e5ff662 AS FRONTEND3_BUILD
+FROM node:20.19@sha256:929de1eecc6450613bf37eea2f93f3d362b536a465d74e962488b5eca1168948 AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching

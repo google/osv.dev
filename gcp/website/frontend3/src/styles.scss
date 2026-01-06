@@ -873,11 +873,11 @@ dl.vulnerability-details,
   }
 }
 
-osv-tabs-accordion.vulnerability-packages[affordance="tab-bar"] {
+osv-tabs.vulnerability-packages[affordance="tab-bar"] {
   display: block;
 }
 
-osv-tabs-accordion.vulnerability-packages[affordance="collapse"] {
+osv-tabs.vulnerability-packages[affordance="collapse"] {
   display: block;
 
   > h2.package-header {

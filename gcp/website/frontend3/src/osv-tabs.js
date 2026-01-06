@@ -1,4 +1,4 @@
-class OsvTabsAccordion extends HTMLElement {
+class OsvTabs extends HTMLElement {
   constructor() {
     super();
     this.breakpoint = 500;
@@ -220,4 +220,4 @@ class OsvTabsAccordion extends HTMLElement {
   }
 }
 
-customElements.define("osv-tabs-accordion", OsvTabsAccordion);
+customElements.define("osv-tabs", OsvTabs);

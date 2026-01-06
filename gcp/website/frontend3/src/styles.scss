@@ -38,6 +38,37 @@ $osv-border-radius-small: 4px;
   margin-right: -50vw;
 }
 
+@mixin hide-details-marker {
+  list-style: none;
+  &::-webkit-details-marker {
+    display: none;
+  }
+  &::marker {
+    display: none;
+    content: '';
+  }
+}
+
+// Indicator for expand/collapse UI
+@mixin chevron-indicator($size: 12px, $margin-right: 8px, $color: $osv-grey-800) {
+  content: '';
+  display: inline-block;
+  width: $size;
+  height: $size;
+  margin-right: $margin-right;
+  -webkit-mask-image: url(/static/img/filled-triangle.svg);
+  mask-image: url(/static/img/filled-triangle.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: $color;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
 /** Reset */
 
 *,
@@ -886,22 +917,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     cursor: pointer;
 
     &::before {
-      content: '';
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      margin-right: 8px;
-      -webkit-mask-image: url(/static/img/filled-triangle.svg);
-      mask-image: url(/static/img/filled-triangle.svg);
-      -webkit-mask-size: contain;
-      mask-size: contain;
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
-      -webkit-mask-position: center;
-      mask-position: center;
-      background-color: $osv-grey-800;
-      transform: rotate(0deg);
-      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+      @include chevron-indicator;
     }
 
     &[expanded]::before {
@@ -936,36 +952,12 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
   }
 
   .versions-section {
-    margin-bottom: 28px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
     > summary {
-      list-style: none;
-      &::-webkit-details-marker {
-        display: none;
-      }
-      &::marker {
-        display: none;
-        content: '';
-      }
+      @include hide-details-marker;
     }
 
     summary.version-header::before {
-      content: '';
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      margin-right: 16px;
-      background: url(/static/img/filled-triangle.svg);
-      background-position: center;
-      background-repeat: no-repeat;
-      transform: rotate(0deg);
-      transition: transform 0.2s ease-in-out;
-      // Make the filled triangle white.
-      filter: invert(100%);
+      @include chevron-indicator($margin-right: 16px, $color: #fff);
     }
 
     &[open] > summary.version-header::before {
@@ -976,7 +968,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
-      padding-left: 0px;
+      padding: 16px 0;
       font-size: 16px;
       cursor: pointer;
     }
@@ -1016,38 +1008,21 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
   .database-specific-section {
     > summary {
-      list-style: none;
-      &::-webkit-details-marker {
-        display: none;
-      }
-      &::marker {
-        display: none;
-        content: '';
-      }
+      @include hide-details-marker;
     }
 
     summary.database-specific-header {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
-      padding-left: 0;
+      padding: 16px 0;
       font-size: 16px;
       display: flex;
       align-items: center;
       cursor: pointer;
 
       &::before {
-        content: '';
-        width: 11px;
-        height: 11px;
-        margin-right: 8px;
-        background: url(/static/img/filled-triangle.svg);
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        transform: rotate(0deg);
-        transition: transform 0.2s ease-in-out;
-        filter: invert(100%);
+        @include chevron-indicator($color: #fff);
       }
     }
 
@@ -1063,14 +1038,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
   &.force-collapse {
     .ecosystem-accordion > summary {
-      list-style: none;
-      &::-webkit-details-marker {
-        display: none;
-      }
-      &::marker {
-        display: none;
-        content: '';
-      }
+      @include hide-details-marker;
     }
 
     summary.package-header {
@@ -1087,17 +1055,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       display: block;
 
       &::before {
-        content: '';
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        background-image: url(/static/img/filled-triangle.svg);
-        background-position: center;
-        background-repeat: no-repeat;
-        transition: transform 0.2s ease-in-out;
-        transform: rotate(0deg);
-        filter: invert(100%);
+        @include chevron-indicator($color: #fff);
       }
 
       &:hover {
@@ -1112,7 +1070,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
       &::before {
         transform: rotate(90deg);
-        filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
+        background-color: $osv-accent-color;
       }
 
       &:hover {
@@ -1162,14 +1120,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       position: relative;
 
       > summary {
-        list-style: none;
-        &::-webkit-details-marker {
-          display: none;
-        }
-        &::marker {
-          display: none;
-          content: '';
-        }
+        @include hide-details-marker;
       }
 
       // The horizontal "connector" line
@@ -1202,18 +1153,8 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       display: block;
 
       &::before {
-        content: '';
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        background-image: url(/static/img/filled-triangle.svg);
-        background-position: center;
-        background-repeat: no-repeat;
-        filter: invert(100%);
-        transition: transform 0.2s ease-in-out;
-        display: inline-block;
+        @include chevron-indicator($color: #fff);
         vertical-align: middle;
-        transform: rotate(0deg);
       }
     }
 

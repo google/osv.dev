@@ -47,7 +47,7 @@ We’ve also begun to diversify our CVE matching data by ingesting directly from
 
 ### Decoupling Alpine and Debian Data 
 
-Following the introduction of the `upstream` field this year, we have separated the Debian and Alpine vulnerability data —which were previously merged with the main NVD CVE record—into distinct records, each with its own prefix. This ensures records only apply to the environments they exist in, significantly reducing false positives–such as preventing Debian vulnerability alerts from appearing on Alpine systems.
+Following the introduction of the `upstream` field last year, we have separated the Debian and Alpine vulnerability data —which were previously merged with the main NVD CVE record—into distinct records, each with its own prefix. This ensures records only apply to the environments they exist in, significantly reducing false positives–such as preventing Debian vulnerability alerts from appearing on Alpine systems.
 
 ## Infrastructure and Data Quality
 
@@ -96,7 +96,7 @@ We also engaged with the community at several key events, with OSV-related prese
 
 ## Tooling
 
-Our tooling (OSV-Scanner and OSV-Scalibr) continues to evolve with a focus on developer experience and accuracy. Key updates this year include:
+Our tooling (OSV-Scanner and OSV-Scalibr) continues to evolve with a focus on developer experience and accuracy. Key updates last year include:
  - **Scalibr feature unification** to streamline the tooling experience.
  - Launch of an **experimental MCP server**, allowing AI agents (like Claude or ChatGPT) to query the OSV database directly for live vulnerability intelligence.
  - Enhanced Python vulnerability management including **transitive dependency scanning for `requirements.txt`** and **Guided Remediation for Python**.

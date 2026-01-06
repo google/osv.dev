@@ -11,7 +11,7 @@ author: The OSV Team
 
 ## OSV Data Adoption and Improvements
 
-We welcomed 11 new data providers, and 11 new ecosystems. Every new data provider helps us improve coverage of vulnerabilities and matching in the open source.
+We welcomed 11 new data providers, and 11 new ecosystems. Every new data provider helps us improve vulnerability coverage and matching for the open source community.
 
 | Data Providers |
 | :--- |
@@ -29,7 +29,7 @@ We welcomed 11 new data providers, and 11 new ecosystems. Every new data provide
 
 | Ecosystems |
 | :--- |
-| Alpquita |
+| Alpaquita |
 | BellSoft Hardened Containers |
 | CleanStart |
 | Docker Hardened Images |
@@ -45,9 +45,9 @@ We welcomed 11 new data providers, and 11 new ecosystems. Every new data provide
 
 We’ve also begun to diversify our CVE matching data by ingesting directly from the CVE Program’s CVEList as well as the NVD, allowing for more accurate vulnerable ranges. Look out for an upcoming blog post going deeper into this project.
 
-### Decoupling Alpine and Debian Data 
+### Decoupling Alpine and Debian Data
 
-Following the introduction of the `upstream` field last year, we have separated the Debian and Alpine vulnerability data —which were previously merged with the main NVD CVE record—into distinct records, each with its own prefix. This ensures records only apply to the environments they exist in, significantly reducing false positives–such as preventing Debian vulnerability alerts from appearing on Alpine systems.
+Following the introduction of the `upstream` field last year, we have separated the Debian and Alpine vulnerability data, which were previously merged with the main NVD CVE record-into distinct records, each with its own prefix. This ensures records only apply to the environments they exist in, significantly reducing false positives–such as preventing Debian vulnerability alerts from appearing on Alpine systems.
 
 ## Infrastructure and Data Quality
 
@@ -82,7 +82,7 @@ Last year saw sustained interest and external contributions across all our major
  - **OSV-Scanner**: 33 total contributors
  - **OSV-Scalibr**: 52 total contributors
 
-Notably, the **OSV-Scanner GitHub Action** saw contributions from 8 individuals and has been adopted by **over 1600 GitHub repositories**, demonstrating its value to the developer community
+Notably, the **OSV-Scanner GitHub Action** saw contributions from 8 individuals and has been adopted by **over 1600 GitHub repositories**, demonstrating its value to the developer community.
 
 ### Conferences
 

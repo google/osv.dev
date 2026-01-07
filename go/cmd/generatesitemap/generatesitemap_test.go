@@ -111,9 +111,9 @@ func TestGenerateSitemaps(t *testing.T) {
 	if len(urlSet.URLs) != 2 {
 		t.Errorf("expected 2 URLs in sitemap_Go.xml, got %d", len(urlSet.URLs))
 	}
-	// Verify sorting (descending)
-	if urlSet.URLs[0].Loc != "https://example.com/vulnerability/GO-2" {
-		t.Errorf("expected GO-2 first (newer), got %s", urlSet.URLs[0].Loc)
+	// Verify sorting (ascending)
+	if urlSet.URLs[0].Loc != "https://example.com/vulnerability/GO-1" {
+		t.Errorf("expected GO-1 first (older), got %s", urlSet.URLs[0].Loc)
 	}
 
 	// Verify content of sitemap_index.xml

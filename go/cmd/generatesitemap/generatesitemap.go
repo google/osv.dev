@@ -230,9 +230,9 @@ func generateSitemaps(ctx context.Context, client clients.CloudStorage, outputDi
 
 	for _, eco := range ecosystems {
 		vulns := entries[eco]
-		// Sort by LastModified descending
+		// Sort by LastModified ascending (oldest first)
 		sort.Slice(vulns, func(i, j int) bool {
-			return vulns[i].LastModified.After(vulns[j].LastModified)
+			return vulns[i].LastModified.Before(vulns[j].LastModified)
 		})
 
 		// Split into chunks
@@ -258,7 +258,8 @@ func generateSitemaps(ctx context.Context, client clients.CloudStorage, outputDi
 			// Add to index
 			chunkLastMod := time.Unix(0, 0).UTC()
 			if len(chunk) > 0 {
-				chunkLastMod = chunk[0].LastModified
+				// Since we sort by oldest first, the last item is the newest
+				chunkLastMod = chunk[len(chunk)-1].LastModified
 			}
 
 			sitemapIndexEntries = append(sitemapIndexEntries, SitemapIndexEntry{

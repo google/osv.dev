@@ -10,7 +10,7 @@ dependencies = [
     "pyyaml==6.0.3",
     "redis==5.3.1",
     "packageurl-python==0.17.6",
-    "pygit2==1.19.0",
+    "pygit2==1.19.1",
     "requests==2.32.5",
     "jsonschema==4.25.1",
     "vanir==1.0.2",

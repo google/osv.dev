@@ -121,8 +121,8 @@ github.com/mattn/go-runewidth v0.0.16 h1:E5ScNMtiwvlvB5paMFdw9p4kSQzbXFikJ5SQO6T
 github.com/mattn/go-runewidth v0.0.16/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
 github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc=
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251209024518-c18cb6974477 h1:WjVFgFtgbxOVpC3ne8Xr3SPThuw+aYEEqWf5KRTiTfg=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20251209024518-c18cb6974477/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251230224438-88c48750ddae h1:nvfTerE/hSYc/TQ3JUZYeL7DuVhjPkBeOGxicPzoJmc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20251230224438-88c48750ddae/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgmp0tecUJ0sJuv4pzYCqS9+RGSn52M3FUwPs+uo=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10/go.mod h1:t/avpk3KcrXxUnYOhZhMXJlSEyie6gQbtLq5NM3loB8=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

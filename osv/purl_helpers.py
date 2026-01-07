@@ -87,6 +87,20 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('rpm', 'redhat'),
     'Rocky Linux':
         EcosystemPURL('rpm', 'rocky-linux'),
+    # Root sub-ecosystems - map to appropriate PURL types
+    'Root:Alpine':
+        EcosystemPURL('apk', 'root-alpine'),
+    'Root:Debian':
+        EcosystemPURL('deb', 'root-debian'),
+    'Root:Ubuntu':
+        EcosystemPURL('deb', 'root-ubuntu'),
+    'Root:PyPI':
+        EcosystemPURL('pypi', 'root'),
+    'Root:npm':
+        EcosystemPURL('npm', 'root'),
+    'Root:Maven':
+        EcosystemPURL('maven', 'root'),
+    # Fallback for Root (unknown sub-ecosystem)
     'Root':
         EcosystemPURL('generic', 'root'),
     'RubyGems':
@@ -119,7 +133,19 @@ def _url_encode(package_name):
 
 def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   """Convert a ecosystem and package name to PURL."""
-  purl_data = ECOSYSTEM_PURL_DATA.get(ecosystem)
+  # Handle Root's hierarchical ecosystems (e.g., "Root:Alpine:3.18")
+  # Extract the sub-ecosystem for PURL mapping
+  lookup_ecosystem = ecosystem
+  if ecosystem.startswith('Root:'):
+    # Extract first two parts: "Root:Alpine:3.18" -> "Root:Alpine"
+    parts = ecosystem.split(':', 2)
+    if len(parts) >= 2:
+      lookup_ecosystem = ':'.join(parts[:2])
+    # If exact match not found, try just "Root"
+    if lookup_ecosystem not in ECOSYSTEM_PURL_DATA:
+      lookup_ecosystem = 'Root'
+
+  purl_data = ECOSYSTEM_PURL_DATA.get(lookup_ecosystem)
   if not purl_data:
     return None
 
@@ -138,12 +164,22 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   if purl_type == 'deb' and ecosystem == 'Debian':
     suffix = '?arch=source'
 
+  # Add arch=source for Root Debian/Ubuntu packages
+  if purl_type == 'deb' and ecosystem.startswith('Root:'):
+    suffix = '?arch=source'
+
   if purl_type == 'apk' and ecosystem in ('Alpine', 'Alpaquita',
                                           'BellSoft Hardened Containers'):
     suffix = '?arch=source'
 
-  # Encode package name: preserve '/' only when no namespace is defined
-  safe_chars = '' if purl_namespace else '/'
+  # Add arch=source for Root Alpine packages
+  if purl_type == 'apk' and ecosystem.startswith('Root:'):
+    suffix = '?arch=source'
+
+  # Encode package name: preserve '/' in specific cases
+  # - When no namespace is defined
+  # - For maven type (uses / to separate group ID and artifact ID)
+  safe_chars = '' if (purl_namespace and purl_type != 'maven') else '/'
   encoded_name = quote(package_name, safe=safe_chars)
 
   return f'pkg:{purl_ecosystem}/{encoded_name}{suffix}'

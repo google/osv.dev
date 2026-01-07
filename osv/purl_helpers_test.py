@@ -98,6 +98,46 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    # Root ecosystem tests - verify no collisions
+    self.assertEqual('pkg:apk/root-alpine/curl?arch=source',
+                     purl_helpers.package_to_purl('Root:Alpine:3.18', 'curl'))
+
+    self.assertEqual('pkg:deb/root-debian/curl?arch=source',
+                     purl_helpers.package_to_purl('Root:Debian:12', 'curl'))
+
+    self.assertEqual('pkg:deb/root-ubuntu/curl?arch=source',
+                     purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'curl'))
+
+    self.assertEqual('pkg:pypi/root/requests',
+                     purl_helpers.package_to_purl('Root:PyPI', 'requests'))
+
+    self.assertEqual('pkg:npm/root/%40root%2Flodash',
+                     purl_helpers.package_to_purl('Root:npm', '@root/lodash'))
+
+    self.assertEqual('pkg:maven/root/com.example/mylib',
+                     purl_helpers.package_to_purl('Root:Maven', 'com.example:mylib'))
+
+    # Test fallback for unknown Root sub-ecosystem
+    self.assertEqual('pkg:generic/root/unknown-package',
+                     purl_helpers.package_to_purl('Root', 'unknown-package'))
+
+  def test_root_purl_no_collisions(self):
+    """Test that Root PURLs don't collide across sub-ecosystems."""
+    # Generate PURLs for the same package name across different Root ecosystems
+    purl_alpine = purl_helpers.package_to_purl('Root:Alpine:3.18', 'curl')
+    purl_debian = purl_helpers.package_to_purl('Root:Debian:12', 'curl')
+    purl_ubuntu = purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'curl')
+
+    # Verify they are all different (no collisions)
+    self.assertNotEqual(purl_alpine, purl_debian)
+    self.assertNotEqual(purl_alpine, purl_ubuntu)
+    self.assertNotEqual(purl_debian, purl_ubuntu)
+
+    # Verify they have the correct structure
+    self.assertTrue(purl_alpine.startswith('pkg:apk/root-alpine/'))
+    self.assertTrue(purl_debian.startswith('pkg:deb/root-debian/'))
+    self.assertTrue(purl_ubuntu.startswith('pkg:deb/root-ubuntu/'))
+
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))
 

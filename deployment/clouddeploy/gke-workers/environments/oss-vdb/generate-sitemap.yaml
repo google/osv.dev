@@ -10,9 +10,11 @@ spec:
           containers:
           - name: generate-sitemap-cron
             env:
-            - name: BASE_URL
-              value: "https://osv.dev"
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb
-            - name: OUTPUT_GCS_BUCKET
-              value: osv-dev-sitemap
+            args:
+              - "--base-url=https://osv.dev"
+              - "--osv-vulns-bucket=osv-vulnerabilities"
+              - "--upload-to-gcs=true"
+              - "--bucket=osv-dev-sitemap"
+

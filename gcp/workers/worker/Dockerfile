@@ -14,7 +14,7 @@
 
 FROM gcr.io/oss-vdb/worker-base
 
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update && apt-get upgrade -y && apt-get install -y zstd
 
 RUN mkdir /work && mkdir -p /env/gcp/workers/worker
 VOLUME /var/lib/docker

@@ -22,6 +22,9 @@ spec:
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"
+            env:
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
             securityContext:
               privileged: true
             resources:

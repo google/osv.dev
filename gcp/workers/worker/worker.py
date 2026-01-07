@@ -477,6 +477,7 @@ class TaskRunner:
 
     result = osv.analyze(
         vulnerability,
+        checkout_path=os.path.join(self._work_dir, 'checkout'),
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo,

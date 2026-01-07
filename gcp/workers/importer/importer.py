@@ -923,7 +923,8 @@ class Importer:
       logging.exception('Exception querying REST API:')
       return
     if request.status_code != 200:
-      logging.error('Failed to fetch REST API: %s', request.status_code)
+      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
+                    source_repo.rest_api_url)
       return
 
     request_last_modified = None

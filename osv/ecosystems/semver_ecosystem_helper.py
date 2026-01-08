@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Ecosystem helper for ecosystems using SemVer."""
-from typing_extensions import deprecated
+from warnings import deprecated
 
 from .ecosystems_base import OrderedEcosystem
 from .. import semver_index

@@ -14,7 +14,7 @@
 """Ecosystems base classes."""
 from abc import ABC, abstractmethod
 from typing import Any
-from warnings import deprecated
+from typing_extensions import deprecated
 import bisect
 import functools
 import requests

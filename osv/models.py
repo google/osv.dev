@@ -40,6 +40,9 @@ SCHEMA_VERSION = '1.7.3'
 
 _MAX_GIT_VERSIONS_TO_INDEX = 5000
 
+MIN_COARSE_VERSION = '00:00000000.00000000.00000000'
+MAX_COARSE_VERSION = '99:99999999.99999999.99999999'
+
 _EVENT_ORDER = {
     'introduced': 0,
     'last_affected': 1,
@@ -999,6 +1002,13 @@ class AffectedVersions(ndb.Model):
   events: list[AffectedEvent] = ndb.LocalStructuredProperty(
       AffectedEvent, repeated=True)
 
+  # Coarse, string-comparable version bounds
+  # for pre-filtering affected versions.
+  # minimum: 00:00000000.00000000.00000000
+  # maximum: 99:99999999.99999999.99999999
+  coarse_min: str = ndb.StringProperty()
+  coarse_max: str = ndb.StringProperty()
+
   def sort_key(self):
     """Key function for comparison and deduplication."""
     return (self.vuln_id, self.ecosystem, self.name, tuple(self.versions),
@@ -1198,10 +1208,32 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
       if not events:
         continue
       pkg_has_affected = True
+      coarse_min = MIN_COARSE_VERSION
+      coarse_max = MAX_COARSE_VERSION
       if e_helper is not None:
         # If we have an ecosystem helper sort the events to help with querying.
         events.sort(key=lambda e, sort_key=e_helper.sort_key:
                     (sort_key(e.value), _EVENT_ORDER.get(e.type, -1)))
+        try:
+          # Find the lowest introduced event for coarse min
+          # (in case, for some reason, the first event is not introduced)
+          for e in events:
+            if e.type == 'introduced':
+              coarse_min = e_helper.coarse_version(e.value)
+              # Only if we found an introduced version, update coarse_max
+              # And only if the range is bounded.
+              last = events[-1]
+              if last.type != 'introduced':
+                coarse_max = e_helper.coarse_version(last.value)
+              break
+        except NotImplementedError:
+          # Coarse versioning not yet implemented for this ecosystem.
+          coarse_min = MIN_COARSE_VERSION
+          coarse_max = MAX_COARSE_VERSION
+        except ValueError:
+          logging.warning('Invalid version in %s', entity.db_id)
+          coarse_min = MIN_COARSE_VERSION
+          coarse_max = MAX_COARSE_VERSION
       # If we don't have an ecosystem helper, assume the events are in order.
       for e in all_pkg_ecosystems:
         affected_versions.append(
@@ -1209,6 +1241,8 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
                 vuln_id=entity.db_id,
                 ecosystem=e,
                 name=pkg_name,
+                coarse_min=coarse_min,
+                coarse_max=coarse_max,
                 events=events,
             ))
 
@@ -1216,6 +1250,23 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
     # We need at least a package name to perform matching.
     if pkg_name and affected.versions:
       pkg_has_affected = True
+      coarse_min = MIN_COARSE_VERSION
+      coarse_max = MAX_COARSE_VERSION
+      if e_helper is not None:
+        try:
+          coarse_min = e_helper.coarse_version(affected.versions[0])
+          coarse_max = e_helper.coarse_version(affected.versions[0])
+          for v in affected.versions[1:]:
+            coarse_min = min(coarse_min, e_helper.coarse_version(v))
+            coarse_max = max(coarse_max, e_helper.coarse_version(v))
+        except NotImplementedError:
+          # Coarse versioning not yet implemented for this ecosystem.
+          coarse_min = MIN_COARSE_VERSION
+          coarse_max = MAX_COARSE_VERSION
+        except ValueError:
+          logging.warning('Invalid version in %s', entity.db_id)
+          coarse_min = MIN_COARSE_VERSION
+          coarse_max = MAX_COARSE_VERSION
       for e in all_pkg_ecosystems:
         affected_versions.append(
             AffectedVersions(
@@ -1223,6 +1274,8 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
                 ecosystem=e,
                 name=pkg_name,
                 versions=affected.versions,
+                coarse_min=coarse_min,
+                coarse_max=coarse_max,
             ))
     if pkg_name and not pkg_has_affected:
       # We have a package that does not have any affected ranges or versions,

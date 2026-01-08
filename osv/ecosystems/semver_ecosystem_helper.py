@@ -14,7 +14,7 @@
 """Ecosystem helper for ecosystems using SemVer."""
 from warnings import deprecated
 
-from .ecosystems_base import OrderedEcosystem
+from .ecosystems_base import coarse_version_generic, OrderedEcosystem
 from .. import semver_index
 
 
@@ -30,6 +30,21 @@ class SemverLike(OrderedEcosystem):
       # If a user gives us an unparsable semver version,
       # treat it as a very large version so as to not match anything.
       return semver_index.parse('9999999999')
+
+  def coarse_version(self, version):
+    """Coarse version."""
+    # Make sure the version is valid before trying to make it coarse.
+    try:
+      semver_index.parse(version)
+    except ValueError:
+      raise ValueError(f'Invalid version: {version}')
+    if version[0] == 'v':
+      version = version[1:]
+    return coarse_version_generic(version,
+                                  separators_regex=r'[.]',
+                                  trim_regex=r'[-+]',
+                                  implicit_split=True,
+                                  empty_as_zero=False)
 
 
 class SemverEcosystem(SemverLike):

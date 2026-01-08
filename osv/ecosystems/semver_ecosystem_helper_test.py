@@ -38,3 +38,13 @@ class SemVerEcosystemTest(unittest.TestCase):
     ecosystem = semver_ecosystem_helper.SemverLike('')
     # Check the 0 sentinel value
     self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0-0.0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = semver_ecosystem_helper.SemverLike('')
+    self.assertEqual('00:00000000.00000000.00000000', ecosystem.coarse_version('0'))
+    self.assertEqual('00:00000001.00000002.00000003', ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00000010.00000020.00000030', ecosystem.coarse_version('10.20.30-alpha.1'))
+    self.assertEqual('00:00000000.00000002.00000000', ecosystem.coarse_version('0.2.0+a'))
+    self.assertEqual('00:00000000.00000000.00000099', ecosystem.coarse_version('0.0.99-pre+b'))
+    self.assertEqual('00:00000002.99999999.99999999', ecosystem.coarse_version('2.100000000.1'))

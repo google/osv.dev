@@ -17,6 +17,7 @@ from typing import Any
 from warnings import deprecated
 import bisect
 import functools
+import re
 import requests
 from urllib.parse import quote
 
@@ -96,6 +97,28 @@ class OrderedEcosystem(ABC):
   def sort_versions(self, versions: list[str]):
     """Sort versions."""
     versions.sort(key=self.sort_key)
+
+  def coarse_version(self, version: str) -> str:
+    """Convert a version string for this ecosystem to a
+    lexicographically sortable string in the form:
+
+    EE:XXXXXXXX.YYYYYYYY.ZZZZZZZZ
+    where:
+    EE is the 0-padded 2-digit epoch number (or equivalent),
+    XXXXXXXX is the 0-padded 8-digit major version (or equivalent),
+    YYYYYYYY is the 0-padded 8-digit minor version (or equivalent),
+    ZZZZZZZZ is the 0-padded 8-digit patch version (or equivalent).
+
+    This method must preserve version ordering (allowing for collisions).
+    i.e. if v1 < v2, then coarse_version(v1) <= coarse_version(v2).
+    (i.e. it must be monotonically non-decreasing).
+
+    Version string '0' should map to 00:0000000.00000000.00000000
+
+    Should raise a ValueError if the version string is invalid.
+    """
+    raise NotImplementedError(
+      f'coarse_version not implemented for {self.__class__.__name__}')
 
 
 class EnumerateError(Exception):
@@ -210,3 +233,68 @@ class DepsDevMixin(EnumerableEcosystem, ABC):
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
+
+
+def coarse_version_generic(
+                           version: str,
+                           separators_regex=r'[.]',
+                           trim_regex=r'[-+]',
+                           implicit_split=False,
+                           empty_as_zero=False) -> str:
+  """
+  Convert a version string into a coarse, lexicographically comparable string.
+  
+  Format: 00:00000000.00000000.00000000
+  (Epoch:Major.Minor.Patch)
+  
+  The Epoch is always 00.
+  Only the first 3 integer components (Major, Minor, Patch) are used.
+  
+  Args:
+    version: The version string to convert.
+    separators_regex: Regex for separators (default: r'[.]').
+    trim_regex: Regex for characters to trim after (default: r'[-+]'). 
+                If None, no trimming is performed.
+    implicit_split: If True, splits on transitions between digits and non-digits
+                    (in addition to separators_regex).
+    empty_as_zero: If True, treats empty parts as '0' instead of removing them.
+  """
+  if version == '0':
+    return '00:00000000.00000000.00000000'
+
+  main = version
+  if trim_regex:
+      # Trim off trailing components (e.g. prerelease/build)
+      main = re.split(trim_regex, version, maxsplit=1)[0]
+  parts = re.split(separators_regex, main)
+  if implicit_split:
+      # Also split on transitions between digits and non-digits
+      parts = [p for part in parts for p in re.findall(r'\d+|\D+', part)]
+
+  # Filter empty parts or treat as zero
+  if empty_as_zero:
+      parts = [p if p else '0' for p in parts]
+  else:
+      parts = [p for p in parts if p]
+
+  # Extract up to 3 integer components
+  components = []
+  overflow = False
+  for p in parts[:3]:
+    if not p.isdigit():
+      break
+    val = int(p)
+    if val > 99999999:
+        val = 99999999
+        overflow = True
+    components.append(val)
+    if overflow:
+        break
+  
+  # Pad with zeros to ensure 3 components
+  # If we overflowed, we should pad with MAX instead of 0
+  pad_value = 99999999 if overflow else 0
+  while len(components) < 3:
+    components.append(pad_value)
+
+  return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'

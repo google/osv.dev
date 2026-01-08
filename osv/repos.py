@@ -117,6 +117,7 @@ class RepoInaccessibleError(Exception):
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
+  # Don't user Gitter for oss-fuzz-vulns repo because we may need to push to it
   if GITTER_HOST and git_url != 'ssh://github.com/google/oss-fuzz-vulns':
     try:
       os.makedirs(checkout_dir, exist_ok=True)

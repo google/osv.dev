@@ -1020,7 +1020,9 @@ class Importer:
 
     logging.info('Finished processing REST: %s', source_repo.name)
 
-  def _process_deletions_rest(self, source_repo: osv.SourceRepository, threshold: float = 10.0):
+  def _process_deletions_rest(self,
+                              source_repo: osv.SourceRepository,
+                              threshold: float = 10.0):
     """Process deletions from a REST bucket source.
 
     This validates the continued existence of every Bug in Datastore (for the
@@ -1117,8 +1119,7 @@ class Importer:
 
     # Request deletion.
     for v in vulns_to_delete:
-      logging.info('Requesting deletion of REST entry: %s for %s',
-                   v.path, v.id)
+      logging.info('Requesting deletion of REST entry: %s for %s', v.path, v.id)
       self._request_analysis_external(
           source_repo, original_sha256='', path=v.path, deleted=True)
 

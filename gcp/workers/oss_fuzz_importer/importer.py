@@ -295,17 +295,21 @@ class Importer:
 
   def run(self):
     """Run importer."""
-    for source_repo in osv.SourceRepository.query():
-      if source_repo.name == 'oss-fuzz':
-        continue
-      try:
-        self.validate_source_repo(source_repo)
-        if not self._delete:
-          self.process_updates(source_repo)
-        if self._delete:
-          self.process_deletions(source_repo)
-      except Exception as e:
-        logging.exception(e)
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    if not source_repo:
+      logging.error('OSS-Fuzz source repo not found')
+      return
+
+    try:
+      if not self._delete:
+        self.process_oss_fuzz(source_repo)
+      self.validate_source_repo(source_repo)
+      if not self._delete:
+        self.process_updates(source_repo)
+      if self._delete:
+        self.process_deletions(source_repo)
+    except Exception as e:
+      logging.exception(e)
 
   def checkout(self, source_repo):
     """Check out a source repo."""
@@ -923,8 +927,7 @@ class Importer:
       logging.exception('Exception querying REST API:')
       return
     if request.status_code != 200:
-      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
-                    source_repo.rest_api_url)
+      logging.error('Failed to fetch REST API: %s', request.status_code)
       return
 
     request_last_modified = None
@@ -1020,108 +1023,9 @@ class Importer:
 
     logging.info('Finished processing REST: %s', source_repo.name)
 
-  def _process_deletions_rest(self,
-                              source_repo: osv.SourceRepository,
-                              threshold: float = 10.0):
-    """Process deletions from a REST bucket source.
-
-    This validates the continued existence of every Bug in Datastore (for the
-    given source) against every bug currently in that source's REST API,
-    calculating the delta. The bugs determined to have been
-    deleted from the REST API are then flagged for treatment by the worker.
-
-    If the number of deletions exceeds the safety threshold (default 10%),
-    the operation is aborted unless ignore_deletion_threshold is set on the
-    SourceRepository.
-    """
-    logging.info('Begin processing REST for deletions: %s', source_repo.name)
-
-    # Get all the existing non-withdrawn Bug IDs for
-    # source_repo.name in Datastore
-    query = osv.Bug.query()
-    query = query.filter(osv.Bug.source == source_repo.name)
-    result = list(query.fetch(keys_only=False))
-    result.sort(key=lambda r: r.id())
-    VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
-    logging.info('Retrieved %s results from query', len(result))
-
-    vuln_ids_for_source = [
-        VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
-        for r in result
-        if not r.withdrawn
-    ]
-    logging.info(
-        'Counted %d Bugs for %s in Datastore',
-        len(vuln_ids_for_source),
-        source_repo.name,
-        extra={
-            'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
-                'source_repo': source_repo.name,
-            }
-        })
-
-    s = requests.Session()
-    adapter = HTTPAdapter(
-        max_retries=Retry(
-            total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
-    s.mount('http://', adapter)
-    s.mount('https://', adapter)
-
-    try:
-      request = s.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
-    except Exception:
-      logging.exception('Exception querying REST API:')
-      return
-
-    if request.status_code != 200:
-      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
-                    source_repo.rest_api_url)
-      return
-
-    data = json.loads(request.text)
-    vuln_ids_in_rest = []
-    for datum in data:
-      vulnerability = vulnerability_pb2.Vulnerability()
-      json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
-      if not vulnerability.id:
-        logging.warning('Missing id field in REST response. Skipping.')
-        continue
-      vuln_ids_in_rest.append(vulnerability.id)
-
-    logging.info('Counted %d vulnerabilities from REST API for %s',
-                 len(vuln_ids_in_rest), source_repo.name)
-
-    # diff what's in Datastore with what was seen in REST.
-    vulns_to_delete = [
-        v for v in vuln_ids_for_source if v.id not in vuln_ids_in_rest
-    ]
-
-    logging.info('%d Bugs in Datastore considered deleted from REST for %s',
-                 len(vulns_to_delete), source_repo.name)
-
-    if len(vulns_to_delete) == 0:
-      logging.info('No bugs to delete from REST for %s', source_repo.name)
-      return
-
-    # sanity check: deleting a lot/all of the records for source in Datastore is
-    # probably worth flagging for review.
-    if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
-      logging.error(
-          'Cowardly refusing to delete %d missing records from '
-          'REST for: %s',
-          len(vulns_to_delete),
-          source_repo.name,
-          extra={})
-      vulns = [v.id for v in vulns_to_delete]
-      logging.info('Vulnerabilities to delete: %s', vulns)
-      return
-
-    # Request deletion.
-    for v in vulns_to_delete:
-      logging.info('Requesting deletion of REST entry: %s for %s', v.path, v.id)
-      self._request_analysis_external(
-          source_repo, original_sha256='', path=v.path, deleted=True)
+  def _process_deletions_rest(self, source_repo: osv.SourceRepository):
+    """Process deletions from a REST bucket source."""
+    raise NotImplementedError
 
   def validate_source_repo(self, source_repo: osv.SourceRepository):
     """Validate the source_repo for correctness."""
@@ -1153,16 +1057,13 @@ class Importer:
       # see discussion on https://github.com/google/osv.dev/pull/2133
       return
 
-    threshold = self._deletion_safety_threshold_pct
-    if source_repo.ignore_deletion_threshold:
-      threshold = 101.0
-
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
-      self._process_deletions_bucket(source_repo, threshold)
+      self._process_deletions_bucket(source_repo,
+                                     self._deletion_safety_threshold_pct)
       return
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      self._process_deletions_rest(source_repo, threshold)
+      # TODO: To be implemented.
       return
 
     logging.error('Invalid repo type: %s - %d', source_repo.name,

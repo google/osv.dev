@@ -70,6 +70,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('npm', None),
     'NuGet':
         EcosystemPURL('nuget', None),
+    'opam':
+        EcosystemPURL('opam', None),
     'openEuler':
         EcosystemPURL('rpm', 'openeuler'),
     'openSUSE':

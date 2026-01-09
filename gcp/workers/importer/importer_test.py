@@ -19,6 +19,7 @@ import shutil
 import tempfile
 import unittest
 import http.server
+import json
 import logging
 import threading
 
@@ -1520,6 +1521,141 @@ class RESTImporterTest(unittest.TestCase):
     # The checksum should be the same as before enrichment, as it's based on
     # the raw vuln.
     self.assertEqual(v2_checksum, bug_v3.affected_checksum)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_rest_deletion(self, unused_mock_time: mock.MagicMock,
+                         mock_publish: mock.MagicMock):
+    """Test REST deletion."""
+    # Setup existing bugs in Datastore
+    # Bug 1: Exists in REST (should NOT be deleted)
+    osv.Bug(
+        id='OSV-DEL-REST-1',
+        db_id='OSV-DEL-REST-1',
+        status=1,
+        source='curl',
+        source_id='curl:OSV-DEL-REST-1.json',
+        public=True,
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'PyPI',
+                'name': 'pkg1'
+            }
+        }]).put()
+
+    # Bug 2: Missing from REST (SHOULD be deleted)
+    osv.Bug(
+        id='OSV-DEL-REST-2',
+        db_id='OSV-DEL-REST-2',
+        status=1,
+        source='curl',
+        source_id='curl:OSV-DEL-REST-2.json',
+        public=True,
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'PyPI',
+                'name': 'pkg2'
+            }
+        }]).put()
+
+    # Bug 3: Withdrawn (should be ignored)
+    osv.Bug(
+        id='OSV-DEL-REST-3',
+        db_id='OSV-DEL-REST-3',
+        status=1,
+        source='curl',
+        source_id='curl:OSV-DEL-REST-3.json',
+        public=True,
+        withdrawn=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'PyPI',
+                'name': 'pkg3'
+            }
+        }]).put()
+
+    # Mock REST API response
+    data_handler = MockDataHandler
+    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
+    # OSV-DEL-REST-1 is old (2023), OSV-DEL-REST-NEW is new (2024).
+    # We will set last_update_date to mid-2023 so OSV-DEL-REST-1 is skipped
+    # but OSV-DEL-REST-NEW is processed.
+    mock_data = [{
+        'id': 'OSV-DEL-REST-1',
+        'modified': '2023-01-01T00:00:00Z'
+    }, {
+        'id': 'OSV-DEL-REST-NEW',
+        'modified': '2024-01-01T00:00:00Z',
+        'schema_version': '1.3.0',
+        'affected': [{
+            'package': {
+                'ecosystem': 'PyPI',
+                'name': 'pkg-new'
+            }
+        }]
+    }]
+    data_handler.load_data(data_handler, json.dumps(mock_data))
+
+    # Set last_update_date to skip REST-1
+    self.source_repo.last_update_date = datetime.datetime(
+        2023, 6, 1, tzinfo=datetime.UTC)
+    self.source_repo.put()
+
+    # Run 1: Update mode (delete=False)
+    # This should update OSV-DEL-REST-NEW
+    imp_update = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,  # strict_validation
+        False,  # delete=False
+        deletion_safety_threshold_pct=100)
+
+    # Run 2: Delete mode (delete=True)
+    # This should delete OSV-DEL-REST-2
+    imp_delete = importer.Importer(
+        'fake_public_key',
+        'fake_private_key',
+        self.tmp_dir,
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
+        'bucket',
+        True,  # strict_validation
+        True,  # delete=True
+        deletion_safety_threshold_pct=100)
+
+    with self.assertLogs(level='INFO') as logs, self.server(data_handler):
+      # Run 1: Update mode (delete=False)
+      # This should update OSV-DEL-REST-NEW
+      imp_update.run()
+
+      # Run 2: Delete mode (delete=True)
+      # This should delete OSV-DEL-REST-2
+      imp_delete.run()
+
+    # Verify calls:
+    # 1. Update OSV-DEL-REST-NEW
+    # 2. Delete OSV-DEL-REST-2
+    if mock_publish.call_count != 2:
+      self.fail(f'Expected 2 calls, got {mock_publish.call_count}. '
+                f'Logs: {logs.output}')
+
+    # Verify OSV-DEL-REST-2 deletion
+    rest_2_calls = [
+        c for c in mock_publish.call_args_list
+        if c.kwargs.get('path') == 'OSV-DEL-REST-2.json'
+    ]
+    self.assertEqual(1, len(rest_2_calls))
+    self.assertEqual('true', rest_2_calls[0].kwargs.get('deleted'))
+
+    # Verify OSV-DEL-REST-NEW update
+    rest_new_calls = [
+        c for c in mock_publish.call_args_list
+        if c.kwargs.get('path') == 'OSV-DEL-REST-NEW.json'
+    ]
+    self.assertEqual(1, len(rest_new_calls))
+    self.assertEqual('false', rest_new_calls[0].kwargs.get('deleted', 'false'))
 
 
 @mock.patch('importer.utcnow',

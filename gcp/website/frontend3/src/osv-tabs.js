@@ -143,7 +143,6 @@ class OsvTabs extends HTMLElement {
       } else {
         panel.removeAttribute("data-panel-active");
       }
-      panel.style.display = isActive ? "" : "none";
     });
   }
 

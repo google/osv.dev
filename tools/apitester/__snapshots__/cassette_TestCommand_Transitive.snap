@@ -605,6 +605,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-g4mx-q9vg-27p4",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -644,6 +648,10 @@
     },
     {
       "vulns": [
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2025>"

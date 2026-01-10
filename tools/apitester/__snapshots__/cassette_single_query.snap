@@ -1467,7 +1467,6 @@
       "related": [
         "ALSA-2025:1671",
         "ALSA-2025:1673",
-        "CGA-962m-89hc-rmjq",
         "RLSA-2025:1673",
         "SUSE-SU-2024:2784-1",
         "SUSE-SU-2024:2930-1",
@@ -1546,7 +1545,6 @@
       "modified": "<RFC3339 date with the year 2025>",
       "published": "2024-09-11T10:15:02.883Z",
       "related": [
-        "CGA-g55g-qx76-5fjj",
         "SUSE-SU-2024:3202-1",
         "SUSE-SU-2024:3203-1",
         "SUSE-SU-2024:3204-1",
@@ -1710,6 +1708,7 @@
       "modified": "<RFC3339 date with the year 2025>",
       "published": "2025-02-05T10:15:22.710Z",
       "related": [
+        "CGA-gr5c-pjrp-3fmw",
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",
@@ -1768,7 +1767,11 @@
       "aliases": ["CURL-CVE-2025-0665"],
       "modified": "<RFC3339 date with the year 2025>",
       "published": "2025-02-05T10:15:22.857Z",
-      "related": ["MGASA-2025-0123", "openSUSE-SU-2025:14809-1"],
+      "related": [
+        "CGA-h2f8-6v5h-2qcp",
+        "MGASA-2025-0123",
+        "openSUSE-SU-2025:14809-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
@@ -1830,6 +1833,7 @@
       "modified": "<RFC3339 date with the year 2025>",
       "published": "2025-02-05T10:15:22.980Z",
       "related": [
+        "CGA-378j-cghq-mmhg",
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",

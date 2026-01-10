@@ -1,0 +1,364 @@
+
+[TestSnapshotConversion/CVE-2025-21631.json - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "63a07379fdb6c72450cb05294461c6016b8b7726"
+            },
+            {
+              "fixed": "f587c1ac68956c4703857d650d9b1cd7bb2ac4d7"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        },
+        {
+          "events": [
+            {
+              "introduced": "de0456460f2abf921e356ed2bd8da87a376680bd"
+            },
+            {
+              "fixed": "2550149fcdf2934155ff625d76ad4e3d4b25bbc6"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        },
+        {
+          "events": [
+            {
+              "introduced": "0780451f03bf518bc032a7c584de8f92e2d39d7f"
+            },
+            {
+              "fixed": "be3eed59ac01f429ac10aaa46e26f653bcf581ab"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        },
+        {
+          "events": [
+            {
+              "introduced": "1ba0403ac6447f2d63914fb760c44a3b19c44eaf"
+            },
+            {
+              "fixed": "bc2aeb35ff167e0c6b0cedf0c96a5c41e6cba1ed"
+            },
+            {
+              "fixed": "fcede1f0a043ccefe9bc6ad57f12718e42f63f1d"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        },
+        {
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "last_affected": "0b8bda0ff17156cd3f60944527c9d8c9f99f1583"
+            },
+            {
+              "last_affected": "cae58d19121a70329cf971359e2518c93fec04fe"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        }
+      ]
+    },
+    {
+      "package": {
+        "ecosystem": "Linux",
+        "name": "Kernel"
+      },
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "5.15.177"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.16.0"
+            },
+            {
+              "fixed": "6.1.125"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.2.0"
+            },
+            {
+              "fixed": "6.6.72"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.7.0"
+            },
+            {
+              "fixed": "6.12.10"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "Linux",
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "In the Linux kernel, the following vulnerability has been resolved:\n\nblock, bfq: fix waker_bfqq UAF after bfq_split_bfqq()\n\nOur syzkaller report a following UAF for v6.6:\n\nBUG: KASAN: slab-use-after-free in bfq_init_rq+0x175d/0x17a0 block/bfq-iosched.c:6958\nRead of size 8 at addr ffff8881b57147d8 by task fsstress/232726\n\nCPU: 2 PID: 232726 Comm: fsstress Not tainted 6.6.0-g3629d1885222 #39\nCall Trace:\n \u003cTASK\u003e\n __dump_stack lib/dump_stack.c:88 [inline]\n dump_stack_lvl+0x91/0xf0 lib/dump_stack.c:106\n print_address_description.constprop.0+0x66/0x300 mm/kasan/report.c:364\n print_report+0x3e/0x70 mm/kasan/report.c:475\n kasan_report+0xb8/0xf0 mm/kasan/report.c:588\n hlist_add_head include/linux/list.h:1023 [inline]\n bfq_init_rq+0x175d/0x17a0 block/bfq-iosched.c:6958\n bfq_insert_request.isra.0+0xe8/0xa20 block/bfq-iosched.c:6271\n bfq_insert_requests+0x27f/0x390 block/bfq-iosched.c:6323\n blk_mq_insert_request+0x290/0x8f0 block/blk-mq.c:2660\n blk_mq_submit_bio+0x1021/0x15e0 block/blk-mq.c:3143\n __submit_bio+0xa0/0x6b0 block/blk-core.c:639\n __submit_bio_noacct_mq block/blk-core.c:718 [inline]\n submit_bio_noacct_nocheck+0x5b7/0x810 block/blk-core.c:747\n submit_bio_noacct+0xca0/0x1990 block/blk-core.c:847\n __ext4_read_bh fs/ext4/super.c:205 [inline]\n ext4_read_bh+0x15e/0x2e0 fs/ext4/super.c:230\n __read_extent_tree_block+0x304/0x6f0 fs/ext4/extents.c:567\n ext4_find_extent+0x479/0xd20 fs/ext4/extents.c:947\n ext4_ext_map_blocks+0x1a3/0x2680 fs/ext4/extents.c:4182\n ext4_map_blocks+0x929/0x15a0 fs/ext4/inode.c:660\n ext4_iomap_begin_report+0x298/0x480 fs/ext4/inode.c:3569\n iomap_iter+0x3dd/0x1010 fs/iomap/iter.c:91\n iomap_fiemap+0x1f4/0x360 fs/iomap/fiemap.c:80\n ext4_fiemap+0x181/0x210 fs/ext4/extents.c:5051\n ioctl_fiemap.isra.0+0x1b4/0x290 fs/ioctl.c:220\n do_vfs_ioctl+0x31c/0x11a0 fs/ioctl.c:811\n __do_sys_ioctl fs/ioctl.c:869 [inline]\n __se_sys_ioctl+0xae/0x190 fs/ioctl.c:857\n do_syscall_x64 arch/x86/entry/common.c:67\n \u003c/TASK\u003e",
+  "id": "CVE-2025-21631",
+  "modified": "2025-05-04T13:05:59.494Z",
+  "published": "2025-01-19T10:17:49.439Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/2550149fcdf2934155ff625d76ad4e3d4b25bbc6"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/bc2aeb35ff167e0c6b0cedf0c96a5c41e6cba1ed"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/be3eed59ac01f429ac10aaa46e26f653bcf581ab"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/f587c1ac68956c4703857d650d9b1cd7bb2ac4d7"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/fcede1f0a043ccefe9bc6ad57f12718e42f63f1d"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-21631"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "block, bfq: fix waker_bfqq UAF after bfq_split_bfqq()"
+}
+---
+
+[TestSnapshotConversion/CVE-2025-21772.json - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"
+            },
+            {
+              "fixed": "a3e77da9f843e4ab93917d30c314f0283e28c124"
+            },
+            {
+              "fixed": "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"
+            },
+            {
+              "fixed": "40a35d14f3c0dc72b689061ec72fc9b193f37d1f"
+            },
+            {
+              "fixed": "27a39d006f85e869be68c1d5d2ce05e5d6445bf5"
+            },
+            {
+              "fixed": "92527100be38ede924768f4277450dfe8a40e16b"
+            },
+            {
+              "fixed": "6578717ebca91678131d2b1f4ba4258e60536e9f"
+            },
+            {
+              "fixed": "7fa9706722882f634090bfc9af642bf9ed719e27"
+            },
+            {
+              "fixed": "80e648042e512d5a767da251d44132553fe04ae0"
+            }
+          ],
+          "repo": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+          "type": "GIT"
+        }
+      ]
+    },
+    {
+      "package": {
+        "ecosystem": "Linux",
+        "name": "Kernel"
+      },
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "5.4.291"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.5.0"
+            },
+            {
+              "fixed": "5.10.235"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.11.0"
+            },
+            {
+              "fixed": "5.15.179"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "5.16.0"
+            },
+            {
+              "fixed": "6.1.129"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.2.0"
+            },
+            {
+              "fixed": "6.6.79"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.7.0"
+            },
+            {
+              "fixed": "6.12.16"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        },
+        {
+          "events": [
+            {
+              "introduced": "6.13.0"
+            },
+            {
+              "fixed": "6.13.4"
+            }
+          ],
+          "type": "ECOSYSTEM"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "Linux",
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "In the Linux kernel, the following vulnerability has been resolved:\n\npartitions: mac: fix handling of bogus partition table\n\nFix several issues in partition probing:\n\n - The bailout for a bad partoffset must use put_dev_sector(), since the\n   preceding read_part_sector() succeeded.\n - If the partition table claims a silly sector size like 0xfff bytes\n   (which results in partition table entries straddling sector boundaries),\n   bail out instead of accessing out-of-bounds memory.\n - We must not assume that the partition table contains proper NUL\n   termination - use strnlen() and strncmp() instead of strlen() and\n   strcmp().",
+  "id": "CVE-2025-21772",
+  "modified": "2025-05-04T07:20:46.575Z",
+  "published": "2025-02-27T02:18:19.528Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/27a39d006f85e869be68c1d5d2ce05e5d6445bf5"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/92527100be38ede924768f4277450dfe8a40e16b"
+    },
+    {
+      "type": "WEB",
+      "url": "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-21772"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "summary": "partitions: mac: fix handling of bogus partition table"
+}
+---

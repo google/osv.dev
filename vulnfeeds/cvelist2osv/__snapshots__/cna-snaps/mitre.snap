@@ -1,0 +1,154 @@
+
+[TestSnapshotConversion/CVE-2021-26917.json - 1]
+{
+  "database_specific": {
+    "cna_assigner": "mitre",
+    "isDisputed": true,
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "PyBitmessage through 0.6.3.2 allows attackers to write screen captures to Potentially Unwanted Directories via a crafted apinotifypath value. NOTE: the discoverer states \"security mitigation may not be necessary as there is no evidence yet that these screen intercepts are actually transported away from the local host.\" NOTE: it is unclear whether there are any common use cases in which apinotifypath is controlled by an attacker",
+  "id": "CVE-2021-26917",
+  "modified": "2021-02-08T22:22:51Z",
+  "published": "2021-02-08T22:22:51Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://attack.mitre.org/techniques/T1113/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/Bitmessage/PyBitmessage/blob/f381721bec31641002e2f240309600c4994855a7/src/api.py#L35-L37"
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/Bitmessage/PyBitmessage/releases"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-26917"
+    },
+    {
+      "type": "WEB",
+      "url": "https://poal.co/s/technology/290479"
+    }
+  ],
+  "schema_version": "1.7.3"
+}
+---
+
+[TestSnapshotConversion/CVE-2023-23127.json - 1]
+{
+  "database_specific": {
+    "cna_assigner": "mitre",
+    "isDisputed": true,
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "In Connectwise Control 22.8.10013.8329, the login page does not implement HSTS headers therefore not enforcing HTTPS. NOTE: the vendor's position is that, by design, this is controlled by a configuration option in which a customer can choose to use HTTP (rather than HTTPS) during troubleshooting.",
+  "id": "CVE-2023-23127",
+  "modified": "2023-02-02T00:00:00Z",
+  "published": "2023-02-01T00:00:00Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/l00neyhacker/CVE-2023-23127"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-23127"
+    }
+  ],
+  "schema_version": "1.7.3"
+}
+---
+
+[TestSnapshotConversion/CVE-2023-38408.json - 1]
+{
+  "database_specific": {
+    "cna_assigner": "mitre",
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "The PKCS#11 feature in ssh-agent in OpenSSH before 9.3p2 has an insufficiently trustworthy search path, leading to remote code execution if an agent is forwarded to an attacker-controlled system. (Code in /usr/lib is not necessarily safe for loading into ssh-agent.) NOTE: this issue exists because of an incomplete fix for CVE-2016-10009.",
+  "id": "CVE-2023-38408",
+  "modified": "2023-08-03T00:00:00Z",
+  "published": "2023-07-20T00:00:00Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/173661/OpenSSH-Forwarded-SSH-Agent-Remote-Code-Execution.html"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2023/07/20/1"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2023/07/20/2"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://blog.qualys.com/vulnerabilities-threat-research/2023/07/19/cve-2023-38408-remote-code-execution-in-opensshs-forwarded-ssh-agent"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/openbsd/src/commit/7bc29a9d5cd697290aa056e94ecee6253d3425f8"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/openbsd/src/commit/f03a4faa55c4ce0818324701dadbf91988d7351d"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/openbsd/src/commit/f8f5a6b003981bb824329dc987d101977beda7ca"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/CEBTJJINE2I3FHAUKKNQWMFGYMLSMWKQ/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/RAXVQS6ZYTULFAK3TEJHRLKZALJS3AOU/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://news.ycombinator.com/item?id=36790196"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-38408"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/202307-01"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20230803-0010/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.openssh.com/security.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.openssh.com/txt/release-9.3p2"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.qualys.com/2023/07/19/cve-2023-38408/rce-openssh-forwarded-ssh-agent.txt"
+    }
+  ],
+  "schema_version": "1.7.3"
+}
+---

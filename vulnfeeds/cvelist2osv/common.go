@@ -4,7 +4,10 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -53,6 +56,27 @@ const (
 	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
 )
 
+func (c ConversionOutcome) String() string {
+	switch c {
+	case Successful:
+		return "Successful"
+	case Rejected:
+		return "Rejected"
+	case NoSoftware:
+		return "NoSoftware"
+	case NoRepos:
+		return "NoRepos"
+	case NoCommitRanges:
+		return "NoCommitRanges"
+	case NoRanges:
+		return "NoRanges"
+	case FixUnresolvable:
+		return "FixUnresolvable"
+	default:
+		return "Unknown"
+	}
+}
+
 // String returns the string representation of a VersionRangeType.
 func (vrt VersionRangeType) String() string {
 	switch vrt {
@@ -78,6 +102,19 @@ func toVersionRangeType(s string) VersionRangeType {
 		// Other version types like "semver" are treated as ecosystem ranges.
 		return VersionRangeTypeEcosystem
 	}
+}
+
+func createConversionsOutput(stats map[string]int) string {
+	keys := slices.Sorted(maps.Keys(stats))
+
+	var statsOutput strings.Builder
+
+	statsOutput.WriteString("Conversion Outcomes:\n")
+	for _, k := range keys {
+		statsOutput.WriteString(fmt.Sprintf("%s: %d\n", k, stats[k]))
+	}
+
+	return statsOutput.String()
 }
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.

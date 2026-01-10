@@ -876,6 +876,261 @@
       ]
     },
     {
+      "id": "CURL-CVE-2025-14017",
+      "summary": "broken TLS options for threaded LDAPS",
+      "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
+      "aliases": ["CVE-2025-14017"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ccba0d10b6baf5c73cae8cf4fb3f29f0f55c5a34"
+                },
+                {
+                  "fixed": "39d1976b7f709a516e3243338ebc0443bdd8d56d"
+                }
+              ]
+            }
+          ],
+          "versions": 143,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-14524",
+      "summary": "bearer token leak on cross-protocol redirect",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
+      "aliases": ["CVE-2025-14524"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-06T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "06c1bea72faabb6fad4b7ef818aafaa336c9a7aa"
+                },
+                {
+                  "fixed": "1a822275d333dc6da6043497160fd04c8fa48640"
+                }
+              ]
+            }
+          ],
+          "versions": 107,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "anonymous237 on hackerone",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-14819",
+      "summary": "OpenSSL partial chain store policy bypass",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "aliases": ["CVE-2025-14819"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.87.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "3c16697ebd796f799227be293e8689aec5f8190d"
+                },
+                {
+                  "fixed": "cd046f6c93b39d673a58c18648d8906e954c4f5d"
+                }
+              ]
+            }
+          ],
+          "versions": 31,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-15079",
+      "summary": "libssh global known_hosts override",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
+      "aliases": ["CVE-2025-15079"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "adca486c125d9a6d9565b9607a19dce803a8b479"
+                }
+              ]
+            }
+          ],
+          "versions": 70,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Harry Sintonen",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-15224",
+      "summary": "libssh key passphrase bypass without agent set",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
+      "aliases": ["CVE-2025-15224"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "16d5f2a5660c61cc27bd5f1c7f512391d1c927aa"
+                }
+              ]
+            }
+          ],
+          "versions": 70,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Harry Sintonen",
+          "type": "FINDER"
+        },
+        {
+          "name": "Harry Sintonen",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2025-5025",
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
@@ -922,57 +1177,6 @@
         },
         {
           "name": "Stefan Eissing",
-          "type": "REMEDIATION_DEVELOPER"
-        }
-      ]
-    },
-    {
-      "id": "CURL-CVE-2025-9086",
-      "summary": "Out of bounds read for cookie path",
-      "details": "1. A cookie is set using the `secure` keyword for `https://target`\n2. curl is redirected to or otherwise made to speak with `http://target` (same\n   hostname, but using clear text HTTP) using the same cookie set\n3. The same cookie name is set - but with just a slash as path (`path=\"/\"`).\n   Since this site is not secure, the cookie *should* just be ignored.\n4. A bug in the path comparison logic makes curl read outside a heap buffer\n   boundary\n\nThe bug either causes a crash or it potentially makes the comparison come to\nthe wrong conclusion and lets the clear-text site override the contents of the\nsecure cookie, contrary to expectations and depending on the memory contents\nimmediately following the single-byte allocation that holds the path.\n\nThe presumed and correct behavior would be to plainly ignore the second set of\nthe cookie since it was already set as secure on a secure host so overriding\nit on an insecure host should not be okay.",
-      "aliases": ["CVE-2025-9086"],
-      "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-09-10T08:00:00Z",
-      "database_specific": "<Any value>",
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.31.0"
-                },
-                {
-                  "fixed": "8.16.0"
-                }
-              ]
-            },
-            {
-              "type": "GIT",
-              "repo": "https://github.com/curl/curl.git",
-              "events": [
-                {
-                  "introduced": "f24dc09d209a2f91ca38d854f0c15ad93f3d7e2d"
-                },
-                {
-                  "fixed": "c6ae07c6a541e0e96d0040afb62b45dd37711300"
-                }
-              ]
-            }
-          ],
-          "versions": 107,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "credits": [
-        {
-          "name": "Google Big Sleep",
-          "type": "FINDER"
-        },
-        {
-          "name": "Daniel Stenberg",
           "type": "REMEDIATION_DEVELOPER"
         }
       ]

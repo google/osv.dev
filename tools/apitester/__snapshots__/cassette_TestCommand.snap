@@ -1308,6 +1308,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "DEBIAN-CVE-2025-13151",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DLA-3263-1",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -1529,7 +1533,7 @@
         },
         {
           "id": "DEBIAN-CVE-2025-9714",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "DLA-3012-1",
@@ -1815,7 +1819,7 @@
         },
         {
           "id": "DEBIAN-CVE-2024-13176",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "DEBIAN-CVE-2024-2511",
@@ -3112,6 +3116,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-g4mx-q9vg-27p4",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -3160,6 +3168,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-g4mx-q9vg-27p4",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -3200,13 +3212,9 @@
     {
       "vulns": [
         {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ]
-    },
-    {
-      "vulns": [
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2025>"
@@ -3215,6 +3223,22 @@
     },
     {
       "vulns": [
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2025>"
@@ -3590,6 +3614,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-g4mx-q9vg-27p4",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -3638,6 +3666,10 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-g4mx-q9vg-27p4",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -3678,13 +3710,9 @@
     {
       "vulns": [
         {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ]
-    },
-    {
-      "vulns": [
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2025>"
@@ -3693,6 +3721,22 @@
     },
     {
       "vulns": [
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2025>"

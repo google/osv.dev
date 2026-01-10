@@ -1612,3 +1612,100 @@ func TestBuildVersionRange(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractVersionsFromText(t *testing.T) {
+	tests := []struct {
+		name             string
+		description      string
+		validVersions    []string
+		expectedVersions []models.AffectedVersion
+	}{
+		{
+			name:        "up to and including - CVE-2025-11411",
+			description: "NLnet Labs Unbound up to and including version 1.24.1 is vulnerable to possible domain hijack attacks.",
+			validVersions: []string{
+				"1.24.0", "1.24.1", "1.24.2",
+			},
+			expectedVersions: []models.AffectedVersion{
+				{
+					// "up to and including" implies inclusive upper bound.
+					// Since validVersions has "1.24.2" as next, logic prefers Fixed="1.24.2" over LastAffected="1.24.1".
+					Fixed: "1.24.2",
+				},
+			},
+		},
+		{
+			name:          "prior to - CVE-2022-3306",
+			description:   "The vulnerability affected versions prior to 106.0.5249.62 and was reported on April 27, 2022.",
+			validVersions: []string{},
+			expectedVersions: []models.AffectedVersion{
+				{
+					Fixed: "106.0.5249.62",
+				},
+			},
+		},
+		{
+			name:          "below - CVE-2024-29945",
+			description:   "In Splunk Enterprise versions below 9.2.1, 9.1.4, and 9.0.9, authentication tokens can be exposed.",
+			validVersions: []string{},
+			expectedVersions: []models.AffectedVersion{
+				{
+					Fixed: "9.2.1",
+				},
+			},
+		},
+		{
+			name:        "and earlier - CVE-2025-27199",
+			description: "Adobe Animate versions 24.0.7 and earlier are affected by a Heap-based Buffer Overflow vulnerability.",
+			validVersions: []string{
+				"23.0.0", "24.0.0", "24.0.7", "24.0.8",
+			},
+			expectedVersions: []models.AffectedVersion{
+				{
+					Fixed: "24.0.8",
+				},
+			},
+		},
+		{
+			name:        "and earlier - CVE-2025-27199 (No next version)",
+			description: "Adobe Animate versions 24.0.7 and earlier are affected by a Heap-based Buffer Overflow vulnerability.",
+			validVersions: []string{
+				"24.0.7",
+			},
+			expectedVersions: []models.AffectedVersion{
+				{
+					LastAffected: "24.0.7",
+				},
+			},
+		},
+		{
+			name:          "or older - CVE-2025-0725",
+			description:   "A vulnerability affects systems utilizing zlib version 1.2.0.3 or older.",
+			validVersions: []string{},
+			expectedVersions: []models.AffectedVersion{
+				{
+					LastAffected: "1.2.0.3",
+				},
+			},
+		},
+		{
+			name:          "and below - CVE-2025-54591",
+			description:   "FreshRSS, in versions 1.26.3 and below, exposes information about feeds.",
+			validVersions: []string{},
+			expectedVersions: []models.AffectedVersion{
+				{
+					LastAffected: "1.26.3",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotVersions, _ := ExtractVersionsFromText(tc.validVersions, tc.description)
+			if diff := cmp.Diff(tc.expectedVersions, gotVersions); diff != "" {
+				t.Errorf("ExtractVersionsFromText() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

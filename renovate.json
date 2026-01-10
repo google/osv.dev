@@ -43,19 +43,7 @@
       "matchFileNames": [
         "gcp/website/**"
       ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "website-backend"
-    },
-    {
-      "matchFileNames": [
-        "gcp/website/**"
-      ],
-      "matchCategories": [
-        "js"
-      ],
-      "groupName": "website-frontend"
+      "groupName": "website"
     },
     {
       "matchFileNames": [
@@ -68,33 +56,12 @@
     },
     {
       "matchFileNames": [
-        "gcp/api/**"
-      ],
-      "groupName": "api"
-    },
-    {
-      "matchFileNames": [
-        "gcp/functions/**"
-      ],
-      "groupName": "functions"
-    },
-    {
-      "matchFileNames": [
-        "gcp/workers/**"
-      ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "workers"
-    },
-    {
-      "matchFileNames": [
+        "gcp/api/**",
+        "gcp/functions/**",
+        "gcp/workers/**",
         "gcp/indexer/**"
       ],
-      "matchCategories": [
-        "golang"
-      ],
-      "groupName": "indexer"
+      "groupName": "gcp-services"
     },
     {
       "matchFileNames": [
@@ -140,6 +107,40 @@
         "python"
       ],
       "enabled": false
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchManagers": [
+        "git-submodules"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchDatasources": [
+        "git-refs"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchFileNames": [
+        "bindings/**",
+        "go/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
+      "groupName": "go-libraries"
     },
     {
       "matchDepTypes": ["uses-with"],

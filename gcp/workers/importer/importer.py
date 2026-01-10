@@ -246,7 +246,7 @@ class Importer:
     extension = os.path.splitext(name)[1]
     try:
       vulns = osv.parse_vulnerabilities_from_data(
-          content, extension, strict=False)
+          content, extension, strict=False, source_name=name)
       if vulns:
         return vulns[0].id
     except RuntimeError:
@@ -435,7 +435,8 @@ class Importer:
     vulns = osv.parse_vulnerabilities_from_data(
         blob_bytes,
         os.path.splitext(blob.name)[1],
-        strict=source_repo.strict_validation and self._strict_validation)
+        strict=source_repo.strict_validation and self._strict_validation,
+        source_name=blob.name)
     for vuln in vulns:
       vuln_ids.append(vuln.id)
     return vuln_ids
@@ -502,7 +503,8 @@ class Importer:
     vulns = osv.parse_vulnerabilities_from_data(
         blob_bytes,
         os.path.splitext(blob.name)[1],
-        strict=self._strict_validation)
+        strict=self._strict_validation,
+        source_name=blob.name)
 
     # TODO(andrewpollock): integrate with linter here.
 

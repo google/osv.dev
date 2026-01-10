@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -1156,6 +1157,229 @@ func TestInvalidRangeDetection(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestExtractVersionInfoInvalidRange tests the detection of invalid version ranges
+// where the introduced version comes after or equals the fixed version in the
+// ordered validVersions list (e.g., bad CVE data like introduced: 1.0, fixed: 1.0b4).
+func TestExtractVersionInfoInvalidRange(t *testing.T) {
+	tests := []struct {
+		description   string
+		cve           CVE
+		validVersions []string
+		expectedNote  string // substring expected in notes
+		expectWarning bool
+	}{
+		{
+			description: "Valid range: introduced before fixed",
+			cve: CVE{
+				ID: "CVE-2024-TEST-001",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("1.0.0"),
+										VersionEndExcluding:   ptrString("1.0.5"),
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{"0.9.0", "1.0.0", "1.0.1", "1.0.2", "1.0.3", "1.0.4", "1.0.5", "1.0.6"},
+			expectedNote:  "",
+			expectWarning: false,
+		},
+		{
+			description: "Invalid range: introduced equals fixed (same index)",
+			cve: CVE{
+				ID: "CVE-2024-TEST-002",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("1.0.0"),
+										VersionEndExcluding:   ptrString("1.0.0"),
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{"0.9.0", "1.0.0", "1.0.1", "1.0.2"},
+			expectedNote:  "Warning: introduced version 1.0.0 >= fixed version 1.0.0",
+			expectWarning: true,
+		},
+		{
+			description: "Invalid range: introduced after fixed (Python versioning edge case)",
+			cve: CVE{
+				ID: "CVE-2024-TEST-003",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("1.0"),
+										VersionEndExcluding:   ptrString("1.0b4"),
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			// In Python PEP 440 versioning, 1.0b4 (beta) comes before 1.0 (release)
+			validVersions: []string{"1.0a1", "1.0b1", "1.0b2", "1.0b3", "1.0b4", "1.0rc1", "1.0", "1.0.1"},
+			expectedNote:  "Warning: introduced version 1.0 >= fixed version 1.0b4",
+			expectWarning: true,
+		},
+		{
+			description: "No warning when validVersions is empty",
+			cve: CVE{
+				ID: "CVE-2024-TEST-004",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("2.0.0"),
+										VersionEndExcluding:   ptrString("1.0.0"),
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{}, // Empty - can't determine order
+			expectedNote:  "",
+			expectWarning: false,
+		},
+		{
+			description: "No warning when introduced version not in validVersions",
+			cve: CVE{
+				ID: "CVE-2024-TEST-005",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("3.0.0"), // Not in validVersions
+										VersionEndExcluding:   ptrString("1.0.0"),
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{"1.0.0", "2.0.0"},
+			expectedNote:  "",
+			expectWarning: false,
+		},
+		{
+			description: "No warning when fixed version not in validVersions",
+			cve: CVE{
+				ID: "CVE-2024-TEST-006",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("1.0.0"),
+										VersionEndExcluding:   ptrString("3.0.0"), // Not in validVersions
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{"1.0.0", "2.0.0"},
+			expectedNote:  "",
+			expectWarning: false,
+		},
+		{
+			description: "No warning when only introduced (no fixed)",
+			cve: CVE{
+				ID: "CVE-2024-TEST-007",
+				Configurations: []Config{
+					{
+						Nodes: []Node{
+							{
+								Operator: "OR",
+								CPEMatch: []CPEMatch{
+									{
+										Vulnerable:            true,
+										VersionStartIncluding: ptrString("1.0.0"),
+										VersionEndIncluding:   ptrString("2.0.0"), // Will try nextVersion
+										Criteria:              "cpe:2.3:a:example:test:*:*:*:*:*:*:*:*",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validVersions: []string{"1.0.0", "1.5.0", "2.0.0", "2.0.1"},
+			expectedNote:  "",
+			expectWarning: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			r := testutils.SetupVCR(t)
+			client := r.GetDefaultClient()
+
+			_, notes := ExtractVersionInfo(tc.cve, tc.validVersions, client)
+
+			foundWarning := slices.ContainsFunc(notes, func(note string) bool {
+				return tc.expectedNote != "" && strings.Contains(note, tc.expectedNote)
+			})
+
+			if tc.expectWarning && !foundWarning {
+				t.Errorf("Expected warning note containing %q but not found in notes: %v", tc.expectedNote, notes)
+			}
+			if !tc.expectWarning && foundWarning {
+				t.Errorf("Did not expect warning note containing %q but found in notes: %v", tc.expectedNote, notes)
+			}
+		})
+	}
+}
+
+// ptrString is a helper to create a pointer to a string
+func ptrString(s string) *string {
+	return &s
 }
 
 func TestValidateAndCanonicalizeLink(t *testing.T) {

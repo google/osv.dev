@@ -387,6 +387,9 @@ class TaskRunner:
 
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      if deleted:
+        self._handle_deleted(source_repo, path)
+        return
       vulnerabilities = []
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:

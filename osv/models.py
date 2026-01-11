@@ -1404,6 +1404,8 @@ class SourceRepository(ndb.Model):
   versions_from_repo: bool = ndb.BooleanProperty(default=True)
   # Ignore last import time once (SourceRepositoryType.BUCKET).
   ignore_last_import_time: bool = ndb.BooleanProperty(default=False)
+  # Ignore deletion threshold (SourceRepositoryType.BUCKET and REST_ENDPOINT).
+  ignore_deletion_threshold: bool = ndb.BooleanProperty(default=False)
   # HTTP link prefix to individual OSV source records.
   link: str = ndb.StringProperty()
   # HTTP link prefix to individual vulnerability records for humans.

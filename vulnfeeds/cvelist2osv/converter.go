@@ -229,7 +229,7 @@ func determineOutcome(metrics *ConversionMetrics) {
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) error {
+func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*ConversionMetrics, error) {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
@@ -261,21 +261,21 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 	err := v.ToJSON(vulnSink)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
-		return err
+		return &metrics, err
 	}
 
 	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
 	if err != nil {
 		logger.Info("Failed to marshal", slog.Any("err", err))
-		return err
+		return &metrics, err
 	}
 	_, err = metricsSink.Write(marshalledMetrics)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
-		return err
+		return &metrics, err
 	}
 
-	return nil
+	return &metrics, nil
 }
 
 // identifyPossibleURLs extracts all URLs from a CVE object.

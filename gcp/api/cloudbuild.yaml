@@ -53,3 +53,5 @@ steps:
   waitFor: ['init', 'sync', 'api-tests']
 
 timeout: 7200s
+serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'
+

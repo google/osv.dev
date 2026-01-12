@@ -271,18 +271,32 @@
     },
     {
       "id": "CVE-2026-22693",
+      "summary": "Null Pointer Dereference in SubtableUnicodesCache::create leading to DoS",
       "details": "HarfBuzz is a text shaping engine. Prior to version 12.3.0, a null pointer dereference vulnerability exists in the SubtableUnicodesCache::create function located in src/hb-ot-cmap-table.hh. The function fails to check if hb_malloc returns NULL before using placement new to construct an object at the returned pointer address. When hb_malloc fails to allocate memory (which can occur in low-memory conditions or when using custom allocators that simulate allocation failures), it returns NULL. The code then attempts to call the constructor on this null pointer using placement new syntax, resulting in undefined behavior and a Segmentation Fault. This issue has been patched in version 12.3.0.",
       "aliases": ["GHSA-xvjr-f2r9-c7ww"],
       "modified": "<RFC3339 date with the year 2026>",
-      "published": "2026-01-10T06:15:52.063Z",
+      "published": "2026-01-10T05:53:21.019Z",
+      "database_specific": "<Any value>",
       "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/11/1"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/22xxx/CVE-2026-22693.json"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
+        },
         {
           "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/security/advisories/GHSA-xvjr-f2r9-c7ww"
         },
         {
-          "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-22693"
         }
       ],
       "affected": [
@@ -296,12 +310,12 @@
                   "introduced": "0"
                 },
                 {
-                  "fixed": "1265ff8d990284f04d8768f35b0e20ae5f60daae"
+                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
                 }
               ]
             }
           ],
-          "versions": 207,
+          "versions": 206,
           "database_specific": "<Any value>"
         }
       ],

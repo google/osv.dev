@@ -25,4 +25,5 @@ service docker start || true
 
 set -e
 
+poetry install
 poetry run python run_apitester.py "$1"

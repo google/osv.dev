@@ -76,7 +76,8 @@ class Root(OrderedEcosystem):
     sub_ecosystem = self._get_sub_ecosystem()
 
     # Parse the upstream version using the appropriate version class
-    return self._parse_upstream_version(upstream_version, sub_ecosystem) + (root_patch,)
+    return self._parse_upstream_version(upstream_version,
+                                        sub_ecosystem) + (root_patch,)
 
   def _get_sub_ecosystem(self) -> str:
     """Extract the sub-ecosystem from the suffix.
@@ -124,7 +125,7 @@ class Root(OrderedEcosystem):
         return (packaging_legacy.version.parse(version),)
 
       case 'maven':
-          return (MavenVersion.from_string(version),)
+        return (MavenVersion.from_string(version),)
 
       case _:
         return (packaging_legacy.version.parse(version),)

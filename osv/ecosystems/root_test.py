@@ -27,17 +27,18 @@ class RootEcosystemTest(unittest.TestCase):
 
     # Basic Alpine version ordering
     self.assertGreater(
-        ecosystem.sort_key('1.51.0-r20072'), ecosystem.sort_key('1.51.0-r20071'))
+        ecosystem.sort_key('1.51.0-r20072'),
+        ecosystem.sort_key('1.51.0-r20071'))
     self.assertGreater(
         ecosystem.sort_key('1.0.0-r2'), ecosystem.sort_key('1.0.0-r1'))
 
     # Check the 0 sentinel value
-    self.assertLess(
-        ecosystem.sort_key('0'), ecosystem.sort_key('1.0.0-r1'))
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('1.0.0-r1'))
 
     # Check equality
     self.assertEqual(
-        ecosystem.sort_key('1.51.0-r20071'), ecosystem.sort_key('1.51.0-r20071'))
+        ecosystem.sort_key('1.51.0-r20071'),
+        ecosystem.sort_key('1.51.0-r20071'))
 
   def test_debian_versions(self):
     """Test Root:Debian version comparison."""
@@ -76,8 +77,7 @@ class RootEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.0.0+root.io.1'))
 
     # PEP440 version ordering
-    self.assertGreater(
-        ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.9.9'))
+    self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.9.9'))
     self.assertGreater(
         ecosystem.sort_key('1.0.0'), ecosystem.sort_key('1.0.0rc1'))
 
@@ -91,18 +91,15 @@ class RootEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.0.0.root.io.1'))
 
     # Basic semver ordering
-    self.assertGreater(
-        ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.9.9'))
-    self.assertGreater(
-        ecosystem.sort_key('1.0.1'), ecosystem.sort_key('1.0.0'))
+    self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.9.9'))
+    self.assertGreater(ecosystem.sort_key('1.0.1'), ecosystem.sort_key('1.0.0'))
 
   def test_maven_versions(self):
     """Test Root:Maven version comparison."""
     ecosystem = root.Root(suffix=':Maven')
 
     # Maven version ordering
-    self.assertGreater(
-        ecosystem.sort_key('2.0'), ecosystem.sort_key('1.0'))
+    self.assertGreater(ecosystem.sort_key('2.0'), ecosystem.sort_key('1.0'))
     self.assertGreater(
         ecosystem.sort_key('1.0'), ecosystem.sort_key('1.0-SNAPSHOT'))
 
@@ -115,8 +112,7 @@ class RootEcosystemTest(unittest.TestCase):
         ecosystem.sort_key('1.0.0-r2'), ecosystem.sort_key('1.0.0-r1'))
 
     # Should work with generic versions
-    self.assertGreater(
-        ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
+    self.assertGreater(ecosystem.sort_key('2.0.0'), ecosystem.sort_key('1.0.0'))
 
   def test_github_issue_4396(self):
     """Test the specific versions from GitHub issue #4396."""
@@ -158,6 +154,7 @@ class RootEcosystemTest(unittest.TestCase):
   def test_sub_ecosystem_extraction(self):
     """Test _get_sub_ecosystem method."""
     # Test various suffix formats
+    # pylint: disable=protected-access
     ecosystem = root.Root(suffix=':Alpine:3.18')
     self.assertEqual(ecosystem._get_sub_ecosystem(), 'Alpine')
 

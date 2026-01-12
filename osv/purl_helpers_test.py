@@ -100,20 +100,29 @@ class PurlHelpersTest(unittest.TestCase):
 
     # Root ecosystem does not generate PURLs
     # Root packages are not published to public registries
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:PyPI', 'rootio-requests'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:npm', '@rootio/lodash'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Maven', 'io.root.example:mylib'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:PyPI', 'rootio-requests'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:npm', '@rootio/lodash'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Maven', 'io.root.example:mylib'))
     self.assertIsNone(purl_helpers.package_to_purl('Root', 'root-nginx'))
 
   def test_root_purl_no_generation(self):
     """Test that Root ecosystem does not generate PURLs."""
     # Root packages should return None as they're not in public registries
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
-    self.assertIsNone(purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
 
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))

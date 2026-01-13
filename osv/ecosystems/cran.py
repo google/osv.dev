@@ -14,10 +14,13 @@
 """CRAN helpers."""
 
 import requests
-import packaging_legacy.version
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_from_ints,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 
 
 class CRAN(EnumerableEcosystem):
@@ -34,11 +37,16 @@ class CRAN(EnumerableEcosystem):
     # Some documentation on CRAN versioning and the R numeric_version method:
     # https://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file
     # https://stat.ethz.ch/R-manual/R-devel/library/base/html/numeric_version.html
-    # The packaging.version appears to work for the typical X.Y.Z and
-    # X.Y-Z cases
     version = version.replace("-", ".")
-    # version.parse() handles invalid versions by returning LegacyVersion()
-    return packaging_legacy.version.parse(version)
+    try:
+      return tuple(int(part) for part in version.split('.'))
+    except ValueError as exc:
+      raise ValueError(f'Invalid version: {version}') from exc
+
+  def coarse_version(self, version):
+    """Coarse version."""
+    # Use _sort_key to validate or raise ValueError
+    return coarse_version_from_ints(self._sort_key(version))
 
   def _enumerate_versions(self,
                           url,

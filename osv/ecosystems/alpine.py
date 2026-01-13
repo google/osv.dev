@@ -22,8 +22,12 @@ import typing
 from ..third_party.univers.alpine import AlpineLinuxVersion
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
-from .ecosystems_base import OrderedEcosystem
+from .ecosystems_base import (
+    coarse_version_generic,
+    EnumerableEcosystem,
+    EnumerateError,
+    OrderedEcosystem,
+)
 from .. import repos
 from ..cache import cached
 
@@ -33,10 +37,24 @@ class APK(OrderedEcosystem):
 
   def _sort_key(self, version):
     if not AlpineLinuxVersion.is_valid(version):
-      # If version is not valid, it is most likely an invalid input
-      # version then sort it to the last/largest element
-      return AlpineLinuxVersion('9999999999')
+      raise ValueError(f'Invalid version: {version}')
     return AlpineLinuxVersion(version)
+
+  def coarse_version(self, version):
+    if not AlpineLinuxVersion.is_valid(version):
+      raise ValueError(f'Invalid version: {version}')
+    # is_valid uses a $ regex anchor (which can match a newline),
+    # so we need to remove the newline if one exists.
+    if version[-1] == '\n':
+      version = version[:-1]
+    return coarse_version_generic(
+        version,
+        separators_regex=r'[.]',
+        # in APK, 1.02.1 < 1.1.1, so we must treat everything after .0x as 0
+        # also split off the _rc, _p, or -r suffixes
+        trim_regex=r'(?:\.0|[_-])',
+        implicit_split=False,
+        empty_as='')
 
 
 class Alpine(APK, EnumerableEcosystem):
@@ -99,7 +117,7 @@ class Alpine(APK, EnumerableEcosystem):
         current_ver = clean_versions(current_ver)
         current_rel = clean_versions(current_rel)
         # Ignore occasional version that is still not valid.
-        if AlpineLinuxVersion.is_valid(current_ver) and current_rel.isdigit():
+        if AlpineLinuxVersion.is_valid(current_ver) and current_rel.isdecimal():
           all_versions.add(current_ver + '-r' + current_rel)
         else:
           logging.warning('Alpine version "%s" - "%s" is not valid',

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Ecosystems base classes."""
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Iterable
 from warnings import deprecated
 import bisect
 import functools
@@ -30,14 +30,33 @@ class VersionKey:
 
   _key: Any
   _is_zero: bool
+  _is_invalid: bool
+  _error: Exception | None
 
-  def __init__(self, key: Any = None, is_zero: bool = False):
+  def __init__(self,
+               key: Any = None,
+               is_zero: bool = False,
+               is_invalid: bool = False,
+               error: Exception | None = None):
     self._key = key
     self._is_zero = is_zero
+    self._is_invalid = is_invalid
+    self._error = error
+
+  @property
+  def is_invalid(self):
+    return self._is_invalid
 
   def __lt__(self, other):
     if not isinstance(other, VersionKey):
       return NotImplemented
+
+    # Invalid versions are greater than everything else
+    if self._is_invalid:
+      # If both are invalid, they are equal (not less than)
+      return False
+    if other._is_invalid:
+      return True
 
     if self._is_zero:
       return not other._is_zero
@@ -51,6 +70,12 @@ class VersionKey:
     if not isinstance(other, VersionKey):
       return NotImplemented
 
+    if self._is_invalid:
+      return other._is_invalid
+
+    if other._is_invalid:
+      return False
+
     if self._is_zero:
       return other._is_zero
 
@@ -60,13 +85,15 @@ class VersionKey:
     return self._key == other._key
 
   def __repr__(self):
+    if self._is_invalid:
+      return 'VersionKey(is_invalid=True)'
     if self._is_zero:
       return 'VersionKey(is_zero=True)'
-
-    return f'VersionKey(key={self._key!r})'
+    return f'VersionKey({self._key})'
 
 
 _VERSION_ZERO = VersionKey(is_zero=True)
+_VERSION_INVALID = VersionKey(is_invalid=True)
 
 
 class OrderedEcosystem(ABC):
@@ -84,7 +111,7 @@ class OrderedEcosystem(ABC):
   def _sort_key(self, version: str) -> Any:
     """Comparable key for a version.
     
-    If the version string is invalid, return a very large version.
+    If the version string is invalid, raise a ValueError.
     """
 
   def sort_key(self, version: str) -> VersionKey:
@@ -92,7 +119,11 @@ class OrderedEcosystem(ABC):
     if version == '0':
       return _VERSION_ZERO
 
-    return VersionKey(self._sort_key(version))
+    try:
+      return VersionKey(self._sort_key(version))
+    except ValueError as e:
+      # Store the exception for potential logging/debugging.
+      return VersionKey(is_invalid=True, error=e)
 
   def sort_versions(self, versions: list[str]):
     """Sort versions."""
@@ -118,7 +149,7 @@ class OrderedEcosystem(ABC):
     Should raise a ValueError if the version string is invalid.
     """
     raise NotImplementedError(
-      f'coarse_version not implemented for {self.__class__.__name__}')
+        f'coarse_version not implemented for {self.__class__.__name__}')
 
 
 class EnumerateError(Exception):
@@ -235,12 +266,11 @@ class DepsDevMixin(EnumerableEcosystem, ABC):
                                        last_affected, limits)
 
 
-def coarse_version_generic(
-                           version: str,
+def coarse_version_generic(version: str,
                            separators_regex=r'[.]',
                            trim_regex=r'[-+]',
                            implicit_split=False,
-                           empty_as_zero=False) -> str:
+                           empty_as: str | None = None) -> str:
   """
   Convert a version string into a coarse, lexicographically comparable string.
   
@@ -257,40 +287,78 @@ def coarse_version_generic(
                 If None, no trimming is performed.
     implicit_split: If True, splits on transitions between digits and non-digits
                     (in addition to separators_regex).
-    empty_as_zero: If True, treats empty parts as '0' instead of removing them.
+    empty_as: If not None, treats empty parts as the given string instead of
+              removing them.
   """
   if version == '0':
     return '00:00000000.00000000.00000000'
 
   main = version
   if trim_regex:
-      # Trim off trailing components (e.g. prerelease/build)
-      main = re.split(trim_regex, version, maxsplit=1)[0]
+    # Trim off trailing components (e.g. prerelease/build)
+    main = re.split(trim_regex, version, maxsplit=1)[0]
   parts = re.split(separators_regex, main)
   if implicit_split:
-      # Also split on transitions between digits and non-digits
-      parts = [p for part in parts for p in re.findall(r'\d+|\D+', part)]
+    # Also split on transitions between digits and non-digits
+    parts = [p for part in parts for p in re.findall(r'^$|\d+|\D+', part)]
 
   # Filter empty parts or treat as zero
-  if empty_as_zero:
-      parts = [p if p else '0' for p in parts]
+  if empty_as is not None:
+    parts = [p if p else empty_as for p in parts]
   else:
-      parts = [p for p in parts if p]
+    parts = [p for p in parts if p]
 
   # Extract up to 3 integer components
   components = []
   overflow = False
   for p in parts[:3]:
-    if not p.isdigit():
+    if not p.isdecimal():
       break
     val = int(p)
     if val > 99999999:
-        val = 99999999
-        overflow = True
+      val = 99999999
+      overflow = True
     components.append(val)
     if overflow:
-        break
+      break
+
+  # Pad with zeros to ensure 3 components
+  # If we overflowed, we should pad with MAX instead of 0
+  pad_value = 99999999 if overflow else 0
+  while len(components) < 3:
+    components.append(pad_value)
+
+  return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'
+
+
+def coarse_version_from_ints(parts: Iterable[int]) -> str:
+  """
+  Convert a list of integers into a coarse version string.
   
+  Format: 00:00000000.00000000.00000000
+  (Epoch:Major.Minor.Patch)
+  
+  The Epoch is always 00.
+  Only the first 3 integer components (Major, Minor, Patch) are used.
+  
+  Args:
+    parts: The list of integers to convert.
+  """
+  components = []
+  overflow = False
+  for p in parts:
+    if p < 0:
+      # A negative part doesn't really make sense
+      # but let's just treat it and all following parts as 0
+      components.append(0)
+      break
+    if p > 99999999:
+      p = 99999999
+      overflow = True
+    components.append(p)
+    if overflow or len(components) == 3:
+      break
+
   # Pad with zeros to ensure 3 components
   # If we overflowed, we should pad with MAX instead of 0
   pad_value = 99999999 if overflow else 0

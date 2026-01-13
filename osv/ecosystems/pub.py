@@ -17,7 +17,11 @@ import functools
 import json
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_generic,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 from .. import semver_index
 from ..request_helper import RequestError, RequestHelper
 
@@ -58,12 +62,10 @@ class Version:
 
   @classmethod
   def from_string(cls, str_version):
-    # If version is not valid, it is most likely an invalid input
-    # version then sort it to the last/largest element
     try:
       return Version(semver_index.parse(str_version))
-    except ValueError:
-      return Version(semver_index.parse('999999'))
+    except ValueError as exc:
+      raise ValueError(f'Invalid version: {str_version}') from exc
 
 
 class Pub(EnumerableEcosystem):
@@ -74,6 +76,22 @@ class Pub(EnumerableEcosystem):
   def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
+
+  def coarse_version(self, version):
+    """Coarse version."""
+    # Make sure the version is valid before trying to make it coarse.
+    try:
+      semver_index.parse(version)
+    except ValueError as e:
+      raise ValueError(f'Invalid version: {version}') from e
+    if version[0] == 'v':
+      version = version[1:]
+    return coarse_version_generic(
+        version,
+        separators_regex=r'[.]',
+        trim_regex=r'[-+]',
+        implicit_split=True,
+        empty_as=None)
 
   def enumerate_versions(self,
                          package,

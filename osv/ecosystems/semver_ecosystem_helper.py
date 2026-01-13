@@ -24,27 +24,23 @@ class SemverLike(OrderedEcosystem):
 
   def _sort_key(self, version):
     """Sort key."""
-    try:
-      return semver_index.parse(version)
-    except ValueError:
-      # If a user gives us an unparsable semver version,
-      # treat it as a very large version so as to not match anything.
-      return semver_index.parse('9999999999')
+    return semver_index.parse(version)
 
   def coarse_version(self, version):
     """Coarse version."""
     # Make sure the version is valid before trying to make it coarse.
     try:
       semver_index.parse(version)
-    except ValueError:
-      raise ValueError(f'Invalid version: {version}')
+    except ValueError as e:
+      raise ValueError(f'Invalid version: {version}') from e
     if version[0] == 'v':
       version = version[1:]
-    return coarse_version_generic(version,
-                                  separators_regex=r'[.]',
-                                  trim_regex=r'[-+]',
-                                  implicit_split=True,
-                                  empty_as_zero=False)
+    return coarse_version_generic(
+        version,
+        separators_regex=r'[.]',
+        trim_regex=r'[-+]',
+        implicit_split=True,
+        empty_as=None)
 
 
 class SemverEcosystem(SemverLike):

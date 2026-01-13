@@ -17,7 +17,11 @@ import collections
 import functools
 import re
 
-from .ecosystems_base import EnumerableEcosystem, DepsDevMixin
+from .ecosystems_base import (
+    coarse_version_generic,
+    EnumerableEcosystem,
+    DepsDevMixin,
+)
 
 
 # pylint: disable=line-too-long
@@ -31,7 +35,7 @@ _KEYWORD_ORDER = ('alpha', 'beta', 'milestone', 'rc', 'snapshot', '', 'sp')
 def qualifier_order(token):
   """Returns an integer representing a token's order."""
   # ".qualifier" < "-qualifier" < "-number" < ".number"
-  if token.value.isdigit():
+  if token.value.isdecimal():
     if token.prefix == '-':
       return 2
 
@@ -58,16 +62,16 @@ class VersionToken(
   def __lt__(self, other):
     if self.prefix == other.prefix:
       # if the prefix is the same, then compare the token:
-      if self.value.isdigit() and other.value.isdigit():
+      if self.value.isdecimal() and other.value.isdecimal():
         # Numeric tokens have the natural order.
         return int(self.value) < int(other.value)
       # The spec is unclear, but according to Maven's implementation, numerics
       # sort after non-numerics, **unless it's a null value**.
       # https://github.com/apache/maven/blob/965aaa53da5c2d814e94a41d37142d0d6830375d/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L443
-      if self.value.isdigit() and not self.is_null:
+      if self.value.isdecimal() and not self.is_null:
         return False
 
-      if other.value.isdigit() and not other.is_null:
+      if other.value.isdecimal() and not other.is_null:
         return True
 
       # Non-numeric tokens ("qualifiers") have the alphabetical order, except
@@ -208,7 +212,7 @@ class Version:
           if current == 'm':
             current = 'milestone'
 
-        if current.isdigit():
+        if current.isdecimal():
           # Remove any leading zeros.
           current = str(int(current))
 
@@ -243,6 +247,16 @@ class Maven(DepsDevMixin, EnumerableEcosystem):
   def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
+
+  def coarse_version(self, version):
+    """Coarse version."""
+    return coarse_version_generic(
+        version,
+        separators_regex=r'[.]',
+        trim_regex=r'-',
+        implicit_split=True,
+        empty_as='0',
+    )
 
   def enumerate_versions(self,
                          package,

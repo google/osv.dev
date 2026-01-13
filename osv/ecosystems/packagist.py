@@ -92,11 +92,11 @@ class PackagistVersion:
     Compare php versions after being split by '.'
     """
     for a, b in zip(a_split, b_split):
-      if a.isdigit() and b.isdigit():
+      if a.isdecimal() and b.isdecimal():
         compare = int(a) - int(b)
-      elif not a.isdigit() and not b.isdigit():
+      elif not a.isdecimal() and not b.isdecimal():
         compare = PackagistVersion.compare_special_versions(a, b)
-      elif a.isdigit():
+      elif a.isdecimal():
         compare = PackagistVersion.compare_special_versions('#', b)
       else:
         compare = PackagistVersion.compare_special_versions(a, '#')
@@ -108,13 +108,13 @@ class PackagistVersion:
 
     if len(a_split) > len(b_split):
       next_char = a_split[len(b_split)]
-      if next_char.isdigit():
+      if next_char.isdecimal():
         return 1
       return PackagistVersion.php_slices_compare(a_split[len(b_split):], ['#'])
 
     if len(a_split) < len(b_split):
       next_char = b_split[len(a_split)]
-      if next_char.isdigit():
+      if next_char.isdecimal():
         return -1
       return PackagistVersion.php_slices_compare(['#'], b_split[len(a_split):])
 
@@ -201,6 +201,46 @@ class Packagist(EnumerableEcosystem):
 
   def _sort_key(self, version):
     return PackagistVersion(version)
+
+  def coarse_version(self, version):
+    """Coarse version."""
+    if version.startswith('v'):
+      version = version[1:]
+    # Cannot use coarse_version_generic because 'p' and 'pl' are considered
+    # greater than numbers
+    # 0 > .1 (but 0.1 == 0..1)
+    if not version or version[0] in '-_+.':
+      return '00:00000000.00000000.00000000'
+    # Split on separators.
+    parts = re.split(r'[-_+.]', version)
+    # Split on transitions between digits and non-digits
+    parts = [p for part in parts for p in re.findall(r'^$|\d+|\D+', part)]
+    # Filter empty parts
+    parts = [p for p in parts if p]
+    # Extract up to 3 integer components
+    components = []
+    overflow = False
+    for p in parts[:3]:
+      if p in ('p', 'pl'):
+        val = 99999999999  # trigger overflow
+      elif not p.isdecimal():
+        break
+      else:
+        val = int(p)
+      if val > 99999999:
+        val = 99999999
+        overflow = True
+      components.append(val)
+      if overflow:
+        break
+
+    # Pad with zeros to ensure 3 components
+    # If we overflowed, we should pad with MAX instead of 0
+    pad_value = 99999999 if overflow else 0
+    while len(components) < 3:
+      components.append(pad_value)
+
+    return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'
 
   def enumerate_versions(self,
                          package,

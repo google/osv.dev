@@ -13,14 +13,20 @@
 # limitations under the License.
 """Debian ecosystem helper."""
 
+from itertools import batched
 import json
 import logging
+import re
 import requests
 
 from ..third_party.univers.debian import Version as DebianVersion
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_from_ints,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 from .ecosystems_base import OrderedEcosystem
 from .. import cache
 from ..request_helper import RequestError, RequestHelper
@@ -31,10 +37,51 @@ class DPKG(OrderedEcosystem):
 
   def _sort_key(self, version):
     if not DebianVersion.is_valid(version):
-      # If debian version is not valid, it is most likely an invalid fixed
-      # version then sort it to the last/largest element
-      return DebianVersion(9999999999, '9999999999')
+      raise ValueError(f'Invalid version: {version}')
     return DebianVersion.from_string(version)
+
+  def coarse_version(self, version: str) -> str:
+    """Coarse version."""
+    if not DebianVersion.is_valid(version):
+      raise ValueError(f'Invalid version: {version}')
+
+    # Try extract epoch.
+    e, p, v = version.partition(':')
+    if not p:
+      v = e
+      e = '0'
+    try:
+      epoch = int(e)
+    except ValueError as e:
+      raise ValueError(f'Invalid version: {version}') from e
+
+    if epoch > 99:
+      return '99:99999999.99999999.99999999'
+    # Versions are treated as alternating digit/non-digit strings
+    # We treat the exact string '.' as a digit separator.
+    # Any strings starting with '.' (that are not exactly '.')
+    # are greater than any number.
+    # Any strings starting with anything else are less than any number.
+    parts = re.findall(r'^$|\d+|\D+', v)
+    int_parts = []
+    for couple in batched(parts, 2):
+      if not couple[0].isdecimal():
+        # This is probably handled by is_valid
+        break
+      int_parts.append(int(couple[0]))
+      if len(couple) == 1:
+        break
+      sep = couple[1]
+      if sep == '.':
+        continue
+      if sep[0] == '.':
+        # Bigger than the max int, so we overflow
+        int_parts.append(9999999999)
+      break
+
+    coarse = coarse_version_from_ints(int_parts)
+    # Insert the epoch as we return
+    return f'{epoch:02d}{coarse[2:]}'
 
 
 # TODO(another-rex): Update this to use dynamically

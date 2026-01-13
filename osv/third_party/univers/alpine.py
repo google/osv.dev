@@ -20,28 +20,29 @@ class InvalidVersion(ValueError):
 def is_valid_alpine_version(s: str):
   """
   Return True is the string `s` is a valid Alpine version.
-  We do not support yet version strings that start with
+  We do support version strings that start with
   non-significant zeros.
   For example:
   >>> is_valid_alpine_version("006")
-  False
+  True
   >>> is_valid_alpine_version("1.2.3")
   True
   >>> is_valid_alpine_version("02-r1")
   True
   """
   search = AlpineLinuxVersion.version_extractor.search(s)
-  if not search:
-    return False
+  return bool(search)
+  # if not search:
+  #   return False
 
-  s = search.group(1)
-  left, _, _ = s.partition(".")
-  # handle the suffix case
-  left, _, _ = left.partition("-")
-  if not left.isdigit():
-    return True
-  i = int(left)
-  return str(i) == left
+  # s = search.group(1)
+  # left, _, _ = s.partition(".")
+  # # handle the suffix case
+  # left, _, _ = left.partition("-")
+  # if not left.isdecimal():
+  #   return True
+  # i = int(left)
+  # return str(i) == left
 
 
 @attr.s(frozen=True, order=False, hash=True)

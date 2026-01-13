@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/storage v1.58.0
+	cloud.google.com/go/storage v1.59.0
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.20.0
 	github.com/charmbracelet/lipgloss v1.1.0

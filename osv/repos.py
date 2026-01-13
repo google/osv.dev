@@ -147,7 +147,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
         return pygit2.Repository(checkout_dir)
 
       logging.error(
-          f'Failed to clone repo through gitter, '
+          'Failed to clone repo through gitter, '
           f'status: %d, response: %s', resp.status_code, resp.text)
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e

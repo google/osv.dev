@@ -89,6 +89,23 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']
 
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:latest', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', '-f', 'gcp/workers/oss_fuzz_worker/Dockerfile', '.']
+  id: 'build-oss-fuzz-worker'
+  waitFor: ['build-worker-base']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/oss-fuzz-worker']
+  waitFor: ['build-oss-fuzz-worker', 'cloud-build-queue']
+
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/oss-fuzz-importer:latest', '-t', 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA', '.']
+  dir: 'gcp/workers/oss_fuzz_importer'
+  id: 'build-oss-fuzz-importer'
+  waitFor: ['build-oss-fuzz-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/oss-fuzz-importer']
+  waitFor: ['build-oss-fuzz-importer', 'cloud-build-queue']
+
 # Build/push go images
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
@@ -372,7 +389,6 @@ steps:
      exporter=gcr.io/oss-vdb/exporter:$COMMIT_SHA,\
      staging-api-test=gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA,\
      osv-linter=gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA,\
-     cron=gcr.io/oss-vdb/cron:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
@@ -447,5 +463,7 @@ images:
 - 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/relations:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'

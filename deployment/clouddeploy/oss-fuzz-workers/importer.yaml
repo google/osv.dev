@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importer
+  labels:
+    cronLastSuccessfulTimeMins: "90"
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: importer
+            image: importer
+            imagePullPolicy: Always
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb
+            - name: OSV_VULNERABILITIES_BUCKET
+              value: osv-vulnerabilities
+            args:
+              - "--ssh_key_public=/secrets/ssh.pub"
+              - "--ssh_key_private=/secrets/ssh"
+              - "--public_log_bucket=osv-public-import-logs"
+            volumeMounts:
+              - mountPath: "/work"
+                name: "ssd"
+              - mountPath: "/secrets"
+                name: "secrets"
+            securityContext:
+              privileged: true
+            resources:
+              requests:
+                cpu: "1"
+                memory: "8G"
+              limits:
+                cpu: "1"
+                memory: "16G"
+          restartPolicy: Never
+          volumes:
+          - name: "ssd"
+            hostPath:
+              path: "/mnt/disks/ssd0"
+          - name: secrets
+            secret:
+              items:
+              - key: ssh
+                mode: 384
+                path: ssh
+              - key: ssh.pub
+                path: ssh.pub
+              secretName: secrets

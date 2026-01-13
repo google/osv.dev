@@ -19,7 +19,6 @@ import shutil
 import tempfile
 import unittest
 import http.server
-import json
 import logging
 import threading
 
@@ -29,6 +28,7 @@ import warnings
 
 from google.cloud import ndb
 from google.cloud import storage
+from google.cloud.storage import retry
 import pygit2
 from gcp.workers.mock_test.mock_test_handler import MockDataHandler
 import importer
@@ -101,6 +101,172 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_basic(self, unused_mock_time: mock.MagicMock,
+                 mock_publish: mock.MagicMock):
+    """Test basic run."""
+    osv.Bug(
+        db_id='OSV-2017-134',
+        affected_packages=[{
+            'versions': ['FILE5_29', 'FILE5_30'],
+            'ranges': [{
+                'type':
+                    'GIT',
+                'repo_url':
+                    'https://github.com/file/file.git',
+                'events': [
+                    {
+                        'type': 'introduced',
+                        'value': '17ee4cf670c363de8d2ea4a4897d7a699837873f'
+                    },
+                    {
+                        'type': 'fixed',
+                        'value': '19ccebafb7663c422c714e0c67fa4775abf91c43'
+                    },
+                ],
+            }],
+            'package': {
+                'ecosystem': 'OSS-Fuzz',
+                'name': 'file',
+                'purl': 'pkg:generic/file',
+            },
+            'ecosystem_specific': {
+                'severity': 'MEDIUM',
+            },
+            'database_specific': {
+                'database_specific': 1337,
+            },
+        }],
+        affected_fuzzy=['5-29', '5-30'],
+        credits=[{
+            'name': 'Foo bar',
+            'contact': [],
+        }, {
+            'name': 'Bar foo',
+            'contact': ['mailto:bar@foo.com'],
+        }],
+        severities=[{
+            'type': 'CVSS_V3',
+            'score': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L',
+        }],
+        details=(
+            'OSS-Fuzz report: '
+            'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\n\n'
+            'Crash type: Heap-buffer-overflow READ 1\n'
+            'Crash state:\ncdf_file_property_info\ncdf_file_summary_info\n'
+            'cdf_check_summary_info\n'),
+        fixed='19ccebafb7663c422c714e0c67fa4775abf91c43',
+        has_affected=True,
+        issue_id='1064',
+        public=True,
+        reference_url_types={
+            'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064':
+                'REPORT'
+        },
+        regressed='17ee4cf670c363de8d2ea4a4897d7a699837873f',
+        search_indices=['file', '2017-134', '2017', '134'],
+        source_id='oss-fuzz:5417710252982272',
+        source_of_truth=osv.SourceOfTruth.INTERNAL,
+        status=1,
+        summary='Heap-buffer-overflow in cdf_file_property_info',
+        timestamp=datetime.datetime(
+            2021, 1, 15, 0, 0, 24, 559102, tzinfo=datetime.UTC),
+        database_specific={
+            'database_specific': 1337
+        },
+    ).put()
+
+    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.commit('User', 'user@email')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+    imp.run()
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+
+    self.assertEqual('infra@osv.dev', commit.author.email)
+    self.assertEqual('OSV', commit.author.name)
+    self.assertEqual('Import from OSS-Fuzz', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.expect_equal('diff_basic', diff.patch)
+
+    mock_publish.assert_has_calls([
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            deleted='false',
+            original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
+                             '19a3cd03fc15360bf16187f54df92a75'),
+            path='2021-111.yaml',
+            source='oss-fuzz',
+            type='update-oss-fuzz',
+            req_timestamp='12345',
+            src_timestamp='')
+    ])
+    bug = osv.Bug.get_by_id('OSV-2017-134')
+    self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
+
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    self.assertEqual(str(commit.id), source_repo.last_synced_hash)
+
+    self.mock_storage_client().get_bucket.assert_called_with('bucket')
+    bucket = self.mock_storage_client().get_bucket('bucket')
+
+    expected_json = bucket.blob().upload_from_string.call_args[0][0]
+    self.expect_equal('expected.json', expected_json)
+
+    bucket.blob.assert_has_calls([
+        mock.call('testcase/5417710252982272.json'),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
+        mock.call('issue/1064.json'),
+        mock.call().upload_from_string(
+            expected_json, retry=retry.DEFAULT_RETRY),
+    ])
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_invalid(self, mock_publish: mock.MagicMock):
+    """Test invalid entries behaves correctly."""
+    self.mock_repo.add_file('2021-111.yaml', _MIN_INVALID_VULNERABILITY)
+    self.mock_repo.commit('User', 'user@email')
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+    with self.assertLogs(level='WARNING') as logs:
+      imp.run()
+
+    self.assertIn(
+        osv.ImportFinding(
+            bug_id='OSV-2017-145',
+            source='oss-fuzz',
+            findings=[osv.ImportFindings.INVALID_JSON],
+            first_seen=importer.utcnow(),
+            last_attempt=importer.utcnow()).to_dict(),
+        [r.to_dict() for r in osv.ImportFinding.query()])
+
+    self.assertEqual(
+        5,
+        len(logs.output),
+        msg='Expected number of WARNING level (or higher) logs not found')
+    self.assertEqual(
+        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[0])
+    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
+    self.assertIn(
+        "ERROR:root:Failed to parse 2021-111.yaml: 'modified' is a required property",  # pylint: disable=line-too-long
+        logs.output[2])
+
+    mock_publish.assert_not_called()
+    bucket = self.mock_storage_client().bucket(
+        importer.DEFAULT_PUBLIC_LOGGING_BUCKET)
+    expected_log = bucket.blob().upload_from_string.call_args[0][0]
+    self.assertIn('Failed to parse vulnerability', expected_log)
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_nop(self, mock_publish: mock.MagicMock):
     """Test deletion."""
     self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
@@ -118,6 +284,96 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     imp.run()
 
     mock_publish.assert_not_called()
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  @mock.patch('time.time', return_value=12345.0)
+  def test_scheduled_updates(self, unused_mock_time: mock.MagicMock,
+                             mock_publish: mock.MagicMock):
+    """Test scheduled updates."""
+    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.add_file('proj/OSV-2021-1339.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.add_file('OSV-2021-1338.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.commit('OSV', 'infra@osv.dev')
+
+    osv.SourceRepository(
+        type=osv.SourceRepositoryType.GIT,
+        id='source',
+        name='source',
+        repo_url='file://' + self.remote_source_repo_path,
+        repo_username='',
+        strict_validation=True).put()
+    osv.Bug(
+        db_id='OSV-2021-1337',
+        affected_packages=[
+            osv.AffectedPackage(
+                package=osv.Package(ecosystem='OSS-Fuzz', name='proj'))
+        ],
+        status=1,
+        source_id='oss-fuzz:123',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+        timestamp=datetime.datetime(
+            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
+    osv.Bug(
+        db_id='OSV-2021-1338',
+        affected_packages=[
+            osv.AffectedPackage(
+                package=osv.Package(ecosystem='ecosystem', name='proj'),
+                ranges=[
+                    osv.AffectedRange2(
+                        type='GIT',
+                        repo_url='https://example.com/some/repo',
+                        events=[
+                            osv.AffectedEvent(type='introduced', value='0'),
+                            osv.AffectedEvent(type='fixed', value='fix'),
+                        ])
+                ])
+        ],
+        source_id='source:OSV-2021-1338.yaml',
+        status=1,
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
+        timestamp=importer.utcnow()).put()
+    osv.Bug(
+        db_id='OSV-2021-1339',
+        affected_packages=[
+            osv.AffectedPackage(
+                package=osv.Package(ecosystem='OSS-Fuzz', name='proj'))
+        ],
+        status=1,
+        source_id='oss-fuzz:124',
+        source_of_truth=osv.SourceOfTruth.INTERNAL,
+        timestamp=datetime.datetime(
+            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+    imp.run()
+
+    mock_publish.assert_has_calls([
+        mock.call(
+            self.tasks_topic,
+            data=b'',
+            deleted='false',
+            original_sha256=('874535768a62eb9dc4f3ea7acd9a4601'
+                             '19a3cd03fc15360bf16187f54df92a75'),
+            path='proj/OSV-2021-1337.yaml',
+            source='oss-fuzz',
+            type='update-oss-fuzz',
+            req_timestamp='12345',
+            src_timestamp=''),
+        mock.call(
+            self.tasks_topic,
+            allocated_id='OSV-2021-1339',
+            data=b'',
+            source_id='oss-fuzz:124',
+            type='impact',
+            req_timestamp='12345'),
+    ])
+
+    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
+    self.assertEqual(
+        datetime.datetime(2021, 1, 1, 10, 0, tzinfo=datetime.UTC),
+        source_repo.last_update_date)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_scheduled_updates_already_done(self, mock_publish):  # pylint: disable=unused-argument
@@ -400,335 +656,6 @@ class BucketImporterTest(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-  @mock.patch('google.cloud.storage.Blob.upload_from_string')
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_bucket(self, unused_mock_time: mock.MagicMock,
-                  mock_publish: mock.MagicMock,
-                  upload_from_str: mock.MagicMock):
-    """Test bucket updates."""
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-
-    with self.assertLogs(level='WARNING') as logs:
-      imp.run()
-
-    self.assertEqual(
-        5,
-        len(logs.output),
-        msg=(f'Expected number of WARNING level (or higher) '
-             f'logs not found {logs.output}'))
-    self.assertEqual(
-        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0],
-        msg='Expected schema validation failure log not found')
-    self.assertIn(
-        'WARNING:root:Invalid data:',
-        logs.output[1],
-        msg='Expected schema validation failure log not found')
-    self.assertIn(
-        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2],
-        msg='Expected schema validation failure log not found')
-
-    # Check parse failure finding was recorded correctly.
-    self.assertIn(
-        osv.ImportFinding(
-            bug_id='GO-2021-0085',
-            source='test',
-            findings=[osv.ImportFindings.INVALID_JSON],
-            first_seen=importer.utcnow(),
-            last_attempt=importer.utcnow()).to_dict(),
-        [r.to_dict() for r in osv.ImportFinding.query()])
-    self.assertEqual(
-        1,
-        len(list(osv.ImportFinding.query())),
-        msg="Expected number of adverse import findings not found")
-
-    # Check if vulnerability parse failure was logged correctly.
-    self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import)'
-             ' "a/b/test-invalid.json"') in x[0][0]
-            for x in upload_from_str.call_args_list),
-        msg=('Expected schema validation failure not logged in public log '
-             'bucket'))
-
-    # Expected pubsub calls for validly imported records.
-    mock_publish.assert_has_calls([
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='test',
-            path='a/b/android-test.json',
-            original_sha256=('12453f85cd87bc1d465e0d013db572c0'
-                             '1f7fb7de3b3a33de94ebcc7bd0f23a14'),
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1645053056'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='test',
-            path='a/b/test.json',
-            original_sha256=('62966a80f6f9f54161803211069216177'
-                             '37340a47f43356ee4a1cabe8f089869'),
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1683180616'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='test',
-            path='a/b/CVE-2022-0128.json',
-            original_sha256=('a4060cb842363cb6ae7669057402ccddc'
-                             'e21a94ed6cad98234e73305816a86d3'),
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1671420222'),
-    ],
-                                  any_order=True)
-
-    # Test this entry is not published, as it is preexisting and not newer.
-    dsa_call = mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='test',
-        path='a/b/DSA-3029-1.json',
-        original_sha256=mock.ANY,
-        deleted='false')
-    self.assertNotIn(
-        dsa_call,
-        mock_publish.mock_calls,
-        msg='Old record was processed unexpectedly')
-
-    # Test invalid entry is not published, as it failed validation.
-    invalid_call = mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='test',
-        path='a/b/test-invalid.json',
-        original_sha256=mock.ANY,
-        deleted=mock.ANY)
-    self.assertNotIn(
-        invalid_call,
-        mock_publish.mock_calls,
-        msg='Invalid record was processed unexpectedly')
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_bucket_deletion(self, unused_mock_time: mock.MagicMock,
-                           mock_publish: mock.MagicMock):
-    """Test bucket deletion."""
-    imp = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,
-        True,
-        # The test dataset is too small for the safety threshold.
-        deletion_safety_threshold_pct=100)
-
-    with self.assertLogs(level='WARNING') as logs:
-      imp.run()
-    self.assertEqual(
-        3,
-        len(logs.output),
-        msg='Expected number of WARNING level (or higher) logs not found')
-    self.assertEqual(
-        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0])
-    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn(
-        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2])
-
-    # Test existing record in Datastore no longer present in GCS has been
-    # requested to be deleted.
-    deletion_call = mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='test',
-        path='a/b/CVE-2018-1000030.json',
-        original_sha256='',
-        deleted='true',
-        req_timestamp='12345',
-        src_timestamp='')
-    mock_publish.assert_has_calls([deletion_call])
-
-    # Test existing record in Datastore with an ID containing a colon and no
-    # longer present in GCS has been requested to be deleted and is correctly
-    # formed.
-    deletion_call = mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='test',
-        path='RXSA-2023:0101.json',
-        original_sha256='',
-        deleted='true',
-        req_timestamp='12345',
-        src_timestamp='')
-    mock_publish.assert_has_calls([deletion_call])
-
-    # Run again with a 10% threshold and confirm the safeguards work as
-    # intended.
-    imp = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,
-        True,
-        # The test dataset is so small this safety threshold triggers.
-        deletion_safety_threshold_pct=10)
-
-    mock_publish.reset_mock()
-
-    with self.assertLogs(level='WARNING') as logs:
-      imp.run()
-    # The schema validation of failures of the files in GCS by
-    # _process_deletions_bucket() causes, plus an extra one from the safeguard.
-    self.assertEqual(4, len(logs.output))
-    self.assertEqual(
-        "ERROR:root:Cowardly refusing to delete 2 missing records from GCS for: test",  # pylint: disable=line-too-long
-        logs.output[-1])
-
-    # No deletions should have been requested.
-    self.assertNotIn(deletion_call, mock_publish.mock_calls)
-
-  @mock.patch('google.cloud.storage.Blob.upload_from_string')
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_import_override(self, unused_mock_time: mock.MagicMock,
-                           mock_publish: mock.MagicMock,
-                           upload_from_str: mock.MagicMock):
-    """Test behavior of ignore_last_import_time source setting."""
-
-    self.source_repo.ignore_last_import_time = True
-    self.source_repo.put()
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-
-    expected_pubsub_message = mock.call(
-        self.tasks_topic,
-        data=b'',
-        type='update',
-        source='test',
-        path='a/b/DSA-3029-1.json',
-        original_sha256=mock.ANY,
-        deleted='false',
-        req_timestamp='12345',
-        src_timestamp='')
-
-    with self.assertLogs(level='WARNING') as logs:
-      imp.run()
-
-    # Confirm invalid records were treated as expected.
-    self.assertEqual(
-        5,
-        len(logs.output),
-        msg=('Expected number of WARNING level (or higher) logs '
-             '(from first run) not found'))
-    self.assertEqual(
-        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0])
-    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn(
-        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2])
-
-    # Check parse failure finding was recorded correctly.
-    self.assertEqual(
-        1,
-        len(list(osv.ImportFinding.query())),
-        msg="Expected number of adverse import findings not found")
-
-    # Check if vulnerability parse failure was logged correctly.
-    self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import) '
-             '"a/b/test-invalid.json"') in x[0][0]
-            for x in upload_from_str.call_args_list))
-
-    # Confirm a pubsub message was emitted for record reimported.
-    mock_publish.assert_has_calls([
-        expected_pubsub_message,
-    ])
-    mock_publish.reset_mock()
-
-    # Second run should not reimport existing records again, since each import
-    # run resets the value of source_repo.ignore_last_import_time to False
-    with self.assertLogs(level='WARNING') as logs:
-      imp.run()
-
-    # Confirm invalid records were (again) treated as expected.
-    self.assertEqual(
-        5,
-        len(logs.output),
-        msg=('Expected number of WARNING level (or higher) logs '
-             '(from second run) not found'))
-    self.assertEqual(
-        "WARNING:root:Failed to validate loaded OSV entry: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[0])
-    self.assertIn('WARNING:root:Invalid data:', logs.output[1])
-    self.assertIn(
-        "ERROR:root:Failed to parse vulnerability a/b/test-invalid.json: 'modified' is a required property",  # pylint: disable=line-too-long
-        logs.output[2])
-
-    # Check if vulnerability parse failure was logged correctly.
-    self.assertTrue(
-        any(('Failed to parse vulnerability (when considering for import) '
-             '"a/b/test-invalid.json"') in x[0][0]
-            for x in upload_from_str.call_args_list))
-
-    # Confirm second run didn't reprocess any existing records.
-    self.assertNotIn(expected_pubsub_message, mock_publish.mock_calls)
-
-  def test_blob_parsing(self):
-    """Test conditional GCS blob parsing works correctly."""
-
-    imp = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,
-        False,
-        deletion_safety_threshold_pct=100)
-
-    if not self.source_repo.last_update_date:
-      self.source_repo.last_update_date = datetime.datetime.min.replace(
-          tzinfo=datetime.UTC)
-
-    storage_client = storage.Client()
-    # Reuse the NDB client already created in __main__
-    datastore_client = self.ndb_context.client
-    blob = storage.Blob(
-        'a/b/CVE-2022-0128.json',
-        storage.Bucket(storage_client, TEST_BUCKET),
-        generation=None)
-    vs = osv.parse_vulnerabilities_from_data(blob.download_as_bytes(), '.json')
-
-    # pylint: disable-next=protected-access
-    result = imp._convert_blob_to_vuln(storage_client, datastore_client,
-                                       self.source_repo, blob, False)
-    self.assertEqual(
-        result,
-        ('a4060cb842363cb6ae7669057402ccddce21a94ed6cad98234e73305816a86d3',
-         'a/b/CVE-2022-0128.json', None, vs))
-
   @mock.patch('google.cloud.storage.Blob.download_as_bytes')
   @mock.patch('google.cloud.storage.Client.list_blobs')
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
@@ -989,160 +916,6 @@ class RESTImporterTest(unittest.TestCase):
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   @mock.patch('time.time', return_value=12345.0)
-  def test_all_updated(self, unused_mock_time: mock.MagicMock,
-                       mock_publish: mock.MagicMock):
-    """Testing basic rest endpoint import"""
-    data_handler = MockDataHandler
-    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    data_handler.load_file(data_handler, 'rest_test.json')
-    self.source_repo.last_update_date = datetime.datetime(
-        2020, 1, 1, tzinfo=datetime.UTC)
-    repo = self.source_repo.put()
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False, False)
-    with self.server(data_handler):
-      imp.run()
-    self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-    self.assertEqual(
-        repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
-        msg='Expected last_update_date to equal REST Last-Modified date')
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_last_update_ignored(self, unused_mock_time: mock.MagicMock,
-                               mock_publish: mock.MagicMock):
-    """Testing last update ignored"""
-    data_handler = MockDataHandler
-    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    data_handler.load_file(data_handler, 'rest_test.json')
-    self.source_repo.last_update_date = datetime.datetime(
-        2023, 6, 6, tzinfo=datetime.UTC)
-    self.source_repo.ignore_last_import_time = True
-    repo = self.source_repo.put()
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False, False)
-    with self.server(data_handler):
-      imp.run()
-    self.assertEqual(mock_publish.call_count, data_handler.cve_count)
-    self.assertEqual(
-        repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
-        msg='Expected last_update_date to equal REST Last-Modified date')
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_no_updates(self, unused_mock_time: mock.MagicMock,
-                      mock_publish: mock.MagicMock):
-    """Testing none last modified"""
-    MockDataHandler.last_modified = 'Fri, 01 Jan 2021 00:00:00 GMT'
-    self.source_repo.last_update_date = datetime.datetime(
-        2024, 2, 1, tzinfo=datetime.UTC)
-    repo = self.source_repo.put()
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-    with self.assertLogs() as logs, self.server(MockDataHandler):
-      imp.run()
-    mock_publish.assert_not_called()
-    self.assertIn('INFO:root:No changes since last update.', logs.output[1])
-    self.assertEqual(
-        repo.get().last_update_date,
-        datetime.datetime(2024, 2, 1, tzinfo=datetime.UTC),
-        msg='last_update_date should not have been updated')
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_few_updates(self, unused_mock_time: mock.MagicMock,
-                       mock_publish: mock.MagicMock):
-    """Testing from date between entries - 
-    only entries after 6/6/2023 should be called"""
-    MockDataHandler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    self.source_repo.last_update_date = datetime.datetime(
-        2023, 6, 6, tzinfo=datetime.UTC)
-    repo = self.source_repo.put()
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False, False)
-    with self.server(MockDataHandler):
-      imp.run()
-    mock_publish.assert_has_calls([
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-46219.json',
-            original_sha256='dd4766773f12e14912d7c930669a2650'
-            '2a83c80151815cb49400462067ab704e',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1701684728'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-46218.json',
-            original_sha256='ed5d9ee8fad738687254138fdbfd6da0'
-            'f6a3eccbc9ffcda12fb484d63448a22f',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1701684985'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-38546.json',
-            original_sha256='61425ff4651524a71daa90c66235a2af'
-            'b09a06faa839fe4af010a5a02f3dafb7',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1697013410'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-38545.json',
-            original_sha256='f76bcb2dedf63b51b3195f2f27942dc2'
-            '3c87f2bc3a93dec79ea838b4c1ffb412',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1700412273'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-38039.json',
-            original_sha256='fcac007c2f0d2685fa56c5910a0e24bc'
-            '0587efc409878fcb0df5b096db5d205f',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1694717842'),
-        mock.call(
-            self.tasks_topic,
-            data=b'',
-            type='update',
-            source='curl',
-            path='CURL-CVE-2023-28321.json',
-            original_sha256='f8bf8e7e18662ca0c1ddd4a3f90ac4a9'
-            '6fc730f09e3bff00c63d99d61b0697b2',
-            deleted='false',
-            req_timestamp='12345',
-            src_timestamp='1696205251')
-    ])
-    self.assertEqual(
-        repo.get().last_update_date,
-        datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
-        msg='Expected last_update_date to equal REST Last-Modified date')
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
   def test_invalid(self, unused_mock_time: mock.MagicMock,
                    mock_publish: mock.MagicMock):
     """Test invalid records are treated correctly."""
@@ -1265,141 +1038,6 @@ class RESTImporterTest(unittest.TestCase):
     # the raw vuln.
     self.assertEqual(v2_checksum, bug_v3.affected_checksum)
 
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_rest_deletion(self, unused_mock_time: mock.MagicMock,
-                         mock_publish: mock.MagicMock):
-    """Test REST deletion."""
-    # Setup existing bugs in Datastore
-    # Bug 1: Exists in REST (should NOT be deleted)
-    osv.Bug(
-        id='OSV-DEL-REST-1',
-        db_id='OSV-DEL-REST-1',
-        status=1,
-        source='curl',
-        source_id='curl:OSV-DEL-REST-1.json',
-        public=True,
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'PyPI',
-                'name': 'pkg1'
-            }
-        }]).put()
-
-    # Bug 2: Missing from REST (SHOULD be deleted)
-    osv.Bug(
-        id='OSV-DEL-REST-2',
-        db_id='OSV-DEL-REST-2',
-        status=1,
-        source='curl',
-        source_id='curl:OSV-DEL-REST-2.json',
-        public=True,
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'PyPI',
-                'name': 'pkg2'
-            }
-        }]).put()
-
-    # Bug 3: Withdrawn (should be ignored)
-    osv.Bug(
-        id='OSV-DEL-REST-3',
-        db_id='OSV-DEL-REST-3',
-        status=1,
-        source='curl',
-        source_id='curl:OSV-DEL-REST-3.json',
-        public=True,
-        withdrawn=datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC),
-        affected_packages=[{
-            'package': {
-                'ecosystem': 'PyPI',
-                'name': 'pkg3'
-            }
-        }]).put()
-
-    # Mock REST API response
-    data_handler = MockDataHandler
-    data_handler.last_modified = 'Mon, 01 Jan 2024 00:00:00 GMT'
-    # OSV-DEL-REST-1 is old (2023), OSV-DEL-REST-NEW is new (2024).
-    # We will set last_update_date to mid-2023 so OSV-DEL-REST-1 is skipped
-    # but OSV-DEL-REST-NEW is processed.
-    mock_data = [{
-        'id': 'OSV-DEL-REST-1',
-        'modified': '2023-01-01T00:00:00Z'
-    }, {
-        'id': 'OSV-DEL-REST-NEW',
-        'modified': '2024-01-01T00:00:00Z',
-        'schema_version': '1.3.0',
-        'affected': [{
-            'package': {
-                'ecosystem': 'PyPI',
-                'name': 'pkg-new'
-            }
-        }]
-    }]
-    data_handler.load_data(data_handler, json.dumps(mock_data))
-
-    # Set last_update_date to skip REST-1
-    self.source_repo.last_update_date = datetime.datetime(
-        2023, 6, 1, tzinfo=datetime.UTC)
-    self.source_repo.put()
-
-    # Run 1: Update mode (delete=False)
-    # This should update OSV-DEL-REST-NEW
-    imp_update = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,  # strict_validation
-        False,  # delete=False
-        deletion_safety_threshold_pct=100)
-
-    # Run 2: Delete mode (delete=True)
-    # This should delete OSV-DEL-REST-2
-    imp_delete = importer.Importer(
-        'fake_public_key',
-        'fake_private_key',
-        self.tmp_dir,
-        importer.DEFAULT_PUBLIC_LOGGING_BUCKET,
-        'bucket',
-        True,  # strict_validation
-        True,  # delete=True
-        deletion_safety_threshold_pct=100)
-
-    with self.assertLogs(level='INFO') as logs, self.server(data_handler):
-      # Run 1: Update mode (delete=False)
-      # This should update OSV-DEL-REST-NEW
-      imp_update.run()
-
-      # Run 2: Delete mode (delete=True)
-      # This should delete OSV-DEL-REST-2
-      imp_delete.run()
-
-    # Verify calls:
-    # 1. Update OSV-DEL-REST-NEW
-    # 2. Delete OSV-DEL-REST-2
-    if mock_publish.call_count != 2:
-      self.fail(f'Expected 2 calls, got {mock_publish.call_count}. '
-                f'Logs: {logs.output}')
-
-    # Verify OSV-DEL-REST-2 deletion
-    rest_2_calls = [
-        c for c in mock_publish.call_args_list
-        if c.kwargs.get('path') == 'OSV-DEL-REST-2.json'
-    ]
-    self.assertEqual(1, len(rest_2_calls))
-    self.assertEqual('true', rest_2_calls[0].kwargs.get('deleted'))
-
-    # Verify OSV-DEL-REST-NEW update
-    rest_new_calls = [
-        c for c in mock_publish.call_args_list
-        if c.kwargs.get('path') == 'OSV-DEL-REST-NEW.json'
-    ]
-    self.assertEqual(1, len(rest_new_calls))
-    self.assertEqual('false', rest_new_calls[0].kwargs.get('deleted', 'false'))
-
 
 @mock.patch('importer.utcnow',
             lambda: datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
@@ -1447,8 +1085,6 @@ def setUpModule():
   logging.getLogger().setLevel(logging.ERROR)
   logging.getLogger("UpstreamTest.test_compute_upstream").setLevel(
       logging.DEBUG)
-
-  unittest.enterModuleContext(tests.setup_gitter())
 
 
 if __name__ == '__main__':

@@ -46,7 +46,7 @@ from vanir import vulnerability_manager
 
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
-TASK_SUBSCRIPTION = 'tasks'
+TASK_SUBSCRIPTION = 'oss-fuzz-tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
 
@@ -387,9 +387,6 @@ class TaskRunner:
 
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      if deleted:
-        self._handle_deleted(source_repo, path)
-        return
       vulnerabilities = []
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:
@@ -480,7 +477,6 @@ class TaskRunner:
 
     result = osv.analyze(
         vulnerability,
-        checkout_path=os.path.join(self._work_dir, 'checkout'),
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo,
@@ -671,22 +667,29 @@ class TaskRunner:
         # the non-oss-fuzz task is not used by oss-fuzz.
         if not source_id:
           logging.error('got message without source_id: %s', message)
-        elif source_id.startswith('oss-fuzz'):
-          if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
-                               'update-oss-fuzz'):
-            logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
-                          task_type, source_id)
-        elif task_type != 'update':
-          logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
+          return
+
+        if not source_id.startswith('oss-fuzz'):
+          logging.error('got non-oss-fuzz task for source %s', source_id)
+          return
+
+        if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
+                             'update-oss-fuzz'):
+          logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
                         task_type, source_id)
 
-        if task_type in ('regressed', 'fixed', 'impact', 'invalid',
-                         'update-oss-fuzz'):
-          # TODO(michaelkedar): Remove this once the cutover is complete and the
-          # subscription filter is updated.
-          logging.info('Ignoring OSS-Fuzz task %s for source %s', task_type,
-                       source_id)
-        elif task_type == 'update':
+        if task_type in ('regressed', 'fixed'):
+          oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
+                                       message)
+        elif task_type == 'impact':
+          try:
+            oss_fuzz.process_impact_task(source_id, message)
+          except osv.ImpactError:
+            logging.exception('Failed to process impact: ')
+        elif task_type == 'invalid':
+          mark_bug_invalid(message)
+        elif task_type == 'update-oss-fuzz':
+          # TODO(michaelkedar): create separate _source_update for oss-fuzz.
           self._source_update(message)
 
         _state.source_id = None

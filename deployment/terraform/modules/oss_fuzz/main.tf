@@ -68,16 +68,6 @@ resource "google_container_node_pool" "workers_pool" {
     local_ssd_count = 1
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "workers-pool"
-    }
-
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "workers-pool"
-    }
   }
 }
 

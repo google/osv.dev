@@ -29,9 +29,9 @@ class Opam(EnumerableEcosystem):
             self._REPO + package, timeout=config.timeout)
         archive_response = requests.get(
             self._REPO_ARCHIVE + package, timeout=config.timeout)
-        if response.status_code == 404 && archive_response.status_code == 404:
+        if response.status_code == 404 and archive_response.status_code == 404:
             raise EnumerateError(f'Package {package} not found')
-        if response.status_code != 200 && archive_response.status_code != 200:
+        if response.status_code != 200 and archive_response.status_code != 200:
             raise RuntimeError(
                 f'Failed to get OPAM versions for {package} with: {response.text}')
 

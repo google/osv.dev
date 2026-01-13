@@ -130,8 +130,8 @@ class OrderedEcosystem(ABC):
     versions.sort(key=self.sort_key)
 
   def coarse_version(self, version: str) -> str:
-    """Convert a version string for this ecosystem to a
-    lexicographically sortable string in the form:
+    """Convert a version string for this ecosystem to a lexicographically
+    sortable string in the form:
 
     EE:XXXXXXXX.YYYYYYYY.ZZZZZZZZ
     where:
@@ -140,10 +140,11 @@ class OrderedEcosystem(ABC):
     YYYYYYYY is the 0-padded 8-digit minor version (or equivalent),
     ZZZZZZZZ is the 0-padded 8-digit patch version (or equivalent).
 
-    The returned string is used for database range queries (e.g. coarse_min <= v
-    <= coarse_max).
-    It does not need to be a perfect representation of the version, but it MUST be
-    monotonically non-decreasing with respect to the ecosystem's sort order.
+    The returned string is used for database range queries
+    (e.g. coarse_min <= v <= coarse_max).
+    It does not need to be a perfect representation of the version, but it
+    MUST be monotonically non-decreasing with respect to the ecosystem's sort
+    order.
     i.e. if v1 < v2, then coarse_version(v1) <= coarse_version(v2).
 
     Version string '0' should map to 00:0000000.00000000.00000000

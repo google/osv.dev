@@ -35,6 +35,13 @@ from . import rubygems
 from . import semver_ecosystem_helper
 
 # Strategies
+
+# Matches standard SemVer: major.minor.patch, optional 'v', prerelease/build.
+# Note: OSV's SemVer implementation coerces partial versions
+# (e.g. '1.0' -> '1.0.0').
+semver_strategy = st.from_regex(
+    r'^v?[0-9]+(\.[0-9]+){0,2}(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
+
 # Matches standard Alpine versions like 1.2.3, optionally with suffixes
 # like _rc1, _p2, and revision -r3.
 apk_version_strategy = st.from_regex(
@@ -59,16 +66,14 @@ maven_version_strategy = st.from_regex(r'^(([0-9]*|[A-Za-z+]*)[.-]?)*$')
 # Matches NuGet versions: SemVer-like, optional 'v' prefix, 4th component,
 # prerelease/build metadata.
 nuget_version_strategy = st.from_regex(
-    r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$'
-)
+    r'^v?[0-9]+(\.[0-9]+){0,3}(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
 
 # Matches Packagist versions: 'v' prefix, flexible components separated by
 # ., +, _, -.
 packagist_version_strategy = st.from_regex(r'^v?(([0-9]*|[A-Za-z+]*)[.+_-]?)*$')
 
-# Matches Pub versions: SemVer-like, optional 'v' prefix.
-pub_version_strategy = st.from_regex(
-    r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
+# Pub versions are the same format as SemVer.
+pub_version_strategy = semver_strategy
 
 # Uses standard packaging.version pattern.
 pypi_strategy = st.one_of(
@@ -85,12 +90,6 @@ rpm_version_strategy = st.from_regex(
 # Uses standard GemVersion pattern.
 rubygems_version_strategy = st.from_regex(r'^' + GemVersion.VERSION_PATTERN +
                                           r'$')
-
-# Matches standard SemVer: major.minor.patch, optional 'v', prerelease/build.
-# Note: OSV's SemVer implementation coerces partial versions
-# (e.g. '1.0' -> '1.0.0').
-semver_strategy = st.from_regex(
-    r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
 
 
 def check_coarse_version_monotonic(test_case: unittest.TestCase,

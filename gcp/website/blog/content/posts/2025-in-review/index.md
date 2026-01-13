@@ -13,7 +13,7 @@ author: The OSV Team
 
 We welcomed 11 new data providers, and 11 new ecosystems. Every new data provider helps us improve vulnerability coverage and matching for the open source community.
 
-Data Providers:
+**Data Providers:**
 - [BELL] BellSoft
 - [CLEANSTART] CleanStart (Coming Soon)
 - [DRUPAL] Drupal
@@ -26,7 +26,7 @@ Data Providers:
 - [OESA] openEuler
 - [V8] V8
 
-Ecosystems:
+**Ecosystems:**
 - Alpaquita
 - BellSoft Hardened Containers
 - CleanStart

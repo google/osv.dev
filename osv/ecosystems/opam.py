@@ -4,6 +4,7 @@ import json
 
 from ..third_party.univers.debian import Version as DebianVersion
 from . import config
+from .ecosystems_base import EnumerableEcosystem, EnumerateError
 
 class Opam(EnumerableEcosystem):
     """OPAM packages ecosystem"""

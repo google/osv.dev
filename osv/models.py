@@ -1264,18 +1264,14 @@ def _affected_versions_from_package(entity: Bug,
     coarse_max = MAX_COARSE_VERSION
     if e_helper is not None:
       try:
-        coarse_min = e_helper.coarse_version(affected.versions[0])
-        coarse_max = e_helper.coarse_version(affected.versions[0])
-        for v in affected.versions[1:]:
-          coarse_min = min(coarse_min, e_helper.coarse_version(v))
-          coarse_max = max(coarse_max, e_helper.coarse_version(v))
+        all_coarse = [e_helper.coarse_version(v) for v in affected.versions]
+        coarse_min = min(all_coarse)
+        coarse_max = max(all_coarse)
       except NotImplementedError:
         # Coarse versioning not yet implemented for this ecosystem.
         pass
       except ValueError:
         logging.warning('Invalid version in %s', entity.db_id)
-        coarse_min = MIN_COARSE_VERSION
-        coarse_max = MAX_COARSE_VERSION
     for e in all_pkg_ecosystems:
       affected_versions.append(
           AffectedVersions(

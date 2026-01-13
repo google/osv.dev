@@ -20,6 +20,7 @@ $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
 $osv-mobile-breakpoint: 500px;
 $osv-border-radius-small: 4px;
+$osv-border-color: #555;
 
 @use '@material/theme' with ($surface: $osv-background,
 );
@@ -1800,6 +1801,23 @@ div.highlight {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
+
+    table {
+      width: 100%;
+      margin: 1em 0;
+
+      th,
+      td {
+        padding: 0.75em 1em;
+        text-align: left;
+        border: 1px solid $osv-border-color;
+      }
+
+      th {
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.05);
+      }
+    }
   }
 
   .author {

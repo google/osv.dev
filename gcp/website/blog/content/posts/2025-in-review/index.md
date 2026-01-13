@@ -82,7 +82,7 @@ Last year saw sustained interest and external contributions across all our major
  - **OSV-Scanner**: 33 total contributors
  - **OSV-Scalibr**: 52 total contributors
 
-Notably, the **OSV-Scanner GitHub Action** saw contributions from 8 individuals and has been adopted by **over 1600 GitHub repositories**, demonstrating its value to the developer community.
+Notably, the **OSV-Scanner GitHub Action** has been adopted by **over 1600 GitHub repositories**, demonstrating its value to the developer community.
 
 ### Conferences
 
@@ -100,7 +100,7 @@ Our tooling (OSV-Scanner and OSV-Scalibr) continues to evolve with a focus on de
  - **Scalibr feature unification** to streamline the tooling experience.
  - Launch of an **experimental MCP server**, allowing AI agents (like Claude or ChatGPT) to query the OSV database directly for live vulnerability intelligence.
  - Enhanced Python vulnerability management including **transitive dependency scanning for `requirements.txt`** and **Guided Remediation for Python**.
- - Improvements on **Reachability for Java**.
+ - Improvements to **Reachability Analysis for Java**.
 
 ## More to Come in 2026
 

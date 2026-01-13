@@ -145,6 +145,9 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
         os.remove(f'{checkout_dir}.zst')
 
         return pygit2.Repository(checkout_dir)
+      else:
+        logging.error(f'Failed to clone repo through gitter, '
+                      f'status: {resp.status_code}, response: {resp.text}')
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e
     except subprocess.CalledProcessError as e:

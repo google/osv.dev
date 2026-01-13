@@ -148,7 +148,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
 
       logging.error(
           'Failed to clone repo through gitter, '
-          f'status: %d, response: %s', resp.status_code, resp.text)
+          'status: %d, response: %s', resp.status_code, resp.text)
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e
     except subprocess.CalledProcessError as e:

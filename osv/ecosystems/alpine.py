@@ -41,6 +41,11 @@ class APK(OrderedEcosystem):
     return AlpineLinuxVersion(version)
 
   def coarse_version(self, version):
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims suffixes (_rc, _p, -r) to ensure monotonicity (e.g. 1.2_rc1 < 1.2).
+    """
     if not AlpineLinuxVersion.is_valid(version):
       raise ValueError(f'Invalid version: {version}')
     # is_valid uses a $ regex anchor (which can match a newline),

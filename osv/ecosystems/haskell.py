@@ -49,7 +49,10 @@ class Hackage(EnumerableEcosystem):
       raise ValueError(f'Invalid version: {version}') from exc
 
   def coarse_version(self, version):
-    """Coarse version."""
+    """Coarse version.
+    
+    Hackage versions are treated as dot-separated integers.
+    """
     return coarse_version_from_ints(self._sort_key(version))
 
   def enumerate_versions(self,

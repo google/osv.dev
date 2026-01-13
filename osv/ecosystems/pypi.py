@@ -35,7 +35,12 @@ class PyPI(EnumerableEcosystem):
     return packaging_legacy.version.parse(version)
 
   def coarse_version(self, version: str):
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Maps legacy versions to 0 (sort before valid versions).
+    Epochs are preserved.
+    """
     # legacy versions are less than non-legacy versions, thus mapped to 0
     ver = packaging_legacy.version.parse(version)
     if isinstance(ver, packaging_legacy.version.LegacyVersion):

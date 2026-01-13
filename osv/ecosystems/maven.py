@@ -249,7 +249,12 @@ class Maven(DepsDevMixin, EnumerableEcosystem):
     return Version.from_string(version)
 
   def coarse_version(self, version):
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims at hyphens to ensure monotonicity for qualifiers (1.2-beta < 1.2)
+    and numeric suffixes (1.2-3 < 1.2.1).
+    """
     return coarse_version_generic(
         version,
         separators_regex=r'[.]',

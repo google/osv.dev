@@ -33,6 +33,13 @@ class RPM(OrderedEcosystem):
     return ver
 
   def coarse_version(self, version: str) -> str:
+    """Coarse version.
+
+    Treats version as alternating digit/non-digit strings.
+    Treats ~, ^, - as separators that sort before regular separators
+    (e.g. 1.0~rc1 < 1.0).
+    Epochs are preserved.
+    """
     # Call sort key to validate the version
     self._sort_key(version)
     # Extract epoch, if it exists

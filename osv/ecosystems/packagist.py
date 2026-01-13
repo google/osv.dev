@@ -203,7 +203,12 @@ class Packagist(EnumerableEcosystem):
     return PackagistVersion(version)
 
   def coarse_version(self, version):
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as integers separated by ., -, _, or +.
+    Treats 'p'/'pl' suffixes as MAX_INT to ensure they sort after base versions
+    (e.g. 1.0 < 1.0-p1).
+    """
     if version.startswith('v'):
       version = version[1:]
     # Cannot use coarse_version_generic because 'p' and 'pl' are considered

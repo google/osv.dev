@@ -140,9 +140,11 @@ class OrderedEcosystem(ABC):
     YYYYYYYY is the 0-padded 8-digit minor version (or equivalent),
     ZZZZZZZZ is the 0-padded 8-digit patch version (or equivalent).
 
-    This method must preserve version ordering (allowing for collisions).
+    The returned string is used for database range queries (e.g. coarse_min <= v
+    <= coarse_max).
+    It does not need to be a perfect representation of the version, but it MUST be
+    monotonically non-decreasing with respect to the ecosystem's sort order.
     i.e. if v1 < v2, then coarse_version(v1) <= coarse_version(v2).
-    (i.e. it must be monotonically non-decreasing).
 
     Version string '0' should map to 00:0000000.00000000.00000000
 
@@ -289,6 +291,9 @@ def coarse_version_generic(version: str,
                     (in addition to separators_regex).
     empty_as: If not None, treats empty parts as the given string instead of
               removing them.
+
+  Returns:
+    A string in the format 00:00000000.00000000.00000000
   """
   if version == '0':
     return '00:00000000.00000000.00000000'

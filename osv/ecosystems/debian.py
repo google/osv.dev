@@ -41,7 +41,13 @@ class DPKG(OrderedEcosystem):
     return DebianVersion.from_string(version)
 
   def coarse_version(self, version: str) -> str:
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as alternating digit/non-digit strings.
+    Truncates at non-dot separators (like ~) to ensure monotonicity
+    (e.g. 1.0~rc1 < 1.0).
+    Epochs are preserved.
+    """
     if not DebianVersion.is_valid(version):
       raise ValueError(f'Invalid version: {version}')
 

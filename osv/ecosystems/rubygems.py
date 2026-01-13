@@ -40,6 +40,11 @@ class RubyGems(EnumerableEcosystem):
       raise ValueError(f'Invalid version: {version}') from exc
 
   def coarse_version(self, version: str) -> str:
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims at hyphens to ensure monotonicity (e.g. 1.2-3 < 1.2).
+    """
     # Call sort key to validate the version
     self._sort_key(version)
 

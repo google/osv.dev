@@ -44,7 +44,10 @@ class CRAN(EnumerableEcosystem):
       raise ValueError(f'Invalid version: {version}') from exc
 
   def coarse_version(self, version):
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as integers separated by dots or dashes.
+    """
     # Use _sort_key to validate or raise ValueError
     return coarse_version_from_ints(self._sort_key(version))
 

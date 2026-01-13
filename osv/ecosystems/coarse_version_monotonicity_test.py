@@ -35,40 +35,60 @@ from . import rubygems
 from . import semver_ecosystem_helper
 
 # Strategies
+# Matches standard Alpine versions like 1.2.3, optionally with suffixes
+# like _rc1, _p2, and revision -r3.
 apk_version_strategy = st.from_regex(
     r'^[0-9]+(\.[0-9]+)*(_rc[0-9]*|_p[0-9]*)*(-r[0-9]+)?$')
 
+# Matches R versions: sequence of numbers separated by dots or dashes
+# (e.g. 1.2-3).
 cran_version_strategy = st.from_regex(r'^[0-9]+([.-][0-9]+)+$')
 
+# Matches Debian versions: optional epoch, upstream version
+# (alphanumerics/separators), optional debian revision.
 dpkg_version_strategy = st.from_regex(
     r'^(\d+:)?\d([A-Za-z0-9\.\+\~\-]+|[A-Za-z0-9\.\+\~]+-[A-Za-z0-9\+\.\~]+)?$')
 
+# Matches Haskell versions: dot-separated integers (e.g. 1.2.3).
 hackage_version_strategy = st.from_regex(r'^[0-9]+(\.[0-9]+)*$')
 
+# Matches Maven versions: flexible sequence of numbers or identifiers
+# separated by dots or dashes.
 maven_version_strategy = st.from_regex(r'^(([0-9]*|[A-Za-z+]*)[.-]?)*$')
 
+# Matches NuGet versions: SemVer-like, optional 'v' prefix, 4th component,
+# prerelease/build metadata.
 nuget_version_strategy = st.from_regex(
     r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$'
 )
 
+# Matches Packagist versions: 'v' prefix, flexible components separated by
+# ., +, _, -.
 packagist_version_strategy = st.from_regex(r'^v?(([0-9]*|[A-Za-z+]*)[.+_-]?)*$')
 
+# Matches Pub versions: SemVer-like, optional 'v' prefix.
 pub_version_strategy = st.from_regex(
     r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
 
+# Uses standard packaging.version pattern.
 pypi_strategy = st.one_of(
     st.text(),  # legacy version can be any string
     st.from_regex(
         re.compile(r'^' + packaging.version.VERSION_PATTERN + r'$',
                    re.IGNORECASE | re.VERBOSE | re.ASCII)))
 
+# Matches RPM versions: optional epoch, alternating alphanumeric segments.
 rpm_version_strategy = st.from_regex(
     re.compile(r'^([0-9]+:)?(([0-9]+|[A-Za-z]+)((?![0-9A-Za-z])[ -~])*)+$',
                re.ASCII))
 
+# Uses standard GemVersion pattern.
 rubygems_version_strategy = st.from_regex(r'^' + GemVersion.VERSION_PATTERN +
                                           r'$')
 
+# Matches standard SemVer: major.minor.patch, optional 'v', prerelease/build.
+# Note: OSV's SemVer implementation coerces partial versions
+# (e.g. '1.0' -> '1.0.0').
 semver_strategy = st.from_regex(
     r'^v?[0-9]+(\.[0-9]+)?(\.[0-9]+)?(-[0-9a-zA-z.-]*)?\+?[0-9a-zA-z.-]*$')
 

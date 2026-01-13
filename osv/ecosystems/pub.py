@@ -78,7 +78,12 @@ class Pub(EnumerableEcosystem):
     return Version.from_string(version)
 
   def coarse_version(self, version):
-    """Coarse version."""
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims prerelease/build suffixes to ensure monotonicity
+    (e.g. 1.0.0-beta < 1.0.0).
+    """
     # Make sure the version is valid before trying to make it coarse.
     try:
       semver_index.parse(version)

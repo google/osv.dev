@@ -13,33 +13,31 @@ author: The OSV Team
 
 We welcomed 11 new data providers, and 11 new ecosystems. Every new data provider helps us improve vulnerability coverage and matching for the open source community.
 
-| Data Providers |
-| :--- |
-| [BELL] BellSoft |
-| [CLEANSTART] CleanStart (Coming Soon) |
-| [DRUPAL] Drupal |
-| [DHI] Docker Hardened Images (Coming Soon) |
-| [ECHO] Echo |
-| [EEF] Erlang Ecosystem Foundation |
-| [FreeBSD] FreeBSD (Coming Soon) |
-| [JLSEC] Julia |
-| [MINI] Minimus |
-| [OESA] openEuler |
-| [V8] V8 |
+**Data Providers:**
+- [BELL] BellSoft
+- [CLEANSTART] CleanStart (Coming Soon)
+- [DRUPAL] Drupal
+- [DHI] Docker Hardened Images (Coming Soon)
+- [ECHO] Echo
+- [EEF] Erlang Ecosystem Foundation
+- [FreeBSD] FreeBSD (Coming Soon)
+- [JLSEC] Julia
+- [MINI] Minimus
+- [OESA] openEuler
+- [V8] V8
 
-| Ecosystems |
-| :--- |
-| Alpaquita |
-| BellSoft Hardened Containers |
-| CleanStart |
-| Docker Hardened Images |
-| Echo |
-| FreeBSD |
-| Julia |
-| Kubernetes |
-| MinimOS |
-| openEuler |
-| VSCode |
+**Ecosystems:**
+- Alpaquita
+- BellSoft Hardened Containers
+- CleanStart
+- Docker Hardened Images
+- Echo
+- FreeBSD
+- Julia
+- Kubernetes
+- MinimOS
+- openEuler
+- VSCode
 
 ### CVE Data Ingestion
 

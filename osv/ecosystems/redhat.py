@@ -52,18 +52,14 @@ class RPM(OrderedEcosystem):
     except ValueError as e:
       raise ValueError(f'Invalid version: {version}') from e
 
-    if epoch > 99:
-      return '99:99999999.99999999.99999999'
-
-    coarse = coarse_version_generic(
+    return coarse_version_generic(
         v,
         # any non-alphanumeric character is considered a separator
         separators_regex=r'[^0-9A-Za-z~^-]',
         # ~, ^, - separators are special and treated as less than a regular
         # separator
-        trim_regex=r'[~^-]',
+        truncate_regex=r'[~^-]',
         implicit_split=True,
         empty_as=None,
+        epoch=epoch,
     )
-    # Insert the epoch as we return
-    return f'{epoch:02d}{coarse[2:]}'

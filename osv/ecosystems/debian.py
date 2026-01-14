@@ -26,6 +26,7 @@ from .ecosystems_base import (
     coarse_version_from_ints,
     EnumerableEcosystem,
     EnumerateError,
+    MAX_COARSE_PART,
 )
 from .ecosystems_base import OrderedEcosystem
 from .. import cache
@@ -61,8 +62,6 @@ class DPKG(OrderedEcosystem):
     except ValueError as e:
       raise ValueError(f'Invalid version: {version}') from e
 
-    if epoch > 99:
-      return '99:99999999.99999999.99999999'
     # Versions are treated as alternating digit/non-digit strings
     # We treat the exact string '.' as a digit separator.
     # Any strings starting with '.' (that are not exactly '.')
@@ -82,12 +81,10 @@ class DPKG(OrderedEcosystem):
         continue
       if sep[0] == '.':
         # Bigger than the max int, so we overflow
-        int_parts.append(9999999999)
+        int_parts.append(MAX_COARSE_PART + 1)
       break
 
-    coarse = coarse_version_from_ints(int_parts)
-    # Insert the epoch as we return
-    return f'{epoch:02d}{coarse[2:]}'
+    return coarse_version_from_ints(int_parts, epoch=epoch)
 
 
 # TODO(another-rex): Update this to use dynamically

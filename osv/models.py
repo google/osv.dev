@@ -29,6 +29,11 @@ from osv import importfinding_pb2
 # pylint: disable=relative-beyond-top-level
 from . import bug
 from . import ecosystems
+from .ecosystems.ecosystems_base import (
+    coarse_version_from_ints,
+    MAX_COARSE_PART,
+    MAX_COARSE_EPOCH,
+)
 from . import gcs
 from . import pubsub
 from . import purl_helpers
@@ -40,8 +45,9 @@ SCHEMA_VERSION = '1.7.3'
 
 _MAX_GIT_VERSIONS_TO_INDEX = 5000
 
-MIN_COARSE_VERSION = '00:00000000.00000000.00000000'
-MAX_COARSE_VERSION = '99:99999999.99999999.99999999'
+MIN_COARSE_VERSION = coarse_version_from_ints((0,), 0)
+MAX_COARSE_VERSION = coarse_version_from_ints((MAX_COARSE_PART + 1,),
+                                              MAX_COARSE_EPOCH + 1)
 
 _EVENT_ORDER = {
     'introduced': 0,
@@ -1175,7 +1181,9 @@ def populate_entities_from_bug(entity: Bug):
     pubsub.publish_failure(data, type='gcs_retry')
 
 
-def _get_coarse_min_max(events, e_helper, db_id):
+def _get_coarse_min_max(events: list[AffectedEvent],
+                        e_helper: ecosystems.OrderedEcosystem,
+                        db_id: str) -> tuple[str, str]:
   """Get coarse min and max from sorted events."""
   coarse_min = MIN_COARSE_VERSION
   coarse_max = MAX_COARSE_VERSION
@@ -1202,8 +1210,8 @@ def _get_coarse_min_max(events, e_helper, db_id):
   return coarse_min, coarse_max
 
 
-def _affected_versions_from_package(entity: Bug,
-                                    affected) -> list[AffectedVersions]:
+def _affected_versions_from_package(affected: AffectedPackage,
+                                    db_id: str) -> list[AffectedVersions]:
   """Compute AffectedVersions for a single affected package."""
   affected_versions = []
   pkg_ecosystem = affected.package.ecosystem
@@ -1229,7 +1237,7 @@ def _affected_versions_from_package(entity: Bug,
         repo_url = r.repo_url
       continue
     if r.type not in ('SEMVER', 'ECOSYSTEM'):
-      logging.warning('Unknown range type "%s" in %s', r.type, entity.db_id)
+      logging.warning('Unknown range type "%s" in %s', r.type, db_id)
       continue
     events = r.events
     if not events:
@@ -1242,13 +1250,13 @@ def _affected_versions_from_package(entity: Bug,
       events.sort(key=lambda e, sort_key=e_helper.sort_key:
                   (sort_key(e.value), _EVENT_ORDER.get(e.type, -1)))
       coarse_min, coarse_max = _get_coarse_min_max(events, e_helper,
-                                                   entity.db_id)
+                                                   db_id)
 
     # If we don't have an ecosystem helper, assume the events are in order.
     for e in all_pkg_ecosystems:
       affected_versions.append(
           AffectedVersions(
-              vuln_id=entity.db_id,
+              vuln_id=db_id,
               ecosystem=e,
               name=pkg_name,
               coarse_min=coarse_min,
@@ -1271,11 +1279,11 @@ def _affected_versions_from_package(entity: Bug,
         # Coarse versioning not yet implemented for this ecosystem.
         pass
       except ValueError:
-        logging.warning('Invalid version in %s', entity.db_id)
+        logging.warning('Invalid version in %s', db_id)
     for e in all_pkg_ecosystems:
       affected_versions.append(
           AffectedVersions(
-              vuln_id=entity.db_id,
+              vuln_id=db_id,
               ecosystem=e,
               name=pkg_name,
               versions=affected.versions,
@@ -1288,11 +1296,11 @@ def _affected_versions_from_package(entity: Bug,
     # Add an empty AffectedVersions entry so that this vuln is returned when
     # querying the API with no version specified.
     logging.warning('Vuln has empty affected ranges and versions: %s, %s/%s',
-                    entity.db_id, pkg_ecosystem, pkg_name)
+                    db_id, pkg_ecosystem, pkg_name)
     for e in all_pkg_ecosystems:
       affected_versions.append(
           AffectedVersions(
-              vuln_id=entity.db_id,
+              vuln_id=db_id,
               ecosystem=e,
               name=pkg_name,
           ))
@@ -1303,7 +1311,7 @@ def _affected_versions_from_package(entity: Bug,
     # for the API queries with no versions specified.
     affected_versions.append(
         AffectedVersions(
-            vuln_id=entity.db_id,
+            vuln_id=db_id,
             ecosystem='GIT',
             name=normalize_repo_package(repo_url),
             versions=affected.versions,
@@ -1316,7 +1324,7 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
   """Compute the AffectedVersions from a Bug entity."""
   affected_versions = []
   for affected in entity.affected_packages:
-    affected_versions.extend(_affected_versions_from_package(entity, affected))
+    affected_versions.extend(_affected_versions_from_package(affected, entity.db_id))
 
   # Deduplicate and sort the affected_versions
   unique_affected_dict = {av.sort_key(): av for av in affected_versions}

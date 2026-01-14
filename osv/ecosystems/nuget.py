@@ -106,7 +106,7 @@ class NuGet(EnumerableEcosystem):
     return coarse_version_generic(
         version,
         separators_regex=r'[.]',
-        trim_regex=r'[-+]',
+        truncate_regex=r'[-+]',
         implicit_split=True,
         empty_as=None)
 

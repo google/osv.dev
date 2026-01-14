@@ -269,40 +269,45 @@ class DepsDevMixin(EnumerableEcosystem, ABC):
                                        last_affected, limits)
 
 
+MAX_COARSE_EPOCH = 99
+MAX_COARSE_PART = 99999999
+
+
 def coarse_version_generic(version: str,
                            separators_regex=r'[.]',
-                           trim_regex=r'[-+]',
+                           truncate_regex=r'[-+]',
                            implicit_split=False,
-                           empty_as: str | None = None) -> str:
+                           empty_as: str | None = None,
+                           epoch: int = 0) -> str:
   """
   Convert a version string into a coarse, lexicographically comparable string.
   
   Format: 00:00000000.00000000.00000000
   (Epoch:Major.Minor.Patch)
   
-  The Epoch is always 00.
   Only the first 3 integer components (Major, Minor, Patch) are used.
   
   Args:
     version: The version string to convert.
     separators_regex: Regex for separators (default: r'[.]').
-    trim_regex: Regex for characters to trim after (default: r'[-+]'). 
-                If None, no trimming is performed.
+    truncate_regex: Regex for characters to truncate after (default: r'[-+]'). 
+                If None, no truncation is performed.
     implicit_split: If True, splits on transitions between digits and non-digits
                     (in addition to separators_regex).
     empty_as: If not None, treats empty parts as the given string instead of
               removing them.
+    epoch: The epoch to use.
 
   Returns:
     A string in the format 00:00000000.00000000.00000000
   """
   if version == '0':
-    return '00:00000000.00000000.00000000'
+    return coarse_version_from_ints((0, 0, 0), epoch=epoch)
 
   main = version
-  if trim_regex:
-    # Trim off trailing components (e.g. prerelease/build)
-    main = re.split(trim_regex, version, maxsplit=1)[0]
+  if truncate_regex:
+    # Truncate off trailing components (e.g. prerelease/build)
+    main = re.split(truncate_regex, version, maxsplit=1)[0]
   parts = re.split(separators_regex, main)
   if implicit_split:
     # Also split on transitions between digits and non-digits
@@ -316,59 +321,51 @@ def coarse_version_generic(version: str,
 
   # Extract up to 3 integer components
   components = []
-  overflow = False
   for p in parts[:3]:
     if not p.isdecimal():
       break
-    val = int(p)
-    if val > 99999999:
-      val = 99999999
-      overflow = True
-    components.append(val)
-    if overflow:
-      break
+    components.append(int(p))
 
-  # Pad with zeros to ensure 3 components
-  # If we overflowed, we should pad with MAX instead of 0
-  pad_value = 99999999 if overflow else 0
-  while len(components) < 3:
-    components.append(pad_value)
-
-  return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'
+  return coarse_version_from_ints(components, epoch=epoch)
 
 
-def coarse_version_from_ints(parts: Iterable[int]) -> str:
+def coarse_version_from_ints(parts: Iterable[int], epoch: int = 0) -> str:
   """
   Convert a list of integers into a coarse version string.
   
   Format: 00:00000000.00000000.00000000
   (Epoch:Major.Minor.Patch)
   
-  The Epoch is always 00.
   Only the first 3 integer components (Major, Minor, Patch) are used.
   
   Args:
     parts: The list of integers to convert.
+    epoch: The epoch to use.
   """
-  components = []
+  if epoch < 0:
+    # A negative epoch doesn't really make sense
+    return '00:00000000.00000000.00000000'
+  if epoch > MAX_COARSE_EPOCH:
+    return '99:99999999.99999999.99999999'
+  ints = []
   overflow = False
   for p in parts:
     if p < 0:
       # A negative part doesn't really make sense
       # but let's just treat it and all following parts as 0
-      components.append(0)
+      ints.append(0)
       break
-    if p > 99999999:
-      p = 99999999
+    if p > MAX_COARSE_PART:
+      p = MAX_COARSE_PART
       overflow = True
-    components.append(p)
-    if overflow or len(components) == 3:
+    ints.append(p)
+    if overflow or len(ints) == 3:
       break
 
   # Pad with zeros to ensure 3 components
   # If we overflowed, we should pad with MAX instead of 0
-  pad_value = 99999999 if overflow else 0
-  while len(components) < 3:
-    components.append(pad_value)
+  pad_value = MAX_COARSE_PART if overflow else 0
+  while len(ints) < 3:
+    ints.append(pad_value)
 
-  return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'
+  return f'{epoch:02d}:{ints[0]:08d}.{ints[1]:08d}.{ints[2]:08d}'

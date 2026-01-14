@@ -55,9 +55,10 @@ class APK(OrderedEcosystem):
     return coarse_version_generic(
         version,
         separators_regex=r'[.]',
-        # in APK, 1.02.1 < 1.1.1, so we must treat everything after .0x as 0
-        # also split off the _rc, _p, or -r suffixes
-        trim_regex=r'(?:\.0|[_-])',
+        # in APK, 1.0.2 < 1.02.1 < 1.1.1
+        # We must treat everything after .0x as 0
+        # Also split off the _rc, _p, or -r suffixes
+        truncate_regex=r'(?:\.0|[_-])',
         implicit_split=False,
         empty_as='')
 

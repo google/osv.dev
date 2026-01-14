@@ -18,7 +18,12 @@ import re
 from typing import List
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_from_ints,
+    EnumerableEcosystem,
+    EnumerateError,
+    MAX_COARSE_PART,
+)
 from ..request_helper import RequestError, RequestHelper
 
 
@@ -215,7 +220,7 @@ class Packagist(EnumerableEcosystem):
     # greater than numbers
     # 0 > .1 (but 0.1 == 0..1)
     if not version or version[0] in '-_+.':
-      return '00:00000000.00000000.00000000'
+      return coarse_version_from_ints([0])
     # Split on separators.
     parts = re.split(r'[-_+.]', version)
     # Split on transitions between digits and non-digits
@@ -224,28 +229,16 @@ class Packagist(EnumerableEcosystem):
     parts = [p for p in parts if p]
     # Extract up to 3 integer components
     components = []
-    overflow = False
     for p in parts[:3]:
       if p in ('p', 'pl'):
-        val = 99999999999  # trigger overflow
+        val = MAX_COARSE_PART + 1  # trigger overflow
       elif not p.isdecimal():
         break
       else:
         val = int(p)
-      if val > 99999999:
-        val = 99999999
-        overflow = True
       components.append(val)
-      if overflow:
-        break
 
-    # Pad with zeros to ensure 3 components
-    # If we overflowed, we should pad with MAX instead of 0
-    pad_value = 99999999 if overflow else 0
-    while len(components) < 3:
-      components.append(pad_value)
-
-    return f'00:{components[0]:08d}.{components[1]:08d}.{components[2]:08d}'
+    return coarse_version_from_ints(components)
 
   def enumerate_versions(self,
                          package,

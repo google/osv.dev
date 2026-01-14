@@ -26,6 +26,7 @@ steps:
 # Deploy OSS-Fuzz workers
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1', '--delivery-pipeline=oss-fuzz-workers', '--images', 'worker=gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA,importer=gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA,cron=gcr.io/oss-vdb/cron:$COMMIT_SHA', '--annotations=tag=$TAG_NAME']
+  dir: 'oss-fuzz-workers'
 
 # Tag the deployed images with the git tag
 - name: gcr.io/cloud-builders/gcloud

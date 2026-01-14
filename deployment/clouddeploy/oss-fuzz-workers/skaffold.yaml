@@ -10,6 +10,7 @@ profiles:
     - workers.yaml
     - make-bugs-public.yaml
     - process-results.yaml
+    - scaler.yaml
 
 deploy:
   kubectl: {}

@@ -450,7 +450,7 @@ class TaskRunner:
 
     logging.info('Marking %s as invalid and withdrawn.', vuln_id)
     bug.status = osv.BugStatus.INVALID
-    if not bug.withdrawn: # in case this was already withdrawn for some reason
+    if not bug.withdrawn:  # in case this was already withdrawn for some reason
       bug.withdrawn = datetime.datetime.now(datetime.UTC)
     if bug.last_modified:
       bug.last_modified = max(bug.withdrawn, bug.last_modified)

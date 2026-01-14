@@ -1,6 +1,5 @@
 """OPAM ecosystem helper."""
 import requests
-import json
 
 from ..third_party.univers.debian import Version as DebianVersion
 from . import config

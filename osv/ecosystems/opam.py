@@ -17,8 +17,9 @@ class Opam(EnumerableEcosystem):
       return DebianVersion(9999999999, '9999999999')
     return DebianVersion.from_string(version)
 
-  _REPO = 'https://api.github.com/repos/ocaml/opam-repository/contents/packages/'
-  _REPO_ARCHIVE = 'https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/'
+  _BASE = 'https://api.github.com/repos/ocaml/'
+  _REPO = _BASE + 'opam-repository/contents/packages/'
+  _REPO_ARCHIVE = _BASE + 'opam-repository-archive/contents/packages/'
 
   def enumerate_versions(self,
                          package,

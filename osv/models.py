@@ -1249,8 +1249,7 @@ def _affected_versions_from_package(affected: AffectedPackage,
       # If we have an ecosystem helper sort the events to help with querying.
       events.sort(key=lambda e, sort_key=e_helper.sort_key:
                   (sort_key(e.value), _EVENT_ORDER.get(e.type, -1)))
-      coarse_min, coarse_max = _get_coarse_min_max(events, e_helper,
-                                                   db_id)
+      coarse_min, coarse_max = _get_coarse_min_max(events, e_helper, db_id)
 
     # If we don't have an ecosystem helper, assume the events are in order.
     for e in all_pkg_ecosystems:
@@ -1324,7 +1323,8 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
   """Compute the AffectedVersions from a Bug entity."""
   affected_versions = []
   for affected in entity.affected_packages:
-    affected_versions.extend(_affected_versions_from_package(affected, entity.db_id))
+    affected_versions.extend(
+        _affected_versions_from_package(affected, entity.db_id))
 
   # Deduplicate and sort the affected_versions
   unique_affected_dict = {av.sort_key(): av for av in affected_versions}

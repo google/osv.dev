@@ -1,4 +1,4 @@
-"""OPAM ecosystem helper."""
+"""opam ecosystem helper."""
 import requests
 
 from ..third_party.univers.debian import Version as DebianVersion
@@ -8,7 +8,7 @@ from .debian import DPKG
 
 
 class Opam(EnumerableEcosystem, DPKG):
-  """OPAM packages ecosystem"""
+  """opam packages ecosystem"""
 
   _BASE = 'https://api.github.com/repos/ocaml/'
   _REPO = _BASE + 'opam-repository/contents/packages/'
@@ -28,7 +28,7 @@ class Opam(EnumerableEcosystem, DPKG):
       raise EnumerateError(f'Package {package} not found')
     if response.status_code != 200 and archive_response.status_code != 200:
       raise RuntimeError(
-          f'Failed to get OPAM versions for {package} with: {response.text}')
+          f'Failed to get opam versions for {package} with: {response.text}')
 
     responses = {}
 

@@ -25,7 +25,7 @@ service docker start
 set -e
 
 # Install dependencies only if not running in Cloud Build
-if [ -z "$BUILD_ID" ]; then
+if [ -z "$CLOUDBUILD" ]; then
   poetry sync
 fi
 poetry run python server_test.py

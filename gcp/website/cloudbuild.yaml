@@ -45,4 +45,5 @@ steps:
 
 timeout: 7200s
 options:
-  automapSubstitutions: true
+  env:
+    - CLOUDBUILD=1

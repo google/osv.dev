@@ -73,4 +73,5 @@ steps:
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8
-  automapSubstitutions: true
+  env:
+    - CLOUDBUILD=1

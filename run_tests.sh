@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 # Install dependencies only if not running in Cloud Build
-if [ -z "$BUILD_ID" ]; then
+if [ -z "$CLOUDBUILD" ]; then
   poetry sync
 fi
 poetry run python -m unittest osv.bug_test

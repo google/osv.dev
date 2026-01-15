@@ -13,9 +13,8 @@ spec:
         spec:
           containers:
           - name: generate-sitemap-cron
-            image: cron
+            image: generatesitemap
             imagePullPolicy: Always
-            command: ["/usr/local/bin/generate_sitemap/generate_and_upload.sh"]
             resources:
               requests:
                 cpu: "1"

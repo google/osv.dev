@@ -18,7 +18,11 @@ import re
 import requests
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_generic,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 from .. import semver_index
 
 # This relies on a strict SemVer implementation.
@@ -74,10 +78,8 @@ class Version:
     str_version, revision = _extract_revision(str_version)
     try:
       return Version(semver_index.parse(str_version), revision)
-    except ValueError:
-      # If a user gives us an unparsable semver version,
-      # treat it as a very large version so as to not match anything.
-      return Version(semver_index.parse('999999'), 999999)
+    except ValueError as exc:
+      raise ValueError(f'Invalid version: {str_version}') from exc
 
 
 class NuGet(EnumerableEcosystem):
@@ -89,6 +91,24 @@ class NuGet(EnumerableEcosystem):
   def _sort_key(self, version):
     """Sort key."""
     return Version.from_string(version)
+
+  def coarse_version(self, version):
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims prerelease/build suffixes to ensure monotonicity
+    (e.g. 1.0.0-beta < 1.0.0).
+    """
+    # Call _sort_key to force a ValueError if the version is invalid.
+    self._sort_key(version)
+    if version[0] == 'v':
+      version = version[1:]
+    return coarse_version_generic(
+        version,
+        separators_regex=r'[.]',
+        truncate_regex=r'[-+]',
+        implicit_split=True,
+        empty_as=None)
 
   def enumerate_versions(self,
                          package,

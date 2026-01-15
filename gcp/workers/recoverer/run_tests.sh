@@ -15,5 +15,8 @@
 
 cd ../worker
 
-poetry install
+# Install dependencies only if not running in Cloud Build
+if [ -z "$CLOUDBUILD" ]; then
+  poetry sync
+fi
 poetry run python ../recoverer/recoverer_test.py

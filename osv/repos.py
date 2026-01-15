@@ -117,7 +117,9 @@ class RepoInaccessibleError(Exception):
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
-  if GITTER_HOST:
+  # Don't user Gitter for oss-fuzz-vulns repo because it requires auth
+  logging.info('Cloning %s to %s.', git_url, checkout_dir)
+  if GITTER_HOST and git_url != 'ssh://github.com/google/oss-fuzz-vulns':
     try:
       os.makedirs(checkout_dir, exist_ok=True)
       resp = requests.get(
@@ -131,17 +133,22 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
       if resp.status_code == 400:
         raise GitCloneError(f'Failed to clone repo: {resp.text}')
 
-      resp.raise_for_status()
+      # If return is successful write out the repo, otherwise fall back to
+      # original cloning method
+      if resp.status_code == 200:
+        with open(f'{checkout_dir}.zst', 'wb') as f:
+          shutil.copyfileobj(resp.raw, f)
 
-      with open(f'{checkout_dir}.zst', 'wb') as f:
-        shutil.copyfileobj(resp.raw, f)
+        cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
+        subprocess.run(cmd, check=True)
+        # Remove after extraction.
+        os.remove(f'{checkout_dir}.zst')
 
-      cmd = ['tar', '-xf', f'{checkout_dir}.zst', '-C', checkout_dir]
-      subprocess.run(cmd, check=True)
-      # Remove after extraction.
-      os.remove(f'{checkout_dir}.zst')
+        return pygit2.Repository(checkout_dir)
 
-      return pygit2.Repository(checkout_dir)
+      logging.error(
+          'Failed to clone repo through gitter, '
+          'status: %d, response: %s', resp.status_code, resp.text)
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e
     except subprocess.CalledProcessError as e:

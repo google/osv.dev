@@ -17,7 +17,12 @@ import packaging_legacy.version
 import requests
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_generic,
+    coarse_version_from_ints,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 
 
 class PyPI(EnumerableEcosystem):
@@ -29,6 +34,33 @@ class PyPI(EnumerableEcosystem):
     """Sort key."""
     # version.parse() handles invalid versions by returning LegacyVersion()
     return packaging_legacy.version.parse(version)
+
+  def coarse_version(self, version: str):
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Maps legacy versions to 0 (sort before valid versions).
+    Epochs are preserved.
+    """
+    # legacy versions are less than non-legacy versions, thus mapped to 0
+    ver = packaging_legacy.version.parse(version)
+    if isinstance(ver, packaging_legacy.version.LegacyVersion):
+      return coarse_version_from_ints([0])
+
+    epoch = ver.epoch
+
+    # parse the epoch-less string
+    if version[0].lower() == 'v':
+      version = version[1:]
+    epochless = version.split('!', 1)[-1]
+
+    return coarse_version_generic(
+        epochless,
+        separators_regex=r'[.]',
+        truncate_regex=r'[+_-]',
+        implicit_split=True,
+        empty_as=None,
+        epoch=epoch)
 
   def enumerate_versions(self,
                          package,

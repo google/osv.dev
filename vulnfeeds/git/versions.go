@@ -154,9 +154,13 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 		}
 	} else {
 		// Two constraints
-		if op1 == ">=" {
+		switch op1 {
+		case ">=":
 			av.Introduced = ver1
-		} else {
+		case ">":
+			// this is technically incorrect but better than introduced being 0
+			av.Introduced = ver1
+		default:
 			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
 		}
 

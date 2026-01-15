@@ -44,3 +44,6 @@ steps:
   waitFor: ['init', 'sync']
 
 timeout: 7200s
+options:
+  env:
+    - CLOUDBUILD=1

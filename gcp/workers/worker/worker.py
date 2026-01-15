@@ -387,6 +387,9 @@ class TaskRunner:
 
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      if deleted:
+        self._handle_deleted(source_repo, path)
+        return
       vulnerabilities = []
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:
@@ -447,7 +450,12 @@ class TaskRunner:
 
     logging.info('Marking %s as invalid and withdrawn.', vuln_id)
     bug.status = osv.BugStatus.INVALID
-    bug.withdrawn = datetime.datetime.now(datetime.UTC)
+    if not bug.withdrawn:  # in case this was already withdrawn for some reason
+      bug.withdrawn = datetime.datetime.now(datetime.UTC)
+    if bug.last_modified:
+      bug.last_modified = max(bug.withdrawn, bug.last_modified)
+    else:
+      bug.last_modified = bug.withdrawn
     bug.put()
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
@@ -677,19 +685,12 @@ class TaskRunner:
           logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
                         task_type, source_id)
 
-        if task_type in ('regressed', 'fixed'):
-          oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
-                                       message)
-        elif task_type == 'impact':
-          try:
-            oss_fuzz.process_impact_task(source_id, message)
-          except osv.ImpactError:
-            logging.exception('Failed to process impact: ')
-        elif task_type == 'invalid':
-          mark_bug_invalid(message)
-        elif task_type == 'update-oss-fuzz':
-          # TODO(michaelkedar): create separate _source_update for oss-fuzz.
-          self._source_update(message)
+        if task_type in ('regressed', 'fixed', 'impact', 'invalid',
+                         'update-oss-fuzz'):
+          # TODO(michaelkedar): Remove this once the cutover is complete and the
+          # subscription filter is updated.
+          logging.info('Ignoring OSS-Fuzz task %s for source %s', task_type,
+                       source_id)
         elif task_type == 'update':
           self._source_update(message)
 

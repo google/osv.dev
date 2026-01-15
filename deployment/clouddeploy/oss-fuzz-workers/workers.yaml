@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: worker-private
+  template:
+    metadata:
+      labels:
+        name: worker-private
+    spec:
+      containers:
+      - name: worker-private
+        image: worker
+        imagePullPolicy: Always
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-vulnerabilities
+        args:
+          - "--ssh_key_public=/secrets/ssh.pub"
+          - "--ssh_key_private=/secrets/ssh"
+          - "--redis_host=10.102.25.213"
+        volumeMounts:
+          - mountPath: "/work"
+            name: "ssd"
+          - mountPath: "/secrets"
+            name: "secrets"
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 1
+            memory: "10G"
+          limits:
+            cpu: 2
+            memory: "13G"
+      volumes:
+        - name: "ssd"
+          hostPath:
+            path: "/mnt/disks/ssd0"
+        - name: secrets
+          secret:
+            secretName: secrets
+            items:
+              - key: ssh
+                path: ssh
+                mode: 0600
+              - key: ssh.pub
+                path: ssh.pub

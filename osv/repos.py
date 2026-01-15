@@ -114,6 +114,12 @@ class NoBranchError(Exception):
 class RepoInaccessibleError(Exception):
   """Git repository cannot be cloned due to being deleted or requiring auth."""
 
+def checkout_repo(checkout_dir):
+  try:
+    repo = pygit2.Repository(checkout_dir)
+  except:
+    repo = pygit2.Repository(checkout_dir, pygit2.enums.RepositoryOpenFlag.BARE)
+  return repo
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""
@@ -142,7 +148,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
       # Remove after extraction.
       os.remove(f'{checkout_dir}.zst')
 
-      return pygit2.Repository(checkout_dir)
+      return checkout_repo(checkout_dir)
     except requests.RequestException as e:
       raise GitCloneError(f'Failed to clone repo: {e}') from e
     except subprocess.CalledProcessError as e:
@@ -158,7 +164,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
       cmd.append('--filter=blob:none')
     cmd.extend([_git_mirror(git_url), checkout_dir])
     subprocess.run(cmd, env=env, capture_output=True, check=True)
-    return pygit2.Repository(checkout_dir)
+    return checkout_repo(checkout_dir)
   except subprocess.CalledProcessError as e:
     stderr = e.stderr.decode(errors='ignore')
     if ('could not read Username' in stderr or
@@ -205,7 +211,7 @@ def _use_existing_checkout(git_url,
                            git_callbacks=None,
                            branch=None):
   """Update and use existing checkout."""
-  repo = pygit2.Repository(checkout_dir)
+  repo = checkout_repo(checkout_dir)
   repo.cache = {}
   if repo.remotes['origin'].url != _git_mirror(git_url):
     # The URL in the code is the source of truth,

@@ -141,15 +141,13 @@ class RootEcosystemTest(unittest.TestCase):
     """Test that invalid versions raise appropriate errors."""
     # Alpine ecosystem with invalid version
     ecosystem_alpine = root.Root(suffix=':Alpine:3.18')
-    with self.assertRaises(ValueError) as context:
-      ecosystem_alpine.sort_key('invalid-version!@#')
-    self.assertIn('Invalid Alpine version', str(context.exception))
+    key = ecosystem_alpine.sort_key('invalid-version!@#')
+    self.assertTrue(key.is_invalid)
 
     # Debian ecosystem with empty version
     ecosystem_debian = root.Root(suffix=':Debian:12')
-    with self.assertRaises(ValueError) as context:
-      ecosystem_debian.sort_key('')
-    self.assertIn('Invalid Debian/Ubuntu version', str(context.exception))
+    key = ecosystem_debian.sort_key('')
+    self.assertTrue(key.is_invalid)
 
   def test_sub_ecosystem_extraction(self):
     """Test _get_sub_ecosystem method."""

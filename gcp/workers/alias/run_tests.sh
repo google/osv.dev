@@ -15,6 +15,9 @@
 
 cd ../worker
 
-poetry install
+# Install dependencies only if not running in Cloud Build
+if [ -z "$CLOUDBUILD" ]; then
+  poetry sync
+fi
 poetry run python ../alias/alias_computation_test.py
 poetry run python ../alias/upstream_computation_test.py

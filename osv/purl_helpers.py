@@ -87,8 +87,9 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('rpm', 'redhat'),
     'Rocky Linux':
         EcosystemPURL('rpm', 'rocky-linux'),
-    'Root':
-        EcosystemPURL('generic', 'root'),
+    # Note: Root ecosystem does not generate PURLs as Root packages are not
+    # published to public registries (npm, PyPI, Maven Central, etc.).
+    # Users can query Root vulnerabilities using ecosystem and package name.
     'RubyGems':
         EcosystemPURL('gem', None),
     'SUSE':
@@ -142,8 +143,10 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
                                           'BellSoft Hardened Containers'):
     suffix = '?arch=source'
 
-  # Encode package name: preserve '/' only when no namespace is defined
-  safe_chars = '' if purl_namespace else '/'
+  # Encode package name: preserve '/' in specific cases
+  # - When no namespace is defined
+  # - For maven type (uses / to separate group ID and artifact ID)
+  safe_chars = '' if (purl_namespace and purl_type != 'maven') else '/'
   encoded_name = quote(package_name, safe=safe_chars)
 
   return f'pkg:{purl_ecosystem}/{encoded_name}{suffix}'

@@ -202,6 +202,7 @@ func main() {
 		Addr:              fmt.Sprintf(":%d", *port),
 		ReadHeaderTimeout: 3 * time.Second,
 		BaseContext: func(_ net.Listener) context.Context {
+			// Return the context tied to the termination signal.
 			return ctx
 		},
 	}

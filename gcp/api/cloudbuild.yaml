@@ -39,8 +39,9 @@ steps:
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
-  env:
-    - CLOUDBUILD=1
   waitFor: ['init', 'sync']
 
 timeout: 7200s
+options:
+  env:
+    - CLOUDBUILD=1

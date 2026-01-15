@@ -73,3 +73,5 @@ steps:
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8
+  env:
+    - CLOUDBUILD=1

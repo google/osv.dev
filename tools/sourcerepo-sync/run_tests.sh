@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-poetry install
+# Install dependencies only if not running in Cloud Build
+if [ -z "$CLOUDBUILD" ]; then
+  poetry sync
+fi
 poetry run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
 poetry run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate

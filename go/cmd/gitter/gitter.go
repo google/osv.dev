@@ -64,8 +64,10 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 			logger.Warn("Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
 			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
+
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
+
 	return nil
 }
 

@@ -4,18 +4,11 @@ import requests
 from ..third_party.univers.debian import Version as DebianVersion
 from . import config
 from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .debian import DPKG
 
 
-class Opam(EnumerableEcosystem):
+class Opam(EnumerableEcosystem, DPKG):
   """OPAM packages ecosystem"""
-
-  def _sort_key(self, version):
-    # OPAM uses debian versioning
-    if not DebianVersion.is_valid(version):
-      # If debian version is not valid, it is most likely an invalid fixed
-      # version then sort it to the last/largest element
-      return DebianVersion(9999999999, '9999999999')
-    return DebianVersion.from_string(version)
 
   _BASE = 'https://api.github.com/repos/ocaml/'
   _REPO = _BASE + 'opam-repository/contents/packages/'

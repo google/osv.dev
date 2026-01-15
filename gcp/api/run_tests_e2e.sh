@@ -25,5 +25,7 @@ service docker start || true
 
 set -e
 
-poetry install
+if [ -z "$CLOUDBUILD" ]; then
+  poetry sync
+fi
 poetry run python run_apitester.py "$1"

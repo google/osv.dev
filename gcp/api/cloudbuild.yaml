@@ -45,9 +45,7 @@ steps:
   id: 'api-snapshot-tests'
   dir: gcp/api
   args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
-  env:
-    - CLOUDBUILD=1
-    # Don't run at the same time as api-tests
+  # Don't run at the same time as api-tests
   waitFor: ['init', 'sync', 'api-tests']
 
 timeout: 7200s

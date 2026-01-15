@@ -115,7 +115,11 @@ class RepoInaccessibleError(Exception):
   """Git repository cannot be cloned due to being deleted or requiring auth."""
 
 def checkout_repo(checkout_dir):
-  return pygit2.Repository(checkout_dir, pygit2.enums.RepositoryOpenFlag.BARE)
+  try:
+    repo = pygit2.Repository(checkout_dir)
+  except:
+    repo = pygit2.Repository(checkout_dir, pygit2.enums.RepositoryOpenFlag.BARE)
+  return repo
 
 def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
   """Perform a clone."""

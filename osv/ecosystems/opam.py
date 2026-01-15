@@ -44,7 +44,7 @@ class Opam(EnumerableEcosystem):
     if archive_response.status_code == 200:
       responses.extend(archive_response.json())
 
-    versions = [x["name"] for x in responses]
+    versions = [x["name"].removeprefix(package + '.') for x in responses]
 
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,

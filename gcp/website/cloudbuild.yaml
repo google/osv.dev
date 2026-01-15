@@ -44,3 +44,5 @@ steps:
   waitFor: ['init', 'sync']
 
 timeout: 7200s
+options:
+  automapSubstitutions: true

@@ -24,6 +24,9 @@ service docker start
 # Set -e later as service docker start should be able to successfully fail
 set -e
 
-poetry install
+# Install dependencies only if not running in Cloud Build
+if [ -z "$BUILD_ID" ]; then
+  poetry sync
+fi
 poetry run python server_test.py
 poetry run python integration_tests.py "$1"

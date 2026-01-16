@@ -137,7 +137,7 @@
       "vulns": [
         {
           "id": "GHSA-8qvm-5x2c-j2w7",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

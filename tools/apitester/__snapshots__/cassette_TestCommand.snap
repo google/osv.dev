@@ -61,35 +61,35 @@
       "vulns": [
         {
           "id": "GO-2024-2598",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2599",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2600",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2609",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2610",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2687",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2887",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2888",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2963",
@@ -201,35 +201,35 @@
       "vulns": [
         {
           "id": "GO-2024-2598",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2599",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2600",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2609",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2610",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2687",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2887",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2888",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2963",
@@ -333,35 +333,35 @@
       "vulns": [
         {
           "id": "GO-2024-2598",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2599",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2600",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2609",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2610",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2687",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2887",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2888",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2963",
@@ -473,35 +473,35 @@
       "vulns": [
         {
           "id": "GO-2024-2598",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2599",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2600",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2609",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2610",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2687",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2887",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2888",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2963",
@@ -1492,10 +1492,6 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
-          "id": "DEBIAN-CVE-2025-12863",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
           "id": "DEBIAN-CVE-2025-24928",
           "modified": "<RFC3339 date with the year 2025>"
         },
@@ -1533,6 +1529,18 @@
         },
         {
           "id": "DEBIAN-CVE-2025-9714",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-0989",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-0990",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-0992",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

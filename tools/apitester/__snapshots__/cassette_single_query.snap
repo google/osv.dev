@@ -82,7 +82,10 @@
     {
       "id": "CVE-2022-33068",
       "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-      "aliases": ["ROOT-OS-DEBIAN-bullseye-CVE-2022-33068"],
+      "aliases": [
+        "ROOT-OS-DEBIAN-11-CVE-2022-33068",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2022-33068"
+      ],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2022-06-23T17:15:14.350Z",
       "related": [
@@ -165,6 +168,8 @@
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
       "aliases": [
+        "ROOT-OS-DEBIAN-11-CVE-2023-25193",
+        "ROOT-OS-DEBIAN-12-CVE-2023-25193",
         "ROOT-OS-DEBIAN-bookworm-CVE-2023-25193",
         "ROOT-OS-DEBIAN-bullseye-CVE-2023-25193"
       ],
@@ -273,7 +278,7 @@
       "id": "CVE-2026-22693",
       "summary": "Null Pointer Dereference in SubtableUnicodesCache::create leading to DoS",
       "details": "HarfBuzz is a text shaping engine. Prior to version 12.3.0, a null pointer dereference vulnerability exists in the SubtableUnicodesCache::create function located in src/hb-ot-cmap-table.hh. The function fails to check if hb_malloc returns NULL before using placement new to construct an object at the returned pointer address. When hb_malloc fails to allocate memory (which can occur in low-memory conditions or when using custom allocators that simulate allocation failures), it returns NULL. The code then attempts to call the constructor on this null pointer using placement new syntax, resulting in undefined behavior and a Segmentation Fault. This issue has been patched in version 12.3.0.",
-      "aliases": ["GHSA-xvjr-f2r9-c7ww"],
+      "aliases": ["GHSA-xvjr-f2r9-c7ww", "ROOT-OS-DEBIAN-13-CVE-2026-22693"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-10T05:53:21.019Z",
       "database_specific": "<Any value>",
@@ -281,6 +286,10 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2026/01/11/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/12/1"
         },
         {
           "type": "ADVISORY",
@@ -738,7 +747,11 @@
       "id": "CURL-CVE-2024-9681",
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CVE-2024-9681", "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"],
+      "aliases": [
+        "CVE-2024-9681",
+        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
+      ],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1877,6 +1890,7 @@
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
       "aliases": [
         "CURL-CVE-2024-9681",
+        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
         "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
       ],
       "modified": "<RFC3339 date with the year 2026>",

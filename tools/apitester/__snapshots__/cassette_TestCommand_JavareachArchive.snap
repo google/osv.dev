@@ -27,7 +27,7 @@
       "vulns": [
         {
           "id": "GHSA-288c-cq4h-88gq",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-4gq5-ch57-c2mg",
@@ -39,7 +39,7 @@
         },
         {
           "id": "GHSA-57j2-w4cx-62h2",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-5949-rw7g-wx7w",
@@ -151,7 +151,7 @@
         },
         {
           "id": "GHSA-jjjh-jjxp-wpff",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-m6x4-97wx-4q27",
@@ -195,7 +195,7 @@
         },
         {
           "id": "GHSA-rgv9-q543-rqg4",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rpr3-cw39-3pxh",
@@ -316,7 +316,7 @@
       "vulns": [
         {
           "id": "GHSA-288c-cq4h-88gq",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-4gq5-ch57-c2mg",
@@ -328,7 +328,7 @@
         },
         {
           "id": "GHSA-57j2-w4cx-62h2",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-5949-rw7g-wx7w",
@@ -440,7 +440,7 @@
         },
         {
           "id": "GHSA-jjjh-jjxp-wpff",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-m6x4-97wx-4q27",
@@ -484,7 +484,7 @@
         },
         {
           "id": "GHSA-rgv9-q543-rqg4",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rpr3-cw39-3pxh",

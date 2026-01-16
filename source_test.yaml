@@ -141,7 +141,7 @@
   bucket: 'osv-test-cve-osv-conversion'
   db_prefix: ['CVE-']
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
   strict_validation: True

@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/storage v1.59.1
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20251230224438-88c48750ddae
-	golang.org/x/sync v0.18.0
+	golang.org/x/sync v0.19.0
 	google.golang.org/api v0.257.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260112192933-99fd39fd28a9
 	google.golang.org/protobuf v1.36.11

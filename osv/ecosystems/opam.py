@@ -1,7 +1,6 @@
 """opam ecosystem helper."""
 import requests
 
-from ..third_party.univers.debian import Version as DebianVersion
 from . import config
 from .ecosystems_base import EnumerableEcosystem, EnumerateError
 from .debian import DPKG

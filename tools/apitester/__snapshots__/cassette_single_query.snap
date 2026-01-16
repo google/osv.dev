@@ -340,7 +340,7 @@
       "id": "OSV-2020-484",
       "summary": "Heap-buffer-overflow in AAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition",
       "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=12532\n\n```\nCrash type: Heap-buffer-overflow READ 4\nCrash state:\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition\nvoid AAT::StateTableDriver\u003cAAT::ExtendedTypes, AAT::KerxSubTableFormat4\u003cAAT::Ker\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::apply\n```\n",
-      "modified": "<RFC3339 date with the year 2022>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2020-07-01T00:00:12.297418Z",
       "references": [
         {

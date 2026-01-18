@@ -39,6 +39,9 @@ def parse_version_and_revision(version_string):
     revision = int(match.group(1)[2:])
     version = version_string[:match.span(1)[0]]
 
+  # strip leading 0's from the first component only
+  version = re.sub(r"^0+(\d)", r"\1", version)
+
   return version, revision
 
 

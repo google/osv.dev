@@ -403,7 +403,8 @@ steps:
      custommetrics=gcr.io/oss-vdb/custommetrics:$COMMIT_SHA,\
      relations=gcr.io/oss-vdb/relations:$COMMIT_SHA,\
      generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA,\
-     gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA"
+     gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA,\
+     cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
 

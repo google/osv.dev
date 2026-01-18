@@ -1,5 +1,5 @@
-#!/bin/bash -ex
-# Copyright 2024 Google LLC
+#!/bin/bash -x
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install dependencies only if not running in Cloud Build
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 /path/to/credential.json"
+  exit 1
+fi
+
+export GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities
+
+# Try to start docker if not running (mostly for CI)
+service docker start || true
+
+set -e
+
 if [ -z "$CLOUDBUILD" ]; then
   poetry sync
 fi
-poetry run python source_sync.py --kind SourceRepository --project oss-vdb --file ../../source.yaml --verbose --validate
-poetry run python source_sync.py --kind SourceRepository --project oss-vdb-test --file ../../source_test.yaml --verbose --validate
+poetry run python run_apitester.py "$1"

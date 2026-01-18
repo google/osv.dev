@@ -135,3 +135,15 @@ class RPMEcosystemTest(unittest.TestCase):
     for ecosystem_name in ecos:
       ecosystem = ecosystems.get(ecosystem_name)
       self.assertIsInstance(ecosystem, redhat.RPM)
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = redhat.RPM()
+    self.assertEqual('00:00000003.00000004.00000001',
+                     ecosystem.coarse_version('0:3.4.1-6.el8_10'))
+    self.assertEqual('02:00000001.00000035.00000000',
+                     ecosystem.coarse_version('2:1.35-9.el10_1'))
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1+2__3'))
+    self.assertEqual('00:00000010.00000020.00000000',
+                     ecosystem.coarse_version('10.20^2'))

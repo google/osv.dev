@@ -18,13 +18,13 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func loadTestData2(cveName string) Vulnerability {
+func loadTestData2(cveName string) models.Vulnerability {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves CVEAPIJSON20Schema
+	var nvdCves models.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", fileName, err)
@@ -36,7 +36,7 @@ func loadTestData2(cveName string) Vulnerability {
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
 
-	return Vulnerability{}
+	return models.Vulnerability{}
 }
 
 func TestParseCPE(t *testing.T) {
@@ -710,7 +710,7 @@ func TestExtractGitCommit(t *testing.T) {
 func TestExtractVersionInfo(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputCVEItem        Vulnerability
+		inputCVEItem        models.Vulnerability
 		inputValidVersions  []string
 		expectedVersionInfo models.VersionInfo
 		expectedNotes       []string
@@ -930,7 +930,7 @@ func TestExtractVersionInfo(t *testing.T) {
 func TestCPEs(t *testing.T) {
 	tests := []struct {
 		description  string
-		inputCVEItem Vulnerability
+		inputCVEItem models.Vulnerability
 		expectedCPEs []string
 	}{
 		{
@@ -1286,7 +1286,7 @@ func TestReposFromReferences(t *testing.T) {
 		CVE         string
 		cache       VendorProductToRepoMap
 		vp          *VendorProduct
-		refs        []Reference
+		refs        []models.Reference
 		tagDenyList []string
 	}
 	tests := []struct {
@@ -1300,7 +1300,7 @@ func TestReposFromReferences(t *testing.T) {
 				CVE:   "CVE-2023-0327",
 				cache: nil,
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1316,7 +1316,7 @@ func TestReposFromReferences(t *testing.T) {
 				CVE:   "CVE-2025-0211",
 				cache: nil,
 				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
@@ -1332,7 +1332,7 @@ func TestReposFromReferences(t *testing.T) {
 				CVE:   "CVE-2025-26519",
 				cache: nil,
 				vp:    nil,
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
@@ -1349,7 +1349,7 @@ func TestReposFromReferences(t *testing.T) {
 				CVE:   "CVE-2016-10525",
 				cache: nil,
 				vp:    nil,
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1376,7 +1376,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		CVE         string
 		cache       VendorProductToRepoMap
 		vp          *VendorProduct
-		refs        []Reference
+		refs        []models.Reference
 		tagDenyList []string
 	}
 	tests := []struct {
@@ -1390,7 +1390,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				CVE:   "CVE-2023-0327",
 				cache: nil,
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1406,7 +1406,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				CVE:   "CVE-2025-0211",
 				cache: nil,
 				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
@@ -1422,7 +1422,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				CVE:   "CVE-2025-26519",
 				cache: nil,
 				vp:    nil,
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
@@ -1439,7 +1439,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				CVE:   "CVE-2016-10525",
 				cache: nil,
 				vp:    nil,
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1455,7 +1455,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				CVE:   "CVE-2024-7790",
 				cache: nil,
 				vp:    &VendorProduct{"Devikia", "DevikaAI"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},

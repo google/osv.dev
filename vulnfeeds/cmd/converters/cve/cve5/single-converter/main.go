@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/google/osv/vulnfeeds/cvelist2osv"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
@@ -28,7 +28,7 @@ func main() {
 		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
 
-	var cve cves.CVE5
+	var cve models.CVE5
 	if err = json.Unmarshal(data, &cve); err != nil {
 		logger.Fatal("Failed to parse CVEList CVE JSON", slog.Any("err", err))
 	}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -28,7 +29,7 @@ const (
 
 // ConversionMetrics holds the collected data about the conversion process for a single CVE.
 type ConversionMetrics struct {
-	CVEID                 cves.CVEID                       `json:"id"`              // The CVE ID
+	CVEID                 models.CVEID                     `json:"id"`              // The CVE ID
 	CNA                   string                           `json:"cna"`             // The CNA that assigned the CVE.
 	Outcome               ConversionOutcome                `json:"outcome"`         // The final outcome of the conversion (e.g., "Successful", "Failed").
 	Repos                 []string                         `json:"repos"`           // A list of repositories extracted from the CVE's references.
@@ -63,7 +64,7 @@ var RefTagDenyList = []string{
 // extractConversionMetrics examines a CVE and its generated OSV references to populate
 // the ConversionMetrics struct with heuristics about the conversion process.
 // It captures the assigning CNA and counts the occurrences of each reference type.
-func extractConversionMetrics(cve cves.CVE5, refs []*osvschema.Reference, metrics *ConversionMetrics) {
+func extractConversionMetrics(cve models.CVE5, refs []*osvschema.Reference, metrics *ConversionMetrics) {
 	// Capture the CNA for heuristic analysis.
 	metrics.CNA = cve.Metadata.AssignerShortName
 	// TODO(jesslowe): more CNA based analysis
@@ -82,7 +83,7 @@ func extractConversionMetrics(cve cves.CVE5, refs []*osvschema.Reference, metric
 }
 
 // getCWEs extracts and adds CWE IDs from the CVE5 problem-types
-func getCWEs(cna cves.CNA, metrics *ConversionMetrics) []string {
+func getCWEs(cna models.CNA, metrics *ConversionMetrics) []string {
 	var cwes []string
 
 	for _, pt := range cna.ProblemTypes {
@@ -106,30 +107,30 @@ func getCWEs(cna cves.CNA, metrics *ConversionMetrics) []string {
 	return cwes
 }
 
-// FromCVE5 creates a `vulns.Vulnerability` object from a `cves.CVE5` object.
+// FromCVE5 creates a `vulns.Vulnerability` object from a `models.CVE5` object.
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
-func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics, sourceLink string) *vulns.Vulnerability {
+func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *ConversionMetrics, sourceLink string) *vulns.Vulnerability {
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
 	v := vulns.Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			SchemaVersion: osvconstants.SchemaVersion,
 			Id:            string(cve.Metadata.CVEID),
 			Summary:       cve.Containers.CNA.Title,
-			Details:       cves.EnglishDescription(cve.Containers.CNA.Descriptions),
+			Details:       models.EnglishDescription(cve.Containers.CNA.Descriptions),
 			Aliases:       aliases,
 			Related:       related,
 			References:    vulns.ClassifyReferences(refs),
 		}}
 
-	published, err := cves.ParseCVE5Timestamp(cve.Metadata.DatePublished)
+	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
 		metrics.AddNote("[%s]: Published date failed to parse, setting time to now", cve.Metadata.CVEID)
 		published = time.Now()
 	}
 	v.Published = timestamppb.New(published)
 
-	modified, err := cves.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
+	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
 		metrics.AddNote("[%s]: Modified date failed to parse, setting time to now", cve.Metadata.CVEID)
 		modified = time.Now()
@@ -165,7 +166,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics, 
 	})
 
 	// Combine severity metrics from both CNA and ADP containers.
-	var severity []cves.Metrics
+	var severity []models.Metrics
 	if len(cve.Containers.CNA.Metrics) != 0 {
 		severity = append(severity, cve.Containers.CNA.Metrics...)
 	}
@@ -184,7 +185,7 @@ func FromCVE5(cve cves.CVE5, refs []cves.Reference, metrics *ConversionMetrics, 
 }
 
 // CreateOSVFile creates the initial file for the OSV record.
-func CreateOSVFile(id cves.CVEID, vulnDir string) (*os.File, error) {
+func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
 	outputFile := filepath.Join(vulnDir, string(id)+extension)
 
 	f, err := os.Create(outputFile)
@@ -199,7 +200,7 @@ func CreateOSVFile(id cves.CVEID, vulnDir string) (*os.File, error) {
 // CreateMetricsFile saves the collected conversion metrics to a JSON file.
 // This file provides data for analyzing the success and characteristics of the
 // conversion process for a given CVE.
-func CreateMetricsFile(id cves.CVEID, vulnDir string) (*os.File, error) {
+func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
 	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
 	f, err := os.Create(metricsFile)
 	if err != nil {
@@ -229,15 +230,15 @@ func determineOutcome(metrics *ConversionMetrics) {
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) error {
+func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) error {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
 
 	// Add NVD and computed source link to references
-	references = append(references, cves.Reference{URL: fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID)})
+	references = append(references, models.Reference{URL: fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", cveID)})
 	if sourceLink != "" {
-		references = append(references, cves.Reference{URL: sourceLink})
+		references = append(references, models.Reference{URL: sourceLink})
 	}
 
 	references = deduplicateRefs(references)
@@ -281,7 +282,7 @@ func ConvertAndExportCVEToOSV(cve cves.CVE5, vulnSink io.Writer, metricsSink io.
 // identifyPossibleURLs extracts all URLs from a CVE object.
 // It searches for URLs in the CNA and ADP reference sections, as well as in
 // the 'collectionUrl' and 'repo' fields of the 'affected' entries.
-func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
+func identifyPossibleURLs(cve models.CVE5) []models.Reference {
 	refs := cve.Containers.CNA.References
 
 	for _, adp := range cve.Containers.ADP {
@@ -292,15 +293,15 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 
 	for _, affected := range cve.Containers.CNA.Affected {
 		if affected.CollectionURL != "" {
-			refs = append(refs, cves.Reference{URL: affected.CollectionURL})
+			refs = append(refs, models.Reference{URL: affected.CollectionURL})
 		}
 		if affected.Repo != "" {
-			refs = append(refs, cves.Reference{URL: affected.Repo})
+			refs = append(refs, models.Reference{URL: affected.Repo})
 		}
 	}
 
 	// Filter out empty URLs from CNA references if any
-	filteredRefs := make([]cves.Reference, 0, len(refs))
+	filteredRefs := make([]models.Reference, 0, len(refs))
 	for _, ref := range refs {
 		if ref.URL != "" {
 			filteredRefs = append(filteredRefs, ref)
@@ -311,19 +312,19 @@ func identifyPossibleURLs(cve cves.CVE5) []cves.Reference {
 	return refs
 }
 
-func deduplicateRefs(refs []cves.Reference) []cves.Reference {
+func deduplicateRefs(refs []models.Reference) []models.Reference {
 	// Deduplicate references by URL.
-	slices.SortStableFunc(refs, func(a, b cves.Reference) int {
+	slices.SortStableFunc(refs, func(a, b models.Reference) int {
 		return strings.Compare(a.URL, b.URL)
 	})
-	refs = slices.CompactFunc(refs, func(a, b cves.Reference) bool {
+	refs = slices.CompactFunc(refs, func(a, b models.Reference) bool {
 		return a.URL == b.URL
 	})
 
 	return refs
 }
 
-func buildDBSpecific(cve cves.CVE5, metrics *ConversionMetrics, sourceLink string) map[string]any {
+func buildDBSpecific(cve models.CVE5, metrics *ConversionMetrics, sourceLink string) map[string]any {
 	dbSpecific := make(map[string]any)
 
 	if sourceLink != "" {

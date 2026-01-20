@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cvelist2osv"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
@@ -103,7 +103,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 			continue
 		}
 
-		var cve cves.CVE5
+		var cve models.CVE5
 		if err := json.Unmarshal(data, &cve); err != nil {
 			logger.Info("Failed to unmarshal JSON", slog.String("path", path), slog.Any("err", err))
 			continue

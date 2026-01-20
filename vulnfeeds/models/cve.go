@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package cves contains CVE-specific data structures.
-package cves
+package models
 
 import (
 	"strings"

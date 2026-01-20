@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
+	"github.com/google/osv/vulnfeeds/models"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -82,7 +83,7 @@ func toVersionRangeType(s string) VersionRangeType {
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.
 // It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
 	if version == "" {
 		return ""
 	}
@@ -101,7 +102,7 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
+func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
@@ -193,7 +194,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve cves.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
+func findCPEVersionRanges(cve models.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
 	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {

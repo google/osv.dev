@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/google/osv/vulnfeeds/models"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -115,7 +116,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
-	var parsed cves.CVEAPIJSON20Schema
+	var parsed models.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		logger.Fatal("Failed to parse NVD CVE JSON", slog.Any("err", err))

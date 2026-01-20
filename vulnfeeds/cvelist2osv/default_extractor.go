@@ -2,6 +2,7 @@ package cvelist2osv
 
 import (
 	"fmt"
+	"github.com/google/osv/vulnfeeds/models"
 	"log/slog"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -14,7 +15,7 @@ import (
 // DefaultVersionExtractor provides the default version extraction logic.
 type DefaultVersionExtractor struct{}
 
-func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metrics *ConversionMetrics) []*osvschema.Range {
+func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *ConversionMetrics) []*osvschema.Range {
 	var ranges []*osvschema.Range
 	for _, cveAff := range affected {
 		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
@@ -30,7 +31,7 @@ func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metri
 }
 
 // ExtractVersions for DefaultVersionExtractor.
-func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
+func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
 	gotVersions := false
 
 	repoTagsCache := git.RepoTagsCache{}
@@ -76,7 +77,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 	}
 }
 
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
+func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/osv/vulnfeeds/models"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,7 +18,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
@@ -58,7 +58,7 @@ func main() {
 // Pages are offset based, this assumes the default (and maximum) page size of PageSize
 // Maintaining the recommended 6 seconds betweens calls is left to the caller.
 // See https://nvd.nist.gov/developers/vulnerabilities
-func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *cves.CVEAPIJSON20Schema, err error) { //nolint:unused
+func downloadCVE2FromAPIWithOffset(apiKey string, offset int) (page *models.CVEAPIJSON20Schema, err error) { //nolint:unused
 	client := &http.Client{}
 	APIURL, err := url.Parse(NVDAPIEndpoint)
 	if err != nil {
@@ -125,8 +125,8 @@ func downloadCVE2FromAPI(apiKey string, cvePath string) { //nolint:unused
 		logger.Fatal("Something went wrong when creating/opening file", slog.Any("err", err))
 	}
 	defer file.Close()
-	var vulnerabilities []cves.Vulnerability
-	var page *cves.CVEAPIJSON20Schema
+	var vulnerabilities []models.Vulnerability
+	var page *models.CVEAPIJSON20Schema
 	offset := 0
 	prevTotal := 0
 	for {

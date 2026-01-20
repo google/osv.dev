@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
@@ -75,7 +74,7 @@ func main() {
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
-func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[cves.CVEID]cves.Vulnerability) map[string]*vulns.Vulnerability {
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[models.CVEID]models.Vulnerability) map[string]*vulns.Vulnerability {
 	logger.Info("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
@@ -107,7 +106,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 				continue
 			}
 			v, ok := osvCves[cveID]
-			currentNVDCVE := allCVEs[cves.CVEID(cveID)]
+			currentNVDCVE := allCVEs[models.CVEID(cveID)]
 			if !ok {
 				v = &vulns.Vulnerability{
 					Vulnerability: &osvschema.Vulnerability{

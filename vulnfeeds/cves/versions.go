@@ -683,7 +683,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client) (v models.VersionInfo, notes []string) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
@@ -782,7 +782,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 	}
 	if !gotVersions {
 		var extractNotes []string
-		v.AffectedVersions, extractNotes = ExtractVersionsFromText(validVersions, EnglishDescription(cve.Descriptions))
+		v.AffectedVersions, extractNotes = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions))
 		notes = append(notes, extractNotes...)
 		if len(v.AffectedVersions) > 0 {
 			logger.Info("Extracted versions from description", slog.String("cve", string(cve.ID)), slog.Any("versions", v.AffectedVersions))
@@ -815,7 +815,7 @@ func ExtractVersionInfo(cve CVE, validVersions []string, httpClient *http.Client
 	return v, notes
 }
 
-func CPEs(cve CVE) []string {
+func CPEs(cve models.NVDCVE) []string {
 	var cpes []string
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
@@ -870,7 +870,7 @@ func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func RefAcceptable(ref Reference, tagDenyList []string) bool {
+func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 	for _, deniedTag := range tagDenyList {
 		if slices.Contains(ref.Tags, deniedTag) {
 			return false
@@ -923,7 +923,7 @@ func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -1009,7 +1009,7 @@ func GitVersionsToCommits(cveID CVEID, versions models.VersionInfo, repos []stri
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []Reference, tagDenyList []string) (repos []string) {
+func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []models.Reference, tagDenyList []string) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1046,7 +1046,7 @@ func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorPro
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-func ReposFromReferencesCVEList(cve string, refs []Reference, tagDenyList []string) (repos []string, notes []string) {
+func ReposFromReferencesCVEList(cve string, refs []models.Reference, tagDenyList []string) (repos []string, notes []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {

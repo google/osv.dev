@@ -1,10 +1,10 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.25.5
+go 1.25.6
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
-	cloud.google.com/go/storage v1.59.0
+	cloud.google.com/go/storage v1.59.1
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.20.0
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -13,9 +13,9 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251230224438-88c48750ddae
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260114034825-230b4a2f4d73
 	github.com/sethvargo/go-retry v0.3.0
-	google.golang.org/api v0.259.0
+	google.golang.org/api v0.260.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0
@@ -59,7 +59,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.9 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect

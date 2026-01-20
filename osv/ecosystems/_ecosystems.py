@@ -24,6 +24,7 @@ from .haskell import Hackage, GHC
 from .hex import Hex
 from .maven import Maven
 from .nuget import NuGet
+from .opam import Opam
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
@@ -55,6 +56,7 @@ _ecosystems = {
     'MinimOS': APK,
     'npm': SemverEcosystem,
     'NuGet': NuGet,
+    'opam': Opam,
     'openEuler': RPM,
     'openSUSE': RPM,
     'Packagist': Packagist,

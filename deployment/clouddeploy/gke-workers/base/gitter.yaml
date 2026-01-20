@@ -5,10 +5,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-      maxSurge: 1
+    type: Recreate
   selector:
     matchLabels:
       name: gitter
@@ -17,6 +14,7 @@ spec:
       labels:
         name: gitter
     spec:
+      terminationGracePeriodSeconds: 60
       tolerations:
       - key: workloadType
         operator: Equal

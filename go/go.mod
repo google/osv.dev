@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go
 
-go 1.25.5
+go 1.25.6
 
 require (
 	cloud.google.com/go/datastore v1.21.0
@@ -8,10 +8,10 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.3.0
 	cloud.google.com/go/storage v1.59.1
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20251230224438-88c48750ddae
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260114034825-230b4a2f4d73
 	golang.org/x/sync v0.19.0
 	google.golang.org/api v0.260.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260112192933-99fd39fd28a9
+	google.golang.org/genproto/googleapis/api v0.0.0-20260120174246-409b4a993575
 	google.golang.org/protobuf v1.36.11
 )
 

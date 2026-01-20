@@ -836,7 +836,7 @@ func RemoveQuoting(s string) (result string) {
 }
 
 // Parse a well-formed CPE string into a struct.
-func ParseCPE(formattedString string) (*models.CPE, error) {
+func ParseCPE(formattedString string) (*models.CPEString, error) {
 	if !strings.HasPrefix(formattedString, "cpe:") {
 		return nil, fmt.Errorf("%q does not have expected 'cpe:' prefix", formattedString)
 	}
@@ -847,7 +847,7 @@ func ParseCPE(formattedString string) (*models.CPE, error) {
 		return nil, err
 	}
 
-	return &models.CPE{
+	return &models.CPEString{
 		CPEVersion: strings.Split(formattedString, ":")[1],
 		Part:       wfn.GetString("part"),
 		Vendor:     RemoveQuoting(wfn.GetString("vendor")),

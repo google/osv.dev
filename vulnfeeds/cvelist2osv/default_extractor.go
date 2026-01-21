@@ -2,6 +2,7 @@ package cvelist2osv
 
 import (
 	"fmt"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"log/slog"
 
@@ -45,7 +46,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		} else {
 			gotVersions = true
 		}
-		addAffected(v, aff, metrics)
+		conversion.AddAffected(v, aff, metrics)
 	}
 
 	if !gotVersions {
@@ -60,7 +61,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 				gotVersions = true
 			}
 
-			addAffected(v, aff, metrics)
+			conversion.AddAffected(v, aff, metrics)
 		}
 	}
 
@@ -72,7 +73,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			if err != nil {
 				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 			}
-			addAffected(v, aff, metrics)
+			conversion.AddAffected(v, aff, metrics)
 		}
 	}
 }

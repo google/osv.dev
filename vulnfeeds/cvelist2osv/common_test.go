@@ -1,6 +1,7 @@
 package cvelist2osv
 
 import (
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"testing"
 
@@ -58,7 +59,7 @@ func TestAddAffected(t *testing.T) {
 	}
 	metrics := &models.ConversionMetrics{}
 
-	addAffected(v, aff, metrics)
+	conversion.AddAffected(v, aff, metrics)
 
 	expectedAffected := []*osvschema.Affected{
 		{

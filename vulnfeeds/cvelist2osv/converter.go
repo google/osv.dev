@@ -4,13 +4,11 @@ package cvelist2osv
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"io"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/osv/vulnfeeds/cves"
@@ -146,33 +144,6 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	return &v
 }
 
-// CreateOSVFile creates the initial file for the OSV record.
-func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	outputFile := filepath.Join(vulnDir, string(id)+models.Extension)
-
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, err
-}
-
-// CreateMetricsFile saves the collected conversion metrics to a JSON file.
-// This file provides data for analyzing the success and characteristics of the
-// conversion process for a given CVE.
-func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
-	f, err := os.Create(metricsFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, nil
-}
-
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
 func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) error {
@@ -186,7 +157,7 @@ func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink i
 		references = append(references, models.Reference{URL: sourceLink})
 	}
 
-	references = deduplicateRefs(references)
+	references = conversion.DeduplicateRefs(references)
 
 	metrics := models.ConversionMetrics{CVEID: cveID, CNA: cnaAssigner, UnresolvedRangesCount: 0, ResolvedRangesCount: 0}
 
@@ -200,7 +171,7 @@ func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink i
 	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
 	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
 
-	groupAffectedRanges(v.Affected)
+	conversion.GroupAffectedRanges(v.Affected)
 
 	models.DetermineOutcome(&metrics)
 
@@ -253,18 +224,6 @@ func identifyPossibleURLs(cve models.CVE5) []models.Reference {
 		}
 	}
 	refs = filteredRefs
-
-	return refs
-}
-
-func deduplicateRefs(refs []models.Reference) []models.Reference {
-	// Deduplicate references by URL.
-	slices.SortStableFunc(refs, func(a, b models.Reference) int {
-		return strings.Compare(a.URL, b.URL)
-	})
-	refs = slices.CompactFunc(refs, func(a, b models.Reference) bool {
-		return a.URL == b.URL
-	})
 
 	return refs
 }

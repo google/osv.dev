@@ -2,6 +2,7 @@ package cvelist2osv
 
 import (
 	"fmt"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"slices"
 	"strconv"
 	"strings"
@@ -44,7 +45,7 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 		}
 		aff := createLinuxAffected(versionRanges, versionType, cveAff.Repo)
 		metrics.AddSource(models.VersionSourceAffected)
-		addAffected(v, aff, metrics)
+		conversion.AddAffected(v, aff, metrics)
 	}
 
 	return gotVersions

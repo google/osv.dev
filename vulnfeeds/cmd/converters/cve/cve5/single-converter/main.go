@@ -4,6 +4,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"log/slog"
 	"os"
 
@@ -44,8 +45,8 @@ func main() {
 	}
 	// create the files
 
-	osvFile, errCVE := cvelist2osv.CreateOSVFile(cveID, outDir)
-	metricsFile, errMetrics := cvelist2osv.CreateMetricsFile(cveID, outDir)
+	osvFile, errCVE := conversion.CreateOSVFile(cveID, outDir)
+	metricsFile, errMetrics := conversion.CreateMetricsFile(cveID, outDir)
 	if errCVE != nil || errMetrics != nil {
 		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 	}

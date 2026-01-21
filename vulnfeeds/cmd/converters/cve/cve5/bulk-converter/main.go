@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"flag"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ func main() {
 	flag.Parse()
 	logger.InitGlobalLogger()
 
-	logger.Info("Commencing Linux CVE to OSV conversion run")
+	logger.Info("Commencing CVE to OSV conversion run")
 	if err := os.MkdirAll(*localOutputDir, 0755); err != nil {
 		logger.Fatal("Failed to create local output directory", slog.Any("err", err))
 	}
@@ -115,8 +116,8 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		cveID := cve.Metadata.CVEID
 		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
 
-		osvFile, errCVE := cvelist2osv.CreateOSVFile(cveID, outDir)
-		metricsFile, errMetrics := cvelist2osv.CreateMetricsFile(cveID, outDir)
+		osvFile, errCVE := conversion.CreateOSVFile(cveID, outDir)
+		metricsFile, errMetrics := conversion.CreateMetricsFile(cveID, outDir)
 		if errCVE != nil || errMetrics != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 		}

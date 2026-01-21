@@ -380,7 +380,8 @@ class TaskRunner:
         vulnerabilities = osv.parse_vulnerabilities_from_data(
             blob,
             extension=os.path.splitext(path)[1],
-            key_path=source_repo.key_path)
+            key_path=source_repo.key_path,
+            source_name=path)
       except Exception:
         logging.exception('Failed to parse vulnerability %s', path)
         return

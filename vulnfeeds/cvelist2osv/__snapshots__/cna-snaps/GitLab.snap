@@ -1,0 +1,82 @@
+
+[TestSnapshotConversion/CVE-2025-1110.json - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "versions": [
+              {
+                "introduced": "18.0"
+              },
+              {
+                "fixed": "18.0.1"
+              }
+            ]
+          },
+          "events": [
+            {
+              "introduced": "504fd9e5236e13d674e051c6b8a1e9892b371c58"
+            },
+            {
+              "fixed": "3426be1b93852c5358240c5df40970c0ddfbdb2a"
+            }
+          ],
+          "repo": "https://gitlab.com/gitlab-org/gitlab",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "GitLab",
+    "cwe_ids": [
+      "CWE-1220"
+    ],
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "An issue has been discovered in GitLab CE/EE affecting all versions from 18.0 before 18.0.1. In certain circumstances, a user with limited permissions could access Job Data via a crafted GraphQL query.",
+  "id": "CVE-2025-1110",
+  "modified": "2025-05-22T14:17:44.379Z",
+  "published": "2025-05-22T14:02:31.385Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "git://git@gitlab.com:gitlab-org/gitlab.git"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "REPORT",
+      "url": "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "https://hackerone.com/reports/2972576"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-1110"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "Insufficient Granularity of Access Control in GitLab"
+}
+---

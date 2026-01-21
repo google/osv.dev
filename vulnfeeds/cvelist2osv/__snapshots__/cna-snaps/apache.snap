@@ -1,0 +1,240 @@
+
+[TestSnapshotConversion/CVE-2021-44228.json - 1]
+{
+  "database_specific": {
+    "cna_assigner": "apache",
+    "cwe_ids": [
+      "CWE-20",
+      "CWE-400",
+      "CWE-502"
+    ],
+    "osv_generated_from": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+  },
+  "details": "Apache Log4j2 2.0-beta9 through 2.15.0 (excluding security releases 2.12.2, 2.12.3, and 2.3.1) JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints. An attacker who can control log messages or log message parameters can execute arbitrary code loaded from LDAP servers when message lookup substitution is enabled. From log4j 2.15.0, this behavior has been disabled by default. From version 2.16.0 (along with 2.12.2, 2.12.3, and 2.3.1), this functionality has been completely removed. Note that this vulnerability is specific to log4j-core and does not affect log4net, log4cxx, or other Apache Logging Services projects.",
+  "id": "CVE-2021-44228",
+  "modified": "2025-02-04T14:25:37.215Z",
+  "published": "2021-12-10T00:00:00Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165225/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165260/VMware-Security-Advisory-2021-0028.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165261/Apache-Log4j2-2.14.1-Information-Disclosure.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165270/Apache-Log4j2-2.14.1-Remote-Code-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165281/Log4j2-Log4Shell-Regexes.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165282/Log4j-Payload-Generator.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165306/L4sh-Log4j-Remote-Code-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165307/Log4j-Remote-Code-Execution-Word-Bypassing.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165311/log4j-scan-Extensive-Scanner.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165371/VMware-Security-Advisory-2021-0028.4.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165532/Log4Shell-HTTP-Header-Injection.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165642/VMware-vCenter-Server-Unauthenticated-Log4Shell-JNDI-Injection-Remote-Code-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/165673/UniFi-Network-Application-Unauthenticated-Log4Shell-Remote-Code-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/167794/Open-Xchange-App-Suite-7.10.x-Cross-Site-Scripting-Command-Injection.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/167917/MobileIron-Log4Shell-Remote-Command-Execution.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://packetstormsecurity.com/files/171626/AD-Manager-Plus-7122-Remote-Code-Execution.html"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://seclists.org/fulldisclosure/2022/Dec/2"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://seclists.org/fulldisclosure/2022/Jul/11"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://seclists.org/fulldisclosure/2022/Mar/23"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/10/1"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/10/2"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/10/3"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/13/1"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/13/2"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/14/4"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2021/12/15/3"
+    },
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-397453.pdf"
+    },
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-479842.pdf"
+    },
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-661247.pdf"
+    },
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-714170.pdf"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/..."
+    },
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/cisagov/log4j-affected-db"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/cisagov/log4j-affected-db/blob/develop/SOFTWARE-LIST.md"
+    },
+    {
+      "type": "WEB",
+      "url": "https://github.com/nu11secur1ty/CVE-mitre/tree/main/CVE-2021-44228"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://lists.debian.org/debian-lts-announce/2021/12/msg00007.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/M5CSVUNV4HWZZXGOKNSK6L7RPM7BOKIB/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/VU57UJDCFIASIO35GC55JMKSRXJMCDFM/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://logging.apache.org/log4j/2.x/security.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://msrc-blog.microsoft.com/2021/12/11/microsofts-response-to-cve-2021-44228-apache-log4j2/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+    },
+    {
+      "type": "WEB",
+      "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2021-0032"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20211210-0007/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://support.apple.com/kb/HT213189"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
+    },
+    {
+      "type": "WEB",
+      "url": "https://twitter.com/kurtseifried/status/1469345530182455296"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.bentley.com/en/common-vulnerability-exposure/be-2022-0001"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.debian.org/security/2021/dsa-5020"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00646.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.kb.cert.org/vuls/id/930724"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.nu11secur1ty.com/2021/12/cve-2021-44228.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.oracle.com/security-alerts/alert-cve-2021-44228.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.oracle.com/security-alerts/cpuapr2022.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.oracle.com/security-alerts/cpujan2022.html"
+    }
+  ],
+  "schema_version": "1.7.3",
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "type": "CVSS_V3"
+    }
+  ],
+  "summary": "Apache Log4j2 JNDI features do not protect against attacker controlled LDAP and other JNDI related endpoints"
+}
+---

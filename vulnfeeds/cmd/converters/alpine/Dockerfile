@@ -22,13 +22,13 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o alpine-osv ./cmd/alpine/
+RUN go build -o alpine-osv ./cmd/converters/alpine/
 
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/alpine-osv ./
-COPY ./cmd/alpine/run_alpine_convert.sh ./
+COPY ./cmd/converters/alpine/run_alpine_convert.sh ./
 
 ENTRYPOINT ["/root/run_alpine_convert.sh"]

@@ -22,13 +22,13 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/cpe-repo-gen
+RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/mirrors/cpe-repo-gen
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 
 RUN apk add --no-cache unzip
 
 COPY --from=GO_BUILD /src/cpe-repo-gen ./
-COPY ./cmd/cpe-repo-gen/cpe-repo-gen_map.sh ./
+COPY ./cmd/mirrors/cpe-repo-gen/cpe-repo-gen_map.sh ./
 
 ENTRYPOINT ["/cpe-repo-gen_map.sh"]

@@ -23,13 +23,13 @@ RUN go mod download && go mod verify
 
 
 COPY ./ /src/
-RUN go build -o cve-bulk-converter ./cmd/cve-bulk-converter/
+RUN go build -o cve-bulk-converter ./cmd/converters/cve/cve5/bulk-converter/
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 RUN apk --no-cache add jq
 
 WORKDIR /root/
 COPY --from=go_build /src/cve-bulk-converter ./
-COPY ./cmd/cve-bulk-converter/run-cvelist-converter.sh ./
+COPY ./cmd/converters/cve/cve5/bulk-converter/run-cvelist-converter.sh ./
 
 ENTRYPOINT ["/root/run-cvelist-converter.sh"]

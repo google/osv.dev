@@ -22,14 +22,14 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o debian ./cmd/debian/
+RUN go build -o debian ./cmd/converters/debian/
 
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/debian ./
-COPY ./cmd/debian/run_debian_convert.sh ./
+COPY ./cmd/converters/debian/run_debian_convert.sh ./
 
 RUN chmod 755 ./run_debian_convert.sh
 

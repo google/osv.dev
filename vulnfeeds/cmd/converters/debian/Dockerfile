@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.5-alpine@sha256:ac09a5f469f307e5da71e766b0bd59c9c49ea460a528cc3e6686513d64a6f1fb AS GO_BUILD
+FROM golang:1.25.6-alpine@sha256:d9b2e14101f27ec8d09674cd01186798d227bb0daec90e032aeb1cd22ac0f029 AS GO_BUILD
 
 RUN mkdir /src
 WORKDIR /src
@@ -22,14 +22,14 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o debian ./cmd/debian/
+RUN go build -o debian ./cmd/converters/debian/
 
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/debian ./
-COPY ./cmd/debian/run_debian_convert.sh ./
+COPY ./cmd/converters/debian/run_debian_convert.sh ./
 
 RUN chmod 755 ./run_debian_convert.sh
 

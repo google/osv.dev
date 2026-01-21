@@ -1,7 +1,6 @@
 package cvelist2osv
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/google/osv/vulnfeeds/conversion"
@@ -120,7 +119,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
 			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
-			metrics.AddNote(fmt.Sprintf("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version))
+			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}
 

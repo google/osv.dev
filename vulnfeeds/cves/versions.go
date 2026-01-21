@@ -608,7 +608,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *ConversionMetrics) ([]models.AffectedVersion) {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) ([]models.AffectedVersion) {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -633,10 +633,10 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *Conve
 			var err error
 			fixed, err = nextVersion(validVersions, fixed)
 			if err != nil {
-				metrics.AddNote(err.Error())
+				metrics.AddNote("Failed to determine next version after %s: %s", fixed, err.Error())
 				// if that inference failed, we know this version was definitely still vulnerable.
 				lastaffected = cleanVersion(match[3])
-				metrics.AddNote(fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(match[3])))
+				metrics.AddNote("Using %s as last_affected version instead", cleanVersion(match[3]))
 			}
 		}
 
@@ -646,13 +646,13 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *Conve
 		}
 
 		if introduced != "" && !HasVersion(validVersions, introduced) {
-			metrics.AddNote(fmt.Sprintf("Extracted introduced version %s is not a valid version", introduced))
+			metrics.AddNote("Extracted introduced version %s is not a valid version", introduced)
 		}
 		if fixed != "" && !HasVersion(validVersions, fixed) {
-			metrics.AddNote(fmt.Sprintf("Extracted fixed version %s is not a valid version", fixed))
+			metrics.AddNote("Extracted fixed version %s is not a valid version", fixed)
 		}
 		if lastaffected != "" && !HasVersion(validVersions, lastaffected) {
-			metrics.AddNote(fmt.Sprintf("Extracted last_affected version %s is not a valid version", lastaffected))
+			metrics.AddNote("Extracted last_affected version %s is not a valid version", lastaffected)
 		}
 		// Favour fixed over last_affected for schema compliance.
 		if fixed != "" && lastaffected != "" {
@@ -684,7 +684,7 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, *metrics ConversionMetrics) (v models.VersionInfo) {
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	for _, reference := range cve.References {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
@@ -716,7 +716,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 					var err error
 					introduced, err = nextVersion(validVersions, cleanVersion(*match.VersionStartExcluding))
 					if err != nil {
-						metrics.AddNote(err.Error())
+						metrics.AddNote("%v", err.Error())
 					}
 				}
 
@@ -727,10 +727,10 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 					// Infer the fixed version from the next version after.
 					fixed, err = nextVersion(validVersions, cleanVersion(*match.VersionEndIncluding))
 					if err != nil {
-						metrics.AddNote(err.Error())
+						metrics.AddNote("%v", err.Error())
 						// if that inference failed, we know this version was definitely still vulnerable.
 						lastaffected = cleanVersion(*match.VersionEndIncluding)
-						metrics.AddNote(fmt.Sprintf("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding)))
+						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
 					}
 				}
 
@@ -760,11 +760,11 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 				}
 
 				if introduced != "" && !HasVersion(validVersions, introduced) {
-					metrics.AddNote(fmt.Sprintf("Warning: %s is not a valid introduced version", introduced))
+					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
 				}
 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
-					metrics.AddNote(fmt.Sprintf("Warning: %s is not a valid fixed version", fixed))
+					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
 
 				gotVersions = true
@@ -795,7 +795,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 	if len(validVersions) > 0 {
 		metrics.AddNote("Valid versions:")
 		for _, version := range validVersions {
-			metrics.AddNote("  - "+version)
+			metrics.AddNote("  - %v", version)
 		}
 	}
 
@@ -1049,7 +1049,7 @@ func ReposFromReferencesCVEList(cve string, refs []models.Reference, tagDenyList
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
-			metrics.AddNote(fmt.Sprintf("[%s]: disregarding %q due to a denied tag in %q", cve, ref.URL, ref.Tags))
+			metrics.AddNote("Disregarding %q due to a denied tag in %q", ref.URL, ref.Tags)
 			continue
 		}
 		// if it ends with .md it is likely a researcher repo and _currently_ useless.
@@ -1069,9 +1069,9 @@ func ReposFromReferencesCVEList(cve string, refs []models.Reference, tagDenyList
 		repos = append(repos, repo)
 	}
 	if len(repos) == 0 {
-		metrics.AddNote(fmt.Sprintf("[%s]: Failed to identify any repos using references", cve))
+		metrics.AddNote("Failed to identify any repos using references")
 	} else {
-		metrics.AddNote(fmt.Sprintf("[%s]: Derived %q (no CPEs) using references", cve, repos))
+		metrics.AddNote("Derived %q (no CPEs) using references", repos)
 	}
 
 	return repos

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
@@ -25,7 +24,6 @@ var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
-	cveID := cve.ID
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
@@ -100,7 +98,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 		return fmt.Errorf("failed to create dir: %w", err)
 	}
 	outputFile := filepath.Join(vulnDir, v.Id+models.Extension)
-	notesFile := filepath.Join(vulnDir, v.Id+".notes")
+	// notesFile := filepath.Join(vulnDir, v.Id+".notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
@@ -113,12 +111,12 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 		return fmt.Errorf("failed to write %s: %w", outputFile, err)
 	}
 	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
-	if len(notes) > 0 {
-		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-		if err != nil {
-			logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-		}
-	}
+	// if len(notes) > 0 {
+	// 	err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
+	// 	if err != nil {
+	// 		logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
+	// 	}
+	// }
 
 	return nil
 }
@@ -202,7 +200,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
-	notesFile := filepath.Join(vulnDir, string(cve.ID)+".nvd.notes")
+	// notesFile := filepath.Join(vulnDir, string(cve.ID)+".nvd.notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
@@ -221,12 +219,12 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	if len(notes) > 0 {
-		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-		if err != nil {
-			logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-		}
-	}
+	// if len(notes) > 0 {
+	// 	err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
+	// 	if err != nil {
+	// 		logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
+	// 	}
+	// }
 
 	return nil
 }
@@ -260,7 +258,7 @@ func FindRepos(cve models.NVDCVE, VPRepoCache cves.VendorProductToRepoMap, metri
 
 	// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 	appCPECount := 0
-	for _, CPEstr := range cves.CPEs(cve.CVE) {
+	for _, CPEstr := range CPEs {
 		CPE, err := cves.ParseCPE(CPEstr)
 		if err != nil {
 			logger.Warn("Failed to parse CPE", slog.String("cve", string(CVEID)), slog.String("cpe", CPEstr), slog.Any("err", err))

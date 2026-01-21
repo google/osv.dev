@@ -918,7 +918,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
-			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client)
+			metrics := &models.ConversionMetrics{}
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -1468,7 +1469,8 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

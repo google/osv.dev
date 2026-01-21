@@ -8,8 +8,8 @@ import (
 
 // VersionExtractor defines the interface for different version extraction strategies.
 type VersionExtractor interface {
-	ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string)
-	FindNormalAffectedRanges(affected models.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType)
+	ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string)
+	FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]*osvschema.Range, VersionRangeType)
 }
 
 // GetVersionExtractor returns the appropriate VersionExtractor for a given CNA.

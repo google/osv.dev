@@ -7,10 +7,10 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func cpeVersionExtraction(cve models.CVE5, metrics *ConversionMetrics) ([]*osvschema.Range, error) {
+func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([]*osvschema.Range, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 	if err == nil && len(cpeRanges) > 0 {
-		metrics.VersionSources = append(metrics.VersionSources, VersionSourceCPE)
+		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
 		metrics.CPEs = vulns.Unique(cpeStrings)
 
 		return cpeRanges, nil
@@ -22,7 +22,7 @@ func cpeVersionExtraction(cve models.CVE5, metrics *ConversionMetrics) ([]*osvsc
 }
 
 // textVersionExtraction is a helper function for CPE and description extraction.
-func textVersionExtraction(cve models.CVE5, metrics *ConversionMetrics) []*osvschema.Range {
+func textVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) []*osvschema.Range {
 	// As a last resort, try extracting versions from the description text.
 	versions, extractNotes := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions))
 	for _, note := range extractNotes {
@@ -30,7 +30,7 @@ func textVersionExtraction(cve models.CVE5, metrics *ConversionMetrics) []*osvsc
 	}
 	if len(versions) > 0 {
 		// NOTE: These versions are not currently saved due to the need for better validation.
-		metrics.VersionSources = append(metrics.VersionSources, VersionSourceDescription)
+		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
 		metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
 	}
 
@@ -38,7 +38,7 @@ func textVersionExtraction(cve models.CVE5, metrics *ConversionMetrics) []*osvsc
 }
 
 // initialNormalExtraction handles an expected case of version ranges in the affected field of CVE5
-func initialNormalExtraction(vers models.Versions, metrics *ConversionMetrics, versionTypesCount map[VersionRangeType]int) ([]*osvschema.Range, VersionRangeType, bool) {
+func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMetrics, versionTypesCount map[VersionRangeType]int) ([]*osvschema.Range, VersionRangeType, bool) {
 	if vers.Status != "affected" {
 		return nil, VersionRangeTypeUnknown, true
 	}

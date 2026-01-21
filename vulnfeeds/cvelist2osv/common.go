@@ -29,31 +29,6 @@ const (
 	VersionRangeTypeEcosystem
 )
 
-// VersionSource indicates the source of the extracted version information.
-type VersionSource string
-
-const (
-	VersionSourceNone        VersionSource = "NOVERS"
-	VersionSourceAffected    VersionSource = "CVEAFFVERS"
-	VersionSourceGit         VersionSource = "GITVERS"
-	VersionSourceCPE         VersionSource = "CPEVERS"
-	VersionSourceDescription VersionSource = "DESCRVERS"
-)
-
-type ConversionOutcome int
-
-const (
-	// Set of enums for categorizing conversion outcomes.
-	ConversionUnknown ConversionOutcome = iota // Shouldn't happen
-	Successful                                 // It worked!
-	Rejected                                   // The CVE was rejected
-	NoSoftware                                 // The CVE had no CPEs relating to software (i.e. Operating Systems or Hardware).
-	NoRepos                                    // The CPE Vendor/Product had no repositories derived for it.
-	NoCommitRanges                             // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
-	NoRanges                                   // No version ranges could be extracted from the record.
-	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
-)
-
 // String returns the string representation of a VersionRangeType.
 func (vrt VersionRangeType) String() string {
 	switch vrt {
@@ -102,7 +77,7 @@ func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo strin
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
+func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
@@ -274,7 +249,7 @@ func compareSemverLike(a, b string) int {
 }
 
 // addAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
-func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *ConversionMetrics) {
+func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *models.ConversionMetrics) {
 	allExistingRanges := make(map[string]struct{})
 	for _, existingAff := range v.Affected {
 		for _, r := range existingAff.GetRanges() {

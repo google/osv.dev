@@ -1,10 +1,11 @@
 package cvelist2osv
 
 import (
-	"github.com/google/osv/vulnfeeds/models"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/google/osv/vulnfeeds/models"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/cves"
@@ -114,7 +115,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			versionExtractor := &DefaultVersionExtractor{}
-			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &ConversionMetrics{})
+			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges, protocmp.Transform()); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -221,7 +222,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges, protocmp.Transform()); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
@@ -280,7 +281,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &ConversionMetrics{})
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &models.ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {
@@ -551,7 +552,7 @@ func TestExtractVersions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{},
 			}

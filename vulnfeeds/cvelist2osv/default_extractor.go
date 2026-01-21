@@ -15,7 +15,7 @@ import (
 // DefaultVersionExtractor provides the default version extraction logic.
 type DefaultVersionExtractor struct{}
 
-func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *ConversionMetrics) []*osvschema.Range {
+func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []*osvschema.Range {
 	var ranges []*osvschema.Range
 	for _, cveAff := range affected {
 		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
@@ -24,14 +24,14 @@ func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, met
 			continue
 		}
 		ranges = append(ranges, versionRanges...)
-		metrics.AddSource(VersionSourceAffected)
+		metrics.AddSource(models.VersionSourceAffected)
 	}
 
 	return ranges
 }
 
 // ExtractVersions for DefaultVersionExtractor.
-func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
+func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	gotVersions := false
 
 	repoTagsCache := git.RepoTagsCache{}
@@ -77,7 +77,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 }
 
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
+func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {

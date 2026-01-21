@@ -340,7 +340,7 @@ func TestFromCVE5(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
 
 			// Handle non-deterministic time.Now()

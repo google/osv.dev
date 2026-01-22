@@ -90,7 +90,7 @@ class NoDatesSafeLoader(yaml.SafeLoader):
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
 
-def _parse_vulnerability_dict(path):
+def _parse_vulnerability_dict(path: str) -> dict:
   """Parse a vulnerability file into a dict."""
   with open(path) as f:
     ext = os.path.splitext(path)[1]
@@ -106,7 +106,7 @@ def _parse_vulnerability_dict(path):
 
 
 @cache.cached(shared_cache)
-def load_schema():
+def load_schema() -> dict:
   path = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'osv-schema', 'validation',
       'schema.json')
@@ -115,13 +115,13 @@ def load_schema():
     return json.loads(text)
 
 
-def parse_vulnerability(path, key_path=None, strict=False):
+def parse_vulnerability(path: str, key_path=None, strict=False) -> vulnerability_pb2.Vulnerability:
   """Parse vulnerability YAML/JSON."""
   data = _parse_vulnerability_dict(path)
   return parse_vulnerability_from_dict(data, key_path, strict)
 
 
-def _parse_vulnerabilities(data, key_path, strict=False):
+def _parse_vulnerabilities(data: dict | list[dict], key_path, strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse multiple vulnerabilities."""
   if isinstance(data, list):
     return [parse_vulnerability_from_dict(v, key_path, strict) for v in data]
@@ -129,16 +129,16 @@ def _parse_vulnerabilities(data, key_path, strict=False):
   return [parse_vulnerability_from_dict(data, key_path, strict)]
 
 
-def parse_vulnerabilities(path, key_path=None, strict=False):
+def parse_vulnerabilities(path: str, key_path=None, strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse vulnerabilities (potentially multiple in a list)."""
   return _parse_vulnerabilities(
       _parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data_text,
-                                    extension,
+def parse_vulnerabilities_from_data(data_text: str | bytes,
+                                    extension: str,
                                     key_path=None,
-                                    strict=False):
+                                    strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
     data = yaml.load(data_text, Loader=NoDatesSafeLoader)
@@ -150,7 +150,7 @@ def parse_vulnerabilities_from_data(data_text,
   return _parse_vulnerabilities(data, key_path, strict)
 
 
-def _get_nested_vulnerability(data, key_path=None):
+def _get_nested_vulnerability(data: dict, key_path=None) -> dict:
   """Get nested vulnerability."""
   if key_path:
     try:
@@ -162,7 +162,7 @@ def _get_nested_vulnerability(data, key_path=None):
   return data
 
 
-def parse_vulnerability_from_dict(data, key_path=None, strict=False):
+def parse_vulnerability_from_dict(data: dict, key_path=None, strict=False) -> vulnerability_pb2.Vulnerability:
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
   try:
@@ -195,7 +195,7 @@ class YamlDumper(yaml.SafeDumper):
 YamlDumper.add_representer(str, _yaml_str_representer)
 
 
-def vulnerability_to_dict(vulnerability):
+def vulnerability_to_dict(vulnerability: vulnerability_pb2.Vulnerability) -> dict:
   """Convert Vulnerability to a dict."""
   result = json_format.MessageToDict(
       vulnerability, preserving_proto_field_name=True)
@@ -215,7 +215,7 @@ def vulnerability_to_dict(vulnerability):
   return result
 
 
-def _write_vulnerability_dict(data, output_path,
+def _write_vulnerability_dict(data: dict, output_path: str,
                               modified_date_timestamp: float):
   """Write a vulnerability dict to disk."""
   with open(output_path, 'w') as f:
@@ -231,7 +231,7 @@ def _write_vulnerability_dict(data, output_path,
 
 
 def write_vulnerability(vulnerability: vulnerability_pb2.Vulnerability,
-                        output_path,
+                        output_path: str,
                         key_path=None):
   """Update a vulnerability file on disk."""
   if os.path.exists(output_path):

@@ -81,7 +81,7 @@ def _check_valid_event_type(prop, value):
     raise ValueError('Invalid event type: ' + value)
 
 
-def utcnow():
+def utcnow() -> datetime.datetime:
   """For mocking."""
   return datetime.datetime.now(datetime.UTC)
 
@@ -960,7 +960,6 @@ class Vulnerability(ndb.Model):
   # When this record was truly last modified (including e.g. aliases/upstream).
   modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
   # Whether this record has been withdrawn
-  # TODO(michaelkedar): I don't think this is necessary
   is_withdrawn: bool = ndb.BooleanProperty()
 
   # Raw fields from the original source.
@@ -1140,8 +1139,6 @@ def populate_entities_from_bug(entity: Bug):
       include_source=True, include_alias=True, include_upstream=True)
 
   def transaction():
-    to_put = []
-    to_delete = []
     vuln = Vulnerability.get_by_id(entity.db_id)
     if vuln is None:
       vuln = Vulnerability(id=entity.db_id)
@@ -1153,23 +1150,7 @@ def populate_entities_from_bug(entity: Bug):
       vuln.alias_raw = entity.aliases
       vuln.related_raw = entity.related
       vuln.upstream_raw = entity.upstream_raw
-      to_put.append(vuln)
-
-    old_affected = AffectedVersions.query(
-        AffectedVersions.vuln_id == entity.db_id).fetch()
-    if vuln.is_withdrawn:
-      # We do not want the vuln to be searchable if it's been withdrawn.
-      to_delete.append(ndb.Key(ListedVulnerability, vuln_pb.id))
-      to_delete.extend(av.key for av in old_affected)
-    else:
-      to_put.append(ListedVulnerability.from_vulnerability(vuln_pb))
-      new_affected = affected_from_bug(entity)
-      added, removed = diff_affected_versions(old_affected, new_affected)
-      to_put.extend(added)
-      to_delete.extend(r.key for r in removed)
-
-    ndb.put_multi(to_put)
-    ndb.delete_multi(to_delete)
+    put_entities(vuln, vuln_pb)
 
   ndb.transaction(transaction)
   try:
@@ -1180,6 +1161,23 @@ def populate_entities_from_bug(entity: Bug):
     data = vuln_pb.SerializeToString(deterministic=True)
     pubsub.publish_failure(data, type='gcs_retry')
 
+def put_entities(ds_vuln: Vulnerability, vuln_pb: vulnerability_pb2.Vulnerability):
+  to_put = [ds_vuln]
+  to_delete = []
+  old_affected = AffectedVersions.query(
+      AffectedVersions.vuln_id == vuln_pb.id).fetch()
+  if ds_vuln.is_withdrawn:
+    to_delete.append(ndb.Key(ListedVulnerability, vuln_pb.id))
+    to_delete.extend(av.key for av in old_affected)
+  else:
+    to_put.append(ListedVulnerability.from_vulnerability(vuln_pb))
+    new_affected = affected_from_proto(vuln_pb)
+    added, removed = diff_affected_versions(old_affected, new_affected)
+    to_put.extend(added)
+    to_delete.extend(r.key for r in removed)
+
+  ndb.put_multi(to_put)
+  ndb.delete_multi(to_delete)
 
 def _get_coarse_min_max(events: list[AffectedEvent],
                         e_helper: ecosystems.OrderedEcosystem,
@@ -1203,14 +1201,14 @@ def _get_coarse_min_max(events: list[AffectedEvent],
     # Coarse versioning not yet implemented for this ecosystem.
     pass
   except ValueError:
-    logging.warning('Invalid version in %s', db_id)
+    logging.warning('Invalid version in %s %s', db_id, events)
     coarse_min = MIN_COARSE_VERSION
     coarse_max = MAX_COARSE_VERSION
 
   return coarse_min, coarse_max
 
 
-def _affected_versions_from_package(affected: AffectedPackage,
+def _affected_versions_from_affected_proto(affected: vulnerability_pb2.Affected,
                                     db_id: str) -> list[AffectedVersions]:
   """Compute AffectedVersions for a single affected package."""
   affected_versions = []
@@ -1232,16 +1230,25 @@ def _affected_versions_from_package(affected: AffectedPackage,
   repo_url = ''
   pkg_has_affected = False
   for r in affected.ranges:
-    if r.type == 'GIT':
+    if r.type == vulnerability_pb2.Range.Type.GIT:
       if not repo_url:
-        repo_url = r.repo_url
+        repo_url = r.repo
       continue
-    if r.type not in ('SEMVER', 'ECOSYSTEM'):
-      logging.warning('Unknown range type "%s" in %s', r.type, db_id)
+    if r.type not in (vulnerability_pb2.Range.Type.SEMVER, vulnerability_pb2.Range.Type.ECOSYSTEM):
+      logging.warning('Unknown range type "%d" in %s', r.type, db_id)
       continue
-    events = r.events
-    if not events:
+    if not r.events:
       continue
+    events = []
+    for e in r.events:
+      if e.introduced:
+        events.append(AffectedEvent(type='introduced', value=e.introduced))
+      elif e.fixed:
+        events.append(AffectedEvent(type='fixed', value=e.fixed))
+      elif e.limit:
+        events.append(AffectedEvent(type='limit', value=e.limit))
+      elif e.last_affected:
+        events.append(AffectedEvent(type='last_affected', value=e.last_affected))
     pkg_has_affected = True
     coarse_min = MIN_COARSE_VERSION
     coarse_max = MAX_COARSE_VERSION
@@ -1285,7 +1292,7 @@ def _affected_versions_from_package(affected: AffectedPackage,
               vuln_id=db_id,
               ecosystem=e,
               name=pkg_name,
-              versions=affected.versions,
+              versions=list(affected.versions),
               coarse_min=coarse_min,
               coarse_max=coarse_max,
           ))
@@ -1313,18 +1320,18 @@ def _affected_versions_from_package(affected: AffectedPackage,
             vuln_id=db_id,
             ecosystem='GIT',
             name=normalize_repo_package(repo_url),
-            versions=affected.versions,
+            versions=list(affected.versions),
         ))
 
   return affected_versions
 
 
-def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
-  """Compute the AffectedVersions from a Bug entity."""
+def affected_from_proto(vuln_pb: vulnerability_pb2.Vulnerability) -> list[AffectedVersions]:
+  """Compute the AffectedVersions from a Vulnerability proto."""
   affected_versions = []
-  for affected in entity.affected_packages:
+  for affected in vuln_pb.affected:
     affected_versions.extend(
-        _affected_versions_from_package(affected, entity.db_id))
+        _affected_versions_from_affected_proto(affected, vuln_pb.id))
 
   # Deduplicate and sort the affected_versions
   unique_affected_dict = {av.sort_key(): av for av in affected_versions}
@@ -1332,7 +1339,6 @@ def affected_from_bug(entity: Bug) -> list[AffectedVersions]:
       unique_affected_dict.values(), key=AffectedVersions.sort_key)
 
   return affected_versions
-
 
 def diff_affected_versions(
     old: list[AffectedVersions], new: list[AffectedVersions]

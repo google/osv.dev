@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
 
 FROM golang:1.25.6-alpine@sha256:d9b2e14101f27ec8d09674cd01186798d227bb0daec90e032aeb1cd22ac0f029 AS GO_BUILD
 
-WORKDIR /go/src
+RUN mkdir /src
+WORKDIR /src
 
-COPY go.mod go.sum ./
-RUN go mod download && go mod verify
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
 
-COPY . .
-RUN CGO_ENABLED=0 go build -v -o /usr/local/bin ./cmd/nvd-cve-osv ./cmd/download-cves
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/mirrors/cpe-repo-gen
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
-RUN apk --no-cache add jq
 
-COPY --from=GO_BUILD /usr/local/bin/ ./usr/local/bin/
-COPY --from=GO_BUILD /go/src/cmd/nvd-cve-osv/run_cve_to_osv_generation.sh ./usr/local/bin/
+RUN apk add --no-cache unzip
 
-CMD ["/usr/local/bin/run_cve_to_osv_generation.sh"]
+COPY --from=GO_BUILD /src/cpe-repo-gen ./
+COPY ./cmd/mirrors/cpe-repo-gen/cpe-repo-gen_map.sh ./
+
+ENTRYPOINT ["/cpe-repo-gen_map.sh"]

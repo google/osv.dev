@@ -1,4 +1,4 @@
-# Copyright 2021 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,15 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o download-cves ./cmd/download-cves/
+RUN go build -o debian ./cmd/converters/debian/
+
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f
 
-WORKDIR /usr/local/bin
-COPY --from=GO_BUILD /src/download-cves ./
-COPY ./cmd/download-cves/mirror_nvd.sh ./
+WORKDIR /root/
+COPY --from=GO_BUILD /src/debian ./
+COPY ./cmd/converters/debian/run_debian_convert.sh ./
 
-ENTRYPOINT ["/usr/local/bin/mirror_nvd.sh"]
+RUN chmod 755 ./run_debian_convert.sh
+
+ENTRYPOINT ["/root/run_debian_convert.sh"]

@@ -228,7 +228,7 @@ steps:
   id: 'pull-alpine-cve-convert'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/converters/alpine/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-alpine-cve-convert'
   waitFor: ['pull-alpine-cve-convert']
@@ -242,7 +242,7 @@ steps:
   id: 'pull-debian-cve-convert'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-cve-convert:latest', '-t', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', '-f', 'cmd/debian/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/debian-cve-convert:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/debian-cve-convert:latest', '-t', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', '-f', 'cmd/converters/debian/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/debian-cve-convert:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-debian-cve-convert'
   waitFor: ['pull-debian-cve-convert']
@@ -256,7 +256,7 @@ steps:
   id: 'pull-combine-to-osv'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/converters/combine-to-osv/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/combine-to-osv:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-combine-to-osv'
   waitFor: ['pull-combine-to-osv']
@@ -270,7 +270,7 @@ steps:
   id: 'pull-cve5-to-osv'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '-f', 'cmd/cve-bulk-converter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/cve5-to-osv:latest', '--pull', '.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '-f', 'cmd/converters/cve/cve5/bulk-converter/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/cve5-to-osv:latest', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-cve5-to-osv'
   waitFor: ['pull-cve5-to-osv']
@@ -314,7 +314,7 @@ steps:
 # Build/push Debian copyright mirror image
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '.']
-  dir: 'vulnfeeds/cmd/debian-copyright-mirror'
+  dir: 'vulnfeeds/cmd/mirrors/debian-copyright-mirror'
   id: 'build-debian-copyright-mirror'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
@@ -323,7 +323,7 @@ steps:
 
 # Build/push CPE repo map generating image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/cpe-repo-gen/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/mirrors/cpe-repo-gen/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-cpe-repo-gen'
   waitFor: ['setup']
@@ -333,7 +333,7 @@ steps:
 
 # Build/push NVD CVE to OSV conversion image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '-f', 'cmd/nvd-cve-osv/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '-f', 'cmd/converters/cve/nvd-cve-osv/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-nvd-cve-osv'
   waitFor: ['setup']
@@ -361,7 +361,7 @@ steps:
 
 # Build/push NVD mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/download-cves/Dockerfile','.']
+  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/mirrors/download-cves/Dockerfile','.']
   dir: 'vulnfeeds'
   id: 'build-nvd-mirror'
   waitFor: ['setup']

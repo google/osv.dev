@@ -17,7 +17,6 @@ package pypi
 
 import (
 	"encoding/json"
-	"github.com/google/osv/vulnfeeds/models"
 	"log"
 	"log/slog"
 	"net/http"
@@ -28,8 +27,8 @@ import (
 	"strings"
 
 	version "github.com/aquasecurity/go-pep440-version"
-
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )

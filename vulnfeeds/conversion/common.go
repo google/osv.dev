@@ -1,3 +1,5 @@
+// Package conversion implements common utilities for converting vulnerability data
+// from various sources into the OSV schema.
 package conversion
 
 import (

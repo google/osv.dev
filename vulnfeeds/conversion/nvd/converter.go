@@ -1,3 +1,4 @@
+// Package nvd converts NVD CVEs to OSV format.
 package nvd
 
 import (

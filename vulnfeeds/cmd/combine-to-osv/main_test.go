@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/google/osv/vulnfeeds/models"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"

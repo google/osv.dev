@@ -20,7 +20,6 @@ from gcp.workers.mock_test.mock_test_handler import MockDataHandler
 import http.server
 import logging
 import os
-import shutil
 import tempfile
 import threading
 import warnings
@@ -34,7 +33,6 @@ import pygit2
 import osv
 from osv import tests
 from osv import vulnerability_pb2
-import oss_fuzz
 import worker
 
 TEST_BUCKET = 'test-osv-source-bucket'
@@ -98,7 +96,6 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
   def tearDown(self):
     self.httpd.shutdown()
-    # self.tmp_dir.cleanup()
 
   def test_update(self):
     """Test updating rest."""
@@ -123,7 +120,8 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
     vuln_pb = vulnerability_pb2.Vulnerability(id='CURL-CVE-2022-32221')
-    vuln_pb.modified.FromDatetime(datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln_pb.modified.FromDatetime(
+        datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln_ds = osv.Vulnerability(
         id='CURL-CVE-2022-32221',
         modified=datetime.datetime(2020, 1, 1, 0, 0, tzinfo=datetime.UTC),
@@ -141,7 +139,9 @@ class RESTUpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_no_introduced', MessageToDict(osv.gcs.get_by_id('CURL-CVE-2022-32221')))
+    self.expect_dict_equal(
+        'update_no_introduced',
+        MessageToDict(osv.gcs.get_by_id('CURL-CVE-2022-32221')))
 
 
 class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
@@ -159,6 +159,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
       return f.read()
 
   def _put_vuln(self, vuln: vulnerability_pb2.Vulnerability, source_id: str):
+    """Put vulnerability into Datastore and GCS (emulators)."""
     ds_vuln = osv.Vulnerability(
         id=vuln.id,
         source_id=source_id,
@@ -225,23 +226,28 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.put()
 
     vuln = vulnerability_pb2.Vulnerability(id='OSV-123')
-    vuln.modified.FromDatetime(datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln.modified.FromDatetime(
+        datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln.published.CopyFrom(vuln.modified)
     self._put_vuln(vuln, 'source:OSV-123.yaml')
     vuln = vulnerability_pb2.Vulnerability(id='OSV-124')
-    vuln.modified.FromDatetime(datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln.modified.FromDatetime(
+        datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln.published.CopyFrom(vuln.modified)
     self._put_vuln(vuln, 'source:OSV-124.yaml')
     vuln = vulnerability_pb2.Vulnerability(id='OSV-125')
-    vuln.modified.FromDatetime(datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln.modified.FromDatetime(
+        datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln.published.CopyFrom(vuln.modified)
     self._put_vuln(vuln, 'source:OSV-125.yaml')
     vuln = vulnerability_pb2.Vulnerability(id='OSV-127')
-    vuln.modified.FromDatetime(datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln.modified.FromDatetime(
+        datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln.published.CopyFrom(vuln.modified)
     self._put_vuln(vuln, 'source:OSV-127.yaml')
     vuln = vulnerability_pb2.Vulnerability(id='OSV-131')
-    vuln.modified.FromDatetime(datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
+    vuln.modified.FromDatetime(
+        datetime.datetime(2021, 1, 1, 0, 0, tzinfo=datetime.UTC))
     vuln.published.CopyFrom(vuln.modified)
     self._put_vuln(vuln, 'source:OSV-131.yaml')
 
@@ -257,10 +263,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'ecosystem': None,
     })
 
-  def tearDown(self):
-    # self.tmp_dir.cleanup()
-    pass
-
   def test_update(self):
     """Test basic update."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -274,7 +276,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update', MessageToDict(osv.gcs.get_by_id('OSV-123')))
+    self.expect_dict_equal('update',
+                           MessageToDict(osv.gcs.get_by_id('OSV-123')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -306,7 +309,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_limit', MessageToDict(osv.gcs.get_by_id('OSV-128')))
+    self.expect_dict_equal('update_limit',
+                           MessageToDict(osv.gcs.get_by_id('OSV-128')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -322,7 +326,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
 
-
   def test_update_no_introduced(self):
     """Test update vulnerability with no introduced commit."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -337,7 +340,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_no_introduced', MessageToDict(osv.gcs.get_by_id('OSV-127')))
+    self.expect_dict_equal('update_no_introduced',
+                           MessageToDict(osv.gcs.get_by_id('OSV-127')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -383,7 +387,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_new', MessageToDict(osv.gcs.get_by_id('OSV-126')))
+    self.expect_dict_equal('update_new',
+                           MessageToDict(osv.gcs.get_by_id('OSV-126')))
 
   def test_update_delete(self):
     """Test deletion."""
@@ -458,7 +463,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_pypi', MessageToDict(osv.gcs.get_by_id('PYSEC-123')))
+    self.expect_dict_equal('update_pypi',
+                           MessageToDict(osv.gcs.get_by_id('PYSEC-123')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -498,7 +504,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('normalized_pypi', MessageToDict(osv.gcs.get_by_id('PYSEC-456')))
+    self.expect_dict_equal('normalized_pypi',
+                           MessageToDict(osv.gcs.get_by_id('PYSEC-456')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -539,7 +546,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_last_affected', MessageToDict(osv.gcs.get_by_id('PYSEC-124')))
+    self.expect_dict_equal('update_last_affected',
+                           MessageToDict(osv.gcs.get_by_id('PYSEC-124')))
 
   def test_update_maven(self):
     """Test updating maven."""
@@ -566,8 +574,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_maven',
-                           MessageToDict(osv.gcs.get_by_id('GHSA-838r-hvwh-24h8')))
+    self.expect_dict_equal(
+        'update_maven', MessageToDict(osv.gcs.get_by_id('GHSA-838r-hvwh-24h8')))
 
     self.mock_publish.assert_not_called()
 
@@ -595,7 +603,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_linux', MessageToDict(osv.gcs.get_by_id('GSD-123')))
+    self.expect_dict_equal('update_linux',
+                           MessageToDict(osv.gcs.get_by_id('GSD-123')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -630,7 +639,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_bucket_0', MessageToDict(osv.gcs.get_by_id('GO-2021-0085')))
+    self.expect_dict_equal('update_bucket_0',
+                           MessageToDict(osv.gcs.get_by_id('GO-2021-0085')))
 
   def test_update_debian(self):
     """Test updating debian."""
@@ -656,7 +666,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_debian', MessageToDict(osv.gcs.get_by_id('DSA-3029-1')))
+    self.expect_dict_equal('update_debian',
+                           MessageToDict(osv.gcs.get_by_id('DSA-3029-1')))
 
     self.mock_publish.assert_not_called()
 
@@ -685,7 +696,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_alpine', MessageToDict(osv.gcs.get_by_id('CVE-2022-27449')))
+    self.expect_dict_equal('update_alpine',
+                           MessageToDict(osv.gcs.get_by_id('CVE-2022-27449')))
 
   def test_update_android(self):
     """Test updating Android through bucket entries."""
@@ -708,7 +720,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
 
     task_runner._source_update(message)
-    self.expect_dict_equal('update_bucket_2', MessageToDict(osv.gcs.get_by_id('ASB-A-153358911')))
+    self.expect_dict_equal('update_bucket_2',
+                           MessageToDict(osv.gcs.get_by_id('ASB-A-153358911')))
 
   def test_update_bad_ecosystem_new(self):
     """Test adding from an unsupported ecosystem."""
@@ -731,7 +744,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
 
-    self.expect_dict_equal('update_bad_ecosystem_new', MessageToDict(osv.gcs.get_by_id('OSV-129')))
+    self.expect_dict_equal('update_bad_ecosystem_new',
+                           MessageToDict(osv.gcs.get_by_id('OSV-129')))
 
   def test_update_partly_bad_ecosystem_new(self):
     """Test adding vuln with both supported and unsupported ecosystem."""
@@ -754,7 +768,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
 
-    self.expect_dict_equal('update_partly_bad_ecosystem_new', MessageToDict(osv.gcs.get_by_id('OSV-130')))
+    self.expect_dict_equal('update_partly_bad_ecosystem_new',
+                           MessageToDict(osv.gcs.get_by_id('OSV-130')))
 
   def test_update_partly_bad_ecosystem_delete(self):
     """Test removal of only supported ecosystem in vulnerability with
@@ -772,8 +787,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     with self.assertLogs(level='WARNING'):
       task_runner._source_update(message)
-    
-    self.expect_dict_equal('update_partly_bad_ecosystem_delete', MessageToDict(osv.gcs.get_by_id('OSV-131')))
+
+    self.expect_dict_equal('update_partly_bad_ecosystem_delete',
+                           MessageToDict(osv.gcs.get_by_id('OSV-131')))
 
   def test_update_bucket_cve(self):
     """Test a bucket entry that is a converted CVE and doesn't have an ecosystem."""
@@ -797,7 +813,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('update_bucket_cve', MessageToDict(osv.gcs.get_by_id('CVE-2016-15011')))
+    self.expect_dict_equal('update_bucket_cve',
+                           MessageToDict(osv.gcs.get_by_id('CVE-2016-15011')))
 
   def test_last_affected_git(self):
     """Basic last_affected GIT enumeration."""
@@ -826,7 +843,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('last_affected_git', MessageToDict(osv.gcs.get_by_id('OSV-TEST-last-affected-01')))
+    self.expect_dict_equal(
+        'last_affected_git',
+        MessageToDict(osv.gcs.get_by_id('OSV-TEST-last-affected-01')))
 
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
@@ -840,7 +859,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
-
 
   def test_update_clears_stale_import_finding(self):
     """A subsequent successful update removes the now stale import finding."""
@@ -890,7 +908,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     }
     task_runner._source_update(message)
 
-    self.expect_dict_equal('ubuntu_severity_type', MessageToDict(osv.gcs.get_by_id('UBUNTU-CVE-2025-38094')))
+    self.expect_dict_equal(
+        'ubuntu_severity_type',
+        MessageToDict(osv.gcs.get_by_id('UBUNTU-CVE-2025-38094')))
 
 
 def setUpModule():

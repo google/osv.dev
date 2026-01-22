@@ -1161,7 +1161,13 @@ def populate_entities_from_bug(entity: Bug):
     data = vuln_pb.SerializeToString(deterministic=True)
     pubsub.publish_failure(data, type='gcs_retry')
 
-def put_entities(ds_vuln: Vulnerability, vuln_pb: vulnerability_pb2.Vulnerability):
+
+def put_entities(ds_vuln: Vulnerability,
+                 vuln_pb: vulnerability_pb2.Vulnerability):
+  """Puts entities (Vulnerability, ListedVulnerability, AffectedVersions) from
+  a given Vulnerability entity and proto into Datastore.
+
+  Does not write to GCS."""
   to_put = [ds_vuln]
   to_delete = []
   old_affected = AffectedVersions.query(
@@ -1178,6 +1184,7 @@ def put_entities(ds_vuln: Vulnerability, vuln_pb: vulnerability_pb2.Vulnerabilit
 
   ndb.put_multi(to_put)
   ndb.delete_multi(to_delete)
+
 
 def _get_coarse_min_max(events: list[AffectedEvent],
                         e_helper: ecosystems.OrderedEcosystem,
@@ -1208,8 +1215,8 @@ def _get_coarse_min_max(events: list[AffectedEvent],
   return coarse_min, coarse_max
 
 
-def _affected_versions_from_affected_proto(affected: vulnerability_pb2.Affected,
-                                    db_id: str) -> list[AffectedVersions]:
+def _affected_versions_from_affected_proto(
+    affected: vulnerability_pb2.Affected, db_id: str) -> list[AffectedVersions]:
   """Compute AffectedVersions for a single affected package."""
   affected_versions = []
   pkg_ecosystem = affected.package.ecosystem
@@ -1234,7 +1241,8 @@ def _affected_versions_from_affected_proto(affected: vulnerability_pb2.Affected,
       if not repo_url:
         repo_url = r.repo
       continue
-    if r.type not in (vulnerability_pb2.Range.Type.SEMVER, vulnerability_pb2.Range.Type.ECOSYSTEM):
+    if r.type not in (vulnerability_pb2.Range.Type.SEMVER,
+                      vulnerability_pb2.Range.Type.ECOSYSTEM):
       logging.warning('Unknown range type "%d" in %s', r.type, db_id)
       continue
     if not r.events:
@@ -1248,7 +1256,8 @@ def _affected_versions_from_affected_proto(affected: vulnerability_pb2.Affected,
       elif e.limit:
         events.append(AffectedEvent(type='limit', value=e.limit))
       elif e.last_affected:
-        events.append(AffectedEvent(type='last_affected', value=e.last_affected))
+        events.append(
+            AffectedEvent(type='last_affected', value=e.last_affected))
     pkg_has_affected = True
     coarse_min = MIN_COARSE_VERSION
     coarse_max = MAX_COARSE_VERSION
@@ -1326,7 +1335,8 @@ def _affected_versions_from_affected_proto(affected: vulnerability_pb2.Affected,
   return affected_versions
 
 
-def affected_from_proto(vuln_pb: vulnerability_pb2.Vulnerability) -> list[AffectedVersions]:
+def affected_from_proto(
+    vuln_pb: vulnerability_pb2.Vulnerability) -> list[AffectedVersions]:
   """Compute the AffectedVersions from a Vulnerability proto."""
   affected_versions = []
   for affected in vuln_pb.affected:
@@ -1339,6 +1349,7 @@ def affected_from_proto(vuln_pb: vulnerability_pb2.Vulnerability) -> list[Affect
       unique_affected_dict.values(), key=AffectedVersions.sort_key)
 
   return affected_versions
+
 
 def diff_affected_versions(
     old: list[AffectedVersions], new: list[AffectedVersions]

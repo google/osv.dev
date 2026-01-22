@@ -269,7 +269,9 @@ def fix_invalid_ghsa(vulnerability):
   return True
 
 
-def maybe_normalize_package_names(vulnerability: vulnerability_pb2.Vulnerability) -> vulnerability_pb2.Vulnerability:
+def maybe_normalize_package_names(
+    vulnerability: vulnerability_pb2.Vulnerability
+) -> vulnerability_pb2.Vulnerability:
   """Normalize package names as necessary."""
   for affected in vulnerability.affected:
     if not affected.package.ecosystem:
@@ -338,7 +340,7 @@ class TaskRunner:
       if not os.path.exists(vuln_path):
         logging.info('%s was deleted.', vuln_path)
         if deleted:
-          self._handle_deleted(source_repo, path)
+          self._handle_deleted(path)
 
         return
 
@@ -356,7 +358,7 @@ class TaskRunner:
       current_sha256 = osv.sha256(vuln_path)
     elif source_repo.type == osv.SourceRepositoryType.BUCKET:
       if deleted:
-        self._handle_deleted(source_repo, path)
+        self._handle_deleted(path)
         return
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
@@ -379,7 +381,7 @@ class TaskRunner:
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
       if deleted:
-        self._handle_deleted(source_repo, path)
+        self._handle_deleted(path)
         return
       vulnerabilities = []
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
@@ -418,11 +420,11 @@ class TaskRunner:
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
-  def _handle_deleted(self, source_repo, vuln_path):
-    """Handle existing vulns that have been subsequently deleted at their source.
+  def _handle_deleted(self, vuln_path: str):
+    """Handle existing vulns that have been subsequently deleted at their
+    source.
 
     Args:
-      source_repo: Source repository.
       vuln_path: Path to vulnerability.
 
     This marks the Vulnerability as withdrawn.
@@ -431,6 +433,7 @@ class TaskRunner:
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vuln_id)
     gcs_gen = None
     proto_vuln = None
+
     def xact():
       nonlocal gcs_gen
       nonlocal proto_vuln
@@ -453,18 +456,19 @@ class TaskRunner:
         proto_vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
       else:
         proto_vuln, gcs_gen = vuln_and_gen
-      
+
       if not proto_vuln.HasField('withdrawn'):
         # in case this was already withdrawn for some reason
         proto_vuln.withdrawn.FromDatetime(datetime.datetime.now(datetime.UTC))
       if (not proto_vuln.HasField('modified') or
-      proto_vuln.withdrawn.ToDatetime(datetime.UTC) > proto_vuln.modified.ToDatetime(datetime.UTC)):
+          proto_vuln.withdrawn.ToDatetime(
+              datetime.UTC) > proto_vuln.modified.ToDatetime(datetime.UTC)):
         proto_vuln.modified.CopyFrom(proto_vuln.withdrawn)
       ds_vuln.is_withdrawn = True
       ds_vuln.modified = proto_vuln.modified.ToDatetime(datetime.UTC)
       osv.models.put_entities(ds_vuln, proto_vuln)
       osv.update_affected_commits(vuln_id, [], False)
-    
+
     try:
       ndb.transaction(xact)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
@@ -476,12 +480,12 @@ class TaskRunner:
       return
     try:
       osv.gcs.upload_vulnerability(proto_vuln, gcs_gen)
-    except Exception as e:
-      # Writing to bucket failed for some reason. Send a pub/sub message to retry.
+    except Exception:
+      # Writing to bucket failed for some reason.
+      # Send a pub/sub message to retry.
       logging.error('Writing to bucket failed for %s', vuln_id)
       data = proto_vuln.SerializeToString(deterministic=True)
-      pubsub.publish_failure(data, type='gcs_retry')
-
+      osv.pubsub.publish_failure(data, type='gcs_retry')
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
                                     output_path, original_sha256):
@@ -497,7 +501,10 @@ class TaskRunner:
             output_path: original_sha256,
         })
 
-  def _analyze_vulnerability(self, source_repo: osv.SourceRepository, repo: pygit2.Repository | None, vulnerability: vulnerability_pb2.Vulnerability, path: str,
+  def _analyze_vulnerability(self, source_repo: osv.SourceRepository,
+                             repo: pygit2.Repository | None,
+                             vulnerability: vulnerability_pb2.Vulnerability,
+                             path: str,
                              original_sha256: str) -> osv.AnalyzeResult:
     """Analyze vulnerability and push new changes."""
     result = osv.analyze(
@@ -526,7 +533,9 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
-  def _generate_vanir_signatures(self, vulnerability: vulnerability_pb2.Vulnerability) -> vulnerability_pb2.Vulnerability:
+  def _generate_vanir_signatures(
+      self, vulnerability: vulnerability_pb2.Vulnerability
+  ) -> vulnerability_pb2.Vulnerability:
     """Generates Vanir signatures for a vulnerability."""
     if not any(r.type == vulnerability_pb2.Range.GIT
                for affected in vulnerability.affected
@@ -563,12 +572,10 @@ class TaskRunner:
                         vulnerability.id)
       return vulnerability
 
-  def _do_update(self,
-                 source_repo: osv.SourceRepository,
+  def _do_update(self, source_repo: osv.SourceRepository,
                  repo: pygit2.Repository | None,
                  vulnerability: vulnerability_pb2.Vulnerability,
-                 relative_path: str,
-                 original_sha256: str):
+                 relative_path: str, original_sha256: str):
     """Process updates on a vulnerability."""
     _state.bug_id = vulnerability.id
     logging.info('Processing update for vulnerability %s', vulnerability.id)
@@ -593,6 +600,7 @@ class TaskRunner:
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None
+
     def xact():
       # Fetch the current state from Datastore.
       nonlocal gcs_gen
@@ -602,14 +610,16 @@ class TaskRunner:
       # Compute the related fields here first.
       # TODO(michaelkedar): Make a related computation in relations cron
       related_raw = vulnerability.related
-      q = osv.Vulnerability.query(osv.Vulnerability.related_raw == vulnerability.id)
+      q = osv.Vulnerability.query(
+          osv.Vulnerability.related_raw == vulnerability.id)
       related = set(vulnerability.related).union(set(r.id for r in q))
       vulnerability.related[:] = sorted(related)
 
       old_published = None
 
       # Update the schema version
-      # TODO(michaelkedar): osv.SCHEMA_VERSION is not kept up to date with the submodule
+      # TODO(michaelkedar): osv.SCHEMA_VERSION is not kept up to date with
+      # the osv-schema submodule
       vulnerability.schema_version = osv.SCHEMA_VERSION
       # Add PURLs and source if they are missing.
       source_link = None
@@ -636,7 +646,8 @@ class TaskRunner:
         # Create a 'pure' vulnerability object from the existing vuln for
         # comparison, excluding external data that would cause false positives.
         if vuln_and_gen is None:
-          logging.warning('Vulnerability %s found in Datastore but not in GCS.', vulnerability.id)
+          logging.warning('Vulnerability %s found in Datastore but not in GCS.',
+                          vulnerability.id)
           # We need to write the vuln in this case
           has_changed = True
         else:
@@ -669,26 +680,27 @@ class TaskRunner:
       if has_changed:
         ds_vuln.modified = osv.utcnow()
       else:
-        # If no meaningful change, ensure last_modified reflects the source file's
-        # modified date, as only metadata might have changed.
+        # If no meaningful change, ensure last_modified reflects the source
+        # file's modified date, as only metadata might have changed.
         ds_vuln.modified = orig_modified_date
 
       # Overwrite aliases / upstream from computation
-      alias_group = osv.AliasGroup.query(osv.AliasGroup.bug_ids == vulnerability.id).get()
+      alias_group = osv.AliasGroup.query(
+          osv.AliasGroup.bug_ids == vulnerability.id).get()
       if alias_group:
         aliases = sorted(set(alias_group.bug_ids) - {vulnerability.id})
         vulnerability.aliases[:] = aliases
-        if alias_group.last_modified > ds_vuln.modified:
-          ds_vuln.modified = alias_group.last_modified
-      upstream_group = osv.UpstreamGroup.query(osv.UpstreamGroup.db_id == vulnerability.id).get()
+        ds_vuln.modified = max(alias_group.last_modified, ds_vuln.modified)
+      upstream_group = osv.UpstreamGroup.query(
+          osv.UpstreamGroup.db_id == vulnerability.id).get()
       if upstream_group:
         vulnerability.upstream[:] = sorted(upstream_group.upstream_ids)
-        if upstream_group.last_modified > ds_vuln.modified:
-          ds_vuln.modified = upstream_group.last_modified
+        ds_vuln.modified = max(upstream_group.last_modified, ds_vuln.modified)
       # Make sure modified date is >= withdrawn date
-      if ds_vuln.is_withdrawn and vulnerability.withdrawn.ToDatetime(datetime.UTC) > ds_vuln.modified:
+      if ds_vuln.is_withdrawn and vulnerability.withdrawn.ToDatetime(
+          datetime.UTC) > ds_vuln.modified:
         ds_vuln.modified = vulnerability.withdrawn.ToDatetime(datetime.UTC)
-      
+
       vulnerability.modified.FromDatetime(ds_vuln.modified)
 
       # Make sure vuln has a published date
@@ -710,11 +722,12 @@ class TaskRunner:
       raise
     try:
       osv.gcs.upload_vulnerability(vulnerability, gcs_gen)
-    except Exception as e:
-      # Writing to bucket failed for some reason. Send a pub/sub message to retry.
+    except Exception:
+      # Writing to bucket failed for some reason.
+      # Send a pub/sub message to retry.
       logging.error('Writing to bucket failed for %s', vulnerability.id)
       data = vulnerability.SerializeToString(deterministic=True)
-      pubsub.publish_failure(data, type='gcs_retry')
+      osv.pubsub.publish_failure(data, type='gcs_retry')
 
     self._notify_ecosystem_bridge(vulnerability)
     self._maybe_remove_import_findings(vulnerability.id)

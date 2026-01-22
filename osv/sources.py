@@ -115,13 +115,18 @@ def load_schema() -> dict:
     return json.loads(text)
 
 
-def parse_vulnerability(path: str, key_path=None, strict=False) -> vulnerability_pb2.Vulnerability:
+def parse_vulnerability(path: str,
+                        key_path=None,
+                        strict=False) -> vulnerability_pb2.Vulnerability:
   """Parse vulnerability YAML/JSON."""
   data = _parse_vulnerability_dict(path)
   return parse_vulnerability_from_dict(data, key_path, strict)
 
 
-def _parse_vulnerabilities(data: dict | list[dict], key_path, strict=False) -> list[vulnerability_pb2.Vulnerability]:
+def _parse_vulnerabilities(
+    data: dict | list[dict],
+    key_path,
+    strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse multiple vulnerabilities."""
   if isinstance(data, list):
     return [parse_vulnerability_from_dict(v, key_path, strict) for v in data]
@@ -129,16 +134,20 @@ def _parse_vulnerabilities(data: dict | list[dict], key_path, strict=False) -> l
   return [parse_vulnerability_from_dict(data, key_path, strict)]
 
 
-def parse_vulnerabilities(path: str, key_path=None, strict=False) -> list[vulnerability_pb2.Vulnerability]:
+def parse_vulnerabilities(
+    path: str,
+    key_path=None,
+    strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse vulnerabilities (potentially multiple in a list)."""
   return _parse_vulnerabilities(
       _parse_vulnerability_dict(path), key_path, strict)
 
 
-def parse_vulnerabilities_from_data(data_text: str | bytes,
-                                    extension: str,
-                                    key_path=None,
-                                    strict=False) -> list[vulnerability_pb2.Vulnerability]:
+def parse_vulnerabilities_from_data(
+    data_text: str | bytes,
+    extension: str,
+    key_path=None,
+    strict=False) -> list[vulnerability_pb2.Vulnerability]:
   """Parse vulnerabilities from data."""
   if extension in YAML_EXTENSIONS:
     data = yaml.load(data_text, Loader=NoDatesSafeLoader)
@@ -162,7 +171,10 @@ def _get_nested_vulnerability(data: dict, key_path=None) -> dict:
   return data
 
 
-def parse_vulnerability_from_dict(data: dict, key_path=None, strict=False) -> vulnerability_pb2.Vulnerability:
+def parse_vulnerability_from_dict(data: dict,
+                                  key_path=None,
+                                  strict=False
+                                 ) -> vulnerability_pb2.Vulnerability:
   """Parse vulnerability from dict."""
   data = _get_nested_vulnerability(data, key_path)
   try:
@@ -195,7 +207,8 @@ class YamlDumper(yaml.SafeDumper):
 YamlDumper.add_representer(str, _yaml_str_representer)
 
 
-def vulnerability_to_dict(vulnerability: vulnerability_pb2.Vulnerability) -> dict:
+def vulnerability_to_dict(
+    vulnerability: vulnerability_pb2.Vulnerability) -> dict:
   """Convert Vulnerability to a dict."""
   result = json_format.MessageToDict(
       vulnerability, preserving_proto_field_name=True)

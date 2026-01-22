@@ -23,7 +23,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
@@ -122,7 +122,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
 	CPEs := cves.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -230,7 +230,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 }
 
 
-func FindRepos(cve models.NVDCVE, VPRepoCache cves.VendorProductToRepoMap, metrics *models.ConversionMetrics) []string {
+func FindRepos(cve models.NVDCVE, VPRepoCache *cves.VPRepoCache, metrics *models.ConversionMetrics) []string {
 	// Find repos
 	refs := cve.References
 	CPEs := cves.CPEs(cve)
@@ -270,14 +270,14 @@ func FindRepos(cve models.NVDCVE, VPRepoCache cves.VendorProductToRepoMap, metri
 			appCPECount += 1
 		}
 		vendorProductKey := cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
-		if _, ok := VPRepoCache[vendorProductKey]; ok {
-			logger.Info("Pre-references, derived repos using cache", slog.String("cve", string(CVEID)), slog.Any("repos", VPRepoCache[vendorProductKey]), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
+		if repos, ok := VPRepoCache.Get(vendorProductKey); ok {
+			logger.Info("Pre-references, derived repos using cache", slog.String("cve", string(CVEID)), slog.Any("repos", repos), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
 			if len(reposForCVE) == 0 {
-				reposForCVE = VPRepoCache[vendorProductKey]
+				reposForCVE = repos
 				continue
 			}
 			// Don't append duplicates.
-			for _, repo := range VPRepoCache[vendorProductKey] {
+			for _, repo := range repos {
 				if !slices.Contains(reposForCVE, repo) {
 					reposForCVE = append(reposForCVE, repo)
 				}

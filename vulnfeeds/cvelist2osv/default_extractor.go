@@ -34,7 +34,7 @@ func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, met
 func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	gotVersions := false
 
-	repoTagsCache := git.RepoTagsCache{}
+	repoTagsCache := &git.RepoTagsCache{}
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 

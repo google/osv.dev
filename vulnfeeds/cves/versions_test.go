@@ -1284,7 +1284,7 @@ func TestCommit(t *testing.T) {
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
+		cache       *VPRepoCache
 		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
@@ -1313,9 +1313,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				CVE: "CVE-2025-0211",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1329,9 +1327,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2025-26519",
 				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
@@ -1346,9 +1342,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2016-10525",
 				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
@@ -1374,8 +1368,6 @@ func TestReposFromReferences(t *testing.T) {
 func TestReposFromReferencesCVEList(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
-		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
 	}
@@ -1387,9 +1379,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
-				CVE:   "CVE-2023-0327",
-				cache: nil,
-				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
+				CVE: "CVE-2023-0327",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1403,9 +1393,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				CVE: "CVE-2025-0211",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1419,9 +1407,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2025-26519",
 				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
@@ -1436,9 +1422,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2016-10525",
 				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
@@ -1452,9 +1436,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		}, {
 			name: "A CVE with a repo not already present)",
 			args: args{
-				CVE:   "CVE-2024-7790",
-				cache: nil,
-				vp:    &VendorProduct{"Devikia", "DevikaAI"},
+				CVE: "CVE-2024-7790",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1471,7 +1453,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			if gotRepos := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
-				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+				t.Errorf("ReposFromReferencesCVEList() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
 	}
@@ -1495,7 +1477,7 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
-			wantCache: nil,
+			wantCache: VendorProductToRepoMap{},
 		},
 		{
 			name: "Test with an empty cache",
@@ -1545,11 +1527,12 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
+			cache := &VPRepoCache{M: tt.args.cache}
 			for _, repo := range tt.args.repos {
-				MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
+				MaybeUpdateVPRepoCache(cache, tt.args.vp, repo)
 			}
-			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
-				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)
+			if !reflect.DeepEqual(cache.M, tt.wantCache) {
+				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", cache.M, tt.wantCache)
 			}
 		})
 	}

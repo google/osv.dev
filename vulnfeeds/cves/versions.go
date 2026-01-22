@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
@@ -68,6 +69,29 @@ type VendorProduct struct {
 	Product string
 }
 type VendorProductToRepoMap map[VendorProduct][]string
+type VPRepoCache struct {
+	sync.RWMutex
+	M VendorProductToRepoMap
+}
+
+func (c *VPRepoCache) Get(vp VendorProduct) ([]string, bool) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.M == nil {
+		return nil, false
+	}
+	repos, ok := c.M[vp]
+	return repos, ok
+}
+
+func (c *VPRepoCache) Set(vp VendorProduct, repos []string) {
+	c.Lock()
+	defer c.Unlock()
+	if c.M == nil {
+		c.M = make(VendorProductToRepoMap)
+	}
+	c.M[vp] = repos
+}
 
 // Rewrites known GitWeb URLs to their base repository.
 func repoGitWeb(parsedURL *url.URL) (string, error) {
@@ -880,25 +904,35 @@ func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 }
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
-func MaybeUpdateVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, repo string) {
+func MaybeUpdateVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo string) {
 	if cache == nil || vp == nil {
 		return
 	}
-	if slices.Contains(cache[*vp], repo) {
+	cache.Lock()
+	defer cache.Unlock()
+	if cache.M == nil {
+		cache.M = make(VendorProductToRepoMap)
+	}
+	if slices.Contains(cache.M[*vp], repo) {
 		return
 	}
 	// Avoid polluting the cache with existent-but-useless repos.
 	if git.ValidRepoAndHasUsableRefs(repo) {
-		cache[*vp] = append(cache[*vp], repo)
+		cache.M[*vp] = append(cache.M[*vp], repo)
 	}
 }
 
 // Removes the repo from the cache for the Vendor/Product combination if already present.
-func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct, repo string) {
+func MaybeRemoveFromVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo string) {
 	if cache == nil || vp == nil {
 		return
 	}
-	cacheEntry, ok := cache[*vp]
+	cache.Lock()
+	defer cache.Unlock()
+	if cache.M == nil {
+		return
+	}
+	cacheEntry, ok := cache.M[*vp]
 	if !ok {
 		return
 	}
@@ -911,18 +945,18 @@ func MaybeRemoveFromVPRepoCache(cache VendorProductToRepoMap, vp *VendorProduct,
 	}
 	// If there is only one entry, delete the entry cache entry.
 	if len(cacheEntry) == 1 {
-		delete(cache, *vp)
+		delete(cache.M, *vp)
 		return
 	}
 	cacheEntry = slices.Delete(cacheEntry, i, i+1)
-	cache[*vp] = cacheEntry
+	cache.M[*vp] = cacheEntry
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache git.RepoTagsCache) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache *git.RepoTagsCache) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -1008,7 +1042,7 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(cve string, cache VendorProductToRepoMap, vp *VendorProduct, refs []models.Reference, tagDenyList []string) (repos []string) {
+func ReposFromReferences(cve string, cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {

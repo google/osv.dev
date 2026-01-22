@@ -2,7 +2,6 @@ package conversion
 
 import (
 	"encoding/json"
-	"github.com/google/osv/vulnfeeds/utility/logger"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )

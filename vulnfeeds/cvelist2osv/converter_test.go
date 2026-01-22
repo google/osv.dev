@@ -3,7 +3,6 @@ package cvelist2osv
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/google/osv/vulnfeeds/models"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"

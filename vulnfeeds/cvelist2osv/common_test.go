@@ -1,11 +1,11 @@
 package cvelist2osv
 
 import (
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/models"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"

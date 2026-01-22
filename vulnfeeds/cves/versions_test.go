@@ -6,10 +6,9 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
-
-	"slices"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/internal/testutils"

@@ -4,13 +4,13 @@ package cvelist2osv
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/osv/vulnfeeds/conversion"
 	"io"
 	"log/slog"
 	"slices"
 	"sort"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"

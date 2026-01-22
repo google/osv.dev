@@ -3,13 +3,13 @@ package cvelist2osv
 import (
 	"cmp"
 	"errors"
-	"github.com/google/osv/vulnfeeds/models"
 	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"

@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"flag"
-	"github.com/google/osv/vulnfeeds/conversion"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cvelist2osv"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"

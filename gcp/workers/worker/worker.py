@@ -324,6 +324,7 @@ class TaskRunner:
     path = message.attributes['path']
     original_sha256 = message.attributes['original_sha256']
     deleted = message.attributes['deleted'] == 'true'
+    skip_hash_check = message.attributes.get('skip_hash_check') == 'true'
 
     source_repo = osv.get_source_repository(source)
     if source_repo is None:
@@ -339,7 +340,7 @@ class TaskRunner:
       vuln_path = os.path.join(osv.repo_path(repo), path)
       if not os.path.exists(vuln_path):
         logging.info('%s was deleted.', vuln_path)
-        if deleted:
+        if deleted or skip_hash_check:
           self._handle_deleted(path)
 
         return
@@ -366,6 +367,8 @@ class TaskRunner:
         blob = bucket.blob(path).download_as_bytes(retry=retry.DEFAULT_RETRY)
       except google.cloud.exceptions.NotFound:
         logging.exception('Bucket path %s does not exist.', path)
+        if skip_hash_check:
+          self._handle_deleted(path)
         return
 
       current_sha256 = osv.sha256_bytes(blob)
@@ -387,6 +390,8 @@ class TaskRunner:
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:
         logging.error('Failed to fetch REST API: %s', request.status_code)
+        if request.status_code == 404 and skip_hash_check:
+          self._handle_deleted(path)
         return
       vuln = request.json()
       try:
@@ -399,7 +404,7 @@ class TaskRunner:
     else:
       raise RuntimeError('Unsupported SourceRepository type.')
 
-    if current_sha256 != original_sha256:
+    if not skip_hash_check and current_sha256 != original_sha256:
       logging.warning(
           'sha256sum of %s no longer matches (expected=%s vs current=%s).',
           path, original_sha256, current_sha256)

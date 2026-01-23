@@ -912,6 +912,41 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         'ubuntu_severity_type',
         MessageToDict(osv.gcs.get_by_id('UBUNTU-CVE-2025-38094')))
 
+  def test_update_skip_hash_check(self):
+    """Test update with skip_hash_check=true."""
+    task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
+                                    None)
+    # Case 1: File exists, hash mismatch but skipped
+    message = mock.Mock()
+    message.attributes = {
+        'source': 'source',
+        'path': 'OSV-123.yaml',
+        'original_sha256': 'mismatch',
+        'deleted': 'false',
+        'skip_hash_check': 'true',
+    }
+
+    # Should not log warning about hash mismatch
+    with self.assertLogs(level='INFO'):  # capture info to ensure no warning
+      task_runner._source_update(message)
+
+    # Verify it updated (we can check GCS or just that it didn't return early)
+    self.expect_dict_equal('update',
+                           MessageToDict(osv.gcs.get_by_id('OSV-123')))
+
+    # Case 2: File missing, skip_hash_check=true -> should delete
+    self.mock_repo.delete_file('OSV-123.yaml')
+    self.mock_repo.commit('User', 'user@email')
+
+    message.attributes['original_sha256'] = ''  # irrelevant
+
+    task_runner._source_update(message)
+
+    vuln = osv.Vulnerability.get_by_id('OSV-123')
+    self.assertTrue(vuln.is_withdrawn)
+    vuln_pb = osv.gcs.get_by_id('OSV-123')
+    self.assertTrue(vuln_pb.HasField('withdrawn'))
+
 
 def setUpModule():
   """Set up the test module."""

@@ -456,7 +456,7 @@ class TaskRunner:
 
       logging.info('Marking %s as withdrawn.', vuln_id)
       if not vuln_and_gen:
-        logging.error('Failed to find Vulnerability with ID %s', vuln_id)
+        logging.error('Failed to find Vulnerability with ID %s in GCS', vuln_id)
         # contruct an empty withdrawn vuln
         proto_vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
       else:

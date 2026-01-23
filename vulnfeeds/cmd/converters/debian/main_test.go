@@ -40,7 +40,7 @@ func sortAffected(affected []*osvschema.Affected) {
 
 func loadTestData(t *testing.T, cveName string) cves.Vulnerability {
 	t.Helper()
-	fileName := fmt.Sprintf("../../test_data/nvdcve-2.0/%s.json", cveName)
+	fileName := fmt.Sprintf("../../../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		t.Fatalf("Failed to load test data from %q: %#v", fileName, err)
@@ -65,7 +65,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 	now := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)
 
 	var trackerData DebianSecurityTrackerData
-	if err := json.Unmarshal(mustRead(t, "../../test_data/debian/debian_security_tracker_mock.json"), &trackerData); err != nil {
+	if err := json.Unmarshal(mustRead(t, "../../../test_data/debian/debian_security_tracker_mock.json"), &trackerData); err != nil {
 		t.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 

@@ -43,7 +43,7 @@ func TestParseCPE(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputCPEString    string
-		expectedCPEStruct *models.CPE
+		expectedCPEStruct *models.CPEString
 		expectedOk        bool
 	}{
 		{
@@ -67,7 +67,7 @@ func TestParseCPE(t *testing.T) {
 		},
 		{
 			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "h",
 				Vendor:     "intel",
@@ -86,7 +86,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software)",
 			inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "gitlab",
@@ -105,7 +105,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with embedded colons",
 			inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "http::daemon_project",
@@ -124,7 +124,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with escaped characters",
 			inputCPEString: "cpe:2.3:a:bloodshed:dev-c\\+\\+:4.9.9.2:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "bloodshed",

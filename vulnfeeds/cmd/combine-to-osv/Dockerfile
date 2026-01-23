@@ -23,7 +23,7 @@ RUN go mod download
 
 COPY ./ /src/
 RUN go build -o combine-to-osv ./cmd/combine-to-osv/
-RUN go build -o download-cves ./cmd/download-cves/
+RUN go build -o download-cves ./cmd/mirrors/download-cves/
 
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:feca5d4cb9b422e124e6f28b8ed2e714160757eb383eaae712117c75f584aa2f

@@ -81,7 +81,6 @@ const (
 	Spaces                             // Contains space characters
 	Empty                              // Contains no entry
 	Filler                             // Has been determined to be a filler word
-
 )
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.

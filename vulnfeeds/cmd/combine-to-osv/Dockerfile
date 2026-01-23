@@ -22,7 +22,7 @@ COPY ./go.sum /src/go.sum
 RUN go mod download
 
 COPY ./ /src/
-RUN go build -o combine-to-osv ./cmd/mirrors/combine-to-osv/
+RUN go build -o combine-to-osv ./cmd/combine-to-osv/
 RUN go build -o download-cves ./cmd/mirrors/download-cves/
 
 

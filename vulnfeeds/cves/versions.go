@@ -71,6 +71,7 @@ type VendorProduct struct {
 type VendorProductToRepoMap map[VendorProduct][]string
 type VPRepoCache struct {
 	sync.RWMutex
+
 	M VendorProductToRepoMap
 }
 
@@ -81,6 +82,7 @@ func (c *VPRepoCache) Get(vp VendorProduct) ([]string, bool) {
 		return nil, false
 	}
 	repos, ok := c.M[vp]
+
 	return repos, ok
 }
 
@@ -632,7 +634,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) ([]models.AffectedVersion) {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []models.AffectedVersion {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -1042,13 +1044,13 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(cve string, cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string) (repos []string) {
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, metrics *models.ConversionMetrics) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
 			// Also remove it if previously added under an acceptable tag.
 			MaybeRemoveFromVPRepoCache(cache, vp, ref.URL)
-			logger.Info(fmt.Sprintf("[%s] Disregarding due to a denied tag", cve), slog.String("cve", cve), slog.String("url", ref.URL), slog.Any("product", vp), slog.Any("tags", ref.Tags))
+			metrics.AddNote("Disregarding %q due to a denied tag in %q", ref.URL, ref.Tags)
 
 			continue
 		}
@@ -1070,16 +1072,16 @@ func ReposFromReferences(cve string, cache *VPRepoCache, vp *VendorProduct, refs
 		MaybeUpdateVPRepoCache(cache, vp, repo)
 	}
 	if vp != nil && repos != nil {
-		logger.Info(fmt.Sprintf("[%s] Derived repos using references", cve), slog.String("cve", cve), slog.Any("repos", repos), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
+		metrics.AddNote("Derived repos using references %q for %q %q", repos, vp.Vendor, vp.Product)
 	} else {
-		logger.Info(fmt.Sprintf("[%s] Derived repos (no CPEs) using references", cve), slog.String("cve", cve), slog.Any("repos", repos))
+		metrics.AddNote("Derived repos (no CPEs) using references: %q", repos)
 	}
 
 	return repos
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-func ReposFromReferencesCVEList(cve string, refs []models.Reference, tagDenyList []string, metrics *models.ConversionMetrics) (repos []string) {
+func ReposFromReferencesCVEList(refs []models.Reference, tagDenyList []string, metrics *models.ConversionMetrics) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {

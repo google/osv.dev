@@ -26,8 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/models"
-
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/pypi"

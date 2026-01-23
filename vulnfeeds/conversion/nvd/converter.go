@@ -229,8 +229,8 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	return nil
 }
 
-
-func FindRepos(cve models.NVDCVE, VPRepoCache *cves.VPRepoCache, metrics *models.ConversionMetrics) []string {
+// FindRepos attempts to find the source code repositories for a given CVE.
+func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models.ConversionMetrics) []string {
 	// Find repos
 	refs := cve.References
 	CPEs := cves.CPEs(cve)
@@ -247,7 +247,7 @@ func FindRepos(cve models.NVDCVE, VPRepoCache *cves.VPRepoCache, metrics *models
 
 	// Edge case: No CPEs, but perhaps usable references.
 	if len(refs) > 0 && len(CPEs) == 0 {
-		repos := cves.ReposFromReferences(string(CVEID), nil, nil, refs, cves.RefTagDenyList)
+		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, metrics)
 		if len(repos) == 0 {
 			logger.Warn("Failed to derive any repos and there were no CPEs", slog.String("cve", string(CVEID)))
 			return nil
@@ -270,7 +270,7 @@ func FindRepos(cve models.NVDCVE, VPRepoCache *cves.VPRepoCache, metrics *models
 			appCPECount += 1
 		}
 		vendorProductKey := cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
-		if repos, ok := VPRepoCache.Get(vendorProductKey); ok {
+		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
 			logger.Info("Pre-references, derived repos using cache", slog.String("cve", string(CVEID)), slog.Any("repos", repos), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
 			if len(reposForCVE) == 0 {
 				reposForCVE = repos
@@ -309,7 +309,7 @@ func FindRepos(cve models.NVDCVE, VPRepoCache *cves.VPRepoCache, metrics *models
 			if slices.Contains(cves.VendorProductDenyList, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}) {
 				continue
 			}
-			repos := cves.ReposFromReferences(string(CVEID), VPRepoCache, &cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}, refs, cves.RefTagDenyList)
+			repos := cves.ReposFromReferences(vpRepoCache, &cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}, refs, cves.RefTagDenyList, metrics)
 			if len(repos) == 0 {
 				logger.Warn("Failed to derive any repos", slog.String("cve", string(CVEID)), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
 				continue

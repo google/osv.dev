@@ -67,26 +67,28 @@ type RepoTagsMap struct {
 // RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsCache struct {
 	sync.RWMutex
+
 	m map[string]RepoTagsMap
 }
 
-func (c *RepoTagsCache) Get(url string) (RepoTagsMap, bool) {
+func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	c.RLock()
 	defer c.RUnlock()
 	if c.m == nil {
 		return RepoTagsMap{}, false
 	}
-	tags, ok := c.m[url]
+	tags, ok := c.m[repo]
+
 	return tags, ok
 }
 
-func (c *RepoTagsCache) Set(url string, tags RepoTagsMap) {
+func (c *RepoTagsCache) Set(repo string, tags RepoTagsMap) {
 	c.Lock()
 	defer c.Unlock()
 	if c.m == nil {
 		c.m = make(map[string]RepoTagsMap)
 	}
-	c.m[url] = tags
+	c.m[repo] = tags
 }
 
 // RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.

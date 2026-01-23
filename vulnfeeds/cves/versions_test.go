@@ -1358,7 +1358,8 @@ func TestReposFromReferences(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1452,7 +1453,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
-			if gotRepos := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferencesCVEList(tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferencesCVEList() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

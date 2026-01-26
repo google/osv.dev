@@ -2,8 +2,8 @@
 name = "api-backend"
 requires-python = ">=3.13,<4.0"
 dependencies = [
-    "google-cloud-ndb==2.3.4",
-    "google-cloud-logging==3.12.1",
+    "google-cloud-ndb==2.4.0",
+    "google-cloud-logging==3.13.0",
     "packaging==24.2",
     "requests==2.32.5",
     "grpcio==1.75.0",

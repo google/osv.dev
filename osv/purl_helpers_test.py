@@ -98,6 +98,32 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    # Root ecosystem does not generate PURLs
+    # Root packages are not published to public registries
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:PyPI', 'rootio-requests'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:npm', '@rootio/lodash'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Maven', 'io.root.example:mylib'))
+    self.assertIsNone(purl_helpers.package_to_purl('Root', 'root-nginx'))
+
+  def test_root_purl_no_generation(self):
+    """Test that Root ecosystem does not generate PURLs."""
+    # Root packages should return None as they're not in public registries
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))
 
@@ -124,8 +150,8 @@ class PurlHelpersTest(unittest.TestCase):
         purl_helpers.package_to_purl('Packagist',
                                      'spencer14420/sp-php-email-handler'))
 
-    self.assertEqual('pkg:pub/test-package',
-                     purl_helpers.package_to_purl('Pub', 'test-package'))
+    self.assertEqual('pkg:pub/test_package',
+                     purl_helpers.package_to_purl('Pub', 'test_package'))
 
     self.assertEqual('pkg:rpm/redhat/test-package',
                      purl_helpers.package_to_purl('Red Hat', 'test-package'))
@@ -271,8 +297,8 @@ class PurlHelpersTest(unittest.TestCase):
         purl_helpers.parse_purl(
             'pkg:composer/spencer14420/sp-php-email-handler@1.2.3'))
 
-    self.assertEqual(('Pub', 'test-package', '1.2.3'),
-                     purl_helpers.parse_purl('pkg:pub/test-package@1.2.3'))
+    self.assertEqual(('Pub', 'test_package', '1.2.3'),
+                     purl_helpers.parse_purl('pkg:pub/test_package@1.2.3'))
 
     self.assertEqual(('PyPI', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:pypi/test-package@1.2.3'))

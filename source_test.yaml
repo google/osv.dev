@@ -9,7 +9,7 @@
   extension: '.json'
   db_prefix: ['ALBA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -24,7 +24,7 @@
   extension: '.json'
   db_prefix: ['ALEA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -39,7 +39,7 @@
   extension: '.json'
   db_prefix: ['ALSA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -141,7 +141,7 @@
   bucket: 'osv-test-cve-osv-conversion'
   db_prefix: ['CVE-']
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -352,6 +352,21 @@
   editable: False
   strict_validation: True
 
+- name: 'opam'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!OSEC-).*$']
+  repo_branch: 'generated-osv'
+  repo_url: 'https://github.com/ocaml/security-advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OSEC-']
+  ignore_git: False
+  link: 'https://github.com/ocaml/security-advisories/blob/generated-osv/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
 - name: 'openeuler'
   versions_from_repo: False
   rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
@@ -464,6 +479,21 @@
   ignore_git: False
   human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
+  editable: False
+  strict_validation: True
+
+- name: 'root'
+  versions_from_repo: False
+  type: 2
+  rest_api_url: 'https://api.root.io/external/osv/all.json'
+  ignore_patterns: ['^(?!ROOT-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ROOT-']
+  ignore_git: True
+  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  link: 'https://api.root.io/external/osv/'
   editable: False
   strict_validation: True
 

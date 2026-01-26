@@ -19,6 +19,9 @@ resource "google_container_cluster" "workers" {
     gce_persistent_disk_csi_driver_config {
       enabled = true
     }
+    gcp_filestore_csi_driver_config {
+      enabled = true
+    }
   }
 
   # We can't create a cluster with no node pool defined, but we want to only use
@@ -137,7 +140,7 @@ resource "google_container_node_pool" "importer_pool" {
   }
 
   node_config {
-    machine_type    = "n2-standard-2"
+    machine_type    = "n2-highmem-4"
     disk_type       = "pd-ssd"
     disk_size_gb    = 64
     local_ssd_count = 1
@@ -171,4 +174,12 @@ resource "google_project_iam_member" "compute_service_datastore" {
   project = var.project_id
   role    = "roles/datastore.importExportAdmin"
   member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_compute_disk" "gitter_disk" {
+  project = var.project_id
+  name    = "gitter-disk"
+  type    = "pd-ssd"
+  zone    = google_container_cluster.workers.location
+  size    = 2048
 }

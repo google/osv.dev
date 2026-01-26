@@ -33,6 +33,7 @@ func TestClassifyReferenceLink(t *testing.T) {
 		{"https://github.com/Netflix/lemur/issues/117", "", osvschema.Reference_REPORT},
 		{"https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329", "", osvschema.Reference_ADVISORY},
 		{"https://nvd.nist.gov/vuln/detail/CVE-2021-23336", "", osvschema.Reference_ADVISORY},
+		{"https://github.com/CVEProject/cvelistV5/blob/545d1041e7c903230240d4c5f86550d266784f99/cves/2025/10xxx/CVE-2025-10316.json", "", osvschema.Reference_ADVISORY},
 		{"https://www.debian.org/security/2021/dsa-4878", "", osvschema.Reference_ADVISORY},
 		{"https://usn.ubuntu.com/usn/usn-4661-1", "", osvschema.Reference_ADVISORY},
 		{"http://www.ubuntu.com/usn/USN-2915-2", "", osvschema.Reference_ADVISORY},
@@ -445,4 +446,36 @@ func TestAddSeverity(t *testing.T) {
 func TestNVD2(t *testing.T) {
 	cve := loadTestData2("CVE-2023-4863")
 	t.Logf("Loaded: %#v", cve)
+}
+
+func TestAttachExtractedVersionInfo_Determinism(t *testing.T) {
+	// Create a VersionInfo with multiple repositories to trigger map iteration randomness
+	versionInfo := models.VersionInfo{
+		AffectedCommits: []models.AffectedCommit{
+			{Repo: "https://github.com/repo/A", Fixed: "fixA"},
+			{Repo: "https://github.com/repo/B", Fixed: "fixB"},
+			{Repo: "https://github.com/repo/C", Fixed: "fixC"},
+			{Repo: "https://github.com/repo/D", Fixed: "fixD"},
+			{Repo: "https://github.com/repo/E", Fixed: "fixE"},
+		},
+	}
+
+	// Run multiple times and compare with the first result
+	var firstResult *Vulnerability
+
+	for i := range 100 {
+		v := &Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		AttachExtractedVersionInfo(v, versionInfo)
+
+		if i == 0 {
+			firstResult = v
+			continue
+		}
+
+		if diff := gocmp.Diff(firstResult, v, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different result:\n%s", i, diff)
+		}
+	}
 }

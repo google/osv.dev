@@ -1,6 +1,9 @@
 #!/bin/bash -ex
 
-poetry install
+# Install dependencies only if not running in Cloud Build
+if [ -z "$CLOUDBUILD" ]; then
+  poetry sync
+fi
 poetry run python -m unittest osv.bug_test
 poetry run python -m unittest osv.purl_helpers_test
 poetry run python -m unittest osv.request_helper_test
@@ -13,4 +16,4 @@ poetry run python -m unittest osv.models_test
 poetry run python -m unittest discover osv/ecosystems/ "*_test.py" .
 
 # Run the validation for the go/python datastore models
-cd ./go/models/internal/validate/ && ./run_validate.sh
+cd ./go/osv/models/internal/validate/ && ./run_validate.sh

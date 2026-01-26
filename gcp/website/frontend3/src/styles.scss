@@ -20,6 +20,7 @@ $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
 $osv-mobile-breakpoint: 500px;
 $osv-border-radius-small: 4px;
+$osv-border-color: #555;
 
 @use '@material/theme' with ($surface: $osv-background,
 );
@@ -1071,7 +1072,7 @@ dl.vulnerability-details,
     }
 
     $last-ecosystem-border-offset: 12px;
-    $last-ecosystem-border-gap: 8px;
+    $last-ecosystem-border-gap: 16px;
     $last-ecosystem-border-thickness: 1px;
 
     .ecosystem-content-panel--last {
@@ -1110,10 +1111,7 @@ dl.vulnerability-details,
 
     .package-accordion--last {
       margin-bottom: 0;
-
-      .package-details-card {
-        margin-bottom: $last-ecosystem-border-gap;
-      }
+      padding-bottom: $last-ecosystem-border-gap;
     }
 
     .package-accordion h3.package-name-title {
@@ -1803,6 +1801,22 @@ div.highlight {
     max-width: 800px;
     width: 100%;
     margin: 0 auto;
+
+    table {
+      margin: 1em auto;
+
+      th,
+      td {
+        padding: 0.75em 1em;
+        text-align: left;
+        border: 1px solid $osv-border-color;
+      }
+
+      th {
+        font-weight: 600;
+        background: $osv-grey-800;
+      }
+    }
   }
 
   .author {

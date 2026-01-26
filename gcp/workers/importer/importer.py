@@ -56,6 +56,7 @@ _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _TIMEOUT_SECONDS = 60
+_NDB_PUT_BATCH_SIZE = 500
 
 _client_store = threading.local()
 
@@ -295,9 +296,9 @@ class Importer:
   def run(self):
     """Run importer."""
     for source_repo in osv.SourceRepository.query():
+      if source_repo.name == 'oss-fuzz':
+        continue
       try:
-        if not self._delete and source_repo.name == 'oss-fuzz':
-          self.process_oss_fuzz(source_repo)
         self.validate_source_repo(source_repo)
         if not self._delete:
           self.process_updates(source_repo)
@@ -514,7 +515,7 @@ class Importer:
     ndb_ctx = ndb.context.get_context(False)
     if ndb_ctx is None:
       # Production. Use the NDB client passed in.
-      ndb_ctx = ndb_client.context()
+      ndb_ctx = ndb_client.context(cache_policy=False)
     else:
       # Unit testing. Reuse the unit test's existing NDB client to avoid
       # "RuntimeError: Context is already created for this thread."
@@ -610,6 +611,7 @@ class Importer:
             changed_entries[rel_path] = None
 
     import_failure_logs = []
+    changed_entries_to_process = []
     # Create tasks for changed files.
     for changed_entry, ts in changed_entries.items():
       path = os.path.join(osv.repo_path(repo), changed_entry)
@@ -641,10 +643,17 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      put_if_newer(vuln, source_repo.name, path)
+      # Collect for batch processing
+      changed_entries_to_process.append(
+          (vuln, path, ts, original_sha256, changed_entry))
 
-      self._request_analysis_external(
-          source_repo, original_sha256, changed_entry, source_timestamp=ts)
+    if changed_entries_to_process:
+      put_if_newer_batch(
+          [(v, p) for v, p, _, _, _ in changed_entries_to_process],
+          source_repo.name)
+      for vuln, path, ts, orig_sha256, entry in changed_entries_to_process:
+        self._request_analysis_external(
+            source_repo, orig_sha256, entry, source_timestamp=ts)
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
@@ -733,8 +742,7 @@ class Importer:
         logging.info('Requesting analysis of bucket entry: %s/%s',
                      source_repo.bucket, blob_name)
 
-        for vuln in vulns:
-          put_if_newer(vuln, source_repo.name, blob_name)
+        put_if_newer_batch([(v, blob_name) for v in vulns], source_repo.name)
 
         self._request_analysis_external(
             source_repo,
@@ -915,7 +923,8 @@ class Importer:
       logging.exception('Exception querying REST API:')
       return
     if request.status_code != 200:
-      logging.error('Failed to fetch REST API: %s', request.status_code)
+      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
+                    source_repo.rest_api_url)
       return
 
     request_last_modified = None
@@ -952,6 +961,7 @@ class Importer:
     vulns_last_modified = last_update_date
     logging.info('%d records to consider', len(vulns))
     # Create tasks for changed files.
+    vulns_to_process = []
     for vuln in vulns:
       import_failure_logs = []
       vuln_modified = vuln.modified.ToDatetime(datetime.UTC)
@@ -981,15 +991,9 @@ class Importer:
           self._record_quality_finding(source_repo.name, bug_id)
           continue
 
-        put_if_newer(v, source_repo.name, v.id + source_repo.extension)
-        logging.info('Requesting analysis of REST record: %s',
-                     vuln.id + source_repo.extension)
         ts = None if ignore_last_import else vuln_modified
-        self._request_analysis_external(
-            source_repo,
-            osv.sha256_bytes(single_vuln.text.encode()),
-            vuln.id + source_repo.extension,
-            source_timestamp=ts)
+        vulns_to_process.append((v, vuln.id + source_repo.extension, ts,
+                                 osv.sha256_bytes(single_vuln.text.encode())))
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -1001,6 +1005,13 @@ class Importer:
         import_failure_logs.append(f'Failed to parse vulnerability "{vuln.id}"')
         continue
 
+    if vulns_to_process:
+      put_if_newer_batch([(v, p) for v, p, _, _ in vulns_to_process],
+                         source_repo.name)
+      for v, path, ts, sha256 in vulns_to_process:
+        self._request_analysis_external(
+            source_repo, sha256, path, source_timestamp=ts)
+
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 
@@ -1009,9 +1020,108 @@ class Importer:
 
     logging.info('Finished processing REST: %s', source_repo.name)
 
-  def _process_deletions_rest(self, source_repo: osv.SourceRepository):
-    """Process deletions from a REST bucket source."""
-    raise NotImplementedError
+  def _process_deletions_rest(self,
+                              source_repo: osv.SourceRepository,
+                              threshold: float = 10.0):
+    """Process deletions from a REST bucket source.
+
+    This validates the continued existence of every Bug in Datastore (for the
+    given source) against every bug currently in that source's REST API,
+    calculating the delta. The bugs determined to have been
+    deleted from the REST API are then flagged for treatment by the worker.
+
+    If the number of deletions exceeds the safety threshold (default 10%),
+    the operation is aborted unless ignore_deletion_threshold is set on the
+    SourceRepository.
+    """
+    logging.info('Begin processing REST for deletions: %s', source_repo.name)
+
+    # Get all the existing non-withdrawn Bug IDs for
+    # source_repo.name in Datastore
+    query = osv.Bug.query()
+    query = query.filter(osv.Bug.source == source_repo.name)
+    result = list(query.fetch(keys_only=False))
+    result.sort(key=lambda r: r.id())
+    VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
+    logging.info('Retrieved %s results from query', len(result))
+
+    vuln_ids_for_source = [
+        VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
+        for r in result
+        if not r.withdrawn
+    ]
+    logging.info(
+        'Counted %d Bugs for %s in Datastore',
+        len(vuln_ids_for_source),
+        source_repo.name,
+        extra={
+            'json_fields': {
+                'vuln_ids_for_source': vuln_ids_for_source,
+                'source_repo': source_repo.name,
+            }
+        })
+
+    s = requests.Session()
+    adapter = HTTPAdapter(
+        max_retries=Retry(
+            total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
+    s.mount('http://', adapter)
+    s.mount('https://', adapter)
+
+    try:
+      request = s.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
+
+    if request.status_code != 200:
+      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
+                    source_repo.rest_api_url)
+      return
+
+    data = json.loads(request.text)
+    vuln_ids_in_rest = []
+    for datum in data:
+      vulnerability = vulnerability_pb2.Vulnerability()
+      json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
+      if not vulnerability.id:
+        logging.warning('Missing id field in REST response. Skipping.')
+        continue
+      vuln_ids_in_rest.append(vulnerability.id)
+
+    logging.info('Counted %d vulnerabilities from REST API for %s',
+                 len(vuln_ids_in_rest), source_repo.name)
+
+    # diff what's in Datastore with what was seen in REST.
+    vulns_to_delete = [
+        v for v in vuln_ids_for_source if v.id not in vuln_ids_in_rest
+    ]
+
+    logging.info('%d Bugs in Datastore considered deleted from REST for %s',
+                 len(vulns_to_delete), source_repo.name)
+
+    if len(vulns_to_delete) == 0:
+      logging.info('No bugs to delete from REST for %s', source_repo.name)
+      return
+
+    # sanity check: deleting a lot/all of the records for source in Datastore is
+    # probably worth flagging for review.
+    if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
+      logging.error(
+          'Cowardly refusing to delete %d missing records from '
+          'REST for: %s',
+          len(vulns_to_delete),
+          source_repo.name,
+          extra={})
+      vulns = [v.id for v in vulns_to_delete]
+      logging.info('Vulnerabilities to delete: %s', vulns)
+      return
+
+    # Request deletion.
+    for v in vulns_to_delete:
+      logging.info('Requesting deletion of REST entry: %s for %s', v.path, v.id)
+      self._request_analysis_external(
+          source_repo, original_sha256='', path=v.path, deleted=True)
 
   def validate_source_repo(self, source_repo: osv.SourceRepository):
     """Validate the source_repo for correctness."""
@@ -1043,13 +1153,16 @@ class Importer:
       # see discussion on https://github.com/google/osv.dev/pull/2133
       return
 
+    threshold = self._deletion_safety_threshold_pct
+    if source_repo.ignore_deletion_threshold:
+      threshold = 101.0
+
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
-      self._process_deletions_bucket(source_repo,
-                                     self._deletion_safety_threshold_pct)
+      self._process_deletions_bucket(source_repo, threshold)
       return
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      # TODO: To be implemented.
+      self._process_deletions_rest(source_repo, threshold)
       return
 
     logging.error('Invalid repo type: %s - %d', source_repo.name,
@@ -1235,25 +1348,63 @@ def put_if_newer(vuln: vulnerability_pb2.Vulnerability, source: str, path: str):
   unchanged. Does not write if vuln's modified date is older than what's already
   in datastore.
   """
-  preprocess_vuln(vuln)
-  bug = osv.Bug.get_by_id(vuln.id)
-  if bug is None:
-    bug = new_bug_from_vuln(vuln, source, path)
-    bug.put()
-    log_update_latency(bug)
+  put_if_newer_batch([(vuln, path)], source)
+
+
+def put_if_newer_batch(
+    vulns_and_paths: list[tuple[vulnerability_pb2.Vulnerability,
+                                str]], source: str):
+  """Try to write vulnerabilities to datastore in batch, keeping enumerated
+  versions if unchanged. Does not write if vuln's modified date is older than
+  what's already in datastore.
+  """
+  # TODO(michaelkedar): Putting so many records is causing slowdowns on the
+  # importer, need to reconsider the approach.
+  return
+  # pylint: disable=unreachable
+  if not vulns_and_paths:
     return
 
-  # Only update if the incoming vulnerability is newer.
-  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
-  if bug.import_last_modified and orig_modified <= bug.import_last_modified:
-    logging.info(
-        'Skipping update for %s because incoming modification time'
-        ' (%s) is not newer than existing record (%s)', vuln.id, orig_modified,
-        bug.import_last_modified)
-    return
-  update_bug_from_vuln(bug, vuln, source, path)
-  bug.put()
-  log_update_latency(bug)
+  # Deduplicate by vuln.id, keeping the last one.
+  unique_vulns_and_paths = {}
+  for vuln, path in vulns_and_paths:
+    unique_vulns_and_paths[vuln.id] = (vuln, path)
+  vulns_and_paths = list(unique_vulns_and_paths.values())
+
+  for vuln, _ in vulns_and_paths:
+    preprocess_vuln(vuln)
+
+  keys = [ndb.Key(osv.Bug, v.id) for v, _ in vulns_and_paths]
+  existing_bugs = []
+  for i in range(0, len(keys), _NDB_PUT_BATCH_SIZE):
+    batch_keys = keys[i:i + _NDB_PUT_BATCH_SIZE]
+    existing_bugs.extend(ndb.get_multi(batch_keys))
+
+  bugs_to_put = []
+  for i, (vuln, path) in enumerate(vulns_and_paths):
+    bug = existing_bugs[i]
+    if bug is None:
+      bug = new_bug_from_vuln(vuln, source, path)
+      bugs_to_put.append(bug)
+      continue
+
+    # Only update if the incoming vulnerability is newer.
+    orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+    if bug.import_last_modified and orig_modified <= bug.import_last_modified:
+      logging.info(
+          'Skipping update for %s because incoming modification time'
+          ' (%s) is not newer than existing record (%s)', vuln.id,
+          orig_modified, bug.import_last_modified)
+      continue
+    update_bug_from_vuln(bug, vuln, source, path)
+    bugs_to_put.append(bug)
+
+  if bugs_to_put:
+    for i in range(0, len(bugs_to_put), _NDB_PUT_BATCH_SIZE):
+      batch = bugs_to_put[i:i + _NDB_PUT_BATCH_SIZE]
+      ndb.put_multi(batch)
+      for bug in batch:
+        log_update_latency(bug)
 
 
 def main():
@@ -1306,5 +1457,5 @@ if __name__ == '__main__':
   atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  with _ndb_client.context():
+  with _ndb_client.context(cache_policy=False):
     main()

@@ -159,7 +159,7 @@ func TestNormalizeVersion(t *testing.T) {
 		{
 			description:               "Valid supported version #4",
 			inputVersion:              ".1",
-			expectedNormalizedVersion: "1",
+			expectedNormalizedVersion: "0-1",
 			expectedOk:                true,
 		},
 		{

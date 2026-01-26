@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: relations
+  labels:
+    cronLastSuccessfulTimeMins: "45"
+spec:
+  schedule: "10/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: relations
+            image: relations
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "1"
+                memory: "10G"
+              limits:
+                cpu: "1"
+                memory: "13G"
+          restartPolicy: Never

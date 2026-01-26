@@ -1,7 +1,5 @@
 resources:
 - ../../base
-- make-bugs-public.yaml
-- process-results.yaml
 patches:
 - path: workers.yaml
 - path: importer.yaml
@@ -16,7 +14,7 @@ patches:
 - path: cpe-repo-gen.yaml
 - path: nvd-cve-osv.yaml
 - path: nvd-mirror.yaml
-- path: alias-computation.yaml
+- path: relations.yaml
 - path: backup.yaml
 - path: generate-sitemap.yaml
 - path: recoverer.yaml

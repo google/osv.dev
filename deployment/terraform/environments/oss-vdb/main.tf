@@ -10,8 +10,17 @@ locals {
   )
 
   # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.
+  # Break apart by --- first as default yamldecode does not support parsing multiple documents in a single file.
   kube_manifests = {
-    for manifest in flatten([for file in local.all_resources : yamldecode(file(file))]) :
+    for manifest in flatten([
+      for file_path in local.all_resources : [
+        # Split content by separator, creating a list of string documents
+        for doc in split("\n---\n", file(file_path)) :
+        yamldecode(doc)
+        # Filter out empty strings caused by trailing separators
+        if trimspace(doc) != ""
+      ]
+    ]) :
     "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
     if try(manifest.kind, "") == "CronJob"
   }
@@ -37,6 +46,14 @@ module "osv" {
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
   esp_version    = "2.53.0"
+}
+
+module "oss_fuzz" {
+  source                       = "../../modules/oss_fuzz"
+  project_id                   = "oss-vdb"
+  tasks_topic_id               = module.osv.tasks_topic_id
+  failed_tasks_topic_id        = module.osv.failed_tasks_topic_id
+  pubsub_service_account_email = module.osv.pubsub_service_account_email
 }
 
 module "k8s_cron_alert" {

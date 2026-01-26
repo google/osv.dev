@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Frontend handler tests."""
+from datetime import datetime, UTC
 import shutil
 import tempfile
 import unittest
@@ -90,6 +91,7 @@ class FrontendHandlerTest(unittest.TestCase):
         db_id='OSV-3',
         status=2,
         public=True,
+        withdrawn=datetime(2020, 1, 1, tzinfo=UTC),
         source='test',
         affected_packages=[{
             'package': {
@@ -113,6 +115,46 @@ class FrontendHandlerTest(unittest.TestCase):
 
     counts = frontend_handlers.osv_get_ecosystem_counts()
     self.assertDictEqual({'Debian': 2, 'PyPI': 1}, counts)
+
+
+class MarkdownFilterTest(unittest.TestCase):
+  """Tests for markdown template filter."""
+
+  def test_removes_empty_anchor_tags(self):
+    """Test removal of empty anchor tags."""
+    result = frontend_handlers.markdown(
+        'Text <a name="test"></a> <a name="foo"/> more')
+    self.assertNotIn('name="test"', result)
+    self.assertNotIn('name="foo"', result)
+    self.assertIn('Text', result)
+
+  def test_removes_anchor_with_multiple_attributes(self):
+    """Test anchor tags with name and other attributes are removed."""
+    result = frontend_handlers.markdown('<a name="x" id="y" class="z"></a>')
+    self.assertNotIn('name="x"', result)
+
+  def test_preserves_anchor_with_content(self):
+    """Test anchor tags with content are preserved."""
+    result = frontend_handlers.markdown('[Link](http://example.com)')
+    self.assertIn('href', result)
+    self.assertIn('Link', result)
+
+  def test_sanitizes_urls_and_escapes_comments(self):
+    """Test HTML comment escaping."""
+    result = frontend_handlers.markdown('Text <!-- comment --> more')
+    self.assertIn('&lt;!--', result)
+    self.assertNotIn('<!--', result)
+
+  def test_handles_empty_and_none(self):
+    """Test empty string and None inputs."""
+    self.assertEqual('', frontend_handlers.markdown(None))
+    self.assertEqual('', frontend_handlers.markdown(''))
+
+  def test_escapes_xss(self):
+    """Test XSS attempts are escaped."""
+    result = frontend_handlers.markdown('<script>alert(1)</script>')
+    self.assertNotIn('<script>', result)
+    self.assertIn('&lt;script&gt;', result)
 
 
 def setUpModule():

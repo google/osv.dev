@@ -22,15 +22,18 @@ spec:
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"
+            env:
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
             securityContext:
               privileged: true
             resources:
               requests:
                 cpu: "1"
-                memory: "1G"
+                memory: "24G"
               limits:
-                cpu: "1"
-                memory: "2G"
+                cpu: "2"
+                memory: "32G"
           nodeSelector:
             cloud.google.com/gke-nodepool: importer-pool
           restartPolicy: Never

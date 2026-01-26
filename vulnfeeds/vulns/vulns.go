@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"net/url"
 	"os"
 	"path"
@@ -80,7 +81,6 @@ const (
 	Spaces                             // Contains space characters
 	Empty                              // Contains no entry
 	Filler                             // Has been determined to be a filler word
-
 )
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
@@ -110,7 +110,8 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		}
 	}
 
-	for repo, commits := range repoToCommits {
+	for _, repo := range slices.Sorted(maps.Keys(repoToCommits)) {
+		commits := repoToCommits[repo]
 		gitRange := osvschema.Range{
 			Type: osvschema.Range_GIT,
 			Repo: repo,
@@ -425,6 +426,12 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 	// Index 0 will always be "", so the length must be at least 2 to be relevant
 	if len(pathParts) >= 2 {
 		if u.Host == "github.com" {
+			// CVEProject CVEList reference
+			// Example: https://github.com/CVEProject/cvelistV5/blob/7dd48109ee33618242f36ae1d14d80950f2d0e59/cves/2021/45xxx/CVE-2021-45931.json
+			if len(pathParts) >= 3 && pathParts[1] == "CVEProject" {
+				return osvschema.Reference_ADVISORY
+			}
+
 			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
 				return osvschema.Reference_FIX

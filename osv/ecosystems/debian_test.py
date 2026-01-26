@@ -14,6 +14,7 @@
 """dpkg / Debian ecosystem helper tests."""
 
 import requests
+
 import vcr.unittest
 import unittest
 from unittest import mock
@@ -81,15 +82,54 @@ class DPKGEcosystemTest(unittest.TestCase):
     self.assertLessEqual(
         ecosystem.sort_key('1.2.0-1'), ecosystem.sort_key('1.10.0-1'))
 
+  def test_ubuntu(self):
+    """Test sort_key from Ubuntu"""
+    ecosystem = debian.DPKG()
+    self.assertGreater(
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.40.0+dfsg-3ubuntu0.5'))
+    self.assertGreater(
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.42.8+dfsg-1ubuntu0.2'))
+    self.assertGreater(ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('0'))
+
+    # Check the 0 sentinel value.
+    self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0:0~0-0'))
+
+    self.assertGreater(
+        ecosystem.sort_key('5.4.13-1'), ecosystem.sort_key('3.2.30-1'))
+    self.assertGreater(
+        ecosystem.sort_key('invalid'), ecosystem.sort_key('3.2.30-1'))
+    # Check >= / <= methods
+    self.assertGreaterEqual(
+        ecosystem.sort_key('2.10.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.2.8+dfsg-1ubuntu0.3'))
+    self.assertLessEqual(
+        ecosystem.sort_key('2.2.8+dfsg-1ubuntu0.3'),
+        ecosystem.sort_key('2.10.8+dfsg-1ubuntu0.3'))
+
   def test_dpkg_ecosystems(self):
     """Test dpkg-based ecosystems return a DPKG ecosystem."""
     ecos = [
         'Debian',
         'Echo',
+        'Ubuntu',
     ]
     for ecosystem_name in ecos:
       ecosystem = ecosystems.get(ecosystem_name)
       self.assertIsInstance(ecosystem, debian.DPKG)
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = debian.DPKG()
+    self.assertEqual('00:00000001.00000002.00000000',
+                     ecosystem.coarse_version('1.2+1'))
+    self.assertEqual('01:20230101.00000000.00000000',
+                     ecosystem.coarse_version('1:20230101~dfsg-1.1~deb12u1'))
+    self.assertEqual('00:00000010.00000020.00000030',
+                     ecosystem.coarse_version('10.20.30'))
+    self.assertEqual('00:00000010.00000020.99999999',
+                     ecosystem.coarse_version('10.20.a30'))
 
 
 class DebianEcosystemTest(vcr.unittest.VCRTestCase):

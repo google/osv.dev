@@ -1777,6 +1777,7 @@ def setUpModule():
   ds_emulator = unittest.enterModuleContext(tests.datastore_emulator())
   ndb_client = ndb.Client()
   unittest.enterModuleContext(ndb_client.context(cache_policy=False))
+  unittest.enterModuleContext(tests.setup_gitter())
 
 
 if __name__ == '__main__':

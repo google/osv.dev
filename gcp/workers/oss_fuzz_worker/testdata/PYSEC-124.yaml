@@ -1,0 +1,18 @@
+id: PYSEC-124
+summary: A vulnerability
+details: |
+  Blah blah blah
+  Blah
+modified: 2022-10-07T18:59:00Z
+references:
+- type: WEB
+  url: https://ref.com/ref
+affected:
+- package:
+    name: grpcio
+    ecosystem: PyPI
+  ranges:
+  - type: ECOSYSTEM
+    events:
+    - introduced: 1.14.2
+    - last_affected: 1.31.0

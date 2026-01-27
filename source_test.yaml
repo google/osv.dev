@@ -141,7 +141,7 @@
   bucket: 'osv-test-cve-osv-conversion'
   db_prefix: ['CVE-']
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -350,6 +350,21 @@
   ignore_git: True
   link: 'https://packages.mini.dev/advisories/osv/'
   editable: False
+  strict_validation: True
+
+- name: 'opam'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!OSEC-).*$']
+  repo_branch: 'generated-osv'
+  repo_url: 'https://github.com/ocaml/security-advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OSEC-']
+  ignore_git: False
+  link: 'https://github.com/ocaml/security-advisories/blob/generated-osv/'
+  editable: False
+  repo_username: 'git'
   strict_validation: True
 
 - name: 'openeuler'

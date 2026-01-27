@@ -142,6 +142,17 @@ gcloud auth login --update-adc
 make run-api-server
 ```
 
+#### API E2E Snapshots
+
+If you have made any changes to the API, please update the API query snapshots with
+
+```shell
+gcloud auth login --update-adc
+make update-api-snapshots
+```
+
+and check the git diff to see if the API result changes are expected.
+
 ### Making commits
 
 Please follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for commit messages. This helps us to automate processes like changelog generation and ensures a clear and consistent commit history.

@@ -98,6 +98,32 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    # Root ecosystem does not generate PURLs
+    # Root packages are not published to public registries
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:PyPI', 'rootio-requests'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:npm', '@rootio/lodash'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Maven', 'io.root.example:mylib'))
+    self.assertIsNone(purl_helpers.package_to_purl('Root', 'root-nginx'))
+
+  def test_root_purl_no_generation(self):
+    """Test that Root ecosystem does not generate PURLs."""
+    # Root packages should return None as they're not in public registries
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Alpine:3.18', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Debian:12', 'rootio-curl'))
+    self.assertIsNone(
+        purl_helpers.package_to_purl('Root:Ubuntu:22.04', 'rootio-curl'))
+
     self.assertEqual('pkg:julia/Example',
                      purl_helpers.package_to_purl('Julia', 'Example'))
 
@@ -133,12 +159,6 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(
         'pkg:rpm/rocky-linux/test-package',
         purl_helpers.package_to_purl('Rocky Linux', 'test-package'))
-
-    self.assertEqual('pkg:generic/root/root-nginx',
-                     purl_helpers.package_to_purl('Root', 'root-nginx'))
-
-    self.assertEqual('pkg:generic/root/%40root%2Flodash',
-                     purl_helpers.package_to_purl('Root', '@root/lodash'))
 
     self.assertEqual('pkg:gem/test-package',
                      purl_helpers.package_to_purl('RubyGems', 'test-package'))
@@ -290,14 +310,6 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(
         ('Rocky Linux', 'test-package', '1.2.3'),
         purl_helpers.parse_purl('pkg:rpm/rocky-linux/test-package@1.2.3'))
-
-    self.assertEqual(
-        ('Root', 'root-nginx', '1.0.0-r10071'),
-        purl_helpers.parse_purl('pkg:generic/root/root-nginx@1.0.0-r10071'))
-
-    self.assertEqual(
-        ('Root', '@root/lodash', '4.17.21'),
-        purl_helpers.parse_purl('pkg:generic/root/%40root%2Flodash@4.17.21'))
 
     self.assertEqual(('RubyGems', 'test-package', '1.2.3'),
                      purl_helpers.parse_purl('pkg:gem/test-package@1.2.3'))

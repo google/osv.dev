@@ -39,8 +39,18 @@ steps:
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
-  env:
-    - CLOUDBUILD=1
   waitFor: ['init', 'sync']
 
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'api-snapshot-tests'
+  dir: gcp/api
+  args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
+  # Don't run at the same time as api-tests
+  waitFor: ['init', 'sync', 'api-tests']
+
 timeout: 7200s
+serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - CLOUDBUILD=1

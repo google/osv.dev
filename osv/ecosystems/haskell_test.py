@@ -51,6 +51,16 @@ class HackageEcosystemTest(vcr.unittest.VCRTestCase):
     self.assertLessEqual(
         ecosystem.sort_key('1.20.0'), ecosystem.sort_key('1-20-0'))
 
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = ecosystems.get('Hackage')
+    self.assertEqual('00:00009001.00000010.00000033',
+                     ecosystem.coarse_version('9001.10.33.4'))
+    self.assertEqual('00:00000000.00000001.00000000',
+                     ecosystem.coarse_version('0.1'))
+    self.assertEqual('00:00000067.00000000.00000000',
+                     ecosystem.coarse_version('67'))
+
 
 class GHCEcosystemTest(vcr.unittest.VCRTestCase):
   """GHC ecosystem helper tests."""

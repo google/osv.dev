@@ -45,7 +45,15 @@ module "osv" {
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
-  esp_version    = "2.53.0"
+  esp_version    = "2.54.0"
+}
+
+module "oss_fuzz" {
+  source                       = "../../modules/oss_fuzz"
+  project_id                   = "oss-vdb"
+  tasks_topic_id               = module.osv.tasks_topic_id
+  failed_tasks_topic_id        = module.osv.failed_tasks_topic_id
+  pubsub_service_account_email = module.osv.pubsub_service_account_email
 }
 
 module "k8s_cron_alert" {

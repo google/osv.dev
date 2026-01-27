@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/pypi"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -115,7 +116,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
-	var parsed cves.CVEAPIJSON20Schema
+	var parsed models.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		logger.Fatal("Failed to parse NVD CVE JSON", slog.Any("err", err))

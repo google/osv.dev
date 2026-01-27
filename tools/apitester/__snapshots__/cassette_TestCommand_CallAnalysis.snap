@@ -6,7 +6,7 @@
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2024>"
         },
         {
           "id": "GO-2021-0053",
@@ -74,7 +74,7 @@
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2024>"
         },
         {
           "id": "GO-2021-0053",
@@ -94,7 +94,7 @@
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2024>"
         },
         {
           "id": "GO-2021-0053",

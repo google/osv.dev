@@ -48,6 +48,8 @@ type Attrs struct {
 	Generation int64
 	// CustomTime is the custom time metadata of the object.
 	CustomTime time.Time
+	// CRC32C is the CRC32 checksum of the object, using the Castagnoli93 polynomial.
+	CRC32C uint32
 }
 
 // CloudStorage defines a generic interface for blob storage operations.

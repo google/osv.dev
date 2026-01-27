@@ -108,16 +108,15 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		logger.Info("Failed to write", slog.Any("err", err))
 		return err
 	}
-	
+
 	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 	osvFile.Close()
-	
+
 	err = conversion.WriteMetricsFile(metrics, metricsFile)
 	if err != nil {
 		return err
 	}
 
-	
 	return nil
 }
 

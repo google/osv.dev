@@ -887,13 +887,13 @@ func ParseCPE(formattedString string) (*models.CPEString, error) {
 		Other:      wfn.GetString("other")}, nil
 }
 
-func (vp *VendorProduct) UnmarshalText(text []byte) error {
-	s := strings.Split(string(text), ":")
-	vp.Vendor = s[0]
-	vp.Product = s[1]
+// func (vp *VendorProduct) UnmarshalText(text []byte) error {
+// 	s := strings.Split(string(text), ":")
+// 	vp.Vendor = s[0]
+// 	vp.Product = s[1]
 
-	return nil
-}
+// 	return nil
+// }
 
 func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 	for _, deniedTag := range tagDenyList {

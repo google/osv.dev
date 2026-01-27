@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -92,32 +93,31 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-	err := os.MkdirAll(vulnDir, 0755)
-	if err != nil {
-		logger.Warn("Failed to create dir", slog.Any("err", err))
-		return fmt.Errorf("failed to create dir: %w", err)
-	}
-	outputFile := filepath.Join(vulnDir, v.Id+models.Extension)
-	// notesFile := filepath.Join(vulnDir, v.Id+".notes")
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
-		return fmt.Errorf("failed to open %s for writing: %w", outputFile, err)
-	}
-	defer f.Close()
-	err = v.ToJSON(f)
-	if err != nil {
-		logger.Warn("Failed to write", slog.String("path", outputFile), slog.Any("err", err))
-		return fmt.Errorf("failed to write %s: %w", outputFile, err)
-	}
-	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
-	// if len(notes) > 0 {
-	// 	err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-	// 	if err != nil {
-	// 		logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-	// 	}
-	// }
 
+	if err := os.MkdirAll(vulnDir, 0755); err != nil {
+		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", string(cve.ID)), slog.String("path", vulnDir), slog.Any("err", err))
+	}
+	osvFile, errCVE := conversion.CreateOSVFile(cve.ID, vulnDir)
+	metricsFile, errMetrics := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	if errCVE != nil || errMetrics != nil {
+		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
+	}
+
+	err := v.ToJSON(osvFile)
+	if err != nil {
+		logger.Info("Failed to write", slog.Any("err", err))
+		return err
+	}
+	
+	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
+	osvFile.Close()
+	
+	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	if err != nil {
+		return err
+	}
+
+	
 	return nil
 }
 
@@ -219,12 +219,14 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	// if len(notes) > 0 {
-	// 	err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-	// 	if err != nil {
-	// 		logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-	// 	}
-	// }
+	metricsFile, err := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	if err != nil {
+		return err
+	}
+	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

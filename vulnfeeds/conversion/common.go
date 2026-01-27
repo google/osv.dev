@@ -4,6 +4,7 @@ package conversion
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -68,11 +69,9 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 	return refs
 }
 
-// CreateMetricsFile saves the collected conversion metrics to a JSON file.
-// This file provides data for analyzing the success and characteristics of the
-// conversion process for a given CVE.
+// CreateMetricsFile creates the initial file for the metrics record.
 func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	metricsFile := filepath.Join(vulnDir, string(id)+".metrics.json")
+	metricsFile := filepath.Join(vulnDir, string(id)+".metrics"+models.Extension)
 	f, err := os.Create(metricsFile)
 	if err != nil {
 		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
@@ -93,4 +92,22 @@ func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
 	}
 
 	return f, err
+}
+
+func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) error {
+	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
+	if err != nil {
+		logger.Info("Failed to marshal", slog.Any("err", err))
+		return err
+	}
+
+	_, err = metricsFile.Write(marshalledMetrics)
+	if err != nil {
+		logger.Warn("Failed to write", slog.String("path", metricsFile.Name()), slog.Any("err", err))
+		return fmt.Errorf("failed to write %s: %w", metricsFile.Name(), err)
+	}
+
+	metricsFile.Close()
+
+	return nil
 }

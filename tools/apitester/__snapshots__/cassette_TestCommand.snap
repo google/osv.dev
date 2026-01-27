@@ -1854,12 +1854,52 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
+          "id": "DEBIAN-CVE-2025-11187",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-15467",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-15468",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-15469",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2025-27587",
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-4575",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-66199",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-68160",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-69418",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-69419",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-69420",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2025-69421",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "DEBIAN-CVE-2025-9230",
@@ -1872,6 +1912,14 @@
         {
           "id": "DEBIAN-CVE-2025-9232",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-22795",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-22796",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "DLA-3008-1",

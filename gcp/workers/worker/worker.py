@@ -472,7 +472,6 @@ class TaskRunner:
       ds_vuln.is_withdrawn = True
       ds_vuln.modified = proto_vuln.modified.ToDatetime(datetime.UTC)
       osv.models.put_entities(ds_vuln, proto_vuln)
-      osv.update_affected_commits(vuln_id, [], False)
 
     try:
       ndb.transaction(xact)
@@ -527,6 +526,7 @@ class TaskRunner:
       return result
     # NB: Only OSS-Fuzz is editable - all other sources are read-only.
     # This should not be reachable by this worker.
+    logging.error('Source %s flagged as editable', source_repo.name)
     output_path = os.path.join(osv.repo_path(repo), path)
     if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
                                           output_path, original_sha256):

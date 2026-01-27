@@ -810,7 +810,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 	if !gotVersions {
 		v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
 		if len(v.AffectedVersions) > 0 {
-			logger.Info("Extracted versions from description", slog.String("cve", string(cve.ID)), slog.Any("versions", v.AffectedVersions))
+			metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
 		}
 	}
 
@@ -958,7 +958,7 @@ func MaybeRemoveFromVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo stri
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache *git.RepoTagsCache) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -969,14 +969,14 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 			continue
 		}
 		for _, av := range versions.AffectedVersions {
-			logger.Info("Attempting version resolution", slog.String("cve", string(cveID)), slog.Any("version", av), slog.String("repo", repo))
+			metrics.AddNote("Attempting version resolution for %s in %s", av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" {
 				ac, err := git.VersionToAffectedCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
 					logger.Warn("Failed to get a Git commit for introduced version", slog.String("cve", string(cveID)), slog.String("version", av.Introduced), slog.String("repo", repo), slog.Any("err", err))
 				} else {
-					logger.Info("Successfully derived commit for introduced version", slog.String("cve", string(cveID)), slog.Any("commit", ac), slog.String("version", av.Introduced))
+					metrics.AddNote("Successfully derived commit %s for introduced version %s", ac, av.Introduced)
 					introducedEquivalentCommit = ac.Introduced
 				}
 			}
@@ -986,13 +986,13 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			fixedEquivalentCommit := ""
 			if v.HasFixedCommits(repo) && av.Fixed != "" {
-				logger.Info("Using preassumed fixed commits instead of deriving from fixed version", slog.String("cve", string(cveID)), slog.Any("commits", v.FixedCommits(repo)), slog.String("version", av.Fixed))
+				metrics.AddNote("Using preassumed fixed commits instead of deriving from fixed version %s", av.Fixed)
 			} else if av.Fixed != "" {
 				ac, err := git.VersionToAffectedCommit(av.Fixed, repo, models.Fixed, normalizedTags)
 				if err != nil {
 					logger.Warn("Failed to get a Git commit for fixed version", slog.String("cve", string(cveID)), slog.String("version", av.Fixed), slog.String("repo", repo), slog.Any("err", err))
 				} else {
-					logger.Info("Successfully derived commit for fixed version", slog.String("cve", string(cveID)), slog.Any("commit", ac), slog.String("version", av.Fixed))
+					metrics.AddNote("Successfully derived commit %s for fixed version %s", ac, av.Fixed)
 					fixedEquivalentCommit = ac.Fixed
 				}
 			}
@@ -1005,7 +1005,7 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 				if err != nil {
 					logger.Warn("Failed to get a Git commit for last_affected version", slog.String("cve", string(cveID)), slog.String("version", av.LastAffected), slog.String("repo", repo), slog.Any("err", err))
 				} else {
-					logger.Info("Successfully derived commit for last_affected version", slog.String("cve", string(cveID)), slog.Any("commit", ac), slog.String("version", av.LastAffected))
+					metrics.AddNote("Successfully derived commit %s for last_affected version %s", ac, av.LastAffected)
 					lastAffectedEquivalentCommit = ac.LastAffected
 				}
 			}
@@ -1024,15 +1024,15 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 			}
 			if ac == (models.AffectedCommit{}) {
 				// Nothing resolved, move on to the next AffectedVersion
-				logger.Warn("Sufficient resolution not possible", slog.String("cve", string(cveID)), slog.Any("version", av))
+				metrics.AddNote("Sufficient resolution not possible for %s", av)
 				continue
 			}
 			if ac.InvalidRange() {
-				logger.Warn("Invalid range", slog.String("cve", string(cveID)), slog.Any("commit", ac))
+				metrics.AddNote("Invalid range for %s", ac)
 				continue
 			}
 			if v.Duplicated(ac) {
-				logger.Warn("Duplicate commit", slog.String("cve", string(cveID)), slog.Any("commit", ac), slog.Any("version", v))
+				metrics.AddNote("Duplicate commit for %s", ac)
 				continue
 			}
 			v.AffectedCommits = append(v.AffectedCommits, ac)

@@ -50,8 +50,8 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", cve.ID, maybeProductName, versions.AffectedVersions)
 		}
-		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache)
+		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
+		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
 		if err != nil {
 			metrics.AddNote("Failed to convert version tags to commits: %#v", err)
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#w", cve.ID, err)
@@ -147,7 +147,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", cve.ID, maybeProductName, versions.AffectedVersions)
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache)
+		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
 		if err != nil {
 			metrics.AddNote("Failed to convert version tags to commits: %#v", err)
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#w", cve.ID, err)
@@ -238,7 +238,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 	var reposForCVE []string
 
 	if len(refs) == 0 && len(CPEs) == 0 {
-		logger.Info("Skipping due to lack of CPEs and lack of references", slog.String("cve", string(CVEID)))
+		metrics.AddNote("Skipping due to lack of CPEs and lack of references")
 		// 100% of these in 2022 were rejected CVEs
 		metrics.Outcome = models.Rejected
 
@@ -249,10 +249,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 	if len(refs) > 0 && len(CPEs) == 0 {
 		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, metrics)
 		if len(repos) == 0 {
-			logger.Warn("Failed to derive any repos and there were no CPEs", slog.String("cve", string(CVEID)))
+			metrics.AddNote("Failed to derive any repos and there were no CPEs")
 			return nil
 		}
-		logger.Info("Derived repos for CVE with no CPEs", slog.String("cve", string(CVEID)), slog.Any("repos", repos))
+		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
 
@@ -261,7 +261,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 	for _, CPEstr := range CPEs {
 		CPE, err := cves.ParseCPE(CPEstr)
 		if err != nil {
-			logger.Warn("Failed to parse CPE", slog.String("cve", string(CVEID)), slog.String("cpe", CPEstr), slog.Any("err", err))
+			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			metrics.Outcome = models.ConversionUnknown
 
 			continue
@@ -271,7 +271,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		}
 		vendorProductKey := cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
 		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
-			logger.Info("Pre-references, derived repos using cache", slog.String("cve", string(CVEID)), slog.Any("repos", repos), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
+			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
 			if len(reposForCVE) == 0 {
 				reposForCVE = repos
 				continue
@@ -296,7 +296,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		for _, CPEstr := range cves.CPEs(cve) {
 			CPE, err := cves.ParseCPE(CPEstr)
 			if err != nil {
-				logger.Warn("Failed to parse CPE", slog.String("cve", string(CVEID)), slog.String("cpe", CPEstr), slog.Any("err", err))
+				metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 				continue
 			}
 			// Continue to only focus on application CPEs.
@@ -311,10 +311,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 			}
 			repos := cves.ReposFromReferences(vpRepoCache, &cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}, refs, cves.RefTagDenyList, metrics)
 			if len(repos) == 0 {
-				logger.Warn("Failed to derive any repos", slog.String("cve", string(CVEID)), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
+				metrics.AddNote("Failed to derive any repos: %v", CPE)
 				continue
 			}
-			logger.Info("Derived repos", slog.String("cve", string(CVEID)), slog.Any("repos", repos), slog.String("vendor", CPE.Vendor), slog.String("product", CPE.Product))
+			metrics.AddNote("Derived repos: %v", repos)
 			reposForCVE = repos
 		}
 	}
@@ -337,13 +337,13 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope
-		logger.Info("Passing due to lack of viable repository", slog.String("cve", string(CVEID)))
+		metrics.AddNote("Passing due to lack of viable repository")
 		metrics.Outcome = models.NoRepos
 
 		return nil
 	}
 
-	logger.Info("Found Repos for CVE "+string(CVEID), slog.String("cve", string(CVEID)), slog.Any("repos", reposForCVE))
+	metrics.AddNote("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
 
 	return reposForCVE
 }

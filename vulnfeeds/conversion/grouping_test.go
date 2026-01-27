@@ -1,4 +1,4 @@
-package cvelist2osv
+package conversion
 
 import (
 	"testing"
@@ -423,7 +423,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			groupAffectedRanges(tt.affected)
+			GroupAffectedRanges(tt.affected)
 			if diff := cmp.Diff(tt.want, tt.affected, protocmp.Transform()); diff != "" {
 				t.Errorf("groupAffectedRanges() mismatch (-want +got):\n%s", diff)
 			}

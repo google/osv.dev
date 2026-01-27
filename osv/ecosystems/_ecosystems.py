@@ -45,6 +45,7 @@ _ecosystems = {
     'CRAN': CRAN,
     'crates.io': SemverEcosystem,
     'Debian': Debian,
+    'Docker Hardened Images': SemverEcosystem,
     'Echo': DPKG,
     'GHC': GHC,
     'Go': SemverEcosystem,

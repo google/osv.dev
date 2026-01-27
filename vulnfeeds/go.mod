@@ -7,11 +7,12 @@ require (
 	cloud.google.com/go/storage v1.59.1
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.21.0
-	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/gkampitakis/go-snaps v0.5.19
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scanner v1.9.2
+	github.com/google/osv-scanner/v2 v2.3.2
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260127070820-fe5c3a64c8f4
 	github.com/sethvargo/go-retry v0.3.0
@@ -19,6 +20,7 @@ require (
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -34,17 +36,17 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.54.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/ProtonMail/go-crypto v1.1.6 // indirect
+	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/aquasecurity/go-version v0.0.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
-	github.com/charmbracelet/x/ansi v0.8.0 // indirect
-	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
+	github.com/charmbracelet/colorprofile v0.3.1 // indirect
+	github.com/charmbracelet/x/ansi v0.10.1 // indirect
+	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
@@ -71,7 +73,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/package-url/packageurl-go v0.1.3 // indirect
-	github.com/pjbgf/sha1cd v0.3.2 // indirect
+	github.com/pjbgf/sha1cd v0.4.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -88,7 +90,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.38.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
@@ -105,7 +107,7 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

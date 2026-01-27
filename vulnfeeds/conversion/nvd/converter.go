@@ -199,7 +199,6 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	}
 
 	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
-	// notesFile := filepath.Join(vulnDir, string(cve.ID)+".nvd.notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))

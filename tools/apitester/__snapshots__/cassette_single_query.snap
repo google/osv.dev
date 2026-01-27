@@ -2187,6 +2187,266 @@
       ]
     },
     {
+      "id": "CVE-2025-10966",
+      "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
+      "aliases": ["CURL-CVE-2025-10966"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2025-11-07T08:15:39.617Z",
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-10966.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-10966.json"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3355218"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
+                },
+                {
+                  "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
+                }
+              ]
+            }
+          ],
+          "versions": 53,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14524",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
+      "aliases": ["CURL-CVE-2025-14524"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:46.607Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14524.json"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3459417"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 109,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14819",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the  `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "aliases": ["CURL-CVE-2025-14819"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:46.730Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14819.json"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "c12fb3ddaf48e709a7a4deaa55ec485e4df163ee"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 34,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15079",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
+      "aliases": ["CURL-CVE-2025-15079"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:47.100Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15079.json"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3477116"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 73,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15224",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
+      "aliases": ["CURL-CVE-2025-15224"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:47.207Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-15224.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15224.json"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3480925"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 73,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N"
+        }
+      ]
+    },
+    {
       "id": "CVE-2025-5025",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS transfers. Due to an omission, this check is not performed when connecting with QUIC for HTTP/3, when the TLS backend is wolfSSL. Documentation says the option works with wolfSSL, failing to specify that it does not for QUIC and HTTP/3. Since pinning makes the transfer succeed if the pin is fine, users could unwittingly connect to an impostor server without noticing.",
       "aliases": ["CURL-CVE-2025-5025"],

@@ -219,7 +219,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 	return false
 }
 
-type CPE struct {
+type CPEString struct {
 	CPEVersion string
 	Part       string
 	Vendor     string

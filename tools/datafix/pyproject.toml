@@ -3,7 +3,7 @@ name = "datafix"
 requires-python = ">=3.13,<4.0"
 dependencies = [
     "google-cloud-ndb==2.4.0",
-    "google-cloud-storage==2.19.0",
+    "google-cloud-storage==3.8.0",
     "pyyaml==6.0.3",
     "osv",
     "google-cloud-pubsub>=2.25.2", 

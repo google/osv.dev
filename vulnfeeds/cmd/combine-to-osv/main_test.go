@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -35,7 +35,7 @@ func TestCombineIntoOSV(t *testing.T) {
 
 	cve5osv := loadOSV(cve5Path)
 	nvdosv := loadOSV(nvdPath)
-	nvdosvCopy := make(map[cves.CVEID]*osvschema.Vulnerability)
+	nvdosvCopy := make(map[models.CVEID]*osvschema.Vulnerability)
 	for k, v := range nvdosv {
 		nvdosvCopy[k] = v
 	}

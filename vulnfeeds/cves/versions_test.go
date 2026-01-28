@@ -1284,7 +1284,7 @@ func TestCommit(t *testing.T) {
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       *VPRepoCache
+		cache       VPRepoCache
 		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
@@ -1298,7 +1298,7 @@ func TestReposFromReferences(t *testing.T) {
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
 				CVE:   "CVE-2023-0327",
-				cache: nil,
+				cache: *NewVPRepoCache(),
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
 				refs: []models.Reference{
 					{
@@ -1359,7 +1359,7 @@ func TestReposFromReferences(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
-			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(&tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

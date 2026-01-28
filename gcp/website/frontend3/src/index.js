@@ -4,7 +4,7 @@ import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/progress/circular-progress.js';
 import '@hotwired/turbo';
-import 'spicy-sections/src/SpicySections';
+import './osv-tabs.js';
 import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js';
 import { LitElement, html } from 'lit';
 import { ExpandableSearch, SearchSuggestionsManager } from './search.js';

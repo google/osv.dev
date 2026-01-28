@@ -2012,6 +2012,10 @@
         {
           "id": "DSA-6015-1",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "DSA-6113-1",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

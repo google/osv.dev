@@ -58,3 +58,11 @@ class CRANEcosystemTest(vcr.unittest.VCRTestCase):
         ecosystem.sort_key('1.10-0'), ecosystem.sort_key('1.2-0'))
     self.assertLessEqual(
         ecosystem.sort_key('1.2-0'), ecosystem.sort_key('1.10-0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = ecosystems.get('CRAN')
+    self.assertEqual('00:00009001.00000010.00000033',
+                     ecosystem.coarse_version('9001.10-33.4'))
+    self.assertEqual('00:00000000.00000001.00000000',
+                     ecosystem.coarse_version('0-1'))

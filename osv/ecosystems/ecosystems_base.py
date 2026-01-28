@@ -13,10 +13,11 @@
 # limitations under the License.
 """Ecosystems base classes."""
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Iterable
 from warnings import deprecated
 import bisect
 import functools
+import re
 import requests
 from urllib.parse import quote
 
@@ -29,14 +30,33 @@ class VersionKey:
 
   _key: Any
   _is_zero: bool
+  _is_invalid: bool
+  _error: Exception | None
 
-  def __init__(self, key: Any = None, is_zero: bool = False):
+  def __init__(self,
+               key: Any = None,
+               is_zero: bool = False,
+               is_invalid: bool = False,
+               error: Exception | None = None):
     self._key = key
     self._is_zero = is_zero
+    self._is_invalid = is_invalid
+    self._error = error
+
+  @property
+  def is_invalid(self):
+    return self._is_invalid
 
   def __lt__(self, other):
     if not isinstance(other, VersionKey):
       return NotImplemented
+
+    # Invalid versions are greater than everything else
+    if self._is_invalid:
+      # If both are invalid, they are equal (not less than)
+      return False
+    if other._is_invalid:
+      return True
 
     if self._is_zero:
       return not other._is_zero
@@ -50,6 +70,12 @@ class VersionKey:
     if not isinstance(other, VersionKey):
       return NotImplemented
 
+    if self._is_invalid:
+      return other._is_invalid
+
+    if other._is_invalid:
+      return False
+
     if self._is_zero:
       return other._is_zero
 
@@ -59,13 +85,15 @@ class VersionKey:
     return self._key == other._key
 
   def __repr__(self):
+    if self._is_invalid:
+      return 'VersionKey(is_invalid=True)'
     if self._is_zero:
       return 'VersionKey(is_zero=True)'
-
-    return f'VersionKey(key={self._key!r})'
+    return f'VersionKey({self._key})'
 
 
 _VERSION_ZERO = VersionKey(is_zero=True)
+_VERSION_INVALID = VersionKey(is_invalid=True)
 
 
 class OrderedEcosystem(ABC):
@@ -83,7 +111,7 @@ class OrderedEcosystem(ABC):
   def _sort_key(self, version: str) -> Any:
     """Comparable key for a version.
     
-    If the version string is invalid, return a very large version.
+    If the version string is invalid, raise a ValueError.
     """
 
   def sort_key(self, version: str) -> VersionKey:
@@ -91,11 +119,40 @@ class OrderedEcosystem(ABC):
     if version == '0':
       return _VERSION_ZERO
 
-    return VersionKey(self._sort_key(version))
+    try:
+      return VersionKey(self._sort_key(version))
+    except ValueError as e:
+      # Store the exception for potential logging/debugging.
+      return VersionKey(is_invalid=True, error=e)
 
   def sort_versions(self, versions: list[str]):
     """Sort versions."""
     versions.sort(key=self.sort_key)
+
+  def coarse_version(self, version: str) -> str:
+    """Convert a version string for this ecosystem to a lexicographically
+    sortable string in the form:
+
+    EE:XXXXXXXX.YYYYYYYY.ZZZZZZZZ
+    where:
+    EE is the 0-padded 2-digit epoch number (or equivalent),
+    XXXXXXXX is the 0-padded 8-digit major version (or equivalent),
+    YYYYYYYY is the 0-padded 8-digit minor version (or equivalent),
+    ZZZZZZZZ is the 0-padded 8-digit patch version (or equivalent).
+
+    The returned string is used for database range queries
+    (e.g. coarse_min <= v <= coarse_max).
+    It does not need to be a perfect representation of the version, but it
+    MUST be monotonically non-decreasing with respect to the ecosystem's sort
+    order.
+    i.e. if v1 < v2, then coarse_version(v1) <= coarse_version(v2).
+
+    Version string '0' should map to 00:0000000.00000000.00000000
+
+    Should raise a ValueError if the version string is invalid.
+    """
+    raise NotImplementedError(
+        f'coarse_version not implemented for {self.__class__.__name__}')
 
 
 class EnumerateError(Exception):
@@ -210,3 +267,105 @@ class DepsDevMixin(EnumerableEcosystem, ABC):
     self.sort_versions(versions)
     return self._get_affected_versions(versions, introduced, fixed,
                                        last_affected, limits)
+
+
+MAX_COARSE_EPOCH = 99
+MAX_COARSE_PART = 99999999
+
+
+def coarse_version_generic(version: str,
+                           separators_regex=r'[.]',
+                           truncate_regex=r'[-+]',
+                           implicit_split=False,
+                           empty_as: str | None = None,
+                           epoch: int = 0) -> str:
+  """
+  Convert a version string into a coarse, lexicographically comparable string.
+  
+  Format: 00:00000000.00000000.00000000
+  (Epoch:Major.Minor.Patch)
+  
+  Only the first 3 integer components (Major, Minor, Patch) are used.
+  
+  Args:
+    version: The version string to convert.
+    separators_regex: Regex for separators (default: r'[.]').
+    truncate_regex: Regex for characters to truncate after (default: r'[-+]'). 
+                If None, no truncation is performed.
+    implicit_split: If True, splits on transitions between digits and non-digits
+                    (in addition to separators_regex).
+    empty_as: If not None, treats empty parts as the given string instead of
+              removing them.
+    epoch: The epoch to use.
+
+  Returns:
+    A string in the format 00:00000000.00000000.00000000
+  """
+  if version == '0':
+    return coarse_version_from_ints((0, 0, 0), epoch=epoch)
+
+  main = version
+  if truncate_regex:
+    # Truncate off trailing components (e.g. prerelease/build)
+    main = re.split(truncate_regex, version, maxsplit=1)[0]
+  parts = re.split(separators_regex, main)
+  if implicit_split:
+    # Also split on transitions between digits and non-digits
+    parts = [p for part in parts for p in re.findall(r'^$|\d+|\D+', part)]
+
+  # Filter empty parts or treat as zero
+  if empty_as is not None:
+    parts = [p if p else empty_as for p in parts]
+  else:
+    parts = [p for p in parts if p]
+
+  # Extract up to 3 integer components
+  components = []
+  for p in parts[:3]:
+    if not p.isdecimal():
+      break
+    components.append(int(p))
+
+  return coarse_version_from_ints(components, epoch=epoch)
+
+
+def coarse_version_from_ints(parts: Iterable[int], epoch: int = 0) -> str:
+  """
+  Convert a list of integers into a coarse version string.
+  
+  Format: 00:00000000.00000000.00000000
+  (Epoch:Major.Minor.Patch)
+  
+  Only the first 3 integer components (Major, Minor, Patch) are used.
+  
+  Args:
+    parts: The list of integers to convert.
+    epoch: The epoch to use.
+  """
+  if epoch < 0:
+    # A negative epoch doesn't really make sense
+    return '00:00000000.00000000.00000000'
+  if epoch > MAX_COARSE_EPOCH:
+    return '99:99999999.99999999.99999999'
+  ints = []
+  overflow = False
+  for p in parts:
+    if p < 0:
+      # A negative part doesn't really make sense
+      # but let's just treat it and all following parts as 0
+      ints.append(0)
+      break
+    if p > MAX_COARSE_PART:
+      p = MAX_COARSE_PART
+      overflow = True
+    ints.append(p)
+    if overflow or len(ints) == 3:
+      break
+
+  # Pad with zeros to ensure 3 components
+  # If we overflowed, we should pad with MAX instead of 0
+  pad_value = MAX_COARSE_PART if overflow else 0
+  while len(ints) < 3:
+    ints.append(pad_value)
+
+  return f'{epoch:02d}:{ints[0]:08d}.{ints[1]:08d}.{ints[2]:08d}'

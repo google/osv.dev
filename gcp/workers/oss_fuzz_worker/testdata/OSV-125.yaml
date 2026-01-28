@@ -1,0 +1,28 @@
+id: OSV-125
+summary: A vulnerability
+details: |
+  Blah blah blah
+  Blah
+severity:
+- type: CVSS_V3
+  score: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L
+affected:
+- package:
+    name: blah.com/package
+    ecosystem: Go
+  ranges:
+  - type: GIT
+    repo: https://osv-test/repo/url
+    events:
+    - introduced: eefe8ec3f1f90d0e684890e810f3f21e8500a4cd
+    - fixed: 8d8242f545e9cec3e6d0d2e3f5bde8be1c659735
+    - fixed: b9b3fd4732695b83c3068b7b6a14bb372ec31f98
+    - introduced: febfac1940086bc1f6d3dc33fda0a1d1ba336209
+  versions:
+  - branch-v0.1.1
+  - branch_1_cherrypick_regress
+  - v0.1.1
+references:
+- type: WEB
+  url: https://ref.com/ref
+modified: '2020-01-01T00:00:00Z'

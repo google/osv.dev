@@ -34,7 +34,8 @@ steps:
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'api-tests'
-  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
+  # Need custom service account for api tests access to oss-vdb-test datastore
+  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '--service-account=projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com', '.']
   waitFor: ['init']
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'

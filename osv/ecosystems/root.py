@@ -14,7 +14,11 @@
 """Root ecosystem helper."""
 
 import re
+import packaging_legacy.version
 from .ecosystems_base import OrderedEcosystem
+from .maven import Version as MavenVersion
+from ..third_party.univers.alpine import AlpineLinuxVersion
+from ..third_party.univers.debian import Version as DebianVersion
 
 
 class Root(OrderedEcosystem):
@@ -37,79 +41,91 @@ class Root(OrderedEcosystem):
   def _sort_key(self, version: str):
     """Generate sort key for Root version strings.
 
-    Handles multiple version formats:
-    - Alpine: 1.0.0-r10071
-    - Python: 1.0.0+root.io.1
-    - Others: 1.0.0.root.io.1
+    Delegates to the appropriate ecosystem version parser based on the
+    ecosystem suffix (e.g., :Alpine:3.18, :Debian:12, :npm).
 
     Args:
       version: Version string to parse
 
     Returns:
-      Tuple suitable for sorting
+      Tuple with (version_object, root_patch) for sorting
     """
-    # Try Alpine format: <version>-r<number>
-    alpine_match = re.match(r'^(.+?)-r(\d+)$', version)
-    if alpine_match:
-      upstream = alpine_match.group(1)
-      root_patch = int(alpine_match.group(2))
-      return self._parse_upstream_version(upstream) + (root_patch,)
+    upstream_version = version
+    root_patch = 0
 
-    # Try Python format: <version>+root.io.<number>
+    # Extract Root-specific suffixes
+    # Python format: <version>+root.io.<number>
     python_match = re.match(r'^(.+?)\+root\.io\.(\d+)$', version)
     if python_match:
-      upstream = python_match.group(1)
+      upstream_version = python_match.group(1)
       root_patch = int(python_match.group(2))
-      return self._parse_upstream_version(upstream) + (root_patch,)
 
-    # Try other format: <version>.root.io.<number>
+    # Generic format: <version>.root.io.<number>
     other_match = re.match(r'^(.+?)\.root\.io\.(\d+)$', version)
     if other_match:
-      upstream = other_match.group(1)
+      upstream_version = other_match.group(1)
       root_patch = int(other_match.group(2))
-      return self._parse_upstream_version(upstream) + (root_patch,)
 
-    # Fallback: treat as generic version
-    return self._parse_upstream_version(version)
+    # Alpine format with Root suffix: <version>-r<number>
+    # Note: Alpine naturally uses -r<revision>
+    alpine_match = re.match(r'^(.+?)-r(\d+)$', upstream_version)
+    if alpine_match:
+      root_patch = int(alpine_match.group(2))
 
-  def _parse_upstream_version(self, version: str):
-    """Parse upstream version component.
+    # Determine the sub-ecosystem from the suffix
+    sub_ecosystem = self._get_sub_ecosystem()
 
-    Attempts to extract numeric and string components for sorting.
+    # Parse the upstream version using the appropriate version class
+    return self._parse_upstream_version(upstream_version,
+                                        sub_ecosystem) + (root_patch,)
+
+  def _get_sub_ecosystem(self) -> str:
+    """Extract the sub-ecosystem from the suffix.
+
+    Returns:
+      Sub-ecosystem name (e.g., 'Alpine', 'Debian', 'npm', 'PyPI')
+    """
+    if not self.suffix:
+      return 'unknown'
+
+    # Parse suffix like ":Alpine:3.18" -> "Alpine"
+    # or ":npm" -> "npm"
+    parts = self.suffix.strip(':').split(':')
+    if parts:
+      return parts[0]
+    return 'unknown'
+
+  def _parse_upstream_version(self, version: str, sub_ecosystem: str):
+    """Parse upstream version using ecosystem-specific parser.
 
     Args:
       version: Upstream version string
+      sub_ecosystem: Sub-ecosystem name (e.g., 'Alpine', 'Debian', 'npm')
 
     Returns:
-      Tuple of parsed components
+      Tuple with version object for comparison
+
+    Raises:
+      ValueError: If the version cannot be parsed by the appropriate parser
     """
-    parts = []
+    match sub_ecosystem.lower():
+      case 'alpine':
+        if not AlpineLinuxVersion.is_valid(version):
+          raise ValueError(f'Invalid Alpine version: {version}')
+        return (AlpineLinuxVersion(version),)
 
-    # Split on common delimiters
-    components = re.split(r'[.-]', version)
+      case 'debian' | 'ubuntu':
+        if not DebianVersion.is_valid(version):
+          raise ValueError(f'Invalid Debian/Ubuntu version: {version}')
+        return (DebianVersion.from_string(version),)
 
-    for component in components:
-      # Try to parse as integer
-      try:
-        parts.append(int(component))
-      except ValueError:
-        # If not numeric, use string comparison
-        # Convert to tuple of character codes for consistent sorting
-        parts.append(component)
+      case 'pypi' | 'python':
+        # packaging_legacy.version.parse handles invalid versions gracefully
+        # by returning LegacyVersion, so we don't need explicit validation
+        return (packaging_legacy.version.parse(version),)
 
-    return tuple(parts)
+      case 'maven':
+        return (MavenVersion.from_string(version),)
 
-  def sort_key(self, version: str):
-    """Public sort key method.
-
-    Args:
-      version: Version string
-
-    Returns:
-      Tuple for sorting
-    """
-    try:
-      return self._sort_key(version)
-    except Exception:
-      # Fallback to string comparison if parsing fails
-      return (version,)
+      case _:
+        return (packaging_legacy.version.parse(version),)

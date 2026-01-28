@@ -9,14 +9,14 @@ Combine [`PackageInfo`](https://github.com/google/osv.dev/blob/2c22e9534a521c6c6
 To address the generation of CVE records from multiple disparate sources (all requiring a common record prefix):
 
 * Alpine, by [this code](../alpine)
-* the NVD, by [this code](../nvd-cve-osv)
+* the NVD, by [this code](../converters/cve/nvd-cve-osv)
 
 ## How
 
 See [`run_combine_to_osv_convert.sh`](run_combine_to_osv_convert.sh):
 
 * Reads from [`gs://cve-osv-conversion/parts`](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=parts/)
-* Merges with CVE data from NVD (obtained from GCS mirror maintained by [`download-cves`](../download-cves/mirror_nvd.sh))
+* Merges with CVE data from NVD (obtained from GCS mirror maintained by [`download-cves`](../mirrors/download-cves/mirror_nvd.sh))
 * Writes an OSV record to [`gs://cve-osv-conversion/osv-output`](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/)
   * This is the import source for [`cve-osv`](https://github.com/google/osv.dev/blob/2c22e9534a521c6c6350275427f80e481065ca39/source.yaml#L96)
   * What gets written can be overridden by OSV records in [`gs://cve-osv-conversion/osv-output-overrides`](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output-overrides/)

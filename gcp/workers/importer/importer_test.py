@@ -120,45 +120,6 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     mock_publish.assert_not_called()
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_scheduled_updates_already_done(self, mock_publish):  # pylint: disable=unused-argument
-    """Scheduled updates already done."""
-    # TODO(michaelkedar): This test doesn't check anything
-    self.skipTest("Not Implemented")
-    source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
-    source_repo.last_update_date = importer.utcnow()
-    source_repo.put()
-
-    self.mock_repo.add_file('proj/OSV-2021-1337.yaml', _MIN_VALID_VULNERABILITY)
-    self.mock_repo.commit('OSV', 'infra@osv.dev')
-    osv.Bug(
-        db_id='OSV-2021-1337',
-        project=['proj'],
-        fixed='',
-        status=1,
-        source_id='oss-fuzz:123',
-        source_of_truth=osv.SourceOfTruth.SOURCE_REPO,
-        timestamp=datetime.datetime(
-            2020, 1, 1, 0, 0, 0, 0, tzinfo=datetime.UTC)).put()
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-    imp.run()
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  def test_no_updates(self, mock_publish):  # pylint: disable=unused-argument
-    """Test no update marker."""
-    # TODO(michaelkedar): This test doesn't check anything
-    self.skipTest("Not Implemented")
-    self.mock_repo.add_file('2021-111.yaml', _MIN_VALID_VULNERABILITY)
-    self.mock_repo.commit('User', 'user@email', 'message. OSV-NO-UPDATE')
-
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            True, False)
-    imp.run()
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_ignore(self, mock_publish):  # pylint: disable=unused-argument
     """Test ignoring."""
     self.assertTrue(self.source_repo.ignore_file('/tmp/foo/recoredIGNOREme'))

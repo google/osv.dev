@@ -2,7 +2,6 @@ package cvelist2osv
 
 import (
 	"cmp"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -26,31 +26,6 @@ const (
 	VersionRangeTypeGit
 	VersionRangeTypeSemver
 	VersionRangeTypeEcosystem
-)
-
-// VersionSource indicates the source of the extracted version information.
-type VersionSource string
-
-const (
-	VersionSourceNone        VersionSource = "NOVERS"
-	VersionSourceAffected    VersionSource = "CVEAFFVERS"
-	VersionSourceGit         VersionSource = "GITVERS"
-	VersionSourceCPE         VersionSource = "CPEVERS"
-	VersionSourceDescription VersionSource = "DESCRVERS"
-)
-
-type ConversionOutcome int
-
-const (
-	// Set of enums for categorizing conversion outcomes.
-	ConversionUnknown ConversionOutcome = iota // Shouldn't happen
-	Successful                                 // It worked!
-	Rejected                                   // The CVE was rejected
-	NoSoftware                                 // The CVE had no CPEs relating to software (i.e. Operating Systems or Hardware).
-	NoRepos                                    // The CPE Vendor/Product had no repositories derived for it.
-	NoCommitRanges                             // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
-	NoRanges                                   // No version ranges could be extracted from the record.
-	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
 )
 
 // String returns the string representation of a VersionRangeType.
@@ -82,7 +57,7 @@ func toVersionRangeType(s string) VersionRangeType {
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.
 // It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
 	if version == "" {
 		return ""
 	}
@@ -101,7 +76,7 @@ func resolveVersionToCommit(cveID cves.CVEID, version, versionType, repo string,
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
+func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
@@ -193,7 +168,7 @@ func gitVersionsToCommits(cveID cves.CVEID, versionRanges []*osvschema.Range, re
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve cves.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
+func findCPEVersionRanges(cve models.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
 	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
 	for _, c := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range c.Nodes {
@@ -270,44 +245,4 @@ func compareSemverLike(a, b string) int {
 
 	// All extra parts were zero, so the versions are effectively equal.
 	return 0
-}
-
-// addAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
-func addAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *ConversionMetrics) {
-	allExistingRanges := make(map[string]struct{})
-	for _, existingAff := range v.Affected {
-		for _, r := range existingAff.GetRanges() {
-			rangeBytes, err := json.Marshal(r)
-			if err == nil {
-				allExistingRanges[string(rangeBytes)] = struct{}{}
-			}
-		}
-	}
-
-	uniqueRanges := []*osvschema.Range{}
-	for _, r := range aff.GetRanges() {
-		rangeBytes, err := json.Marshal(r)
-		if err != nil {
-			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
-			uniqueRanges = append(uniqueRanges, r)
-
-			continue
-		}
-		rangeStr := string(rangeBytes)
-		if _, exists := allExistingRanges[rangeStr]; !exists {
-			uniqueRanges = append(uniqueRanges, r)
-			allExistingRanges[rangeStr] = struct{}{}
-		} else {
-			metrics.AddNote("Skipping duplicate range: %+v", r)
-		}
-	}
-
-	if len(uniqueRanges) > 0 {
-		newAff := &osvschema.Affected{
-			Package:          aff.GetPackage(),
-			Ranges:           uniqueRanges,
-			DatabaseSpecific: aff.GetDatabaseSpecific(),
-		}
-		v.Affected = append(v.Affected, newAff)
-	}
 }

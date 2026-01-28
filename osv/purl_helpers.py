@@ -48,6 +48,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('deb', 'echo'),
     'Debian':
         EcosystemPURL('deb', 'debian'),
+    'Docker Hardened Images':
+        EcosystemPURL('dhi', None),
     # GHC
     # GIT
     # GitHub Actions
@@ -70,6 +72,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('npm', None),
     'NuGet':
         EcosystemPURL('nuget', None),
+    'opam':
+        EcosystemPURL('opam', None),
     'openEuler':
         EcosystemPURL('rpm', 'openeuler'),
     'openSUSE':

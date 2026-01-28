@@ -15,6 +15,7 @@
 import datetime
 import os
 import unittest
+import unittest.mock
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
@@ -52,6 +53,11 @@ class RecovererTest(unittest.TestCase):
           public=True,
           import_last_modified=datetime.datetime(
               2025, 1, 1, tzinfo=datetime.UTC),
+      ).put()
+      osv.Vulnerability(
+          id='TEST-123',
+          source_id='test:TEST-123.yaml',
+          modified=datetime.datetime(2025, 1, 1, tzinfo=datetime.UTC),
       ).put()
     return super().setUp()
 
@@ -100,19 +106,19 @@ class RecovererTest(unittest.TestCase):
     self.assertEqual(1, len(cm.output))
     self.assertIn('failed to decode protobuf', cm.output[0])
 
-  def test_handle_gcs_missing(self):
+  @unittest.mock.patch('google.cloud.pubsub_v1.PublisherClient')
+  def test_handle_gcs_missing(self, mock_publisher):
     """Test standard handle_gcs_missing"""
-    # Going to pretend this is missing, we'll check the contents don't change.
-    original_result = osv.gcs.get_by_id_with_generation('TEST-123')
-    self.assertIsNotNone(original_result)
-    original_data, original_generation = original_result
     message = pubsub_v1.types.PubsubMessage(attributes={'id': 'TEST-123'})
     self.assertTrue(recoverer.handle_gcs_missing(message))
-    new_result = osv.gcs.get_by_id_with_generation('TEST-123')
-    self.assertIsNotNone(new_result)
-    new_data, new_generation = new_result
-    self.assertEqual(original_data, new_data)
-    self.assertNotEqual(original_generation, new_generation)
+
+    # Check that the update message was published
+    mock_publisher.return_value.publish.assert_called_once()
+    call_args = mock_publisher.return_value.publish.call_args
+    self.assertEqual(call_args.kwargs['type'], 'update')
+    self.assertEqual(call_args.kwargs['source'], 'test')
+    self.assertEqual(call_args.kwargs['path'], 'TEST-123.yaml')
+    self.assertEqual(call_args.kwargs['skip_hash_check'], 'true')
 
   def test_handle_gcs_gen_mismatch_aliases(self):
     """Test handle_gcs_gen_mismatch for aliases."""

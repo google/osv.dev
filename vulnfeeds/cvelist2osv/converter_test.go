@@ -10,9 +10,8 @@ import (
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
-
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -21,7 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func loadTestData(t *testing.T, cveName string) cves.CVE5 {
+func loadTestData(t *testing.T, cveName string) models.CVE5 {
 	t.Helper()
 	prefix := strings.Split(cveName, "-")[2]
 	prefixpath := prefix[:len(prefix)-3] + "xxx"
@@ -30,14 +29,14 @@ func loadTestData(t *testing.T, cveName string) cves.CVE5 {
 	return loadTestCVE(t, fileName)
 }
 
-func loadTestCVE(t *testing.T, path string) cves.CVE5 {
+func loadTestCVE(t *testing.T, path string) models.CVE5 {
 	t.Helper()
 	file, err := os.Open(path)
 	if err != nil {
 		t.Fatalf("Failed to load test data from %q: %v", path, err)
 	}
 	defer file.Close()
-	var cve cves.CVE5
+	var cve models.CVE5
 	err = json.NewDecoder(file).Decode(&cve)
 	if err != nil {
 		t.Fatalf("Failed to decode %q: %+v", path, err)
@@ -49,31 +48,31 @@ func loadTestCVE(t *testing.T, path string) cves.CVE5 {
 func TestIdentifyPossibleURLs(t *testing.T) {
 	testCases := []struct {
 		name         string
-		cve          cves.CVE5
-		expectedRefs []cves.Reference
+		cve          models.CVE5
+		expectedRefs []models.Reference
 	}{
 		{
 			name: "simple case with duplicates",
-			cve: cves.CVE5{
+			cve: models.CVE5{
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
-						References: []cves.Reference{
+					CNA: models.CNA{
+						References: []models.Reference{
 							{URL: "http://a.com"},
 							{URL: "http://b.com"},
 						},
-						Affected: []cves.Affected{
+						Affected: []models.Affected{
 							{
 								CollectionURL: "http://d.com",
 								Repo:          "http://b.com",
 							},
 						},
 					},
-					ADP: []cves.CNA{
+					ADP: []models.CNA{
 						{
-							References: []cves.Reference{
+							References: []models.Reference{
 								{URL: "http://c.com"},
 								{URL: "http://a.com"},
 							},
@@ -81,7 +80,7 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 					},
 				},
 			},
-			expectedRefs: []cves.Reference{
+			expectedRefs: []models.Reference{
 				{URL: "http://a.com"},
 				{URL: "http://b.com"},
 				{URL: "http://c.com"},
@@ -92,53 +91,53 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 		},
 		{
 			name: "no references and CNA refs is nil",
-			cve: cves.CVE5{
+			cve: models.CVE5{
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
+					CNA: models.CNA{
 						References: nil,
 					},
 				},
 			},
-			expectedRefs: []cves.Reference{},
+			expectedRefs: []models.Reference{},
 		},
 		{
 			name: "no references and CNA refs is empty slice",
-			cve: cves.CVE5{
+			cve: models.CVE5{
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
-						References: []cves.Reference{},
+					CNA: models.CNA{
+						References: []models.Reference{},
 					},
 				},
 			},
-			expectedRefs: []cves.Reference{},
+			expectedRefs: []models.Reference{},
 		},
 		{
 			name: "empty url string",
-			cve: cves.CVE5{
+			cve: models.CVE5{
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
-						Affected: []cves.Affected{
+					CNA: models.CNA{
+						Affected: []models.Affected{
 							{
 								CollectionURL: "",
 							},
 						},
-						References: []cves.Reference{
+						References: []models.Reference{
 							{URL: "http://a.com"},
 							{URL: ""},
 						},
 					},
 				},
 			},
-			expectedRefs: []cves.Reference{
+			expectedRefs: []models.Reference{
 				{URL: "http://a.com"},
 			},
 		},
@@ -155,36 +154,36 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 }
 
 func TestFromCVE5(t *testing.T) {
-	cve1110Pub, _ := cves.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
-	cve1110Mod, _ := cves.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
-	cve21634Pub, _ := cves.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
-	cve21634Mod, _ := cves.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
-	cve21772Pub, _ := cves.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
-	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
-	cvePlaceholder, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+	cve1110Pub, _ := models.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
+	cve1110Mod, _ := models.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
+	cve21634Pub, _ := models.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
+	cve21634Mod, _ := models.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
+	cve21772Pub, _ := models.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
+	cve21772Mod, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+	cvePlaceholder, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 	testCases := []struct {
 		name string
-		cve  cves.CVE5
+		cve  models.CVE5
 
-		refs         []cves.Reference
+		refs         []models.Reference
 		expectedVuln *vulns.Vulnerability
 	}{
 		{
 			name: "disputed record",
-			cve: cves.CVE5{
-				Metadata: cves.CVE5Metadata{
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
 					CVEID:         "CVE-2025-9999",
 					State:         "PUBLISHED",
 					DatePublished: "2025-05-04T07:20:46.575Z",
 					DateUpdated:   "2025-05-04T07:20:46.575Z",
 				},
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
+					CNA: models.CNA{
 						Tags: []string{"disputed"},
-						Descriptions: []cves.LangString{
+						Descriptions: []models.LangString{
 							{
 								Lang:  "en",
 								Value: "A disputed vulnerability.",
@@ -193,7 +192,7 @@ func TestFromCVE5(t *testing.T) {
 					},
 				},
 			},
-			refs: []cves.Reference{},
+			refs: []models.Reference{},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-9999",
@@ -213,7 +212,7 @@ func TestFromCVE5(t *testing.T) {
 		{
 			name: "CVE-2025-1110",
 			cve:  loadTestData(t, "CVE-2025-1110"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
 				{URL: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
 			},
@@ -256,7 +255,7 @@ func TestFromCVE5(t *testing.T) {
 		{
 			name: "CVE-2024-21634",
 			cve:  loadTestData(t, "CVE-2024-21634"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{Tags: []string{"x_refsource_CONFIRM"}, URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 			},
 			expectedVuln: &vulns.Vulnerability{
@@ -297,7 +296,7 @@ func TestFromCVE5(t *testing.T) {
 		{
 			name: "CVE-2025-21772",
 			cve:  loadTestData(t, "CVE-2025-21772"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 				{URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
 				{URL: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},
@@ -340,7 +339,7 @@ func TestFromCVE5(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
 
 			// Handle non-deterministic time.Now()
@@ -392,24 +391,24 @@ func TestFromCVE5(t *testing.T) {
 }
 
 func TestConvertAndExportCVEToOSV(t *testing.T) {
-	cve1110Pub, _ := cves.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
-	cve1110Mod, _ := cves.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
-	cve21634Pub, _ := cves.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
-	cve21634Mod, _ := cves.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
-	cve21772Pub, _ := cves.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
-	cve21772Mod, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
-	cvePlaceholder, _ := cves.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+	cve1110Pub, _ := models.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
+	cve1110Mod, _ := models.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
+	cve21634Pub, _ := models.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
+	cve21634Mod, _ := models.ParseCVE5Timestamp("2025-06-16T19:45:37.088Z")
+	cve21772Pub, _ := models.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
+	cve21772Mod, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+	cvePlaceholder, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 	testCases := []struct {
 		name string
-		cve  cves.CVE5
+		cve  models.CVE5
 
-		refs         []cves.Reference
+		refs         []models.Reference
 		expectedVuln *vulns.Vulnerability
 	}{
 		{
 			name: "disputed record",
-			cve: cves.CVE5{
-				Metadata: cves.CVE5Metadata{
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
 					CVEID:             "CVE-2025-9999",
 					State:             "PUBLISHED",
 					DatePublished:     "2025-05-04T07:20:46.575Z",
@@ -417,12 +416,12 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					AssignerShortName: "unknown",
 				},
 				Containers: struct {
-					CNA cves.CNA   `json:"cna"`
-					ADP []cves.CNA `json:"adp,omitempty"`
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
 				}{
-					CNA: cves.CNA{
+					CNA: models.CNA{
 						Tags: []string{"disputed"},
-						Descriptions: []cves.LangString{
+						Descriptions: []models.LangString{
 							{
 								Lang:  "en",
 								Value: "A disputed vulnerability.",
@@ -431,7 +430,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 					},
 				},
 			},
-			refs: []cves.Reference{},
+			refs: []models.Reference{},
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-9999",
@@ -452,7 +451,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		{
 			name: "CVE-2025-1110",
 			cve:  loadTestData(t, "CVE-2025-1110"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"}},
 				{URL: "https://hackerone.com/reports/2972576", Tags: []string{"technical-description", "exploit", "permissions-required"}},
 			},
@@ -497,7 +496,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		{
 			name: "CVE-2024-21634",
 			cve:  loadTestData(t, "CVE-2024-21634"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{Tags: []string{"x_refsource_CONFIRM"}, URL: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 			},
 			expectedVuln: &vulns.Vulnerability{
@@ -538,7 +537,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		{
 			name: "CVE-2025-21772",
 			cve:  loadTestData(t, "CVE-2025-21772"),
-			refs: []cves.Reference{
+			refs: []models.Reference{
 				{URL: "https://git.kernel.org/stable/c/a3e77da9f843e4ab93917d30c314f0283e28c124"},
 				{URL: "https://git.kernel.org/stable/c/213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
 				{URL: "https://git.kernel.org/stable/c/40a35d14f3c0dc72b689061ec72fc9b193f37d1f"},

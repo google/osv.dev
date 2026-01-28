@@ -1284,7 +1284,7 @@ func TestCommit(t *testing.T) {
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VPRepoCache
+		cache       *VPRepoCache
 		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
@@ -1298,7 +1298,7 @@ func TestReposFromReferences(t *testing.T) {
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
 				CVE:   "CVE-2023-0327",
-				cache: *NewVPRepoCache(),
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
 				refs: []models.Reference{
 					{
@@ -1355,11 +1355,12 @@ func TestReposFromReferences(t *testing.T) {
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
-			if gotRepos := ReposFromReferences(&tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1462,7 +1463,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 
 func Test_MaybeUpdate(t *testing.T) {
 	type args struct {
-		cache VPRepoCache
+		cache *VPRepoCache
 		vp    *VendorProduct
 		repos []string
 	}
@@ -1474,7 +1475,7 @@ func Test_MaybeUpdate(t *testing.T) {
 		{
 			name: "Test with an empty cache",
 			args: args{
-				cache: *NewVPRepoCache(),
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
@@ -1485,7 +1486,7 @@ func Test_MaybeUpdate(t *testing.T) {
 		{
 			name: "Test with an empty cache and an unusable repo",
 			args: args{
-				cache: *NewVPRepoCache(),
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/vendor/repo"},
 			},
@@ -1494,7 +1495,7 @@ func Test_MaybeUpdate(t *testing.T) {
 		{
 			name: "Test with an existing cache",
 			args: args{
-				cache: VPRepoCache{
+				cache: &VPRepoCache{
 					m: VendorProductToRepoMap{
 						VendorProduct{
 							"avendor",
@@ -1512,7 +1513,7 @@ func Test_MaybeUpdate(t *testing.T) {
 		{
 			name: "Test with an empty cache adding two values",
 			args: args{
-				cache: *NewVPRepoCache(),
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
@@ -1521,10 +1522,11 @@ func Test_MaybeUpdate(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			cache := &tt.args.cache
+			cache := tt.args.cache
 			for _, repo := range tt.args.repos {
 				cache.MaybeUpdate(tt.args.vp, repo)
 			}
@@ -1607,6 +1609,7 @@ func TestVPRepoCache_MaybeRemove(t *testing.T) {
 				if tt.wantCache != nil {
 					t.Errorf("MaybeRemove() cache is nil, wanted %#v", tt.wantCache)
 				}
+
 				return
 			}
 			if !reflect.DeepEqual(cache.m, tt.wantCache) {

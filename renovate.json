@@ -58,16 +58,31 @@
       "matchFileNames": [
         "gcp/api/**",
         "gcp/functions/**",
-        "gcp/workers/**",
+        "gcp/workers/**"
+      ],
+      "matchCategories": ["python"],
+      "groupName": "gcp-services-python"
+    },
+    {
+      "matchFileNames": [
         "gcp/indexer/**"
       ],
-      "groupName": "gcp-services"
+      "matchCategories": ["golang"],
+      "groupName": "gcp-indexer-go"
     },
     {
       "matchFileNames": [
         "vulnfeeds/**"
       ],
-      "groupName": "vulnfeeds"
+      "matchCategories": ["python"],
+      "groupName": "vulnfeeds-python"
+    },
+    {
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
+      "matchCategories": ["golang"],
+      "groupName": "vulnfeeds-go"
     },
     {
       "matchFileNames": [

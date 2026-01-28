@@ -865,6 +865,9 @@ func ParseCPE(formattedString string) (*models.CPEString, error) {
 
 func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	s := strings.Split(string(text), ":")
+	if len(s) != 2 {
+		return fmt.Errorf("expected 2 parts, got %d", len(s))
+	}
 	vp.Vendor = s[0]
 	vp.Product = s[1]
 

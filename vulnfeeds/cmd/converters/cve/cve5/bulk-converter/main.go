@@ -137,7 +137,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		if err != nil {
 			logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 		} else {
-			if rejectFailed && metrics.Outcome != cvelist2osv.Successful {
+			if rejectFailed && metrics.Outcome != models.Successful {
 				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 				osvFile.Close()
 				os.Remove(osvFile.Name())

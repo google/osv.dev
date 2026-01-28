@@ -143,7 +143,7 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
 // converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*ConversionMetrics, error) {
+func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*models.ConversionMetrics, error) {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)

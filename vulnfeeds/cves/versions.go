@@ -961,7 +961,7 @@ func (c *VPRepoCache) MaybeRemove(vp *VendorProduct, repo string) {
 	c.m[*vp] = cacheEntry
 }
 
-func (c *VPRepoCache) Import(vpMap VendorProductToRepoMap) {
+func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 	c.Lock()
 	defer c.Unlock()
 	c.m = vpMap

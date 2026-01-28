@@ -1,4 +1,4 @@
-package cvelist2osv
+package conversion
 
 import (
 	"fmt"
@@ -11,11 +11,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// groupAffectedRanges groups ranges that share the same introduced value, type, and repo.
+// GroupAffectedRanges groups ranges that share the same introduced value, type, and repo.
 // This is because having multiple ranges with the same introduced value would act like an
 // OR condition, rather than AND.
 // This function modifies in-place
-func groupAffectedRanges(affected []*osvschema.Affected) {
+func GroupAffectedRanges(affected []*osvschema.Affected) {
 	for _, aff := range affected {
 		if len(aff.GetRanges()) <= 1 {
 			continue

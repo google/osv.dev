@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cvelist2osv"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
@@ -28,7 +29,7 @@ func main() {
 		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
 
-	var cve cves.CVE5
+	var cve models.CVE5
 	if err = json.Unmarshal(data, &cve); err != nil {
 		logger.Fatal("Failed to parse CVEList CVE JSON", slog.Any("err", err))
 	}
@@ -44,8 +45,8 @@ func main() {
 	}
 	// create the files
 
-	osvFile, errCVE := cvelist2osv.CreateOSVFile(cveID, outDir)
-	metricsFile, errMetrics := cvelist2osv.CreateMetricsFile(cveID, outDir)
+	osvFile, errCVE := conversion.CreateOSVFile(cveID, outDir)
+	metricsFile, errMetrics := conversion.CreateMetricsFile(cveID, outDir)
 	if errCVE != nil || errMetrics != nil {
 		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 	}

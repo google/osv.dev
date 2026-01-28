@@ -14,8 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cvelist2osv"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
@@ -34,7 +35,7 @@ func main() {
 	flag.Parse()
 	logger.InitGlobalLogger()
 
-	logger.Info("Commencing Linux CVE to OSV conversion run")
+	logger.Info("Commencing CVE to OSV conversion run")
 	if err := os.MkdirAll(*localOutputDir, 0755); err != nil {
 		logger.Fatal("Failed to create local output directory", slog.Any("err", err))
 	}
@@ -103,7 +104,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 			continue
 		}
 
-		var cve cves.CVE5
+		var cve models.CVE5
 		if err := json.Unmarshal(data, &cve); err != nil {
 			logger.Info("Failed to unmarshal JSON", slog.String("path", path), slog.Any("err", err))
 			continue
@@ -115,8 +116,8 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		cveID := cve.Metadata.CVEID
 		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
 
-		osvFile, errCVE := cvelist2osv.CreateOSVFile(cveID, outDir)
-		metricsFile, errMetrics := cvelist2osv.CreateMetricsFile(cveID, outDir)
+		osvFile, errCVE := conversion.CreateOSVFile(cveID, outDir)
+		metricsFile, errMetrics := conversion.CreateMetricsFile(cveID, outDir)
 		if errCVE != nil || errMetrics != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 		}

@@ -34,7 +34,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -324,7 +323,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
 // It prioritizes newer CVSS versions and "Primary" sources.
-func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, string) {
+func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string) {
 	// Define search passes. First pass for "Primary", second for any.
 	for _, primaryOnly := range []bool{true, false} {
 		// Inside each pass, prioritize v4.0 over v3.1 over v3.0.
@@ -350,7 +349,7 @@ func getBestSeverity(metricsData *cves.CVEItemMetrics) (string, string) {
 
 // AddSeverity adds CVSS severity information to the OSV vulnerability object.
 // It uses the highest available CVSS score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(metricsData *cves.CVEItemMetrics) {
+func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics) {
 	bestVectorString, severityType := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {
@@ -588,7 +587,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 
 // ExtractReferencedVulns extracts other vulnerability IDs from a CVE's references
 // to place them into the aliases and related fields.
-func ExtractReferencedVulns(id cves.CVEID, cveID cves.CVEID, references []cves.Reference) ([]string, []string) {
+func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []models.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
 	if id != cveID {
@@ -663,7 +662,7 @@ func Unique[T comparable](s []T) []T {
 }
 
 // ClassifyReferences annotates reference links based on their tags or their shape.
-func ClassifyReferences(refs []cves.Reference) []*osvschema.Reference {
+func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 	var references []*osvschema.Reference
 	refMap := make(map[string]map[osvschema.Reference_Type]bool)
 
@@ -705,12 +704,12 @@ func ClassifyReferences(refs []cves.Reference) []*osvschema.Reference {
 // Leaves affected and version fields empty to be filled in later with AddPkgInfo
 // There are two id fields passed in as one of the users of this field (PyPi) sometimes has a different id than the CVEID
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
-func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
+func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
 	v := &Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			Id:         string(id),
-			Details:    cves.EnglishDescription(cve.Descriptions),
+			Details:    models.EnglishDescription(cve.Descriptions),
 			Aliases:    aliases,
 			Related:    related,
 			Published:  timestamppb.New(cve.Published.Time),
@@ -723,9 +722,9 @@ func FromNVDCVE(id cves.CVEID, cve cves.CVE) *Vulnerability {
 	return v
 }
 
-// GetCPEs extracts CPE strings from a slice of cves.CPE.
+// GetCPEs extracts CPE strings from a slice of models.CPE.
 // Returns array of CPE strings and array of notes.
-func GetCPEs(cpeApplicability []cves.CPE) ([]string, []string) {
+func GetCPEs(cpeApplicability []models.CPE) ([]string, []string) {
 	var CPEs []string
 	var notes []string
 	for _, c := range cpeApplicability {
@@ -796,13 +795,13 @@ func CheckQuality(text string) QualityCheck {
 }
 
 // LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
-func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
+func LoadAllCVEs(cvePath string) map[models.CVEID]models.Vulnerability {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
 	}
 
-	vulnsChan := make(chan cves.Vulnerability)
+	vulnsChan := make(chan models.Vulnerability)
 	var wg sync.WaitGroup
 
 	for _, entry := range dir {
@@ -821,7 +820,7 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 			}
 			defer file.Close()
 
-			var nvdcve cves.CVEAPIJSON20Schema
+			var nvdcve models.CVEAPIJSON20Schema
 			if err := json.NewDecoder(file).Decode(&nvdcve); err != nil {
 				logger.Error("Failed to decode JSON", slog.String("file", filename), slog.Any("err", err))
 				return
@@ -839,7 +838,7 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 		close(vulnsChan)
 	}()
 
-	result := make(map[cves.CVEID]cves.Vulnerability)
+	result := make(map[models.CVEID]models.Vulnerability)
 	for item := range vulnsChan {
 		result[item.CVE.ID] = item
 	}
@@ -847,7 +846,7 @@ func LoadAllCVEs(cvePath string) map[cves.CVEID]cves.Vulnerability {
 	return result
 }
 
-func FindSeverity(metricsData []cves.Metrics) *osvschema.Severity {
+func FindSeverity(metricsData []models.Metrics) *osvschema.Severity {
 	bestVectorString, severityType := getBestCVE5Severity(metricsData)
 	if bestVectorString == "" {
 		return nil
@@ -859,14 +858,14 @@ func FindSeverity(metricsData []cves.Metrics) *osvschema.Severity {
 	}
 }
 
-func getBestCVE5Severity(metricsData []cves.Metrics) (string, osvschema.Severity_Type) {
+func getBestCVE5Severity(metricsData []models.Metrics) (string, osvschema.Severity_Type) {
 	checks := []struct {
-		getVectorString func(cves.Metrics) string
+		getVectorString func(models.Metrics) string
 		severityType    osvschema.Severity_Type
 	}{
-		{func(m cves.Metrics) string { return m.CVSSv4_0.VectorString }, osvschema.Severity_CVSS_V4},
-		{func(m cves.Metrics) string { return m.CVSSv3_1.VectorString }, osvschema.Severity_CVSS_V3},
-		{func(m cves.Metrics) string { return m.CVSSv3_0.VectorString }, osvschema.Severity_CVSS_V3},
+		{func(m models.Metrics) string { return m.CVSSv4_0.VectorString }, osvschema.Severity_CVSS_V4},
+		{func(m models.Metrics) string { return m.CVSSv3_1.VectorString }, osvschema.Severity_CVSS_V3},
+		{func(m models.Metrics) string { return m.CVSSv3_0.VectorString }, osvschema.Severity_CVSS_V3},
 	}
 
 	for _, check := range checks {

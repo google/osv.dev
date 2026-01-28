@@ -27,8 +27,8 @@ import (
 	"strings"
 
 	version "github.com/aquasecurity/go-pep440-version"
-
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
@@ -244,7 +244,7 @@ func New(pypiLinksPath string, pypiVersionsPath string) *PyPI {
 	}
 }
 
-func (p *PyPI) Matches(cve cves.CVE, falsePositives *triage.FalsePositives) []string {
+func (p *PyPI) Matches(cve models.NVDCVE, falsePositives *triage.FalsePositives) []string {
 	matches := []string{}
 	for _, reference := range cve.References {
 		// If there is a PyPI link, it must be a Python package. These take precedence.
@@ -348,9 +348,9 @@ func (p *PyPI) packageExists(pkg string) bool {
 	return result
 }
 
-func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.FalsePositives) bool {
+func (p *PyPI) finalPkgCheck(cve models.NVDCVE, pkg string, falsePositives *triage.FalsePositives) bool {
 	// To avoid false positives, check that the pkg name is mentioned in the description.
-	desc := strings.ToLower(cves.EnglishDescription(cve.Descriptions))
+	desc := strings.ToLower(models.EnglishDescription(cve.Descriptions))
 	pkgNameParts := strings.Split(pkg, "-")
 
 	for _, part := range pkgNameParts {
@@ -375,7 +375,7 @@ func (p *PyPI) finalPkgCheck(cve cves.CVE, pkg string, falsePositives *triage.Fa
 }
 
 // matchesPackage checks if a given reference link matches a PyPI package.
-func (p *PyPI) matchesPackage(link string, cve cves.CVE, falsePositives *triage.FalsePositives) []string {
+func (p *PyPI) matchesPackage(link string, cve models.NVDCVE, falsePositives *triage.FalsePositives) []string {
 	pkgs := []string{}
 	u, err := url.Parse(strings.ToLower(link))
 	if err != nil {

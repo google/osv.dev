@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -138,7 +137,7 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 }
 
 // generateAlpineOSV generates the generic PackageInfo package from the information given by alpine advisory
-func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cves.CVEID]cves.Vulnerability) (osvVulnerabilities []*vulns.Vulnerability) {
+func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[models.CVEID]models.Vulnerability) (osvVulnerabilities []*vulns.Vulnerability) {
 	cveIDs := make([]string, 0, len(allAlpineSecDb))
 	for cveID := range allAlpineSecDb {
 		cveIDs = append(cveIDs, cveID)
@@ -157,7 +156,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[cv
 
 			return verPkgs[i].Ver < verPkgs[j].Ver
 		})
-		cve, ok := allCVEs[cves.CVEID(cveID)]
+		cve, ok := allCVEs[models.CVEID(cveID)]
 		var published time.Time
 		var details string
 		if ok {

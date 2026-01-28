@@ -706,7 +706,6 @@ class Importer:
         source_repo.name,
         extra={
             'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
                 'source_repo': source_repo.name,
             }
         })
@@ -782,8 +781,6 @@ class Importer:
           len(vulns_to_delete),
           source_repo.name,
           extra={})
-      vulns = [v.id for v in vulns_to_delete]
-      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.
@@ -969,7 +966,6 @@ class Importer:
         source_repo.name,
         extra={
             'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
                 'source_repo': source_repo.name,
             }
         })
@@ -1028,8 +1024,6 @@ class Importer:
           len(vulns_to_delete),
           source_repo.name,
           extra={})
-      vulns = [v.id for v in vulns_to_delete]
-      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.

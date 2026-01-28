@@ -704,11 +704,9 @@ class Importer:
         'Counted %d Vulnerabilities for %s in Datastore',
         len(vuln_ids_for_source),
         source_repo.name,
-        extra={
-            'json_fields': {
-                'source_repo': source_repo.name,
-            }
-        })
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
@@ -781,6 +779,8 @@ class Importer:
           len(vulns_to_delete),
           source_repo.name,
           extra={})
+      vulns = [v.id for v in vulns_to_delete]
+      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.
@@ -964,11 +964,9 @@ class Importer:
         'Counted %d Vulnerabilities for %s in Datastore',
         len(vuln_ids_for_source),
         source_repo.name,
-        extra={
-            'json_fields': {
-                'source_repo': source_repo.name,
-            }
-        })
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
 
     s = requests.Session()
     adapter = HTTPAdapter(
@@ -1024,6 +1022,8 @@ class Importer:
           len(vulns_to_delete),
           source_repo.name,
           extra={})
+      vulns = [v.id for v in vulns_to_delete]
+      logging.info('Vulnerabilities to delete: %s', vulns)
       return
 
     # Request deletion.

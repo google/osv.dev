@@ -704,12 +704,9 @@ class Importer:
         'Counted %d Vulnerabilities for %s in Datastore',
         len(vuln_ids_for_source),
         source_repo.name,
-        extra={
-            'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
-                'source_repo': source_repo.name,
-            }
-        })
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
@@ -967,12 +964,9 @@ class Importer:
         'Counted %d Vulnerabilities for %s in Datastore',
         len(vuln_ids_for_source),
         source_repo.name,
-        extra={
-            'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
-                'source_repo': source_repo.name,
-            }
-        })
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
 
     s = requests.Session()
     adapter = HTTPAdapter(

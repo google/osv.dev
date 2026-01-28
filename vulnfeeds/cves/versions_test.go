@@ -1677,3 +1677,125 @@ func TestBuildVersionRange(t *testing.T) {
 		})
 	}
 }
+
+func TestVendorProduct_MarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		vp      VendorProduct
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			vp: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+			want: "google:chrome",
+		},
+		{
+			name: "with spaces",
+			vp: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+			want: "adobe:acrobat+reader",
+		},
+		{
+			name: "with colons",
+			vp: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+			want: "foo%3Abar:baz",
+		},
+		{
+			name: "empty",
+			vp: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+			want: ":",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vp.MarshalText()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.MarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if string(got) != tt.want {
+				t.Errorf("VendorProduct.MarshalText() = %v, want %v", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		want    VendorProduct
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			text: "google:chrome",
+			want: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+		},
+		{
+			name: "with spaces",
+			text: "adobe:acrobat+reader",
+			want: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+		},
+		{
+			name: "with colons encoded",
+			text: "foo%3Abar:baz",
+			want: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+		},
+		{
+			name: "empty",
+			text: ":",
+			want: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+		},
+		{
+			name:    "no colon",
+			text:    "invalid",
+			wantErr: true,
+		},
+		{
+			name:    "too many colons",
+			text:    "too:many:colons",
+			wantErr: true,
+		},
+		{
+			name:    "bad encoding",
+			text:    "bad%encoding:foo",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var vp VendorProduct
+			if err := vp.UnmarshalText([]byte(tt.text)); (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && vp != tt.want {
+				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
+			}
+		})
+	}
+}

@@ -898,10 +898,22 @@ func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	if len(s) < 2 {
 		return fmt.Errorf("expected at least 2 parts, got %d", len(s))
 	}
-	vp.Vendor = s[0]
-	vp.Product = s[1]
+	var err error
+	vp.Vendor, err = url.QueryUnescape(s[0])
+	if err != nil {
+		return err
+	}
+	vp.Product, err = url.QueryUnescape(s[1])
+	if err != nil {
+		return err
+	}
 
 	return nil
+}
+
+// MarshalText is a helper for JSON rendering of a map with a struct key.
+func (vp VendorProduct) MarshalText() ([]byte, error) {
+	return []byte(url.QueryEscape(vp.Vendor) + ":" + url.QueryEscape(vp.Product)), nil
 }
 
 func RefAcceptable(ref models.Reference, tagDenyList []string) bool {

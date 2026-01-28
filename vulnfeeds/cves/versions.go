@@ -895,8 +895,8 @@ func ParseCPE(formattedString string) (*models.CPEString, error) {
 
 func (vp *VendorProduct) UnmarshalText(text []byte) error {
 	s := strings.Split(string(text), ":")
-	if len(s) < 2 {
-		return fmt.Errorf("expected at least 2 parts, got %d", len(s))
+	if len(s) != 2 {
+		return fmt.Errorf("expected exactly 2 parts, got %d", len(s))
 	}
 	var err error
 	vp.Vendor, err = url.QueryUnescape(s[0])

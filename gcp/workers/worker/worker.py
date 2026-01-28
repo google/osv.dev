@@ -617,7 +617,7 @@ class TaskRunner:
       related_raw = vulnerability.related
       q = osv.Vulnerability.query(
           osv.Vulnerability.related_raw == vulnerability.id)
-      related = set(vulnerability.related).union(set(r.id for r in q))
+      related = set(vulnerability.related).union(set(r.key.id() for r in q))
       vulnerability.related[:] = sorted(related)
 
       old_published = None

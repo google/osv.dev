@@ -76,7 +76,7 @@ func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo strin
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (*osvschema.Affected, error) {
+func gitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges

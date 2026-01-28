@@ -165,10 +165,12 @@ func main() {
 				Ecosystem: "PyPI",
 				PURL:      purl,
 			}
-
+			metrics := &models.ConversionMetrics{
+				CVEID: cve.CVE.ID,
+			}
 			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
+			versions := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics)
 
 			vulns.AttachExtractedVersionInfo(v, versions)
 			if len(v.Affected[0].GetRanges()) == 0 {
@@ -192,7 +194,7 @@ func main() {
 				continue
 			}
 
-			if len(notes) > 0 && *withoutNotes {
+			if len(metrics.Notes) > 0 && *withoutNotes {
 				logger.Info("Skipping as there are notes associated with it", slog.String("path", vulnPath))
 				continue
 			}
@@ -208,9 +210,9 @@ func main() {
 			}
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
-			if len(notes) > 0 {
+			if len(metrics.Notes) > 0 {
 				notesPath := filepath.Join(pkgDir, v.Id+".notes")
-				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
+				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(metrics.Notes, "\n# "))
 				if err != nil {
 					logger.Panic("Failed to write", slog.String("path", notesPath), slog.Any("err", err))
 				}

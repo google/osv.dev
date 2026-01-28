@@ -724,13 +724,12 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 
 // GetCPEs extracts CPE strings from a slice of models.CPE.
 // Returns array of CPE strings and array of notes.
-func GetCPEs(cpeApplicability []models.CPE) ([]string, []string) {
+func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) []string {
 	var CPEs []string
-	var notes []string
 	for _, c := range cpeApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
-				notes = append(notes, "Node found without OR operator")
+				metrics.AddNote("Node found without OR operator")
 				continue
 			}
 			for _, match := range node.CPEMatch {
@@ -739,7 +738,7 @@ func GetCPEs(cpeApplicability []models.CPE) ([]string, []string) {
 		}
 	}
 
-	return CPEs, notes
+	return CPEs
 }
 
 // FromYAML deserializes a Vulnerability from a YAML reader.

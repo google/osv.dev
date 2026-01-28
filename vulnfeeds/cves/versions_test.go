@@ -1460,9 +1460,9 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 	}
 }
 
-func Test_MaybeUpdateVPRepoCache(t *testing.T) {
+func Test_MaybeUpdate(t *testing.T) {
 	type args struct {
-		cache VendorProductToRepoMap
+		cache VPRepoCache
 		vp    *VendorProduct
 		repos []string
 	}
@@ -1472,18 +1472,9 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		wantCache VendorProductToRepoMap
 	}{
 		{
-			name: "Test with no cache",
-			args: args{
-				cache: nil,
-				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv.dev"},
-			},
-			wantCache: VendorProductToRepoMap{},
-		},
-		{
 			name: "Test with an empty cache",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: *NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
@@ -1494,7 +1485,7 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an empty cache and an unusable repo",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: *NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/vendor/repo"},
 			},
@@ -1503,20 +1494,25 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an existing cache",
 			args: args{
-				cache: VendorProductToRepoMap{
-					VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+				cache: VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{
+							"avendor",
+							"aproduct",
+						}: []string{"https://github.com/google/osv-scanner"},
+					},
 				},
 				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv-scanner"},
+				repos: []string{"https://github.com/google/osv.dev"},
 			},
 			wantCache: VendorProductToRepoMap{
-				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner", "https://github.com/google/osv.dev"},
 			},
 		},
 		{
 			name: "Test with an empty cache adding two values",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: *NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
@@ -1528,12 +1524,93 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			cache := &VPRepoCache{M: tt.args.cache}
+			cache := &tt.args.cache
 			for _, repo := range tt.args.repos {
-				MaybeUpdateVPRepoCache(cache, tt.args.vp, repo)
+				cache.MaybeUpdate(tt.args.vp, repo)
 			}
-			if !reflect.DeepEqual(cache.M, tt.wantCache) {
-				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", cache.M, tt.wantCache)
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeUpdate() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVPRepoCache_MaybeRemove(t *testing.T) {
+	type args struct {
+		cache *VPRepoCache
+		vp    *VendorProduct
+		repo  string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with a nil vp",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    nil,
+				repo:  "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test removing existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing non-existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing last repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := tt.args.cache
+			cache.MaybeRemove(tt.args.vp, tt.args.repo)
+			if cache == nil {
+				if tt.wantCache != nil {
+					t.Errorf("MaybeRemove() cache is nil, wanted %#v", tt.wantCache)
+				}
+				return
+			}
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeRemove() have %#v, wanted %#v", cache.m, tt.wantCache)
 			}
 		})
 	}

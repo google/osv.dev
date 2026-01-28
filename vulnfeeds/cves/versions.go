@@ -72,16 +72,22 @@ type VendorProductToRepoMap map[VendorProduct][]string
 type VPRepoCache struct {
 	sync.RWMutex
 
-	M VendorProductToRepoMap
+	m VendorProductToRepoMap
+}
+
+func NewVPRepoCache() *VPRepoCache {
+	return &VPRepoCache{
+		m: make(VendorProductToRepoMap),
+	}
 }
 
 func (c *VPRepoCache) Get(vp VendorProduct) ([]string, bool) {
 	c.RLock()
 	defer c.RUnlock()
-	if c.M == nil {
+	if c.m == nil {
 		return nil, false
 	}
-	repos, ok := c.M[vp]
+	repos, ok := c.m[vp]
 
 	return repos, ok
 }
@@ -89,10 +95,10 @@ func (c *VPRepoCache) Get(vp VendorProduct) ([]string, bool) {
 func (c *VPRepoCache) Set(vp VendorProduct, repos []string) {
 	c.Lock()
 	defer c.Unlock()
-	if c.M == nil {
-		c.M = make(VendorProductToRepoMap)
+	if c.m == nil {
+		c.m = make(VendorProductToRepoMap)
 	}
-	c.M[vp] = repos
+	c.m[vp] = repos
 }
 
 // Rewrites known GitWeb URLs to their base repository.
@@ -887,13 +893,16 @@ func ParseCPE(formattedString string) (*models.CPEString, error) {
 		Other:      wfn.GetString("other")}, nil
 }
 
-// func (vp *VendorProduct) UnmarshalText(text []byte) error {
-// 	s := strings.Split(string(text), ":")
-// 	vp.Vendor = s[0]
-// 	vp.Product = s[1]
+func (vp *VendorProduct) UnmarshalText(text []byte) error {
+	s := strings.Split(string(text), ":")
+	if len(s) != 2 {
+		return fmt.Errorf("expected 2 parts, got %d", len(s))
+	}
+	vp.Vendor = s[0]
+	vp.Product = s[1]
 
-// 	return nil
-// }
+	return nil
+}
 
 func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 	for _, deniedTag := range tagDenyList {
@@ -906,35 +915,33 @@ func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 }
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
-func MaybeUpdateVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo string) {
-	if cache == nil || vp == nil {
+func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
+	if vp == nil {
 		return
 	}
-	cache.Lock()
-	defer cache.Unlock()
-	if cache.M == nil {
-		cache.M = make(VendorProductToRepoMap)
-	}
-	if slices.Contains(cache.M[*vp], repo) {
+	c.Lock()
+	defer c.Unlock()
+
+	if slices.Contains(c.m[*vp], repo) {
 		return
 	}
 	// Avoid polluting the cache with existent-but-useless repos.
 	if git.ValidRepoAndHasUsableRefs(repo) {
-		cache.M[*vp] = append(cache.M[*vp], repo)
+		c.m[*vp] = append(c.m[*vp], repo)
 	}
 }
 
 // Removes the repo from the cache for the Vendor/Product combination if already present.
-func MaybeRemoveFromVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo string) {
-	if cache == nil || vp == nil {
+func (c *VPRepoCache) MaybeRemove(vp *VendorProduct, repo string) {
+	if vp == nil {
 		return
 	}
-	cache.Lock()
-	defer cache.Unlock()
-	if cache.M == nil {
+	c.Lock()
+	defer c.Unlock()
+	if c.m == nil {
 		return
 	}
-	cacheEntry, ok := cache.M[*vp]
+	cacheEntry, ok := c.m[*vp]
 	if !ok {
 		return
 	}
@@ -947,11 +954,17 @@ func MaybeRemoveFromVPRepoCache(cache *VPRepoCache, vp *VendorProduct, repo stri
 	}
 	// If there is only one entry, delete the entry cache entry.
 	if len(cacheEntry) == 1 {
-		delete(cache.M, *vp)
+		delete(c.m, *vp)
 		return
 	}
 	cacheEntry = slices.Delete(cacheEntry, i, i+1)
-	cache.M[*vp] = cacheEntry
+	c.m[*vp] = cacheEntry
+}
+
+func (c *VPRepoCache) Import(vpMap VendorProductToRepoMap) {
+	c.Lock()
+	defer c.Unlock()
+	c.m = vpMap
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
@@ -1048,8 +1061,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
-			// Also remove it if previously added under an acceptable tag.
-			MaybeRemoveFromVPRepoCache(cache, vp, ref.URL)
+			cache.MaybeRemove(vp, ref.URL)
 			metrics.AddNote("Disregarding %q due to a denied tag in %q", ref.URL, ref.Tags)
 
 			continue
@@ -1069,7 +1081,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		repos = append(repos, repo)
-		MaybeUpdateVPRepoCache(cache, vp, repo)
+		cache.MaybeUpdate(vp, repo)
 	}
 	if vp != nil && repos != nil {
 		metrics.AddNote("Derived repos using references %q for %q %q", repos, vp.Vendor, vp.Product)

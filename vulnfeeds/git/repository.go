@@ -238,8 +238,8 @@ func NormalizeRepoTags(repoURL string, repoTagsCache *RepoTagsCache) (normalized
 	}
 	if repoTagsCache != nil {
 		// The RepoTags() call above will have cached the Tag map already
-		tagsMap, _ := repoTagsCache.Get(repoURL)
-		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: tagsMap.Tag, NormalizedTag: normalizedTags})
+		repoTagsMap, _ := repoTagsCache.Get(repoURL)
+		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: repoTagsMap.Tag, NormalizedTag: normalizedTags})
 	}
 
 	return normalizedTags, nil

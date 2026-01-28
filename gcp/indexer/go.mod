@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	cloud.google.com/go/datastore v1.21.0
 	cloud.google.com/go/pubsub v1.50.1
+	cloud.google.com/go/pubsub/v2 v2.3.0
 	cloud.google.com/go/storage v1.59.1
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/golang/glog v1.2.5
@@ -22,7 +23,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
-	cloud.google.com/go/pubsub/v2 v2.0.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.54.0 // indirect

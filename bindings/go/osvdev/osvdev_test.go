@@ -220,7 +220,7 @@ func TestOSVClient_QueryBatchDeadline(t *testing.T) {
 
 			c := osvdev.DefaultClient()
 			c.Config.UserAgent = "osv-scanner-api-test"
-			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*500))
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Millisecond*100))
 
 			got, err := c.QueryBatch(ctx, tt.queries)
 			cancel()

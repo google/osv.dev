@@ -34,6 +34,11 @@
       "enabled": true
     },
     {
+      "matchPackageNames": ["redis"],
+      "matchCategories": ["python"],
+      "allowedVersions": "< 7.0.0"
+    },
+    {
       "matchDepNames": [
         "gcp/workers/worker/osv-test"
       ],

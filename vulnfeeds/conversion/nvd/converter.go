@@ -290,7 +290,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		return nil
 	}
 
-	VendorProductCombinations := make(map[cves.VendorProduct]bool)
+	vendorProductCombinations := make(map[cves.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
 		CPE, err := cves.ParseCPE(CPEstr)
 		if err != nil {
@@ -300,11 +300,11 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		if CPE.Part != "a" {
 			continue
 		}
-		VendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
 	}
 
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
-	for vendorProductKey := range VendorProductCombinations {
+	for vendorProductKey := range vendorProductCombinations {
 		if len(reposForCVE) == 0 && len(refs) > 0 {
 			// Continue to only focus on application CPEs.
 			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {

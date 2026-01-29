@@ -14,12 +14,20 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// computeRelated computes all related groups for the given vulns.
+// `groups` is a map of vuln IDs to their related IDs.
+// `withdrawnVulns` is a map of withdrawn vulns.
+// Returns a map of vuln IDs to their related IDs, with the inverse relation added.
+// `groups` is modified in place.
 func computeRelated(groups map[string][]string, withdrawnVulns map[string]struct{}) map[string][]string {
 	// Add the inverse relation of the groups to the map
 	for id, group := range groups {
-		// We want to prevent withdrawn vulns from being added to related groups.
-		// But if a non-withdrawn vuln has a withdrawn vuln as a related id, we want to add it.
 		if _, ok := withdrawnVulns[id]; ok {
+			// We want to prevent withdrawn vulns IDs from being added to related groups,
+			// if the withdrawn vuln itself references other non-withdrawn vulns.
+			// For example:
+			// - If A (withdrawn) relates to B (valid), B should NOT list A.
+			// - If A (valid) relates to B (withdrawn), B SHOULD list A.
 			continue
 		}
 		for _, related := range group {
@@ -69,6 +77,8 @@ func updateRelated(ctx context.Context, cl *datastore.Client, id string, related
 
 func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update) error {
 	// Query for all vulns that have related.
+	// It's easier to recompute all groups than to try and figure out which ones
+	// need to be recomputed.
 	logger.Info("Retrieving vulns for related computation...")
 	q := datastore.NewQuery("Vulnerability").FilterField("related_raw", ">", "")
 
@@ -123,6 +133,8 @@ func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- U
 		}
 	}
 
+	// The remaining groups in relatedGroups are the ones that are no longer
+	// present in the vulns, so we delete them.
 	for id := range relatedGroups {
 		if err := updateRelated(ctx, cl, id, nil, ch); err != nil {
 			return fmt.Errorf("failed to delete related group: %w", err)

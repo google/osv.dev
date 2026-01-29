@@ -307,7 +307,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 	for vendorProductKey := range VendorProductCombinations {
 		if len(reposForCVE) == 0 && len(refs) > 0 {
 			// Continue to only focus on application CPEs.
-			
 			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
 				continue
 			}

@@ -725,7 +725,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 	}
 	if v.AffectedCommits != nil {
 		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))}
+		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
+	}
 
 	gotVersions := false
 	for _, config := range cve.Configurations {

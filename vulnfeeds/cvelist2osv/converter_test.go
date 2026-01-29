@@ -582,7 +582,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			vWriter := bytes.NewBuffer(nil)
 			mWriter := bytes.NewBuffer(nil)
-			err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter, "")
+			_, err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter, "")
 			if err != nil {
 				t.Errorf("Unexpected error from ConvertAndExportCVEToOSV: %v", err)
 			}

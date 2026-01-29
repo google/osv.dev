@@ -26,6 +26,7 @@ var (
 	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
 	workers        = flag.Int("workers", 30, "The number of concurrent workers to use for processing CVEs.")
 	cnaAllowList   = flag.String("cnas-allowlist", "", "A comma-separated list of CNAs to process. If not provided, defaults to cna_allowlist.txt.")
+	rejectFailed   = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
 )
 
 //go:embed cna_allowlist.txt
@@ -57,7 +58,7 @@ func main() {
 	// Start the worker pool.
 	for range *workers {
 		wg.Add(1)
-		go worker(&wg, jobs, *localOutputDir, cnaList)
+		go worker(&wg, jobs, *localOutputDir, cnaList, *rejectFailed)
 	}
 
 	// Discover files and send them to the workers.
@@ -76,6 +77,7 @@ func main() {
 		logger.Info("Processing CVEs for year", slog.String("year", year))
 		err := filepath.Walk(yearDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				logger.Info("Error walking directory for year", slog.String("year", year), slog.Any("err", err))
 				return err
 			}
 			if !info.IsDir() && strings.HasSuffix(info.Name(), ".json") {
@@ -95,7 +97,7 @@ func main() {
 }
 
 // worker is a function that processes CVE files from the jobs channel.
-func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string) {
+func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string, rejectFailed bool) {
 	defer wg.Done()
 	for path := range jobs {
 		data, err := os.ReadFile(path)
@@ -131,10 +133,17 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		}
 
 		// Perform the conversion and export the results.
-		if err = cvelist2osv.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, sourceLink); err != nil {
+		metrics, err := cvelist2osv.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, sourceLink)
+		if err != nil {
 			logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 		} else {
-			logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName))
+			if rejectFailed && metrics.Outcome != models.Successful {
+				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
+				osvFile.Close()
+				os.Remove(osvFile.Name())
+			} else {
+				logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))
+			}
 		}
 
 		metricsFile.Close()

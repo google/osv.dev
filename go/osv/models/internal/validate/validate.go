@@ -75,6 +75,14 @@ func readRecords(ctx context.Context, client *datastore.Client) {
 		fmt.Printf("(Go) Failed getting ListedVulnerability: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("(Go) Getting RelatedGroup")
+	key = datastore.NameKey("RelatedGroup", "CVE-123-456", nil)
+	var relatedGroup models.RelatedGroup
+	if err := client.Get(ctx, key, &relatedGroup); err != nil {
+		fmt.Printf("(Go) Failed getting RelatedGroup: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func writeRecords(ctx context.Context, client *datastore.Client) {
@@ -153,6 +161,17 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 	}
 	if _, err := client.Put(ctx, key, &listedVulnerability); err != nil {
 		fmt.Printf("(Go) Failed writing ListedVulnerability %v: %v\n", key, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing RelatedGroup")
+	key = datastore.NameKey("RelatedGroup", "CVE-987-654", nil)
+	relatedGroup := models.RelatedGroup{
+		RelatedIDs: []string{"R-1", "R-2"},
+		Modified:   time.Date(2025, time.January, 1, 1, 1, 1, 1, time.UTC),
+	}
+	if _, err := client.Put(ctx, key, &relatedGroup); err != nil {
+		fmt.Printf("(Go) Failed writing RelatedGroup %v: %v\n", key, err)
 		os.Exit(1)
 	}
 }

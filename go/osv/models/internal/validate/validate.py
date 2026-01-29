@@ -20,7 +20,8 @@ from google.cloud import ndb
 
 import osv.tests
 from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
-        AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup
+    AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup, \
+    RelatedGroup
 
 
 def main() -> int:
@@ -83,6 +84,13 @@ def main() -> int:
       search_indices=['cve-123-456', 'stdlib', 'requests'],
   ).put()
 
+  print('(Python) Putting RelatedGroup')
+  RelatedGroup(
+      id='CVE-123-456',
+      related_ids=['R-1', 'R-2'],
+      modified=datetime.datetime(2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
+  ).put()
+
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
   result = subprocess.run(['go', 'run', './validate.go'], check=False, cwd='.')
@@ -107,6 +115,9 @@ def main() -> int:
     return 1
   print('(Python) Getting ListedVulnerability')
   if ListedVulnerability.get_by_id('CVE-987-654') is None:
+    return 1
+  print('(Python) Getting RelatedGroup')
+  if RelatedGroup.get_by_id('CVE-987-654') is None:
     return 1
 
   return 0

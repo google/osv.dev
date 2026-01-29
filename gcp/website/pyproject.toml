@@ -14,7 +14,7 @@ dependencies = [
     "markdown2==2.5.4",
     "markupsafe==3.0.3",
     "packageurl-python==0.17.6",
-    "redis==7.1.0",
+    "redis==6.4.0",
     "requests==2.32.5",
     "gunicorn==24.1.1",
     "whitenoise==6.11.0",

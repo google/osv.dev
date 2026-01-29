@@ -109,7 +109,6 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		return err
 	}
 
-	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 	osvFile.Close()
 
 	err = conversion.WriteMetricsFile(metrics, metricsFile)
@@ -291,31 +290,33 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		return nil
 	}
 
+	vendorProductCombinations := make(map[cves.VendorProduct]bool)
+	for _, CPEstr := range CPEs {
+		CPE, err := cves.ParseCPE(CPEstr)
+		if err != nil {
+			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
+			continue
+		}
+		if CPE.Part != "a" {
+			continue
+		}
+		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+	}
+
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
-	if len(reposForCVE) == 0 && len(refs) > 0 {
-		for _, CPEstr := range cves.CPEs(cve) {
-			CPE, err := cves.ParseCPE(CPEstr)
-			if err != nil {
-				metrics.AddNote("Failed to parse CPE: %v", CPEstr)
-				continue
-			}
+	for vendorProductKey := range vendorProductCombinations {
+		if len(reposForCVE) == 0 && len(refs) > 0 {
 			// Continue to only focus on application CPEs.
-			if CPE.Part != "a" {
+			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
 				continue
 			}
-			if slices.Contains(cves.VendorProductDenyList, cves.VendorProduct{Vendor: CPE.Vendor, Product: ""}) {
-				continue
-			}
-			if slices.Contains(cves.VendorProductDenyList, cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}) {
-				continue
-			}
-			repos := cves.ReposFromReferences(vpRepoCache, &cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}, refs, cves.RefTagDenyList, metrics)
+			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, metrics)
 			if len(repos) == 0 {
-				metrics.AddNote("Failed to derive any repos: %v", CPE)
+				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
 				continue
 			}
 			metrics.AddNote("Derived repos: %v", repos)
-			reposForCVE = repos
+			reposForCVE = append(reposForCVE, repos...)
 		}
 	}
 

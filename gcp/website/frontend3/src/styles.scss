@@ -840,22 +840,26 @@ dl.vulnerability-details,
   ul.substream {
     padding-bottom: 2px;
     padding-top: 2px;
+    padding-inline-start: 40px;
   }
 
-  ul.substream::before {
-    float: left;
-    margin-right: 5px;
+  ul.substream > li {
+    display: grid;
+    grid-template-columns: 1ch 1fr;
+    column-gap: 8px;
+    align-items: start;
+    min-width: 0;
   }
 
   .downstream {
-    ul.substream::before {
+    ul.substream > li::before {
       content: "⤷";
       line-height: 1.4;
     }
   }
 
   .upstream {
-    ul.substream::before {
+    ul.substream > li::before {
       content: "⤶";
       line-height: 0.9;
       transform: rotate(90deg);

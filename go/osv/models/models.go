@@ -45,6 +45,12 @@ type UpstreamGroup struct {
 	UpstreamHierarchy []byte         `datastore:"upstream_hierarchy,noindex"`
 }
 
+type RelatedGroup struct {
+	Key        *datastore.Key `datastore:"__key__"`
+	RelatedIDs []string       `datastore:"related_ids"`
+	Modified   time.Time      `datastore:"modified"`
+}
+
 type AliasAllowListEntry struct {
 	VulnID string `datastore:"bug_id"`
 }

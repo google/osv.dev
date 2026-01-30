@@ -725,6 +725,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 	}
 	if v.AffectedCommits != nil {
 		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
+		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
 	}
 
 	gotVersions := false
@@ -1095,7 +1096,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		repos = append(repos, repo)
 		cache.MaybeUpdate(vp, repo)
 	}
-	if vp != nil && repos != nil {
+	if vp != nil && len(repos) > 0 {
 		metrics.AddNote("Derived repos using references %q for %q %q", repos, vp.Vendor, vp.Product)
 	} else {
 		metrics.AddNote("Derived repos (no CPEs) using references: %q", repos)

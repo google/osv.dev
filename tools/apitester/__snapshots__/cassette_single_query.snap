@@ -2239,6 +2239,59 @@
       ]
     },
     {
+      "id": "CVE-2025-14017",
+      "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
+      "aliases": ["CURL-CVE-2025-14017"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:45.667Z",
+      "related": ["MGASA-2026-0003", "SUSE-SU-2026:0077-1"],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14017.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14017.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 146,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
       "id": "CVE-2025-14524",
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
       "aliases": ["CURL-CVE-2025-14524"],

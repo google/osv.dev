@@ -612,14 +612,6 @@ class TaskRunner:
       ds_vuln = osv.Vulnerability.get_by_id(vulnerability.id)
       is_new_bug = ds_vuln is None
 
-      # Compute the related fields here first.
-      # TODO(michaelkedar): Make a related computation in relations cron
-      related_raw = vulnerability.related
-      q = osv.Vulnerability.query(
-          osv.Vulnerability.related_raw == vulnerability.id)
-      related = set(vulnerability.related).union(set(r.id for r in q))
-      vulnerability.related[:] = sorted(related)
-
       old_published = None
 
       # Update the schema version
@@ -673,13 +665,15 @@ class TaskRunner:
           new_vulnerability.aliases.clear()
           old_vulnerability.upstream.clear()
           new_vulnerability.upstream.clear()
+          old_vulnerability.related.clear()
+          new_vulnerability.related.clear()
 
           has_changed = old_vulnerability != new_vulnerability
 
       ds_vuln.is_withdrawn = vulnerability.HasField('withdrawn')
       ds_vuln.modified_raw = orig_modified_date
       ds_vuln.alias_raw = list(vulnerability.aliases)
-      ds_vuln.related_raw = list(related_raw)
+      ds_vuln.related_raw = list(vulnerability.related)
       ds_vuln.upstream_raw = list(vulnerability.upstream)
       # Update the bug entity based on the comparison.
       if has_changed:
@@ -701,6 +695,10 @@ class TaskRunner:
       if upstream_group:
         vulnerability.upstream[:] = sorted(upstream_group.upstream_ids)
         ds_vuln.modified = max(upstream_group.last_modified, ds_vuln.modified)
+      related_group = osv.RelatedGroup.get_by_id(vulnerability.id)
+      if related_group:
+        vulnerability.related[:] = sorted(related_group.related_ids)
+        ds_vuln.modified = max(related_group.modified, ds_vuln.modified)
       # Make sure modified date is >= withdrawn date
       if ds_vuln.is_withdrawn and vulnerability.withdrawn.ToDatetime(
           datetime.UTC) > ds_vuln.modified:

@@ -918,7 +918,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
-			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client)
+			metrics := &models.ConversionMetrics{}
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -1283,7 +1284,7 @@ func TestCommit(t *testing.T) {
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
+		cache       *VPRepoCache
 		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
@@ -1297,7 +1298,7 @@ func TestReposFromReferences(t *testing.T) {
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
 				CVE:   "CVE-2023-0327",
-				cache: nil,
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
 				refs: []models.Reference{
 					{
@@ -1312,9 +1313,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				CVE: "CVE-2025-0211",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1328,9 +1327,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2025-26519",
 				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
@@ -1345,9 +1342,7 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2016-10525",
 				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
@@ -1360,10 +1355,12 @@ func TestReposFromReferences(t *testing.T) {
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1373,8 +1370,6 @@ func TestReposFromReferences(t *testing.T) {
 func TestReposFromReferencesCVEList(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
-		vp          *VendorProduct
 		refs        []models.Reference
 		tagDenyList []string
 	}
@@ -1386,9 +1381,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
-				CVE:   "CVE-2023-0327",
-				cache: nil,
-				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
+				CVE: "CVE-2023-0327",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1402,9 +1395,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
+				CVE: "CVE-2025-0211",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1418,9 +1409,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2025-26519",
 				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
@@ -1435,9 +1424,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
+				CVE: "CVE-2016-10525",
 				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
@@ -1451,9 +1438,7 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		}, {
 			name: "A CVE with a repo not already present)",
 			args: args{
-				CVE:   "CVE-2024-7790",
-				cache: nil,
-				vp:    &VendorProduct{"Devikia", "DevikaAI"},
+				CVE: "CVE-2024-7790",
 				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
@@ -1468,16 +1453,17 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
-				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferencesCVEList(tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferencesCVEList() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
 	}
 }
 
-func Test_MaybeUpdateVPRepoCache(t *testing.T) {
+func Test_MaybeUpdate(t *testing.T) {
 	type args struct {
-		cache VendorProductToRepoMap
+		cache *VPRepoCache
 		vp    *VendorProduct
 		repos []string
 	}
@@ -1487,18 +1473,9 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		wantCache VendorProductToRepoMap
 	}{
 		{
-			name: "Test with no cache",
-			args: args{
-				cache: nil,
-				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv.dev"},
-			},
-			wantCache: nil,
-		},
-		{
 			name: "Test with an empty cache",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
@@ -1509,7 +1486,7 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an empty cache and an unusable repo",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/vendor/repo"},
 			},
@@ -1518,20 +1495,25 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an existing cache",
 			args: args{
-				cache: VendorProductToRepoMap{
-					VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{
+							"avendor",
+							"aproduct",
+						}: []string{"https://github.com/google/osv-scanner"},
+					},
 				},
 				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv-scanner"},
+				repos: []string{"https://github.com/google/osv.dev"},
 			},
 			wantCache: VendorProductToRepoMap{
-				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner", "https://github.com/google/osv.dev"},
 			},
 		},
 		{
 			name: "Test with an empty cache adding two values",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
@@ -1540,14 +1522,98 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
+			cache := tt.args.cache
 			for _, repo := range tt.args.repos {
-				MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
+				cache.MaybeUpdate(tt.args.vp, repo)
 			}
-			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
-				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeUpdate() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVPRepoCache_MaybeRemove(t *testing.T) {
+	type args struct {
+		cache *VPRepoCache
+		vp    *VendorProduct
+		repo  string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with a nil vp",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    nil,
+				repo:  "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test removing existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing non-existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing last repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := tt.args.cache
+			cache.MaybeRemove(tt.args.vp, tt.args.repo)
+			if cache == nil {
+				if tt.wantCache != nil {
+					t.Errorf("MaybeRemove() cache is nil, wanted %#v", tt.wantCache)
+				}
+
+				return
+			}
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeRemove() have %#v, wanted %#v", cache.m, tt.wantCache)
 			}
 		})
 	}
@@ -1607,6 +1673,128 @@ func TestBuildVersionRange(t *testing.T) {
 			got := BuildVersionRange(tt.intro, tt.lastAff, tt.fixed)
 			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
 				t.Errorf("cves.BuildVersionRange() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_MarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		vp      VendorProduct
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			vp: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+			want: "google:chrome",
+		},
+		{
+			name: "with spaces",
+			vp: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+			want: "adobe:acrobat+reader",
+		},
+		{
+			name: "with colons",
+			vp: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+			want: "foo%3Abar:baz",
+		},
+		{
+			name: "empty",
+			vp: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+			want: ":",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vp.MarshalText()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.MarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if string(got) != tt.want {
+				t.Errorf("VendorProduct.MarshalText() = %v, want %v", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		want    VendorProduct
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			text: "google:chrome",
+			want: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+		},
+		{
+			name: "with spaces",
+			text: "adobe:acrobat+reader",
+			want: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+		},
+		{
+			name: "with colons encoded",
+			text: "foo%3Abar:baz",
+			want: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+		},
+		{
+			name: "empty",
+			text: ":",
+			want: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+		},
+		{
+			name:    "no colon",
+			text:    "invalid",
+			wantErr: true,
+		},
+		{
+			name:    "too many colons",
+			text:    "too:many:colons",
+			wantErr: true,
+		},
+		{
+			name:    "bad encoding",
+			text:    "bad%encoding:foo",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var vp VendorProduct
+			if err := vp.UnmarshalText([]byte(tt.text)); (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && vp != tt.want {
+				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
 			}
 		})
 	}

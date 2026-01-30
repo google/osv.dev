@@ -91,7 +91,7 @@ func main() {
 
 	close(jobs)
 	wg.Wait()
-	logger.Info("Conversion run complete")
+	logger.Info("CVE5 Conversion run complete")
 }
 
 // worker is a function that processes CVE files from the jobs channel.

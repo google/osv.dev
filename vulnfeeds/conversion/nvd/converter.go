@@ -10,8 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -24,8 +24,9 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string) error {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
 	CPEs := cves.CPEs(cve)
+	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
@@ -40,17 +41,19 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 	}
 
 	v := vulns.FromNVDCVE(cve.ID, cve)
-	versions, notes := cves.ExtractVersionInfo(cve, nil, http.DefaultClient)
+	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
 		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
+			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", cve.ID, maybeProductName, versions.AffectedVersions)
 		}
-		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache)
+		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
+		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
 		if err != nil {
+			metrics.AddNote("Failed to convert version tags to commits: %#v", err)
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#w", cve.ID, err)
 		}
 		hasAnyFixedCommits := false
@@ -62,6 +65,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 		}
 
 		if versions.HasFixedVersions() && !hasAnyFixedCommits {
+			metrics.AddNote("Failed to convert fixed version tags to commits: %#v", versions)
 			return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", cve.ID, versions, ErrUnresolvedFix)
 		}
 
@@ -74,6 +78,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 		}
 
 		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
+			metrics.AddNote("Failed to convert last_affected version tags to commits: %#v", versions)
 			return fmt.Errorf("[%s]: Failed to convert last_affected version tags to commits: %#v %w", cve.ID, versions, ErrUnresolvedFix)
 		}
 	}
@@ -83,41 +88,39 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, direct
 	vulns.AttachExtractedVersionInfo(v, versions)
 
 	if len(v.Affected) == 0 {
+		metrics.AddNote("No affected ranges detected for %q", maybeProductName)
 		return fmt.Errorf("[%s]: No affected ranges detected for %q %w", cve.ID, maybeProductName, ErrNoRanges)
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-	err := os.MkdirAll(vulnDir, 0755)
-	if err != nil {
-		logger.Warn("Failed to create dir", slog.Any("err", err))
-		return fmt.Errorf("failed to create dir: %w", err)
+
+	if err := os.MkdirAll(vulnDir, 0755); err != nil {
+		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", string(cve.ID)), slog.String("path", vulnDir), slog.Any("err", err))
 	}
-	outputFile := filepath.Join(vulnDir, v.Id+models.Extension)
-	notesFile := filepath.Join(vulnDir, v.Id+".notes")
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
-		return fmt.Errorf("failed to open %s for writing: %w", outputFile, err)
+	osvFile, errCVE := conversion.CreateOSVFile(cve.ID, vulnDir)
+	metricsFile, errMetrics := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	if errCVE != nil || errMetrics != nil {
+		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
 	}
-	defer f.Close()
-	err = v.ToJSON(f)
+
+	err := v.ToJSON(osvFile)
 	if err != nil {
-		logger.Warn("Failed to write", slog.String("path", outputFile), slog.Any("err", err))
-		return fmt.Errorf("failed to write %s: %w", outputFile, err)
+		logger.Info("Failed to write", slog.Any("err", err))
+		return err
 	}
-	logger.Info("Generated OSV record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
-	if len(notes) > 0 {
-		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-		if err != nil {
-			logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-		}
+
+	osvFile.Close()
+
+	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string) error {
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) error {
 	CPEs := cves.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -133,17 +136,19 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-	versions, notes := cves.ExtractVersionInfo(cve, nil, http.DefaultClient)
+	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
 		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
+			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 			return fmt.Errorf("[%s]: No affected ranges for %q, and no repos to try and convert %+v to tags with", cve.ID, maybeProductName, versions.AffectedVersions)
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache)
+		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
 		if err != nil {
+			metrics.AddNote("Failed to convert version tags to commits: %#v", err)
 			return fmt.Errorf("[%s]: Failed to convert version tags to commits: %#w", cve.ID, err)
 		}
 	}
@@ -156,6 +161,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	if versions.HasFixedVersions() && !hasAnyFixedCommits {
+		metrics.AddNote("Failed to convert fixed version tags to commits: %#v", versions)
 		return fmt.Errorf("[%s]: Failed to convert fixed version tags to commits: %#v %w", cve.ID, versions, ErrUnresolvedFix)
 	}
 
@@ -167,10 +173,12 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
+		metrics.AddNote("Failed to convert last_affected version tags to commits: %#v", versions)
 		return fmt.Errorf("[%s]: Failed to convert last_affected version tags to commits: %#v %w", cve.ID, versions, ErrUnresolvedFix)
 	}
 
 	if len(versions.AffectedCommits) == 0 {
+		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
 		return fmt.Errorf("[%s]: No affected commit ranges determined for %q %w", cve.ID, maybeProductName, ErrNoRanges)
 	}
 
@@ -190,7 +198,6 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
-	notesFile := filepath.Join(vulnDir, string(cve.ID)+".nvd.notes")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
@@ -209,12 +216,135 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	if len(notes) > 0 {
-		err = os.WriteFile(notesFile, []byte(strings.Join(notes, "\n")), 0600)
-		if err != nil {
-			logger.Warn("Failed to write", slog.String("cve", string(cve.ID)), slog.String("path", notesFile), slog.Any("err", err))
-		}
+	metricsFile, err := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	if err != nil {
+		return err
+	}
+	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	if err != nil {
+		return err
 	}
 
 	return nil
+}
+
+// FindRepos attempts to find the source code repositories for a given CVE.
+func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models.ConversionMetrics) []string {
+	// Find repos
+	refs := cve.References
+	CPEs := cves.CPEs(cve)
+	CVEID := cve.ID
+	var reposForCVE []string
+
+	if len(refs) == 0 && len(CPEs) == 0 {
+		metrics.AddNote("Skipping due to lack of CPEs and lack of references")
+		// 100% of these in 2022 were rejected CVEs
+		metrics.Outcome = models.Rejected
+
+		return nil
+	}
+
+	// Edge case: No CPEs, but perhaps usable references.
+	if len(refs) > 0 && len(CPEs) == 0 {
+		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, metrics)
+		if len(repos) == 0 {
+			metrics.AddNote("Failed to derive any repos and there were no CPEs")
+			return nil
+		}
+		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
+		reposForCVE = repos
+	}
+
+	// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
+	appCPECount := 0
+	for _, CPEstr := range CPEs {
+		CPE, err := cves.ParseCPE(CPEstr)
+		if err != nil {
+			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
+			metrics.Outcome = models.ConversionUnknown
+
+			continue
+		}
+		if CPE.Part == "a" {
+			appCPECount += 1
+		}
+		vendorProductKey := cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
+			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
+			if len(reposForCVE) == 0 {
+				reposForCVE = repos
+				continue
+			}
+			// Don't append duplicates.
+			for _, repo := range repos {
+				if !slices.Contains(reposForCVE, repo) {
+					reposForCVE = append(reposForCVE, repo)
+				}
+			}
+		}
+	}
+
+	if len(CPEs) > 0 && appCPECount == 0 {
+		// This CVE is not for software (based on there being CPEs but not any application ones), skip.
+		metrics.Outcome = models.NoSoftware
+		return nil
+	}
+
+	vendorProductCombinations := make(map[cves.VendorProduct]bool)
+	for _, CPEstr := range CPEs {
+		CPE, err := cves.ParseCPE(CPEstr)
+		if err != nil {
+			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
+			continue
+		}
+		if CPE.Part != "a" {
+			continue
+		}
+		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+	}
+
+	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
+	for vendorProductKey := range vendorProductCombinations {
+		if len(reposForCVE) == 0 && len(refs) > 0 {
+			// Continue to only focus on application CPEs.
+			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
+				continue
+			}
+			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, metrics)
+			if len(repos) == 0 {
+				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
+				continue
+			}
+			metrics.AddNote("Derived repos: %v", repos)
+			reposForCVE = append(reposForCVE, repos...)
+		}
+	}
+
+	logger.Info("Finished processing "+string(CVEID),
+		slog.String("cve", string(CVEID)),
+		slog.Int("cpes", len(CPEs)),
+		slog.Int("app_cpes", appCPECount),
+		slog.Int("derived_repos", len(reposForCVE)))
+
+	// If we've made it to here, we may have a CVE:
+	// * that has Application-related CPEs (so applies to software)
+	// * has a reference that is a known repository URL
+	// OR
+	// * a derived repository for the software package
+	//
+	// We do not yet have:
+	// * any knowledge of the language used
+	// * definitive version information
+
+	if len(reposForCVE) == 0 {
+		// We have nothing useful to work with, so we'll assume it's out of scope
+		metrics.AddNote("Passing due to lack of viable repository")
+		metrics.Outcome = models.NoRepos
+
+		return nil
+	}
+
+	metrics.AddNote("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
+
+	return reposForCVE
 }

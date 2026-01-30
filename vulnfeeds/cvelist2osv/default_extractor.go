@@ -1,7 +1,6 @@
 package cvelist2osv
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/google/osv/vulnfeeds/conversion"
@@ -35,7 +34,7 @@ func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, met
 func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	gotVersions := false
 
-	repoTagsCache := git.RepoTagsCache{}
+	repoTagsCache := &git.RepoTagsCache{}
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
@@ -110,11 +109,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		}
 
 		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions, notes := cves.ExtractVersionsFromText(nil, vers.Version)
-
-		for _, note := range notes {
-			metrics.AddNote("%s", note)
-		}
+		possibleVersions := cves.ExtractVersionsFromText(nil, vers.Version, metrics)
 
 		if possibleVersions != nil {
 			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
@@ -124,7 +119,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
 			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version))
+			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}
 

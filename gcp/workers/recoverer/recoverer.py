@@ -187,6 +187,22 @@ def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:
             else:
               modified = datetime.datetime.now(datetime.UTC)
 
+        elif f == 'related':
+          related_group = osv.RelatedGroup.get_by_id(vuln_id)
+          if related_group is None:
+            related = []
+            related_modified = datetime.datetime.now(datetime.UTC)
+          else:
+            related = related_group.related_ids
+            related_modified = related_group.last_modified
+          # Only update the modified time if it's actually being modified
+          if vuln_proto.related != related:
+            vuln_proto.related[:] = related
+            if related_modified > modified:
+              modified = related_modified
+            else:
+              modified = datetime.datetime.now(datetime.UTC)
+
       vuln_proto.modified.FromDatetime(modified)
       osv.ListedVulnerability.from_vulnerability(vuln_proto).put()
       vuln.modified = modified

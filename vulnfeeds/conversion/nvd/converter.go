@@ -254,21 +254,30 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
-
-	// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 	appCPECount := 0
+	vendorProductCombinations := make(map[cves.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
 		CPE, err := cves.ParseCPE(CPEstr)
 		if err != nil {
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
-			metrics.Outcome = models.ConversionUnknown
-
 			continue
 		}
-		if CPE.Part == "a" {
-			appCPECount += 1
+		if CPE.Part != "a" {
+			continue
 		}
-		vendorProductKey := cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+		appCPECount += 1
+		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+	}
+
+	if len(CPEs) > 0 && appCPECount == 0 {
+		// This CVE is not for software (based on there being CPEs but not any application ones), skip.
+		metrics.Outcome = models.NoSoftware
+		return nil
+	}
+
+	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
+	for vendorProductKey := range vendorProductCombinations {
+		// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
 			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
 			if len(reposForCVE) == 0 {
@@ -282,31 +291,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, metrics *models
 				}
 			}
 		}
-	}
-
-	if len(CPEs) > 0 && appCPECount == 0 {
-		// This CVE is not for software (based on there being CPEs but not any application ones), skip.
-		metrics.Outcome = models.NoSoftware
-		return nil
-	}
-
-	vendorProductCombinations := make(map[cves.VendorProduct]bool)
-	for _, CPEstr := range CPEs {
-		CPE, err := cves.ParseCPE(CPEstr)
-		if err != nil {
-			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
-			continue
-		}
-		if CPE.Part != "a" {
-			continue
-		}
-		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
-	}
-
-	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
-	for vendorProductKey := range vendorProductCombinations {
 		if len(reposForCVE) == 0 && len(refs) > 0 {
-			// Continue to only focus on application CPEs.
 			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
 				continue
 			}

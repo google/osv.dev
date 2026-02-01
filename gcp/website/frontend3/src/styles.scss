@@ -39,6 +39,37 @@ $osv-border-color: #555;
   margin-right: -50vw;
 }
 
+@mixin hide-details-marker {
+  list-style: none;
+  &::-webkit-details-marker {
+    display: none;
+  }
+  &::marker {
+    display: none;
+    content: '';
+  }
+}
+
+// Indicator for expand/collapse UI
+@mixin chevron-indicator($size: 12px, $margin-right: 8px, $color: $osv-grey-800) {
+  content: '';
+  display: inline-block;
+  width: $size;
+  height: $size;
+  margin-right: $margin-right;
+  -webkit-mask-image: url(/static/img/filled-triangle.svg);
+  mask-image: url(/static/img/filled-triangle.svg);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: $color;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
 /** Reset */
 
 *,
@@ -391,63 +422,56 @@ pre {
     gap: 10px;
     align-items: center;
 
-    // We use <spicy-sections> to collapse the ecosystem list only on mobile.
-    // On desktop, display the full list.
-    --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse;
+    .ecosystem-label-all {
+      position: relative;
+      margin-right: 20px;
 
-    &::part(tab-bar) {
-      // The tab bar affordance isn't used, so hide it.
-      display: none;
+      &::after {
+        content: '';
+        position: absolute;
+        right: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 30px;
+        background-color: $osv-grey-600;
+      }
     }
 
-    &::part(content-panels) {
-      // Because the shadow root of <spicy-sections> actually wraps our content
-      // we need to use display: contents; in order for flex to apply as if the
-      // child elements are direct descendants of the parent flex container.
-      display: contents;
-    }
+    @media (max-width: #{$osv-mobile-breakpoint}) {
+      gap: 8px;
 
-    .spicy-content {
-      // Expanded contents also should act as if they were direct descendants
-      // of our flex container.
-      display: contents;
-    }
+      .ecosystem-label {
+        padding: 8px 14px;
+        height: 32px;
+        gap: 12px;
+        font-size: 14px;
+      }
 
-    // Customizing the collapsing header for <spicy-sections>. We can select it
-    // by looking for the element with affordance="collapse".
-    [affordance=collapse] {
-      display: flex;
-      align-items: center;
+      .ecosystem-label-all {
+        margin-right: 14px;
 
-      // The ::before on the collapsible is used to display the chevron.
-      &::before {
-        display: block;
-        padding: 0 8px;
-        // HACK: Invert the black chevron to white. The chevron is set using
-        // background-image, so we can't use the CSS fill property on it.
-        filter: invert(100%);
+        &::after {
+          height: 20px;
+          right: -12px;
+        }
       }
     }
 
     .ecosystem-label {
-      display: flex;
+      display: inline-flex;
       gap: 16px;
       font-family: $osv-heading-font-family;
       padding: 10px 20px;
       background: #696969;
       border-radius: 999px;
       height: 38px;
+      cursor: pointer;
+      align-items: center;
 
       .ecosystem-count {
         font-weight: bold;
       }
-    }
-
-    .ecosystems-divider {
-      display: block;
-      margin: 0 10px;
-      height: 30px;
-      border-right: 1px solid $osv-grey-600;
     }
 
     input[type=radio]:checked+.ecosystem-label {
@@ -879,12 +903,28 @@ dl.vulnerability-details,
     margin-bottom: 16px;
     font-weight: bold;
   }
+}
 
-  // Tab bar styling.
-  --const-mq-affordances: [screen and (max-width: #{$osv-mobile-breakpoint})] collapse | [screen and (min-width: #{$osv-mobile-breakpoint + 1})] tab-bar;
+osv-tabs.vulnerability-packages[affordance="tab-bar"] {
+  display: block;
+}
 
-  .force-collapse {
-    --const-mq-affordances: [screen] collapse;
+osv-tabs.vulnerability-packages[affordance="collapse"] {
+  display: block;
+
+  > h2.package-header {
+    display: block;
+    width: 100%;
+    cursor: pointer;
+
+    &::before {
+      @include chevron-indicator;
+    }
+
+    &[expanded]::before {
+      transform: rotate(90deg);
+      background-color: $osv-accent-color;
+    }
   }
 }
 
@@ -893,6 +933,7 @@ dl.vulnerability-details,
     background: #aaa;
     color: #000;
     display: inline-block;
+    font-family: $osv-heading-font-family;
     font-size: 14px;
     padding: 16px;
   }
@@ -912,28 +953,25 @@ dl.vulnerability-details,
   }
 
   .versions-section {
-    --const-mq-affordances: [screen] collapse;
-
-    h2.version-header::before {
-      content: '';
-      margin-right: 16px;
-      background: url(/static/img/filled-triangle.svg);
-      background-position: center;
-      transform: rotate(0deg);
-      // Make the filled triangle white.
-      filter: invert(100%);
+    > summary {
+      @include hide-details-marker;
     }
 
-    h2.version-header[expanded]::before {
+    summary.version-header::before {
+      @include chevron-indicator($margin-right: 16px, $color: #fff);
+    }
+
+    &[open] > summary.version-header::before {
       transform: rotate(90deg);
     }
 
-    h2.version-header {
+    summary.version-header {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
-      padding-left: 0px;
+      padding: 16px 0;
       font-size: 16px;
+      cursor: pointer;
     }
   }
 
@@ -942,6 +980,7 @@ dl.vulnerability-details,
     overflow: auto;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 8px;
     padding-bottom: 12px;
   }
 
@@ -969,32 +1008,27 @@ dl.vulnerability-details,
   }
 
   .database-specific-section {
-    --const-mq-affordances: [screen] collapse;
+    > summary {
+      @include hide-details-marker;
+    }
 
-    h2.database-specific-header {
+    summary.database-specific-header {
       background: none;
       font-family: $osv-heading-font-family;
       color: #fff;
-      padding-left: 0;
+      padding: 16px 0;
       font-size: 16px;
       display: flex;
       align-items: center;
+      cursor: pointer;
 
       &::before {
-        content: '';
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        background: url(/static/img/filled-triangle.svg);
-        background-position: center;
-        background-repeat: no-repeat;
-        transform: rotate(0deg);
-        filter: invert(100%);
+        @include chevron-indicator($color: #fff);
       }
+    }
 
-      &[expanded]::before {
-        transform: rotate(90deg);
-      }
+    &[open] > summary.database-specific-header::before {
+      transform: rotate(90deg);
     }
   }
 
@@ -1002,56 +1036,46 @@ dl.vulnerability-details,
     padding: 8px 0 0 24px;
   }
 
-  .spicy-sections-workaround {
-    // https://github.com/tabvengers/spicy-sections/issues/64.
-    pointer-events: none;
-  }
 
   &.force-collapse {
-    h2.package-header {
+    .ecosystem-accordion > summary {
+      @include hide-details-marker;
+    }
+
+    summary.package-header {
       width: 100%;
       background: #393939;
       color: #fff;
       padding: 16px;
       margin-bottom: 2px;
       border-radius: 0;
+      font-family: $osv-heading-font-family;
       font-weight: normal;
       transition: background-color 0.2s ease-in-out;
       cursor: pointer;
+      display: block;
 
       &::before {
-        content: '';
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        background-image: url(/static/img/filled-triangle.svg);
-        background-position: center;
-        background-repeat: no-repeat;
-        transition: transform 0.2s ease-in-out;
-        transform: rotate(0deg);
-        filter: invert(100%);
-      }
-
-      &[expanded]::before {
-        transform: rotate(90deg);
+        @include chevron-indicator($color: #fff);
       }
 
       &:hover {
         background: #4F4F4F;
       }
+    }
 
-      &[expanded] {
-        background: #fff;
-        color: $osv-accent-color;
-        font-weight: bold;
-        
-        &::before {
-          filter: invert(24%) sepia(89%) saturate(2293%) hue-rotate(345deg) brightness(81%) contrast(107%);
-        }
-          
-        &:hover {
-          background: #f0f0f0;
-        }
+    .ecosystem-accordion[open] > summary.package-header {
+      background: #fff;
+      color: $osv-accent-color;
+      font-weight: bold;
+
+      &::before {
+        transform: rotate(90deg);
+        background-color: $osv-accent-color;
+      }
+
+      &:hover {
+        background: #f0f0f0;
       }
     }
 
@@ -1095,7 +1119,10 @@ dl.vulnerability-details,
     
     .package-accordion {
       position: relative;
-      margin-bottom: 8px;
+
+      > summary {
+        @include hide-details-marker;
+      }
 
       // The horizontal "connector" line
       &::before {
@@ -1114,37 +1141,29 @@ dl.vulnerability-details,
       padding-bottom: $last-ecosystem-border-gap;
     }
 
-    .package-accordion h3.package-name-title {
+    .package-accordion summary.package-name-title {
       font-family: $osv-heading-font-family;
       font-size: 1.1rem;
+      font-weight: bold;
       color: #f1f1f1;
       padding: 12px 16px;
       cursor: pointer;
       background: #333333;
       border: 1px solid #444;
       border-radius: 0;
+      display: block;
 
       &::before {
-        content: '';
-        width: 12px;
-        height: 12px;
-        margin-right: 8px;
-        background-image: url(/static/img/filled-triangle.svg);
-        background-position: center;
-        background-repeat: no-repeat;
-        filter: invert(100%);
-        transition: transform 0.2s ease-in-out;
-        display: inline-block;
+        @include chevron-indicator($color: #fff);
         vertical-align: middle;
-        transform: rotate(0deg);
       }
+    }
 
-      &[expanded] {
-        border-bottom: 1px dashed #fff;
-        
-        &::before {
-          transform: rotate(90deg);
-        }
+    .package-accordion[open] > summary.package-name-title {
+      border-bottom: 1px dashed #fff;
+
+      &::before {
+        transform: rotate(90deg);
       }
     }
 
@@ -1214,7 +1233,6 @@ dl.vulnerability-details,
     &[tabindex="0"] {
       background: #fff;
       color: $osv-accent-color;
-      // Override spicy-sections default blue bottom border.
       border-bottom: 1px solid $osv-accent-color;
     }
 

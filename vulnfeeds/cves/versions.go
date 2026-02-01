@@ -714,19 +714,8 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	for _, reference := range cve.References {
-		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
-			v.AffectedCommits = append(v.AffectedCommits, commit)
-		}
-	}
-	if v.AffectedCommits != nil {
-		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
-	}
-
-	gotVersions := false
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.AffectedVersion {
+	versions := []models.AffectedVersion{}
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			if node.Operator != "OR" {
@@ -798,23 +787,40 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
 
-				gotVersions = true
 				possibleNewAffectedVersion := models.AffectedVersion{
 					Introduced:   introduced,
 					Fixed:        fixed,
 					LastAffected: lastaffected,
 				}
-				
-				if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+
+				if slices.Contains(versions, possibleNewAffectedVersion) {
 					// Avoid appending duplicates
 					continue
 				}
-				v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
+				versions = append(versions, possibleNewAffectedVersion)
 				metrics.AddNote("Extracted version %+v", possibleNewAffectedVersion)
 			}
 		}
 	}
-	if !gotVersions {
+	return versions
+}
+
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
+	for _, reference := range cve.References {
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
+			v.AffectedCommits = append(v.AffectedCommits, commit)
+		}
+	}
+	if v.AffectedCommits != nil {
+		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
+		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
+	}
+
+	v.AffectedVersions = ExtractVersionsFromCPEs(cve, validVersions, metrics)
+	if len(v.AffectedVersions) > 0 {
+		metrics.AddNote("Extracted versions from CPEs: %v", v.AffectedVersions)
+	} else {
 		v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
 		if len(v.AffectedVersions) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
@@ -846,7 +852,6 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 
 	return v
 }
-
 
 func CPEs(cve models.NVDCVE) []string {
 	var cpes []string
@@ -990,6 +995,9 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
 	for _, repo := range repos {
+		if cache.IsInvalid(repo) {
+			continue
+		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
@@ -1072,7 +1080,7 @@ func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // TODO (jesslowe): refactor with below
-func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, metrics *models.ConversionMetrics) (repos []string) {
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1091,8 +1099,15 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
 		_, err = Commit(ref.URL)
+		// Check if it was previously found to be bad:
+		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
+			continue
+		}
 		// If it's any other repo-shaped URL, it's only useful if it has tags.
 		if (err == nil && !git.ValidRepo(repo)) || (err != nil && !git.ValidRepoAndHasUsableRefs(repo)) {
+			if repoTagsCache != nil {
+				repoTagsCache.SetInvalid(repo)
+			}
 			continue
 		}
 		repos = append(repos, repo)

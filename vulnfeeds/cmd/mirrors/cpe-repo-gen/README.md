@@ -31,7 +31,7 @@ go run main.go [flags]
 
 - `-cpe-dictionary-dir`: The path to the directory of NVD CPE Dictionary JSON files (default: "cve_json/nvdcpe-2.0-chunks"). See https://nvd.nist.gov/products/cpe
 - `-debian-metadata-path`: The path to a directory containing a local mirror of Debian copyright metadata.
-- `-output-dir`: The directory to output `cpe_product_to_repo.json` and `cpe_reference_description_frequency.csv` in (default: ".").
+- `-output-dir`: The directory to output `cpe_product_to_repo.json` and `cpe_reference_description_frequency.csv` (default: ".").
 - `-validate`: Perform remote validation of repositories and only include ones that validate successfully (default: true).
 - `-verbose`: If true, output additional telemetry to stdout (default: false).
 - `-gcp-logging-project`: GCP project ID to use for logging (default: "oss-vdb"). Set to the empty string to log to stdout

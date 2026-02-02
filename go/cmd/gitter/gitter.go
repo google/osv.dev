@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -26,7 +27,13 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-const getGitEndpoint = "/getgit"
+// API Endpoints
+var endpointHandlers = map[string]http.HandlerFunc{
+	"/getgit":         gitHandler,
+	"POST /cache":     cacheHandler,
+	"POST /enumerate": affectCommitsHandler,
+}
+
 const defaultGitterWorkDir = "/work/gitter"
 const persistanceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
@@ -38,11 +45,16 @@ var (
 	fetchTimeout    time.Duration
 )
 
+type Event struct {
+	EventType string `json:"eventType"`
+	Hash      string `json:"hash"`
+}
+
 const shutdownTimeout = 10 * time.Second
 
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
+func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -57,18 +69,18 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	// Ensure it eventually dies if it ignores SIGINT
 	cmd.WaitDelay = shutdownTimeout / 2
 
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
 			logger.Warn("Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
+			return nil, fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
-		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+		return nil, fmt.Errorf("command %s failed, stdout: %s, stderr: %s", name, out, err)
 	}
 
-	return nil
+	return out, nil
 }
 
 func isLocalRequest(r *http.Request) bool {
@@ -117,7 +129,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		logger.Info("Fetching git blob", slog.String("url", url), slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
-			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
+			_, err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
 				return nil, fmt.Errorf("git clone failed: %w", err)
 			}
@@ -125,11 +137,11 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
 			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
-			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+			_, err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
 				return nil, fmt.Errorf("git fetch failed: %w", err)
 			}
-			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+			_, err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
 			if err != nil {
 				return nil, fmt.Errorf("git reset failed: %w", err)
 			}
@@ -139,7 +151,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
+		_, err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
@@ -185,7 +197,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	http.HandleFunc(getGitEndpoint, gitHandler)
+	for endpoint, handler := range endpointHandlers {
+		http.HandleFunc(endpoint, handler)
+	}
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -285,4 +299,117 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("Request completed successfully", slog.String("url", url))
+}
+
+func cacheHandler(w http.ResponseWriter, r *http.Request) {
+	// POST requets body processing
+	var body struct {
+		URL string `json:"url"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	url := body.URL
+	logger.Info("Received request: /cache", slog.String("url", url))
+
+
+	// Fetch repo if it's not fresh
+	// We use the same singleflight group as the main handler to avoid concurrent fetches
+	_, err, _ = g.Do(url, func() (any, error) {
+		return fetchBlob(r.Context(), url)
+	})
+	if err != nil {
+		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to update repo: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+
+	_, err = LoadRepository(r.Context(), repoPath)
+	if err != nil {
+		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	logger.Info("Request completed successfully: /cache", slog.String("url", url))
+}
+
+func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	// POST requets body processing
+	var body struct {
+		URL    string  `json:"url"`
+		Events []Event `json:"events"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	url := body.URL
+	introduced := []SHA1{}
+	fixed := []SHA1{}
+	lastAffected := []SHA1{}
+	limit := []SHA1{}
+
+	for _, event := range body.Events {
+		hash, err := hex.DecodeString(event.Hash)
+		if err != nil {
+			logger.Error("Error parsing hash", slog.String("hash", event.Hash), slog.Any("error", err))
+			continue
+		}
+
+		switch event.EventType {
+		case "introduced":
+			introduced = append(introduced, SHA1(hash))
+		case "fixed":
+			fixed = append(fixed, SHA1(hash))
+		case "last_affected":
+			lastAffected = append(lastAffected, SHA1(hash))
+		case "limit":
+			limit = append(limit, SHA1(hash))
+		default:
+			logger.Error("Invalid event type", slog.String("event_type", event.EventType))
+			continue
+		}
+	}
+
+	logger.Info("Received request", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit))
+
+	// Fetch repo if it's not fresh
+	// We use the same singleflight group as the main handler to avoid concurrent fetches
+	_, err, _ = g.Do(url, func() (any, error) {
+		return fetchBlob(r.Context(), url)
+	})
+	if err != nil {
+		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to update repo: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+
+	repo, err := LoadRepository(r.Context(), repoPath)
+	if err != nil {
+		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	affectedCommits := repo.EnumerateCommits(introduced, fixed, lastAffected)
+	logger.Info("Enumeration complete", slog.String("url", url), slog.Int("affected_commits_count", len(affectedCommits)))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(affectedCommits)
 }

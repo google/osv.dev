@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
 	"github.com/google/osv.dev/go/logger"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -82,4 +84,38 @@ func loadMap() {
 	}
 
 	logger.Info("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
+}
+
+func saveRepositoryCache(cachePath string, repo *Repository) error {
+	logger.Info("Saving repository cache", slog.String("path", cachePath))
+
+	cache := &pb.RepositoryCache{}
+	for _, commit := range repo.commitDetails {
+		cache.Commits = append(cache.Commits, &pb.CommitDetail{
+			Hash:    commit.Hash[:],
+			PatchId: commit.PatchID[:],
+			Tags:    commit.Tags,
+		})
+	}
+
+	data, err := proto.Marshal(cache)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(cachePath, data, 0644)
+}
+
+func loadRepositoryCache(cachePath string) (*pb.RepositoryCache, error) {
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		return nil, err
+	}
+
+	cache := &pb.RepositoryCache{}
+	if err := proto.Unmarshal(data, cache); err != nil {
+		return nil, err
+	}
+
+	return cache, nil
 }

@@ -13,7 +13,7 @@ go run main.go [flags]
 - `-output-path`: Path to output OSV files (default: "debian-cve-osv").
 - `-output-bucket`: The GCS bucket to write to (default: "debian-osv").
 - `-workers`: Number of workers to process records (default: 64).
-- `-upload-to-gcs`: If true, do not write to GCS bucket and instead write to local disk (default: false).
+- `-upload-to-gcs`: If true, upload to GCS bucket instead of writing to local disk (default: false).
 - `-sync-deletions`: If false, do not delete files in bucket that are not local (default: false).
 
 ## Description

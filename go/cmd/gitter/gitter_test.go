@@ -92,7 +92,7 @@ func TestGitHandler_Integration(t *testing.T) {
 	fetchTimeout = time.Minute
 	// Ensure lastFetch map is initialized
 	if lastFetch == nil {
-		loadMap()
+		loadLastFetchMap()
 	}
 
 	tests := []struct {

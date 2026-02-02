@@ -35,12 +35,12 @@ var endpointHandlers = map[string]http.HandlerFunc{
 }
 
 const defaultGitterWorkDir = "/work/gitter"
-const persistanceFileName = "last-fetch.json"
+const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
 
 var (
 	g               singleflight.Group
-	persistancePath = path.Join(defaultGitterWorkDir, persistanceFileName)
+	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 )
@@ -183,7 +183,7 @@ func main() {
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
 
-	persistancePath = path.Join(*workDir, persistanceFileName)
+	persistencePath = path.Join(*workDir, persistenceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
@@ -191,7 +191,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	loadMap()
+	loadLastFetchMap()
 
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -244,7 +244,7 @@ func main() {
 		logger.Error("Server forced to shutdown", slog.Any("error", err))
 	}
 
-	saveMap()
+	saveLastFetchMap()
 	logger.Info("Server exiting")
 }
 

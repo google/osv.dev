@@ -45,32 +45,32 @@ func debounceSaveMap() {
 		saveTimer.Stop()
 	}
 	saveTimer = time.AfterFunc(3*time.Second, func() {
-		saveMap()
+		saveLastFetchMap()
 	})
 }
 
-func saveMap() {
+func saveLastFetchMap() {
 	lastFetchMu.Lock()
 	defer lastFetchMu.Unlock()
 
-	logger.Info("Saving lastFetch map", slog.String("path", persistancePath))
+	logger.Info("Saving lastFetch map", slog.String("path", persistencePath))
 
 	data, err := json.Marshal(lastFetch)
 	if err != nil {
-		logger.Error("Error marshaling lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
+		logger.Error("Error marshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 		return
 	}
 
-	if err := os.WriteFile(persistancePath, data, 0600); err != nil {
-		logger.Error("Error writing lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
+	if err := os.WriteFile(persistencePath, data, 0600); err != nil {
+		logger.Error("Error writing lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 	}
 }
 
-func loadMap() {
-	data, err := os.ReadFile(persistancePath)
+func loadLastFetchMap() {
+	data, err := os.ReadFile(persistencePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logger.Error("Error reading lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
+			logger.Error("Error reading lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 		}
 
 		return
@@ -80,7 +80,7 @@ func loadMap() {
 	defer lastFetchMu.Unlock()
 
 	if err := json.Unmarshal(data, &lastFetch); err != nil {
-		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistancePath), slog.Any("error", err))
+		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 	}
 
 	logger.Info("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))

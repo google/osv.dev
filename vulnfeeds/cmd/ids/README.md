@@ -2,6 +2,8 @@
 
 This utility assigns IDs to OSV records in a directory. It ensures that IDs are unique and follow a specified prefix and year format.
 
+It is predominately used by [PYSEC](https://github.com/pypa/advisory-database/blob/main/.github/workflows/automation.yaml) and [Malicious Packages](https://github.com/ossf/malicious-packages/blob/7b1ba332528dba6b0a2df23e9a43b384623c0251/.github/workflows/assign-osv-ids.yml#L35).
+
 ## Usage
 
 ```bash

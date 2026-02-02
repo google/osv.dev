@@ -8,11 +8,14 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
 	"github.com/google/osv.dev/go/logger"
+	"golang.org/x/sync/errgroup"
 )
 
 type SHA1 [20]byte
@@ -25,6 +28,8 @@ type Commit struct {
 
 // Repository holds the commit graph and other details for a git repository.
 type Repository struct {
+	repoMu   sync.Mutex
+	repoPath string
 	// Adjacency list: Parent -> []Children
 	commitGraph map[SHA1][]SHA1
 	// Actual commit details
@@ -36,11 +41,12 @@ type Repository struct {
 }
 
 // %H commit hash; %P parent hashes; %D:refs
-const gitLogFormat = "%H;%P;%D" // TODO: Double check if semi-colon is the best delimitor
+const gitLogFormat = "%H%x09%P%x09%D"
 
 // NewRepository initializes a new Repository struct.
-func NewRepository() *Repository {
+func NewRepository(repoPath string) *Repository {
 	return &Repository{
+		repoPath:         repoPath,
 		commitGraph:      make(map[SHA1][]SHA1),
 		commitDetails:    make(map[SHA1]Commit),
 		tagToCommit:      make(map[string]SHA1),
@@ -51,10 +57,9 @@ func NewRepository() *Repository {
 // LoadRepository loads a repo from disk into memory.
 // Takes in repo .git file path.
 func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
-	logger.Info("Starting repository loading", slog.String("repo", repoPath))
 	start := time.Now()
 
-	repo := NewRepository()
+	repo := NewRepository(repoPath)
 
 	cachePath := repoPath + ".pb"
 	var cache *pb.RepositoryCache
@@ -69,13 +74,13 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	}
 
 	// Commit graph is built from scratch every time
-	newCommits, err := repo.buildCommitGraph(ctx, repoPath, cache)
+	newCommits, err := repo.buildCommitGraph(ctx, cache)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build commit graph: %w", err)
 	}
 
 	if len(newCommits) > 0 {
-		if err := repo.calculatePatchIDs(ctx, repoPath, newCommits); err != nil {
+		if err := repo.calculatePatchIDs(ctx, newCommits); err != nil {
 			return nil, fmt.Errorf("failed to calculate patch id for commits: %w", err)
 		}
 	}
@@ -90,8 +95,8 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 }
 
 // Graph is computed from scratch everytime
-func (r *Repository) buildCommitGraph(ctx context.Context, repoPath string, cache *pb.RepositoryCache) ([]SHA1, error) {
-	logger.Info("Starting graph construction", slog.String("repo", repoPath))
+func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]SHA1, error) {
+	logger.Info("Starting graph construction", slog.String("repo", r.repoPath))
 	start := time.Now()
 
 	// Build cache map
@@ -114,7 +119,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, repoPath string, cach
 	tmpFile.Close()
 
 	// Run git log
-	if _, err := runCmd(ctx, repoPath, nil, "git", "log", "--all", "--date-order", "--format="+gitLogFormat, "--output="+tmpFile.Name()); err != nil {
+	if _, err := runCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--date-order", "--format="+gitLogFormat, "--output="+tmpFile.Name()); err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
 
@@ -128,8 +133,8 @@ func (r *Repository) buildCommitGraph(ctx context.Context, repoPath string, cach
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Example of a line of commit info
-		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494;de84b0dd689622922a54d1bc6cc45c384c7ff8bd;HEAD -> master, tag: v2025.01.01
-		commitInfo := strings.Split(line, ";")
+		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494\x00de84b0dd689622922a54d1bc6cc45c384c7ff8bd\x00HEAD -> master, tag: v2025.01.01
+		commitInfo := strings.Split(line, "\x09")
 
 		childHash := SHA1{}
 		parentHashes := []SHA1{}
@@ -206,17 +211,48 @@ func (r *Repository) buildCommitGraph(ctx context.Context, repoPath string, cach
 
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // TODO: Parallelize this
-func (r *Repository) calculatePatchIDs(ctx context.Context, repoPath string, commits []SHA1) error {
-	logger.Info("Starting patch ID calculation", slog.String("repo", repoPath))
+func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) error {
+	logger.Info("Starting patch ID calculation", slog.String("repo", r.repoPath))
 	start := time.Now()
 
+	// Number of workers
+	workers := runtime.NumCPU()
+	if len(commits) < workers {
+		workers = len(commits)
+	}
+
+	chunkSize := len(commits) / workers
+
+	errg, ctx := errgroup.WithContext(ctx)
+
+	for i := 0; i < workers; i++ {
+		start := i * chunkSize
+		end := start + chunkSize
+
+		if i == workers-1 {
+			end = len(commits)
+		}
+		errg.Go(func() error {
+			return r.calculatePatchIDsWorker(ctx, commits[start:end])
+		})
+	}
+
+	if err := errg.Wait(); err != nil {
+		return fmt.Errorf("failed to calculate patch IDs: %w", err)
+	}
+
+	logger.Info("Patch ID calculation completed", slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
+	return nil
+}
+
+func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) error {
 	// Prepare git commands
-	// TODO: Replace with plumbing cmd `git diff-tree` might be slightly faster
+	// TODO: Replace with plumbing cmd `git diff-tree`, might be slightly faster
 	cmdShow := exec.CommandContext(ctx, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
-	cmdShow.Dir = repoPath
+	cmdShow.Dir = r.repoPath
 
 	cmdPatchID := exec.CommandContext(ctx, "git", "patch-id", "--stable")
-	cmdPatchID.Dir = repoPath
+	cmdPatchID.Dir = r.repoPath
 
 	// Pipe the git show with git patch-id
 	in, err := cmdShow.StdinPipe()
@@ -247,7 +283,7 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, repoPath string, com
 	// Write hashes to stdin
 	go func() {
 		defer in.Close()
-		for _, hash := range commits {
+		for _, hash := range chunk {
 			fmt.Fprintf(in, "%s\n", hex.EncodeToString(hash[:]))
 		}
 	}()
@@ -285,16 +321,21 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, repoPath string, com
 		}
 		hash := SHA1(hashBytes)
 
-		commit := r.commitDetails[hash]
-		commit.PatchID = patchID
-		r.commitDetails[hash] = commit
-
-		r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], hash)
+		r.updatePatchID(hash, patchID)
 	}
 
-	logger.Info("Patch ID calculation completed", slog.Int("count", len(r.commitDetails)), slog.Duration("duration", time.Since(start)))
-
 	return nil
+}
+
+func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
+	r.repoMu.Lock()
+	defer r.repoMu.Unlock()
+
+	commit := r.commitDetails[commitHash]
+	commit.PatchID = patchID
+	r.commitDetails[commitHash] = commit
+
+	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
 }
 
 func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1) []Commit {

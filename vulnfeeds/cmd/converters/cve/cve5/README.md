@@ -26,7 +26,7 @@ go run bulk-converter/main.go [flags]
 
 The tool performs the following steps:
 1. Walks the specified CVEListV5 directory for JSON files starting from the `start-year`.
-2. Filters CVEs based on the CNA allowlist and state ("PUBLISHED").
+2. Filters CVEs based on the CNA allowlist and state being "PUBLISHED".
 3. Converts valid CVEs to OSV format using `cvelist2osv`.
 4. Outputs the OSV records and metrics to the specified output directory.
 

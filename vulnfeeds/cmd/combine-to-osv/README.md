@@ -35,7 +35,7 @@ go run main.go [flags]
 - `-overrides-bucket`: The GCS bucket to read overrides from (default: "osv-test-cve-osv-conversion")
 - `-upload-to-gcs`: If true, upload to GCS bucket instead of writing to local disk (default: false)
 - `-workers`: Number of workers to process records (default: 64)
-- `-sync-deletions`: If false, do not delete files in bucket that are not local (default: false)
+- `-sync-deletions`: If true, deletes files in the destination bucket that are not present in the source directory. This is useful for keeping the destination in sync with the source (default: false)
 
 ## Description
 

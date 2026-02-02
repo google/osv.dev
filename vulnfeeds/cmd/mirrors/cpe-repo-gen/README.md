@@ -33,7 +33,7 @@ go run main.go [flags]
 - `-debian-metadata-path`: The path to a directory containing a local mirror of Debian copyright metadata.
 - `-output-dir`: The directory to output `cpe_product_to_repo.json` and `cpe_reference_description_frequency.csv` in (default: ".").
 - `-validate`: Perform remote validation of repositories and only include ones that validate successfully (default: true).
-- `-verbose`: Output additional telemetry to stdout (default: false).
+- `-verbose`: If true, output additional telemetry to stdout (default: false).
 - `-gcp-logging-project`: GCP project ID to use for logging (default: "oss-vdb"). Set to the empty string to log to stdout
 
 ## Description

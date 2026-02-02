@@ -716,6 +716,8 @@ func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 
 func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.AffectedVersion {
 	versions := []models.AffectedVersion{}
+	seen := make(map[models.AffectedVersion]bool)
+
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			if node.Operator != "OR" {
@@ -792,11 +794,11 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					Fixed:        fixed,
 					LastAffected: lastaffected,
 				}
-
-				if slices.Contains(versions, possibleNewAffectedVersion) {
-					// Avoid appending duplicates
+				
+				if seen[possibleNewAffectedVersion] {
 					continue
 				}
+				seen[possibleNewAffectedVersion] = true
 				versions = append(versions, possibleNewAffectedVersion)
 				metrics.AddNote("Extracted version %+v", possibleNewAffectedVersion)
 			}

@@ -794,7 +794,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					Fixed:        fixed,
 					LastAffected: lastaffected,
 				}
-				
+
 				if seen[possibleNewAffectedVersion] {
 					continue
 				}

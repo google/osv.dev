@@ -36,7 +36,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
-			return fmt.Errorf("Can't generate an OSV record without valid CPE data")
+			return errors.New("can't generate an OSV record without valid CPE data")
 		}
 	}
 
@@ -48,13 +48,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
 			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-			return fmt.Errorf("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
+			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
+		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
 		if err != nil {
 			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("Failed to convert version tags to commits: %+v %w", versions, err)
+			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
 		}
 		hasAnyFixedCommits := false
 		for _, repo := range repos {
@@ -66,7 +66,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 		if versions.HasFixedVersions() && !hasAnyFixedCommits {
 			metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
-			return fmt.Errorf("Failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+			return fmt.Errorf("failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
 		}
 
 		hasAnyLastAffectedCommits := false
@@ -79,7 +79,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
 			metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
-			return fmt.Errorf("Failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+			return fmt.Errorf("failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
 		}
 	}
 
@@ -89,7 +89,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	if len(v.Affected) == 0 {
 		metrics.AddNote("No affected ranges detected for %q", maybeProductName)
-		return fmt.Errorf("No affected ranges detected for %q %w", maybeProductName, ErrNoRanges)
+		return fmt.Errorf("no affected ranges detected for %q %w", maybeProductName, ErrNoRanges)
 	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
@@ -131,7 +131,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
-			return fmt.Errorf("Can't generate an OSV record without valid CPE data")
+			return errors.New("can't generate an OSV record without valid CPE data")
 		}
 	}
 
@@ -143,13 +143,13 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
 			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-			return fmt.Errorf("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
+			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(cve.ID, versions, repos, cache, metrics)
+		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
 		if err != nil {
 			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("Failed to convert version tags to commits: %+v %w", versions, err)
+			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
 		}
 	}
 
@@ -162,7 +162,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	if versions.HasFixedVersions() && !hasAnyFixedCommits {
 		metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
-		return fmt.Errorf("Failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+		return fmt.Errorf("failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
 	}
 
 	hasAnyLastAffectedCommits := false
@@ -174,12 +174,12 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
 		metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
-		return fmt.Errorf("Failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+		return fmt.Errorf("failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
 	}
 
 	if len(versions.AffectedCommits) == 0 {
 		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
-		return fmt.Errorf("No affected commit ranges determined for %q %w", maybeProductName, ErrNoRanges)
+		return fmt.Errorf("no affected commit ranges determined for %q %w", maybeProductName, ErrNoRanges)
 	}
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.

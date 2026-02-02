@@ -107,6 +107,7 @@ func (c *RepoTagsCache) IsInvalid(repo string) bool {
 	if c.invalid == nil {
 		return false
 	}
+
 	return c.invalid[repo]
 }
 
@@ -173,6 +174,7 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error)
 		if repoTagsCache != nil {
 			repoTagsCache.SetInvalid(repoURL)
 		}
+
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)

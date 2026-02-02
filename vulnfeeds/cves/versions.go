@@ -802,6 +802,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 			}
 		}
 	}
+
 	return versions
 }
 
@@ -990,7 +991,7 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID models.CVEID, versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo, e error) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions
@@ -1108,6 +1109,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			if repoTagsCache != nil {
 				repoTagsCache.SetInvalid(repo)
 			}
+
 			continue
 		}
 		repos = append(repos, repo)
@@ -1119,8 +1121,8 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 	if vp != nil {
 		metrics.AddNote("Derived repos using references %q for %q %q", repos, vp.Vendor, vp.Product)
 	}
-
 	metrics.AddNote("Derived repos (no CPEs) using references: %q", repos)
+
 	return repos
 }
 

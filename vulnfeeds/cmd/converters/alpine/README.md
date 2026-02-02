@@ -14,7 +14,7 @@ go run main.go [flags]
 - `-output-bucket`: The GCS bucket to write to (default: "osv-test-cve-osv-conversion")
 - `-workers`: Number of workers to process records (default: 64)
 - `-upload-to-gcs`: If true, write to GCS bucket instead of local disk (default: false)
-- `-sync-deletions`: If false, do not delete files in bucket that are not local (default: false)
+- `-sync-deletions`: If true, deletes files in the destination bucket that are not present in the source directory. This is useful for keeping the destination in sync with the source (default: false)
 
 ## Description
 

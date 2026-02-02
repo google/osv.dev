@@ -406,7 +406,7 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	affectedCommits := repo.EnumerateCommits(introduced, fixed, lastAffected)
+	affectedCommits := repo.FindAffectedCommits(introduced, fixed, lastAffected)
 	logger.Info("Enumeration complete", slog.String("url", url), slog.Int("affected_commits_count", len(affectedCommits)))
 
 	w.Header().Set("Content-Type", "application/json")

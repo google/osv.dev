@@ -297,45 +297,80 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, repoPath string, com
 	return nil
 }
 
-func (r *Repository) EnumerateCommits(introduced []SHA1, fixed []SHA1, lastAffected []SHA1) []Commit {
-	stack := introduced
-	visited := make(map[SHA1]bool)
-	fixedMap := map[SHA1]struct{}{}
-	for _, commit := range fixed {
-		fixedMap[commit] = struct{}{}
+func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1) []Commit {
+	introducedMap := make(map[SHA1]struct{})
+	for _, commit := range introduced {
+		introducedMap[commit] = struct{}{}
 	}
-	lastAffectedMap := map[SHA1]struct{}{}
-	for _, commit := range lastAffected {
-		lastAffectedMap[commit] = struct{}{}
-	}
+	safeCommits := r.findSafeCommits(introducedMap, fixed, lastAffected)
 
-	var commits []Commit
+	var affectedCommits []Commit
+
+	stack := make([]SHA1, len(introduced))
+	copy(stack, introduced)
+
+	visited := make(map[SHA1]struct{})
 
 	for len(stack) > 0 {
 		curr := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 
-		if visited[curr] {
+		if _, ok := visited[curr]; ok {
 			continue
 		}
-		visited[curr] = true
+		visited[curr] = struct{}{}
 
-		// Is a fixed commit, we can stop here
-		if _, ok := fixedMap[curr]; ok {
-			continue
-		}
-
-		commits = append(commits, r.commitDetails[curr])
-
-		// Is a last affected commit, still add this commit to result,
-		// but no need to add children to stack
-		if _, ok := lastAffectedMap[curr]; ok {
+		// If commit is in safe set, we can stop the traversal
+		if _, ok := safeCommits[curr]; ok {
 			continue
 		}
 
-		children := r.commitGraph[curr]
-		stack = append(stack, children...)
+		// Otherwise, add to affected commits
+		affectedCommits = append(affectedCommits, r.commitDetails[curr])
+
+		// Add children to DFS stack
+		if children, ok := r.commitGraph[curr]; ok {
+			stack = append(stack, children...)
+		}
+
+	}
+	return affectedCommits
+}
+
+func (r *Repository) findSafeCommits(introducedMap map[SHA1]struct{}, fixed, lastAffected []SHA1) map[SHA1]struct{} {
+	safeSet := make(map[SHA1]struct{})
+	stack := make([]SHA1, 0, len(fixed)+len(lastAffected))
+	stack = append(stack, fixed...)
+
+	// All children of last affected commits are root for traversal
+	for _, commit := range lastAffected {
+		if children, ok := r.commitGraph[commit]; ok {
+			for _, child := range children {
+				stack = append(stack, child)
+			}
+		}
 	}
 
-	return commits
+	// DFS until we hit an "introduced" commit
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if _, ok := safeSet[curr]; ok {
+			continue
+		}
+		safeSet[curr] = struct{}{}
+
+		if children, ok := r.commitGraph[curr]; ok {
+			for _, child := range children {
+				// vuln re-introduced at a later commit, subsequent commits are no longer safe
+				if _, ok := introducedMap[child]; ok {
+					continue
+				}
+				stack = append(stack, child)
+			}
+		}
+	}
+
+	return safeSet
 }

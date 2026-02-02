@@ -29,9 +29,9 @@ import (
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"/getgit":         gitHandler,
+	"GET /repo":         gitHandler,
 	"POST /cache":     cacheHandler,
-	"POST /enumerate": affectCommitsHandler,
+	"POST /affected-commits": affectCommitsHandler,
 }
 
 const defaultGitterWorkDir = "/work/gitter"
@@ -116,6 +116,9 @@ func isAuthError(err error) bool {
 }
 
 func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
+	logger.Info("Starting fetch repo", slog.String("url", url))
+	start := time.Now()
+
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
@@ -174,6 +177,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
+	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
 	return fileData, nil
 }
 

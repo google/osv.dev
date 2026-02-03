@@ -414,8 +414,9 @@ func TestAddSeverity(t *testing.T) {
 			inputCVE:    loadTestData2("CVE-2022-34668"),
 			expectedResult: []*osvschema.Severity{
 				{
-					Type:  osvschema.Severity_CVSS_V3,
-					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Source: "psirt@nvidia.com",
 				},
 			},
 		},
@@ -424,8 +425,25 @@ func TestAddSeverity(t *testing.T) {
 			inputCVE:    loadTestData2("CVE-2023-5341"),
 			expectedResult: []*osvschema.Severity{
 				{
-					Type:  osvschema.Severity_CVSS_V3,
-					Score: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+					Source: "secalert@redhat.com",
+				},
+			},
+		},
+		{
+			description: "CVE with Primary and Secondary CVSS information",
+			inputCVE:    loadTestData2("CVE-2022-36037"),
+			expectedResult: []*osvschema.Severity{
+				{
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+					Source: "nvd@nist.gov",
+				},
+				{
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N",
+					Source: "security-advisories@github.com",
 				},
 			},
 		},

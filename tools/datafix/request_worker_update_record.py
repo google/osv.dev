@@ -79,7 +79,7 @@ def request_url_update(record_url, project_id, source, path, timeout,
     if not allow_delete or e.response.status_code != 404:
       print(e)
       return
-    print(f'Bug was deleted: {record_url}')
+    print(f'Vulnerability was deleted: {record_url}')
     deleted = True
 
   publish_update_message(project_id, PUBSUB_TOPIC_ID, source, path,
@@ -101,12 +101,12 @@ def main():
       "--allow-delete",
       action="store_true",
       default=False,
-      help="Delete bugs if not found in source (GIT only)")
+      help="Delete vulns if not found in source (GIT only)")
   parser.add_argument(
-      "bugs",
+      "vulns",
       action="append",
       nargs="*",
-      help="The bug IDs to operate on. If not specified, all bugs from the "
+      help="The vuln IDs to operate on. If not specified, all vulns from the "
       "source will be processed.")
 
   args = parser.parse_args()
@@ -118,32 +118,34 @@ def main():
     if not source_repo:
       raise ValueError(f"Source repository '{args.source}' not found.")
 
-    bugs_to_process = []
-    if args.bugs and args.bugs[0]:
-      bugs_to_process = args.bugs[0]
+    vulns_to_process = []
+    if args.vulns and args.vulns[0]:
+      vulns_to_process = args.vulns[0]
     else:
-      print(
-          f'No bug IDs provided. Querying all bugs for source {args.source}...')
-      query = osv.Bug.query(osv.Bug.source == args.source)
-      bugs_to_process = [b.id() for b in query.iter(keys_only=True)]
-      print(f'Found {len(bugs_to_process)} bugs to update.')
+      print('No vuln IDs provided. '
+            'Querying all vulns for source {args.source}...')
+      query = osv.Vulnerability.query(
+          osv.Vulnerability.source_id > args.source + ':',
+          osv.Vulnerability.source_id < (args.source + ';'))
+      vulns_to_process = [b.id() for b in query.iter(keys_only=True)]
+      print(f'Found {len(vulns_to_process)} bugs to update.')
       confirm = input('Are you sure you want to proceed? (y/N) ')
       if confirm.lower() not in ('y', 'yes'):
         print('Aborting.')
         return
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      for bug in bugs_to_process:
-        record_url = f'{source_repo.link}{bug}{source_repo.extension}'
-        path = f'{bug}{source_repo.extension}'
+      for vuln in vulns_to_process:
+        record_url = f'{source_repo.link}{vuln}{source_repo.extension}'
+        path = f'{vuln}{source_repo.extension}'
         request_url_update(record_url, args.project_id, args.source, path,
                            args.timeout, False)
 
     if source_repo.type == osv.SourceRepositoryType.GIT:
-      for bug in bugs_to_process:
-        entity = osv.Bug.get_by_id(bug)
+      for vuln in vulns_to_process:
+        entity = osv.Vulnerability.get_by_id(vuln)
         if not entity:
-          print(f'Warning: {bug} does not exist in Datastore, skipping.')
+          print(f'Warning: {vuln} does not exist in Datastore, skipping.')
           continue
 
         path = entity.source_id.split(':')[1]

@@ -12,15 +12,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/utility/logger"
-
-	"slices"
-
 	"github.com/google/osv-scanner/pkg/models"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"gopkg.in/yaml.v2"
 )
 

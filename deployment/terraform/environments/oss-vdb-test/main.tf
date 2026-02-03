@@ -45,7 +45,7 @@ module "osv_test" {
 
   website_domain = "test.osv.dev"
   api_url        = "api.test.osv.dev"
-  esp_version    = "2.53.0"
+  esp_version    = "2.54.0"
 }
 
 module "k8s_cron_alert" {
@@ -77,11 +77,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.45.0"
+      version = "~> 7.17.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.45.0"
+      version = "~> 7.17.0"
     }
     external = {
       source  = "hashicorp/external"

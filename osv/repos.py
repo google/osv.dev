@@ -140,10 +140,7 @@ def clone(git_url,
 
       # Long timeout duration (1hr) because it could be cloning a large repo
       resp = requests.get(
-          f'{GITTER_HOST}/getgit',
-          params=params,
-          stream=True,
-          timeout=3600)
+          f'{GITTER_HOST}/getgit', params=params, stream=True, timeout=3600)
       if resp.status_code == 403:
         raise RepoInaccessibleError()
       if resp.status_code == 400:

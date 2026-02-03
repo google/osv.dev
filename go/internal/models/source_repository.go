@@ -7,6 +7,19 @@ import (
 	"time"
 )
 
+type SourceRepositoryStore interface {
+	// Get retrieves a source repository by its name.
+	// Returns ErrNotFound if the repository does not exist.
+	Get(ctx context.Context, name string) (*SourceRepository, error)
+
+	// Update creates or updates a source repository.
+	// The name argument must match repo.Name.
+	Update(ctx context.Context, name string, repo *SourceRepository) error
+
+	// All returns an iterator over all source repositories.
+	All(ctx context.Context) iter.Seq2[*SourceRepository, error]
+}
+
 type SourceRepositoryType int
 
 const (
@@ -90,17 +103,4 @@ type SourceRepoREST struct {
 	IgnoreLastImportTime bool
 	// Ignore deletion threshold.
 	IgnoreDeletionThreshold bool
-}
-
-type SourceRepositoryStore interface {
-	// Get retrieves a source repository by its name.
-	// Returns ErrNotFound if the repository does not exist.
-	Get(ctx context.Context, name string) (*SourceRepository, error)
-
-	// Update creates or updates a source repository.
-	// The name argument must match repo.Name.
-	Update(ctx context.Context, name string, repo *SourceRepository) error
-
-	// All returns an iterator over all source repositories.
-	All(ctx context.Context) iter.Seq2[*SourceRepository, error]
 }

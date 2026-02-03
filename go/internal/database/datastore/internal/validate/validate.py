@@ -158,5 +158,6 @@ def main() -> int:
 
 if __name__ == '__main__':
   with osv.tests.datastore_emulator(), ndb.Client().context():
+    print('Datastore emulator running')
     ret = main()
   sys.exit(ret)

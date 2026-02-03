@@ -103,7 +103,7 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
-func fetchBlob(ctx context.Context, url string) ([]byte, error) {
+func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
@@ -113,7 +113,7 @@ func fetchBlob(ctx context.Context, url string) ([]byte, error) {
 	lastFetchMu.Unlock()
 
 	// Check if we need to fetch
-	if !ok || time.Since(accessTime) > fetchTimeout {
+	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
 		logger.Info("Fetching git blob", slog.String("url", url), slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
@@ -240,8 +240,9 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing url parameter", http.StatusBadRequest)
 		return
 	}
+	forceUpdate := r.URL.Query().Get("force-update") == "true"
 
-	logger.Info("Received request", slog.String("url", url), slog.String("remoteAddr", r.RemoteAddr))
+	logger.Info("Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -251,9 +252,14 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	key := url
+	if forceUpdate {
+		key += "?force-update=true"
+	}
+
 	//nolint:contextcheck // I can't change singleflight's interface
-	fileData, err, _ := g.Do(url, func() (any, error) {
-		return fetchBlob(r.Context(), url)
+	fileData, err, _ := g.Do(key, func() (any, error) {
+		return fetchBlob(r.Context(), url, forceUpdate)
 	})
 
 	if err != nil {

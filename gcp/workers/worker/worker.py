@@ -735,7 +735,9 @@ class TaskRunner:
       osv.update_affected_commits(vulnerability.id, result.commits, True)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
       e.add_note(f'Happened processing {vulnerability.id}')
-      logging.exception('Unexpected exception while updating affected commits for %s', vulnerability.id)
+      logging.exception(
+          'Unexpected exception while updating affected commits for %s',
+          vulnerability.id)
       raise
     self._notify_ecosystem_bridge(vulnerability)
     self._maybe_remove_import_findings(vulnerability.id)

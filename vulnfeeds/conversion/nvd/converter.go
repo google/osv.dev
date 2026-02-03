@@ -15,8 +15,10 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 var ErrNoRanges = errors.New("no ranges")
@@ -32,55 +34,31 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, _ := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
-		if err != nil {
-			return errors.New("can't generate an OSV record without valid CPE data")
-		}
 	}
 
+	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
+
 	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
+	// turn AffectedVersions into Ranges
+	ranges := []*osvschema.Range{}
+	for _, version := range versions.AffectedVersions {
+		vr := cves.BuildVersionRange(version.Introduced, version.LastAffected, version.Fixed)
+		ranges = append(ranges, vr)
+	}
+	databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": ranges})
+	if err != nil {
+		logger.Error("failed to create database specific struct", slog.Any("err", err))
+	} else {
+		v.DatabaseSpecific = databaseSpecific
+	}
 
-	if len(versions.AffectedVersions) != 0 {
-		var err error
-		// There are some AffectedVersions to try and resolve to AffectedCommits.
-		if len(repos) == 0 {
-			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-		}
-		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
-		if err != nil {
-			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
-		}
-		hasAnyFixedCommits := false
-		for _, repo := range repos {
-			if versions.HasFixedCommits(repo) {
-				hasAnyFixedCommits = true
-				break
-			}
-		}
-
-		if versions.HasFixedVersions() && !hasAnyFixedCommits {
-			metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
-			return fmt.Errorf("failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
-		}
-
-		hasAnyLastAffectedCommits := false
-		for _, repo := range repos {
-			if versions.HasLastAffectedCommits(repo) {
-				hasAnyLastAffectedCommits = true
-				break
-			}
-		}
-
-		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
-			metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
-			return fmt.Errorf("failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
-		}
+	err = resolveVersionsToCommits(&versions, repos, cache, metrics)
+	if err != nil {
+		return err
 	}
 
 	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
@@ -103,7 +81,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
 	}
 
-	err := v.ToJSON(osvFile)
+	err = v.ToJSON(osvFile)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
 		return err
@@ -138,45 +116,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
 	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
-	if len(versions.AffectedVersions) != 0 {
-		var err error
-		// There are some AffectedVersions to try and resolve to AffectedCommits.
-		if len(repos) == 0 {
-			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-		}
-		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
-		if err != nil {
-			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
-		}
-	}
-
-	hasAnyFixedCommits := false
-	for _, repo := range repos {
-		if versions.HasFixedCommits(repo) {
-			hasAnyFixedCommits = true
-		}
-	}
-
-	if versions.HasFixedVersions() && !hasAnyFixedCommits {
-		metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
-		return fmt.Errorf("failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
-	}
-
-	hasAnyLastAffectedCommits := false
-	for _, repo := range repos {
-		if versions.HasLastAffectedCommits(repo) {
-			hasAnyLastAffectedCommits = true
-		}
-	}
-
-	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
-		metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
-		return fmt.Errorf("failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
-	}
-
+	err := resolveVersionsToCommits(&versions, repos, cache, metrics)
 	if len(versions.AffectedCommits) == 0 {
 		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
 		return fmt.Errorf("no affected commit ranges determined for %q %w", maybeProductName, ErrNoRanges)
@@ -191,7 +131,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-	err := os.MkdirAll(vulnDir, 0755)
+	err = os.MkdirAll(vulnDir, 0755)
 	if err != nil {
 		logger.Warn("Failed to create dir", slog.Any("err", err))
 		return fmt.Errorf("failed to create dir: %w", err)
@@ -332,4 +272,48 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	metrics.AddNote("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
 
 	return reposForCVE
+}
+
+func resolveVersionsToCommits(versions *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) error {
+		if len(repos) == 0 && len(versions.AffectedCommits) == 0 {
+			return fmt.Errorf("no repos to try and convert %+v to tags with", versions.AffectedVersions)
+		}
+
+		// There are some AffectedVersions to try and resolve to AffectedCommits.
+		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
+		if len(versions.AffectedVersions) != 0 {
+			// There are some AffectedVersions to try and resolve to AffectedCommits.
+			if len(repos) == 0 {
+				metrics.AddNote("No affected ranges and no repos to try and convert %+v to tags with", versions.AffectedVersions)
+				return fmt.Errorf("no affected ranges and no repos to try and convert %+v to tags with", versions.AffectedVersions)
+			}
+			cves.GitVersionsToCommits(versions, repos, cache, metrics)
+		}
+		hasAnyFixedCommits := false
+		for _, repo := range repos {
+			if versions.HasFixedCommits(repo) {
+				hasAnyFixedCommits = true
+				break
+			}
+		}
+
+		if versions.HasFixedVersions() && !hasAnyFixedCommits {
+			metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
+			// return fmt.Errorf("failed to convert fixed version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+		}
+
+		hasAnyLastAffectedCommits := false
+		for _, repo := range repos {
+			if versions.HasLastAffectedCommits(repo) {
+				hasAnyLastAffectedCommits = true
+				break
+			}
+		}
+
+		if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
+			metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
+			return fmt.Errorf("failed to convert last_affected version tags to commits: %+v %w", versions, ErrUnresolvedFix)
+		}
+
+		return nil
 }

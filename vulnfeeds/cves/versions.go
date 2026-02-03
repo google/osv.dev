@@ -993,20 +993,16 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics){
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
-	v = versions
 	for _, repo := range repos {
-		if cache.IsInvalid(repo) {
-			continue
-		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
 			continue
 		}
-		for _, av := range versions.AffectedVersions {
+		for _, av := range v.AffectedVersions {
 			metrics.AddNote("Attempting version resolution for %s in %s", av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" {
@@ -1023,7 +1019,7 @@ func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *gi
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references, and assuming these references are indeed
 			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			fixedEquivalentCommit := ""
-			if v.HasFixedCommits(repo) && av.Fixed != "" && len(versions.AffectedVersions) == 1 {
+			if v.HasFixedCommits(repo) && av.Fixed != "" && len(v.AffectedVersions) == 1 {
 				fixedEquivalentCommit = v.FixedCommits(repo)[0]
 				metrics.AddNote("Using preassumed fixed commits instead of deriving from fixed version %s", av.Fixed)
 			} else if av.Fixed != "" {
@@ -1077,8 +1073,6 @@ func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *gi
 			v.AffectedCommits = append(v.AffectedCommits, ac)
 		}
 	}
-
-	return v, nil
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.

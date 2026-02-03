@@ -109,26 +109,23 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	}
 	var newCommits []SHA1
 
-	// Temp file for git log
-	tmpFile, err := os.CreateTemp("", "git-log-*.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
-
 	// Run git log
-	if _, err := runCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--date-order", "--format="+gitLogFormat, "--output="+tmpFile.Name()); err != nil {
-		return nil, fmt.Errorf("failed to run git log: %w", err)
-	}
-
-	file, err := os.Open(tmpFile.Name())
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open temp file: %w", err)
+		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
 
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start git log: %w", err)
+	}
+	defer func() {
+		if err := cmd.Wait(); err != nil && ctx.Err() == nil {
+			logger.Error("git log command failed", slog.Any("err", err))
+		}
+	}()
+
+	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Example of a line of commit info

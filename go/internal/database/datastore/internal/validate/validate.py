@@ -90,7 +90,7 @@ def main() -> int:
       related_ids=['R-1', 'R-2'],
       modified=datetime.datetime(2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
   ).put()
-  
+
   print('(Python) Putting SourceRepository')
   SourceRepository(
       id='oss-fuzz',
@@ -103,7 +103,8 @@ def main() -> int:
       bucket='bucket',
       directory_path='vulns',
       last_synced_hash='abcdef',
-      last_update_date=datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
+      last_update_date=datetime.datetime(
+          2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
       ignore_patterns=['.*\\.md', 'test/.*'],
       editable=True,
       extension='.json',

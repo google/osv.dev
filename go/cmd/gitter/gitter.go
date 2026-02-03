@@ -29,8 +29,8 @@ import (
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"GET /repo":         gitHandler,
-	"POST /cache":     cacheHandler,
+	"GET /repo":              gitHandler,
+	"POST /cache":            cacheHandler,
 	"POST /affected-commits": affectCommitsHandler,
 }
 
@@ -81,6 +81,22 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	}
 
 	return out, nil
+}
+
+// prepareCmd prepares the command with context cancellation handled by sending SIGINT.
+func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(syscall.SIGINT)
+	}
+	return cmd
 }
 
 func isLocalRequest(r *http.Request) bool {
@@ -319,7 +335,6 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	url := body.URL
 	logger.Info("Received request: /cache", slog.String("url", url))
-
 
 	// Fetch repo if it's not fresh
 	// We use the same singleflight group as the main handler to avoid concurrent fetches

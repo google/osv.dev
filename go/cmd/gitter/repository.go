@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -28,7 +27,8 @@ type Commit struct {
 
 // Repository holds the commit graph and other details for a git repository.
 type Repository struct {
-	repoMu   sync.Mutex
+	repoMu sync.Mutex
+	// Path to the .git directory within gitter's working dir
 	repoPath string
 	// Adjacency list: Parent -> []Children
 	commitGraph map[SHA1][]SHA1
@@ -40,7 +40,7 @@ type Repository struct {
 	patchIDToCommits map[SHA1][]SHA1
 }
 
-// %H commit hash; %P parent hashes; %D:refs
+// %H commit hash; %P parent hashes; %D:refs (tab delimited)
 const gitLogFormat = "%H%x09%P%x09%D"
 
 // NewRepository initializes a new Repository struct.
@@ -55,7 +55,6 @@ func NewRepository(repoPath string) *Repository {
 }
 
 // LoadRepository loads a repo from disk into memory.
-// Takes in repo .git file path.
 func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	start := time.Now()
 
@@ -94,7 +93,7 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	return repo, nil
 }
 
-// Graph is computed from scratch everytime
+// buildCommitGraph builds the commit graph and associate commit details from scratch
 func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]SHA1, error) {
 	logger.Info("Starting graph construction", slog.String("repo", r.repoPath))
 	start := time.Now()
@@ -133,7 +132,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Example of a line of commit info
-		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494\x00de84b0dd689622922a54d1bc6cc45c384c7ff8bd\x00HEAD -> master, tag: v2025.01.01
+		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494\x09de84b0dd689622922a54d1bc6cc45c384c7ff8bd\x09HEAD -> master, tag: v2025.01.01
 		commitInfo := strings.Split(line, "\x09")
 
 		childHash := SHA1{}
@@ -210,7 +209,6 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 }
 
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
-// TODO: Parallelize this
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) error {
 	logger.Info("Starting patch ID calculation", slog.String("repo", r.repoPath))
 	start := time.Now()
@@ -248,11 +246,8 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) error {
 	// Prepare git commands
 	// TODO: Replace with plumbing cmd `git diff-tree`, might be slightly faster
-	cmdShow := exec.CommandContext(ctx, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
-	cmdShow.Dir = r.repoPath
-
-	cmdPatchID := exec.CommandContext(ctx, "git", "patch-id", "--stable")
-	cmdPatchID.Dir = r.repoPath
+	cmdShow := prepareCmd(ctx, r.repoPath, nil, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
+	cmdPatchID := prepareCmd(ctx, r.repoPath, nil, "git", "patch-id", "--stable")
 
 	// Pipe the git show with git patch-id
 	in, err := cmdShow.StdinPipe()

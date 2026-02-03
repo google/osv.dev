@@ -323,43 +323,75 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
 // It prioritizes newer CVSS versions and "Primary" sources.
-func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string) {
+func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string, string) {
+	if metricsData == nil {
+		return "", "", ""
+	}
 	// Define search passes. First pass for "Primary", second for any.
 	for _, primaryOnly := range []bool{true, false} {
 		// Inside each pass, prioritize v4.0 over v3.1 over v3.0.
 		for _, metric := range metricsData.CVSSMetricV40 {
 			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V4"
+				return metric.CVSSData.VectorString, "CVSS_V4", metric.Source
 			}
 		}
 		for _, metric := range metricsData.CVSSMetricV31 {
 			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V3"
+				return metric.CVSSData.VectorString, "CVSS_V3", metric.Source
 			}
 		}
 		for _, metric := range metricsData.CVSSMetricV30 {
 			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V3"
+				return metric.CVSSData.VectorString, "CVSS_V3", metric.Source
 			}
 		}
 	}
 
-	return "", ""
+	return "", "", ""
 }
 
-// AddSeverity adds CVSS severity information to the OSV vulnerability object.
-// It uses the highest available CVSS score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics) {
-	bestVectorString, severityType := getBestSeverity(metricsData)
+// AddSingleSeverity adds CVSS severity information to the OSV vulnerability object.
+// It uses the getBestSeverity function to determine the best severity.
+func (v *Vulnerability) AddSingleSeverity(metricsData *models.CVEItemMetrics) {
+	bestVectorString, severityType, source := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {
 		return
 	}
 
 	v.Severity = append(v.Severity, &osvschema.Severity{
-		Type:  osvschema.Severity_Type(osvschema.Severity_Type_value[severityType]),
-		Score: bestVectorString,
+		Type:   osvschema.Severity_Type(osvschema.Severity_Type_value[severityType]),
+		Score:  bestVectorString,
+		Source: source,
 	})
+}
+
+// AddAllSeverities adds all the CVSS severity information from NVD to the OSV vulnerability object.
+func (v *Vulnerability) AddAllSeverities(metricsData *models.CVEItemMetrics) {
+	if metricsData == nil {
+		return
+	}
+
+	addSeverity := func(severityType osvschema.Severity_Type, vectorString, source string) {
+		if vectorString == "" {
+			return
+		}
+		v.Severity = append(v.Severity, &osvschema.Severity{
+			Type:   severityType,
+			Score:  vectorString,
+			Source: source,
+		})
+	}
+
+	for _, metric := range metricsData.CVSSMetricV40 {
+		addSeverity(osvschema.Severity_CVSS_V4, metric.CVSSData.VectorString, metric.Source)
+	}
+	for _, metric := range metricsData.CVSSMetricV31 {
+		addSeverity(osvschema.Severity_CVSS_V3, metric.CVSSData.VectorString, metric.Source)
+	}
+	for _, metric := range metricsData.CVSSMetricV30 {
+		addSeverity(osvschema.Severity_CVSS_V3, metric.CVSSData.VectorString, metric.Source)
+	}
 }
 
 // ToJSON serializes the Vulnerability to JSON.
@@ -717,7 +749,7 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 			References: ClassifyReferences(cve.References),
 		},
 	}
-	v.AddSeverity(cve.Metrics)
+	v.AddAllSeverities(cve.Metrics)
 
 	return v
 }

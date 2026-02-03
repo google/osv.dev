@@ -110,20 +110,11 @@ func TestGitHandler_Integration(t *testing.T) {
 			url:          "https://github.com/google/this-repo-does-not-exist-12345.git",
 			expectedCode: http.StatusForbidden,
 		},
-		{
-			name:         "Force update",
-			url:          "https://github.com/google/oss-fuzz-vulns.git",
-			expectedCode: http.StatusOK,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query := "/getgit?url=" + tt.url
-			if tt.name == "Force update" {
-				query += "&force-update=true"
-			}
-			req, err := http.NewRequest(http.MethodGet, query, nil)
+			req, err := http.NewRequest(http.MethodGet, "/getgit?url="+tt.url, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

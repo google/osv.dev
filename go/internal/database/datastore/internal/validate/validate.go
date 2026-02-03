@@ -193,7 +193,7 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 		RepoURL:                 "https://example.com/go-source",
 		RepoUsername:            "user",
 		RepoBranch:              "master",
-		RestApiUrl:              "http://localhost:8080/",
+		RESTAPIURL:              "http://localhost:8080/",
 		Bucket:                  "osv-test-bucket",
 		DirectoryPath:           "osv",
 		LastSyncedHash:          "zyxwvutsrqponmlkjihgfedcba",

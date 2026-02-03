@@ -83,7 +83,7 @@ type SourceRepository struct {
 	RepoURL                 string                      `datastore:"repo_url"`
 	RepoUsername            string                      `datastore:"repo_username"`
 	RepoBranch              string                      `datastore:"repo_branch"`
-	RestApiUrl              string                      `datastore:"rest_api_url"`
+	RESTAPIURL              string                      `datastore:"rest_api_url"`
 	Bucket                  string                      `datastore:"bucket"`
 	DirectoryPath           string                      `datastore:"directory_path"`
 	LastSyncedHash          string                      `datastore:"last_synced_hash"`

@@ -1,4 +1,4 @@
-// package models contains the domain types for the OSV database.
+// Package models contains the domain types for the OSV database.
 package models
 
 import (

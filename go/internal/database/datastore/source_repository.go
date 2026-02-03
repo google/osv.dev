@@ -47,12 +47,13 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 		}
 	case models.SourceRepositoryTypeREST:
 		msr.REST = &models.SourceRepoREST{
-			URL:                     sr.RestApiUrl,
+			URL:                     sr.RESTAPIURL,
 			LastUpdated:             sr.LastUpdateDate,
 			IgnoreLastImportTime:    sr.IgnoreLastImportTime,
 			IgnoreDeletionThreshold: sr.IgnoreDeletionThreshold,
 		}
 	}
+
 	return msr
 }
 
@@ -73,6 +74,7 @@ func (s *SourceRepositoryStore) Get(ctx context.Context, name string) (*models.S
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source repository: %w", err)
 	}
+
 	return sr.toModel(), nil
 }
 
@@ -85,6 +87,7 @@ func (s *SourceRepositoryStore) Update(ctx context.Context, name string, repo *m
 	if _, err := s.client.Put(ctx, key, sr); err != nil {
 		return fmt.Errorf("failed to put source repository: %w", err)
 	}
+
 	return nil
 }
 
@@ -121,11 +124,12 @@ func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository 
 		sr.IgnoreDeletionThreshold = r.Bucket.IgnoreDeletionThreshold
 	}
 	if r.REST != nil {
-		sr.RestApiUrl = r.REST.URL
+		sr.RESTAPIURL = r.REST.URL
 		sr.LastUpdateDate = r.REST.LastUpdated
 		sr.IgnoreLastImportTime = r.REST.IgnoreLastImportTime
 		sr.IgnoreDeletionThreshold = r.REST.IgnoreDeletionThreshold
 	}
+
 	return sr
 }
 

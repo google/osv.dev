@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -113,7 +114,7 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 			want: &SourceRepository{
 				Name:                    "test-rest-repo",
 				Type:                    models.SourceRepositoryTypeREST,
-				RestApiUrl:              "http://rest.url",
+				RESTAPIURL:              "http://rest.url",
 				LastUpdateDate:          &testTime2,
 				IgnoreLastImportTime:    true,
 				IgnoreDeletionThreshold: true,
@@ -216,9 +217,10 @@ func TestSourceRepositoryStore_Get(t *testing.T) {
 				return
 			}
 			if tt.wantErr {
-				if err != models.ErrNotFound {
+				if !errors.Is(err, models.ErrNotFound) {
 					t.Errorf("Get() error = %v, want models.ErrNotFound", err)
 				}
+
 				return
 			}
 
@@ -281,7 +283,7 @@ func TestSourceRepositoryStore_All(t *testing.T) {
 		}
 	}
 
-	var got []*models.SourceRepository
+	got := make([]*models.SourceRepository, 0, len(repos))
 	for r, err := range store.All(ctx) {
 		if err != nil {
 			t.Fatalf("All() iterator error: %v", err)

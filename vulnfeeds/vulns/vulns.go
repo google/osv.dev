@@ -113,7 +113,7 @@ func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 		commits := repoToCommits[repo]
 		gitRange := osvschema.Range{
 			Type: osvschema.Range_GIT,
-			Repo: repo, 
+			Repo: repo,
 		}
 		// We're not always able to determine when a vulnerability is introduced, and may need to default to the dawn of time.
 		addedIntroduced := false

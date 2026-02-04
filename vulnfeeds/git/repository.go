@@ -135,6 +135,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 				return retry.RetryableError(err)
 			}
 			logger.Warn("Error: "+err.Error(), slog.Any("repo", repo))
+			
 			return err
 		}
 

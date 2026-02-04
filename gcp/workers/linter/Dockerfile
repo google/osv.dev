@@ -14,7 +14,7 @@
 
 
 # Stage 1: Build the Go linter binary
-FROM golang:1.25.6-alpine@sha256:d9b2e14101f27ec8d09674cd01186798d227bb0daec90e032aeb1cd22ac0f029 AS go_builder
+FROM golang:1.25.7-alpine@sha256:81d49e1de26fa223b9ae0b4d5a4065ff8176a7d80aa5ef0bd9f2eee430afe4d7 AS go_builder
 
 RUN apk add --no-cache git
 WORKDIR /src

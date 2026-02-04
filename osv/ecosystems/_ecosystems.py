@@ -42,7 +42,6 @@ _ecosystems = {
     'Bioconductor': Bioconductor,
     'Bitnami': SemverEcosystem,
     'Chainguard': APK,
-    'CleanStart': APK,
     'CRAN': CRAN,
     'crates.io': SemverEcosystem,
     'Debian': Debian,

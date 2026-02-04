@@ -252,13 +252,14 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	key := url
-	if forceUpdate {
-		key += "?force-update=true"
-	}
-
+	// Keep the key as the url regardless of forceUpdate.
+	// Occasionally this could be problematic if an existing unforce updated
+	// query is already inplace, no force update will happen.
+	// That is highly unlikely in our use case, as importer only queries
+	// the repo once, and always with force update.
+	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
-	fileData, err, _ := g.Do(key, func() (any, error) {
+	fileData, err, _ := g.Do(url, func() (any, error) {
 		return fetchBlob(r.Context(), url, forceUpdate)
 	})
 

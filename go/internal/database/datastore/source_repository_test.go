@@ -81,7 +81,7 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 				Name: "test-bucket-repo",
 				Type: models.SourceRepositoryTypeBucket,
 				Bucket: &models.SourceRepoBucket{
-					Bucket:                  "test-bucket",
+					Name:                    "test-bucket",
 					Path:                    "test/path",
 					LastUpdated:             &testTime,
 					IgnoreLastImportTime:    true,
@@ -235,7 +235,7 @@ func TestSourceRepositoryStore_Get(t *testing.T) {
 		Name: "test-bucket-repo",
 		Type: models.SourceRepositoryTypeBucket,
 		Bucket: &models.SourceRepoBucket{
-			Bucket:      "test-bucket",
+			Name:        "test-bucket",
 			LastUpdated: &testTime,
 		},
 		GitAnalysis: &models.GitAnalysisConfig{},
@@ -271,7 +271,7 @@ func TestSourceRepositoryStore_All(t *testing.T) {
 			Name: "repo-2",
 			Type: models.SourceRepositoryTypeBucket,
 			Bucket: &models.SourceRepoBucket{
-				Bucket: "bucket-2",
+				Name: "bucket-2",
 			},
 			GitAnalysis: &models.GitAnalysisConfig{},
 		},

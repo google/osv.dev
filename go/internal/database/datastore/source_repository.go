@@ -39,7 +39,7 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 		}
 	case models.SourceRepositoryTypeBucket:
 		msr.Bucket = &models.SourceRepoBucket{
-			Bucket:                  sr.Bucket,
+			Name:                    sr.Bucket,
 			Path:                    sr.DirectoryPath,
 			LastUpdated:             sr.LastUpdateDate,
 			IgnoreLastImportTime:    sr.IgnoreLastImportTime,
@@ -117,7 +117,7 @@ func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository 
 		sr.LastSyncedHash = r.Git.LastSyncedCommit
 	}
 	if r.Bucket != nil {
-		sr.Bucket = r.Bucket.Bucket
+		sr.Bucket = r.Bucket.Name
 		sr.DirectoryPath = r.Bucket.Path
 		sr.LastUpdateDate = r.Bucket.LastUpdated
 		sr.IgnoreLastImportTime = r.Bucket.IgnoreLastImportTime

@@ -82,8 +82,8 @@ type SourceRepoGit struct {
 }
 
 type SourceRepoBucket struct {
-	// Bucket name
-	Bucket string
+	// Name of bucket
+	Name string
 	// Vulnerability data not under this path is ignored by the importer.
 	Path string
 	// Last date recurring updates were requested.

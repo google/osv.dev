@@ -54,8 +54,6 @@ func (s *SourceRepositoryStore) Update(ctx context.Context, name string, repo *m
 	return nil
 }
 
-
-
 func (s *SourceRepositoryStore) All(ctx context.Context) iter.Seq2[*models.SourceRepository, error] {
 	return func(yield func(*models.SourceRepository, error) bool) {
 		q := datastore.NewQuery("SourceRepository")

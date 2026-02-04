@@ -1560,6 +1560,15 @@ class UpstreamGroup(ndb.Model):
   last_modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
 
 
+class RelatedGroup(ndb.Model):
+  """Related group for storing related ids of a Vulnerability"""
+  # Key is Vuln ID
+  # List of related ids
+  related_ids: list[str] = ndb.StringProperty(repeated=True)
+  # Date when group was last modified
+  modified: datetime.datetime = ndb.DateTimeProperty(tzinfo=datetime.UTC)
+
+
 # --- ImportFinding ---
 # TODO(gongh@): redesign this to make it easy to scale.
 class ImportFindings(enum.IntEnum):

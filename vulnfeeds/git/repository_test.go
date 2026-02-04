@@ -164,6 +164,13 @@ func TestRepoTags(t *testing.T) {
 			},
 			expectedOk: true,
 		},
+		{
+			description:    "Invalid repository with caching",
+			inputRepoURL:   "https://github.com/andrewpollock/mybogusrepo",
+			cache:          cache,
+			expectedResult: Tags(nil),
+			expectedOk:     false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -175,7 +182,7 @@ func TestRepoTags(t *testing.T) {
 			var cacheBefore, cacheAfter int
 			if tc.cache != nil {
 				tc.cache.RLock()
-				cacheBefore = len(tc.cache.m)
+				cacheBefore = len(tc.cache.m) + len(tc.cache.invalid)
 				tc.cache.RUnlock()
 			}
 			got, err := RepoTags(tc.inputRepoURL, tc.cache)
@@ -187,7 +194,7 @@ func TestRepoTags(t *testing.T) {
 			}
 			if tc.cache != nil {
 				tc.cache.RLock()
-				cacheAfter = len(tc.cache.m)
+				cacheAfter = len(tc.cache.m) + len(tc.cache.invalid)
 				tc.cache.RUnlock()
 			}
 			if tc.cache != nil && (cacheAfter <= cacheBefore) {

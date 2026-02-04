@@ -64,11 +64,12 @@ type RepoTagsMap struct {
 	NormalizedTag map[string]NormalizedTag // The key is the normalized (as by NormalizeRepoTags) original tag.
 }
 
-// RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
+// RepoTagsCache acts as a cache for RepoTags results, keyed on the repo's URL.
 type RepoTagsCache struct {
 	sync.RWMutex
 
-	m map[string]RepoTagsMap
+	m       map[string]RepoTagsMap
+	invalid map[string]bool
 }
 
 func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
@@ -89,6 +90,25 @@ func (c *RepoTagsCache) Set(repo string, tags RepoTagsMap) {
 		c.m = make(map[string]RepoTagsMap)
 	}
 	c.m[repo] = tags
+}
+
+func (c *RepoTagsCache) SetInvalid(repo string) {
+	c.Lock()
+	defer c.Unlock()
+	if c.invalid == nil {
+		c.invalid = make(map[string]bool)
+	}
+	c.invalid[repo] = true
+}
+
+func (c *RepoTagsCache) IsInvalid(repo string) bool {
+	c.RLock()
+	defer c.RUnlock()
+	if c.invalid == nil {
+		return false
+	}
+
+	return c.invalid[repo]
 }
 
 // RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.
@@ -140,14 +160,21 @@ func RepoName(repoURL string) (name string, e error) {
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error) {
 	if repoTagsCache != nil {
-		tags, ok := repoTagsCache.Get(repoURL)
+		tagsRepoMap, ok := repoTagsCache.Get(repoURL)
 		if ok {
-			return slices.Collect(maps.Values(tags.Tag)), nil
+			return slices.Collect(maps.Values(tagsRepoMap.Tag)), nil
+		}
+		if repoTagsCache.IsInvalid(repoURL) {
+			return tags, errors.New("repo previously found to be invalid")
 		}
 	}
 	// Cache miss.
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil {
+		if repoTagsCache != nil {
+			repoTagsCache.SetInvalid(repoURL)
+		}
+
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)

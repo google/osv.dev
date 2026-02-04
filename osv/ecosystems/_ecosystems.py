@@ -24,6 +24,7 @@ from .haskell import Hackage, GHC
 from .hex import Hex
 from .maven import Maven
 from .nuget import NuGet
+from .opam import Opam
 from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
@@ -41,9 +42,11 @@ _ecosystems = {
     'Bioconductor': Bioconductor,
     'Bitnami': SemverEcosystem,
     'Chainguard': APK,
+    'CleanStart': APK,
     'CRAN': CRAN,
     'crates.io': SemverEcosystem,
     'Debian': Debian,
+    'Docker Hardened Images': SemverEcosystem,
     'Echo': DPKG,
     'GHC': GHC,
     'Go': SemverEcosystem,
@@ -55,6 +58,7 @@ _ecosystems = {
     'MinimOS': APK,
     'npm': SemverEcosystem,
     'NuGet': NuGet,
+    'opam': Opam,
     'openEuler': RPM,
     'openSUSE': RPM,
     'Packagist': Packagist,

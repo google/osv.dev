@@ -143,6 +143,7 @@ class CoarseVersionMonotonicityTest(unittest.TestCase):
     check_coarse_version_monotonic(self, nuget.NuGet(), v1_str, v2_str)
 
   @given(packagist_version_strategy, packagist_version_strategy)
+  @example('0__1', '00')
   def test_packagist(self, v1_str, v2_str):
     check_coarse_version_monotonic(self, packagist.Packagist(), v1_str, v2_str)
 

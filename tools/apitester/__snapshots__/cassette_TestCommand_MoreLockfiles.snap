@@ -58,7 +58,7 @@
       "vulns": [
         {
           "id": "GHSA-9m3q-rhmv-5q44",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -67,19 +67,19 @@
       "vulns": [
         {
           "id": "GHSA-353f-x4gh-cqq8",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-5w6v-399v-w3cc",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-mrxw-mxhj-p664",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-vvfq-8hwr-qm4m",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -135,6 +135,10 @@
     {},
     {
       "vulns": [
+        {
+          "id": "GHSA-7gcm-g887-7qv7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-8qvm-5x2c-j2w7",
           "modified": "<RFC3339 date with the year 2026>"

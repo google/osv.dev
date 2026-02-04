@@ -123,6 +123,14 @@ indexes:
     properties:
       - name: name
       - name: vuln_id
+  
+  - kind: AffectedVersions
+    properties:
+      - name: ecosystem
+      - name: name
+      - name: vuln_id
+      - name: coarse_min
+      - name: coarse_max
 
   # Indexes for website /list search
   - kind: ListedVulnerability

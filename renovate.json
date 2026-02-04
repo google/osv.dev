@@ -31,7 +31,12 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "enabled": false
+      "enabled": true
+    },
+    {
+      "matchPackageNames": ["redis"],
+      "matchCategories": ["python"],
+      "allowedVersions": "< 7.0.0"
     },
     {
       "matchDepNames": [
@@ -43,19 +48,7 @@
       "matchFileNames": [
         "gcp/website/**"
       ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "website-backend"
-    },
-    {
-      "matchFileNames": [
-        "gcp/website/**"
-      ],
-      "matchCategories": [
-        "js"
-      ],
-      "groupName": "website-frontend"
+      "groupName": "website"
     },
     {
       "matchFileNames": [
@@ -68,39 +61,33 @@
     },
     {
       "matchFileNames": [
-        "gcp/api/**"
-      ],
-      "groupName": "api"
-    },
-    {
-      "matchFileNames": [
-        "gcp/functions/**"
-      ],
-      "groupName": "functions"
-    },
-    {
-      "matchFileNames": [
+        "gcp/api/**",
+        "gcp/functions/**",
         "gcp/workers/**"
       ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "workers"
+      "matchCategories": ["python"],
+      "groupName": "gcp-services-python"
     },
     {
       "matchFileNames": [
         "gcp/indexer/**"
       ],
-      "matchCategories": [
-        "golang"
-      ],
-      "groupName": "indexer"
+      "matchCategories": ["golang"],
+      "groupName": "gcp-indexer-go"
     },
     {
       "matchFileNames": [
         "vulnfeeds/**"
       ],
-      "groupName": "vulnfeeds"
+      "matchCategories": ["python"],
+      "groupName": "vulnfeeds-python"
+    },
+    {
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
+      "matchCategories": ["golang"],
+      "groupName": "vulnfeeds-go"
     },
     {
       "matchFileNames": [
@@ -140,6 +127,40 @@
         "python"
       ],
       "enabled": false
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchManagers": [
+        "git-submodules"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchDatasources": [
+        "git-refs"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchFileNames": [
+        "bindings/**",
+        "go/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
+      "groupName": "go-libraries"
     },
     {
       "matchDepTypes": ["uses-with"],

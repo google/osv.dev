@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -55,9 +57,9 @@ func TestAddAffected(t *testing.T) {
 			},
 		},
 	}
-	metrics := &ConversionMetrics{}
+	metrics := &models.ConversionMetrics{}
 
-	addAffected(v, aff, metrics)
+	conversion.AddAffected(v, aff, metrics)
 
 	expectedAffected := []*osvschema.Affected{
 		{

@@ -11,6 +11,76 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+type SourceRepositoryStore struct {
+	client *datastore.Client
+}
+
+var _ models.SourceRepositoryStore = (*SourceRepositoryStore)(nil)
+
+func NewSourceRepositoryStore(client *datastore.Client) *SourceRepositoryStore {
+	return &SourceRepositoryStore{client: client}
+}
+
+func (s *SourceRepositoryStore) Get(ctx context.Context, name string) (*models.SourceRepository, error) {
+	if name == "oss-fuzz" {
+		// oss-fuzz in Datastore is handled specially - do not touch.
+		return nil, models.ErrNotFound
+	}
+	var sr SourceRepository
+	err := s.client.Get(ctx, datastore.NameKey("SourceRepository", name, nil), &sr)
+	if errors.Is(err, datastore.ErrNoSuchEntity) {
+		return nil, models.ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get source repository: %w", err)
+	}
+
+	return sr.toModel(), nil
+}
+
+func (s *SourceRepositoryStore) Update(ctx context.Context, name string, repo *models.SourceRepository) error {
+	if name != repo.Name {
+		return fmt.Errorf("name mismatch: %q != %q", name, repo.Name)
+	}
+	if name == "oss-fuzz" {
+		return errors.New("oss-fuzz repository should not be modified in go")
+	}
+	sr := newSourceRepositoryFromModel(repo)
+	key := datastore.NameKey("SourceRepository", name, nil)
+	if _, err := s.client.Put(ctx, key, sr); err != nil {
+		return fmt.Errorf("failed to put source repository: %w", err)
+	}
+
+	return nil
+}
+
+
+
+func (s *SourceRepositoryStore) All(ctx context.Context) iter.Seq2[*models.SourceRepository, error] {
+	return func(yield func(*models.SourceRepository, error) bool) {
+		q := datastore.NewQuery("SourceRepository")
+		it := s.client.Run(ctx, q)
+		for {
+			var sr SourceRepository
+			_, err := it.Next(&sr)
+			if errors.Is(err, iterator.Done) {
+				return
+			}
+			if err != nil {
+				yield(nil, fmt.Errorf("failed to get source repository: %w", err))
+				return
+			}
+			if sr.Name == "oss-fuzz" {
+				// oss-fuzz in Datastore is handled specially - do not touch.
+				continue
+			}
+			if !yield(sr.toModel(), nil) {
+				return
+			}
+		}
+	}
+}
+
 func (sr *SourceRepository) toModel() *models.SourceRepository {
 	msr := &models.SourceRepository{
 		Name:           sr.Name,
@@ -57,40 +127,6 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 	return msr
 }
 
-type SourceRepositoryStore struct {
-	client *datastore.Client
-}
-
-func NewSourceRepositoryStore(client *datastore.Client) *SourceRepositoryStore {
-	return &SourceRepositoryStore{client: client}
-}
-
-func (s *SourceRepositoryStore) Get(ctx context.Context, name string) (*models.SourceRepository, error) {
-	var sr SourceRepository
-	err := s.client.Get(ctx, datastore.NameKey("SourceRepository", name, nil), &sr)
-	if errors.Is(err, datastore.ErrNoSuchEntity) {
-		return nil, models.ErrNotFound
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to get source repository: %w", err)
-	}
-
-	return sr.toModel(), nil
-}
-
-func (s *SourceRepositoryStore) Update(ctx context.Context, name string, repo *models.SourceRepository) error {
-	if name != repo.Name {
-		return fmt.Errorf("name mismatch: %q != %q", name, repo.Name)
-	}
-	sr := newSourceRepositoryFromModel(repo)
-	key := datastore.NameKey("SourceRepository", name, nil)
-	if _, err := s.client.Put(ctx, key, sr); err != nil {
-		return fmt.Errorf("failed to put source repository: %w", err)
-	}
-
-	return nil
-}
-
 func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository {
 	sr := &SourceRepository{
 		Name:             r.Name,
@@ -131,25 +167,4 @@ func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository 
 	}
 
 	return sr
-}
-
-func (s *SourceRepositoryStore) All(ctx context.Context) iter.Seq2[*models.SourceRepository, error] {
-	return func(yield func(*models.SourceRepository, error) bool) {
-		q := datastore.NewQuery("SourceRepository")
-		it := s.client.Run(ctx, q)
-		for {
-			var sr SourceRepository
-			_, err := it.Next(&sr)
-			if errors.Is(err, iterator.Done) {
-				return
-			}
-			if err != nil {
-				yield(nil, fmt.Errorf("failed to get source repository: %w", err))
-				return
-			}
-			if !yield(sr.toModel(), nil) {
-				return
-			}
-		}
-	}
 }

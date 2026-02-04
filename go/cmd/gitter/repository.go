@@ -125,11 +125,15 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 	}()
 
+	cummulativeTimer := time.Duration(0)
+
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Example of a line of commit info
 		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494\x09de84b0dd689622922a54d1bc6cc45c384c7ff8bd\x09HEAD -> master, tag: v2025.01.01
+		start := time.Now()
+
 		commitInfo := strings.Split(line, "\x09")
 
 		childHash := SHA1{}
@@ -198,9 +202,11 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		for _, tag := range tags {
 			r.tagToCommit[tag] = childHash
 		}
+
+		cummulativeTimer += time.Since(start)
 	}
 
-	logger.Info("Commit graph completed", slog.Int("commits", len(r.commitDetails)), slog.Int("nodes", len(r.commitGraph)), slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
+	logger.Info("Commit graph completed", slog.Int("commits", len(r.commitDetails)), slog.Int("nodes", len(r.commitGraph)), slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)), slog.Duration("graph", cummulativeTimer))
 
 	return newCommits, nil
 }

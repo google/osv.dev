@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +21,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"runtime/pprof"
 
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/singleflight"
@@ -39,7 +40,8 @@ const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
 
 var (
-	g               singleflight.Group
+	gFetch          singleflight.Group
+	gArchive        singleflight.Group
 	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
@@ -131,13 +133,12 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
-func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
+func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	logger.Info("Starting fetch repo", slog.String("url", url))
 	start := time.Now()
 
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
-	archivePath := repoPath + ".zst"
 
 	lastFetchMu.Lock()
 	accessTime, ok := lastFetch[url]
@@ -150,7 +151,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			// Clone
 			_, err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
-				return nil, fmt.Errorf("git clone failed: %w", err)
+				return fmt.Errorf("git clone failed: %w", err)
 			}
 		} else {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
@@ -158,14 +159,43 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
 			_, err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
-				return nil, fmt.Errorf("git fetch failed: %w", err)
+				return fmt.Errorf("git fetch failed: %w", err)
 			}
 			_, err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
 			if err != nil {
-				return nil, fmt.Errorf("git reset failed: %w", err)
+				return fmt.Errorf("git reset failed: %w", err)
 			}
 		}
 
+		updateLastFetch(url)
+	}
+
+	// Double check if the git directory exist
+	_, err := os.Stat(path.Join(repoPath, ".git"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			deleteLastFetch(url)
+		}
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
+	return nil
+}
+
+func archiveRepo(ctx context.Context, url string) ([]byte, error) {
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+	archivePath := repoPath + ".zst"
+
+	lastFetchMu.Lock()
+	accessTime := lastFetch[url]
+	lastFetchMu.Unlock()
+
+	// Check if archive needs update
+	// We update if archive does not exist OR if it is older than the last fetch
+	stats, err := os.Stat(archivePath)
+	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
 		logger.Info("Archiving git blob", slog.String("url", url))
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
@@ -174,8 +204,6 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
-
-		updateLastFetch(url)
 	}
 
 	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
@@ -186,22 +214,33 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 
 	fileData, err := os.ReadFile(archivePath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			deleteLastFetch(url)
-		}
-
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
 	return fileData, nil
 }
 
 func main() {
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
+
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			logger.Error("could not create CPU profile", slog.Any("error", err))
+			os.Exit(1)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			logger.Error("could not start CPU profile", slog.Any("error", err))
+			os.Exit(1)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	persistencePath = path.Join(*workDir, persistenceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
@@ -293,8 +332,15 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
-	fileData, err, _ := g.Do(url, func() (any, error) {
-		return fetchBlob(r.Context(), url, forceUpdate)
+	fileData, err, _ := gArchive.Do(url, func() (any, error) {
+		// Fetch repo first
+		_, err, _ := gFetch.Do(url, func() (any, error) {
+			return nil, fetchRepo(r.Context(), url, forceUpdate)
+		})
+		if err != nil {
+			return nil, err
+		}
+		return archiveRepo(r.Context(), url)
 	})
 
 	if err != nil {
@@ -337,9 +383,8 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Received request: /cache", slog.String("url", url))
 
 	// Fetch repo if it's not fresh
-	// We use the same singleflight group as the main handler to avoid concurrent fetches
-	_, err, _ = g.Do(url, func() (any, error) {
-		return fetchBlob(r.Context(), url)
+	_, err, _ = gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url)
 	})
 	if err != nil {
 		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
@@ -405,9 +450,8 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Received request", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit))
 
 	// Fetch repo if it's not fresh
-	// We use the same singleflight group as the main handler to avoid concurrent fetches
-	_, err, _ = g.Do(url, func() (any, error) {
-		return fetchBlob(r.Context(), url)
+	_, err, _ = gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url)
 	})
 	if err != nil {
 		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))

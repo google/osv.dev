@@ -1,1 +1,1 @@
-`osv-scanner` has been moved to it's own repository at: https://github.com/google/osv-scanner
+The osv-scanner tool has migrated to a dedicated repository at https://github.com/google/osv-scanner to facilitate independent versioning and development [1.2]. Future development, issue tracking, and documentation will occur in the new location [1]. The migration decouples the CLI tool from the main osv.dev repository [2].

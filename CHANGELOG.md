@@ -1,3 +1,5 @@
-## Upcoming
+## [Unreleased]
+
 ### Changed
-- Moved Debian converted CVE tracking records to their own record at the prefix "DEBIAN-"
+
+- Refactored Debian-converted CVE tracking records to a dedicated record structure using the `DEBIAN-` prefix for improved data isolation.

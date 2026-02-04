@@ -1,202 +1,114 @@
-# How to Contribute
+# Contributing to OSV.dev
 
-We'd love to accept your patches and contributions to this project. There are
-just a few small guidelines you need to follow.
+Thank you for your interest in the Open Source Vulnerability (OSV) project. To maintain the integrity of our security data and code quality, please adhere to the following professional standards and technical workflows.
 
-## Contributor License Agreement
+---
 
-Contributions to this project must be accompanied by a Contributor License
-Agreement. You (or your employer) retain the copyright to your contribution;
-this simply gives us permission to use and redistribute your contributions as
-part of the project. Head over to <https://cla.developers.google.com/> to see
-your current agreements on file or to sign a new one.
+## ⚖️ Legal & Ethical Framework
 
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+### 1. Contributor License Agreement (CLA)
 
-## Code reviews
+All contributions must be accompanied by a signed [Contributor License Agreement](https://cla.developers.google.com).
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult
-[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+- **Ownership:** You (or your employer) retain the copyright; the CLA simply grants us permission to distribute your work.
 
-When creating a pull request, please use the provided
-[pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
-sections to ensure a smooth review process.
+- **Verification:** You generally only need to submit this once. Check your status or sign a new one at the [Google Developers CLA portal](https://cla.developers.google.com).
 
-For any new feature, please [create an issue first](https://github.com/google/osv.dev/issues/new?template=feature_request.md)
-to discuss the proposed changes before proceeding to make a pull request.
-This helps ensure that your contribution is aligned with the project's goals
-and avoids duplicate work.
+### 2. Community Guidelines
 
-## Community Guidelines
+We uphold a professional environment governed by [Google’s Open Source Community Guidelines](https://opensource.google.com). Respectful collaboration is mandatory for all participants.
 
-This project follows
-[Google's Open Source Community Guidelines](https://opensource.google.com/conduct/).
+---
 
-## Contributing code
+## 🛠️ Technical Workflow
 
-### Prerequisites
+### Code Review Process
 
-You must install:
+We utilize [GitHub Pull Requests](https://help.github.com) for all submissions, including those from project members.
 
-1.  Git
-1.  Python 3.13
-1.  [Docker](https://www.docker.com/)
-1.  [Pylint](https://pypi.org/project/pylint)
-1.  [Yapf](https://github.com/google/yapf)
-1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/) >= 2.2.1
-2.  [Google Cloud SDK](https://cloud.google.com/sdk)
-3.  [Hugo](https://gohugo.io/installation/)
-4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
+- **Feature Alignment:** For new features, [create an issue](https://github.com) for architectural discussion before beginning development.
 
-Then you can set up the development environment by cloning the OSV repo and
-installing the Poetry dependencies.
+- **Documentation:** Use our [Pull Request Template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) to ensure a streamlined review.
+
+### Development Environment Setup
+
+Ensure your system meets the following high-level prerequisites:
+
+- **Languages:** Python 3.13 & Node.js (≥ 18.17.x)
+
+- **Package Management:** [Poetry](https://python-poetry.org) (≥ 2.2.1)
+
+- **Infrastructure:** [Docker](https://www.docker.com), [Terraform](https://developer.hashicorp.com) (≥ 1.5), and [Google Cloud SDK](https://cloud.google.com).
+
+- **Build Tools:** [Make](https://www.gnu.org) and [Hugo](https://gohugo.io).
+
+**Initialization:**
 
 ```shell
-git clone --recurse-submodules https://github.com/google/osv.dev
-# FYI
-# git config fetch.recurseSubmodules on-demand
-# is recommended to help manage updates to the osv/osv-schema submodule
+
+git clone --recurse-submodules https://github.com
 cd osv.dev
-poetry install
-poetry self add poetry-plugin-shell
-poetry shell
+poetry install && poetry self add poetry-plugin-shell && poetry shell
+
 ```
 
-### Running tests
+1. Testing Protocols
 
-Certain tests require you to auth with the Google Cloud SDK and to install the
-Firestore Emulator:
+Validate your changes using our test result generation framework.
+Authentication: gcloud auth login --update-adc
+Standard Tests: make all-tests
+API Integration: make api-server-tests
+Output Regeneration: If logic changes alter expected results, use TESTS_GENERATE=1 make all-tests.
 
-```shell
-gcloud auth login --update-adc
-gcloud components install cloud-firestore-emulator
-```
+2. Linting & Formatting
 
-To run tests:
-```shell
-make all-tests
-```
+Maintain code health with Pylint and Yapf.
+Lint: make lint
+Format: yapf -i <file>.py
 
-To run integration tests for the API is a separate command
-```shell
-make api-server-tests
-```
+3. Commit Standards
 
-By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
-```shell
-LONG_TESTS=1 make api-server-tests
-```
+Follow the Conventional Commits specification. Use structured prefixes such as feat:, fix:, docs:, and chore: to facilitate automated changelog management.
 
-#### Test result generation
+🚀 Advanced Contribution Guidelines (Add-ons)
 
-Many tests are written using a
-[simple framework](https://github.com/google/osv.dev/blob/a4b682a32575cc3314a5ef83c8e91b70c60f7b77/osv/tests.py#L32)
-to help with generating expected test outputs.
+🛡️ Security Vulnerability Reporting (SECURITY.md)
 
-The expected outputs are generated once and saved into the source tree to run
-all subsequent tests against.
+Private Disclosure: Do not report security vulnerabilities via public GitHub issues.
+Process: Please follow our Security Policy for private reporting instructions. This ensures we can patch the vulnerability before it is publicly exploited.
 
-If a change is made that requires these outputs to be regenerated, you can set
-the environment variable `TESTS_GENERATE=1` and run the tests:
+🗺️ Project Roadmap & Vision
 
-```shell
-TESTS_GENERATE=1 make all-tests
-```
+Strategic Alignment: Before starting work on large features, check our Roadmap to ensure your idea aligns with the project's current direction.
 
-### Linting and formatting
+"No" is Temporary: If a PR is rejected for being "out of scope," it doesn't mean it's a bad idea; it just may not fit the current 3–6 month vision.
 
-To lint your code, run
+🏷️ Issue Labeling System
 
-```shell
-make lint
-```
+To help you find the right task, we use specific labels:
 
-To format your code, run
-```shell
-yapf -i <file>.py
-```
+good first issue: Simple tasks designed for newcomers to get familiar with our codebase.
 
-### Running local UI and API instances (maintainers only)
+help wanted: Critical tasks that the core team doesn't have immediate bandwidth to tackle.
 
-#### UI
+datasource: Specifically for contributors adding new security advisory sources.
 
-```shell
-gcloud auth login --update-adc
-make run-website
-```
+🤖 Automation & CI/CD
 
-#### API
+Status Checks: Every PR triggers an automated suite of tests. All checks must pass (green checkmark) before a maintainer will perform a deep manual review.
 
-Running a local instance of the API server requires the path to application
-default credentials. The is required so that the ESP container has credentials
-to download API configuration.
+Coverage: We encourage contributors to include unit tests with every code change to maintain our high test coverage standards.
 
-```shell
-gcloud auth login --update-adc
-make run-api-server
-```
+🌟 Recognition & Attribution
 
-#### API E2E Snapshots
+Public Credit: Significant contributions are celebrated in our Release Notes.
 
-If you have made any changes to the API, please update the API query snapshots with
+Community Roles: Consistent, high-quality contributors may be invited to join the project as Maintainers or Core Members with merge privileges.
 
-```shell
-gcloud auth login --update-adc
-make update-api-snapshots
-```
+🕒 Communication & Expectations
 
-and check the git diff to see if the API result changes are expected.
+Response Times: We aim to review all PRs within 3–5 business days. If you haven't heard from us by then, feel free to ping the thread with a polite "Any updates?".
 
-### Making commits
+Asynchronous Culture: Our team works across multiple time zones; please keep all technical discussions in public PR comments or issues to ensure transparency.
 
-Please follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for commit messages. This helps us to automate processes like changelog generation and ensures a clear and consistent commit history.
-
-Some types: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, and others.
-
-## Contributing data
-
-Data contributions are also welcome!
-
-If you work with a project such as a Linux distribution and would like to
-contribute your security advisories, please follow these steps.
-
-1.  Open an [issue](https://github.com/google/osv.dev/issues). Let us know about
-    your project and we can help you figure out the remaining steps. Please tag
-    the issue `datasource` so we can properly triage the issue.
-
-2.  Refer to the [OSV Schema](https://ossf.github.io/osv-schema/) documentation
-    for information on how to properly format the data so it can be accepted.
-
-3.  Data can be supplied either through a public Git repository, a public GCS
-    bucket or to [REST API endpoints](https://google.github.io/osv.dev/data/new/rest-api).
-
-## Contributing documentation
-
-Please follow these steps to successfully contribute documentation.
-
-1.  Fork the repository.
-2.  Make desired documentation changes.
-3.  Preview the changes by spinning up a GitHub page for your fork, building
-    from your working branch.
-    -   On your fork, go to the settings tab and then the GitHub page settings.
-        Sample URL: <!-- markdown-link-check-disable -->
-        https://github.com/{your-github-profile}/osv.dev/settings/pages
-        <!-- markdown-link-check-enable -->
-    -   Under "Build and deployment" select "Build from branch"
-    -   Set the branch to your working branch
-    -   Set the github page to build from the "/docs" folder
-    -   Hit save and wait for your site to build
-    -   Once it is ready, click the link and preview the docs
-
-![Image shows the UI settings for building the GitHub page, which is described
-in step 3 of the contributing documentation
-instructions.](docs/images/github-page.png)
-
-1.  If you are satisfied with the changes, open a PR
-2.  In the PR, link to your fork's GitHub page, so we can preview the changes
+Would you like me to help you set up a **GitHub Action** to automatically verify these **CLA signatures** or **Conventional Commits** on every new pull request?

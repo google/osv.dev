@@ -937,6 +937,7 @@ func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 }
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
+// *** Does external calls to verify repos ***
 func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
 	if vp == nil {
 		return
@@ -993,7 +994,7 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics){
+func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	for _, repo := range repos {
@@ -1076,7 +1077,7 @@ func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-// TODO (jesslowe): refactor with below
+// *** Does external calls to verify repos ***
 func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.

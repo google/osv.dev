@@ -61,7 +61,7 @@ def _coerce_suffix(suffix):
     for component in match.group(1)[1:].split('.'):
       if not component:
         pre_components.append('-')
-      elif component.isdigit():
+      elif component.isdecimal():
         pre_components.append(_remove_leading_zero(component))
       else:
         pre_components.append(component)
@@ -156,7 +156,7 @@ def normalize_prerelease(prerelease):
     #
     # Normalization: Pad numeric components with '0', and prefix alphanumeric
     # with a single '1' (to ensure they always come after).
-    if component.isdigit():
+    if component.isdecimal():
       # 1. Identifiers consisting of only digits are compared numerically.
       pre_components.append(component.rjust(_PAD_WIDTH, '0'))
     else:

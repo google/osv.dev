@@ -12,13 +12,13 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
-
 	"slices"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/cves"
 	gitpurl "github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -140,8 +140,8 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 // The function returns a map of CVE IDs to their corresponding Vulnerability objects.
 // Files that are not ".json" files, directories, or files ending in ".metrics.json" are skipped.
 // The function will log warnings for files that fail to open or decode, and will terminate if it fails to walk the directory.
-func loadOSV(osvPath string) map[cves.CVEID]*osvschema.Vulnerability {
-	allVulns := make(map[cves.CVEID]*osvschema.Vulnerability)
+func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
+	allVulns := make(map[models.CVEID]*osvschema.Vulnerability)
 	logger.Info("Loading OSV records", slog.String("path", osvPath))
 	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -163,7 +163,7 @@ func loadOSV(osvPath string) map[cves.CVEID]*osvschema.Vulnerability {
 			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
 			return nil
 		}
-		allVulns[cves.CVEID(vuln.GetId())] = &vuln
+		allVulns[models.CVEID(vuln.GetId())] = &vuln
 
 		return nil
 	})
@@ -176,8 +176,8 @@ func loadOSV(osvPath string) map[cves.CVEID]*osvschema.Vulnerability {
 }
 
 // combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[cves.CVEID]*osvschema.Vulnerability, nvdosv map[cves.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[cves.CVEID]*osvschema.Vulnerability {
-	osvRecords := make(map[cves.CVEID]*osvschema.Vulnerability)
+func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
+	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
 
 	// Iterate through CVEs from security advisories (cve5) as the base
 	for cveID, cve5 := range cve5osv {

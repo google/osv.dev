@@ -52,3 +52,11 @@ class RubyGemsEcosystemTest(vcr.unittest.VCRTestCase):
         ecosystem.sort_key('1.2.0.rc1'), ecosystem.sort_key('1.10.0.rc1'))
     # Check the 0 sentinel value
     self.assertLess(ecosystem.sort_key('0'), ecosystem.sort_key('0.0.0.rc0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = ecosystems.get('RubyGems')
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3.4'))
+    self.assertEqual('00:00000010.00000002.00000000',
+                     ecosystem.coarse_version('10.2a.3'))

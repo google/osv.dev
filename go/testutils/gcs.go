@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"context"
+	"hash/crc32"
 	"iter"
 	"slices"
 	"strings"
@@ -16,7 +17,11 @@ type mockObject struct {
 	data       []byte
 	generation int64
 	customTime time.Time
+	crc32c     uint32
 }
+
+// crc32Table uses the Castagnoli CRC32 polynomial for checksums to match GCS.
+var crc32Table = crc32.MakeTable(crc32.Castagnoli)
 
 // MockStorage implements osv.CloudStorage for testing.
 type MockStorage struct {
@@ -59,7 +64,11 @@ func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.
 		return nil, clients.ErrNotFound
 	}
 
-	return &clients.Attrs{Generation: obj.generation, CustomTime: obj.customTime}, nil
+	return &clients.Attrs{
+		Generation: obj.generation,
+		CustomTime: obj.customTime,
+		CRC32C:     obj.crc32c,
+	}, nil
 }
 
 func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, opts *clients.WriteOptions) error {
@@ -99,6 +108,7 @@ func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, o
 		data:       data,
 		generation: newGeneration,
 		customTime: customTime,
+		crc32c:     crc32.Checksum(data, crc32Table),
 	}
 
 	return nil

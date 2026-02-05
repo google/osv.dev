@@ -29,8 +29,9 @@ dependencies = [
 yapf = "*"
 pylint = "*"
 grpcio-tools = "*"
-mypy-protobuf = "^3.6.0"
+mypy-protobuf = "^5.0.0"
 vcrpy = "*"
+hypothesis = "*"
 
 [tool.pyright]
 executionEnvironments = [

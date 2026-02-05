@@ -47,9 +47,15 @@ api-server-tests:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
 	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
+	cd gcp/api && ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
+
+update-api-snapshots:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth login --update-adc'"; exit 1)
+	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
+	cd gcp/api && UPDATE_SNAPS=true ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	$(run-cmd) tools/lint_and_format.sh
+	GOTOOLCHAIN=go1.25.6 $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
@@ -85,12 +91,12 @@ build-protos: build-osv-protos build-api-protos
 run-website:
 	cd gcp/website/frontend3 && npm install && npm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb $(run-cmd) python main.py
+	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
 run-website-staging:
 	cd gcp/website/frontend3 && npm install && npm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test $(run-cmd) python main.py
+	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
 run-website-emulator:
 	cd gcp/website/frontend3 && npm install && npm run build

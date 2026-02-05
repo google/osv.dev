@@ -10,8 +10,17 @@ locals {
   )
 
   # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.
+  # Break apart by --- first as default yamldecode does not support parsing multiple documents in a single file.
   kube_manifests = {
-    for manifest in flatten([for file in local.all_resources : yamldecode(file(file))]) :
+    for manifest in flatten([
+      for file_path in local.all_resources : [
+        # Split content by separator, creating a list of string documents
+        for doc in split("\n---\n", file(file_path)) :
+        yamldecode(doc)
+        # Filter out empty strings caused by trailing separators
+        if trimspace(doc) != ""
+      ]
+    ]) :
     "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
     if try(manifest.kind, "") == "CronJob"
   }
@@ -36,7 +45,7 @@ module "osv_test" {
 
   website_domain = "test.osv.dev"
   api_url        = "api.test.osv.dev"
-  esp_version    = "2.53.0"
+  esp_version    = "2.54.0"
 }
 
 module "k8s_cron_alert" {
@@ -68,11 +77,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.45.0"
+      version = "~> 7.17.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.45.0"
+      version = "~> 7.17.0"
     }
     external = {
       source  = "hashicorp/external"

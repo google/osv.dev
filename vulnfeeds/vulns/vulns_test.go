@@ -13,7 +13,6 @@ import (
 	"slices"
 
 	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -81,11 +80,11 @@ func TestClassifyReferenceLink(t *testing.T) {
 
 func TestClassifyReferences(t *testing.T) {
 	testcases := []struct {
-		refData    []cves.Reference
+		refData    []models.Reference
 		references []*osvschema.Reference
 	}{
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "https://example.com", Tags: []string{"MISC"}, URL: "https://example.com",
 				},
@@ -93,7 +92,7 @@ func TestClassifyReferences(t *testing.T) {
 			references: []*osvschema.Reference{{Url: "https://example.com", Type: osvschema.Reference_WEB}},
 		},
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "https://github.com/Netflix/lemur/issues/117", URL: "https://github.com/Netflix/lemur/issues/117", Tags: []string{"MISC", "Issue Tracking"},
 				},
@@ -101,7 +100,7 @@ func TestClassifyReferences(t *testing.T) {
 			references: []*osvschema.Reference{{Url: "https://github.com/Netflix/lemur/issues/117", Type: osvschema.Reference_REPORT}},
 		},
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "https://github.com/curl/curl/issues/9271", URL: "https://github.com/curl/curl/issues/9271", Tags: []string{"MISC", "Exploit", "Issue Tracking", "Third Party Advisory"},
 				},
@@ -113,7 +112,7 @@ func TestClassifyReferences(t *testing.T) {
 			},
 		},
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", URL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693", Tags: []string{"issue-tracking", "permissions-required"},
 				},
@@ -123,7 +122,7 @@ func TestClassifyReferences(t *testing.T) {
 			},
 		},
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "https://security.gentoo.org/glsa/202307-01", URL: "https://security.gentoo.org/glsa/202307-01", Tags: []string{"vendor-advisory"},
 				},
@@ -133,7 +132,7 @@ func TestClassifyReferences(t *testing.T) {
 			},
 		},
 		{
-			refData: []cves.Reference{
+			refData: []models.Reference{
 				{
 					Source: "http://www.openwall.com/lists/oss-security/2023/07/20/1", URL: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Tags: []string{"mailing-list"},
 				},
@@ -154,13 +153,13 @@ func TestClassifyReferences(t *testing.T) {
 	}
 }
 
-func loadTestData2(cveName string) cves.Vulnerability {
+func loadTestData2(cveName string) models.Vulnerability {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves cves.CVEAPIJSON20Schema
+	var nvdCves models.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", fileName, err)
@@ -172,7 +171,7 @@ func loadTestData2(cveName string) cves.Vulnerability {
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
 
-	return cves.Vulnerability{}
+	return models.Vulnerability{}
 }
 
 func TestExtractAliases(t *testing.T) {
@@ -198,7 +197,7 @@ func TestExtractAliases(t *testing.T) {
 
 func TestEnglishDescription(t *testing.T) {
 	cveItem := loadTestData2("CVE-2022-36037")
-	description := cves.EnglishDescription(cveItem.CVE.Descriptions)
+	description := models.EnglishDescription(cveItem.CVE.Descriptions)
 	expectedDescription := "kirby is a content management system (CMS) that adapts to many different projects and helps you build your own ideal interface. Cross-site scripting (XSS) is a type of vulnerability that allows execution of any kind of JavaScript code inside the Panel session of the same or other users. In the Panel, a harmful script can for example trigger requests to Kirby's API with the permissions of the victim. If bad actors gain access to your group of authenticated Panel users they can escalate their privileges via the Panel session of an admin user. Depending on your site, other JavaScript-powered attacks are possible. The multiselect field allows selection of tags from an autocompleted list. Unfortunately, the Panel in Kirby 3.5 used HTML rendering for the raw option value. This allowed **attackers with influence on the options source** to store HTML code. The browser of the victim who visited a page with manipulated multiselect options in the Panel will then have rendered this malicious HTML code when the victim opened the autocomplete dropdown. Users are *not* affected by this vulnerability if you don't use the multiselect field or don't use it with options that can be manipulated by attackers. The problem has been patched in Kirby 3.5.8.1."
 	if description != expectedDescription {
 		t.Errorf("Description not extracted, got %v, but expected %v", description, expectedDescription)
@@ -407,7 +406,7 @@ func TestAddPkgInfo(t *testing.T) {
 func TestAddSeverity(t *testing.T) {
 	tests := []struct {
 		description    string
-		inputCVE       cves.Vulnerability
+		inputCVE       models.Vulnerability
 		expectedResult []*osvschema.Severity
 	}{
 		{
@@ -446,4 +445,36 @@ func TestAddSeverity(t *testing.T) {
 func TestNVD2(t *testing.T) {
 	cve := loadTestData2("CVE-2023-4863")
 	t.Logf("Loaded: %#v", cve)
+}
+
+func TestAttachExtractedVersionInfo_Determinism(t *testing.T) {
+	// Create a VersionInfo with multiple repositories to trigger map iteration randomness
+	versionInfo := models.VersionInfo{
+		AffectedCommits: []models.AffectedCommit{
+			{Repo: "https://github.com/repo/A", Fixed: "fixA"},
+			{Repo: "https://github.com/repo/B", Fixed: "fixB"},
+			{Repo: "https://github.com/repo/C", Fixed: "fixC"},
+			{Repo: "https://github.com/repo/D", Fixed: "fixD"},
+			{Repo: "https://github.com/repo/E", Fixed: "fixE"},
+		},
+	}
+
+	// Run multiple times and compare with the first result
+	var firstResult *Vulnerability
+
+	for i := range 100 {
+		v := &Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		AttachExtractedVersionInfo(v, versionInfo)
+
+		if i == 0 {
+			firstResult = v
+			continue
+		}
+
+		if diff := gocmp.Diff(firstResult, v, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different result:\n%s", i, diff)
+		}
+	}
 }

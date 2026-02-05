@@ -7,15 +7,13 @@ Thank you for your interest in the Open Source Vulnerability (OSV) project. To m
 ## ⚖️ Legal & Ethical Framework
 
 ### 1. Contributor License Agreement (CLA)
+All contributions must be accompanied by a signed [Contributor License Agreement](https://cla.developers.google.com). 
 
-All contributions must be accompanied by a signed [Contributor License Agreement](https://cla.developers.google.com).
+*   **Ownership:** You (or your employer) retain the copyright; the CLA simply grants us permission to distribute your work.
 
-- **Ownership:** You (or your employer) retain the copyright; the CLA simply grants us permission to distribute your work.
-
-- **Verification:** You generally only need to submit this once. Check your status or sign a new one at the [Google Developers CLA portal](https://cla.developers.google.com).
+*   **Verification:** You generally only need to submit this once. Check your status or sign a new one at the [Google Developers CLA portal](https://cla.developers.google.com).
 
 ### 2. Community Guidelines
-
 We uphold a professional environment governed by [Google’s Open Source Community Guidelines](https://opensource.google.com). Respectful collaboration is mandatory for all participants.
 
 ---
@@ -26,21 +24,21 @@ We uphold a professional environment governed by [Google’s Open Source Communi
 
 We utilize [GitHub Pull Requests](https://help.github.com) for all submissions, including those from project members.
 
-- **Feature Alignment:** For new features, [create an issue](https://github.com) for architectural discussion before beginning development.
+*   **Feature Alignment:** For new features, [create an issue](https://github.com) for architectural discussion before beginning development.
 
-- **Documentation:** Use our [Pull Request Template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) to ensure a streamlined review.
+*   **Documentation:** Use our [Pull Request Template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) to ensure a streamlined review.
 
 ### Development Environment Setup
 
 Ensure your system meets the following high-level prerequisites:
 
-- **Languages:** Python 3.13 & Node.js (≥ 18.17.x)
+*   **Languages:** Python 3.13 & Node.js (≥ 18.17.x)
 
-- **Package Management:** [Poetry](https://python-poetry.org) (≥ 2.2.1)
+*   **Package Management:** [Poetry](https://python-poetry.org) (≥ 2.2.1)
 
-- **Infrastructure:** [Docker](https://www.docker.com), [Terraform](https://developer.hashicorp.com) (≥ 1.5), and [Google Cloud SDK](https://cloud.google.com).
+*   **Infrastructure:** [Docker](https://www.docker.com), [Terraform](https://developer.hashicorp.com) (≥ 1.5), and [Google Cloud SDK](https://cloud.google.com).
 
-- **Build Tools:** [Make](https://www.gnu.org) and [Hugo](https://gohugo.io).
+*   **Build Tools:** [Make](https://www.gnu.org) and [Hugo](https://gohugo.io).
 
 **Initialization:**
 
@@ -75,7 +73,8 @@ Follow the Conventional Commits specification. Use structured prefixes such as f
 🛡️ Security Vulnerability Reporting (SECURITY.md)
 
 Private Disclosure: Do not report security vulnerabilities via public GitHub issues.
-Process: Please follow our Security Policy for private reporting instructions. This ensures we can patch the vulnerability before it is publicly exploited.
+Process: Please follow our Security Policy for private reporting instructions. This ensures we can patch the vulnerability before it is publicly exploited. 
+
 
 🗺️ Project Roadmap & Vision
 
@@ -85,7 +84,7 @@ Strategic Alignment: Before starting work on large features, check our Roadmap t
 
 🏷️ Issue Labeling System
 
-To help you find the right task, we use specific labels:
+To help you find the right task, we use specific labels: 
 
 good first issue: Simple tasks designed for newcomers to get familiar with our codebase.
 
@@ -103,12 +102,13 @@ Coverage: We encourage contributors to include unit tests with every code change
 
 Public Credit: Significant contributions are celebrated in our Release Notes.
 
-Community Roles: Consistent, high-quality contributors may be invited to join the project as Maintainers or Core Members with merge privileges.
+Community Roles: Consistent, high-quality contributors may be invited to join the project as Maintainers or Core Members with merge privileges. 
 
 🕒 Communication & Expectations
 
 Response Times: We aim to review all PRs within 3–5 business days. If you haven't heard from us by then, feel free to ping the thread with a polite "Any updates?".
 
-Asynchronous Culture: Our team works across multiple time zones; please keep all technical discussions in public PR comments or issues to ensure transparency.
+Asynchronous Culture: Our team works across multiple time zones; please keep all technical discussions in public PR comments or issues to ensure transparency. 
+
 
 Would you like me to help you set up a **GitHub Action** to automatically verify these **CLA signatures** or **Conventional Commits** on every new pull request?

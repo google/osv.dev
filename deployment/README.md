@@ -2,113 +2,138 @@
 
 ## API Domain Name
 
-Due to [terraform complexities](https://github.com/hashicorp/terraform-provider-google/issues/5528),
-setting up the OSV API requires a custom domain to serve it on.
+Due to [Terraform limitations](https://github.com/hashicorp/terraform-provider-google/issues/5528),
+setting up the OSV API requires a custom domain.
 
-For example, if you own `custom-domain.name` and wish to serve the api on `api.custom-domain.name`:
+For example, if you own `custom-domain.name` and want to serve the API at
+`api.custom-domain.name`:
 
-1. Verify the ownership of your domain:
-  
-    Go to 
+1. Verify domain ownership:
 
-    `https://www.google.com/webmasters/verification/verification?authuser=0&domain=custom-domain.name`
+   Go to:
 
-    (Replace `custom-domain.name` in the url with the actual domain to be verified.)
-    
-    (This link is usually generated when adding a domain mapping to a service in Cloud Run.
-    I don't know how to navigate to that page otherwise. Trying to add a property from
-    [Webmaster Central](https://www.google.com/webmasters/verification/home)
-    adds it as a site, rather than as a domain.)
+   `https://www.google.com/webmasters/verification/verification?authuser=0&domain=custom-domain.name`
 
-2. Add DNS CNAME record mapping `api.custom-domain.name` to `ghs.googlehosted.com.`
+   (Replace `custom-domain.name` in the URL with the actual domain you want to verify.)
+
+   This link is usually generated when adding a domain mapping to a Cloud Run
+   service. I’m not sure how to navigate to this page manually.
+
+   Note: Adding a property from
+   [Webmaster Central](https://www.google.com/webmasters/verification/home)
+   adds it as a _site_, rather than as a _domain_.
+
+2. Add a DNS CNAME record mapping:
+
+   `api.custom-domain.name` → `ghs.googlehosted.com.`
 
 ## Terraform
 
-Go to the relevant directory `/deployment/terraform/environments/<PROJECT_ID>`:
+Go to the relevant directory:
 
-Initialise terraform:
+`/deployment/terraform/environments/<PROJECT_ID>`
+
+Initialize Terraform:
+
 ```bash
 terraform init
 ```
-This command only needs to be run once to first set up the terraform directory,
-though it is safe to run multiple times.
 
-Plan and apply required project infrastructure:
-```bash
+This only needs to be run once when setting up the Terraform directory, but it is
+safe to run multiple times.
+
+Plan and apply the required infrastructure:
+
 terraform plan
-```
-Running `plan` shows the what resources will be added, changed, and destroyed
-when applying the terraform configuration. It is not strictly necessary to run,
-but it is useful to perform a sanity check before applying.
 
-```bash
+Running plan shows what resources will be added, changed, or destroyed when
+applying the configuration. It is not strictly required, but it is recommended
+as a sanity check.
+
 terraform apply
-```
-Running `apply` will also output the same added/changed/destroyed resources as
-`plan`, and will prompt if you wish to apply the proposed changes.
 
-Always review the planned changes (especially the destroyed resources) before
-applying them. Some changes may cause terraform to unexpectedly destroy and
-recreate resources.
+Running apply will output the same information as plan, and will prompt you
+before applying changes.
 
-Use `terraform plan` and `terraform apply` to deploy any configuration changes.
+Always review planned changes carefully (especially anything being destroyed).
+In some cases, Terraform may unexpectedly destroy and recreate resources.
 
-Terraform is automatically run on `oss-vdb-test` in `build-and-stage.yaml`
+Use terraform plan and terraform apply to deploy any configuration changes.
 
+Terraform is automatically run on oss-vdb-test in build-and-stage.yaml.
 
-## Setting up auto-scaler
+Setting up the Auto-scaler
+There does not seem to be a good way to configure this through Terraform.
 
-There doesn't seem to be a good way to set this up within terraform.
+The following instructions are from
+this GCP guide:
 
-The following instructions are from [here](https://cloud.google.com/kubernetes-engine/docs/tutorials/external-metrics-autoscaling#step1).
-
-```bash
 kubectl create clusterrolebinding cluster-admin-binding \
-    --clusterrole cluster-admin --user "$(gcloud config get-value account)"
-```
+ --clusterrole cluster-admin --user "$(gcloud config get-value account)"
 
-```bash
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stackdriver/master/custom-metrics-stackdriver-adapter/deploy/production/adapter_new_resource_model.yaml
-```
 
-## Build and deploy remote builds to `oss-vdb-test`
+Build and deploy remote builds to oss-vdb-test
+This is done automatically using Cloud Deploy, as part of build-and-stage.yaml,
+which is triggered on pushes to the master branch.
 
-Done automatically with Cloud Deploy, as part of `build-and-stage.yaml`, which is triggered on pushes to the master branch.
+The Cloud Deploy pipelines are configured in the oss-vdb project.
 
-The Cloud Deploy pipelines are set up in the `oss-vdb` project.
+Manual builds / deployment
+Manual builds are not officially supported, but are theoretically possible.
 
+Building locally would require running docker build and docker push for the
+relevant Dockerfiles, similar to what is done in build-and-stage.yaml.
 
-### Manual builds / deployment
+Manual deployment without Cloud Deploy would require manually modifying the
+Kubernetes or Cloud Run manifests in clouddeploy/ to fit your needs. You would
+also need to replace the Cloud Deploy image names with actual container image
+references.
 
-Not really supported, but theoretically possible.
+Quotas
+GCP quota increase requests do not appear to be automatable.
 
-Building locally would involve running `docker build` and `docker push` for the respective Dockerfiles, as in `build-and-stage.yaml`.
+The following quota increases have been manually configured on oss-vdb-test:
 
-Manual deployment without Cloud Deploy would involve manually changing Kubernetes or Cloud Run manifests found in `clouddeploy/` to suit needs, replacing the Cloud Deploy image names with actual container images.
+Compute Engine
 
+CPUs: 1000
 
-## Quotas
+Local SSD: 100 TB
 
-It doesn't look like GCP Quota increase requests can be automated.
+Persistent Disk SSD: 50 TB
 
-Things that have been manually set on `oss-vdb-test`:
-- Compute Engine
-  - CPUs => 1000
-  - Local SSD => 100 TB
-  - Pesistent Disk SSD => 50 TB
+Setting up additional Cloud Deploy pipelines
+To set up additional pipelines, create a new directory inside clouddeploy/
+containing:
 
-## Setting up additional Cloud Deploy pipelines
+clouddeploy.yaml
 
-To setup additional pipelines, you need to create another directory within `clouddeploy/`, with a `clouddeploy.yaml` and `skaffold.yaml` file, as well as the manifest files.
+skaffold.yaml
 
-Easiest method would be to copy the structure in `gke-indexer/` (GKE) or `osv-api` (Cloud Run). You can also refer to the [Cloud Deploy quickstarts](https://cloud.google.com/deploy/docs/quickstarts)
+The required manifest files
 
-NOTE: The `targetId` fields in the `clouddeploy.yaml` files should be unique across all pipelines.
+The easiest method is to copy an existing pipeline structure, such as:
 
-To create the pipeline in GCP, run the following inside the new Cloud Deploy directory:
+gke-indexer/ (GKE)
 
-```
+osv-api/ (Cloud Run)
+
+You can also refer to the
+Cloud Deploy quickstarts.
+
+[!NOTE]
+The targetId fields in the clouddeploy.yaml files must be unique across all pipelines.
+
+To create the pipeline in GCP, run the following command inside the new Cloud
+Deploy directory:
+
 gcloud deploy apply --file=clouddeploy.yaml --region=us-central1 --project=oss-vdb
-```
 
-Then you need to add entries into `build-and-stage.yaml` to build/tag the required images and create a new deployment onto the staging environment (with the image name substitutions), as well as an entry to `deploy-prod.yaml` to do the promotion from staging to prod when releasing.
+You must also add entries into:
+
+build-and-stage.yaml
+(to build/tag the required images and deploy to staging, including image name substitutions)
+
+deploy-prod.yaml
+(to promote staging to prod during releases)

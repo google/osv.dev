@@ -1,12 +1,12 @@
 module github.com/google/osv/vulnfeeds
 
-go 1.25.6
+go 1.25.7
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
 	cloud.google.com/go/storage v1.59.2
 	github.com/aquasecurity/go-pep440-version v0.0.1
-	github.com/atombender/go-jsonschema v0.21.0
+	github.com/atombender/go-jsonschema v0.22.0
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/gkampitakis/go-snaps v0.5.19
 	github.com/go-git/go-git/v5 v5.16.4
@@ -15,7 +15,7 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a
 	github.com/sethvargo/go-retry v0.3.0
-	google.golang.org/api v0.263.0
+	google.golang.org/api v0.265.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0
@@ -106,7 +106,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

@@ -2,7 +2,7 @@
 import requests
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import EnumerateError
 from .debian import DPKG
 
 

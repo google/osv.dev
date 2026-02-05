@@ -5,6 +5,7 @@ from . import config
 from .ecosystems_base import EnumerableEcosystem, EnumerateError
 from .debian import DPKG
 
+
 # Disable enumerable ecosystem as the record is pre-enumerated on import
 class Opam(DPKG):
   """opam packages ecosystem"""

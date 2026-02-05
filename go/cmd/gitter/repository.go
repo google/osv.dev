@@ -109,31 +109,34 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	}
 	var newCommits []SHA1
 
-	// Run git log
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
-	stdout, err := cmd.StdoutPipe()
+	// Temp outFile for git log output
+	tmpFile, err := os.CreateTemp(r.repoPath, "git-log.out")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Run git log via bash because redirecting to file is faster than using pipe
+	_, err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --format="+gitLogFormat+" > "+tmpFile.Name())
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
 
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start git log: %w", err)
+	// Read git log output
+	file, err := os.Open(tmpFile.Name())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git-log.out: %w", err)
 	}
-	defer func() {
-		if err := cmd.Wait(); err != nil && ctx.Err() == nil {
-			logger.Error("git log command failed", slog.Any("err", err))
+	defer file.Close()
+
+	reader := bufio.NewReaderSize(file, 1024*1024)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			break
 		}
-	}()
 
-	cummulativeTimer := time.Duration(0)
-
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		line := scanner.Text()
-		// Example of a line of commit info
-		// b1e3d7a8cbfa38bb2b678eff819fc4926b85c494\x09de84b0dd689622922a54d1bc6cc45c384c7ff8bd\x09HEAD -> master, tag: v2025.01.01
-		start := time.Now()
-
+		line = strings.TrimSuffix(line, "\n")
 		commitInfo := strings.Split(line, "\x09")
 
 		childHash := SHA1{}
@@ -202,11 +205,9 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		for _, tag := range tags {
 			r.tagToCommit[tag] = childHash
 		}
-
-		cummulativeTimer += time.Since(start)
 	}
 
-	logger.Info("Commit graph completed", slog.Int("commits", len(r.commitDetails)), slog.Int("nodes", len(r.commitGraph)), slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)), slog.Duration("graph", cummulativeTimer))
+	logger.Info("Commit graph completed", slog.Int("commits", len(r.commitDetails)), slog.Int("nodes", len(r.commitGraph)), slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
 
 	return newCommits, nil
 }

@@ -1,18 +1,18 @@
 module github.com/google/osv.dev/go
 
-go 1.25.6
+go 1.25.7
 
 require (
-	cloud.google.com/go/datastore v1.21.0
+	cloud.google.com/go/datastore v1.22.0
 	cloud.google.com/go/monitoring v1.24.3
-	cloud.google.com/go/pubsub/v2 v2.3.0
-	cloud.google.com/go/storage v1.59.1
+	cloud.google.com/go/pubsub/v2 v2.4.0
+	cloud.google.com/go/storage v1.59.2
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/google/go-cmp v0.7.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260128001339-9d03e8f4632b
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a
 	golang.org/x/sync v0.19.0
-	google.golang.org/api v0.263.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260128004102-de31872fb2ec
+	google.golang.org/api v0.265.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -70,6 +70,6 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 )

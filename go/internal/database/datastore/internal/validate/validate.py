@@ -21,7 +21,7 @@ from google.cloud import ndb
 import osv.tests
 from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
     AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup, \
-    RelatedGroup
+    RelatedGroup, SourceRepository, SourceRepositoryType
 
 
 def main() -> int:
@@ -91,6 +91,36 @@ def main() -> int:
       modified=datetime.datetime(2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
   ).put()
 
+  print('(Python) Putting SourceRepository')
+  SourceRepository(
+      id='oss-fuzz',
+      type=SourceRepositoryType.GIT,
+      name='oss-fuzz',
+      repo_url='https://github.com/google/oss-fuzz',
+      repo_username='user',
+      repo_branch='master',
+      rest_api_url='http://127.0.0.1/',
+      bucket='bucket',
+      directory_path='vulns',
+      last_synced_hash='abcdef',
+      last_update_date=datetime.datetime(
+          2025, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
+      ignore_patterns=['.*\\.md', 'test/.*'],
+      editable=True,
+      extension='.json',
+      key_path='vulnerability',
+      ignore_git=False,
+      detect_cherrypicks=True,
+      consider_all_branches=False,
+      versions_from_repo=True,
+      ignore_last_import_time=True,
+      ignore_deletion_threshold=True,
+      link='https://github.com/google/oss-fuzz/blob/master/',
+      human_link='https://github.com/google/oss-fuzz/tree/master/',
+      db_prefix=['OSS-FUZZ', 'OTHER'],
+      strict_validation=True,
+  ).put()
+
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
   result = subprocess.run(['go', 'run', './validate.go'], check=False, cwd='.')
@@ -119,11 +149,15 @@ def main() -> int:
   print('(Python) Getting RelatedGroup')
   if RelatedGroup.get_by_id('CVE-987-654') is None:
     return 1
+  print('(Python) Getting SourceRepository')
+  if SourceRepository.get_by_id('go-source') is None:
+    return 1
 
   return 0
 
 
 if __name__ == '__main__':
   with osv.tests.datastore_emulator(), ndb.Client().context():
+    print('Datastore emulator running')
     ret = main()
   sys.exit(ret)

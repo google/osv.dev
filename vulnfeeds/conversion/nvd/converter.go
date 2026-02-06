@@ -25,7 +25,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
@@ -66,6 +66,10 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		}
 	}
 
+	if rejectFailed && metrics.Outcome != models.Successful {
+		return metrics.Outcome
+	}
+
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {
@@ -93,7 +97,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -116,6 +120,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	if len(versions.AffectedCommits) == 0 {
 		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
 		metrics.Outcome = models.NoCommitRanges
+	}
+
+	if rejectFailed && metrics.Outcome != models.Successful {
+		return metrics.Outcome
 	}
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.

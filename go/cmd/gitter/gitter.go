@@ -481,20 +481,12 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	repo := repoAny.(*Repository)
 
-	bodyBytes, _ := json.Marshal(body)
-	key := string(bodyBytes)
-
-	affectedCommitsAny, err, _ := gAffectedCommits.Do(key, func() (any, error) {
-		return repo.FindAffectedCommits(introduced, fixed, lastAffected, cherrypick), nil
-	})
-
+	affectedCommits := repo.FindAffectedCommits(introduced, fixed, lastAffected, cherrypick)
 	if err != nil {
 		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	affectedCommits := affectedCommitsAny.([]Commit)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

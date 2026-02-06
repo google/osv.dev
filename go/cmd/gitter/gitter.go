@@ -40,15 +40,17 @@ const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
 
 var (
-	gFetch          singleflight.Group
-	gArchive        singleflight.Group
-	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
-	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
-	fetchTimeout    time.Duration
+	gFetch           singleflight.Group
+	gArchive         singleflight.Group
+	gLoad            singleflight.Group
+	gAffectedCommits singleflight.Group
+	persistencePath  = path.Join(defaultGitterWorkDir, persistenceFileName)
+	gitStorePath     = path.Join(defaultGitterWorkDir, gitStoreFileName)
+	fetchTimeout     time.Duration
 )
 
 type Event struct {
-	EventType string `json:"eventType"`
+	EventType string `json:"eventType"` // TODO: enum this
 	Hash      string `json:"hash"`
 }
 
@@ -325,6 +327,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fetch repo first
 	// Keep the key as the url regardless of forceUpdate.
 	// Occasionally this could be problematic if an existing unforce updated
 	// query is already inplace, no force update will happen.
@@ -332,32 +335,34 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
-	fileData, err, _ := gArchive.Do(url, func() (any, error) {
-		// Fetch repo first
-		_, err, _ := gFetch.Do(url, func() (any, error) {
-			return nil, fetchRepo(r.Context(), url, forceUpdate)
-		})
-		if err != nil {
-			return nil, err
-		}
-		return archiveRepo(r.Context(), url)
-	})
-
-	if err != nil {
-		logger.Error("Error fetching/archiving blob", slog.String("url", url), slog.Any("error", err))
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url, forceUpdate)
+	}); err != nil {
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-
 		return
 	}
+
+	// Archive repo
+	//nolint:contextcheck // I can't change singleflight's interface
+	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
+		return archiveRepo(r.Context(), url)
+	})
+	if err != nil {
+		logger.Error("Error archiving blob", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
+		return
+	}
+	fileData := fileDataAny.([]byte)
 
 	w.Header().Set("Content-Type", "application/zstd")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 	w.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(w, bytes.NewReader(fileData.([]byte))); err != nil {
+	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 
@@ -368,6 +373,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	// POST requets body processing
 	var body struct {
 		URL string `json:"url"`
@@ -395,7 +401,9 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 
-	_, err = LoadRepository(r.Context(), repoPath)
+	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
+		return LoadRepository(r.Context(), repoPath)
+	})
 	if err != nil {
 		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
@@ -403,14 +411,16 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	logger.Info("Request completed successfully: /cache", slog.String("url", url))
+	logger.Info("Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }
 
 func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	// POST requets body processing
 	var body struct {
-		URL    string  `json:"url"`
-		Events []Event `json:"events"`
+		URL               string  `json:"url"`
+		Events            []Event `json:"events"`
+		DetectCherrypicks bool    `json:"detect_cherrypicks"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -424,6 +434,7 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	fixed := []SHA1{}
 	lastAffected := []SHA1{}
 	limit := []SHA1{}
+	cherrypick := body.DetectCherrypicks
 
 	for _, event := range body.Events {
 		hash, err := hex.DecodeString(event.Hash)
@@ -446,14 +457,12 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 	}
-
-	logger.Info("Received request", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit))
+	logger.Info("Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
 
 	// Fetch repo if it's not fresh
-	_, err, _ = gFetch.Do(url, func() (any, error) {
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url)
-	})
-	if err != nil {
+	}); err != nil {
 		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to update repo: %v", err), http.StatusInternalServerError)
 		return
@@ -462,17 +471,33 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 
-	repo, err := LoadRepository(r.Context(), repoPath)
+	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+		return LoadRepository(r.Context(), repoPath)
+	})
 	if err != nil {
 		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
 		return
 	}
+	repo := repoAny.(*Repository)
 
-	affectedCommits := repo.FindAffectedCommits(introduced, fixed, lastAffected)
-	logger.Info("Enumeration complete", slog.String("url", url), slog.Int("affected_commits_count", len(affectedCommits)))
+	bodyBytes, _ := json.Marshal(body)
+	key := string(bodyBytes)
+
+	affectedCommitsAny, err, _ := gAffectedCommits.Do(key, func() (any, error) {
+		return repo.FindAffectedCommits(introduced, fixed, lastAffected, cherrypick), nil
+	})
+
+	if err != nil {
+		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	affectedCommits := affectedCommitsAny.([]Commit)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(affectedCommits)
+	logger.Info("Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }

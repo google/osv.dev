@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -56,8 +58,6 @@ func NewRepository(repoPath string) *Repository {
 
 // LoadRepository loads a repo from disk into memory.
 func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
-	start := time.Now()
-
 	repo := NewRepository(repoPath)
 
 	cachePath := repoPath + ".pb"
@@ -89,7 +89,6 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		logger.Error("Failed to save repository cache", slog.Any("err", err))
 	}
 
-	logger.Info("Repository fully processed", slog.Duration("duration", time.Since(start)))
 	return repo, nil
 }
 
@@ -117,7 +116,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	defer os.Remove(tmpFile.Name())
 
 	// Run git log via bash because redirecting to file is faster than using pipe
-	_, err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --format="+gitLogFormat+" > "+tmpFile.Name())
+	_, err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --topo-order --format="+gitLogFormat+" > "+tmpFile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
@@ -337,12 +336,19 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
 }
 
-func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1) []Commit {
-	introducedMap := make(map[SHA1]struct{})
-	for _, commit := range introduced {
-		introducedMap[commit] = struct{}{}
+// FindAffectedCommits returns a list of commits that are affected by the given introduced, fixed and last_affected events
+func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1, cherrypick bool) []Commit {
+	r.repoMu.Lock()
+	defer r.repoMu.Unlock()
+
+	// Expands the introduced and fixed commits to include cherrypick equivalents
+	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
+	if cherrypick {
+		introduced = r.expandByCherrypick(introduced)
+		fixed = r.expandByCherrypick(fixed)
 	}
-	safeCommits := r.findSafeCommits(introducedMap, fixed, lastAffected)
+
+	safeCommits := r.findSafeCommits(introduced, fixed, lastAffected)
 
 	var affectedCommits []Commit
 
@@ -377,7 +383,14 @@ func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1)
 	return affectedCommits
 }
 
-func (r *Repository) findSafeCommits(introducedMap map[SHA1]struct{}, fixed, lastAffected []SHA1) map[SHA1]struct{} {
+// findSafeCommits returns a set of commits that are non-vulnerable
+// Traversing from fixed and children of last affected to the next introduced (if exist)
+func (r *Repository) findSafeCommits(introduced, fixed, lastAffected []SHA1) map[SHA1]struct{} {
+	introducedMap := make(map[SHA1]struct{})
+	for _, commit := range introduced {
+		introducedMap[commit] = struct{}{}
+	}
+
 	safeSet := make(map[SHA1]struct{})
 	stack := make([]SHA1, 0, len(fixed)+len(lastAffected))
 	stack = append(stack, fixed...)
@@ -413,4 +426,25 @@ func (r *Repository) findSafeCommits(introducedMap map[SHA1]struct{}, fixed, las
 	}
 
 	return safeSet
+}
+
+// expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits PLUS any other commits that share the same Patch ID
+func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
+	unique := make(map[SHA1]struct{}, len(commits)*2) // avoid duplication
+	for _, hash := range commits {
+		unique[hash] = struct{}{}
+
+		// Find patch ID from commit details
+		details := r.commitDetails[hash]
+
+		// Find equivalent commits
+		equivalents := r.patchIDToCommits[details.PatchID]
+		// TODO: I think this logic will always add the current commit one more time, which isn't a problem because we're using map but still suboptimal
+		for _, eq := range equivalents {
+			unique[eq] = struct{}{}
+		}
+	}
+
+	keys := slices.Collect(maps.Keys(unique))
+	return keys
 }

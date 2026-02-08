@@ -1,85 +1,106 @@
-<picture>
-    <source srcset="docs/images/osv_logo_dark-full.svg"  media="(prefers-color-scheme: dark)">
-    <!-- markdown-link-check-disable-next-line -->
-    <img src="docs/images/osv_logo_light-full.svg">
-</picture>
+<img src="docs/images/osv_logo_light-full.svg" alt="OSV Logo" width="300">
+
+# OSV (Open Source Vulnerabilities)
+
+OSV (Open Source Vulnerabilities) is a distributed vulnerability database for open source projects.  
+It provides a precise, machine-readable data format (the OSV schema) and an infrastructure to aggregate and serve vulnerability data across multiple ecosystems.
 
 ---
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://scorecard.dev/viewer/?uri=github.com/google/osv.dev)
+## 🔗 Quick Links
 
-## Documentation
+- **Official Website:** https://osv.dev
+- **Documentation:**
+  - User Guide: https://google.github.io/osv.dev/
+  - API Reference: https://google.github.io/osv.dev/api/
+- **Data Dumps:** Available via Google Cloud Storage at `gs://osv-vulnerabilities`
+  - Learn more: https://osv.dev/docs/#data-dumps
+- **Mailing List:** https://groups.google.com/g/osv-discuss
 
-Comprehensive documentation is available [here](https://google.github.io/osv.dev).
-API documentation is available [here](https://google.github.io/osv.dev/api/).
+---
 
-## Data Dump
+## 🔍 Using the Scanner
 
-We have data dumps available from a GCS bucket at `gs://osv-vulnerabilities`. For more information check out [our documentation](https://google.github.io/osv.dev/data/#data-dumps).
+We provide a Go-based tool that scans your dependencies and matches them against the OSV database using the OSV API.
 
-## Viewing the web UI
+### Capabilities
 
-An instance of OSV's web UI is deployed at <https://osv.dev>.
+- Scans lockfiles
+- Scans Debian Docker containers
+- Scans SBOMs (SPDX / CycloneDX)
+- Scans Git repositories
 
-## Using the scanner
+### Scanner Repository
 
-We provide a Go based tool that will scan your dependencies, and check them against the OSV database for known vulnerabilities via the OSV API.
+- https://github.com/google/osv-scanner
 
-Currently it is able to scan various lockfiles, debian docker containers, SPDX and CycloneDB SBOMs, and git repositories.
+---
 
-The scanner is located in its [own repository](https://github.com/google/osv-scanner).
+## 🛠 Repository Structure
 
-## This repository
+This repository contains the backend infrastructure for running **osv.dev** on Google Cloud Platform (GCP).
 
-This repository contains all the code for running https://osv.dev on GCP. This
-consists of:
+---
 
-| directory       | what |
-|-----------------|------|
-| `bindings/`     | Language bindings for the [OSV API](https://google.github.io/osv.dev/api/) (currently Go only) |
-| `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
-| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> `worker-base` docker image for `gcp/workers/worker` |
-| `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
-| `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|
-| `gcp/datastore` | The datastore index file (`index.yaml`) |
-| `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
-| `gcp/indexer`   | The determine version `indexer` |
-| `gcp/website`   | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) |
-| `gcp/workers/`  | Workers for bisection and impact analysis (`worker`, `importer`, `alias`) <br /> `cron/` jobs for database backups and processing oss-fuzz records |
-| `go/`           | Go module for shared libraries and commands (`cmd/exporter`, `cmd/recordchecker`) |
-| `osv/`          | The core OSV Python library, used in basically all Python services <br /> OSV ecosystem package versioning helpers in `ecosystems/` <br /> Datastore model definitions in `models.py` |
-| `tools/`        | Misc scripts/tools, mostly intended for development (datastore stuff, linting) <br /> The `indexer-api-caller` for indexer calling |
-| `vulnfeeds/`    | Go module for (mostly) the NVD CVE conversion <br /> The Alpine feed converter (`cmd/alpine`) <br /> The Debian feed converter (`tools/debian`, which is written in Python) |
+## 📌 Core Components
 
+| Component      | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `osv/`         | Core Python library used across all services; defines data models |
+| `gcp/api/`     | API server implementation and Protobuf definitions                |
+| `gcp/website/` | Backend for the web interface (frontend is in `frontend3`)        |
+| `gcp/workers/` | Workers for bisection, impact analysis, and database maintenance  |
 
-You'll need to check out submodules as well for many local building steps to
-work:
+---
+
+## 🔧 Development & Integration
+
+| Component      | Description                                                             |
+| -------------- | ----------------------------------------------------------------------- |
+| `bindings/`    | Language bindings (currently Go only)                                   |
+| `vulnfeeds/`   | Tools for converting external feeds (NVD, Alpine, Debian) to OSV format |
+| `gcp/indexer/` | Version indexer logic                                                   |
+| `tools/`       | Development scripts for linting and datastore management                |
+
+---
+
+## ☁️ Infrastructure
+
+| Component     | Description                                             |
+| ------------- | ------------------------------------------------------- |
+| `deployment/` | Terraform, Cloud Deploy, and Cloud Build configurations |
+| `docker/`     | Dockerfiles for CI and worker base images               |
+| `docs/`       | Jekyll-based source files for the documentation site    |
+
+---
+
+## 🚀 Getting Started
+
+To build or run parts of the project locally, ensure you initialize the submodules:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome!
+Contributions are always welcome!
 
-Learn more about [code](CONTRIBUTING.md#contributing-code), [data](CONTRIBUTING.md#contributing-data), and [documentation](CONTRIBUTING.md#contributing-documentation) contributions.
-We also have a [mailing list](https://groups.google.com/g/osv-discuss).
+Contributing Code: https://google.github.io/osv.dev/contributing/
 
-Do you have a question or a suggestion? Please [open an issue](https://github.com/google/osv.dev/issues).
+Contributing Data: https://google.github.io/osv.dev/contributing_data/
 
-## Third party tools and integrations
+Contributing Documentation: https://google.github.io/osv.dev/contributing_docs/
 
-There are also community tools that use OSV. Note that these are community built
-tools and as such are not supported or endorsed by the core OSV maintainers. You may wish
-to consult the [OpenSSF's Concise Guide for Evaluating Open Source Software](https://best.openssf.org/Concise-Guide-for-Evaluating-Open-Source-Software)
-to determine suitability for your use. Some popular third party tools are:
+## 📦 Third-Party Integrations
 
-- [Cortex XSOAR](https://github.com/demisto/content)
-- [dep-scan](https://github.com/AppThreat/dep-scan)
-- [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
-- [GUAC](https://github.com/guacsec/guac)
-- [OSS Review Toolkit](https://github.com/oss-review-toolkit/ort)
-- [pip-audit](https://github.com/pypa/pip-audit)
-- [Renovate](https://github.com/renovatebot/renovate)
-- [Trivy](https://github.com/aquasecurity/trivy)
+The community has built several tools that integrate with the OSV database.
+
+Note: These are community-maintained and not officially endorsed by the OSV team.
+
+Examples
+Scanners: Trivy, dep-scan, pip-audit
+
+Management: Dependency-Track, GUAC
+
+Automation: Renovate, OSS Review Toolkit

@@ -63,6 +63,14 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 				break
 			}
 		}
+		if !hasAnyFixedCommits {
+			for _, ac := range versions.AffectedCommits {
+				if ac.Fixed != "" {
+					hasAnyFixedCommits = true
+					break
+				}
+			}
+		}
 
 		if versions.HasFixedVersions() && !hasAnyFixedCommits {
 			metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)

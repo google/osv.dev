@@ -422,6 +422,10 @@ func (r *Repository) findSafeCommits(introduced, fixed, lastAffected []SHA1) map
 	for _, commit := range lastAffected {
 		if children, ok := r.commitGraph[commit]; ok {
 			for _, child := range children {
+				// Except if child is an introduced commit
+				if _, ok := introducedMap[child]; ok {
+					continue
+				}
 				stack = append(stack, child)
 			}
 		}
@@ -492,7 +496,14 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 
 	// DFS to walk from limit(s) to introduced (follow first parent)
 	stack := make([]SHA1, len(limit))
-	copy(stack, limit)
+	// Start from limits' parents
+	for i, commit := range limit {
+		details, ok := r.commitDetails[commit]
+		if !ok {
+			continue
+		}
+		stack[i] = details.Parents[0]
+	}
 
 	visited := make(map[SHA1]struct{})
 
@@ -503,19 +514,20 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 		if _, ok := visited[curr]; ok {
 			continue
 		}
-		// If commit is in introduced, we can stop the traversal
-		if _, ok := introMap[curr]; ok {
-			continue
-		}
 		visited[curr] = struct{}{}
 
-		// Otherwise, add to affected commits
+		// Add current node to affected commits
 		details, ok := r.commitDetails[curr]
 		if !ok {
 			continue
 		}
 
 		affectedCommits = append(affectedCommits, details)
+
+		// If commit is in introduced, we can stop the traversal after adding it to affected
+		if _, ok := introMap[curr]; ok {
+			continue
+		}
 
 		// Add first parent to stack to only walk the linear branch
 		if len(details.Parents) > 0 {

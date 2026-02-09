@@ -103,7 +103,7 @@ func saveRepositoryCache(cachePath string, repo *Repository) error {
 		return err
 	}
 
-	return os.WriteFile(cachePath, data, 0644)
+	return os.WriteFile(cachePath, data, 0600)
 }
 
 func loadRepositoryCache(cachePath string) (*pb.RepositoryCache, error) {

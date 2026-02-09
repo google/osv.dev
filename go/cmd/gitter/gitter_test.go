@@ -83,6 +83,7 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 // Note: In a real app we might want to dependency inject these,
 // but for this simple script we modify package globals.
 func setupTest(t *testing.T) string {
+	t.Helper()
 	tmpDir := t.TempDir()
 
 	gitStorePath = tmpDir
@@ -240,7 +241,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 				events = append(events, Event{EventType: "limit", Hash: h})
 			}
 
-			reqBody := map[string]interface{}{
+			reqBody := map[string]any{
 				"url":    tt.url,
 				"events": events,
 			}

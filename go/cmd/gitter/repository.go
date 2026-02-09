@@ -101,9 +101,12 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	// Build cache map
 	cachedPatchIDs := make(map[SHA1]SHA1)
 	if cache != nil {
-		for _, c := range cache.Commits {
-			if len(c.Hash) == 20 && len(c.PatchId) == 20 {
-				cachedPatchIDs[SHA1(c.Hash)] = SHA1(c.PatchId)
+		commits := cache.GetCommits()
+		for _, c := range commits {
+			h := c.GetHash()
+			pid := c.GetPatchId()
+			if len(h) == 20 && len(pid) == 20 {
+				cachedPatchIDs[SHA1(h)] = SHA1(pid)
 			}
 		}
 	}
@@ -139,7 +142,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		line = strings.TrimSuffix(line, "\n")
 		commitInfo := strings.Split(line, "\x09")
 
-		childHash := SHA1{}
+		var childHash SHA1
 		parentHashes := []SHA1{}
 		tags := []string{}
 
@@ -153,6 +156,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 					tags = append(tags, strings.TrimPrefix(ref, "tag: "))
 				}
 			}
+
 			fallthrough
 		case 2:
 			// parent hashes are separated by spaces
@@ -165,6 +169,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 				}
 				parentHashes = append(parentHashes, SHA1(hash))
 			}
+
 			fallthrough
 		case 1:
 			hash, err := hex.DecodeString(commitInfo[0])
@@ -228,13 +233,10 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 
 	errg, ctx := errgroup.WithContext(ctx)
 
-	for i := 0; i < workers; i++ {
+	for i := range workers {
 		start := i * chunkSize
-		end := start + chunkSize
+		end := min(start+chunkSize, len(commits))
 
-		if i == workers-1 {
-			end = len(commits)
-		}
 		errg.Go(func() error {
 			return r.calculatePatchIDsWorker(ctx, commits[start:end])
 		})
@@ -401,8 +403,8 @@ func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick
 		if children, ok := r.commitGraph[curr]; ok {
 			stack = append(stack, children...)
 		}
-
 	}
+
 	return affectedCommits
 }
 
@@ -479,6 +481,7 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 	}
 
 	keys := slices.Collect(maps.Keys(unique))
+
 	return keys
 }
 

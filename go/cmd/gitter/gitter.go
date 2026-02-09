@@ -99,6 +99,7 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 	cmd.Cancel = func() error {
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
+
 	return cmd
 }
 
@@ -181,6 +182,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	}
 
 	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
+
 	return nil
 }
 
@@ -233,12 +235,10 @@ func main() {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
 			logger.Error("could not create CPU profile", slog.Any("error", err))
-			os.Exit(1)
 		}
 		defer f.Close()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			logger.Error("could not start CPU profile", slog.Any("error", err))
-			os.Exit(1)
 		}
 		defer pprof.StopCPUProfile()
 	}
@@ -389,6 +389,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Received request: /cache", slog.String("url", url))
 
 	// Fetch repo if it's not fresh
+	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
 	}); err != nil {
@@ -404,6 +405,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 
+	//nolint:contextcheck // I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
 		return LoadRepository(r.Context(), repoPath)
 	})
@@ -470,6 +472,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch repo if it's not fresh
+	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
 	}); err != nil {
@@ -485,6 +488,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 
+	//nolint:contextcheck // I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
 		return LoadRepository(r.Context(), repoPath)
 	})
@@ -510,6 +514,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(affectedCommits)
+	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
+		logger.Error("Error encoding affected commits", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
+		return
+	}
 	logger.Info("Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }

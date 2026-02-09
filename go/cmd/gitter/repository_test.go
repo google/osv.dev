@@ -259,9 +259,9 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			expected:     []SHA1{hC, hD, hE, hF},
 		},
 		{
-			name:         "Everything affected if no lastAffected",
-			introduced:   []SHA1{hA},
-			expected:     []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
+			name:       "Everything affected if no lastAffected",
+			introduced: []SHA1{hA},
+			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
 		},
 	}
 
@@ -334,10 +334,10 @@ func TestBetween(t *testing.T) {
 	repo.commitDetails[hH] = &Commit{Hash: hH, Parents: []SHA1{hG}}
 
 	tests := []struct {
-		name         string
-		introduced   []SHA1
-		limit        []SHA1
-		expected     []SHA1
+		name       string
+		introduced []SHA1
+		limit      []SHA1
+		expected   []SHA1
 	}{
 		{
 			name:       "One branch: A introduced, D limit",

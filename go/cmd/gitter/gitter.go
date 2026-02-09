@@ -30,9 +30,9 @@ import (
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"GET /repo":              gitHandler,
+	"GET /git":               gitHandler,
 	"POST /cache":            cacheHandler,
-	"POST /affected-commits": affectCommitsHandler,
+	"POST /affected-commits": affectedCommitsHandler,
 }
 
 const defaultGitterWorkDir = "/work/gitter"
@@ -72,7 +72,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	// Ensure it eventually dies if it ignores SIGINT
 	cmd.WaitDelay = shutdownTimeout / 2
 
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
@@ -80,7 +80,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 			return nil, fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
-		return nil, fmt.Errorf("command %s failed, stdout: %s, stderr: %s", name, out, err)
+		return nil, fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
 
 	return out, nil
@@ -388,12 +388,15 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Received request: /cache", slog.String("url", url))
 
 	// Fetch repo if it's not fresh
-	_, err, _ = gFetch.Do(url, func() (any, error) {
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url)
-	})
-	if err != nil {
-		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Failed to update repo: %v", err), http.StatusInternalServerError)
+	}); err != nil {
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -413,7 +416,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }
 
-func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
+func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// POST requets body processing
 	var body struct {
@@ -468,8 +471,12 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url)
 	}); err != nil {
-		logger.Error("Failed to update repo", slog.String("url", url), slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Failed to update repo: %v", err), http.StatusInternalServerError)
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
 		return
 	}
 

@@ -14,4 +14,4 @@ echo "Begin sitemap generation for $BASE_URL_PATH"
 
 echo "Begin Syncing with cloud to $OUTPUT_BUCKET"
 
-gsutil -m rsync -c -d $SITEMAP_OUTPUT "gs://$OUTPUT_BUCKET/"
+gcloud storage rsync --checksums-only --delete-unmatched-destination-objects $SITEMAP_OUTPUT "gs://$OUTPUT_BUCKET/"

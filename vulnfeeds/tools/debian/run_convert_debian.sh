@@ -44,7 +44,7 @@ poetry run python3 convert_debian.py --adv_type=DTSA -o $OSV_DTSA_OUT $WEBWML_PA
 popd
 
 echo "Begin Syncing with cloud"
-gsutil -m rsync -c -d $OSV_DSA_OUT gs://$OUTPUT_BUCKET/dsa-osv
-gsutil -m rsync -c -d "$OSV_DLA_OUT" "gs://${OUTPUT_BUCKET}/dla-osv"
-gsutil -m rsync -c -d "$OSV_DTSA_OUT" "gs://${OUTPUT_BUCKET}/dtsa-osv"
+gcloud storage rsync --checksums-only --delete-unmatched-destination-objects $OSV_DSA_OUT gs://$OUTPUT_BUCKET/dsa-osv
+gcloud storage rsync --checksums-only --delete-unmatched-destination-objects "$OSV_DLA_OUT" "gs://${OUTPUT_BUCKET}/dla-osv"
+gcloud storage rsync --checksums-only --delete-unmatched-destination-objects "$OSV_DTSA_OUT" "gs://${OUTPUT_BUCKET}/dtsa-osv"
 echo "Successfully synced with cloud"

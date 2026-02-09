@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -1355,6 +1356,21 @@ func TestReposFromReferences(t *testing.T) {
 			},
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
+		{
+			name: "A CVE with a repo that redirects (docker/docker -> moby/moby)",
+			args: args{
+				CVE: "CVE-2017-12345", // Dummy CVE
+				refs: []models.Reference{
+					{
+						Source: "cna@docker.com",
+						Tags:   []string{"Third Party Advisory"},
+						URL:    "https://github.com/docker/docker",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/moby/moby"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1362,7 +1378,7 @@ func TestReposFromReferences(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			repoTagsCache := &git.RepoTagsCache{}
-			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

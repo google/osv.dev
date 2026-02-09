@@ -375,7 +375,8 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// POST requets body processing
 	var body struct {
-		URL string `json:"url"`
+		URL         string `json:"url"`
+		ForceUpdate bool   `json:"force_update"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -389,7 +390,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch repo if it's not fresh
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, fetchRepo(r.Context(), url)
+		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
@@ -423,6 +424,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		URL               string  `json:"url"`
 		Events            []Event `json:"events"`
 		DetectCherrypicks bool    `json:"detect_cherrypicks"`
+		ForceUpdate       bool    `json:"force_update"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -469,7 +471,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch repo if it's not fresh
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, fetchRepo(r.Context(), url)
+		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {

@@ -79,23 +79,36 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}
 }
 
+// Override global variables for test
+// Note: In a real app we might want to dependency inject these,
+// but for this simple script we modify package globals.
+func setupTest(t *testing.T) string {
+	tmpDir := t.TempDir()
+
+	gitStorePath = tmpDir
+	persistencePath = tmpDir + "/last-fetch.json" // Use simple path join for test
+	fetchTimeout = time.Minute
+
+	// Reset lastFetch map
+	lastFetchMu.Lock()
+	lastFetch = make(map[string]time.Time)
+	lastFetchMu.Unlock()
+
+	// Stop any existing timer
+	if saveTimer != nil {
+		saveTimer.Stop()
+		saveTimer = nil
+	}
+
+	return tmpDir
+}
+
 func TestGitHandler_Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Setup valid workdir
-	tmpDir := t.TempDir()
-
-	// Override global variables for test
-	// Note: In a real app we might want to dependency inject these,
-	// but for this simple script we modify package globals.
-	gitStorePath = tmpDir
-	fetchTimeout = time.Minute
-	// Ensure lastFetch map is initialized
-	if lastFetch == nil {
-		loadLastFetchMap()
-	}
+	setupTest(t)
 
 	tests := []struct {
 		name         string
@@ -136,18 +149,7 @@ func TestCacheHandler(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Setup valid workdir
-	tmpDir := t.TempDir()
-
-	// Override global variables for test
-	// Note: In a real app we might want to dependency inject these,
-	// but for this simple script we modify package globals.
-	gitStorePath = tmpDir
-	fetchTimeout = time.Minute
-	// Ensure lastFetch map is initialized
-	if lastFetch == nil {
-		loadLastFetchMap()
-	}
+	setupTest(t)
 
 	tests := []struct {
 		name         string
@@ -189,18 +191,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Setup valid workdir
-	tmpDir := t.TempDir()
-
-	// Override global variables for test
-	// Note: In a real app we might want to dependency inject these,
-	// but for this simple script we modify package globals.
-	gitStorePath = tmpDir
-	fetchTimeout = time.Minute
-	// Ensure lastFetch map is initialized
-	if lastFetch == nil {
-		loadLastFetchMap()
-	}
+	setupTest(t)
 
 	tests := []struct {
 		name         string

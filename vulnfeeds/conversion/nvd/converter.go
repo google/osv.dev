@@ -57,8 +57,8 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
 		}
 		hasAnyFixedCommits := false
-		for _, repo := range repos {
-			if versions.HasFixedCommits(repo) {
+		for _, ac := range versions.AffectedCommits {
+			if ac.Fixed != "" {
 				hasAnyFixedCommits = true
 				break
 			}
@@ -70,8 +70,8 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		}
 
 		hasAnyLastAffectedCommits := false
-		for _, repo := range repos {
-			if versions.HasLastAffectedCommits(repo) {
+		for _, ac := range versions.AffectedCommits {
+			if ac.LastAffected != "" {
 				hasAnyLastAffectedCommits = true
 				break
 			}

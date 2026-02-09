@@ -225,8 +225,8 @@ func main() {
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
 
 	port := flag.Int("port", 8888, "Listen port")
-	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
-	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
+	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
+	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
 
 	if *cpuprofile != "" {

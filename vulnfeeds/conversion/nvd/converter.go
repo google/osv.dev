@@ -229,7 +229,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 }
 
 // FindRepos attempts to find the source code repositories for a given CVE.
-func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics) []string {
+func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
 	refs := cve.References
 	CPEs := cves.CPEs(cve)
@@ -244,9 +244,8 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		return nil
 	}
 
-	// Edge case: No CPEs, but perhaps usable references.
 	if len(refs) > 0 && len(CPEs) == 0 {
-		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, repoTagsCache, metrics)
+		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
 		if len(repos) == 0 {
 			metrics.AddNote("Failed to derive any repos and there were no CPEs")
 			return nil
@@ -254,7 +253,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
-	appCPECount := 0
+
 	vendorProductCombinations := make(map[cves.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
 		CPE, err := cves.ParseCPE(CPEstr)
@@ -262,29 +261,17 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
 		}
-		if CPE.Part != "a" {
-			continue
-		}
-		appCPECount += 1
 		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
-	}
-
-	if len(CPEs) > 0 && appCPECount == 0 {
-		// This CVE is not for software (based on there being CPEs but not any application ones), skip.
-		metrics.Outcome = models.NoSoftware
-		return nil
 	}
 
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 	for vendorProductKey := range vendorProductCombinations {
-		// Does it have any application CPEs? Look for pre-computed repos based on VendorProduct.
 		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
 			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
 			if len(reposForCVE) == 0 {
 				reposForCVE = repos
 				continue
 			}
-			// Don't append duplicates.
 			for _, repo := range repos {
 				if !slices.Contains(reposForCVE, repo) {
 					reposForCVE = append(reposForCVE, repo)
@@ -295,7 +282,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
 				continue
 			}
-			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, repoTagsCache, metrics)
+			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
 			if len(repos) == 0 {
 				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
 				continue
@@ -304,22 +291,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			reposForCVE = append(reposForCVE, repos...)
 		}
 	}
-
-	logger.Info("Finished processing "+string(CVEID),
-		slog.String("cve", string(CVEID)),
-		slog.Int("cpes", len(CPEs)),
-		slog.Int("app_cpes", appCPECount),
-		slog.Int("derived_repos", len(reposForCVE)))
-
-	// If we've made it to here, we may have a CVE:
-	// * that has Application-related CPEs (so applies to software)
-	// * has a reference that is a known repository URL
-	// OR
-	// * a derived repository for the software package
-	//
-	// We do not yet have:
-	// * any knowledge of the language used
-	// * definitive version information
 
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope

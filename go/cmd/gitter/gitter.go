@@ -40,12 +40,12 @@ const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
 
 var (
-	gFetch           singleflight.Group
-	gArchive         singleflight.Group
-	gLoad            singleflight.Group
-	persistencePath  = path.Join(defaultGitterWorkDir, persistenceFileName)
-	gitStorePath     = path.Join(defaultGitterWorkDir, gitStoreFileName)
-	fetchTimeout     time.Duration
+	gFetch          singleflight.Group
+	gArchive        singleflight.Group
+	gLoad           singleflight.Group
+	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
+	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
+	fetchTimeout    time.Duration
 )
 
 type Event struct {
@@ -486,7 +486,7 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	repo := repoAny.(*Repository)
 
-	affectedCommits := make([]Commit, 0)
+	var affectedCommits []*Commit
 	if len(limit) > 0 {
 		affectedCommits = repo.Between(introduced, limit)
 	} else {

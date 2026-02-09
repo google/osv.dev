@@ -36,7 +36,7 @@ type Repository struct {
 	// Adjacency list: Parent -> []Children
 	commitGraph map[SHA1][]SHA1
 	// Actual commit details
-	commitDetails map[SHA1]Commit
+	commitDetails map[SHA1]*Commit
 	// Store tags to commit because it's useful for CVE conversion
 	tagToCommit map[string]SHA1
 	// For cherry-pick detection: PatchID -> []commit hash
@@ -51,7 +51,7 @@ func NewRepository(repoPath string) *Repository {
 	return &Repository{
 		repoPath:         repoPath,
 		commitGraph:      make(map[SHA1][]SHA1),
-		commitDetails:    make(map[SHA1]Commit),
+		commitDetails:    make(map[SHA1]*Commit),
 		tagToCommit:      make(map[string]SHA1),
 		patchIDToCommits: make(map[SHA1][]SHA1),
 	}
@@ -200,7 +200,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			newCommits = append(newCommits, childHash)
 		}
 
-		r.commitDetails[childHash] = commit
+		r.commitDetails[childHash] = &commit
 
 		// Also populate the tag-to-commit map
 		for _, tag := range tags {
@@ -264,6 +264,11 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	if err != nil {
 		return fmt.Errorf("inter-process pipe error: %w", err)
 	}
+	defer rPipe.Close()
+	// wPipe should be closed in the goroutine where we wait for git show
+	// But keeping this defer as a failsafe
+	defer wPipe.Close()
+
 	cmdShow.Stdout = wPipe
 	cmdPatchID.Stdin = rPipe
 
@@ -280,7 +285,10 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 		return fmt.Errorf("failed to start git patch-id: %w", err)
 	}
 
-	// Write hashes to stdin
+	// Channel to capture errors from git show
+	showErrChan := make(chan error, 1)
+
+	// Write hashes to git show stdin
 	go func() {
 		defer in.Close()
 		for _, hash := range chunk {
@@ -288,11 +296,14 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 		}
 	}()
 
+	// Wait for git show to finish
 	go func() {
-		cmdShow.Wait()
-		wPipe.Close()
+		err := cmdShow.Wait()
+		showErrChan <- err
+		wPipe.Close() // close pipe to send EOF to git patch-id
 	}()
 
+	// Read results from stdout of git patch-id
 	scanner := bufio.NewScanner(out)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -324,6 +335,16 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 		r.updatePatchID(hash, patchID)
 	}
 
+	// Wait for git patch-id to finish
+	if err := cmdPatchID.Wait(); err != nil {
+		return fmt.Errorf("failed to finish git patch-id: %w", err)
+	}
+
+	// Wait for git show to finish
+	if err := <-showErrChan; err != nil {
+		return fmt.Errorf("failed to finish git show: %w", err)
+	}
+
 	return nil
 }
 
@@ -339,7 +360,7 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
-func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick bool) []Commit {
+func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick bool) []*Commit {
 	r.repoMu.Lock()
 	defer r.repoMu.Unlock()
 
@@ -352,7 +373,7 @@ func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick
 
 	safeCommits := r.findSafeCommits(introduced, fixed, lastAffected)
 
-	var affectedCommits []Commit
+	var affectedCommits []*Commit
 
 	stack := make([]SHA1, len(introduced))
 	copy(stack, introduced)
@@ -458,11 +479,11 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 }
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
-func (r *Repository) Between(introduced, limit []SHA1) []Commit {
+func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 	r.repoMu.Lock()
 	defer r.repoMu.Unlock()
 
-	var affectedCommits []Commit
+	var affectedCommits []*Commit
 
 	introMap := make(map[SHA1]struct{}, len(introduced))
 	for _, commit := range introduced {

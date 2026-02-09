@@ -43,7 +43,6 @@ var (
 	gFetch           singleflight.Group
 	gArchive         singleflight.Group
 	gLoad            singleflight.Group
-	gAffectedCommits singleflight.Group
 	persistencePath  = path.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath     = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout     time.Duration
@@ -459,6 +458,12 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Info("Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
 
+	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
+	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
+		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
+		return
+	}
+
 	// Fetch repo if it's not fresh
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, fetchRepo(r.Context(), url)
@@ -481,7 +486,13 @@ func affectCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	repo := repoAny.(*Repository)
 
-	affectedCommits := repo.FindAffectedCommits(introduced, fixed, lastAffected, cherrypick)
+	affectedCommits := make([]Commit, 0)
+	if len(limit) > 0 {
+		affectedCommits = repo.Between(introduced, limit)
+	} else {
+		affectedCommits = repo.Affected(introduced, fixed, lastAffected, cherrypick)
+	}
+
 	if err != nil {
 		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)

@@ -24,6 +24,7 @@ type SHA1 [20]byte
 type Commit struct {
 	Hash    SHA1
 	PatchID SHA1
+	Parents []SHA1
 	Tags    []string
 }
 
@@ -184,8 +185,9 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 
 		commit := Commit{
-			Hash: childHash,
-			Tags: tags,
+			Hash:    childHash,
+			Tags:    tags,
+			Parents: parentHashes,
 		}
 
 		if patchID, ok := cachedPatchIDs[childHash]; ok {
@@ -336,8 +338,8 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
 }
 
-// FindAffectedCommits returns a list of commits that are affected by the given introduced, fixed and last_affected events
-func (r *Repository) FindAffectedCommits(introduced, fixed, lastAffected []SHA1, cherrypick bool) []Commit {
+// Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
+func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick bool) []Commit {
 	r.repoMu.Lock()
 	defer r.repoMu.Unlock()
 
@@ -430,12 +432,18 @@ func (r *Repository) findSafeCommits(introduced, fixed, lastAffected []SHA1) map
 
 // expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits PLUS any other commits that share the same Patch ID
 func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
-	unique := make(map[SHA1]struct{}, len(commits)*2) // avoid duplication
+	unique := make(map[SHA1]struct{}, len(commits)) // avoid duplication
+	var zeroPatchID SHA1
+
 	for _, hash := range commits {
 		unique[hash] = struct{}{}
 
 		// Find patch ID from commit details
-		details := r.commitDetails[hash]
+		details, ok := r.commitDetails[hash]
+
+		if !ok || details.PatchID == zeroPatchID {
+			continue
+		}
 
 		// Find equivalent commits
 		equivalents := r.patchIDToCommits[details.PatchID]
@@ -447,4 +455,52 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 
 	keys := slices.Collect(maps.Keys(unique))
 	return keys
+}
+
+// Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
+func (r *Repository) Between(introduced, limit []SHA1) []Commit {
+	r.repoMu.Lock()
+	defer r.repoMu.Unlock()
+
+	var affectedCommits []Commit
+
+	introMap := make(map[SHA1]struct{}, len(introduced))
+	for _, commit := range introduced {
+		introMap[commit] = struct{}{}
+	}
+
+	// DFS to walk from limit(s) to introduced (follow first parent)
+	stack := make([]SHA1, len(limit))
+	copy(stack, limit)
+
+	visited := make(map[SHA1]struct{})
+
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if _, ok := visited[curr]; ok {
+			continue
+		}
+		// If commit is in introduced, we can stop the traversal
+		if _, ok := introMap[curr]; ok {
+			continue
+		}
+		visited[curr] = struct{}{}
+
+		// Otherwise, add to affected commits
+		details, ok := r.commitDetails[curr]
+		if !ok {
+			continue
+		}
+
+		affectedCommits = append(affectedCommits, details)
+
+		// Add first parent to stack to only walk the linear branch
+		if len(details.Parents) > 0 {
+			stack = append(stack, details.Parents[0])
+		}
+	}
+
+	return affectedCommits
 }

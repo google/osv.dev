@@ -201,7 +201,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
 		}
-		if CPE.Part != "a" || CPE.Part != "o" {
+		if CPE.Part != "a" && CPE.Part != "o" { // only care about application and operating system CPEs
 			continue
 		}
 		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true

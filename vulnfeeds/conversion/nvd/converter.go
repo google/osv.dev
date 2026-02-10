@@ -55,11 +55,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		v.DatabaseSpecific = databaseSpecific
 	}
 
-	if outcome := ResolveVersionsToCommits(&versions, repos, cache, metrics); outcome == models.FixUnresolvable {
-		return models.FixUnresolvable
-	} else {
-		metrics.Outcome = outcome
-	}
+	metrics.Outcome = ResolveVersionsToCommits(&versions, repos, cache, metrics)
 
 	if metrics.Outcome == models.Successful {
 		versions.AffectedCommits = cves.DeduplicateAffectedCommits(versions.AffectedCommits)

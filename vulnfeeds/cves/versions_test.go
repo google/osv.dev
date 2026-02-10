@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -750,7 +751,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "14.4.5",
 						LastAffected: "",
 					},
@@ -776,7 +777,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "",
 						LastAffected: "2.4.0",
 					},
@@ -791,8 +792,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/joewalnes/smoothie",
-						Fixed: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
+						Repo:       "https://github.com/joewalnes/smoothie",
+						Introduced: "0",
+						Fixed:      "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
@@ -812,29 +814,34 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "33ed2b11cb8e879d86c371700e6573db1814a69e",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "33ed2b11cb8e879d86c371700e6573db1814a69e",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "2.6.4",
 						LastAffected: "",
 					},
@@ -867,8 +874,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-46285"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
-				AffectedVersions: []models.AffectedVersion{{Fixed: "3.5.15"}},
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},
@@ -876,8 +883,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
-				AffectedVersions: []models.AffectedVersion{{LastAffected: "4.3.2"}},
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", LastAffected: "4.3.2"}},
 			},
 		},
 		{
@@ -893,16 +900,18 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
 					},
 					{
-						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "b79db1ac78146fc06b0b8435773d3967de2d659c",
 					},
 				},
 
-				AffectedVersions: []models.AffectedVersion{{Fixed: "1.2.5"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "1.2.5"}},
 			},
 		},
 	}
@@ -1090,7 +1099,7 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := deduplicateAffectedCommits(tt.input)
+			got := DeduplicateAffectedCommits(tt.input)
 
 			slices.SortStableFunc(got, models.AffectedCommitCompare)
 			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
@@ -1355,6 +1364,21 @@ func TestReposFromReferences(t *testing.T) {
 			},
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
+		{
+			name: "A CVE with a repo that redirects (docker/docker -> moby/moby)",
+			args: args{
+				CVE: "CVE-2017-12345", // Dummy CVE
+				refs: []models.Reference{
+					{
+						Source: "cna@docker.com",
+						Tags:   []string{"Third Party Advisory"},
+						URL:    "https://github.com/docker/docker",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/moby/moby"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1362,7 +1386,7 @@ func TestReposFromReferences(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			repoTagsCache := &git.RepoTagsCache{}
-			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})

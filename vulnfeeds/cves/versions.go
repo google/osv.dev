@@ -704,9 +704,14 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
+func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
 	if len(commits) == 0 {
 		return []models.AffectedCommit{}
+	}
+	for i, commit := range commits {
+		if commit.Introduced == "" {
+			commits[i].Introduced = "0"
+		}
 	}
 	slices.SortStableFunc(commits, models.AffectedCommitCompare)
 	uniqueCommits := slices.Compact(commits)
@@ -785,6 +790,10 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
 				}
 
+				if introduced == "" {
+					introduced = "0"
+				}
+
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
@@ -815,8 +824,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
-	if v.AffectedCommits != nil {
-		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
+	if len(v.AffectedCommits) > 0 {
+		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
 		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
 	}
 
@@ -1006,7 +1015,7 @@ func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 		for _, av := range v.AffectedVersions {
 			metrics.AddNote("Attempting version resolution for %s in %s", av, repo)
 			introducedEquivalentCommit := ""
-			if av.Introduced != "" {
+			if av.Introduced != "" && av.Introduced != "0" {
 				ac, err := git.VersionToAffectedCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
 					metrics.AddNote("Failed to get a Git commit for introduced version %s %s", repo, av.Introduced)
@@ -1014,6 +1023,9 @@ func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 					metrics.AddNote("Successfully derived commit %s for introduced version %s", ac, av.Introduced)
 					introducedEquivalentCommit = ac.Introduced
 				}
+			}
+			if av.Introduced == "0" {
+				introducedEquivalentCommit = "0"
 			}
 			// Only try and convert fixed versions to commits via tags if there aren't any Fixed commits already.
 			// ExtractVersionInfo() opportunistically returns
@@ -1074,11 +1086,13 @@ func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 			v.AffectedCommits = append(v.AffectedCommits, ac)
 		}
 	}
+
+	return v
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-// *** Does external calls to verify repos ***
-func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics) (repos []string) {
+// TODO (jesslowe): refactor with below
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1092,6 +1106,13 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			// Failed to parse as a valid repo.
 			continue
 		}
+
+		// Check if the repo URL has changed (e.g. via redirect)
+		canonicalRepo, err := ValidateAndCanonicalizeLink(repo, httpClient)
+		if err == nil {
+			repo = canonicalRepo
+		}
+
 		if slices.Contains(repos, repo) {
 			continue
 		}

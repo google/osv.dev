@@ -57,7 +57,7 @@ const shutdownTimeout = 10 * time.Second
 
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) ([]byte, error) {
+func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -77,13 +77,13 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 		if ctx.Err() != nil {
 			// Log separately if cancelled
 			logger.Warn("Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return nil, fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
+			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
-		return nil, fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
 
-	return out, nil
+	return nil
 }
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
@@ -151,7 +151,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		logger.Info("Fetching git blob", slog.String("url", url), slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
-			_, err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
+			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
 			}
@@ -159,11 +159,11 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
 			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
-			_, err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
 				return fmt.Errorf("git fetch failed: %w", err)
 			}
-			_, err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
 			if err != nil {
 				return fmt.Errorf("git reset failed: %w", err)
 			}
@@ -204,7 +204,7 @@ func archiveRepo(ctx context.Context, url string) ([]byte, error) {
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		_, err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
+		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}

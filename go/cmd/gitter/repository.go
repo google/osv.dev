@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -22,10 +23,10 @@ import (
 type SHA1 [20]byte
 
 type Commit struct {
-	Hash    SHA1
-	PatchID SHA1
-	Parents []SHA1
-	Tags    []string
+	Hash    SHA1     `json:"hash"`
+	PatchID SHA1     `json:"patch_id"`
+	Parents []SHA1   `json:"parents"`
+	Tags    []string `json:"tags"`
 }
 
 // Repository holds the commit graph and other details for a git repository.
@@ -69,7 +70,7 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		cache = c
 		logger.Info("Loaded repository cache", slog.Int("commits", len(cache.GetCommits())))
 	} else {
-		if err == os.ErrNotExist {
+		if errors.Is(err, os.ErrNotExist) {
 			// It's fine if cache doesn't exist, log it just in case
 			logger.Info("No repository cache found")
 		} else {
@@ -124,7 +125,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	defer os.Remove(tmpFile.Name())
 
 	// Run git log via bash because redirecting to file is faster than using pipe
-	_, err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --topo-order --format="+gitLogFormat+" > "+tmpFile.Name())
+	err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --topo-order --format="+gitLogFormat+" > "+tmpFile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
@@ -382,8 +383,8 @@ func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick
 
 	var affectedCommits []*Commit
 
-	stack := make([]SHA1, len(introduced))
-	copy(stack, introduced)
+	stack := make([]SHA1, 0, len(introduced))
+	stack = append(stack, introduced...)
 
 	visited := make(map[SHA1]struct{})
 
@@ -503,14 +504,14 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 	}
 
 	// DFS to walk from limit(s) to introduced (follow first parent)
-	stack := make([]SHA1, len(limit))
+	stack := make([]SHA1, 0, len(limit))
 	// Start from limits' parents
-	for i, commit := range limit {
+	for _, commit := range limit {
 		details, ok := r.commitDetails[commit]
 		if !ok {
 			continue
 		}
-		stack[i] = details.Parents[0]
+		stack = append(stack, details.Parents[0])
 	}
 
 	visited := make(map[SHA1]struct{})

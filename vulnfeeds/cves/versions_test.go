@@ -1090,7 +1090,7 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := deduplicateAffectedCommits(tt.input)
+			got := DeduplicateAffectedCommits(tt.input)
 
 			slices.SortStableFunc(got, models.AffectedCommitCompare)
 			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)

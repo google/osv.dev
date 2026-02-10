@@ -708,9 +708,9 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	if len(commits) == 0 {
 		return []models.AffectedCommit{}
 	}
-	for _, commit := range commits {
+	for i, commit := range commits {
 		if commit.Introduced == "" {
-			commit.Introduced = "0"
+			commits[i].Introduced = "0"
 		}
 	}
 	slices.SortStableFunc(commits, models.AffectedCommitCompare)
@@ -786,12 +786,11 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					continue
 				}
 
-				
 				if introduced != "" && !HasVersion(validVersions, introduced) {
 					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
 				}
-				
-				if introduced == ""{
+
+				if introduced == "" {
 					introduced = "0"
 				}
 
@@ -825,8 +824,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 			v.AffectedCommits = append(v.AffectedCommits, commit)
 		}
 	}
-	if v.AffectedCommits != nil {
-		v.AffectedCommits = deduplicateAffectedCommits(v.AffectedCommits)
+	if len(v.AffectedCommits) > 0 {
+		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
 		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
 	}
 
@@ -1003,7 +1002,7 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo, e error) {
+func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	v = versions

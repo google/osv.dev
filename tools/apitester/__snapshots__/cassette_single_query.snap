@@ -2084,13 +2084,10 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
-                },
-                {
                   "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
-                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
                 }
               ]
             }

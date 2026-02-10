@@ -1,0 +1,12 @@
+---
+version: 2
+interactions:
+- request:
+    host: api.osv.dev
+    body: |
+      { "queries": [ { "commit": "17b30e96476be70b8773b2b807bab857fd3ceb39" } ] }
+    headers:
+      X-Test-Name:
+        - TestBatchQueryEndpoint/CommitQuery_protobuf
+    url: https://api.osv.dev/v1/querybatch
+    method: POST

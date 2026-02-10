@@ -87,7 +87,16 @@
         "vulnfeeds/**"
       ],
       "matchCategories": ["golang"],
+      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "vulnfeeds-go"
+    },
+    {
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
+      "matchCategories": ["golang"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "vulnfeeds-go major"
     },
     {
       "matchFileNames": [

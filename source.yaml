@@ -366,6 +366,21 @@
   editable: False
   strict_validation: True
 
+- name: 'opam'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!OSEC-).*$']
+  repo_branch: 'generated-osv'
+  repo_url: 'https://github.com/ocaml/security-advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OSEC-']
+  ignore_git: False
+  link: 'https://github.com/ocaml/security-advisories/blob/generated-osv/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
 - name: 'openeuler'
   versions_from_repo: False
   rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'

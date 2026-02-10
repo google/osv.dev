@@ -52,8 +52,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: '>=1.23.6'
+          go-version: '>=1.25.7'
       - name: Set up terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
       - name: Run pylint and yapf, go vet
+        env:
+          GOTOOLCHAIN: auto
         run: poetry run ./tools/lint_and_format.sh

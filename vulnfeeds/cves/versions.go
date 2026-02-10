@@ -781,8 +781,13 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					continue
 				}
 
+				
 				if introduced != "" && !HasVersion(validVersions, introduced) {
 					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
+				}
+				
+				if introduced == ""{
+					introduced = "0"
 				}
 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
@@ -1009,7 +1014,7 @@ func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *gi
 		for _, av := range versions.AffectedVersions {
 			metrics.AddNote("Attempting version resolution for %s in %s", av, repo)
 			introducedEquivalentCommit := ""
-			if av.Introduced != "" {
+			if av.Introduced != "" && av.Introduced != "0" {
 				ac, err := git.VersionToAffectedCommit(av.Introduced, repo, models.Introduced, normalizedTags)
 				if err != nil {
 					metrics.AddNote("Failed to get a Git commit for introduced version %s %s", repo, av.Introduced)
@@ -1017,6 +1022,9 @@ func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *gi
 					metrics.AddNote("Successfully derived commit %s for introduced version %s", ac, av.Introduced)
 					introducedEquivalentCommit = ac.Introduced
 				}
+			}
+			if av.Introduced == "0" {
+				introducedEquivalentCommit = "0"
 			}
 			// Only try and convert fixed versions to commits via tags if there aren't any Fixed commits already.
 			// ExtractVersionInfo() opportunistically returns
@@ -1078,7 +1086,7 @@ func GitVersionsToCommits(versions models.VersionInfo, repos []string, cache *gi
 		}
 	}
 
-	return v, nil
+	return v
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.

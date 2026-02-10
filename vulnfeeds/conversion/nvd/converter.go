@@ -201,9 +201,9 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
 		}
-		// if CPE.Part != "a" {
-		// 	continue
-		// }
+		if CPE.Part != "a" || CPE.Part != "o" {
+			continue
+		}
 		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
 	}
 
@@ -217,8 +217,8 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 				continue
 			}
 			for _, repo := range repos {
-				if !slices.Contains(repos, repo) {
-					repos = append(repos, repo)
+				if !slices.Contains(reposForCVE, repo) {
+					reposForCVE = append(reposForCVE, repo)
 				}
 			}
 		}

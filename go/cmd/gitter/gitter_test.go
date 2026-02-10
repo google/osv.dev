@@ -82,7 +82,7 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 // Override global variables for test
 // Note: In a real app we might want to dependency inject these,
 // but for this simple script we modify package globals.
-func setupTest(t *testing.T) string {
+func setupTest(t *testing.T) {
 	t.Helper()
 	tmpDir := t.TempDir()
 
@@ -100,8 +100,6 @@ func setupTest(t *testing.T) string {
 		saveTimer.Stop()
 		saveTimer = nil
 	}
-
-	return tmpDir
 }
 
 func TestGitHandler_Integration(t *testing.T) {

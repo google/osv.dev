@@ -178,6 +178,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		if os.IsNotExist(err) {
 			deleteLastFetch(url)
 		}
+
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
@@ -340,9 +341,11 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -354,6 +357,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Error archiving blob", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 	fileData := fileDataAny.([]byte)
@@ -381,6 +385,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+
 		return
 	}
 	defer r.Body.Close()
@@ -396,9 +401,11 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -412,6 +419,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -431,6 +439,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+
 		return
 	}
 	defer r.Body.Close()
@@ -468,6 +477,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
 	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
 		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
+
 		return
 	}
 
@@ -479,9 +489,11 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -495,6 +507,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 	repo := repoAny.(*Repository)
@@ -509,6 +522,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -517,6 +531,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
 		logger.Error("Error encoding affected commits", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 	logger.Info("Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))

@@ -20,6 +20,7 @@ func decodeSHA1(s string) SHA1 {
 		panic(err)
 	}
 	copy(hash[:], b)
+
 	return hash
 }
 
@@ -27,6 +28,7 @@ func decodeSHA1(s string) SHA1 {
 func encodeSHA1(hash SHA1) string {
 	// Remove padding zeros for a cleaner results
 	str := hex.EncodeToString(hash[:])
+
 	return strings.TrimLeft(str, "0")
 }
 

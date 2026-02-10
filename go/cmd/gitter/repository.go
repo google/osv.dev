@@ -67,10 +67,14 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	// Load cache pb file of the repo if exist
 	if c, err := loadRepositoryCache(cachePath); err == nil {
 		cache = c
-		logger.Info("Loaded repository cache", slog.Int("commits", len(cache.Commits)))
+		logger.Info("Loaded repository cache", slog.Int("commits", len(cache.GetCommits())))
 	} else {
-		// It's fine if cache doesn't exist
-		logger.Info("No repository cache found or failed to load", slog.Any("err", err))
+		if err == os.ErrNotExist {
+			// It's fine if cache doesn't exist, log it just in case
+			logger.Info("No repository cache found")
+		} else {
+			return nil, fmt.Errorf("failed to load repository cache: %w", err)
+		}
 	}
 
 	// Commit graph is built from scratch every time
@@ -247,6 +251,7 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 	}
 
 	logger.Info("Patch ID calculation completed", slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
+
 	return nil
 }
 

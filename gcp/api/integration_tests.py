@@ -792,6 +792,8 @@ class IntegrationTests(unittest.TestCase,
                     }, {
                         'id': 'CVE-2025-7207',
                     }, {
+                        'id': 'CVE-2026-1979',
+                    }, {
                         'id': 'OSV-2020-744',
                     }]
                 },

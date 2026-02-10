@@ -60,18 +60,19 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	} else {
 		metrics.Outcome = outcome
 	}
-	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
-	vulns.AttachExtractedVersionInfo(v, versions)
 
-	if len(v.Affected) == 0 {
-		metrics.AddNote("No affected ranges detected for %q", maybeProductName)
-		metrics.Outcome = models.NoCommitRanges
+	if metrics.Outcome == models.Successful {
+		versions.AffectedCommits = cves.DeduplicateAffectedCommits(versions.AffectedCommits)
+		vulns.AttachExtractedVersionInfo(v, versions)
+		if len(v.Affected) == 0 {
+			metrics.AddNote("No affected ranges detected for %q", maybeProductName)
+			metrics.Outcome = models.NoCommitRanges
+		}
 	}
 
 	if rejectFailed && metrics.Outcome != models.Successful {
 		return metrics.Outcome
 	}
-
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {

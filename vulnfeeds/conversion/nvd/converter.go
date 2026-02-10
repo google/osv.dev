@@ -83,7 +83,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		}
 	}
 
-	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+	versions.AffectedCommits = cves.DeduplicateAffectedCommits(versions.AffectedCommits)
 
 	vulns.AttachExtractedVersionInfo(v, versions)
 

@@ -704,9 +704,14 @@ func cleanVersion(version string) string {
 	return strings.TrimRight(version, ":")
 }
 
-func deduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
+func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.AffectedCommit {
 	if len(commits) == 0 {
 		return []models.AffectedCommit{}
+	}
+	for _, commit := range commits {
+		if commit.Introduced == "" {
+			commit.Introduced = "0"
+		}
 	}
 	slices.SortStableFunc(commits, models.AffectedCommitCompare)
 	uniqueCommits := slices.Compact(commits)

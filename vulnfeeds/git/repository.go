@@ -25,6 +25,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -63,8 +64,52 @@ type RepoTagsMap struct {
 	NormalizedTag map[string]NormalizedTag // The key is the normalized (as by NormalizeRepoTags) original tag.
 }
 
-// RepoTags acts as a cache for RepoTags results, keyed on the repo's URL.
-type RepoTagsCache map[string]RepoTagsMap
+// RepoTagsCache acts as a cache for RepoTags results, keyed on the repo's URL.
+type RepoTagsCache struct {
+	sync.RWMutex
+
+	m       map[string]RepoTagsMap
+	invalid map[string]bool
+}
+
+func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.m == nil {
+		return RepoTagsMap{}, false
+	}
+	tags, ok := c.m[repo]
+
+	return tags, ok
+}
+
+func (c *RepoTagsCache) Set(repo string, tags RepoTagsMap) {
+	c.Lock()
+	defer c.Unlock()
+	if c.m == nil {
+		c.m = make(map[string]RepoTagsMap)
+	}
+	c.m[repo] = tags
+}
+
+func (c *RepoTagsCache) SetInvalid(repo string) {
+	c.Lock()
+	defer c.Unlock()
+	if c.invalid == nil {
+		c.invalid = make(map[string]bool)
+	}
+	c.invalid[repo] = true
+}
+
+func (c *RepoTagsCache) IsInvalid(repo string) bool {
+	c.RLock()
+	defer c.RUnlock()
+	if c.invalid == nil {
+		return false
+	}
+
+	return c.invalid[repo]
+}
 
 // RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.
 func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.Reference, err error) {
@@ -113,16 +158,23 @@ func RepoName(repoURL string) (name string, e error) {
 
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
+func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error) {
 	if repoTagsCache != nil {
-		tags, ok := repoTagsCache[repoURL]
+		tagsRepoMap, ok := repoTagsCache.Get(repoURL)
 		if ok {
-			return slices.Collect(maps.Values(tags.Tag)), nil
+			return slices.Collect(maps.Values(tagsRepoMap.Tag)), nil
+		}
+		if repoTagsCache.IsInvalid(repoURL) {
+			return tags, errors.New("repo previously found to be invalid")
 		}
 	}
 	// Cache miss.
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil {
+		if repoTagsCache != nil {
+			repoTagsCache.SetInvalid(repoURL)
+		}
+
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)
@@ -149,7 +201,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	// Sort so that we get consistently ordered output for test validation purposes.
 	sort.Sort(tags)
 	if repoTagsCache != nil {
-		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: nil}
+		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: tagsMap, NormalizedTag: nil})
 	}
 
 	return tags, nil
@@ -186,9 +238,9 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
+func NormalizeRepoTags(repoURL string, repoTagsCache *RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
 	if repoTagsCache != nil {
-		tags, ok := repoTagsCache[repoURL]
+		tags, ok := repoTagsCache.Get(repoURL)
 		if ok && tags.NormalizedTag != nil {
 			return tags.NormalizedTag, nil
 		}
@@ -213,8 +265,8 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedT
 	}
 	if repoTagsCache != nil {
 		// The RepoTags() call above will have cached the Tag map already
-		tagsMap := repoTagsCache[repoURL].Tag
-		repoTagsCache[repoURL] = RepoTagsMap{Tag: tagsMap, NormalizedTag: normalizedTags}
+		repoTagsMap, _ := repoTagsCache.Get(repoURL)
+		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: repoTagsMap.Tag, NormalizedTag: normalizedTags})
 	}
 
 	return normalizedTags, nil

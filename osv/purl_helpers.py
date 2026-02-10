@@ -48,6 +48,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('deb', 'echo'),
     'Debian':
         EcosystemPURL('deb', 'debian'),
+    'Docker Hardened Images':
+        EcosystemPURL('dhi', None),
     # GHC
     # GIT
     # GitHub Actions

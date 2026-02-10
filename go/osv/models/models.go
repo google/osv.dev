@@ -16,56 +16,21 @@
 package models
 
 import (
-	"time"
-
-	"cloud.google.com/go/datastore"
+	"github.com/google/osv.dev/go/internal/database/datastore"
 )
 
-type Vulnerability struct {
-	Key         *datastore.Key `datastore:"__key__"`
-	SourceID    string         `datastore:"source_id"`
-	Modified    time.Time      `datastore:"modified"`
-	IsWithdrawn bool           `datastore:"is_withdrawn"`
-	ModifiedRaw time.Time      `datastore:"modified_raw"`
-	AliasRaw    []string       `datastore:"alias_raw"`
-	RelatedRaw  []string       `datastore:"related_raw"`
-	UpstreamRaw []string       `datastore:"upstream_raw"`
-}
+type Vulnerability = datastore.Vulnerability
 
-type AliasGroup struct {
-	VulnIDs  []string  `datastore:"bug_ids"`
-	Modified time.Time `datastore:"last_modified"`
-}
+type AliasGroup = datastore.AliasGroup
 
-type UpstreamGroup struct {
-	Key               *datastore.Key `datastore:"__key__"`
-	VulnID            string         `datastore:"db_id"`
-	UpstreamIDs       []string       `datastore:"upstream_ids"`
-	Modified          time.Time      `datastore:"last_modified"`
-	UpstreamHierarchy []byte         `datastore:"upstream_hierarchy,noindex"`
-}
+type UpstreamGroup = datastore.UpstreamGroup
 
-type AliasAllowListEntry struct {
-	VulnID string `datastore:"bug_id"`
-}
+type RelatedGroup = datastore.RelatedGroup
 
-type AliasDenyListEntry struct {
-	VulnID string `datastore:"bug_id"`
-}
+type AliasAllowListEntry = datastore.AliasAllowListEntry
 
-type Severity struct {
-	Type  string `datastore:"type"`
-	Score string `datastore:"score"`
-}
+type AliasDenyListEntry = datastore.AliasDenyListEntry
 
-type ListedVulnerability struct {
-	Key              *datastore.Key `datastore:"__key__"`
-	Published        time.Time      `datastore:"published"`
-	Ecosystems       []string       `datastore:"ecosystems"`
-	Packages         []string       `datastore:"packages,noindex"`
-	Summary          string         `datastore:"summary,noindex"`
-	IsFixed          bool           `datastore:"is_fixed,noindex"`
-	Severities       []Severity     `datastore:"severities"`
-	AutocompleteTags []string       `datastore:"autocomplete_tags"`
-	SearchIndices    []string       `datastore:"search_indices"`
-}
+type Severity = datastore.Severity
+
+type ListedVulnerability = datastore.ListedVulnerability

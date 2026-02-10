@@ -160,6 +160,21 @@ func (u *Updater) run(ctx context.Context) {
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp
 						}
+					case updateFieldRelated:
+						val, ok := u.Value.([]string)
+						if !ok {
+							logger.Error("updated related are not []string", slog.String("id", id))
+							continue
+						}
+						if slices.Compare(v.GetRelated(), val) == 0 {
+							continue
+						}
+						hasUpdates = true
+						v.Related = val
+						updatedFields = append(updatedFields, "related")
+						if u.Timestamp.After(modified) {
+							modified = u.Timestamp
+						}
 					default:
 						logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
 					}

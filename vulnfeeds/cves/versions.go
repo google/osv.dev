@@ -1078,7 +1078,7 @@ func GitVersionsToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // *** Does external calls to verify repos ***
-func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics) (repos []string) {
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1092,6 +1092,13 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			// Failed to parse as a valid repo.
 			continue
 		}
+
+		// Check if the repo URL has changed (e.g. via redirect)
+		canonicalRepo, err := ValidateAndCanonicalizeLink(repo, httpClient)
+		if err == nil {
+			repo = canonicalRepo
+		}
+
 		if slices.Contains(repos, repo) {
 			continue
 		}

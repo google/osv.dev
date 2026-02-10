@@ -297,7 +297,8 @@ class Importer:
         source_repo.repo_url,
         os.path.join(self._sources_dir, source_repo.name),
         git_callbacks=self._git_callbacks(source_repo),
-        branch=source_repo.repo_branch)
+        branch=source_repo.repo_branch,
+        force_update=True)
 
   def _vuln_ids_from_gcs_blob(self, client: storage.Client,
                               source_repo: osv.SourceRepository,

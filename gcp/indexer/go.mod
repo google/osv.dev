@@ -1,16 +1,16 @@
 module github.com/google/osv.dev/gcp/indexer
 
-go 1.25.6
+go 1.25.7
 
 require (
-	cloud.google.com/go/datastore v1.21.0
+	cloud.google.com/go/datastore v1.22.0
 	cloud.google.com/go/pubsub v1.50.1
-	cloud.google.com/go/storage v1.59.1
+	cloud.google.com/go/storage v1.59.2
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
 	golang.org/x/sync v0.19.0
-	google.golang.org/api v0.263.0
+	google.golang.org/api v0.265.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -72,8 +72,8 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

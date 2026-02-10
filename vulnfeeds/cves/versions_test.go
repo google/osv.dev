@@ -791,9 +791,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/joewalnes/smoothie",
+						Repo:       "https://github.com/joewalnes/smoothie",
 						Introduced: "0",
-						Fixed: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
+						Fixed:      "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
@@ -813,29 +813,29 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
+						Repo:       "https://github.com/tensorflow/tensorflow",
 						Introduced: "0",
-						Fixed: "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+						Fixed:      "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
+						Repo:       "https://github.com/tensorflow/tensorflow",
 						Introduced: "0",
-						Fixed: "33ed2b11cb8e879d86c371700e6573db1814a69e",
+						Fixed:      "33ed2b11cb8e879d86c371700e6573db1814a69e",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
+						Repo:       "https://github.com/tensorflow/tensorflow",
 						Introduced: "0",
-						Fixed: "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+						Fixed:      "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
+						Repo:       "https://github.com/tensorflow/tensorflow",
 						Introduced: "0",
-						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+						Fixed:      "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
+						Repo:       "https://github.com/tensorflow/tensorflow",
 						Introduced: "0",
-						Fixed: "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
+						Fixed:      "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
@@ -899,14 +899,14 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/open62541/open62541",
+						Repo:       "https://github.com/open62541/open62541",
 						Introduced: "0",
-						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+						Fixed:      "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
 					},
 					{
-						Repo:  "https://github.com/open62541/open62541",
+						Repo:       "https://github.com/open62541/open62541",
 						Introduced: "0",
-						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+						Fixed:      "b79db1ac78146fc06b0b8435773d3967de2d659c",
 					},
 				},
 

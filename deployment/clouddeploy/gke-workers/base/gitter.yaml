@@ -55,8 +55,9 @@ spec:
     storage: 4Ti
   accessModes:
     - ReadWriteOnce
-  gcePersistentDisk:
-    pdName: gitter-disk
+  csi:
+    driver: pd.csi.storage.gke.io
+    volumeHandle: projects/oss-vdb/zones/us-central1-f/disks/gitter-disk
     fsType: ext4
 ---
 apiVersion: v1

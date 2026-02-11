@@ -137,7 +137,7 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
 		if index < len(introduced) {
-			ranges = append(ranges, cves.BuildVersionRange(introduced[index], "", f))
+			ranges = append(ranges, conversion.BuildVersionRange(introduced[index], "", f))
 			metrics.AddNote("Introduced from version value - %s", introduced[index])
 			metrics.AddNote("Fixed from version value - %s", f)
 		}
@@ -166,13 +166,13 @@ func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affecte
 		metrics.AddNote("Only version exists")
 
 		if currentVersionType == VersionRangeTypeGit {
-			versionRanges = append(versionRanges, cves.BuildVersionRange(vers.Version, "", ""))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange(vers.Version, "", ""))
 			continue
 		}
 
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange("0", vers.Version, ""))
 			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}

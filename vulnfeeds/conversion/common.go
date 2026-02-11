@@ -5,6 +5,7 @@ package conversion
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -14,7 +15,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -167,4 +170,138 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 	metricsFile.Close()
 
 	return nil
+}
+
+
+// Examines repos and tries to convert versions to commits by treating them as Git tags.
+func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
+	var newAff osvschema.Affected
+	var newVersionRanges []*osvschema.Range
+	unresolvedRanges := versionRanges
+
+	for _, repo := range repos {
+		if len(unresolvedRanges) == 0 {
+			break // All ranges have been resolved.
+		}
+
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		if err != nil {
+			metrics.AddNote("Failed to normalize tags - %s", repo)
+			continue
+		}
+
+		var stillUnresolvedRanges []*osvschema.Range
+		for _, vr := range unresolvedRanges {
+			var introduced, fixed, lastAffected string
+			for _, e := range vr.GetEvents() {
+				if e.GetIntroduced() != "" {
+					introduced = e.GetIntroduced()
+				}
+				if e.GetFixed() != "" {
+					fixed = e.GetFixed()
+				}
+				if e.GetLastAffected() != "" {
+					lastAffected = e.GetLastAffected()
+				}
+			}
+
+			var introducedCommit string
+			if introduced == "0" {
+				introducedCommit = "0"
+			} else {
+				introducedCommit = resolveVersionToCommit(metrics.CVEID, introduced, "introduced", repo, normalizedTags)
+			}
+			fixedCommit := resolveVersionToCommit(metrics.CVEID, fixed, "fixed", repo, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(metrics.CVEID, lastAffected, "last_affected", repo, normalizedTags)
+
+			if fixedCommit != "" || lastAffectedCommit != "" {
+				var newVR *osvschema.Range
+
+				if fixedCommit != "" {
+					newVR = BuildVersionRange(introducedCommit, "", fixedCommit)
+				} else {
+					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
+				}
+
+				newVR.Repo = repo
+				newVR.Type = osvschema.Range_GIT
+				if len(vr.GetEvents()) > 0 {
+					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
+					if err != nil {
+						logger.Warn("failed to make database specific: %v", err)
+					} else {
+						newVR.DatabaseSpecific = databaseSpecific
+					}
+				}
+
+				newVersionRanges = append(newVersionRanges, newVR)
+			} else {
+				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
+			}
+		}
+		unresolvedRanges = stillUnresolvedRanges
+	}
+
+	var err error
+	if len(unresolvedRanges) > 0 {
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+		if err != nil {
+			logger.Warn("failed to make database specific: %v", err)
+		} else {
+			newAff.DatabaseSpecific = databaseSpecific
+		}
+
+		metrics.UnresolvedRangesCount += len(unresolvedRanges)
+	}
+
+	if len(newVersionRanges) > 0 {
+		newAff.Ranges = newVersionRanges
+		metrics.ResolvedRangesCount += len(newVersionRanges)
+	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
+		err = errors.New("was not able to get git version ranges")
+	}
+
+	return &newAff, err
+}
+
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		return ""
+	}
+	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+
+	return commit
+}
+
+// BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
+	var versionRange osvschema.Range
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, &osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+
+	return &versionRange
 }

@@ -32,8 +32,11 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 // References with these tags have been found to contain completely unrelated
@@ -547,19 +550,27 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
-	var ac models.AffectedCommit
-	c, r, err := ExtractGitCommit(link, httpClient, 0)
+func extractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
+	var commits []models.AffectedCommit
 
-	if err != nil {
-		return ac, err
+	for _, ref := range references {
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		var ac models.AffectedCommit
+		c, r, err := ExtractGitCommit(ref.URL, httpClient, 0)
+
+		if err != nil {
+			logger.Error("Failed to extract commit from ref: %v", err)
+			continue
+		}
+
+		ac.SetRepo(r)
+
+		models.SetCommitByType(&ac, models.Fixed, c)
+
+		commits = append(commits, ac)
 	}
 
-	ac.SetRepo(r)
-
-	models.SetCommitByType(&ac, commitType, c)
-
-	return ac, nil
+	return commits, nil
 }
 
 func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
@@ -638,7 +649,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []models.AffectedVersion {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []*osvschema.Range {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -651,7 +662,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		return nil
 	}
 
-	versions := make([]models.AffectedVersion, 0, len(matches))
+	versions := make([]*osvschema.Range, 0, len(matches))
 
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
@@ -689,11 +700,8 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		versions = append(versions, models.AffectedVersion{
-			Introduced:   introduced,
-			Fixed:        fixed,
-			LastAffected: lastaffected,
-		})
+		vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+		versions = append(versions, vr)
 	}
 
 	return versions
@@ -719,9 +727,8 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.AffectedVersion {
-	versions := []models.AffectedVersion{}
-	seen := make(map[models.AffectedVersion]bool)
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []*osvschema.Range {
+	versions := []*osvschema.Range{}
 
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
@@ -768,8 +775,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					if err != nil {
 						continue
 					}
-					if CPE.Part != "a" {
-						// Skip operating system CPEs.
+					if CPE.Part != "a" && CPE.Part != "o" {
 						continue
 					}
 					if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
@@ -782,8 +788,11 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					}
 				}
 
-				if introduced == "" && fixed == "" && lastaffected == "" {
-					continue
+				if introduced == "" {
+					if fixed == "" && lastaffected == "" {
+						continue
+					}
+					introduced = "0"
 				}
 
 				if introduced != "" && !HasVersion(validVersions, introduced) {
@@ -797,19 +806,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-
-				possibleNewAffectedVersion := models.AffectedVersion{
-					Introduced:   introduced,
-					Fixed:        fixed,
-					LastAffected: lastaffected,
-				}
-
-				if seen[possibleNewAffectedVersion] {
-					continue
-				}
-				seen[possibleNewAffectedVersion] = true
-				versions = append(versions, possibleNewAffectedVersion)
-				metrics.AddNote("Extracted version %+v", possibleNewAffectedVersion)
+				vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+				versions = append(versions, vr)
 			}
 		}
 	}
@@ -817,29 +815,30 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 	return versions
 }
 
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	for _, reference := range cve.References {
-		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
-			v.AffectedCommits = append(v.AffectedCommits, commit)
-		}
-	}
-	if len(v.AffectedCommits) > 0 {
-		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
+func ExtractVersions(v *vulns.Vulnerability, cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (cpeRanges []*osvschema.Range, commits []models.AffectedCommit, textRanges []*osvschema.Range) {
+	// Extract Versions From CPEs
+	cpeRanges = ExtractVersionsFromCPEs(cve, validVersions, metrics)
+	if len(cpeRanges) > 0 {
+		metrics.AddNote("Extracted versions from CPEs: %v", cpeRanges)
 	}
 
-	v.AffectedVersions = ExtractVersionsFromCPEs(cve, validVersions, metrics)
-	if len(v.AffectedVersions) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", v.AffectedVersions)
-	} else {
-		v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
-		if len(v.AffectedVersions) > 0 {
-			metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
-		}
+	// Extract Commits
+	commits, err := extractCommitsFromRefs(cve.References, httpClient)
+	if err != nil {
+		metrics.AddNote("Failed to extract commits from refs: %v", err)
+	}
+	if len(commits) > 0 {
+		metrics.AddNote("Extracted commits from refs: %v", commits)
 	}
 
-	if len(v.AffectedVersions) == 0 {
+	// Extract Versions From Text
+	textRanges = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
+	if len(textRanges) > 0 {
+		metrics.AddNote("Extracted versions from description: %v", textRanges)
+	}
+
+	// If no versions were detected, add a note
+	if len(cpeRanges) == 0 && len(commits) == 0 && len(textRanges) == 0 {
 		metrics.AddNote("No versions detected.")
 	}
 
@@ -850,19 +849,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 		}
 	}
 
-	// Remove any lastaffected versions in favour of fixed versions.
-	if v.HasFixedVersions() {
-		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
-		for _, av := range v.AffectedVersions {
-			if av.LastAffected != "" {
-				continue
-			}
-			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
-		}
-		v.AffectedVersions = affectedVersionsWithoutLastAffected
-	}
-
-	return v
+	return cpeRanges, commits, textRanges
 }
 
 func CPEs(cve models.NVDCVE) []string {
@@ -1173,29 +1160,4 @@ func ReposFromReferencesCVEList(refs []models.Reference, tagDenyList []string, m
 	}
 
 	return repos
-}
-
-// BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
-// events to an OSV version range. If 'intro' is empty, it defaults to "0".
-func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
-	var versionRange osvschema.Range
-	var i string
-	if intro == "" {
-		i = "0"
-	} else {
-		i = intro
-	}
-	versionRange.Events = append(versionRange.Events, &osvschema.Event{
-		Introduced: i})
-
-	if fixed != "" {
-		versionRange.Events = append(versionRange.Events, &osvschema.Event{
-			Fixed: fixed})
-	} else if lastAff != "" {
-		versionRange.Events = append(versionRange.Events, &osvschema.Event{
-			LastAffected: lastAff,
-		})
-	}
-
-	return &versionRange
 }

@@ -52,7 +52,7 @@ metadata:
 spec:
   storageClassName: ""
   capacity:
-    storage: 2Ti
+    storage: 4Ti
   accessModes:
     - ReadWriteOnce
   gcePersistentDisk:
@@ -70,7 +70,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Ti
+      storage: 4Ti
 ---
 apiVersion: v1
 kind: Service

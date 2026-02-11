@@ -44,18 +44,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
-		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
 			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
-		if err != nil {
-			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
-		}
+		versions = cves.GitVersionsToCommits(versions, repos, cache, metrics)
 		hasAnyFixedCommits := false
 		for _, ac := range versions.AffectedCommits {
 			if ac.Fixed != "" {
@@ -83,7 +78,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		}
 	}
 
-	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+	versions.AffectedCommits = cves.DeduplicateAffectedCommits(versions.AffectedCommits)
 
 	vulns.AttachExtractedVersionInfo(v, versions)
 
@@ -139,18 +134,13 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
-		var err error
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
 		if len(repos) == 0 {
 			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions, err = cves.GitVersionsToCommits(versions, repos, cache, metrics)
-		if err != nil {
-			metrics.AddNote("Failed to convert version tags to commits: %+v", err)
-			return fmt.Errorf("failed to convert version tags to commits: %+v %w", versions, err)
-		}
+		versions = cves.GitVersionsToCommits(versions, repos, cache, metrics)
 	}
 
 	hasAnyFixedCommits := false

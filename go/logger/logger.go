@@ -79,8 +79,10 @@ func log(level slog.Level, msg string, a []any) {
 	runtime.Callers(3, pcs[:]) // skip [Callers, log, Info/Warn/etc]
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(a...)
-	//nolint:errcheck
-	slogLogger.Handler().Handle(context.Background(), r)
+	if slogLogger.Handler().Enabled(context.Background(), level) {
+		//nolint:errcheck
+		slogLogger.Handler().Handle(context.Background(), r)
+	}
 }
 
 // Debug prints a Debug level log.

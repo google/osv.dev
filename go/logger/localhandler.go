@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -26,17 +27,24 @@ var (
 )
 
 type localHandler struct {
-	w io.Writer
+	w     io.Writer
+	debug bool
 }
+
+var _ slog.Handler = (*localHandler)(nil)
 
 func newLocalHandler(w io.Writer) *localHandler {
 	return &localHandler{
-		w: w,
+		w:     w,
+		debug: os.Getenv("LOG_DEBUG") != "",
 	}
 }
 
-func (h *localHandler) Enabled(_ context.Context, _ slog.Level) bool {
-	return true
+func (h *localHandler) Enabled(_ context.Context, level slog.Level) bool {
+	if h.debug {
+		return true
+	}
+	return level >= slog.LevelInfo
 }
 
 func (h *localHandler) Handle(_ context.Context, r slog.Record) error {

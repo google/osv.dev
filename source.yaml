@@ -593,6 +593,7 @@
   versions_from_repo: True
   type: 0
   ignore_patterns: [ '^(?!V8-advisory).*$' ]
+  directory_path: 'advisories'
   repo_url: 'https://github.com/google/chromium-policy-vulnfeed.git'
   detect_cherrypicks: False
   consider_all_branches: True

@@ -58,20 +58,6 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -84,20 +70,6 @@
             }
           ],
           "versions": 138,
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://gitlab.com/wireshark/wireshark",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
           "database_specific": "<Any value>"
         }
       ],
@@ -172,13 +144,13 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "repo": "https://github.com/behdad/harfbuzz",
               "events": [
                 {
                   "introduced": "0"
                 },
                 {
-                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
                 }
               ]
             }
@@ -266,20 +238,6 @@
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -1952,17 +1910,11 @@
                 },
                 {
                   "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
-                },
-                {
-                  "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
-                },
-                {
-                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
               ]
             }
           ],
-          "versions": 94,
+          "versions": 209,
           "database_specific": "<Any value>"
         }
       ],
@@ -2392,13 +2344,10 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
-                },
-                {
                   "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
                 },
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
+                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
               ]
             }

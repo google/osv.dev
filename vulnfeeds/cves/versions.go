@@ -852,6 +852,137 @@ func ExtractVersions(v *vulns.Vulnerability, cve models.NVDCVE, validVersions []
 	return cpeRanges, commits, textRanges
 }
 
+// ExtractVersionInfo extracts version information from a CVE.
+// Deprecated: Use ExtractVersions instead.
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
+	if commit, err := extractCommitsFromRefs(cve.References, httpClient); err == nil {
+		v.AffectedCommits = append(v.AffectedCommits, commit...)
+	}
+
+	if v.AffectedCommits != nil {
+		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
+		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
+	}
+
+	// gotVersions := false
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			if node.Operator != "OR" {
+				continue
+			}
+
+			for _, match := range node.CPEMatch {
+				if !match.Vulnerable {
+					continue
+				}
+
+				introduced := ""
+				fixed := ""
+				lastaffected := ""
+				if match.VersionStartIncluding != nil {
+					introduced = cleanVersion(*match.VersionStartIncluding)
+				} else if match.VersionStartExcluding != nil {
+					var err error
+					introduced, err = nextVersion(validVersions, cleanVersion(*match.VersionStartExcluding))
+					if err != nil {
+						metrics.AddNote("%v", err.Error())
+					}
+				}
+
+				if match.VersionEndExcluding != nil {
+					fixed = cleanVersion(*match.VersionEndExcluding)
+				} else if match.VersionEndIncluding != nil {
+					var err error
+					// Infer the fixed version from the next version after.
+					fixed, err = nextVersion(validVersions, cleanVersion(*match.VersionEndIncluding))
+					if err != nil {
+						metrics.AddNote("%v", err.Error())
+						// if that inference failed, we know this version was definitely still vulnerable.
+						lastaffected = cleanVersion(*match.VersionEndIncluding)
+						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
+					}
+				}
+
+				if introduced == "" && fixed == "" && lastaffected == "" {
+					// See if a last affected version is inferable from the CPE string.
+					// In this situation there is no known introduced version.
+					CPE, err := ParseCPE(match.Criteria)
+					if err != nil {
+						continue
+					}
+					if CPE.Part != "a" {
+						// Skip operating system CPEs.
+						continue
+					}
+					if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
+						// These are meaningless converting to commits.
+						continue
+					}
+					lastaffected = CPE.Version
+					if CPE.Update != "ANY" {
+						lastaffected += "-" + CPE.Update
+					}
+				}
+
+				if introduced == "" && fixed == "" && lastaffected == "" {
+					continue
+				}
+
+				if introduced != "" && !HasVersion(validVersions, introduced) {
+					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
+				}
+
+				if fixed != "" && !HasVersion(validVersions, fixed) {
+					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
+				}
+
+				// gotVersions = true
+				possibleNewAffectedVersion := models.AffectedVersion{
+					Introduced:   introduced,
+					Fixed:        fixed,
+					LastAffected: lastaffected,
+				}
+				if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+					// Avoid appending duplicates
+					continue
+				}
+				v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
+			}
+		}
+	}
+	// if !gotVersions {
+	// 	v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
+	// 	if len(v.AffectedVersions) > 0 {
+	// 		metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
+	// 	}
+	// }
+
+	if len(v.AffectedVersions) == 0 {
+		metrics.AddNote("No versions detected.")
+	}
+
+	if len(validVersions) > 0 {
+		metrics.AddNote("Valid versions:")
+		for _, version := range validVersions {
+			metrics.AddNote("  - %v", version)
+		}
+	}
+
+	// Remove any lastaffected versions in favour of fixed versions.
+	if v.HasFixedVersions() {
+		affectedVersionsWithoutLastAffected := []models.AffectedVersion{}
+		for _, av := range v.AffectedVersions {
+			if av.LastAffected != "" {
+				continue
+			}
+			affectedVersionsWithoutLastAffected = append(affectedVersionsWithoutLastAffected, av)
+		}
+		v.AffectedVersions = affectedVersionsWithoutLastAffected
+	}
+
+	return v
+}
+
 func CPEs(cve models.NVDCVE) []string {
 	var cpes []string
 	for _, config := range cve.Configurations {

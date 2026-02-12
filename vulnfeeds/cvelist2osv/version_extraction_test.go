@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -58,7 +58,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("1.0", "", "1.5"),
+				conversion.BuildVersionRange("1.0", "", "1.5"),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -74,7 +74,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("0", "2.0", ""),
+				conversion.BuildVersionRange("0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -89,7 +89,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("2.0", "", "2.5"),
+				conversion.BuildVersionRange("2.0", "", "2.5"),
 			},
 			wantRangeType: VersionRangeTypeEcosystem,
 		},
@@ -105,7 +105,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("", "deadbeef", ""),
+				conversion.BuildVersionRange("", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -175,7 +175,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
-				cves.BuildVersionRange("5.0.0", "", "5.10.1"),
+				conversion.BuildVersionRange("5.0.0", "", "5.10.1"),
 			},
 		},
 		{
@@ -214,7 +214,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
-				cves.BuildVersionRange("4.0.0", "", "4.5.2"),
+				conversion.BuildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
 	}

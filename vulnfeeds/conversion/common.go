@@ -174,8 +174,8 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
-	var newAff osvschema.Affected
+// Examines repos and tries to convert versions to commits by treating them as Git tags.
+func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, error) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
 
@@ -243,25 +243,17 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 	}
 
 	var err error
-	if len(unresolvedRanges) > 0 {
-		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-		if err != nil {
-			logger.Warn("failed to make database specific: %v", err)
-		} else {
-			newAff.DatabaseSpecific = databaseSpecific
-		}
-
-		metrics.UnresolvedRangesCount += len(unresolvedRanges)
-	}
 
 	if len(newVersionRanges) > 0 {
-		newAff.Ranges = newVersionRanges
 		metrics.ResolvedRangesCount += len(newVersionRanges)
 	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
 		err = errors.New("was not able to get git version ranges")
 	}
+	if len(unresolvedRanges) > 0 {
+		metrics.UnresolvedRangesCount += len(unresolvedRanges)
+	}
 
-	return &newAff, err
+	return newVersionRanges, unresolvedRanges, err
 }
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.

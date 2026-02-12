@@ -13,6 +13,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -284,9 +285,22 @@ func ResolveVersionsToCommits(versions []*osvschema.Range, repos []string, cache
 
 	// There are some AffectedVersions to try and resolve to AffectedCommits.
 	metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-	affected, err := conversion.GitVersionsToCommits(versions, repos, metrics, cache)
+	resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versions, repos, metrics, cache)
 	if err != nil {
 		return models.FixUnresolvable, nil
+	}
+
+	affected := &osvschema.Affected{
+		Ranges: resolvedRanges,
+	}
+
+	if len(unresolvedRanges) > 0 {
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+		if err != nil {
+			logger.Warn("failed to make database specific: %v", err)
+		} else {
+			affected.DatabaseSpecific = databaseSpecific
+		}
 	}
 
 	return models.Successful, affected

@@ -202,7 +202,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 			continue
 		}
 		if cve.CVE.Metrics != nil {
-			v.AddSeverity(cve.CVE.Metrics)
+			v.AddSingleSeverity(cve.CVE.Metrics)
 		}
 
 		osvVulnerabilities = append(osvVulnerabilities, v)

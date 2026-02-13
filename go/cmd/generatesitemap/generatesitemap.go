@@ -180,19 +180,19 @@ func main() {
 
 func listObjects(ctx context.Context, client clients.CloudStorage, outCh chan<- string) error {
 	prevPrefix := ""
-	for name, err := range client.Objects(ctx, gcsProtoPrefix) {
+	for obj, err := range client.Objects(ctx, gcsProtoPrefix) {
 		if err != nil {
 			return err
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(name)
+		prefix := filepath.Base(obj.Name)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", name))
+			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", obj.Name))
 			prevPrefix = prefix
 		}
 		select {
-		case outCh <- name:
+		case outCh <- obj.Name:
 		case <-ctx.Done():
 			return ctx.Err()
 		}

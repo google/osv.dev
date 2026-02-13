@@ -43,6 +43,7 @@ const shutdownTimeout = 10 * time.Second
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
 func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
+	logger.Debug("Running command", slog.String("cmd", name), slog.String("dir", dir), slog.Any("args", args))
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -52,6 +53,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
+		logger.Debug("SIGINT sent to command", slog.String("cmd", name), slog.String("dir", dir), slog.Any("args", args))
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
 	// Ensure it eventually dies if it ignores SIGINT
@@ -67,6 +69,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
+	logger.Debug("Command completed successfully", slog.String("cmd", name), slog.String("out", string(out)))
 
 	return nil
 }

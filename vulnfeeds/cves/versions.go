@@ -35,7 +35,6 @@ import (
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 )
 
@@ -63,6 +62,8 @@ var VendorProductDenyList = []VendorProduct{
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
 	{"oracle", "zfs_storage_appliance_kit"},
 	{"gradle", "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
+	{"qualcomm", ""}, // firmware out of scope
+	{"linux", "linux_kernel"},
 }
 
 type VendorProduct struct {
@@ -559,7 +560,6 @@ func extractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 		c, r, err := ExtractGitCommit(ref.URL, httpClient, 0)
 
 		if err != nil {
-			logger.Error("Failed to extract commit from ref: %v", err)
 			continue
 		}
 

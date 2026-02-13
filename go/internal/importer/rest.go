@@ -73,7 +73,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		return errors.New("invalid SourceRepository for REST import")
 	}
 	logger.Info("Importing REST source repository",
-		slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	hasUpdateTime := false
@@ -99,17 +99,17 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		mod, err := time.Parse(time.RFC1123, lastModified)
 		if err == nil && mod.Before(lastUpdated) {
 			logger.Info("No changes since last update.",
-				slog.String("source_repository", sourceRepo.Name),
+				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
 			return nil
 		}
 		if lastModified == "" {
 			logger.Warn("No Last-Modified header found.",
-				slog.String("source_repository", sourceRepo.Name),
+				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
 		} else if err != nil {
 			logger.Warn("Failed to parse Last-Modified header.",
-				slog.String("source_repository", sourceRepo.Name),
+				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL),
 				slog.String("error", err.Error()))
 		}
@@ -126,33 +126,33 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		logger.Error("Failed to fetch REST API", slog.String("source_repository", sourceRepo.Name), slog.Int("status_code", resp.StatusCode), slog.String("url", sourceRepo.REST.URL))
+		logger.Error("Failed to fetch REST API", slog.String("source", sourceRepo.Name), slog.Int("status_code", resp.StatusCode), slog.String("url", sourceRepo.REST.URL))
 		return fmt.Errorf("failed to fetch REST API: %d for %s", resp.StatusCode, sourceRepo.REST.URL)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Failed to read REST API response", slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("error", err.Error()))
+		logger.Error("Failed to read REST API response", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("error", err.Error()))
 		return err
 	}
 	result := gjson.ParseBytes(data)
 	if !result.IsArray() {
-		logger.Error("REST API response is not an array", slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+		logger.Error("REST API response is not an array", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 		return fmt.Errorf("REST API response is not an array for %s", sourceRepo.REST.URL)
 	}
 	result.ForEach(func(_, vuln gjson.Result) bool {
 		id := vuln.Get("id")
 		if !id.Exists() {
-			logger.Error("Vulnerability missing id", slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+			logger.Error("Vulnerability missing id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 			return true
 		}
 		modified := vuln.Get("modified")
 		if !modified.Exists() {
-			logger.Error("Vulnerability missing modified", slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+			logger.Error("Vulnerability missing modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
 			return true
 		}
 		mod, err := time.Parse(time.RFC3339, modified.String())
 		if err != nil {
-			logger.Error("Failed to parse modified", slog.String("source_repository", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.String("error", err.Error()))
+			logger.Error("Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.String("error", err.Error()))
 			return true
 		}
 		if hasUpdateTime && mod.Before(lastUpdated) {
@@ -176,12 +176,113 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	sourceRepo.REST.LastUpdated = &timeOfRun
 	sourceRepo.REST.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	logger.Info("Finished importing REST source repository",
-		slog.String("source_repository", sourceRepo.Name),
+		slog.String("source", sourceRepo.Name),
 		slog.String("url", sourceRepo.REST.URL))
+
+	return nil
+}
+
+func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
+		return errors.New("invalid SourceRepository for REST deletion")
+	}
+
+	logger.Info("Processing REST deletions",
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+
+	// 1. Fetch current IDs from REST API
+	req, err := http.NewRequest("GET", sourceRepo.REST.URL, nil)
+	if err != nil {
+		return err
+	}
+	req = req.WithContext(ctx)
+	resp, err := config.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("failed to fetch REST API: %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	result := gjson.ParseBytes(data)
+	if !result.IsArray() {
+		return errors.New("REST API response is not an array")
+	}
+
+	idsInREST := make(map[string]bool)
+	result.ForEach(func(_, vuln gjson.Result) bool {
+		if id := vuln.Get("id"); id.Exists() {
+			idsInREST[id.String()] = true
+		}
+		return true
+	})
+
+	// 2. Get all non-withdrawn vulnerabilities in Datastore for this source
+	var vulnsInDatastore []*models.VulnSourceRef
+	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, true) {
+		if err != nil {
+			return err
+		}
+		vulnsInDatastore = append(vulnsInDatastore, entry)
+	}
+
+	if len(vulnsInDatastore) == 0 {
+		logger.Info("No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
+		return nil
+	}
+
+	// 3. Reconcile
+	var toDelete []*models.VulnSourceRef
+	for _, entry := range vulnsInDatastore {
+		// Path in REST is usually just the ID (without extension, or inferred from ID)
+		// We check against the ID map
+		if !idsInREST[entry.ID] {
+			toDelete = append(toDelete, entry)
+		}
+	}
+
+	if len(toDelete) == 0 {
+		logger.Info("No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
+		return nil
+	}
+
+	// 4. Safety Check
+	threshold := config.DeleteThreshold
+	if sourceRepo.REST.IgnoreDeletionThreshold {
+		threshold = 101.0
+	}
+	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
+	if percentage >= threshold {
+		logger.Error("Cowardly refusing to delete missing records (threshold exceeded)",
+			slog.String("source", sourceRepo.Name),
+			slog.Int("to_delete", len(toDelete)),
+			slog.Int("total", len(vulnsInDatastore)),
+			slog.Float64("percentage", percentage),
+			slog.Float64("threshold", threshold))
+		return errors.New("deletion threshold exceeded")
+	}
+
+	// 5. Trigger deletions
+	for _, entry := range toDelete {
+		logger.Info("Requesting deletion of REST entry",
+			slog.String("source", entry.Source),
+			slog.String("id", entry.ID),
+			slog.String("path", entry.Path))
+		if err := sendDeletionToWorker(ctx, config, entry.Source, entry.Path); err != nil {
+			logger.Error("Failed to send deletion to worker",
+				slog.String("source", entry.Source),
+				slog.String("id", entry.ID),
+				slog.Any("error", err))
+		}
+	}
 
 	return nil
 }

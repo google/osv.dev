@@ -36,6 +36,7 @@ func main() {
 
 	config := importer.Config{
 		StrictValidation: *strictValidation,
+		DeleteThreshold:  *deleteThresholdPct,
 		NumWorkers:       *numWorkers,
 		GitWorkDir:       filepath.Join(*workDir, "sources"),
 	}
@@ -52,6 +53,8 @@ func main() {
 		logger.Fatal("Failed to create datastore client", slog.Any("error", err))
 	}
 	config.SourceRepoStore = db.NewSourceRepositoryStore(datastoreClient)
+	// Needed for deletions only
+	config.VulnerabilityStore = db.NewVulnerabilityStore(datastoreClient)
 
 	psClient, err := pubsub.NewClient(context.Background(), project)
 	if err != nil {
@@ -66,11 +69,12 @@ func main() {
 	config.GCSProvider = clients.NewGCSStorageProvider(storageClient)
 
 	if *delete {
-		_ = deleteThresholdPct
-		logger.Fatal("delete not implemented yet")
-	}
-
-	if err := importer.Run(context.Background(), config); err != nil {
-		logger.Fatal("Importer failed", slog.Any("error", err))
+		if err := importer.RunDeletions(context.Background(), config); err != nil {
+			logger.Fatal("Importer-deleter failed", slog.Any("error", err))
+		}
+	} else {
+		if err := importer.Run(context.Background(), config); err != nil {
+			logger.Fatal("Importer failed", slog.Any("error", err))
+		}
 	}
 }

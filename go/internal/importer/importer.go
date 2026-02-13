@@ -27,13 +27,15 @@ const TasksTopic = "tasks"
 type Config struct {
 	NumWorkers int
 
-	SourceRepoStore models.SourceRepositoryStore
-	Publisher       clients.Publisher
-	GCSProvider     clients.CloudStorageProvider
-	HTTPClient      *http.Client
-	GitWorkDir      string
+	SourceRepoStore    models.SourceRepositoryStore
+	VulnerabilityStore models.VulnerabilityStore
+	Publisher          clients.Publisher
+	GCSProvider        clients.CloudStorageProvider
+	HTTPClient         *http.Client
+	GitWorkDir         string
 
 	StrictValidation bool
+	DeleteThreshold  float64
 }
 
 type RetryableHTTPLeveledLogger struct{}
@@ -76,24 +78,54 @@ func Run(ctx context.Context, config Config) error {
 			switch sourceRepo.Type {
 			case models.SourceRepositoryTypeGit:
 				if err := handleImportGit(ctx, workCh, config, sourceRepo); err != nil {
-					logger.Error("Failed to import git source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+					logger.Error("Failed to import git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 				}
 			case models.SourceRepositoryTypeBucket:
 				if err := handleImportBucket(ctx, workCh, config, sourceRepo); err != nil {
-					logger.Error("Failed to import bucket source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+					logger.Error("Failed to import bucket source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 				}
 			case models.SourceRepositoryTypeREST:
 				if err := handleImportREST(ctx, workCh, config, sourceRepo); err != nil {
-					logger.Error("Failed to import REST source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+					logger.Error("Failed to import REST source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 				}
 			default:
-				logger.Error("Unsupported source repository type", slog.String("source_repository", sourceRepo.Name), slog.Any("type", sourceRepo.Type))
+				logger.Error("Unsupported source repository type", slog.String("source", sourceRepo.Name), slog.Any("type", sourceRepo.Type))
 			}
 		})
 	}
 	wg.Wait()
 	close(workCh)
 	workWg.Wait()
+	return nil
+}
+
+func RunDeletions(ctx context.Context, config Config) error {
+	logger.Info("Deletion reconciler started")
+
+	var wg sync.WaitGroup
+	for sourceRepo, err := range config.SourceRepoStore.All(ctx) {
+		if err != nil {
+			return err
+		}
+		wg.Go(func() {
+			switch sourceRepo.Type {
+			case models.SourceRepositoryTypeGit:
+				// TODO: Git deletion
+				return
+			case models.SourceRepositoryTypeBucket:
+				if err := handleDeleteBucket(ctx, config, sourceRepo); err != nil {
+					logger.Error("Failed to process bucket deletions", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+				}
+			case models.SourceRepositoryTypeREST:
+				if err := handleDeleteREST(ctx, config, sourceRepo); err != nil {
+					logger.Error("Failed to process REST deletions", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+				}
+			default:
+				logger.Error("Unsupported source repository type for deletions", slog.String("source", sourceRepo.Name), slog.Any("type", sourceRepo.Type))
+			}
+		})
+	}
+	wg.Wait()
 	return nil
 }
 
@@ -137,8 +169,8 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 			if err != nil {
 				logger.Error("Failed to open source record",
 					slog.Any("error", err),
-					slog.String("source_repository", sourceRepoName),
-					slog.String("source_path", sourceRecord.SourcePath()))
+					slog.String("source", sourceRepoName),
+					slog.String("path", sourceRecord.SourcePath()))
 				continue
 			}
 			data, err := io.ReadAll(r)
@@ -146,8 +178,8 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 			if err != nil {
 				logger.Error("Failed to read source record",
 					slog.Any("error", err),
-					slog.String("source_repository", sourceRepoName),
-					slog.String("source_path", sourceRecord.SourcePath()))
+					slog.String("source", sourceRepoName),
+					slog.String("path", sourceRecord.SourcePath()))
 				continue
 			}
 			hash := computeHash(data)
@@ -159,8 +191,8 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 				if err != nil {
 					logger.Error("Failed to convert YAML to JSON",
 						slog.Any("error", err),
-						slog.String("source_repository", sourceRepoName),
-						slog.String("source_path", sourceRecord.SourcePath()))
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourceRecord.SourcePath()))
 					continue
 				}
 				data = json
@@ -172,8 +204,8 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 					if !res.Exists() {
 						logger.Error("Key path not found",
 							slog.String("key_path", keyPath),
-							slog.String("source_repository", sourceRepoName),
-							slog.String("source_path", sourceRecord.SourcePath()))
+							slog.String("source", sourceRepoName),
+							slog.String("path", sourceRecord.SourcePath()))
 						continue
 					}
 					data = []byte(res.Raw)
@@ -181,8 +213,8 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 				if err := protojson.Unmarshal(data, &vulnProto); err != nil {
 					logger.Error("Failed to unmarshal OSV proto",
 						slog.Any("error", err),
-						slog.String("source_repository", sourceRepoName),
-						slog.String("source_path", sourceRecord.SourcePath()))
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourceRecord.SourcePath()))
 					continue
 				}
 
@@ -195,7 +227,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 				}
 			}
 			if err := sendToWorker(ctx, config, sourceRecord, hash, modified); err != nil {
-				logger.Error("Failed to send to worker", slog.Any("error", err), slog.String("source_repository", sourceRepoName), slog.String("source_path", sourceRecord.SourcePath()))
+				logger.Error("Failed to send to worker", slog.Any("error", err), slog.String("source", sourceRepoName), slog.String("path", sourceRecord.SourcePath()))
 			}
 		}
 	}
@@ -214,12 +246,30 @@ func sendToWorker(ctx context.Context, config Config, sourceRecord SourceRecord,
 			"source":          sourceRecord.SourceRepository(),
 			"path":            sourceRecord.SourcePath(),
 			"original_sha256": hash,
-			"deleted":         "false", // TODO
+			"deleted":         "false",
 			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
 		},
 	}
 	if sourceRecord.ShouldSendModifiedTime() {
 		msg.Attributes["src_timestamp"] = strconv.FormatInt(modifiedTime.Unix(), 10)
+	}
+	result := config.Publisher.Publish(ctx, msg)
+	_, err := result.Get(ctx)
+	return err
+}
+
+func sendDeletionToWorker(ctx context.Context, config Config, source, path string) error {
+	msg := &pubsub.Message{
+		Data: []byte(""),
+		Attributes: map[string]string{
+			"type":            "update",
+			"source":          source,
+			"path":            path,
+			"original_sha256": "",
+			"deleted":         "true",
+			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
+			"src_timestamp":   "",
+		},
 	}
 	result := config.Publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)

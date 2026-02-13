@@ -93,7 +93,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		return errors.New("invalid SourceRepository for git import")
 	}
 	logger.Info("Importing git source repository",
-		slog.String("source_repository", sourceRepo.Name), slog.String("repo", sourceRepo.Git.URL))
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	repoInterface, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (interface{}, error) {
@@ -120,7 +120,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		}, nil
 	})
 	if err != nil {
-		logger.Error("Failed to clone git source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+		logger.Error("Failed to clone git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	repo := repoInterface.(sharedRepo)
@@ -135,7 +135,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 
 	changedFiles, commit, err := changedFiles(ctx, repo, sourceRepo)
 	if err != nil {
-		logger.Error("Failed to get changed files", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+		logger.Error("Failed to get changed files", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	filterPath := func(p string) string {
@@ -181,12 +181,12 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 
 	sourceRepo.Git.LastSyncedCommit = commit.Hash.String()
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	logger.Info("Finished importing git source repository",
-		slog.String("source_repository", sourceRepo.Name),
-		slog.String("repo", sourceRepo.Git.URL))
+		slog.String("source", sourceRepo.Name),
+		slog.String("url", sourceRepo.Git.URL))
 	return nil
 }
 

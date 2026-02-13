@@ -64,7 +64,7 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 		return errors.New("invalid SourceRepository for bucket import")
 	}
 	logger.Info("Importing bucket source repository",
-		slog.String("source_repository", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
+		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
@@ -111,12 +111,99 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	sourceRepo.Bucket.LastUpdated = &timeOfRun
 	sourceRepo.Bucket.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source_repository", sourceRepo.Name))
+		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	logger.Info("Finished importing bucket source repository",
-		slog.String("source_repository", sourceRepo.Name),
+		slog.String("source", sourceRepo.Name),
 		slog.String("bucket", sourceRepo.Bucket.Name))
+
+	return nil
+}
+
+func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
+		return errors.New("invalid SourceRepository for bucket deletion")
+	}
+
+	logger.Info("Processing bucket deletions",
+		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
+
+	// 1. Get all objects in the bucket
+	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
+	objectsInBucket := make(map[string]bool)
+	for obj, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(obj.Name, sourceRepo.Extension) {
+			continue
+		}
+		// In GCS buckets, the OSV ID is usually inferred from the content,
+		// but since we want to avoid downloading every file, we follow the
+		// Python logic of assuming ID-based paths for reconciliation or
+		// parsing if necessary.
+		// However, most bucket-based sources in OSV (like Debian, Rocky, etc.)
+		// use the ID as the filename.
+		objectsInBucket[obj.Name] = true
+	}
+
+	// 2. Get all non-withdrawn vulnerabilities in Datastore for this source
+	var vulnsInDatastore []*models.VulnSourceRef
+	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, true) {
+		if err != nil {
+			return err
+		}
+		vulnsInDatastore = append(vulnsInDatastore, entry)
+	}
+
+	if len(vulnsInDatastore) == 0 {
+		logger.Info("No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
+		return nil
+	}
+
+	// 3. Reconcile
+	var toDelete []*models.VulnSourceRef
+	for _, entry := range vulnsInDatastore {
+		if !objectsInBucket[entry.Path] {
+			toDelete = append(toDelete, entry)
+		}
+	}
+
+	if len(toDelete) == 0 {
+		logger.Info("No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
+		return nil
+	}
+
+	// 4. Safety Check
+	threshold := config.DeleteThreshold
+	if sourceRepo.Bucket.IgnoreDeletionThreshold {
+		threshold = 101.0
+	}
+	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
+	if percentage >= threshold {
+		logger.Error("Cowardly refusing to delete missing records (threshold exceeded)",
+			slog.String("source", sourceRepo.Name),
+			slog.Int("to_delete", len(toDelete)),
+			slog.Int("total", len(vulnsInDatastore)),
+			slog.Float64("percentage", percentage),
+			slog.Float64("threshold", threshold))
+		return errors.New("deletion threshold exceeded")
+	}
+
+	// 5. Trigger deletions
+	for _, entry := range toDelete {
+		logger.Info("Requesting deletion of bucket entry",
+			slog.String("source", entry.Source),
+			slog.String("id", entry.ID),
+			slog.String("path", entry.Path))
+		if err := sendDeletionToWorker(ctx, config, entry.Source, entry.Path); err != nil {
+			logger.Error("Failed to send deletion to worker",
+				slog.String("source", entry.Source),
+				slog.String("id", entry.ID),
+				slog.Any("error", err))
+		}
+	}
 
 	return nil
 }

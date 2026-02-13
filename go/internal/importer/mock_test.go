@@ -29,6 +29,21 @@ func (m *mockSourceRepositoryStore) Update(ctx context.Context, name string, rep
 	return nil
 }
 
+type mockVulnerabilityStore struct {
+	Entries map[string][]*models.VulnSourceRef
+}
+
+func (m *mockVulnerabilityStore) ListBySource(ctx context.Context, source string, skipWithdrawn bool) iter.Seq2[*models.VulnSourceRef, error] {
+	return func(yield func(*models.VulnSourceRef, error) bool) {
+		entries := m.Entries[source]
+		for _, e := range entries {
+			if !yield(e, nil) {
+				return
+			}
+		}
+	}
+}
+
 type mockSourceRecord struct {
 	MockKeyPath          string
 	MockFormat           RecordFormat

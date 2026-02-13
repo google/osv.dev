@@ -36,9 +36,9 @@ func compileIgnorePatterns(sourceRepo *models.SourceRepository) []*regexp.Regexp
 		compiledPattern, err := regexp.Compile(pattern)
 		if err != nil {
 			logger.Warn("Failed to compile ignore pattern",
-				slog.String("source_repository", sourceRepo.Name),
+				slog.String("source", sourceRepo.Name),
 				slog.String("pattern", pattern),
-				slog.String("error", err.Error()))
+				slog.Any("error", err))
 			continue
 		}
 		compiledIgnorePatterns = append(compiledIgnorePatterns, compiledPattern)

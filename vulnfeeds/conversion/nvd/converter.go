@@ -41,7 +41,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
 	cpeRanges, commits, textRanges := cves.ExtractVersions(v, cve, nil, http.DefaultClient, metrics)
-	
+
 	if cpeRanges == nil && commits == nil && textRanges == nil {
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
 		metrics.Outcome = models.NoRanges
@@ -49,55 +49,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			return metrics.Outcome
 		}
 	}
-	
-	var resolutionOutcome models.ConversionOutcome
-	if len(cpeRanges) > 0 {
-		outcome, affected := ResolveVersionsToCommits(cpeRanges, repos, cache, metrics)
-		resolutionOutcome = outcome
-		if outcome == models.Successful {
-			conversion.AddAffected(v, affected, metrics)
-		}
-	}
+	var affected *osvschema.Affected
+	metrics.Outcome, affected = ResolveVersionsToCommits(cpeRanges, textRanges, commits, repos, cache, metrics)
 
-	if len(commits) > 0 {
-		var versionRanges []*osvschema.Range
-		// handle commits as version ranges
-		for _, commit := range commits {
-			// if commit doesn't already 
-			vr := conversion.BuildVersionRange(commit.Introduced,commit.LastAffected,  commit.Fixed)	
-			vr.Repo = commit.Repo
-			versionRanges = append(versionRanges, vr)
-		}
-		
-		if len(versionRanges) > 0 {
-			affected := osvschema.Affected{
-				Ranges: versionRanges,
-			}
-			conversion.AddAffected(v, &affected, metrics)
-			resolutionOutcome = models.Successful
-		}
-	}
+	v.Affected = append(v.Affected, affected)
 
-	if len(textRanges) > 0 && resolutionOutcome != models.Successful {
-		// handle text ranges as version ranges
-		outcome, affected := ResolveVersionsToCommits(textRanges, repos, cache, metrics)
-		resolutionOutcome = outcome
-		if outcome == models.Successful {
-			conversion.AddAffected(v, affected, metrics)
-		}
-	}
-
-	for _, affected := range v.Affected {
-		if len(affected.Ranges) != 0 {
-			break
-		}
-		resolutionOutcome = models.NoCommitRanges
-	}
-	
-	if rejectFailed && resolutionOutcome != models.Successful {
-		return resolutionOutcome
-	}
-	metrics.Outcome = resolutionOutcome
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {
@@ -108,18 +64,18 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	if errCVE != nil || errMetrics != nil {
 		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
 	}
+	if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
+		logger.Error("Failed to write metrics", slog.Any("err", err))
+	}
+	if rejectFailed && metrics.Outcome != models.Successful {
+		return metrics.Outcome
+	}
 
-	err := v.ToJSON(osvFile)
-	if err != nil {
+	if err := v.ToJSON(osvFile); err != nil {
 		logger.Error("Failed to write", slog.Any("err", err))
 	}
 
 	osvFile.Close()
-
-	err = conversion.WriteMetricsFile(metrics, metricsFile)
-	if err != nil {
-		logger.Error("Failed to write metrics", slog.Any("err", err))
-	}
 
 	return metrics.Outcome
 }
@@ -237,7 +193,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	}
 
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
-
 	for vendorProductKey := range vendorProductCombinations {
 		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
 			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
@@ -278,30 +233,137 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	return reposForCVE
 }
 
-func ResolveVersionsToCommits(versions []*osvschema.Range, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (models.ConversionOutcome, *osvschema.Affected) {
-	if len(repos) == 0 && len(versions) == 0 {
-		return models.NoRepos, nil
+func ResolveVersionsToCommits(cpeRanges []*osvschema.Range, textRanges []*osvschema.Range, commits []models.AffectedCommit, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (models.ConversionOutcome, *osvschema.Affected) {
+	var cpeOutcome, textOutcome models.ConversionOutcome
+	resolvedRanges := []*osvschema.Range{}
+	unresolvedRanges := []*osvschema.Range{}
+	var successfulRepos []string
+	if len(cpeRanges) > 0 {
+		if len(repos) == 0 {
+			cpeOutcome = models.NoRepos
+		} else {
+			resolvedCPERanges, unresolvedCPERanges, successfulCPERepos := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
+			successfulRepos = append(successfulRepos, successfulCPERepos...)
+			if len(resolvedCPERanges) > 0 {
+				cpeOutcome = models.Successful
+				resolvedRanges = append(resolvedRanges, resolvedCPERanges...)
+			} else if len(unresolvedCPERanges) > 0 {
+				cpeOutcome = models.NoCommitRanges
+				unresolvedRanges = append(unresolvedRanges, unresolvedCPERanges...)
+			}
+		}
 	}
 
-	// There are some AffectedVersions to try and resolve to AffectedCommits.
-	metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-	resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versions, repos, metrics, cache)
-	if err != nil {
-		return models.FixUnresolvable, nil
+	if len(textRanges) > 0 && cpeOutcome != models.Successful {
+		resolvedTextRanges, unresolvedTextRanges, _ := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
+		if len(resolvedTextRanges) > 0 {
+			textOutcome = models.Successful
+			resolvedRanges = append(resolvedRanges, resolvedTextRanges...)
+		} else if len(unresolvedTextRanges) > 0 {
+			textOutcome = models.NoCommitRanges
+			unresolvedRanges = append(unresolvedRanges, unresolvedTextRanges...)
+		}
 	}
 
-	affected := &osvschema.Affected{
-		Ranges: resolvedRanges,
+	if len(commits) > 0 {
+		for _, commit := range commits {
+			successfulRepos = append(successfulRepos, commit.Repo)
+		}
+	}
+	var newResolvedRanges []*osvschema.Range
+	// Combine the ranges appropriately
+	if len(resolvedRanges) > 0 {
+		slices.Sort(successfulRepos)
+		successfulRepos = slices.Compact(successfulRepos)
+		for _, repo := range successfulRepos {
+			var mergedRange *osvschema.Range
+			for _, vr := range resolvedRanges {
+				if vr.Repo == repo {
+					if mergedRange == nil {
+						mergedRange = vr
+					} else {
+						mergedRange = conversion.MergeTwoRanges(mergedRange, vr)
+					}
+				}
+			}
+			if len(commits) > 0 {
+				for _, commit := range commits {
+					if commit.Repo == repo {
+						if mergedRange == nil {
+							mergedRange = conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+							mergedRange.Repo = repo
+						} else {
+							event := convertCommitToEvent(commit)
+							if event != nil {
+								addEventToRange(mergedRange, event)
+							}
+						}
+					}
+				}
+			}
+			if mergedRange != nil {
+				newResolvedRanges = append(newResolvedRanges, mergedRange)
+			}
+		}
+	}
+
+	newAffected := &osvschema.Affected{
+		Ranges: newResolvedRanges,
 	}
 
 	if len(unresolvedRanges) > 0 {
 		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
 		if err != nil {
-			logger.Warn("failed to make database specific: %v", err)
-		} else {
-			affected.DatabaseSpecific = databaseSpecific
+			metrics.AddNote("failed to make database specific: %v", err)
 		}
+		newAffected.DatabaseSpecific = databaseSpecific
 	}
 
-	return models.Successful, affected
+	if cpeOutcome == models.Successful || textOutcome == models.Successful || len(commits) > 0 {
+		return models.Successful, newAffected
+	}
+
+	return models.NoCommitRanges, newAffected
+}
+
+func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
+	// Handle duplicate events being added
+	for _, e := range versionRange.Events {
+		if e.Introduced != "" && e.Introduced == event.Introduced {
+			return
+		}
+		if e.Fixed != "" && e.Fixed == event.Fixed {
+			return
+		}
+		if e.LastAffected != "" && e.LastAffected == event.LastAffected {
+			return
+		}
+	}
+	//TODO: maybe handle if the fixed event appeards as an introduced event or similar.
+
+	if event.Introduced != "" {
+		versionRange.Events = append([]*osvschema.Event{&osvschema.Event{
+			Introduced: event.Introduced}}, versionRange.Events...)
+	} else {
+		versionRange.Events = append(versionRange.Events, event)
+	}
+}
+
+func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
+	if commit.Introduced != "" {
+		return &osvschema.Event{
+			Introduced: commit.Introduced,
+		}
+	}
+	if commit.Fixed != "" {
+		return &osvschema.Event{
+			Fixed: commit.Fixed,
+		}
+	}
+	if commit.LastAffected != "" {
+		return &osvschema.Event{
+			LastAffected: commit.LastAffected,
+		}
+	}
+	return nil
 }

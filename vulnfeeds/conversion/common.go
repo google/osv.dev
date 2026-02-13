@@ -5,7 +5,6 @@ package conversion
 import (
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -175,9 +174,10 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, error) {
+func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
+	var successfulRepos []string
 
 	for _, repo := range repos {
 		if len(unresolvedRanges) == 0 {
@@ -222,7 +222,7 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				} else {
 					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
 				}
-
+				successfulRepos = append(successfulRepos, repo)
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
 				if len(vr.GetEvents()) > 0 {
@@ -242,18 +242,15 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		unresolvedRanges = stillUnresolvedRanges
 	}
 
-	var err error
-
 	if len(newVersionRanges) > 0 {
 		metrics.ResolvedRangesCount += len(newVersionRanges)
-	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
-		err = errors.New("was not able to get git version ranges")
 	}
+
 	if len(unresolvedRanges) > 0 {
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 	}
 
-	return newVersionRanges, unresolvedRanges, err
+	return newVersionRanges, unresolvedRanges, successfulRepos
 }
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.
@@ -262,7 +259,6 @@ func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo strin
 	if version == "" {
 		return ""
 	}
-	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
 	commit, err := git.VersionToCommit(version, normalizedTags)
 	if err != nil {
 		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
@@ -296,4 +292,59 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	}
 
 	return &versionRange
+}
+
+
+func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
+	// check if the ranges are the same
+	if range1.Repo != range2.Repo || range1.Type != range2.Type {
+		return nil
+	}
+
+	mergedRange := &osvschema.Range{
+		Repo:   range1.Repo,
+		Type:   range1.Type,
+		Events: append(range1.Events, range2.Events...),
+	}
+
+	db1 := range1.GetDatabaseSpecific()
+	db2 := range2.GetDatabaseSpecific()
+
+	if db1 == nil && db2 == nil {
+		return mergedRange
+	}
+
+	mergedMap := make(map[string]any)
+
+	if db1 != nil {
+		for k, v := range db1.GetFields() {
+			mergedMap[k] = v.AsInterface()
+		}
+	}
+
+	if db2 != nil {
+		for k, v := range db2.GetFields() {
+			if existing, ok := mergedMap[k]; ok {
+				// If both are lists, append them
+				if list1, ok := existing.([]any); ok {
+					if list2, ok := v.AsInterface().([]any); ok {
+						mergedMap[k] = append(list1, list2...)
+						continue
+					}
+				}
+			}
+			// Otherwise overwrite or add new
+			mergedMap[k] = v.AsInterface()
+		}
+	}
+
+	if len(mergedMap) > 0 {
+		if ds, err := utility.NewStructpbFromMap(mergedMap); err == nil {
+			mergedRange.DatabaseSpecific = ds
+		} else {
+			logger.Warn("Failed to create DatabaseSpecific for merged range: %v", err)
+		}
+	}
+
+	return mergedRange
 }

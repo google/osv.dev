@@ -35,10 +35,10 @@ spec:
         resources:
           requests:
             cpu: "28"
-            memory: "200Gi"
+            memory: "240Gi"
           limits:
             cpu: "28"
-            memory: "200Gi"
+            memory: "240Gi"
       volumes:
       - name: disk-data
         persistentVolumeClaim:

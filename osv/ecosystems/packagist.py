@@ -147,7 +147,7 @@ class PackagistVersion:
     """
     if version.startswith('v'):
       version = version[1:]
-    replaced = re.sub('[-_+]', '.', version)
+    replaced = re.sub('[-_+.]+', '.', version)
     replaced = re.sub(r'([^\d.])(\d)', r'\1.\2', replaced)
     replaced = re.sub(r'(\d)([^\d.])', r'\1.\2', replaced)
     return replaced

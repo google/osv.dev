@@ -61,6 +61,11 @@ func main() {
 			logger.Error("failed to compute upstream groups", slog.Any("err", err))
 		}
 	})
+	wg.Go(func() {
+		if err := ComputeRelatedGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
+			logger.Error("failed to compute related groups", slog.Any("err", err))
+		}
+	})
 	wg.Wait()
 	updater.Finish()
 }

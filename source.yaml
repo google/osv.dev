@@ -131,6 +131,20 @@
   editable: False
   strict_validation: False
 
+- name: 'cleanstart'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!CLEANSTART-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/cleanstart-dev/cleanstart-security-advisories'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CLEANSTART-']
+  ignore_git: True
+  link: 'https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'curl'
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
@@ -156,7 +170,7 @@
   bucket: 'cve-osv-conversion'
   db_prefix: ['CVE-']
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -365,6 +379,21 @@
   ignore_git: True
   link: 'https://packages.mini.dev/advisories/osv/'
   editable: False
+  strict_validation: True
+
+- name: 'opam'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!OSEC-).*$']
+  repo_branch: 'generated-osv'
+  repo_url: 'https://github.com/ocaml/security-advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OSEC-']
+  ignore_git: False
+  link: 'https://github.com/ocaml/security-advisories/blob/generated-osv/'
+  editable: False
+  repo_username: 'git'
   strict_validation: True
 
 - name: 'openeuler'
@@ -579,6 +608,7 @@
   versions_from_repo: True
   type: 0
   ignore_patterns: [ '^(?!V8-advisory).*$' ]
+  directory_path: 'advisories'
   repo_url: 'https://github.com/google/chromium-policy-vulnfeed.git'
   detect_cherrypicks: False
   consider_all_branches: True

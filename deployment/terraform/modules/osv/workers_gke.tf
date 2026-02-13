@@ -181,5 +181,5 @@ resource "google_compute_disk" "gitter_disk" {
   name    = "gitter-disk"
   type    = "pd-ssd"
   zone    = google_container_cluster.workers.location
-  size    = 2048
+  size    = 4096
 }

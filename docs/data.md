@@ -58,6 +58,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
 -   [Ubuntu](https://github.com/canonical/ubuntu-security-notices)
     ([CC-BY-SA 4.0](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
+-   [opam (OCaml package manager)](https://github.com/ocaml/security-advisories)
+    ([CC0 1.0](https://github.com/ocaml/security-advisories/blob/main/LICENSE.txt))
 
 ## Converted data
 
@@ -91,6 +93,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Maven
 -   npm
 -   NuGet
+-   opam (OCaml package manager)
 -   OSS-Fuzz
 -   Packagist
 -   Pub
@@ -125,7 +128,7 @@ E.g. for PyPI vulnerabilities:
 
 ```bash
 # Or download over HTTP via https://storage.googleapis.com/osv-vulnerabilities/PyPI/all.zip
-gsutil cp gs://osv-vulnerabilities/PyPI/all.zip .
+gcloud storage cp gs://osv-vulnerabilities/PyPI/all.zip .
 ```
 
 ### Downloading recent changes

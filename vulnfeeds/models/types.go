@@ -75,14 +75,20 @@ func AffectedCommitCompare(i, j AffectedCommit) int {
 	if n := cmp.Compare(i.Repo, j.Repo); n != 0 {
 		return n
 	}
+	if i.Introduced == "" && j.Introduced != "" {
+		return 1
+	}
+	if i.Introduced != "" && j.Introduced == "" {
+		return -1
+	}
+	if n := cmp.Compare(i.Introduced, j.Introduced); n != 0 {
+		return n
+	}
 	if n := cmp.Compare(i.Fixed, j.Fixed); n != 0 {
 		return n
 	}
-	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
-		return n
-	}
 
-	return cmp.Compare(i.Introduced, j.Introduced)
+	return cmp.Compare(i.LastAffected, j.LastAffected)
 }
 
 type AffectedVersion struct {
@@ -219,7 +225,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 	return false
 }
 
-type CPE struct {
+type CPEString struct {
 	CPEVersion string
 	Part       string
 	Vendor     string

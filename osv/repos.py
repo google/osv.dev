@@ -115,19 +115,36 @@ class RepoInaccessibleError(Exception):
   """Git repository cannot be cloned due to being deleted or requiring auth."""
 
 
-def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
+def open_repo(checkout_dir):
+  try:
+    repo = pygit2.Repository(checkout_dir)
+  except:
+    repo = pygit2.Repository(checkout_dir, pygit2.enums.RepositoryOpenFlag.BARE)
+  return repo
+
+
+def clone(git_url,
+          checkout_dir,
+          git_callbacks=None,
+          blobless=False,
+          force_update=False):
   """Perform a clone."""
   # Don't user Gitter for oss-fuzz-vulns repo because it requires auth
   logging.info('Cloning %s to %s.', git_url, checkout_dir)
   if GITTER_HOST and git_url != 'ssh://github.com/google/oss-fuzz-vulns':
     try:
       os.makedirs(checkout_dir, exist_ok=True)
+      params = {'url': _git_mirror(git_url)}
+      if force_update:
+        params['force-update'] = 'true'
+
+      # Long timeout duration (1hr) because it could be cloning a large repo
       resp = requests.get(
           f'{GITTER_HOST}/getgit',
-          params={'url': _git_mirror(git_url)},
+          params=params,
           stream=True,
-          timeout=3600
-      )  # Long timeout duration (1hr) because it could be cloning a large repo
+          timeout=3600,
+      )
       if resp.status_code == 403:
         raise RepoInaccessibleError()
       if resp.status_code == 400:
@@ -144,8 +161,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
         # Remove after extraction.
         os.remove(f'{checkout_dir}.zst')
 
-        return pygit2.Repository(checkout_dir)
-
+        return open_repo(checkout_dir)
       logging.error(
           'Failed to clone repo through gitter, '
           'status: %d, response: %s', resp.status_code, resp.text)
@@ -164,7 +180,7 @@ def clone(git_url, checkout_dir, git_callbacks=None, blobless=False):
       cmd.append('--filter=blob:none')
     cmd.extend([_git_mirror(git_url), checkout_dir])
     subprocess.run(cmd, env=env, capture_output=True, check=True)
-    return pygit2.Repository(checkout_dir)
+    return open_repo(checkout_dir)
   except subprocess.CalledProcessError as e:
     stderr = e.stderr.decode(errors='ignore')
     if ('could not read Username' in stderr or
@@ -182,13 +198,19 @@ def clone_with_retries(git_url,
                        checkout_dir,
                        git_callbacks=None,
                        branch=None,
-                       blobless=False):
+                       blobless=False,
+                       force_update=False):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   os.makedirs(checkout_dir, exist_ok=True)
   for attempt in range(CLONE_TRIES):
     try:
-      repo = clone(git_url, checkout_dir, git_callbacks, blobless=blobless)
+      repo = clone(
+          git_url,
+          checkout_dir,
+          git_callbacks,
+          blobless=blobless,
+          force_update=force_update)
       repo.cache = {}
       if branch:
         _checkout_branch(repo, branch)
@@ -209,9 +231,10 @@ def clone_with_retries(git_url,
 def _use_existing_checkout(git_url,
                            checkout_dir,
                            git_callbacks=None,
-                           branch=None):
+                           branch=None,
+                           force_update=False):
   """Update and use existing checkout."""
-  repo = pygit2.Repository(checkout_dir)
+  repo = open_repo(checkout_dir)
   repo.cache = {}
   if repo.remotes['origin'].url != _git_mirror(git_url):
     # The URL in the code is the source of truth,
@@ -228,7 +251,7 @@ def _use_existing_checkout(git_url,
       raise NoBranchError('Branch "%s" not found in repo "%s"' %
                           (branch, git_url)) from e
 
-  reset_repo(repo, git_callbacks)
+  reset_repo(repo, git_callbacks, force=force_update)
   logging.info('Using existing checkout at %s', checkout_dir)
   return repo
 
@@ -237,13 +260,18 @@ def ensure_updated_checkout(git_url,
                             checkout_dir,
                             git_callbacks=None,
                             branch=None,
-                            blobless=False):
+                            blobless=False,
+                            force_update=False):
   """Ensure updated checkout."""
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
     try:
       return _use_existing_checkout(
-          git_url, checkout_dir, git_callbacks=git_callbacks, branch=branch)
+          git_url,
+          checkout_dir,
+          git_callbacks=git_callbacks,
+          branch=branch,
+          force_update=force_update)
     except Exception as e:
       # Failed to re-use existing checkout. Delete it and start over.
       err_str = str(e)
@@ -258,7 +286,8 @@ def ensure_updated_checkout(git_url,
       checkout_dir,
       git_callbacks=git_callbacks,
       branch=branch,
-      blobless=blobless)
+      blobless=blobless,
+      force_update=force_update)
   logging.info('Repo now at: %s', repo.head.peel().message)
   return repo
 

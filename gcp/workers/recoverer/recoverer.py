@@ -19,14 +19,18 @@ import datetime
 import logging
 import os
 import sys
+import time
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
 
 import osv
+import osv.models
+import osv.sources
 from osv.logs import setup_gcp_logging
 
 _FAILED_TASKS_SUBSCRIPTION = 'recovery'
+_TASKS_TOPIC = 'tasks'
 
 _ndb_client = None
 
@@ -54,6 +58,7 @@ def handle_gcs_retry(message: pubsub_v1.types.PubsubMessage) -> bool:
             }
         })
     return True
+  logging.info('gcs_retry: vulnerability: %s', vuln.id)
   modified = vuln.modified.ToDatetime(datetime.UTC)
   bucket = osv.gcs.get_osv_bucket()
   path = os.path.join(osv.gcs.VULN_PB_PATH, vuln.id + '.pb')
@@ -80,24 +85,42 @@ def handle_gcs_retry(message: pubsub_v1.types.PubsubMessage) -> bool:
 def handle_gcs_missing(message: pubsub_v1.types.PubsubMessage) -> bool:
   """Handle a failed GCS read."""
   vuln_id = message.attributes.get('id')
+  logging.info('gcs_missing: vulnerability: %s', vuln_id)
   if not vuln_id:
     logging.error('gcs_missing: message missing id attribute: %s', message)
     return True
-  # Re-put the Bug to regenerate the GCS & Datastore entities
+
   with ndb_client().context():
-    bug = osv.Bug.get_by_id(vuln_id)
-    if not bug:
-      logging.error('gcs_missing: Bug entity not found for %s', vuln_id)
-      # TODO(michaelkedar): What can we do in this case?
+    vuln = osv.Vulnerability.get_by_id(vuln_id)
+    if not vuln:
+      logging.error('gcs_missing: Vulnerability entity not found for %s',
+                    vuln_id)
       return True
+
     try:
-      bug.put()
+      source, path = osv.sources.parse_source_id(vuln.source_id)
+    except ValueError:
+      logging.error('gcs_missing: invalid source_id for %s: %s', vuln_id,
+                    vuln.source_id)
       return True
-    except Exception:
-      logging.exception('gcs_missing: failed to put Bug entity for %s', vuln_id)
-      return False
-  # TODO(michaelkedar): We will want to stop using the Bug entity eventually.
-  # This will need to trigger a reimport of the record from the datasource.
+
+    logging.info('gcs_missing: triggering re-import for %s (%s)', vuln_id,
+                 vuln.source_id)
+    publisher = pubsub_v1.PublisherClient()
+    project = os.environ['GOOGLE_CLOUD_PROJECT']
+    topic_path = publisher.topic_path(project, _TASKS_TOPIC)
+    publisher.publish(
+        topic_path,
+        data=b'',
+        type='update',
+        source=source,
+        path=path,
+        original_sha256='',
+        deleted='false',
+        skip_hash_check='true',
+        req_timestamp=str(int(time.time())))
+
+    return True
 
 
 def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:
@@ -106,6 +129,7 @@ def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:
   """
   vuln_id = message.attributes.get('id')
   field = message.attributes.get('field')
+  logging.info('gcs_gen_mismatch: vulnerability: %s, field: %s', vuln_id, field)
   if not vuln_id or not field:
     logging.error('gcs_gen_mismatch: message missing id or field attribute: %s',
                   message)
@@ -160,6 +184,22 @@ def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:
             vuln_proto.upstream[:] = upstream
             if upstream_modified > modified:
               modified = upstream_modified
+            else:
+              modified = datetime.datetime.now(datetime.UTC)
+
+        elif f == 'related':
+          related_group = osv.RelatedGroup.get_by_id(vuln_id)
+          if related_group is None:
+            related = []
+            related_modified = datetime.datetime.now(datetime.UTC)
+          else:
+            related = related_group.related_ids
+            related_modified = related_group.last_modified
+          # Only update the modified time if it's actually being modified
+          if vuln_proto.related != related:
+            vuln_proto.related[:] = related
+            if related_modified > modified:
+              modified = related_modified
             else:
               modified = datetime.datetime.now(datetime.UTC)
 

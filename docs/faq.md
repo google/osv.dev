@@ -27,7 +27,7 @@ OSV consists of:
 1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data
    format that maps precisely to open source versioning schemes.
 2. Reference infrastructure ([OSV.dev website](https://osv.dev/),
-   [API](/api/), and tooling) that aggregates,
+   [API](../api/), and tooling) that aggregates,
    [enriches](#what-does-osvdev-do-to-the-records-it-imports) and indexes
    vulnerability data from databases that use the OSV schema.
 3. [OSV-Scanner](https://github.com/google/osv-scanner), the officially
@@ -45,7 +45,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by:
 
-1. Open source consumers: By querying [OSV.dev's API](/api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](../api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Open source projects: By publishing vulnerabilities in the OSV format and having them imported by OSV.dev.
 3. Vulnerability database producers: By making the database available in the OSV format.
 
@@ -67,7 +67,7 @@ The benefits of the OSV schema have led to adoption by several vulnerability dat
 
 ### How do I use OSV as an open source user?
 
-OSV.dev provides an [easy-to-use API](./api/) for querying against the aggregated database of vulnerabilities.
+OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.
 
 [Command line tooling](https://github.com/google/osv-scanner) is also available for vulnerability scanning of SBOMs, language manifests, and container images.
 

@@ -5,7 +5,7 @@
     {
       "id": "CVE-2021-45931",
       "details": "HarfBuzz 2.9.0 has an out-of-bounds write in hb_bit_set_invertible_t::set (called from hb_sparseset_t\u003chb_bit_set_invertible_t\u003e::set and hb_set_copy).",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2022-01-01T01:15:08.477Z",
       "references": [
         {
@@ -21,37 +21,39 @@
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202209-11"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
         },
         {
           "type": "FIX",
           "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202209-11"
+          "type": "EVIDENCE",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -82,11 +84,14 @@
     {
       "id": "CVE-2022-33068",
       "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": [
+        "ROOT-OS-DEBIAN-11-CVE-2022-33068",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2022-33068"
+      ],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2022-06-23T17:15:14.350Z",
       "related": [
         "ALSA-2022:8384",
-        "RLSA-2022:8384",
         "SUSE-SU-2022:2663-1",
         "SUSE-SU-2022:2664-1",
         "openSUSE-SU-2022:2663-1",
@@ -106,16 +111,32 @@
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
         },
         {
-          "type": "FIX",
+          "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.gentoo.org/glsa/202209-11"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
         }
       ],
       "affected": [
@@ -127,23 +148,9 @@
               "events": [
                 {
                   "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
                 },
                 {
-                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
                 }
               ]
             }
@@ -163,7 +170,13 @@
     {
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": [
+        "ROOT-OS-DEBIAN-11-CVE-2023-25193",
+        "ROOT-OS-DEBIAN-12-CVE-2023-25193",
+        "ROOT-OS-DEBIAN-bookworm-CVE-2023-25193",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2023-25193"
+      ],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2023-02-04T20:15:08.027Z",
       "related": [
         "ALSA-2023:4158",
@@ -172,13 +185,7 @@
         "ALSA-2023:4177",
         "ALSA-2024:2410",
         "ALSA-2024:2980",
-        "CGA-4m5m-7mmw-26xx",
-        "CGA-6q42-wfwr-qf22",
-        "CGA-8gvm-6q43-m452",
-        "CGA-8qvx-rpqp-4gpp",
-        "CGA-8qw3-g7jv-pff5",
-        "CGA-r8q6-rj77-56qj",
-        "CGA-xg88-pcc2-j423",
+        "CGA-8h2f-cgw9-hwqf",
         "MGASA-2023-0272",
         "SUSE-SU-2023:1820-1",
         "SUSE-SU-2023:1821-1",
@@ -206,7 +213,7 @@
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
         },
         {
-          "type": "FIX",
+          "type": "ADVISORY",
           "url": "https://chromium.googlesource.com/chromium/src/+/e1f324aa681af54101c1f2d173d92adb80e37088/DEPS#361"
         },
         {
@@ -214,29 +221,23 @@
           "url": "https://github.com/harfbuzz/harfbuzz/blob/2822b589bc837fae6f66233e2cf2eef0f6ce8470/src/hb-ot-layout-gsubgpos.hh"
         },
         {
-          "type": "FIX",
+          "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/commit/85be877925ddbf34f74a1229f3ca1716bb6170dc"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20230725-0006/"
+        },
+        {
+          "type": "FIX",
+          "url": "https://chromium.googlesource.com/chromium/src/+/e1f324aa681af54101c1f2d173d92adb80e37088/DEPS#361"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/85be877925ddbf34f74a1229f3ca1716bb6170dc"
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -265,10 +266,73 @@
       ]
     },
     {
+      "id": "CVE-2026-22693",
+      "summary": "Null Pointer Dereference in SubtableUnicodesCache::create leading to DoS",
+      "details": "HarfBuzz is a text shaping engine. Prior to version 12.3.0, a null pointer dereference vulnerability exists in the SubtableUnicodesCache::create function located in src/hb-ot-cmap-table.hh. The function fails to check if hb_malloc returns NULL before using placement new to construct an object at the returned pointer address. When hb_malloc fails to allocate memory (which can occur in low-memory conditions or when using custom allocators that simulate allocation failures), it returns NULL. The code then attempts to call the constructor on this null pointer using placement new syntax, resulting in undefined behavior and a Segmentation Fault. This issue has been patched in version 12.3.0.",
+      "aliases": ["GHSA-xvjr-f2r9-c7ww", "ROOT-OS-DEBIAN-13-CVE-2026-22693"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-10T05:53:21.019Z",
+      "related": ["MGASA-2026-0015"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/11/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/12/1"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/22xxx/CVE-2026-22693.json"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/security/advisories/GHSA-xvjr-f2r9-c7ww"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-22693"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                }
+              ]
+            }
+          ],
+          "versions": 206,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        }
+      ]
+    },
+    {
       "id": "OSV-2020-484",
       "summary": "Heap-buffer-overflow in AAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition",
       "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=12532\n\n```\nCrash type: Heap-buffer-overflow READ 4\nCrash state:\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition\nvoid AAT::StateTableDriver\u003cAAT::ExtendedTypes, AAT::KerxSubTableFormat4\u003cAAT::Ker\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::apply\n```\n",
-      "modified": "<RFC3339 date with the year 2022>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2020-07-01T00:00:12.297418Z",
       "references": [
         {
@@ -675,8 +739,12 @@
       "id": "CURL-CVE-2024-9681",
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CVE-2024-9681"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "aliases": [
+        "CVE-2024-9681",
+        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
+      ],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -876,6 +944,261 @@
       ]
     },
     {
+      "id": "CURL-CVE-2025-14017",
+      "summary": "broken TLS options for threaded LDAPS",
+      "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
+      "aliases": ["CVE-2025-14017"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ccba0d10b6baf5c73cae8cf4fb3f29f0f55c5a34"
+                },
+                {
+                  "fixed": "39d1976b7f709a516e3243338ebc0443bdd8d56d"
+                }
+              ]
+            }
+          ],
+          "versions": 143,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-14524",
+      "summary": "bearer token leak on cross-protocol redirect",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
+      "aliases": ["CVE-2025-14524"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-06T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "06c1bea72faabb6fad4b7ef818aafaa336c9a7aa"
+                },
+                {
+                  "fixed": "1a822275d333dc6da6043497160fd04c8fa48640"
+                }
+              ]
+            }
+          ],
+          "versions": 107,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "anonymous237 on hackerone",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-14819",
+      "summary": "OpenSSL partial chain store policy bypass",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "aliases": ["CVE-2025-14819"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.87.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "3c16697ebd796f799227be293e8689aec5f8190d"
+                },
+                {
+                  "fixed": "cd046f6c93b39d673a58c18648d8906e954c4f5d"
+                }
+              ]
+            }
+          ],
+          "versions": 31,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-15079",
+      "summary": "libssh global known_hosts override",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
+      "aliases": ["CVE-2025-15079"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "adca486c125d9a6d9565b9607a19dce803a8b479"
+                }
+              ]
+            }
+          ],
+          "versions": 70,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Harry Sintonen",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2025-15224",
+      "summary": "libssh key passphrase bypass without agent set",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
+      "aliases": ["CVE-2025-15224"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-07T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.18.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "16d5f2a5660c61cc27bd5f1c7f512391d1c927aa"
+                }
+              ]
+            }
+          ],
+          "versions": 70,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "credits": [
+        {
+          "name": "Harry Sintonen",
+          "type": "FINDER"
+        },
+        {
+          "name": "Harry Sintonen",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2025-5025",
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
@@ -927,63 +1250,12 @@
       ]
     },
     {
-      "id": "CURL-CVE-2025-9086",
-      "summary": "Out of bounds read for cookie path",
-      "details": "1. A cookie is set using the `secure` keyword for `https://target`\n2. curl is redirected to or otherwise made to speak with `http://target` (same\n   hostname, but using clear text HTTP) using the same cookie set\n3. The same cookie name is set - but with just a slash as path (`path=\"/\"`).\n   Since this site is not secure, the cookie *should* just be ignored.\n4. A bug in the path comparison logic makes curl read outside a heap buffer\n   boundary\n\nThe bug either causes a crash or it potentially makes the comparison come to\nthe wrong conclusion and lets the clear-text site override the contents of the\nsecure cookie, contrary to expectations and depending on the memory contents\nimmediately following the single-byte allocation that holds the path.\n\nThe presumed and correct behavior would be to plainly ignore the second set of\nthe cookie since it was already set as secure on a secure host so overriding\nit on an insecure host should not be okay.",
-      "aliases": ["CVE-2025-9086"],
-      "modified": "<RFC3339 date with the year 2025>",
-      "published": "2025-09-10T08:00:00Z",
-      "database_specific": "<Any value>",
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.31.0"
-                },
-                {
-                  "fixed": "8.16.0"
-                }
-              ]
-            },
-            {
-              "type": "GIT",
-              "repo": "https://github.com/curl/curl.git",
-              "events": [
-                {
-                  "introduced": "f24dc09d209a2f91ca38d854f0c15ad93f3d7e2d"
-                },
-                {
-                  "fixed": "c6ae07c6a541e0e96d0040afb62b45dd37711300"
-                }
-              ]
-            }
-          ],
-          "versions": 107,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "credits": [
-        {
-          "name": "Google Big Sleep",
-          "type": "FINDER"
-        },
-        {
-          "name": "Daniel Stenberg",
-          "type": "REMEDIATION_DEVELOPER"
-        }
-      ]
-    },
-    {
       "id": "CVE-2024-0853",
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even when the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh, which then skipped the verify status check.",
       "aliases": ["CURL-CVE-2024-0853"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-02-03T14:15:50.850Z",
-      "related": ["CGA-w4px-x37v-694c", "openSUSE-SU-2024:13637-1"],
+      "related": ["CGA-jhf8-hfv6-c8cj", "openSUSE-SU-2024:13637-1"],
       "references": [
         {
           "type": "ADVISORY",
@@ -1004,6 +1276,10 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2298922"
         },
         {
           "type": "EVIDENCE",
@@ -1042,13 +1318,13 @@
       "id": "CVE-2024-11053",
       "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits just the password or\nomits both login and password.",
       "aliases": ["CURL-CVE-2024-11053"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-11T08:15:05.307Z",
       "related": [
         "ALSA-2025:1671",
         "ALSA-2025:1673",
+        "CGA-q2m3-p84r-4g5w",
         "MGASA-2024-0391",
-        "RLSA-2025:1673",
         "SUSE-SU-2024:4284-1",
         "SUSE-SU-2024:4284-2",
         "SUSE-SU-2024:4287-1",
@@ -1066,11 +1342,11 @@
           "url": "https://curl.se/docs/CVE-2024-11053.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2829063"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
@@ -1084,6 +1360,18 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2829063"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2829063"
         }
       ],
       "affected": [
@@ -1118,10 +1406,10 @@
       "id": "CVE-2024-2004",
       "details": "When a protocol selection parameter option disables all protocols without adding any then the default set of protocols would remain in the allowed set due to an error in the logic for removing protocols. The below command would perform a request to curl.se with a plaintext protocol which has been explicitly disabled.      curl --proto -all,-http http://curl.se  The flaw is only present if the set of selected protocols disables the entire set of available protocols, in itself a command with no practical use and therefore unlikely to be encountered in real situations. The curl security team has thus assessed this to be low severity bug.",
       "aliases": ["CURL-CVE-2024-2004"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:15:41.173Z",
       "related": [
-        "CGA-jqm4-7q66-4rv5",
+        "CGA-j3wv-j4m4-gx9m",
         "MGASA-2024-0099",
         "SUSE-SU-2024:1120-1",
         "SUSE-SU-2024:1150-1",
@@ -1132,19 +1420,19 @@
       ],
       "references": [
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
         },
         {
@@ -1156,7 +1444,7 @@
           "url": "https://curl.se/docs/CVE-2024-2004.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2384833"
         },
         {
@@ -1182,6 +1470,30 @@
         {
           "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2384833"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2384833"
         }
       ],
       "affected": [
@@ -1216,12 +1528,12 @@
       "id": "CVE-2024-2398",
       "details": "When an application tells libcurl it wants to allow HTTP/2 server push, and the amount of received headers for the push surpasses the maximum allowed limit (1000), libcurl aborts the server push. When aborting, libcurl inadvertently does not free all the previously allocated headers and instead leaks the memory.  Further, this error condition fails silently and is therefore not easily detected by an application.",
       "aliases": ["CURL-CVE-2024-2398"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:15:41.283Z",
       "related": [
         "ALSA-2024:5529",
         "ALSA-2024:5654",
-        "CGA-ww95-x7cj-gxrr",
+        "CGA-wp82-qqgp-vfc7",
         "MGASA-2024-0099",
         "SUSE-SU-2024:1120-1",
         "SUSE-SU-2024:1150-1",
@@ -1232,19 +1544,19 @@
       ],
       "references": [
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
         },
         {
@@ -1256,7 +1568,7 @@
           "url": "https://curl.se/docs/CVE-2024-2398.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2402845"
         },
         {
@@ -1282,6 +1594,30 @@
         {
           "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2402845"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2402845"
         }
       ],
       "affected": [
@@ -1316,17 +1652,69 @@
       "id": "CVE-2024-2466",
       "details": "libcurl did not check the server certificate of TLS connections done to a host specified as an IP address, when built to use mbedTLS.  libcurl would wrongly avoid using the set hostname function when the specified hostname was given as an IP address, therefore completely skipping the certificate check. This affects all uses of TLS protocols (HTTPS, FTPS, IMAPS, POPS3, SMTPS, etc).",
       "aliases": ["CURL-CVE-2024-2466"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:15:41.343Z",
       "related": [
-        "CGA-hx4m-3q2w-96wj",
+        "CGA-9ch7-64c5-2ffr",
         "MGASA-2024-0099",
         "openSUSE-SU-2024:13805-1"
       ],
       "references": [
         {
-          "type": "EVIDENCE",
+          "type": "WEB",
           "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/2416725"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0010/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2416725"
         },
         {
           "type": "ARTICLE",
@@ -1345,32 +1733,12 @@
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.json"
-        },
-        {
           "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2416725"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0010/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214118"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
+          "type": "EVIDENCE",
+          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
         }
       ],
       "affected": [
@@ -1405,12 +1773,12 @@
       "id": "CVE-2024-6874",
       "details": "libcurl's URL API function\n[curl_url_get()](https://curl.se/libcurl/c/curl_url_get.html) offers punycode\nconversions, to and from IDN. Asking to convert a name that is exactly 256\nbytes, libcurl ends up reading outside of a stack based buffer when built to\nuse the *macidn* IDN backend. The conversion function then fills up the\nprovided buffer exactly - but does not null terminate the string.\n\nThis flaw can lead to stack contents accidently getting returned as part of\nthe converted string.",
       "aliases": ["CURL-CVE-2024-6874"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-24T08:15:03.413Z",
       "related": ["openSUSE-SU-2024:14225-1"],
       "references": [
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/24/2"
         },
         {
@@ -1424,6 +1792,18 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240822-0004/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2604391"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2024/07/24/2"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://hackerone.com/reports/2604391"
         },
         {
           "type": "EVIDENCE",
@@ -1462,13 +1842,12 @@
       "id": "CVE-2024-7264",
       "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
       "aliases": ["CURL-CVE-2024-7264"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-31T08:15:02.657Z",
       "related": [
         "ALSA-2025:1671",
         "ALSA-2025:1673",
-        "CGA-962m-89hc-rmjq",
-        "RLSA-2025:1673",
+        "CGA-m2jp-pm2h-j34f",
         "SUSE-SU-2024:2784-1",
         "SUSE-SU-2024:2930-1",
         "SUSE-SU-2024:2938-1",
@@ -1487,7 +1866,7 @@
           "url": "https://curl.se/docs/CVE-2024-7264.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2629968"
         },
         {
@@ -1503,12 +1882,20 @@
           "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
         },
         {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2629968"
+        },
+        {
           "type": "FIX",
           "url": "https://github.com/curl/curl/commit/27959ecce75cdb2809c0bdb3286e60e08fadb519"
         },
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2629968"
         }
       ],
       "affected": [
@@ -1543,10 +1930,10 @@
       "id": "CVE-2024-8096",
       "details": "When curl is told to use the Certificate Status Request TLS extension, often referred to as OCSP stapling, to verify that the server certificate is valid, it might fail to detect some OCSP problems and instead wrongly consider the response as fine.  If the returned status reports another error than 'revoked' (like for example 'unauthorized') it is not treated as a bad certficate.",
       "aliases": ["CURL-CVE-2024-8096"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-09-11T10:15:02.883Z",
       "related": [
-        "CGA-g55g-qx76-5fjj",
+        "CGA-73mp-jjfm-5663",
         "SUSE-SU-2024:3202-1",
         "SUSE-SU-2024:3203-1",
         "SUSE-SU-2024:3204-1",
@@ -1563,7 +1950,23 @@
           "url": "https://curl.se/docs/CVE-2024-8096.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/2669852"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.debian.org/debian-lts-announce/2024/11/msg00008.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241011-0005/"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2669852"
         },
         {
@@ -1575,8 +1978,8 @@
           "url": "https://lists.debian.org/debian-lts-announce/2024/11/msg00008.html"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20241011-0005/"
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2669852"
         }
       ],
       "affected": [
@@ -1610,10 +2013,15 @@
     {
       "id": "CVE-2024-9681",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CURL-CVE-2024-9681"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": [
+        "CURL-CVE-2024-9681",
+        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
+        "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
+      ],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-06T08:15:03.740Z",
       "related": [
+        "CGA-v39g-9hmw-2647",
         "MGASA-2024-0360",
         "SUSE-SU-2024:3925-1",
         "SUSE-SU-2024:3926-1",
@@ -1655,7 +2063,7 @@
           "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         },
         {
-          "type": "FIX",
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-9681.html"
         },
         {
@@ -1663,16 +2071,40 @@
           "url": "https://curl.se/docs/CVE-2024-9681.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2764830"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2764830"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2024-9681.html"
+        },
+        {
+          "type": "FIX",
+          "url": "https://hackerone.com/reports/2764830"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
         },
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2764830"
         }
       ],
       "affected": [
@@ -1707,9 +2139,10 @@
       "id": "CVE-2025-0167",
       "details": "When asked to use a `.netrc` file for credentials **and** to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has a `default` entry that\nomits both login and password. A rare circumstance.",
       "aliases": ["CURL-CVE-2025-0167"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T10:15:22.710Z",
       "related": [
+        "CGA-v826-97c2-87gj",
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",
@@ -1726,12 +2159,20 @@
           "url": "https://curl.se/docs/CVE-2025-0167.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://hackerone.com/reports/2917232"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2917232"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2917232"
         }
       ],
       "affected": [
@@ -1766,9 +2207,13 @@
       "id": "CVE-2025-0665",
       "details": "libcurl would wrongly close the same eventfd file descriptor twice when taking\ndown a connection channel after having completed a threaded name resolve.",
       "aliases": ["CURL-CVE-2025-0665"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T10:15:22.857Z",
-      "related": ["MGASA-2025-0123", "openSUSE-SU-2025:14809-1"],
+      "related": [
+        "CGA-pp5p-89c7-m76c",
+        "MGASA-2025-0123",
+        "openSUSE-SU-2025:14809-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
@@ -1779,7 +2224,23 @@
           "url": "https://curl.se/docs/CVE-2025-0665.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/2954286"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0007/"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2954286"
         },
         {
@@ -1791,8 +2252,8 @@
           "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0007/"
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2954286"
         }
       ],
       "affected": [
@@ -1827,9 +2288,10 @@
       "id": "CVE-2025-0725",
       "details": "When libcurl is asked to perform automatic gzip decompression of\ncontent-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option,\n**using zlib 1.2.0.3 or older**, an attacker-controlled integer overflow would\nmake libcurl perform a buffer overflow.",
       "aliases": ["CURL-CVE-2025-0725"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T10:15:22.980Z",
       "related": [
+        "CGA-25q2-2hvj-grx8",
         "MGASA-2025-0123",
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",
@@ -1850,7 +2312,7 @@
           "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
         },
         {
-          "type": "EVIDENCE",
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2956023"
         },
         {
@@ -1868,6 +2330,10 @@
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/4"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/2956023"
         }
       ],
       "affected": [
@@ -1878,15 +2344,15 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "0"
+                  "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
                 },
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
+                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
               ]
             }
           ],
-          "versions": 214,
+          "versions": 164,
           "database_specific": "<Any value>"
         }
       ],
@@ -1899,10 +2365,423 @@
       ]
     },
     {
+      "id": "CVE-2025-10966",
+      "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
+      "aliases": ["CURL-CVE-2025-10966"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2025-11-07T08:15:39.617Z",
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-10966.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-10966.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/3355218"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3355218"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-10966.html"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3355218"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
+                },
+                {
+                  "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
+                }
+              ]
+            }
+          ],
+          "versions": 53,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14017",
+      "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
+      "aliases": ["CURL-CVE-2025-14017"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:45.667Z",
+      "related": ["MGASA-2026-0003", "SUSE-SU-2026:0077-1"],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14017.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14017.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 146,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14524",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
+      "aliases": ["CURL-CVE-2025-14524"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:46.607Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14524.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/3459417"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3459417"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3459417"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 109,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14819",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the  `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "aliases": ["CURL-CVE-2025-14819"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:46.730Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-14819.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "c12fb3ddaf48e709a7a4deaa55ec485e4df163ee"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 34,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15079",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
+      "aliases": ["CURL-CVE-2025-15079"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:47.100Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15079.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/3477116"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3477116"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3477116"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 73,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15224",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
+      "aliases": ["CURL-CVE-2025-15224"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:15:47.207Z",
+      "related": ["MGASA-2026-0003"],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15224.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-15224.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/3480925"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3480925"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2025-15224.html"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3480925"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ]
+            }
+          ],
+          "versions": 73,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N"
+        }
+      ]
+    },
+    {
       "id": "CVE-2025-5025",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS transfers. Due to an omission, this check is not performed when connecting with QUIC for HTTP/3, when the TLS backend is wolfSSL. Documentation says the option works with wolfSSL, failing to specify that it does not for QUIC and HTTP/3. Since pinning makes the transfer succeed if the pin is fine, users could unwittingly connect to an impostor server without noticing.",
       "aliases": ["CURL-CVE-2025-5025"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-05-28T07:15:24.910Z",
       "references": [
         {
@@ -1914,12 +2793,24 @@
           "url": "https://curl.se/docs/CVE-2025-5025.json"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://hackerone.com/reports/3153497"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/3153497"
         },
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://hackerone.com/reports/3153497"
         }
       ],
       "affected": [
@@ -1970,16 +2861,9 @@
       "id": "GHSA-353f-x4gh-cqq8",
       "summary": "Nokogiri patches vendored libxml2 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.9 patches the vendored libxml2 to address CVE-2025-6021, CVE-2025-6170, CVE-2025-49794, CVE-2025-49795, and CVE-2025-49796.\n\n## Impact and severity\n\n### CVE-2025-6021\n\nA flaw was found in libxml2's xmlBuildQName function, where integer overflows in buffer size calculations can lead to a stack-based buffer overflow. This issue can result in memory corruption or a denial of service when processing crafted input.\n\nNVD claims a severity of 7.5 High (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H)\n\nFixed by applying https://gitlab.gnome.org/GNOME/libxml2/-/commit/17d950ae\n\n### CVE-2025-6170\n\nA flaw was found in the interactive shell of the xmllint command-line tool, used for parsing XML files. When a user inputs an overly long command, the program does not check the input size properly, which can cause it to crash. This issue might allow attackers to run harmful code in rare configurations without modern protections.\n\nNVD claims a severity of 2.5 Low (CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:L)\n\nFixed by applying https://gitlab.gnome.org/GNOME/libxml2/-/commit/5e9ec5c1\n\n### CVE-2025-49794\n\nA use-after-free vulnerability was found in libxml2. This issue occurs when parsing XPath elements under certain circumstances when the XML schematron has the \u003csch:name path=\"...\"/\u003e schema elements. This flaw allows a malicious actor to craft a malicious XML document used as input for libxml, resulting in the program's crash using libxml or other possible undefined behaviors.\n\nNVD claims a severity of 9.1 Critical (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H)\n\nFixed by applying https://gitlab.gnome.org/GNOME/libxml2/-/commit/81cef8c5\n\n### CVE-2025-49795\n\nA NULL pointer dereference vulnerability was found in libxml2 when processing XPath XML expressions. This flaw allows an attacker to craft a malicious XML input to libxml2, leading to a denial of service.\n\nNVD claims a severity of 7.5 High (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H)\n\nFixed by applying https://gitlab.gnome.org/GNOME/libxml2/-/commit/62048278\n\n### CVE-2025-49796\n\nA vulnerability was found in libxml2. Processing certain sch:name elements from the input XML file can trigger a memory corruption issue. This flaw allows an attacker to craft a malicious XML input file that can lead libxml to crash, resulting in a denial of service or other possible undefined behavior due to sensitive data being corrupted in memory.\n\nNVD claims a severity of 9.1 Critical (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H)\n\nFixed by applying https://gitlab.gnome.org/GNOME/libxml2/-/commit/81cef8c5\n\n## Affected Versions\n\n- Nokogiri \u003c 1.18.9 when using CRuby (MRI) with vendored libxml2\n\n## Patched Versions\n\n- Nokogiri \u003e= 1.18.9\n\n## Mitigation\n\nUpgrade to Nokogiri v1.18.9 or later.\n\nUsers who are unable to upgrade Nokogiri may also choose a more complicated mitigation: compile and link Nokogiri against patched external libxml2 libraries which will also address these same issues.\n\n## References\n\n- https://github.com/sparklemotion/nokogiri/pull/3526\n- https://nvd.nist.gov/vuln/detail/CVE-2025-6021\n- https://nvd.nist.gov/vuln/detail/CVE-2025-6170\n- https://nvd.nist.gov/vuln/detail/CVE-2025-49794\n- https://nvd.nist.gov/vuln/detail/CVE-2025-49795\n- https://nvd.nist.gov/vuln/detail/CVE-2025-49796",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-07-21T19:35:18Z",
-      "related": [
-        "CGA-73h8-h425-x4mp",
-        "CGA-8v42-fr6h-9x9w",
-        "CGA-hc2m-xw7c-3wr5",
-        "CGA-mxgj-w36w-pmfp",
-        "CGA-vg5r-gj2w-v36p",
-        "CGA-x38x-69c3-6j9r"
-      ],
+      "related": ["CGA-r543-m6vw-g4g3"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2045,15 +2929,9 @@
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-04-21T21:55:56Z",
-      "related": [
-        "CGA-36hq-gx42-7ph7",
-        "CGA-3c55-rv8q-8xmq",
-        "CGA-9fwc-gmv6-444f",
-        "CGA-hfp4-47hq-gcwf",
-        "CGA-q4qr-rqgj-8h6r"
-      ],
+      "related": ["CGA-7x2j-hw2w-785h"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2107,20 +2985,9 @@
       "id": "GHSA-mrxw-mxhj-p664",
       "summary": "Nokogiri updates packaged libxslt to v1.1.43 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.4 upgrades its dependency libxslt to [v1.1.43](https://gitlab.gnome.org/GNOME/libxslt/-/releases/v1.1.43).\n\nlibxslt v1.1.43 resolves:\n\n- CVE-2025-24855: Fix use-after-free of XPath context node\n- CVE-2024-55549: Fix UAF related to excluded namespaces\n\n## Impact\n\n### CVE-2025-24855\n\n- \"Use-after-free due to xsltEvalXPathStringNs leaking xpathCtxt-\u003enode\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/128\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-24855\n\n### CVE-2024-55549\n\n- \"Use-after-free related to excluded result prefixes\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/127\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2024-55549",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-14T18:51:37Z",
-      "related": [
-        "CGA-2534-mwf5-4939",
-        "CGA-365q-39f2-2mr3",
-        "CGA-483r-3jvm-wcg9",
-        "CGA-559h-p6mq-x3h9",
-        "CGA-5xm4-7487-74x5",
-        "CGA-67cr-973w-wx8w",
-        "CGA-fwfp-68vp-7f2p",
-        "CGA-m79p-mm8f-vwhp",
-        "CGA-v9mc-grh4-cp89",
-        "CGA-wwf6-gxpw-8rvg"
-      ],
+      "related": ["CGA-6w3c-9xqr-489f"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2184,16 +3051,9 @@
       "id": "GHSA-vvfq-8hwr-qm4m",
       "summary": "Nokogiri updates packaged libxml2 to 2.13.6 to resolve CVE-2025-24928 and CVE-2024-56171",
       "details": "## Summary\n\nNokogiri v1.18.3 upgrades its dependency libxml2 to [v2.13.6](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.6).\n\nlibxml2 v2.13.6 addresses:\n\n- CVE-2025-24928\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/847\n- CVE-2024-56171\n   - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/828\n\n## Impact\n\n### CVE-2025-24928\n\nStack-buffer overflow is possible when reporting DTD validation errors if the input contains a long (~3kb) QName prefix.\n\n### CVE-2024-56171\n\nUse-after-free is possible during validation against untrusted XML Schemas (.xsd) and, potentially, validation of untrusted documents against trusted Schemas if they make use of `xsd:keyref` in combination with recursively defined types that have additional identity constraints.",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-18T22:36:03Z",
-      "related": [
-        "CGA-9832-f6q3-5726",
-        "CGA-9wf6-25xh-648f",
-        "CGA-mfh8-mfq9-x4cv",
-        "CGA-qq5x-9h37-p5qp",
-        "CGA-qw8j-qh7h-4665",
-        "CGA-rppc-58w9-wv7w"
-      ],
+      "related": ["CGA-pcx9-j9hw-mw82"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2247,27 +3107,10 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
-      "related": [
-        "CGA-2h34-36gr-7wjw",
-        "CGA-3whm-xmcr-46qf",
-        "CGA-3x3w-qq6c-vp29",
-        "CGA-54q9-cvjw-rr77",
-        "CGA-7vqx-6v2v-7gxr",
-        "CGA-8fg5-vxmw-77p6",
-        "CGA-8gfh-2mj5-27qq",
-        "CGA-ch38-hm3p-vqfx",
-        "CGA-hw4r-mxqv-7jj9",
-        "CGA-m6wh-c9m7-3g8v",
-        "CGA-mcp3-399f-p32w",
-        "CGA-p346-mccf-rp28",
-        "CGA-pxmx-r998-7p4j",
-        "CGA-q74h-cfpr-qvcv",
-        "CGA-rc3c-cv49-w8jw",
-        "CGA-v9x5-9f3j-vh44"
-      ],
+      "related": ["CGA-xx5r-cxh4-797p"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2331,28 +3174,10 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
-      "related": [
-        "CGA-2589-9xpr-fmp7",
-        "CGA-372m-j842-xpmm",
-        "CGA-5jxw-7gv5-jv29",
-        "CGA-6pvq-6ww4-f29g",
-        "CGA-9fmg-5576-4h3w",
-        "CGA-9x7g-9rfp-4xhm",
-        "CGA-f7cf-h8jg-fwmv",
-        "CGA-gvvw-7w3r-7m54",
-        "CGA-h79h-32w2-7vmp",
-        "CGA-jjj9-fv4h-c9cv",
-        "CGA-jr6g-xxjr-rgc8",
-        "CGA-mvqg-6j62-4pjm",
-        "CGA-q48p-2qpp-m58h",
-        "CGA-vj5f-6mc5-q329",
-        "CGA-vm55-cfmf-jr9r",
-        "CGA-w9xc-2j9j-8rrv",
-        "CGA-whf8-42p9-686q"
-      ],
+      "related": ["CGA-cxrh-g24g-3973"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2420,29 +3245,10 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
-      "related": [
-        "CGA-3cj4-2jg2-4qm3",
-        "CGA-48m9-g63w-3pmj",
-        "CGA-4qcp-6r5p-mjg3",
-        "CGA-6g29-xf5c-xrq4",
-        "CGA-79fr-pvjg-j9xm",
-        "CGA-8r3m-hvvj-88ff",
-        "CGA-98jf-gjq4-76gh",
-        "CGA-crfr-r549-cvmg",
-        "CGA-f7wq-crqm-v76f",
-        "CGA-gm37-p355-3fq6",
-        "CGA-h3v9-xgx5-mrgr",
-        "CGA-hvm4-vp8w-6q8r",
-        "CGA-p9v5-jpj2-q3ww",
-        "CGA-rx48-pgcw-gx64",
-        "CGA-v3rh-g84v-9h7h",
-        "CGA-w2xv-8gr2-xp8m",
-        "CGA-wxqh-34vm-g4hv",
-        "CGA-x4cq-2pgw-pj4r"
-      ],
+      "related": ["CGA-vf88-6cvh-mxch"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2518,27 +3324,10 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
-      "related": [
-        "CGA-2h34-36gr-7wjw",
-        "CGA-3whm-xmcr-46qf",
-        "CGA-3x3w-qq6c-vp29",
-        "CGA-54q9-cvjw-rr77",
-        "CGA-7vqx-6v2v-7gxr",
-        "CGA-8fg5-vxmw-77p6",
-        "CGA-8gfh-2mj5-27qq",
-        "CGA-ch38-hm3p-vqfx",
-        "CGA-hw4r-mxqv-7jj9",
-        "CGA-m6wh-c9m7-3g8v",
-        "CGA-mcp3-399f-p32w",
-        "CGA-p346-mccf-rp28",
-        "CGA-pxmx-r998-7p4j",
-        "CGA-q74h-cfpr-qvcv",
-        "CGA-rc3c-cv49-w8jw",
-        "CGA-v9x5-9f3j-vh44"
-      ],
+      "related": ["CGA-xx5r-cxh4-797p"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2602,28 +3391,10 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
-      "related": [
-        "CGA-2589-9xpr-fmp7",
-        "CGA-372m-j842-xpmm",
-        "CGA-5jxw-7gv5-jv29",
-        "CGA-6pvq-6ww4-f29g",
-        "CGA-9fmg-5576-4h3w",
-        "CGA-9x7g-9rfp-4xhm",
-        "CGA-f7cf-h8jg-fwmv",
-        "CGA-gvvw-7w3r-7m54",
-        "CGA-h79h-32w2-7vmp",
-        "CGA-jjj9-fv4h-c9cv",
-        "CGA-jr6g-xxjr-rgc8",
-        "CGA-mvqg-6j62-4pjm",
-        "CGA-q48p-2qpp-m58h",
-        "CGA-vj5f-6mc5-q329",
-        "CGA-vm55-cfmf-jr9r",
-        "CGA-w9xc-2j9j-8rrv",
-        "CGA-whf8-42p9-686q"
-      ],
+      "related": ["CGA-cxrh-g24g-3973"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2691,29 +3462,10 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
-      "related": [
-        "CGA-3cj4-2jg2-4qm3",
-        "CGA-48m9-g63w-3pmj",
-        "CGA-4qcp-6r5p-mjg3",
-        "CGA-6g29-xf5c-xrq4",
-        "CGA-79fr-pvjg-j9xm",
-        "CGA-8r3m-hvvj-88ff",
-        "CGA-98jf-gjq4-76gh",
-        "CGA-crfr-r549-cvmg",
-        "CGA-f7wq-crqm-v76f",
-        "CGA-gm37-p355-3fq6",
-        "CGA-h3v9-xgx5-mrgr",
-        "CGA-hvm4-vp8w-6q8r",
-        "CGA-p9v5-jpj2-q3ww",
-        "CGA-rx48-pgcw-gx64",
-        "CGA-v3rh-g84v-9h7h",
-        "CGA-w2xv-8gr2-xp8m",
-        "CGA-wxqh-34vm-g4hv",
-        "CGA-x4cq-2pgw-pj4r"
-      ],
+      "related": ["CGA-vf88-6cvh-mxch"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2789,27 +3541,10 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
-      "related": [
-        "CGA-2h34-36gr-7wjw",
-        "CGA-3whm-xmcr-46qf",
-        "CGA-3x3w-qq6c-vp29",
-        "CGA-54q9-cvjw-rr77",
-        "CGA-7vqx-6v2v-7gxr",
-        "CGA-8fg5-vxmw-77p6",
-        "CGA-8gfh-2mj5-27qq",
-        "CGA-ch38-hm3p-vqfx",
-        "CGA-hw4r-mxqv-7jj9",
-        "CGA-m6wh-c9m7-3g8v",
-        "CGA-mcp3-399f-p32w",
-        "CGA-p346-mccf-rp28",
-        "CGA-pxmx-r998-7p4j",
-        "CGA-q74h-cfpr-qvcv",
-        "CGA-rc3c-cv49-w8jw",
-        "CGA-v9x5-9f3j-vh44"
-      ],
+      "related": ["CGA-xx5r-cxh4-797p"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2873,28 +3608,10 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
-      "related": [
-        "CGA-2589-9xpr-fmp7",
-        "CGA-372m-j842-xpmm",
-        "CGA-5jxw-7gv5-jv29",
-        "CGA-6pvq-6ww4-f29g",
-        "CGA-9fmg-5576-4h3w",
-        "CGA-9x7g-9rfp-4xhm",
-        "CGA-f7cf-h8jg-fwmv",
-        "CGA-gvvw-7w3r-7m54",
-        "CGA-h79h-32w2-7vmp",
-        "CGA-jjj9-fv4h-c9cv",
-        "CGA-jr6g-xxjr-rgc8",
-        "CGA-mvqg-6j62-4pjm",
-        "CGA-q48p-2qpp-m58h",
-        "CGA-vj5f-6mc5-q329",
-        "CGA-vm55-cfmf-jr9r",
-        "CGA-w9xc-2j9j-8rrv",
-        "CGA-whf8-42p9-686q"
-      ],
+      "related": ["CGA-cxrh-g24g-3973"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -2962,29 +3679,10 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
-      "related": [
-        "CGA-3cj4-2jg2-4qm3",
-        "CGA-48m9-g63w-3pmj",
-        "CGA-4qcp-6r5p-mjg3",
-        "CGA-6g29-xf5c-xrq4",
-        "CGA-79fr-pvjg-j9xm",
-        "CGA-8r3m-hvvj-88ff",
-        "CGA-98jf-gjq4-76gh",
-        "CGA-crfr-r549-cvmg",
-        "CGA-f7wq-crqm-v76f",
-        "CGA-gm37-p355-3fq6",
-        "CGA-h3v9-xgx5-mrgr",
-        "CGA-hvm4-vp8w-6q8r",
-        "CGA-p9v5-jpj2-q3ww",
-        "CGA-rx48-pgcw-gx64",
-        "CGA-v3rh-g84v-9h7h",
-        "CGA-w2xv-8gr2-xp8m",
-        "CGA-wxqh-34vm-g4hv",
-        "CGA-x4cq-2pgw-pj4r"
-      ],
+      "related": ["CGA-vf88-6cvh-mxch"],
       "database_specific": "<Any value>",
       "references": [
         {

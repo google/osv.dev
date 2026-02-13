@@ -1,0 +1,35 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5 AS go_build
+
+RUN mkdir /src
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download && go mod verify
+
+
+COPY ./ /src/
+RUN go build -o cve-bulk-converter ./cmd/converters/cve/cve5/bulk-converter/
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:e1f1233a7dda0a37af1ce7c2531f5544b022af79b0c7453ef4216561dece0a9b
+RUN apk --no-cache add jq
+
+WORKDIR /root/
+COPY --from=go_build /src/cve-bulk-converter ./
+COPY ./cmd/converters/cve/cve5/bulk-converter/run-cvelist-converter.sh ./
+
+ENTRYPOINT ["/root/run-cvelist-converter.sh"]

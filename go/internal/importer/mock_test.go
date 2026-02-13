@@ -88,3 +88,7 @@ func (m mockSourceRecord) SourcePath() string {
 func (m mockSourceRecord) ShouldSendModifiedTime() bool {
 	return m.MockSendModifiedTime
 }
+
+func (m mockSourceRecord) IsDeleted() bool {
+	return m.ShouldSendUpdate && m.DataToRead == nil // Simple heuristic for mock
+}

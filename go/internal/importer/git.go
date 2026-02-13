@@ -32,11 +32,15 @@ type gitSourceRecord struct {
 	format           RecordFormat
 	sourceRepository string
 	shouldSendUpdate bool
+	isDeleted        bool
 }
 
 var _ SourceRecord = gitSourceRecord{}
 
 func (g gitSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+	if g.isDeleted {
+		return nil, errors.New("cannot open a deleted record")
+	}
 	g.repo.mu.Lock()
 	defer g.repo.mu.Unlock()
 	f, err := g.commit.File(g.path)
@@ -77,6 +81,10 @@ func (g gitSourceRecord) SourcePath() string {
 
 func (g gitSourceRecord) ShouldSendModifiedTime() bool {
 	return g.shouldSendUpdate
+}
+
+func (g gitSourceRecord) IsDeleted() bool {
+	return g.isDeleted
 }
 
 // Some sourceRepository entries share the same git repository (e.g. ubuntu).
@@ -164,7 +172,11 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		}
 		if to == "" {
 			// Object was deleted / moved to ignored
-			// TODO: handle deletion
+			ch <- gitSourceRecord{
+				sourceRepository: sourceRepo.Name,
+				path:             from,
+				isDeleted:        true,
+			}
 			continue
 		}
 		// object created/modified - send to channel

@@ -59,6 +59,10 @@ func (b bucketSourceRecord) ShouldSendModifiedTime() bool {
 	return b.hasUpdateTime
 }
 
+func (b bucketSourceRecord) IsDeleted() bool {
+	return false
+}
+
 func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket import")

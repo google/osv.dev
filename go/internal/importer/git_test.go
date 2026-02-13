@@ -170,3 +170,84 @@ func TestHandleImportGit(t *testing.T) {
 		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB.String(), sourceRepo.Git.LastSyncedCommit)
 	}
 }
+
+func TestHandleImportGit_Deletion(t *testing.T) {
+	// Setup a temporary git repo acting as the remote source
+	remoteDir, err := os.MkdirTemp("", "osv-git-remote-del-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(remoteDir)
+
+	remoteRepo, err := git.PlainInit(remoteDir, false)
+	if err != nil {
+		t.Fatalf("Failed to init remote repo: %v", err)
+	}
+	remoteWt, err := remoteRepo.Worktree()
+	if err != nil {
+		t.Fatalf("Failed to get remote worktree: %v", err)
+	}
+
+	// Initial commit: one file
+	os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0644)
+	remoteWt.Add("CVE-A.json")
+	commitA, _ := remoteWt.Commit("Initial", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
+	})
+
+	// Second commit: Delete the file
+	_, _ = remoteWt.Remove("CVE-A.json")
+	commitB, _ := remoteWt.Commit("Second (Delete)", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
+	})
+
+	mockStore := &mockSourceRepositoryStore{
+		updates: make(map[string]interface{}),
+	}
+	workDir, _ := os.MkdirTemp("", "osv-git-work-del-*")
+	defer os.RemoveAll(workDir)
+
+	config := Config{
+		SourceRepoStore: mockStore,
+		GitWorkDir:      workDir,
+	}
+
+	sourceRepo := &models.SourceRepository{
+		Name:      "test-git-repo",
+		Type:      models.SourceRepositoryTypeGit,
+		Extension: ".json",
+		Git: &models.SourceRepoGit{
+			URL:              remoteDir,
+			LastSyncedCommit: commitA.String(),
+		},
+	}
+
+	ch := make(chan SourceRecord, 10)
+	err = handleImportGit(context.Background(), ch, config, sourceRepo)
+	if err != nil {
+		t.Fatalf("handleImportGit failed: %v", err)
+	}
+	close(ch)
+
+	var records []gitSourceRecord
+	for r := range ch {
+		records = append(records, r.(gitSourceRecord))
+	}
+
+	// We expect 1 record: the deletion of CVE-A.json
+	if len(records) != 1 {
+		t.Fatalf("Expected 1 record, got %d", len(records))
+	}
+
+	if records[0].path != "CVE-A.json" {
+		t.Errorf("Expected path CVE-A.json, got %s", records[0].path)
+	}
+	if !records[0].isDeleted {
+		t.Errorf("Expected record to be marked as deleted")
+	}
+
+	// Verify the LastSyncedCommit was updated
+	if sourceRepo.Git.LastSyncedCommit != commitB.String() {
+		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB.String(), sourceRepo.Git.LastSyncedCommit)
+	}
+}

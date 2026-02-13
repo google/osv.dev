@@ -1,25 +1,20 @@
-package main
+package importer
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"flag"
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
 
-	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
-	"cloud.google.com/go/storage"
-	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
@@ -27,109 +22,48 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-// publisher is a mockable interface for publishing messages to a topic.
-type publisher interface {
-	Publish(ctx context.Context, msg *pubsub.Message) *pubsub.PublishResult
-}
+const TasksTopic = "tasks"
 
-const tasksTopic = "tasks"
-
-type ImporterConfig struct {
+type Config struct {
 	NumWorkers int
 
 	SourceRepoStore models.SourceRepositoryStore
-	Publisher       publisher
-	GCSClient       *storage.Client
+	Publisher       clients.Publisher
+	GCSProvider     clients.CloudStorageProvider
 	HTTPClient      *http.Client
 	GitWorkDir      string
 
 	StrictValidation bool
 }
 
-type retryableHTTPLeveledLogger struct{}
+type RetryableHTTPLeveledLogger struct{}
 
-var _ retryablehttp.LeveledLogger = retryableHTTPLeveledLogger{}
+var _ retryablehttp.LeveledLogger = RetryableHTTPLeveledLogger{}
 
-func (r retryableHTTPLeveledLogger) Error(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Error(msg string, keysAndValues ...interface{}) {
 	logger.Error(msg, keysAndValues...)
 }
 
-func (r retryableHTTPLeveledLogger) Info(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Info(msg string, keysAndValues ...interface{}) {
 	logger.Info(msg, keysAndValues...)
 }
 
-func (r retryableHTTPLeveledLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Debug(msg string, keysAndValues ...interface{}) {
 	logger.Debug(msg, keysAndValues...)
 }
 
-func (r retryableHTTPLeveledLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Warn(msg string, keysAndValues ...interface{}) {
 	logger.Warn(msg, keysAndValues...)
 }
 
-func main() {
-	logger.InitGlobalLogger()
-
-	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation.")
-	delete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
-	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
-	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
-	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for importing")
-
-	flag.Parse()
-
-	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	if project == "" {
-		logger.Fatal("GOOGLE_CLOUD_PROJECT environment variable is not set")
-	}
-
-	config := ImporterConfig{
-		StrictValidation: *strictValidation,
-		NumWorkers:       *numWorkers,
-		GitWorkDir:       filepath.Join(*workDir, "sources"),
-	}
-
-	httpClient := retryablehttp.NewClient()
-	httpClient.RetryMax = 3
-	httpClient.RetryWaitMin = 1 * time.Second
-	httpClient.RetryWaitMax = 4 * time.Second
-	httpClient.Logger = retryableHTTPLeveledLogger{}
-	config.HTTPClient = httpClient.StandardClient()
-
-	datastoreClient, err := datastore.NewClient(context.Background(), project)
-	if err != nil {
-		logger.Fatal("Failed to create datastore client", slog.Any("error", err))
-	}
-	config.SourceRepoStore = db.NewSourceRepositoryStore(datastoreClient)
-
-	psClient, err := pubsub.NewClient(context.Background(), project)
-	if err != nil {
-		logger.Fatal("Failed to create pubsub client", slog.Any("error", err))
-	}
-	config.Publisher = psClient.Publisher(tasksTopic)
-
-	config.GCSClient, err = storage.NewClient(context.Background())
-	if err != nil {
-		logger.Fatal("Failed to create GCS client", slog.Any("error", err))
-	}
-
-	if *delete {
-		_ = deleteThresholdPct
-		logger.Fatal("delete not implemented yet")
-	}
-
-	if err := RunImporter(context.Background(), config); err != nil {
-		logger.Fatal("Importer failed", slog.Any("error", err))
-	}
-}
-
-func RunImporter(ctx context.Context, config ImporterConfig) error {
+func Run(ctx context.Context, config Config) error {
 	logger.Info("Importer started")
 
 	workCh := make(chan SourceRecord)
 	var workWg sync.WaitGroup
 	for range config.NumWorkers {
 		workWg.Go(func() {
-			ImporterWorker(ctx, workCh, config)
+			importerWorker(ctx, workCh, config)
 		})
 	}
 
@@ -189,7 +123,7 @@ type SourceRecord interface {
 	ShouldSendModifiedTime() bool
 }
 
-func ImporterWorker(ctx context.Context, ch <-chan SourceRecord, config ImporterConfig) {
+func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -205,14 +139,16 @@ func ImporterWorker(ctx context.Context, ch <-chan SourceRecord, config Importer
 					slog.Any("error", err),
 					slog.String("source_repository", sourceRepoName),
 					slog.String("source_path", sourceRecord.SourcePath()))
+				continue
 			}
-			defer r.Close()
 			data, err := io.ReadAll(r)
+			r.Close()
 			if err != nil {
 				logger.Error("Failed to read source record",
 					slog.Any("error", err),
 					slog.String("source_repository", sourceRepoName),
 					slog.String("source_path", sourceRecord.SourcePath()))
+				continue
 			}
 			hash := computeHash(data)
 			var vulnProto osvschema.Vulnerability
@@ -270,7 +206,7 @@ func computeHash(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func sendToWorker(ctx context.Context, config ImporterConfig, sourceRecord SourceRecord, hash string, modifiedTime time.Time) error {
+func sendToWorker(ctx context.Context, config Config, sourceRecord SourceRecord, hash string, modifiedTime time.Time) error {
 	msg := &pubsub.Message{
 		Data: []byte(""),
 		Attributes: map[string]string{

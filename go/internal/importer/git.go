@@ -1,4 +1,4 @@
-package main
+package importer
 
 import (
 	"bytes"
@@ -88,7 +88,7 @@ type sharedRepo struct {
 	mu *sync.Mutex
 }
 
-func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config ImporterConfig, sourceRepo *models.SourceRepository) error {
+func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git import")
 	}

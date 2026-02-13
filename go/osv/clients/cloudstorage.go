@@ -71,3 +71,9 @@ type CloudStorage interface {
 	// Close closes the CloudStorage client.
 	Close() error
 }
+
+// CloudStorageProvider provides CloudStorage instances for a given bucket.
+type CloudStorageProvider interface {
+	Bucket(name string) CloudStorage
+}
+

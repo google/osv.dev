@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
@@ -106,6 +107,11 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
+func isIndexLockError(err error) bool {
+	errString := err.Error()
+	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
+}
+
 func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
@@ -133,6 +139,18 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 				return nil, fmt.Errorf("git fetch failed: %w", err)
 			}
 			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+			if isIndexLockError(err) {
+				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
+				// We can remove the file and retry the command
+				logger.Warn("index.lock exists, attempting to remove and retry", slog.String("repoPath", repoPath))
+				indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
+				if err := os.Remove(indexLockPath); err != nil {
+					return nil, fmt.Errorf("failed to remove index.lock in %s: %w", repoPath, err)
+				}
+				// One more attempt at git reset
+				err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+			}
+
 			if err != nil {
 				return nil, fmt.Errorf("git reset failed: %w", err)
 			}

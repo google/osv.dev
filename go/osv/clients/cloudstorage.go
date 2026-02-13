@@ -52,6 +52,12 @@ type Attrs struct {
 	CRC32C uint32
 }
 
+// Object represents a storage object and its metadata.
+type Object struct {
+	Name  string
+	Attrs Attrs
+}
+
 // CloudStorage defines a generic interface for blob storage operations.
 type CloudStorage interface {
 	// ReadObject reads the raw contents of an object.
@@ -66,7 +72,7 @@ type CloudStorage interface {
 	WriteObject(ctx context.Context, path string, data []byte, opts *WriteOptions) error
 
 	// Objects returns an iterator over objects that match the prefix.
-	Objects(ctx context.Context, prefix string) iter.Seq2[string, error]
+	Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error]
 
 	// Close closes the CloudStorage client.
 	Close() error

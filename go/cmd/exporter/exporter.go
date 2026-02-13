@@ -91,19 +91,19 @@ func main() {
 
 	prevPrefix := ""
 MainLoop:
-	for path, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
+	for obj, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
 		if err != nil {
 			logger.Fatal("failed to list objects", slog.Any("err", err))
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(path)
+		prefix := filepath.Base(obj.Name)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.Info("iterating vulnerabilities", slog.String("now_at", path))
+			logger.Info("iterating vulnerabilities", slog.String("now_at", obj.Name))
 			prevPrefix = prefix
 		}
 		select {
-		case gcsPathToDownloaderCh <- path:
+		case gcsPathToDownloaderCh <- obj.Name:
 		case <-ctx.Done():
 			break MainLoop
 		}

@@ -114,7 +114,7 @@ func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, o
 	return nil
 }
 
-func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[string, error] {
+func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clients.Object, error] {
 	// Create a snapshot of the keys to iterate over, so we don't hold the lock.
 	c.mu.RLock()
 	var keys []string
@@ -126,9 +126,23 @@ func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[string
 	c.mu.RUnlock()
 	slices.Sort(keys) // Sort for deterministic tests.
 
-	return func(yield func(string, error) bool) {
+	return func(yield func(*clients.Object, error) bool) {
 		for _, key := range keys {
-			if !yield(key, nil) {
+			c.mu.RLock()
+			obj, ok := c.objects[key]
+			c.mu.RUnlock()
+			if !ok {
+				continue
+			}
+			o := &clients.Object{
+				Name: key,
+				Attrs: clients.Attrs{
+					Generation: obj.generation,
+					CustomTime: obj.customTime,
+					CRC32C:     obj.crc32c,
+				},
+			}
+			if !yield(o, nil) {
 				return
 			}
 		}

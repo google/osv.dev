@@ -81,29 +81,25 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 		format = RecordFormatJSON
 	}
 	timeOfRun := time.Now()
-	for objectName, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
+	for obj, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
 		if err != nil {
 			return err
 		}
 		if hasUpdateTime {
-			attrs, err := bucket.ReadObjectAttrs(ctx, objectName)
-			if err != nil {
-				return err
-			}
-			if attrs.CustomTime.Before(lastUpdated) {
+			if obj.Attrs.CustomTime.Before(lastUpdated) {
 				continue
 			}
 		}
-		if !strings.HasSuffix(objectName, sourceRepo.Extension) {
+		if !strings.HasSuffix(obj.Name, sourceRepo.Extension) {
 			continue
 		}
-		base := path.Base(objectName)
+		base := path.Base(obj.Name)
 		if shouldIgnore(base, sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			continue
 		}
 		ch <- bucketSourceRecord{
 			bucket:           bucket,
-			objectPath:       objectName,
+			objectPath:       obj.Name,
 			lastUpdated:      lastUpdated,
 			hasUpdateTime:    hasUpdateTime,
 			format:           format,

@@ -6,7 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -22,21 +22,36 @@ import (
 	"syscall"
 	"time"
 
+	"runtime/pprof"
+
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/singleflight"
 )
 
-const getGitEndpoint = "/getgit"
+// API Endpoints
+var endpointHandlers = map[string]http.HandlerFunc{
+	"GET /git":               gitHandler,
+	"POST /cache":            cacheHandler,
+	"POST /affected-commits": affectedCommitsHandler,
+}
+
 const defaultGitterWorkDir = "/work/gitter"
-const persistanceFileName = "last-fetch.json"
+const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
 
 var (
-	g               singleflight.Group
-	persistancePath = path.Join(defaultGitterWorkDir, persistanceFileName)
+	gFetch          singleflight.Group
+	gArchive        singleflight.Group
+	gLoad           singleflight.Group
+	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 )
+
+type Event struct {
+	EventType string `json:"eventType"` // TODO: enum this
+	Hash      string `json:"hash"`
+}
 
 const shutdownTimeout = 10 * time.Second
 
@@ -71,6 +86,23 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	return nil
 }
 
+// prepareCmd prepares the command with context cancellation handled by sending SIGINT.
+func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(syscall.SIGINT)
+	}
+
+	return cmd
+}
+
 func isLocalRequest(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -103,10 +135,12 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
-func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
+func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
+	logger.Info("Starting fetch repo", slog.String("url", url))
+	start := time.Now()
+
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
-	archivePath := repoPath + ".zst"
 
 	lastFetchMu.Lock()
 	accessTime, ok := lastFetch[url]
@@ -119,7 +153,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			// Clone
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
-				return nil, fmt.Errorf("git clone failed: %w", err)
+				return fmt.Errorf("git clone failed: %w", err)
 			}
 		} else {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
@@ -127,14 +161,45 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
 			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
-				return nil, fmt.Errorf("git fetch failed: %w", err)
+				return fmt.Errorf("git fetch failed: %w", err)
 			}
 			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
 			if err != nil {
-				return nil, fmt.Errorf("git reset failed: %w", err)
+				return fmt.Errorf("git reset failed: %w", err)
 			}
 		}
 
+		updateLastFetch(url)
+	}
+
+	// Double check if the git directory exist
+	_, err := os.Stat(path.Join(repoPath, ".git"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			deleteLastFetch(url)
+		}
+
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
+
+	return nil
+}
+
+func archiveRepo(ctx context.Context, url string) ([]byte, error) {
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+	archivePath := repoPath + ".zst"
+
+	lastFetchMu.Lock()
+	accessTime := lastFetch[url]
+	lastFetchMu.Unlock()
+
+	// Check if archive needs update
+	// We update if archive does not exist OR if it is older than the last fetch
+	stats, err := os.Stat(archivePath)
+	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
 		logger.Info("Archiving git blob", slog.String("url", url))
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
@@ -143,8 +208,6 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
-
-		updateLastFetch(url)
 	}
 
 	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
@@ -155,10 +218,6 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 
 	fileData, err := os.ReadFile(archivePath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			deleteLastFetch(url)
-		}
-
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
@@ -166,12 +225,26 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 }
 
 func main() {
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
+
 	port := flag.Int("port", 8888, "Listen port")
-	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
-	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
+	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
+	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
 
-	persistancePath = path.Join(*workDir, persistanceFileName)
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			logger.Error("could not create CPU profile", slog.Any("error", err))
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			logger.Error("could not start CPU profile", slog.Any("error", err))
+		}
+		defer pprof.StopCPUProfile()
+	}
+
+	persistencePath = path.Join(*workDir, persistenceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
@@ -179,13 +252,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	loadMap()
+	loadLastFetchMap()
 
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	http.HandleFunc(getGitEndpoint, gitHandler)
+	for endpoint, handler := range endpointHandlers {
+		http.HandleFunc(endpoint, handler)
+	}
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -230,7 +305,7 @@ func main() {
 		logger.Error("Server forced to shutdown", slog.Any("error", err))
 	}
 
-	saveMap()
+	saveLastFetchMap()
 	logger.Info("Server exiting")
 }
 
@@ -252,6 +327,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Fetch repo first
 	// Keep the key as the url regardless of forceUpdate.
 	// Occasionally this could be problematic if an existing unforce updated
 	// query is already inplace, no force update will happen.
@@ -259,14 +335,13 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
-	fileData, err, _ := g.Do(url, func() (any, error) {
-		return fetchBlob(r.Context(), url, forceUpdate)
-	})
-
-	if err != nil {
-		logger.Error("Error fetching/archiving blob", slog.String("url", url), slog.Any("error", err))
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url, forceUpdate)
+	}); err != nil {
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
 			return
 		}
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
@@ -274,10 +349,23 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Archive repo
+	//nolint:contextcheck // I can't change singleflight's interface
+	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
+		return archiveRepo(r.Context(), url)
+	})
+	if err != nil {
+		logger.Error("Error archiving blob", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+	fileData := fileDataAny.([]byte)
+
 	w.Header().Set("Content-Type", "application/zstd")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 	w.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(w, bytes.NewReader(fileData.([]byte))); err != nil {
+	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 
@@ -285,4 +373,166 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("Request completed successfully", slog.String("url", url))
+}
+
+func cacheHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	// POST requets body processing
+	var body struct {
+		URL         string `json:"url"`
+		ForceUpdate bool   `json:"force_update"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+
+		return
+	}
+	defer r.Body.Close()
+
+	url := body.URL
+	logger.Info("Received request: /cache", slog.String("url", url))
+
+	// Fetch repo if it's not fresh
+	//nolint:contextcheck // I can't change singleflight's interface
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
+	}); err != nil {
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+
+	//nolint:contextcheck // I can't change singleflight's interface
+	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
+		return LoadRepository(r.Context(), repoPath)
+	})
+	if err != nil {
+		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	logger.Info("Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
+}
+
+func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	// POST requets body processing
+	var body struct {
+		URL               string  `json:"url"`
+		Events            []Event `json:"events"`
+		DetectCherrypicks bool    `json:"detect_cherrypicks"`
+		ForceUpdate       bool    `json:"force_update"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+
+		return
+	}
+	defer r.Body.Close()
+
+	url := body.URL
+	introduced := []SHA1{}
+	fixed := []SHA1{}
+	lastAffected := []SHA1{}
+	limit := []SHA1{}
+	cherrypick := body.DetectCherrypicks
+
+	for _, event := range body.Events {
+		hash, err := hex.DecodeString(event.Hash)
+		if err != nil {
+			logger.Error("Error parsing hash", slog.String("hash", event.Hash), slog.Any("error", err))
+			continue
+		}
+
+		switch event.EventType {
+		case "introduced":
+			introduced = append(introduced, SHA1(hash))
+		case "fixed":
+			fixed = append(fixed, SHA1(hash))
+		case "last_affected":
+			lastAffected = append(lastAffected, SHA1(hash))
+		case "limit":
+			limit = append(limit, SHA1(hash))
+		default:
+			logger.Error("Invalid event type", slog.String("event_type", event.EventType))
+			continue
+		}
+	}
+	logger.Info("Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
+
+	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
+	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
+		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
+
+		return
+	}
+
+	// Fetch repo if it's not fresh
+	//nolint:contextcheck // I can't change singleflight's interface
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, fetchRepo(r.Context(), url, body.ForceUpdate)
+	}); err != nil {
+		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	repoDirName := getRepoDirName(url)
+	repoPath := path.Join(gitStorePath, repoDirName)
+
+	//nolint:contextcheck // I can't change singleflight's interface
+	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+		return LoadRepository(r.Context(), repoPath)
+	})
+	if err != nil {
+		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+	repo := repoAny.(*Repository)
+
+	var affectedCommits []*Commit
+	if len(limit) > 0 {
+		affectedCommits = repo.Between(introduced, limit)
+	} else {
+		affectedCommits = repo.Affected(introduced, fixed, lastAffected, cherrypick)
+	}
+
+	if err != nil {
+		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
+		logger.Error("Error encoding affected commits", slog.String("url", url), slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+	logger.Info("Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }

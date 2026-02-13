@@ -3,13 +3,16 @@
 package conversion
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -67,6 +70,60 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 	})
 
 	return refs
+}
+
+// ConductAnalysis conducts an analysis of the conversion results after completion by reading
+// all of the .metrics.json files and extracting conversion outcomes.
+func ConductAnalysis(year string, dir string) {
+	// get the current time in minutes
+	currentTime := time.Now().Format("2006-01-02T15:04")
+	outcomesCSV := "nvd-conversion-outcomes-" + year + "-" + currentTime + ".csv"
+	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
+	if err != nil {
+		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))
+	}
+	defer csvFile.Close()
+
+	csvWriter := csv.NewWriter(csvFile)
+	defer csvWriter.Flush()
+
+	header := []string{"CVEID", "Outcome"}
+	if err := csvWriter.Write(header); err != nil {
+		logger.Fatal("Failed to write header to CSV", slog.Any("err", err))
+	}
+
+	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), ".metrics.json") {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				logger.Warn("Failed to read metrics file", slog.String("path", path), slog.Any("err", err))
+				return nil // Continue
+			}
+
+			var metrics models.ConversionMetrics
+			if err := json.Unmarshal(data, &metrics); err != nil {
+				logger.Warn("Failed to unmarshal metrics JSON", slog.String("path", path), slog.Any("err", err))
+				return nil // Continue
+			}
+
+			record := []string{
+				string(metrics.CVEID),
+				metrics.Outcome.String(),
+			}
+			if err := csvWriter.Write(record); err != nil {
+				logger.Warn("Failed to write record to CSV", slog.String("cve", string(metrics.CVEID)), slog.Any("err", err))
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Error("Failed to walk directory for analysis", slog.Any("err", err))
+	}
 }
 
 // CreateMetricsFile creates the initial file for the metrics record.

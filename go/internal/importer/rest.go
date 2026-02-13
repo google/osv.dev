@@ -1,4 +1,4 @@
-package main
+package importer
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func (r restSourceRecord) ShouldSendModifiedTime() bool {
 	return r.hasUpdateTime
 }
 
-func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config ImporterConfig, sourceRepo *models.SourceRepository) error {
+func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST import")
 	}

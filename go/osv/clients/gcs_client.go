@@ -40,6 +40,20 @@ func NewGCSClient(client *storage.Client, bucketName string) *GCSClient {
 	return &GCSClient{client: client, bucket: bucket}
 }
 
+// GCSStorageProvider is a concrete implementation of CloudStorageProvider for Google Cloud Storage.
+type GCSStorageProvider struct {
+	client *storage.Client
+}
+
+// NewGCSStorageProvider creates a new GCSStorageProvider.
+func NewGCSStorageProvider(client *storage.Client) *GCSStorageProvider {
+	return &GCSStorageProvider{client: client}
+}
+
+func (p *GCSStorageProvider) Bucket(name string) CloudStorage {
+	return NewGCSClient(p.client, name)
+}
+
 func (c *GCSClient) ReadObject(ctx context.Context, path string) ([]byte, error) {
 	obj := c.bucket.Object(path)
 	reader, err := obj.NewReader(ctx)

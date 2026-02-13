@@ -1,6 +1,7 @@
-package main
+package importer
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -9,14 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
-	"google.golang.org/api/iterator"
+	"github.com/google/osv.dev/go/osv/clients"
 )
 
 type bucketSourceRecord struct {
-	bucket           *storage.BucketHandle
+	bucket           clients.CloudStorage
 	objectPath       string
 	keyPath          string
 	hasUpdateTime    bool
@@ -28,7 +28,11 @@ type bucketSourceRecord struct {
 var _ SourceRecord = bucketSourceRecord{}
 
 func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
-	return b.bucket.Object(b.objectPath).NewReader(ctx)
+	data, err := b.bucket.ReadObject(ctx, b.objectPath)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (b bucketSourceRecord) KeyPath() string {
@@ -55,7 +59,7 @@ func (b bucketSourceRecord) ShouldSendModifiedTime() bool {
 	return b.hasUpdateTime
 }
 
-func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config ImporterConfig, sourceRepo *models.SourceRepository) error {
+func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket import")
 	}
@@ -63,9 +67,7 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Impo
 		slog.String("source_repository", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
-	bucket := config.GCSClient.Bucket(sourceRepo.Bucket.Name)
-	query := &storage.Query{Prefix: sourceRepo.Bucket.Path}
-	it := bucket.Objects(ctx, query)
+	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
 	hasUpdateTime := false
 	var lastUpdated time.Time
 	if !sourceRepo.Bucket.IgnoreLastImportTime && sourceRepo.Bucket.LastUpdated != nil {
@@ -79,27 +81,29 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Impo
 		format = RecordFormatJSON
 	}
 	timeOfRun := time.Now()
-	for {
-		object, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
+	for objectName, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
 		if err != nil {
 			return err
 		}
-		if hasUpdateTime && object.Updated.Before(lastUpdated) {
+		if hasUpdateTime {
+			attrs, err := bucket.ReadObjectAttrs(ctx, objectName)
+			if err != nil {
+				return err
+			}
+			if attrs.CustomTime.Before(lastUpdated) {
+				continue
+			}
+		}
+		if !strings.HasSuffix(objectName, sourceRepo.Extension) {
 			continue
 		}
-		if !strings.HasSuffix(object.Name, sourceRepo.Extension) {
-			continue
-		}
-		base := path.Base(object.Name)
+		base := path.Base(objectName)
 		if shouldIgnore(base, sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			continue
 		}
 		ch <- bucketSourceRecord{
 			bucket:           bucket,
-			objectPath:       object.Name,
+			objectPath:       objectName,
 			lastUpdated:      lastUpdated,
 			hasUpdateTime:    hasUpdateTime,
 			format:           format,

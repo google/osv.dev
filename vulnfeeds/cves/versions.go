@@ -1252,10 +1252,6 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 	if len(repos) == 0 {
 		return repos
 	}
-	if vp != nil {
-		metrics.AddNote("Derived repos using references %q for %q %q", repos, vp.Vendor, vp.Product)
-	}
-	metrics.AddNote("Derived repos (no CPEs) using references: %q", repos)
 
 	return repos
 }

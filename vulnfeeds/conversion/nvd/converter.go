@@ -24,7 +24,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
@@ -45,37 +45,42 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	if cpeRanges == nil && commits == nil && textRanges == nil {
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
 		metrics.Outcome = models.NoRanges
-		if rejectFailed {
-			return metrics.Outcome
-		}
+	} else {
+		var affected *osvschema.Affected
+		metrics.Outcome, affected = ResolveVersionsToCommits(cpeRanges, textRanges, commits, repos, cache, metrics)
+		v.Affected = append(v.Affected, affected)
 	}
-	var affected *osvschema.Affected
-	metrics.Outcome, affected = ResolveVersionsToCommits(cpeRanges, textRanges, commits, repos, cache, metrics)
 
-	v.Affected = append(v.Affected, affected)
+	if !outputMetrics && rejectFailed && metrics.Outcome != models.Successful {
+		return metrics.Outcome
+	}
 
 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {
 		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", string(cve.ID)), slog.String("path", vulnDir), slog.Any("err", err))
 	}
-	osvFile, errCVE := conversion.CreateOSVFile(cve.ID, vulnDir)
-	metricsFile, errMetrics := conversion.CreateMetricsFile(cve.ID, vulnDir)
-	if errCVE != nil || errMetrics != nil {
-		logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
-	}
-	if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
-		logger.Error("Failed to write metrics", slog.Any("err", err))
-	}
-	if rejectFailed && metrics.Outcome != models.Successful {
-		return metrics.Outcome
-	}
 
-	if err := v.ToJSON(osvFile); err != nil {
-		logger.Error("Failed to write", slog.Any("err", err))
+	if !rejectFailed || metrics.Outcome == models.Successful {
+		osvFile, errCVE := conversion.CreateOSVFile(cve.ID, vulnDir)
+		if errCVE != nil {
+			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
+		}
+		if err := v.ToJSON(osvFile); err != nil {
+			logger.Error("Failed to write", slog.Any("err", err))
+		}
+		osvFile.Close()
 	}
-
-	osvFile.Close()
+	if outputMetrics {
+		metricsFile, errMetrics := conversion.CreateMetricsFile(cve.ID, vulnDir)
+		if errMetrics != nil {
+			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
+		}
+		if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
+			logger.Error("Failed to write metrics", slog.Any("err", err))
+		}
+		metricsFile.Close()
+	}
 
 	return metrics.Outcome
 }

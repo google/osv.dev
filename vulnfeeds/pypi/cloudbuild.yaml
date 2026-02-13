@@ -25,5 +25,5 @@ steps:
   args:
   - -c
   - bq query --max_rows=10000000 --format=json --nouse_legacy_sql < vulnfeeds/pypi/pypi_versions.sql > pypi_versions.json
-- name: gcr.io/cloud-builders/gsutil
-  args: ['cp', 'pypi_links.json', 'pypi_versions.json', 'gs://pypa-advisory-db/triage/']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['storage', 'cp', 'pypi_links.json', 'pypi_versions.json', 'gs://pypa-advisory-db/triage/']

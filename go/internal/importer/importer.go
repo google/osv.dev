@@ -153,6 +153,8 @@ type SourceRecord interface {
 	SourcePath() string
 	// ShouldSendModifiedTime returns true if the modified time should be sent (for latency monitoring)
 	ShouldSendModifiedTime() bool
+	// IsDeleted returns true if the record was deleted.
+	IsDeleted() bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) {
@@ -164,13 +166,25 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 			if !ok {
 				return
 			}
-			r, err := sourceRecord.Open(ctx)
 			sourceRepoName := sourceRecord.SourceRepository()
+			sourcePath := sourceRecord.SourcePath()
+
+			if sourceRecord.IsDeleted() {
+				if err := sendDeletionToWorker(ctx, config, sourceRepoName, sourcePath); err != nil {
+					logger.Error("Failed to send deletion to worker",
+						slog.Any("error", err),
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourcePath))
+				}
+				continue
+			}
+
+			r, err := sourceRecord.Open(ctx)
 			if err != nil {
 				logger.Error("Failed to open source record",
 					slog.Any("error", err),
 					slog.String("source", sourceRepoName),
-					slog.String("path", sourceRecord.SourcePath()))
+					slog.String("path", sourcePath))
 				continue
 			}
 			data, err := io.ReadAll(r)
@@ -179,7 +193,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 				logger.Error("Failed to read source record",
 					slog.Any("error", err),
 					slog.String("source", sourceRepoName),
-					slog.String("path", sourceRecord.SourcePath()))
+					slog.String("path", sourcePath))
 				continue
 			}
 			hash := computeHash(data)
@@ -239,39 +253,35 @@ func computeHash(data []byte) string {
 }
 
 func sendToWorker(ctx context.Context, config Config, sourceRecord SourceRecord, hash string, modifiedTime time.Time) error {
-	msg := &pubsub.Message{
-		Data: []byte(""),
-		Attributes: map[string]string{
-			"type":            "update",
-			"source":          sourceRecord.SourceRepository(),
-			"path":            sourceRecord.SourcePath(),
-			"original_sha256": hash,
-			"deleted":         "false",
-			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
-		},
-	}
+	var srcTimestamp *time.Time
 	if sourceRecord.ShouldSendModifiedTime() {
-		msg.Attributes["src_timestamp"] = strconv.FormatInt(modifiedTime.Unix(), 10)
+		srcTimestamp = &modifiedTime
 	}
-	result := config.Publisher.Publish(ctx, msg)
-	_, err := result.Get(ctx)
-	return err
+	return publishUpdate(ctx, config.Publisher, sourceRecord.SourceRepository(), sourceRecord.SourcePath(), hash, false, srcTimestamp)
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, source, path string) error {
+	return publishUpdate(ctx, config.Publisher, source, path, "", true, nil)
+}
+
+func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time) error {
 	msg := &pubsub.Message{
 		Data: []byte(""),
 		Attributes: map[string]string{
 			"type":            "update",
 			"source":          source,
 			"path":            path,
-			"original_sha256": "",
-			"deleted":         "true",
+			"original_sha256": hash,
+			"deleted":         strconv.FormatBool(deleted),
 			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
-			"src_timestamp":   "",
 		},
 	}
-	result := config.Publisher.Publish(ctx, msg)
+	if srcTimestamp != nil {
+		msg.Attributes["src_timestamp"] = strconv.FormatInt(srcTimestamp.Unix(), 10)
+	} else {
+		msg.Attributes["src_timestamp"] = ""
+	}
+	result := publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)
 	return err
 }

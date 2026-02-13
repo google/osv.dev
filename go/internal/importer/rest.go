@@ -68,6 +68,10 @@ func (r restSourceRecord) ShouldSendModifiedTime() bool {
 	return r.hasUpdateTime
 }
 
+func (r restSourceRecord) IsDeleted() bool {
+	return false
+}
+
 func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST import")

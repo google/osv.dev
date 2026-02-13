@@ -269,8 +269,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	forceUpdate := r.URL.Query().Get("force-update") == "true"
 
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, urlKey, url)
+	ctx := context.WithValue(r.Context(), urlKey, url)
 
 	logger.Info("Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 	// If request came from a local ip, don't do the check
@@ -288,7 +287,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// That is highly unlikely in our use case, as importer only queries
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
-	//nolint:contextcheck // I can't change singleflight's interface
 	fileData, err, _ := g.Do(url, func() (any, error) {
 		return fetchBlob(ctx, url, forceUpdate)
 	})

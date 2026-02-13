@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -63,7 +62,7 @@ func TestGitSourceRecord_Open(t *testing.T) {
 		path:   "test.json",
 	}
 
-	reader, err := record.Open(context.Background())
+	reader, err := record.Open(t.Context())
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
 	}
@@ -136,7 +135,7 @@ func TestHandleImportGit(t *testing.T) {
 	}
 
 	ch := make(chan SourceRecord, 10)
-	err = handleImportGit(context.Background(), ch, config, sourceRepo)
+	err = handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}
@@ -223,7 +222,7 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	}
 
 	ch := make(chan SourceRecord, 10)
-	err = handleImportGit(context.Background(), ch, config, sourceRepo)
+	err = handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}

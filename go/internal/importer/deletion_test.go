@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,9 +11,9 @@ import (
 )
 
 func TestHandleDeleteBucket(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	// 1. Setup Mock Bucket with 1 remaining file
+	// Setup Mock Bucket with 1 remaining file
 	mockBucket := testutils.NewMockStorage()
 	_ = mockBucket.WriteObject(ctx, "a/b/still-there.json", []byte(`{}`), nil)
 
@@ -24,7 +23,7 @@ func TestHandleDeleteBucket(t *testing.T) {
 		},
 	}
 
-	// 2. Setup Mock Datastore with 2 files (one missing from bucket)
+	// Setup Mock Datastore with 2 files (one missing from bucket)
 	mockVulnStore := &mockVulnerabilityStore{
 		Entries: map[string][]*models.VulnSourceRef{
 			"test-repo": {
@@ -53,13 +52,11 @@ func TestHandleDeleteBucket(t *testing.T) {
 		},
 	}
 
-	// 3. Run Deletion
 	err := handleDeleteBucket(ctx, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteBucket unexpected error: %v", err)
 	}
 
-	// 4. Verify results
 	if len(mockPublisher.Messages) != 1 {
 		t.Fatalf("Expected 1 deletion message, got %d", len(mockPublisher.Messages))
 	}
@@ -74,7 +71,7 @@ func TestHandleDeleteBucket(t *testing.T) {
 }
 
 func TestHandleDeleteBucket_Threshold(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Empty bucket
 	mockBucket := testutils.NewMockStorage()
@@ -124,15 +121,15 @@ func TestHandleDeleteBucket_Threshold(t *testing.T) {
 }
 
 func TestHandleDeleteREST(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
-	// 1. Mock Server returns 1 remaining ID
+	// Mock Server returns 1 remaining ID
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`[{"id": "STILL-THERE"}]`))
 	}))
 	defer ts.Close()
 
-	// 2. Datastore has 2 IDs
+	// Datastore has 2 IDs
 	mockVulnStore := &mockVulnerabilityStore{
 		Entries: map[string][]*models.VulnSourceRef{
 			"test-repo": {
@@ -160,13 +157,11 @@ func TestHandleDeleteREST(t *testing.T) {
 		},
 	}
 
-	// 3. Run Deletion
 	err := handleDeleteREST(ctx, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteREST failed: %v", err)
 	}
 
-	// 4. Verify
 	if len(mockPublisher.Messages) != 1 {
 		t.Fatalf("Expected 1 deletion message, got %d", len(mockPublisher.Messages))
 	}

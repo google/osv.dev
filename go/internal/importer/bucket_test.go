@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"context"
 	"io"
 	"testing"
 	"time"
@@ -13,14 +12,14 @@ import (
 
 func TestBucketSourceRecord_Open(t *testing.T) {
 	mockBucket := testutils.NewMockStorage()
-	_ = mockBucket.WriteObject(context.Background(), "path/to/test.json", []byte("data"), nil)
+	_ = mockBucket.WriteObject(t.Context(), "path/to/test.json", []byte("data"), nil)
 
 	mockRecord := bucketSourceRecord{
 		bucket:     mockBucket,
 		objectPath: "path/to/test.json",
 	}
 
-	reader, err := mockRecord.Open(context.Background())
+	reader, err := mockRecord.Open(t.Context())
 	if err != nil {
 		t.Fatalf("Failed to open bucket source record: %v", err)
 	}
@@ -45,7 +44,7 @@ func (m *mockCloudStorageProvider) Bucket(name string) clients.CloudStorage {
 }
 
 func TestHandleImportBucket(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set up mock bucket with a file
 	mockBucket := testutils.NewMockStorage()

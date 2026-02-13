@@ -1,7 +1,6 @@
 package importer
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +22,7 @@ func TestRestSourceRecord_Open(t *testing.T) {
 		urlPath: "/test",
 	}
 
-	reader, err := record.Open(context.Background())
+	reader, err := record.Open(t.Context())
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
 	}
@@ -40,7 +39,7 @@ func TestRestSourceRecord_Open(t *testing.T) {
 }
 
 func TestHandleImportREST(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lastUpdated := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	lastModifiedHeader := "Sun, 01 Jan 2023 00:00:00 GMT" // RFC1123
 
@@ -110,7 +109,7 @@ func TestHandleImportREST(t *testing.T) {
 }
 
 func TestHandleImportREST_HEAD_NoChanges(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lastUpdated := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// Server returns a Last-Modified older than LastUpdated

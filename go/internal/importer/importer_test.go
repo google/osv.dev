@@ -60,7 +60,7 @@ func TestImporterWorker(t *testing.T) {
 	config := Config{
 		Publisher: mockPublisher,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := t.Context()
 	ch := make(chan SourceRecord, 10)
 
 	// Test 1: JSON format
@@ -97,12 +97,7 @@ func TestImporterWorker(t *testing.T) {
 		MockSourceRepository: "repo4",
 		MockSourcePath:       "4.json",
 	}
-
-	go func() {
-		// Wait a bit and then close to unblock worker
-		time.Sleep(100 * time.Millisecond)
-		cancel()
-	}()
+	close(ch)
 
 	importerWorker(ctx, ch, config)
 

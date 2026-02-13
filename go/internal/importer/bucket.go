@@ -133,7 +133,7 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 	logger.Info("Processing bucket deletions",
 		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
 
-	// 1. Get all objects in the bucket
+	// Get all objects in the bucket
 	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
 	objectsInBucket := make(map[string]bool)
 	for obj, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
@@ -143,16 +143,10 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 		if !strings.HasSuffix(obj.Name, sourceRepo.Extension) {
 			continue
 		}
-		// In GCS buckets, the OSV ID is usually inferred from the content,
-		// but since we want to avoid downloading every file, we follow the
-		// Python logic of assuming ID-based paths for reconciliation or
-		// parsing if necessary.
-		// However, most bucket-based sources in OSV (like Debian, Rocky, etc.)
-		// use the ID as the filename.
 		objectsInBucket[obj.Name] = true
 	}
 
-	// 2. Get all non-withdrawn vulnerabilities in Datastore for this source
+	// Get all non-withdrawn vulnerabilities in Datastore for this source
 	var vulnsInDatastore []*models.VulnSourceRef
 	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, true) {
 		if err != nil {
@@ -166,7 +160,7 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 		return nil
 	}
 
-	// 3. Reconcile
+	// Reconcile
 	var toDelete []*models.VulnSourceRef
 	for _, entry := range vulnsInDatastore {
 		if !objectsInBucket[entry.Path] {
@@ -179,7 +173,7 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 		return nil
 	}
 
-	// 4. Safety Check
+	// Safety Check
 	threshold := config.DeleteThreshold
 	if sourceRepo.Bucket.IgnoreDeletionThreshold {
 		threshold = 101.0
@@ -195,7 +189,7 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 		return errors.New("deletion threshold exceeded")
 	}
 
-	// 5. Trigger deletions
+	// Trigger deletions
 	for _, entry := range toDelete {
 		logger.Info("Requesting deletion of bucket entry",
 			slog.String("source", entry.Source),

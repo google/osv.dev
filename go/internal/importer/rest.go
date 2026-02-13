@@ -198,7 +198,7 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 	logger.Info("Processing REST deletions",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
-	// 1. Fetch current IDs from REST API
+	// Fetch current IDs from REST API
 	req, err := http.NewRequest("GET", sourceRepo.REST.URL, nil)
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 		return true
 	})
 
-	// 2. Get all non-withdrawn vulnerabilities in Datastore for this source
+	// Get all non-withdrawn vulnerabilities in Datastore for this source
 	var vulnsInDatastore []*models.VulnSourceRef
 	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, true) {
 		if err != nil {
@@ -243,7 +243,7 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 		return nil
 	}
 
-	// 3. Reconcile
+	// Reconcile
 	var toDelete []*models.VulnSourceRef
 	for _, entry := range vulnsInDatastore {
 		// Path in REST is usually just the ID (without extension, or inferred from ID)
@@ -258,7 +258,7 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 		return nil
 	}
 
-	// 4. Safety Check
+	// Safety Check
 	threshold := config.DeleteThreshold
 	if sourceRepo.REST.IgnoreDeletionThreshold {
 		threshold = 101.0
@@ -274,7 +274,7 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 		return errors.New("deletion threshold exceeded")
 	}
 
-	// 5. Trigger deletions
+	// Trigger deletions
 	for _, entry := range toDelete {
 		logger.Info("Requesting deletion of REST entry",
 			slog.String("source", entry.Source),

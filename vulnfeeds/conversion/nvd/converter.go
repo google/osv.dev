@@ -2,8 +2,10 @@
 package nvd
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,14 +42,65 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
-	cpeRanges, commits, textRanges := cves.ExtractVersions(v, cve, nil, http.DefaultClient, metrics)
+	cpeRanges := cves.ExtractVersionsFromCPEs(cve, nil, metrics)
+	
+	// if there are no repos, there are no commits from the refs either
+	if len(cpeRanges) == 0 && len(repos) == 0{
+		outputFiles(v,directory,maybeVendorName,maybeProductName,metrics,rejectFailed,outputMetrics)
+		return models.NoRepos
+	}
 
-	if cpeRanges == nil && commits == nil && textRanges == nil {
+	successfulRepos := make(map[string]bool)
+	var resolvedRanges, unresolvedRanges  []*osvschema.Range
+	if len(cpeRanges) > 0 {
+		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
+		resolvedRanges = append(resolvedRanges, r...)
+		unresolvedRanges = append(unresolvedRanges, un...)
+		for _, s := range sR{
+			successfulRepos[s] = true
+		}
+		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
+	} else if len(repos) == 0 {
+		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
+		v.Affected = append(v.Affected, affected)
+		outputFiles(v,directory,maybeVendorName,maybeProductName,metrics,rejectFailed,outputMetrics)
+		return models.NoRepos
+	}
+
+	// Extract Commits
+	commits, err := cves.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	if err != nil {
+		metrics.AddNote("Failed to extract commits from refs: %#v", err)
+	}
+	if len(commits) > 0 {
+		metrics.AddNote("Extracted commits from refs: %v", commits)
+		for _, commit := range commits {
+			successfulRepos[commit.Repo] = true
+		}
+		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceRefs)
+	}
+
+	// Extract Versions From Text if no CPE versions found
+	if len(resolvedRanges) == 0 {
+		textRanges := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
+		if len(textRanges) > 0 {
+			metrics.AddNote("Extracted versions from description: %v", textRanges)
+		}
+		r, un, sR := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
+		resolvedRanges = append(resolvedRanges, r...)
+		unresolvedRanges = append(unresolvedRanges, un...)
+		for _, s := range sR{
+			successfulRepos[s] = true
+		}
+		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
+	}
+
+	if len(resolvedRanges) == 0 && len(commits) == 0{
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
 		metrics.Outcome = models.NoRanges
 	} else {
-		var affected *osvschema.Affected
-		metrics.Outcome, affected = ResolveVersionsToCommits(cpeRanges, textRanges, commits, repos, cache, metrics)
+		keys := slices.Collect(maps.Keys(successfulRepos))
+		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
 		v.Affected = append(v.Affected, affected)
 	}
 
@@ -55,108 +108,83 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		return metrics.Outcome
 	}
 
-	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-
-	if err := os.MkdirAll(vulnDir, 0755); err != nil {
-		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", string(cve.ID)), slog.String("path", vulnDir), slog.Any("err", err))
-	}
-
-	if !rejectFailed || metrics.Outcome == models.Successful {
-		osvFile, errCVE := conversion.CreateOSVFile(cve.ID, vulnDir)
-		if errCVE != nil {
-			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
-		}
-		if err := v.ToJSON(osvFile); err != nil {
-			logger.Error("Failed to write", slog.Any("err", err))
-		}
-		osvFile.Close()
-	}
-	if outputMetrics {
-		metricsFile, errMetrics := conversion.CreateMetricsFile(cve.ID, vulnDir)
-		if errMetrics != nil {
-			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cve.ID)))
-		}
-		if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
-			logger.Error("Failed to write metrics", slog.Any("err", err))
-		}
-		metricsFile.Close()
-	}
+	outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 
 	return metrics.Outcome
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-// func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
-// 	CPEs := cves.CPEs(cve)
-// 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
-// 	maybeVendorName := "ENOCPE"
-// 	maybeProductName := "ENOCPE"
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
+	CPEs := cves.CPEs(cve)
+	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
+	maybeVendorName := "ENOCPE"
+	maybeProductName := "ENOCPE"
 
-// 	if len(CPEs) > 0 {
-// 		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
-// 		maybeVendorName = CPE.Vendor
-// 		maybeProductName = CPE.Product
-// 		if err != nil {
-// 			return models.NoRanges
-// 		}
-// 	}
+	if len(CPEs) > 0 {
+		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		maybeVendorName = CPE.Vendor
+		maybeProductName = CPE.Product
+		if err != nil {
+			return models.NoRanges
+		}
+	}
 
-// 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-// 	// versions := cves.ExtractVersions(cve, nil, http.DefaultClient, metrics)
+	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
+	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
-// 	// metrics.Outcome = ResolveVersionsToCommits(&versions, repos, cache, metrics)
+	// metrics.Outcome = ResolveVersionsToCommits(&versions, repos, cache, metrics)
 
-// 	// if len(versions.AffectedCommits) == 0 {
-// 	// 	metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
-// 	// 	metrics.Outcome = models.NoCommitRanges
-// 	// }
+	// if len(versions.AffectedCommits) == 0 {
+	// 	metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
+	// 	metrics.Outcome = models.NoCommitRanges
+	// }
 
-// 	// if rejectFailed && metrics.Outcome != models.Successful {
-// 	// 	return metrics.Outcome
-// 	// }
+	// if rejectFailed && metrics.Outcome != models.Successful {
+	// 	return metrics.Outcome
+	// }
 
-// 	// versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
+	// versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
-// 	// slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+	// slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
 
-// 	var pkgInfos []vulns.PackageInfo
-// 	pi := vulns.PackageInfo{VersionInfo: versions}
-// 	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
+	var pkgInfos []vulns.PackageInfo
+	pi := vulns.PackageInfo{VersionInfo: versions}
+	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
 
-// 	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-// 	err := os.MkdirAll(vulnDir, 0755)
-// 	if err != nil {
-// 		logger.Warn("Failed to create dir", slog.Any("err", err))
-// 	}
+	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
+	err := os.MkdirAll(vulnDir, 0755)
+	if err != nil {
+		logger.Warn("Failed to create dir", slog.Any("err", err))
+	}
 
-// 	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
-// 	f, err := os.Create(outputFile)
-// 	if err != nil {
-// 		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
-// 	}
-// 	defer f.Close()
+	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
+	f, err := os.Create(outputFile)
+	if err != nil {
+		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
+	}
+	defer f.Close()
 
-// 	encoder := json.NewEncoder(f)
-// 	encoder.SetIndent("", "  ")
-// 	err = encoder.Encode(&pkgInfos)
+	encoder := json.NewEncoder(f)
+	encoder.SetIndent("", "  ")
+	err = encoder.Encode(&pkgInfos)
 
-// 	if err != nil {
-// 		logger.Warn("Failed to encode PackageInfo", slog.String("path", outputFile), slog.Any("err", err))
-// 	}
+	if err != nil {
+		logger.Warn("Failed to encode PackageInfo", slog.String("path", outputFile), slog.Any("err", err))
+	}
 
-// 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
+	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-// 	metricsFile, err := conversion.CreateMetricsFile(cve.ID, vulnDir)
-// 	if err != nil {
-// 		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-// 	}
-// 	err = conversion.WriteMetricsFile(metrics, metricsFile)
-// 	if err != nil {
-// 		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-// 	}
+	metricsFile, err := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	if err != nil {
+		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
+	}
+	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	if err != nil {
+		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
+	}
 
-// 	return metrics.Outcome
-// }
+	return metrics.Outcome
+}
 
 // FindRepos attempts to find the source code repositories for a given CVE.
 func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
@@ -238,43 +266,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	return reposForCVE
 }
 
-func ResolveVersionsToCommits(cpeRanges []*osvschema.Range, textRanges []*osvschema.Range, commits []models.AffectedCommit, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (models.ConversionOutcome, *osvschema.Affected) {
-	var cpeOutcome, textOutcome models.ConversionOutcome
-	resolvedRanges := []*osvschema.Range{}
-	unresolvedRanges := []*osvschema.Range{}
-	var successfulRepos []string
-	if len(cpeRanges) > 0 {
-		if len(repos) == 0 {
-			cpeOutcome = models.NoRepos
-		} else {
-			resolvedCPERanges, unresolvedCPERanges, successfulCPERepos := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
-			successfulRepos = append(successfulRepos, successfulCPERepos...)
-			if len(resolvedCPERanges) > 0 {
-				cpeOutcome = models.Successful
-				resolvedRanges = append(resolvedRanges, resolvedCPERanges...)
-			} else if len(unresolvedCPERanges) > 0 {
-				cpeOutcome = models.NoCommitRanges
-				unresolvedRanges = append(unresolvedRanges, unresolvedCPERanges...)
-			}
-		}
-	}
-
-	if len(textRanges) > 0 && cpeOutcome != models.Successful {
-		resolvedTextRanges, unresolvedTextRanges, _ := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
-		if len(resolvedTextRanges) > 0 {
-			textOutcome = models.Successful
-			resolvedRanges = append(resolvedRanges, resolvedTextRanges...)
-		} else if len(unresolvedTextRanges) > 0 {
-			textOutcome = models.NoCommitRanges
-			unresolvedRanges = append(unresolvedRanges, unresolvedTextRanges...)
-		}
-	}
-
-	if len(commits) > 0 {
-		for _, commit := range commits {
-			successfulRepos = append(successfulRepos, commit.Repo)
-		}
-	}
+func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) (*osvschema.Affected) {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
 	if len(resolvedRanges) > 0 {
@@ -324,11 +316,7 @@ func ResolveVersionsToCommits(cpeRanges []*osvschema.Range, textRanges []*osvsch
 		newAffected.DatabaseSpecific = databaseSpecific
 	}
 
-	if cpeOutcome == models.Successful || textOutcome == models.Successful || len(commits) > 0 {
-		return models.Successful, newAffected
-	}
-
-	return models.NoCommitRanges, newAffected
+	return newAffected
 }
 
 func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
@@ -371,4 +359,34 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 		}
 	}
 	return nil
+}
+
+func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) {
+	cveID := v.Id
+	vulnDir := filepath.Join(dir, vendor, product)
+
+	if err := os.MkdirAll(vulnDir, 0755); err != nil {
+		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", cveID), slog.String("path", vulnDir), slog.Any("err", err))
+	}
+
+	if !rejectFailed || metrics.Outcome == models.Successful {
+		osvFile, errCVE := conversion.CreateOSVFile(models.CVEID(cveID), vulnDir)
+		if errCVE != nil {
+			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
+		}
+		if err := v.ToJSON(osvFile); err != nil {
+			logger.Error("Failed to write", slog.Any("err", err))
+		}
+		osvFile.Close()
+	}
+	if outputMetrics {
+		metricsFile, errMetrics := conversion.CreateMetricsFile(models.CVEID(cveID), vulnDir)
+		if errMetrics != nil {
+			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
+		}
+		if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
+			logger.Error("Failed to write metrics", slog.Any("err", err))
+		}
+		metricsFile.Close()
+	}
 }

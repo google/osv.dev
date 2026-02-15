@@ -551,7 +551,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
+func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
 	var commits []models.AffectedCommit
 
 	for _, ref := range references {
@@ -811,51 +811,16 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 			}
 		}
 	}
-
+	if len(versions) > 0{
+		metrics.AddNote("Extracted versions from CPEs: %v", versions)
+	}
 	return versions
-}
-
-func ExtractVersions(v *vulns.Vulnerability, cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (cpeRanges []*osvschema.Range, commits []models.AffectedCommit, textRanges []*osvschema.Range) {
-	// Extract Versions From CPEs
-	cpeRanges = ExtractVersionsFromCPEs(cve, validVersions, metrics)
-	if len(cpeRanges) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", cpeRanges)
-	}
-
-	// Extract Commits
-	commits, err := extractCommitsFromRefs(cve.References, httpClient)
-	if err != nil {
-		metrics.AddNote("Failed to extract commits from refs: %v", err)
-	}
-	if len(commits) > 0 {
-		metrics.AddNote("Extracted commits from refs: %v", commits)
-	}
-
-	// Extract Versions From Text
-	textRanges = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
-	if len(textRanges) > 0 {
-		metrics.AddNote("Extracted versions from description: %v", textRanges)
-	}
-
-	// If no versions were detected, add a note
-	if len(cpeRanges) == 0 && len(commits) == 0 && len(textRanges) == 0 {
-		metrics.AddNote("No versions detected.")
-	}
-
-	if len(validVersions) > 0 {
-		metrics.AddNote("Valid versions:")
-		for _, version := range validVersions {
-			metrics.AddNote("  - %v", version)
-		}
-	}
-
-	return cpeRanges, commits, textRanges
 }
 
 // ExtractVersionInfo extracts version information from a CVE.
 // Deprecated: Use ExtractVersions instead.
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	if commit, err := extractCommitsFromRefs(cve.References, httpClient); err == nil {
+	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
 	}
 

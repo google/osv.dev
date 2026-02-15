@@ -1,4 +1,4 @@
-package nvd
+package conversion
 
 import (
 	"testing"
@@ -139,7 +139,7 @@ func TestMergeTwoRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mergeTwoRanges(tt.range1, tt.range2)
+			got := MergeTwoRanges(tt.range1, tt.range2)
 			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
 				t.Errorf("mergeTwoRanges() mismatch (-want +got):\n%s", diff)
 			}

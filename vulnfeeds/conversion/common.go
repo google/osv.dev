@@ -228,7 +228,7 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				if len(vr.GetEvents()) > 0 {
 					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
 					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
+						metrics.AddNote("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}
@@ -244,10 +244,14 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 
 	if len(newVersionRanges) > 0 {
 		metrics.ResolvedRangesCount += len(newVersionRanges)
+		metrics.Outcome = models.Successful
 	}
 
 	if len(unresolvedRanges) > 0 {
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
+		if len(newVersionRanges) == 0 {
+			metrics.Outcome = models.NoCommitRanges
+		}
 	}
 
 	return newVersionRanges, unresolvedRanges, successfulRepos
@@ -261,10 +265,10 @@ func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo strin
 	}
 	commit, err := git.VersionToCommit(version, normalizedTags)
 	if err != nil {
-		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
+		// logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
 		return ""
 	}
-	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
+	// logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
 
 	return commit
 }

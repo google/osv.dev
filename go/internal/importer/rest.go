@@ -23,6 +23,7 @@ type restSourceRecord struct {
 	hasUpdateTime    bool
 	lastUpdated      time.Time
 	sourceRepository string
+	strict           bool
 }
 
 var _ SourceRecord = restSourceRecord{}
@@ -72,6 +73,10 @@ func (r restSourceRecord) IsDeleted() bool {
 	return false
 }
 
+func (r restSourceRecord) Strictness() bool {
+	return r.strict
+}
+
 func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST import")
@@ -115,7 +120,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 			logger.Warn("Failed to parse Last-Modified header.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL),
-				slog.String("error", err.Error()))
+				slog.Any("error", err))
 		}
 	}
 
@@ -135,7 +140,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Failed to read REST API response", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("error", err.Error()))
+		logger.Error("Failed to read REST API response", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.Any("error", err))
 		return err
 	}
 	result := gjson.ParseBytes(data)
@@ -156,7 +161,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		}
 		mod, err := time.Parse(time.RFC3339, modified.String())
 		if err != nil {
-			logger.Error("Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.String("error", err.Error()))
+			logger.Error("Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.Any("error", err))
 			return true
 		}
 		if hasUpdateTime && mod.Before(lastUpdated) {
@@ -173,6 +178,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 			hasUpdateTime:    hasUpdateTime,
 			lastUpdated:      lastUpdated,
 			sourceRepository: sourceRepo.Name,
+			strict:           sourceRepo.Strictness,
 		}
 		return true
 	})

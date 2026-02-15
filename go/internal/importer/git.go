@@ -33,6 +33,7 @@ type gitSourceRecord struct {
 	sourceRepository string
 	shouldSendUpdate bool
 	isDeleted        bool
+	strict           bool
 }
 
 var _ SourceRecord = gitSourceRecord{}
@@ -85,6 +86,10 @@ func (g gitSourceRecord) ShouldSendModifiedTime() bool {
 
 func (g gitSourceRecord) IsDeleted() bool {
 	return g.isDeleted
+}
+
+func (g gitSourceRecord) Strictness() bool {
+	return g.strict
 }
 
 // Some sourceRepository entries share the same git repository (e.g. ubuntu).
@@ -176,6 +181,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 				sourceRepository: sourceRepo.Name,
 				path:             from,
 				isDeleted:        true,
+				strict:           sourceRepo.Strictness,
 			}
 			continue
 		}
@@ -188,6 +194,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 			format:           format,
 			sourceRepository: sourceRepo.Name,
 			shouldSendUpdate: shouldSendUpdate,
+			strict:           sourceRepo.Strictness,
 		}
 	}
 

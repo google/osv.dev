@@ -155,6 +155,8 @@ type SourceRecord interface {
 	ShouldSendModifiedTime() bool
 	// IsDeleted returns true if the record was deleted.
 	IsDeleted() bool
+	// Strictness returns true if strict validation is requested for this record.
+	Strictness() bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) {
@@ -168,6 +170,11 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 			}
 			sourceRepoName := sourceRecord.SourceRepository()
 			sourcePath := sourceRecord.SourcePath()
+			strict := config.StrictValidation && sourceRecord.Strictness()
+
+			unmarshalOptions := protojson.UnmarshalOptions{
+				DiscardUnknown: !strict,
+			}
 
 			if sourceRecord.IsDeleted() {
 				if err := sendDeletionToWorker(ctx, config, sourceRepoName, sourcePath); err != nil {
@@ -206,7 +213,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 					logger.Error("Failed to convert YAML to JSON",
 						slog.Any("error", err),
 						slog.String("source", sourceRepoName),
-						slog.String("path", sourceRecord.SourcePath()))
+						slog.String("path", sourcePath))
 					continue
 				}
 				data = json
@@ -219,16 +226,27 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 						logger.Error("Key path not found",
 							slog.String("key_path", keyPath),
 							slog.String("source", sourceRepoName),
-							slog.String("path", sourceRecord.SourcePath()))
+							slog.String("path", sourcePath))
 						continue
 					}
 					data = []byte(res.Raw)
 				}
-				if err := protojson.Unmarshal(data, &vulnProto); err != nil {
+
+				if strict {
+					if err := Validate(data); err != nil {
+						logger.Error("JSON schema validation failed",
+							slog.Any("error", err),
+							slog.String("source", sourceRepoName),
+							slog.String("path", sourcePath))
+						continue
+					}
+				}
+
+				if err := unmarshalOptions.Unmarshal(data, &vulnProto); err != nil {
 					logger.Error("Failed to unmarshal OSV proto",
 						slog.Any("error", err),
 						slog.String("source", sourceRepoName),
-						slog.String("path", sourceRecord.SourcePath()))
+						slog.String("path", sourcePath))
 					continue
 				}
 
@@ -241,7 +259,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 				}
 			}
 			if err := sendToWorker(ctx, config, sourceRecord, hash, modified); err != nil {
-				logger.Error("Failed to send to worker", slog.Any("error", err), slog.String("source", sourceRepoName), slog.String("path", sourceRecord.SourcePath()))
+				logger.Error("Failed to send to worker", slog.Any("error", err), slog.String("source", sourceRepoName), slog.String("path", sourcePath))
 			}
 		}
 	}

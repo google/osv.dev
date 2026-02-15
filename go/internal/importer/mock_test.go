@@ -52,6 +52,7 @@ type mockSourceRecord struct {
 	MockSourceRepository string
 	MockSourcePath       string
 	MockSendModifiedTime bool
+	MockStrictness       bool
 
 	DataToRead       []byte
 	ReadError        error
@@ -91,4 +92,8 @@ func (m mockSourceRecord) ShouldSendModifiedTime() bool {
 
 func (m mockSourceRecord) IsDeleted() bool {
 	return m.ShouldSendUpdate && m.DataToRead == nil // Simple heuristic for mock
+}
+
+func (m mockSourceRecord) Strictness() bool {
+	return m.MockStrictness
 }

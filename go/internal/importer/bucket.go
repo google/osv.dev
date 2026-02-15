@@ -23,6 +23,7 @@ type bucketSourceRecord struct {
 	lastUpdated      time.Time
 	format           RecordFormat
 	sourceRepository string
+	strict           bool
 }
 
 var _ SourceRecord = bucketSourceRecord{}
@@ -61,6 +62,10 @@ func (b bucketSourceRecord) ShouldSendModifiedTime() bool {
 
 func (b bucketSourceRecord) IsDeleted() bool {
 	return false
+}
+
+func (b bucketSourceRecord) Strictness() bool {
+	return b.strict
 }
 
 func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
@@ -109,6 +114,7 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 			format:           format,
 			keyPath:          sourceRepo.KeyPath,
 			sourceRepository: sourceRepo.Name,
+			strict:           sourceRepo.Strictness,
 		}
 	}
 

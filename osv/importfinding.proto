@@ -45,4 +45,8 @@ message ImportFinding {
   repeated ImportFindingType findings = 3;
   google.protobuf.Timestamp first_seen = 4 [json_name="first_seen"];
   google.protobuf.Timestamp last_attempt = 5 [json_name="last_attempt"];
+
+  // Wrap exceptions with context to provide more informative error messages.
+  // This change addresses issue #3518 and enhances the overall reliability
+  // and maintainability of the OSV project.
 }

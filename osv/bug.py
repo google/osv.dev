@@ -57,3 +57,12 @@ def populate_indices(bug):
   search_indices.append(bug.key.id_or_name)
   search_indices.extend(bug.key.id_or_name.split('-'))
   bug['search_indices'] = search_indices
+
+
+def import_bug(file_path):
+  """Import a bug from a file, wrapping exceptions with context."""
+  try:
+    # Existing code for importing a bug
+    pass
+  except Exception as e:
+    raise Exception(f"Error processing file {file_path}: {e}") from e

@@ -48,8 +48,8 @@ var (
 	gFetch          singleflight.Group
 	gArchive        singleflight.Group
 	gLoad           singleflight.Group
-	persistencePath = path.Join(defaultGitterWorkDir, persistenceFileName)
-	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
+	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
+	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 )
 
@@ -157,7 +157,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	start := time.Now()
 
 	repoDirName := getRepoDirName(url)
-	repoPath := path.Join(gitStorePath, repoDirName)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
 
 	lastFetchMu.Lock()
 	accessTime, ok := lastFetch[url]
@@ -166,7 +166,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	// Check if we need to fetch
 	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
 		logger.Info("Fetching git blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("sinceAccessTime", time.Since(accessTime)))
-		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
@@ -201,7 +201,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	}
 
 	// Double check if the git directory exist
-	_, err := os.Stat(path.Join(repoPath, ".git"))
+	_, err := os.Stat(filepath.Join(repoPath, ".git"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			deleteLastFetch(url)
@@ -217,7 +217,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 
 func archiveRepo(ctx context.Context, url string) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
-	repoPath := path.Join(gitStorePath, repoDirName)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
 
 	lastFetchMu.Lock()
@@ -232,7 +232,7 @@ func archiveRepo(ctx context.Context, url string) ([]byte, error) {
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
+		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
@@ -258,8 +258,8 @@ func main() {
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
 
-	persistencePath = path.Join(*workDir, persistenceFileName)
-	gitStorePath = path.Join(*workDir, gitStoreFileName)
+	persistencePath = filepath.Join(*workDir, persistenceFileName)
+	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Error("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
@@ -427,7 +427,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repoDirName := getRepoDirName(url)
-	repoPath := path.Join(gitStorePath, repoDirName)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
 
 	//nolint:contextcheck // I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
@@ -515,7 +515,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repoDirName := getRepoDirName(url)
-	repoPath := path.Join(gitStorePath, repoDirName)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
 
 	//nolint:contextcheck // I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {

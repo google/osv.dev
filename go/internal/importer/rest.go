@@ -97,6 +97,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		hasUpdateTime = true
 	}
 	timeOfRun := time.Now()
+	lastModTime := time.Time{}
 	if hasUpdateTime {
 		// HEAD request to check if there are updates
 		req, err := http.NewRequest(http.MethodHead, sourceRepo.REST.URL, nil)
@@ -110,8 +111,8 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		}
 		resp.Body.Close()
 		lastModified := resp.Header.Get("Last-Modified")
-		mod, err := time.Parse(time.RFC1123, lastModified)
-		if err == nil && mod.Before(lastUpdated) {
+		lastModTime, err = time.Parse(time.RFC1123, lastModified)
+		if err == nil && lastModTime.Before(lastUpdated) {
 			logger.Info("No changes since last update.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
@@ -157,6 +158,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 
 		return fmt.Errorf("REST API response is not an array for %s", sourceRepo.REST.URL)
 	}
+	maxModified := time.Time{}
 	result.ForEach(func(_, vuln gjson.Result) bool {
 		id := vuln.Get("id")
 		if !id.Exists() {
@@ -175,6 +177,9 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 			logger.Error("Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.Any("error", err))
 
 			return true
+		}
+		if mod.After(maxModified) {
+			maxModified = mod
 		}
 		if hasUpdateTime && mod.Before(lastUpdated) {
 			return true
@@ -196,7 +201,19 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		return true
 	})
 
-	sourceRepo.REST.LastUpdated = &timeOfRun
+	// Set the last updated time to the minimum of:
+	// - the time of run
+	// - the max vulnerability modified time
+	// - the Last-Modified time of the REST API response
+	// This is to be more robust in case of misbehaving servers.
+	timeToUpdate := timeOfRun
+	if !maxModified.IsZero() && maxModified.Before(timeToUpdate) {
+		timeToUpdate = maxModified
+	}
+	if !lastModTime.IsZero() && lastModTime.Before(timeToUpdate) {
+		timeToUpdate = lastModTime
+	}
+	sourceRepo.REST.LastUpdated = &timeToUpdate
 	sourceRepo.REST.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
 		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))

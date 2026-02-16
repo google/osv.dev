@@ -539,7 +539,7 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 		}
 
 		// Add first parent to stack to only walk the linear branch
-		if len(details.Parents) > 0 {
+		if details.Parents != nil &&  len(details.Parents) > 0 {
 			stack = append(stack, details.Parents[0])
 		}
 	}

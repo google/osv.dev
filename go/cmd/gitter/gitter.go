@@ -552,13 +552,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		affectedCommits = repo.Affected(introduced, fixed, lastAffected, cherrypick)
 	}
 
-	if err != nil {
-		logger.Error("Error processing affected commits", slog.String("url", url), slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Error processing affected commits: %v", err), http.StatusInternalServerError)
-
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {

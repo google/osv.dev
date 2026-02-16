@@ -1,6 +1,26 @@
-# OpenAPI generation
+# README
 
-## Prerequisites
+The [OSV.dev docs](https://osv.dev/docs) are hosted on [GitHub Pages](https://pages.github.com/).
+
+## Running docs locally
+
+To run the docs locally:
+
+- Install `ruby (>= 3.1.0)`. This should come with `bundler`.
+  - On Debian, you need to install them separately:
+    - `ruby`
+    - `ruby-bundler`
+- In this directory:
+  - `bundle install`
+  - `bundle exec jekyll serve`
+
+Here's the full documentation on GitHub for [running Jekyll locally].
+
+[running Jekyll locally]: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/testing-your-github-pages-site-locally-with-jekyll#building-your-site-locally
+
+## OpenAPI generation
+
+### Prerequisites
 
 Install `protoc` for your platform:
 
@@ -28,8 +48,8 @@ To install the protobuf service converter, run:
 go mod download
 ```
 
-## Generation
+### Generation
 
-```
+```bash
 python3 ./build_swagger.py
 ```

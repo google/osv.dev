@@ -181,7 +181,9 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		if len(unresolvedRanges) == 0 {
 			break // All ranges have been resolved.
 		}
-
+		if cache.IsInvalid(repo) {
+			continue
+		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags - %s", repo)

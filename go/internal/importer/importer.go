@@ -102,6 +102,14 @@ func Run(ctx context.Context, config Config) error {
 func RunDeletions(ctx context.Context, config Config) error {
 	logger.Info("Deletion reconciler started")
 
+	workCh := make(chan SourceRecord)
+	var workWg sync.WaitGroup
+	for range config.NumWorkers {
+		workWg.Go(func() {
+			importerWorker(ctx, workCh, config)
+		})
+	}
+
 	var wg sync.WaitGroup
 	for sourceRepo, err := range config.SourceRepoStore.All(ctx) {
 		if err != nil {
@@ -110,14 +118,14 @@ func RunDeletions(ctx context.Context, config Config) error {
 		wg.Go(func() {
 			switch sourceRepo.Type {
 			case models.SourceRepositoryTypeGit:
-				// TODO: Git deletion
+				// Git deletions are handled in regular importer
 				return
 			case models.SourceRepositoryTypeBucket:
-				if err := handleDeleteBucket(ctx, config, sourceRepo); err != nil {
+				if err := handleDeleteBucket(ctx, workCh, config, sourceRepo); err != nil {
 					logger.Error("Failed to process bucket deletions", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 				}
 			case models.SourceRepositoryTypeREST:
-				if err := handleDeleteREST(ctx, config, sourceRepo); err != nil {
+				if err := handleDeleteREST(ctx, workCh, config, sourceRepo); err != nil {
 					logger.Error("Failed to process REST deletions", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 				}
 			default:
@@ -126,6 +134,8 @@ func RunDeletions(ctx context.Context, config Config) error {
 		})
 	}
 	wg.Wait()
+	close(workCh)
+	workWg.Wait()
 	return nil
 }
 

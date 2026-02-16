@@ -24,11 +24,15 @@ type restSourceRecord struct {
 	lastUpdated      time.Time
 	sourceRepository string
 	strict           bool
+	isDeleted        bool
 }
 
 var _ SourceRecord = restSourceRecord{}
 
 func (r restSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+	if r.isDeleted {
+		return nil, errors.New("cannot open a deleted record")
+	}
 	u, err := url.JoinPath(r.urlBase, r.urlPath)
 	if err != nil {
 		return nil, err
@@ -70,7 +74,7 @@ func (r restSourceRecord) ShouldSendModifiedTime() bool {
 }
 
 func (r restSourceRecord) IsDeleted() bool {
-	return false
+	return r.isDeleted
 }
 
 func (r restSourceRecord) Strictness() bool {
@@ -196,7 +200,7 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	return nil
 }
 
-func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.SourceRepository) error {
+func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST deletion")
 	}
@@ -282,15 +286,10 @@ func handleDeleteREST(ctx context.Context, config Config, sourceRepo *models.Sou
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		logger.Info("Requesting deletion of REST entry",
-			slog.String("source", entry.Source),
-			slog.String("id", entry.ID),
-			slog.String("path", entry.Path))
-		if err := sendDeletionToWorker(ctx, config, entry.Source, entry.Path); err != nil {
-			logger.Error("Failed to send deletion to worker",
-				slog.String("source", entry.Source),
-				slog.String("id", entry.ID),
-				slog.Any("error", err))
+		ch <- restSourceRecord{
+			sourceRepository: entry.Source,
+			urlPath:          entry.Path,
+			isDeleted:        true,
 		}
 	}
 

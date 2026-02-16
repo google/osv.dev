@@ -24,11 +24,15 @@ type bucketSourceRecord struct {
 	format           RecordFormat
 	sourceRepository string
 	strict           bool
+	isDeleted        bool
 }
 
 var _ SourceRecord = bucketSourceRecord{}
 
 func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+	if b.isDeleted {
+		return nil, errors.New("cannot open a deleted record")
+	}
 	data, err := b.bucket.ReadObject(ctx, b.objectPath)
 	if err != nil {
 		return nil, err
@@ -61,7 +65,7 @@ func (b bucketSourceRecord) ShouldSendModifiedTime() bool {
 }
 
 func (b bucketSourceRecord) IsDeleted() bool {
-	return false
+	return b.isDeleted
 }
 
 func (b bucketSourceRecord) Strictness() bool {
@@ -131,7 +135,7 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	return nil
 }
 
-func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.SourceRepository) error {
+func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket deletion")
 	}
@@ -197,15 +201,10 @@ func handleDeleteBucket(ctx context.Context, config Config, sourceRepo *models.S
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		logger.Info("Requesting deletion of bucket entry",
-			slog.String("source", entry.Source),
-			slog.String("id", entry.ID),
-			slog.String("path", entry.Path))
-		if err := sendDeletionToWorker(ctx, config, entry.Source, entry.Path); err != nil {
-			logger.Error("Failed to send deletion to worker",
-				slog.String("source", entry.Source),
-				slog.String("id", entry.ID),
-				slog.Any("error", err))
+		ch <- bucketSourceRecord{
+			sourceRepository: entry.Source,
+			objectPath:       entry.Path,
+			isDeleted:        true,
 		}
 	}
 

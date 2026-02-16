@@ -52,21 +52,28 @@ func TestHandleDeleteBucket(t *testing.T) {
 		},
 	}
 
-	err := handleDeleteBucket(ctx, config, sourceRepo)
+	workCh := make(chan SourceRecord, 10)
+	err := handleDeleteBucket(ctx, workCh, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteBucket unexpected error: %v", err)
 	}
+	close(workCh)
 
-	if len(mockPublisher.Messages) != 1 {
-		t.Fatalf("Expected 1 deletion message, got %d", len(mockPublisher.Messages))
+	var records []SourceRecord
+	for r := range workCh {
+		records = append(records, r)
 	}
 
-	msg := mockPublisher.Messages[0]
-	if msg.Attributes["deleted"] != "true" {
-		t.Errorf("Expected deleted=true, got %s", msg.Attributes["deleted"])
+	if len(records) != 1 {
+		t.Fatalf("Expected 1 deletion record, got %d", len(records))
 	}
-	if msg.Attributes["path"] != "a/b/deleted-file.json" {
-		t.Errorf("Expected path a/b/deleted-file.json, got %s", msg.Attributes["path"])
+
+	r := records[0]
+	if !r.IsDeleted() {
+		t.Errorf("Expected IsDeleted=true, got false")
+	}
+	if r.SourcePath() != "a/b/deleted-file.json" {
+		t.Errorf("Expected path a/b/deleted-file.json, got %s", r.SourcePath())
 	}
 }
 
@@ -111,12 +118,15 @@ func TestHandleDeleteBucket_Threshold(t *testing.T) {
 	}
 
 	// Should fail because 100% of records are missing from bucket
-	err := handleDeleteBucket(ctx, config, sourceRepo)
+	workCh := make(chan SourceRecord, 10)
+	err := handleDeleteBucket(ctx, workCh, config, sourceRepo)
 	if err == nil {
 		t.Fatal("Expected error due to threshold, got nil")
 	}
-	if len(mockPublisher.Messages) != 0 {
-		t.Errorf("Expected 0 messages due to threshold refusal, got %d", len(mockPublisher.Messages))
+	close(workCh)
+
+	if len(workCh) != 0 {
+		t.Errorf("Expected 0 messages due to threshold refusal, got %d", len(workCh))
 	}
 }
 
@@ -157,17 +167,24 @@ func TestHandleDeleteREST(t *testing.T) {
 		},
 	}
 
-	err := handleDeleteREST(ctx, config, sourceRepo)
+	workCh := make(chan SourceRecord, 10)
+	err := handleDeleteREST(ctx, workCh, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteREST failed: %v", err)
 	}
+	close(workCh)
 
-	if len(mockPublisher.Messages) != 1 {
-		t.Fatalf("Expected 1 deletion message, got %d", len(mockPublisher.Messages))
+	var records []SourceRecord
+	for r := range workCh {
+		records = append(records, r)
 	}
 
-	if mockPublisher.Messages[0].Attributes["path"] != "DELETED.json" {
-		t.Errorf("Expected path DELETED.json, got %s", mockPublisher.Messages[0].Attributes["path"])
+	if len(records) != 1 {
+		t.Fatalf("Expected 1 deletion record, got %d", len(records))
+	}
+
+	if records[0].SourcePath() != "DELETED.json" {
+		t.Errorf("Expected path DELETED.json, got %s", records[0].SourcePath())
 	}
 }
 

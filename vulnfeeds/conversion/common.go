@@ -12,7 +12,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -170,9 +169,9 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
-					newVR = cves.BuildVersionRange(introducedCommit, "", fixedCommit)
+					newVR = BuildVersionRange(introducedCommit, "", fixedCommit)
 				} else {
-					newVR = cves.BuildVersionRange(introducedCommit, lastAffectedCommit, "")
+					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
 				}
 
 				newVR.Repo = repo
@@ -214,4 +213,29 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 	}
 
 	return &newAff, err
+}
+
+// BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
+	var versionRange osvschema.Range
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, &osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+
+	return &versionRange
 }

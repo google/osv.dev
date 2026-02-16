@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -72,9 +74,9 @@ func findCPEVersionRanges(cve models.CVE5) (versionRanges []*osvschema.Range, cp
 				}
 
 				if match.VersionEndExcluding != "" {
-					versionRanges = append(versionRanges, cves.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
+					versionRanges = append(versionRanges, conversion.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
 				} else if match.VersionEndIncluding != "" {
-					versionRanges = append(versionRanges, cves.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
+					versionRanges = append(versionRanges, conversion.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
 				}
 			}
 		}

@@ -135,7 +135,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 	return versionRanges, mostFrequentVersionType
 }
 
-func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics){
+func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
 	if len(resolvedRanges) > 0 {
 		aff := &osvschema.Affected{
 			Ranges: resolvedRanges,

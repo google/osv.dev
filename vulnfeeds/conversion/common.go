@@ -116,29 +116,8 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 	return nil
 }
 
-
-// resolveVersionToCommit is a helper to convert a version string to a commit hash.
-// It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
-	if version == "" {
-		return ""
-	}
-	logger.Info("Attempting to resolve version to commit", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo))
-	commit, err := git.VersionToCommit(version, normalizedTags)
-	if err != nil {
-		logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
-		return ""
-	}
-	logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
-
-	return commit
-}
-
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-// Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
-// typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
-// Refuses to add the same commit to AffectedCommits more than once.
-func GitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
+func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
 	var newAff osvschema.Affected
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
@@ -173,10 +152,19 @@ func GitVersionsToCommits(cveID models.CVEID, versionRanges []*osvschema.Range, 
 			if introduced == "0" {
 				introducedCommit = "0"
 			} else {
-				introducedCommit = resolveVersionToCommit(cveID, introduced, "introduced", repo, normalizedTags)
+				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
+				if err != nil {
+					metrics.AddNote("Failed to resolve version to commit - %s", introduced)
+				}
 			}
-			fixedCommit := resolveVersionToCommit(cveID, fixed, "fixed", repo, normalizedTags)
-			lastAffectedCommit := resolveVersionToCommit(cveID, lastAffected, "last_affected", repo, normalizedTags)
+			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
+			if err != nil {
+				metrics.AddNote("Failed to resolve version to commit - %s", fixed)
+			}
+			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
+			if err != nil {
+				metrics.AddNote("Failed to resolve version to commit - %s", lastAffected)
+			}
 
 			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
 				var newVR *osvschema.Range

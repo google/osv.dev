@@ -39,7 +39,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
 	if len(ranges) != 0 {
-		aff, err := conversion.GitVersionsToCommits(cve.Metadata.CVEID, ranges, repos, metrics, repoTagsCache)
+		aff, err := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
 		if err != nil {
 			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 		} else {
@@ -53,7 +53,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			aff, err := conversion.GitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
+			aff, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
 			if err != nil {
 				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 			} else {
@@ -68,7 +68,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versionRanges := textVersionExtraction(cve, metrics)
 		if len(versionRanges) != 0 {
-			aff, err := conversion.GitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
+			aff, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
 			if err != nil {
 				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
 			}

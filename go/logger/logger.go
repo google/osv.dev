@@ -6,115 +6,29 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"runtime"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/errorreporting"
+	"go.opentelemetry.io/otel/trace"
 )
-
-var (
-	slogLogger  *slog.Logger
-	errorClient *errorreporting.Client
-	once        sync.Once
-)
-
-// InitGlobalLogger initializes the global slog logger.
-func InitGlobalLogger(ctx context.Context) {
-	once.Do(func() {
-		if slogLogger != nil {
-			// Logger is already initialized.
-			return
-		}
-
-		inGKE := os.Getenv("KUBERNETES_SERVICE_HOST") != ""
-		inCloudRun := os.Getenv("K_SERVICE") != ""
-		inCloud := inGKE || inCloudRun
-		var handler slog.Handler
-		if inCloud {
-			projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
-			if projectID != "" {
-				serviceName := os.Getenv("K_SERVICE")
-				if serviceName == "" {
-					// Fallback to binary name for GKE services where K_SERVICE is not set.
-					serviceName = filepath.Base(os.Args[0])
-				}
-				var err error
-				errorClient, err = errorreporting.NewClient(ctx, projectID, errorreporting.Config{
-					ServiceName: serviceName,
-					OnError: func(err error) {
-						fmt.Fprintf(os.Stderr, "Could not log error to Error Reporting: %v\n", err)
-					},
-				})
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Failed to create errorreporting client: %v\n", err)
-				}
-			}
-
-			opts := &slog.HandlerOptions{
-				// AddSource adds the source code position to the log output, which is invaluable for debugging.
-				// Google Cloud Logging will automatically parse this into the `sourceLocation` field.
-				AddSource: true,
-				// ReplaceAttr is used to customize log attributes. We use it here to make the output
-				// perfectly align with what Google Cloud Logging expects for structured logs.
-				ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-					// Remap the default "level" key to "severity" for Google Cloud Logging.
-					if a.Key == slog.LevelKey {
-						level := a.Value.Any().(slog.Level)
-						var levelStr string
-						switch level {
-						case slog.LevelDebug:
-							levelStr = "DEBUG"
-						case slog.LevelInfo:
-							levelStr = "INFO"
-						case slog.LevelWarn:
-							levelStr = "WARNING"
-						case slog.LevelError:
-							levelStr = "ERROR"
-						default:
-							levelStr = "DEFAULT"
-						}
-
-						return slog.String("severity", levelStr)
-					}
-					// Remap the default "msg" key to "message" for better compatibility.
-					if a.Key == slog.MessageKey {
-						return slog.Attr{Key: "message", Value: a.Value}
-					}
-					// Remap the default "source" key to "sourceLocation", and trim file path to just file name.
-					if a.Key == slog.SourceKey {
-						source := a.Value.Any().(*slog.Source)
-						source.File = filepath.Base(source.File)
-
-						return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
-					}
-
-					return a
-				},
-			}
-
-			// A JSONHandler writing to stdout is the standard and correct way to log in GKE.
-			handler = slog.NewJSONHandler(os.Stdout, opts)
-		} else {
-			handler = newLocalHandler(os.Stdout)
-		}
-		slogLogger = slog.New(handler)
-	})
-}
-
-// Close flushes any buffered log or error reports.
-func Close() {
-	if errorClient != nil {
-		errorClient.Close()
-	}
-}
 
 func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:]) // skip [Callers, log, Info/Warn/etc]
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add(a...)
+
+	if projectID != "" {
+		spanContext := trace.SpanContextFromContext(ctx)
+		if spanContext.HasTraceID() {
+			r.Add(
+				slog.String("logging.googleapis.com/trace", fmt.Sprintf("projects/%s/traces/%s", projectID, spanContext.TraceID().String())),
+				slog.String("logging.googleapis.com/spanId", spanContext.SpanID().String()),
+				slog.Bool("logging.googleapis.com/trace_sampled", spanContext.IsSampled()),
+			)
+		}
+	}
 
 	if slogLogger.Handler().Enabled(ctx, level) {
 		//nolint:errcheck

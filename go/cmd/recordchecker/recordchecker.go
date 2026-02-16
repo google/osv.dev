@@ -17,6 +17,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/api/iterator"
 )
 
@@ -51,7 +52,7 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	err := cl.Get(ctx, lastRunKey, &lr)
 	if err != nil {
 		if errors.Is(err, datastore.ErrNoSuchEntity) {
-			logger.Info("no prior record checker last run time found")
+			logger.InfoContext(ctx, "no prior record checker last run time found")
 		} else {
 			return data, fmt.Errorf("failed to get %s: %w", JobDataLastRun, err)
 		}
@@ -64,7 +65,7 @@ func getRecordCheckerData(ctx context.Context, cl *datastore.Client) (recordChec
 	err = cl.Get(ctx, invalidRecordsKey, &ir)
 	if err != nil {
 		if errors.Is(err, datastore.ErrNoSuchEntity) {
-			logger.Info("no prior record checker invalid records list found")
+			logger.InfoContext(ctx, "no prior record checker invalid records list found")
 		} else {
 			return data, fmt.Errorf("failed to get %s: %w", JobDataInvalidRecords, err)
 		}
@@ -139,7 +140,7 @@ func run(ctx context.Context, env *appEnv) error {
 
 	// Queue all invalid records from the previous run.
 	for _, id := range rcData.invalidRecords {
-		logger.Debug("checking previously invalid record", slog.String("id", id))
+		logger.DebugContext(ctx, "checking previously invalid record", slog.String("id", id))
 		tasksChan <- checkTask{id: id}
 	}
 
@@ -159,7 +160,7 @@ func run(ctx context.Context, env *appEnv) error {
 		if err != nil {
 			return fmt.Errorf("failed to query vulnerabilities: %w", err)
 		}
-		logger.Debug("checking newly modified record", slog.String("id", key.Name))
+		logger.DebugContext(ctx, "checking newly modified record", slog.String("id", key.Name))
 		tasksChan <- checkTask{id: key.Name, vuln: &vuln}
 	}
 	// Wait for all tasks to finish processing
@@ -185,16 +186,16 @@ func run(ctx context.Context, env *appEnv) error {
 // to indicate that we need to verify that the recoverer fixes the problem on the next run.
 func handleResult(ctx context.Context, publisher clients.Publisher, result checkRecordResult) bool {
 	if result.err != nil {
-		logger.Error("failed to process record", slog.String("id", result.id), slog.Any("err", result.err))
+		logger.ErrorContext(ctx, "failed to process record", slog.String("id", result.id), slog.Any("err", result.err))
 	}
 	if result.needsRetry {
 		msg := pubsub.Message{
 			Attributes: map[string]string{"type": "gcs_missing", "id": result.id},
 		}
-		logger.Info("publishing gcs_missing message", slog.String("id", result.id))
+		logger.InfoContext(ctx, "publishing gcs_missing message", slog.String("id", result.id))
 		_, err := publisher.Publish(ctx, &msg).Get(ctx)
 		if err != nil {
-			logger.Error("failed publishing message", slog.String("id", result.id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed publishing message", slog.String("id", result.id), slog.Any("err", err))
 		}
 	}
 
@@ -250,7 +251,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 		if i, err := strconv.Atoi(numWorkersStr); err == nil {
 			numWorkers = i
 		} else {
-			logger.Warn("invalid NUM_WORKERS value, using default", slog.String("value", numWorkersStr))
+			logger.WarnContext(ctx, "invalid NUM_WORKERS value, using default", slog.String("value", numWorkersStr))
 		}
 	}
 
@@ -311,15 +312,19 @@ func main() {
 	ctx := context.Background()
 	logger.InitGlobalLogger(ctx)
 	defer logger.Close()
+
+	ctx, span := otel.Tracer("recordchecker").Start(ctx, "recordchecker")
+	defer span.End()
+
 	env, err := setup(ctx)
 	if err != nil {
-		logger.Fatal("failed setting up environment", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed setting up environment", slog.Any("err", err))
 	}
 	defer env.storage.Close()
 	defer env.ds.Close()
-	logger.Info("starting record checker")
+	logger.InfoContext(ctx, "starting record checker")
 	if err := run(ctx, env); err != nil {
-		logger.Fatal("failed running record checker", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed running record checker", slog.Any("err", err))
 	}
-	logger.Info("record checker done")
+	logger.InfoContext(ctx, "record checker done")
 }

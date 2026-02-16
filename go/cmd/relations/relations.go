@@ -28,6 +28,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"go.opentelemetry.io/otel"
 )
 
 type gClients struct {
@@ -42,6 +43,10 @@ func main() {
 	ctx := context.Background()
 	logger.InitGlobalLogger(ctx)
 	defer logger.Close()
+
+	ctx, span := otel.Tracer("relations").Start(ctx, "relations")
+	defer span.End()
+
 	gc, err := setupClients(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -51,20 +56,27 @@ func main() {
 
 	updater := NewUpdater(ctx, gc.datastoreClient, gc.gcsClient, gc.publisher)
 
+	tr := otel.Tracer("relations")
 	var wg sync.WaitGroup
 	wg.Go(func() {
+		ctx, span := tr.Start(ctx, "alias")
+		defer span.End()
 		if err := ComputeAliasGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
-			logger.Error("failed to compute alias groups", slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to compute alias groups", slog.Any("err", err))
 		}
 	})
 	wg.Go(func() {
+		ctx, span := tr.Start(ctx, "upstream")
+		defer span.End()
 		if err := ComputeUpstreamGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
-			logger.Error("failed to compute upstream groups", slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to compute upstream groups", slog.Any("err", err))
 		}
 	})
 	wg.Go(func() {
+		ctx, span := tr.Start(ctx, "related")
+		defer span.End()
 		if err := ComputeRelatedGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
-			logger.Error("failed to compute related groups", slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to compute related groups", slog.Any("err", err))
 		}
 	})
 	wg.Wait()

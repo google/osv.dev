@@ -20,6 +20,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -67,6 +68,9 @@ func main() {
 	logger.InitGlobalLogger(context.Background())
 	defer logger.Close()
 
+	ctx, span := otel.Tracer("generatesitemap").Start(context.Background(), "generatesitemap")
+	defer span.End()
+
 	baseURL := flag.String("base-url", "https://osv.dev", "The base URL for the sitemap entries (without trailing /).")
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from.")
 	outputDir := flag.String("bucket", "sitemap_output", "Output bucket or directory name. If -upload-to-gcs is true, this is a GCS bucket name; otherwise, it's a local directory.")
@@ -76,15 +80,15 @@ func main() {
 	flag.Parse()
 
 	if *vulnBucketName == "" {
-		logger.Fatal("OSV_VULNERABILITIES_BUCKET must be set")
+		logger.FatalContext(ctx, "OSV_VULNERABILITIES_BUCKET must be set")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
-		logger.Fatal("failed to create storage client", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed to create storage client", slog.Any("err", err))
 	}
 	defer storageClient.Close()
 
@@ -95,7 +99,7 @@ func main() {
 		outClient = clients.NewGCSClient(storageClient, *outputDir)
 	} else {
 		if err := os.MkdirAll(*outputDir, 0755); err != nil {
-			logger.Fatal("failed to create output directory", slog.Any("err", err))
+			logger.FatalContext(ctx, "failed to create output directory", slog.Any("err", err))
 		}
 	}
 
@@ -108,7 +112,7 @@ func main() {
 	go func() {
 		defer close(gcsPathCh)
 		if err := listObjects(ctx, vulnClient, gcsPathCh); err != nil {
-			logger.Fatal("failed to list objects", slog.Any("err", err))
+			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
 		}
 	}()
 
@@ -163,14 +167,14 @@ func main() {
 		}
 	}
 
-	logger.Info("processed vulnerabilities", slog.Int("count", count))
+	logger.InfoContext(ctx, "processed vulnerabilities", slog.Int("count", count))
 
 	// Generate sitemaps
 	if err := generateSitemaps(ctx, outClient, *outputDir, *baseURL, ecosystemEntries); err != nil {
-		logger.Fatal("failed to generate sitemaps", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed to generate sitemaps", slog.Any("err", err))
 	}
 
-	logger.Info("sitemap generation complete")
+	logger.InfoContext(ctx, "sitemap generation complete")
 }
 
 func listObjects(ctx context.Context, client clients.CloudStorage, outCh chan<- string) error {
@@ -183,7 +187,7 @@ func listObjects(ctx context.Context, client clients.CloudStorage, outCh chan<- 
 		prefix := filepath.Base(name)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.Info("iterating vulnerabilities", slog.String("now_at", name))
+			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", name))
 			prevPrefix = prefix
 		}
 		select {
@@ -201,13 +205,13 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 		// Download and parse
 		content, err := client.ReadObject(ctx, path)
 		if err != nil {
-			logger.Error("failed to read content", slog.String("path", path), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to read content", slog.String("path", path), slog.Any("err", err))
 			continue
 		}
 
 		var vuln osvschema.Vulnerability
 		if err := proto.Unmarshal(content, &vuln); err != nil {
-			logger.Error("failed to unmarshal protobuf", slog.String("path", path), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to unmarshal protobuf", slog.String("path", path), slog.Any("err", err))
 			continue
 		}
 

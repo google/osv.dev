@@ -1,8 +1,6 @@
 package cvelist2osv
 
 import (
-	"log/slog"
-
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
@@ -40,9 +38,9 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
 	if len(ranges) != 0 {
-		resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
-		if err != nil {
-			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+		resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
+		if len(resolvedRanges) == 0 {
+			metrics.AddNote("Failed to convert git versions to commits")
 		} else {
 			gotVersions = true
 		}
@@ -68,9 +66,9 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			} else {
 				gotVersions = true
 			}
@@ -96,9 +94,9 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versionRanges := textVersionExtraction(cve, metrics)
 		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			}
 
 			if len(resolvedRanges) > 0 {

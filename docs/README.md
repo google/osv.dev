@@ -2,7 +2,16 @@
 
 The [OSV.dev docs](https://osv.dev/docs) are hosted on [GitHub Pages](https://pages.github.com/).
 
-## Running docs locally
+## Running docs locally (docker)
+
+You can run the docs locally consistently through docker:
+
+```bash
+docker build -t osvdev-docs -f docs.Dockerfile .
+docker run -p 4000:4000 osvdev-docs
+```
+
+## Running docs locally (native)
 
 To run the docs locally:
 

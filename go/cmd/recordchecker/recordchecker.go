@@ -211,7 +211,6 @@ type appEnv struct {
 
 // setup initializes the application environment.
 func setup(ctx context.Context) (*appEnv, error) {
-	logger.InitGlobalLogger()
 	projectID, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !ok {
 		return nil, errors.New("GOOGLE_CLOUD_PROJECT must be set")
@@ -310,6 +309,8 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.Cl
 
 func main() {
 	ctx := context.Background()
+	logger.InitGlobalLogger(ctx)
+	defer logger.Close()
 	env, err := setup(ctx)
 	if err != nil {
 		logger.Fatal("failed setting up environment", slog.Any("err", err))

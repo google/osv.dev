@@ -24,11 +24,13 @@ const (
 )
 
 func main() {
+	ctx := context.Background()
+	logger.InitGlobalLogger(ctx)
+	defer logger.Close()
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
 		logger.Fatal("GOOGLE_CLOUD_PROJECT must be set")
 	}
-	ctx := context.Background()
 	cl, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
 		logger.Fatal("failed to create monitoring client", slog.Any("err", err))

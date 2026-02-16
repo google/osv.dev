@@ -193,6 +193,8 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 }
 
 func main() {
+	logger.InitGlobalLogger(context.Background())
+	defer logger.Close()
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")

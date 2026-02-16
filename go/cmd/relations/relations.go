@@ -39,8 +39,9 @@ type gClients struct {
 
 func main() {
 	// Set up logging / other clients
-	logger.InitGlobalLogger()
 	ctx := context.Background()
+	logger.InitGlobalLogger(ctx)
+	defer logger.Close()
 	gc, err := setupClients(ctx)
 	if err != nil {
 		fmt.Println(err)

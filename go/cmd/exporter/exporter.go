@@ -22,7 +22,8 @@ const gcsProtoPrefix = "all/pb/"
 // main is the entry point for the exporter. It initializes the GCS clients,
 // sets up the worker pipeline, and starts the GCS object iteration.
 func main() {
-	logger.InitGlobalLogger()
+	logger.InitGlobalLogger(context.Background())
+	defer logger.Close()
 
 	outBucketName := flag.String("bucket", "osv-test-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from. Can also be set with the OSV_VULNERABILITIES_BUCKET environment variable.")

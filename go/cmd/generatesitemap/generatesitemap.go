@@ -64,7 +64,8 @@ type Entry struct {
 }
 
 func main() {
-	logger.InitGlobalLogger()
+	logger.InitGlobalLogger(context.Background())
+	defer logger.Close()
 
 	baseURL := flag.String("base-url", "https://osv.dev", "The base URL for the sitemap entries (without trailing /).")
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from.")

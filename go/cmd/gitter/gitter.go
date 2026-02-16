@@ -114,6 +114,9 @@ func isAuthError(err error) bool {
 }
 
 func isIndexLockError(err error) bool {
+	if err == nil {
+		return false
+	}
 	errString := err.Error()
 	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
 }

@@ -65,10 +65,11 @@ type Entry struct {
 }
 
 func main() {
-	logger.InitGlobalLogger(context.Background())
+	ctx := context.Background()
+	logger.InitGlobalLogger(ctx)
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("generatesitemap").Start(context.Background(), "generatesitemap")
+	ctx, span := otel.Tracer("generatesitemap").Start(ctx, "generatesitemap")
 	defer span.End()
 
 	baseURL := flag.String("base-url", "https://osv.dev", "The base URL for the sitemap entries (without trailing /).")

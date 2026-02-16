@@ -3,6 +3,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -36,14 +37,37 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	}
 
 	if level >= slog.LevelError && errorClient != nil {
+		// Try find an error in the attributes
+		var err error
+		hasErr := false
+		for _, attr := range a {
+			if att, ok := attr.(slog.Attr); ok {
+				if attrErr, ok := att.Value.Any().(error); ok {
+					err = attrErr
+					hasErr = true
+
+					break
+				}
+			}
+		}
+		// Fallback to using the message as the error if no error was provided.
+		if !hasErr {
+			err = errors.New(msg)
+		}
 		// Report the error to Google Cloud Error Reporting.
 		// We leave Stack nil to let the client automatically capture the stack trace.
 		// Note: This will include the logger functions at the top of the stack.
 		// If we want to hide them, we would need to manually capture and trim the stack.
 		errorClient.Report(errorreporting.Entry{
-			Error: fmt.Errorf("%s %v", msg, a),
+			Error: err,
 			Stack: nil,
 		})
+	}
+}
+
+func ensureInit(ctx context.Context) {
+	if slogLogger == nil {
+		InitGlobalLogger(ctx)
 	}
 }
 
@@ -51,16 +75,16 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 //
 //nolint:contextcheck,nolintlint
 func Debug(msg string, a ...any) {
-	DebugContext(context.Background(), msg, a...)
+	// We don't call DebugContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelDebug, msg, a)
 }
 
 // DebugContext prints a Debug level log with context.
 //
 //nolint:contextcheck,nolintlint
 func DebugContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelDebug, msg, a)
 }
 
@@ -68,16 +92,16 @@ func DebugContext(ctx context.Context, msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func Info(msg string, a ...any) {
-	InfoContext(context.Background(), msg, a...)
+	// We don't call InfoContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelInfo, msg, a)
 }
 
 // InfoContext prints an Info level log with context.
 //
 //nolint:contextcheck,nolintlint
 func InfoContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelInfo, msg, a)
 }
 
@@ -85,16 +109,16 @@ func InfoContext(ctx context.Context, msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func Warn(msg string, a ...any) {
-	WarnContext(context.Background(), msg, a...)
+	// We don't call WarnContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelWarn, msg, a)
 }
 
 // WarnContext prints a Warning level log with context.
 //
 //nolint:contextcheck,nolintlint
 func WarnContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelWarn, msg, a)
 }
 
@@ -102,16 +126,16 @@ func WarnContext(ctx context.Context, msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func Error(msg string, a ...any) {
-	ErrorContext(context.Background(), msg, a...)
+	// We don't call ErrorContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelError, msg, a)
 }
 
 // ErrorContext prints an Error level log with context.
 //
 //nolint:contextcheck,nolintlint
 func ErrorContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 }
 
@@ -119,16 +143,18 @@ func ErrorContext(ctx context.Context, msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func Fatal(msg string, a ...any) {
-	FatalContext(context.Background(), msg, a...)
+	// We don't call FatalContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelError, msg, a)
+	Close()
+	os.Exit(1)
 }
 
 // FatalContext prints an Error level log with context and then exits.
 //
 //nolint:contextcheck,nolintlint
 func FatalContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 	Close()
 	os.Exit(1)
@@ -138,16 +164,18 @@ func FatalContext(ctx context.Context, msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func Panic(msg string, a ...any) {
-	PanicContext(context.Background(), msg, a...)
+	// We don't call PanicContext because we want to make sure call stack calculation is correct.
+	ensureInit(context.Background())
+	log(context.Background(), slog.LevelError, msg, a)
+	Close()
+	panic(msg)
 }
 
 // PanicContext prints an Error level log with context and then panics.
 //
 //nolint:contextcheck,nolintlint
 func PanicContext(ctx context.Context, msg string, a ...any) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
+	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 	Close()
 	panic(msg)

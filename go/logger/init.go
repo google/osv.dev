@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"cloud.google.com/go/errorreporting"
@@ -100,10 +101,17 @@ func initTracing(ctx context.Context, projectID, serviceName string) {
 		res = resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(serviceName))
 	}
 
+	sampleRate := 0.05
+	if r := os.Getenv("TRACE_SAMPLE_RATE"); r != "" {
+		if parsed, err := strconv.ParseFloat(r, 64); err == nil {
+			sampleRate = parsed
+		}
+	}
+
 	tp = sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.05))),
+		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(sampleRate))),
 	)
 
 	otel.SetTracerProvider(tp)

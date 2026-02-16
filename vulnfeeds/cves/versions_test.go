@@ -1643,7 +1643,6 @@ func TestVPRepoCache_MaybeRemove(t *testing.T) {
 	}
 }
 
-
 func TestVendorProduct_MarshalText(t *testing.T) {
 	tests := []struct {
 		name    string

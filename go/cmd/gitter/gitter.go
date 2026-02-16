@@ -23,8 +23,6 @@ import (
 	"syscall"
 	"time"
 
-	"runtime/pprof"
-
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/singleflight"
 )
@@ -255,24 +253,10 @@ func archiveRepo(ctx context.Context, url string) ([]byte, error) {
 }
 
 func main() {
-	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
-
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
-
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			logger.Error("could not create CPU profile", slog.Any("error", err))
-		}
-		defer f.Close()
-		if err := pprof.StartCPUProfile(f); err != nil {
-			logger.Error("could not start CPU profile", slog.Any("error", err))
-		}
-		defer pprof.StopCPUProfile()
-	}
 
 	persistencePath = path.Join(*workDir, persistenceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)

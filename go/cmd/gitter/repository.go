@@ -469,18 +469,15 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 	var zeroPatchID SHA1
 
 	for _, hash := range commits {
-		unique[hash] = struct{}{}
-
 		// Find patch ID from commit details
 		details, ok := r.commitDetails[hash]
-
 		if !ok || details.PatchID == zeroPatchID {
+			unique[hash] = struct{}{}
 			continue
 		}
 
-		// Find equivalent commits
+		// Add equivalent commits with the same Patch ID (including the current commit)
 		equivalents := r.patchIDToCommits[details.PatchID]
-		// TODO: I think this logic will always add the current commit one more time, which isn't a problem because we're using map but still suboptimal
 		for _, eq := range equivalents {
 			unique[eq] = struct{}{}
 		}
@@ -511,7 +508,9 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 		if !ok {
 			continue
 		}
-		stack = append(stack, details.Parents[0])
+		if len(details.Parents) > 0 {
+			stack = append(stack, details.Parents[0])
+		}
 	}
 
 	visited := make(map[SHA1]struct{})
@@ -539,7 +538,7 @@ func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
 		}
 
 		// Add first parent to stack to only walk the linear branch
-		if details.Parents != nil &&  len(details.Parents) > 0 {
+		if len(details.Parents) > 0 {
 			stack = append(stack, details.Parents[0])
 		}
 	}

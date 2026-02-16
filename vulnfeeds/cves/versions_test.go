@@ -749,7 +749,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "14.4.5",
 						LastAffected: "",
 					},
@@ -775,7 +775,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "",
 						LastAffected: "2.4.0",
 					},
@@ -839,7 +839,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				},
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "2.6.4",
 						LastAffected: "",
 					},
@@ -873,7 +873,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "3.5.15"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},
@@ -882,7 +882,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", LastAffected: "4.3.2"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", LastAffected: "4.3.2"}},
 			},
 		},
 		{
@@ -909,7 +909,7 @@ func TestExtractVersionInfo(t *testing.T) {
 					},
 				},
 
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "1.2.5"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "1.2.5"}},
 			},
 		},
 	}

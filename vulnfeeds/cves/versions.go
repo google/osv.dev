@@ -29,12 +29,12 @@ import (
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
 )
 
 // References with these tags have been found to contain completely unrelated
@@ -555,22 +555,32 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		var ac models.AffectedCommit
-		c, r, err := ExtractGitCommit(ref.URL, httpClient, 0)
-
+		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient)
 		if err != nil {
 			continue
 		}
-
-		ac.SetRepo(r)
-
-		models.SetCommitByType(&ac, models.Fixed, c)
 
 		commits = append(commits, ac)
 	}
 
 	return commits, nil
 }
+
+// For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
+func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+	var ac models.AffectedCommit
+	c, r, err := ExtractGitCommit(link, httpClient, 0)
+	if err != nil {
+		return ac, err
+	}
+
+	ac.SetRepo(r)
+
+	models.SetCommitByType(&ac, commitType, c)
+
+	return ac, nil
+}
+
 
 func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
 	if depth > 10 {

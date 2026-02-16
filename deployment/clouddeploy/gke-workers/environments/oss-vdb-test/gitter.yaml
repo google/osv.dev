@@ -14,3 +14,13 @@ spec:
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb-test
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gitter-disk-pv
+spec:
+  csi:
+    driver: pd.csi.storage.gke.io
+    volumeHandle: projects/oss-vdb-test/zones/us-central1-f/disks/gitter-disk
+    fsType: ext4

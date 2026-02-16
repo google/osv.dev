@@ -1,6 +1,7 @@
 package cvelist2osv
 
 import (
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -75,9 +76,9 @@ func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMet
 		}
 		var versionRanges []*osvschema.Range
 		if fixed != "" {
-			versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, "", fixed))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange(introduced, "", fixed))
 		} else if lastaffected != "" {
-			versionRanges = append(versionRanges, cves.BuildVersionRange(introduced, lastaffected, ""))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange(introduced, lastaffected, ""))
 		}
 
 		return versionRanges, currentVersionType, true

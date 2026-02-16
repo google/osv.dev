@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -312,7 +312,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				}
 
 				if c5Intro != "" || c5Fixed != "" {
-					newRange := cves.BuildVersionRange(c5Intro, "", c5Fixed)
+					newRange := conversion.BuildVersionRange(c5Intro, "", c5Fixed)
 					newRange.Repo = repo
 					newRange.Type = osvschema.Range_GIT // Preserve the repo
 					newAffectedRanges = append(newAffectedRanges, newRange)

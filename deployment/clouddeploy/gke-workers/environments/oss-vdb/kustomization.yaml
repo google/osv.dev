@@ -21,4 +21,5 @@ patches:
 - path: record-checker.yaml
 - path: cve5-to-osv.yaml
 - path: custommetrics.yaml
+- path: gitter.yaml
 

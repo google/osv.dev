@@ -3,161 +3,9 @@
 {
   "vulns": [
     {
-      "id": "CVE-2016-5131",
-      "details": "Use-after-free vulnerability in libxml2 through 2.9.4, as used in Google Chrome before 52.0.2743.82, allows remote attackers to cause a denial of service or possibly have unspecified other impact via vectors related to the XPointer range-to function.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2016-07-23T19:59:13.767Z",
-      "related": [
-        "MGASA-2018-0048",
-        "SUSE-SU-2018:0395-1",
-        "SUSE-SU-2018:0401-1",
-        "openSUSE-SU-2016:1868-1",
-        "openSUSE-SU-2016:1869-1",
-        "openSUSE-SU-2024:10171-1",
-        "openSUSE-SU-2024:11340-1",
-        "openSUSE-SU-2024:11912-1",
-        "openSUSE-SU-2024:12948-1",
-        "openSUSE-SU-2024:13165-1",
-        "openSUSE-SU-2024:14174-1",
-        "openSUSE-SU-2025:14697-1"
-      ],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "http://lists.apple.com/archives/security-announce/2016/Sep/msg00006.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.apple.com/archives/security-announce/2016/Sep/msg00008.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.apple.com/archives/security-announce/2016/Sep/msg00010.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.apple.com/archives/security-announce/2016/Sep/msg00011.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.opensuse.org/opensuse-security-announce/2016-07/msg00020.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.opensuse.org/opensuse-security-announce/2016-07/msg00021.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.opensuse.org/opensuse-security-announce/2016-07/msg00022.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://lists.opensuse.org/opensuse-security-announce/2016-07/msg00028.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.securityfocus.com/bid/92053"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.securitytracker.com/id/1036428"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.securitytracker.com/id/1038623"
-        },
-        {
-          "type": "WEB",
-          "url": "https://codereview.chromium.org/2127493002"
-        },
-        {
-          "type": "WEB",
-          "url": "https://crbug.com/623378"
-        },
-        {
-          "type": "WEB",
-          "url": "https://source.android.com/security/bulletin/2017-05-01"
-        },
-        {
-          "type": "WEB",
-          "url": "https://support.apple.com/HT207141"
-        },
-        {
-          "type": "WEB",
-          "url": "https://support.apple.com/HT207142"
-        },
-        {
-          "type": "WEB",
-          "url": "https://support.apple.com/HT207143"
-        },
-        {
-          "type": "WEB",
-          "url": "https://support.apple.com/HT207170"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://rhn.redhat.com/errata/RHSA-2016-1485.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.debian.org/security/2016/dsa-3637"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.ubuntu.com/usn/USN-3041-1"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/201610-09"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/201701-37"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=1358641"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://googlechromereleases.blogspot.com/2016/07/stable-channel-update.html"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "9c387e20d65a7a366ac270d789f6ad266014c9e0"
-                },
-                {
-                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 139,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
       "id": "CVE-2021-45931",
       "details": "HarfBuzz 2.9.0 has an out-of-bounds write in hb_bit_set_invertible_t::set (called from hb_sparseset_t\u003chb_bit_set_invertible_t\u003e::set and hb_set_copy).",
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2022-01-01T01:15:08.477Z",
       "references": [
         {
@@ -173,37 +21,39 @@
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
           "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202209-11"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
         },
         {
           "type": "FIX",
           "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202209-11"
+          "type": "EVIDENCE",
+          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -298,23 +148,9 @@
               "events": [
                 {
                   "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
                 },
                 {
-                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
                 }
               ]
             }
@@ -402,20 +238,6 @@
         }
       ],
       "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                }
-              ]
-            }
-          ],
-          "database_specific": "<Any value>"
-        },
         {
           "ranges": [
             {
@@ -2084,15 +1906,15 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
+                  "introduced": "0"
                 },
                 {
-                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
+                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
               ]
             }
           ],
-          "versions": 94,
+          "versions": 209,
           "database_specific": "<Any value>"
         }
       ],
@@ -2522,13 +2344,10 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
-                },
-                {
                   "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
                 },
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
+                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
               ]
             }

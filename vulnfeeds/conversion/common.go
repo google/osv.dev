@@ -171,8 +171,6 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 	return nil
 }
 
-
-// Examines repos and tries to convert versions to commits by treating them as Git tags.
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
 func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	var newVersionRanges []*osvschema.Range
@@ -297,7 +295,6 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 
 	return &versionRange
 }
-
 
 func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
 	// check if the ranges are the same

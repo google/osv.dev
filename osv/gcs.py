@@ -88,6 +88,7 @@ def upload_vulnerability(vulnerability: Vulnerability,
   modified = vulnerability.modified.ToDatetime(datetime.UTC)
   pb_blob = bucket.blob(os.path.join(VULN_PB_PATH, vuln_id + '.pb'))
   pb_blob.custom_time = modified
+  pb_blob.cache_control = 'no-cache,max-age=0'
   pb_blob.upload_from_string(
       vulnerability.SerializeToString(deterministic=True),
       content_type='application/octet-stream',

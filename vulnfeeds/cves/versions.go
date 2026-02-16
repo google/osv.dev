@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/conversion"

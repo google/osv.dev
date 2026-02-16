@@ -28,6 +28,7 @@ func Validate(data []byte) error {
 		for _, desc := range result.Errors() {
 			errs += fmt.Sprintf("- %s\n", desc)
 		}
+
 		return fmt.Errorf("schema validation failed:\n%s", errs)
 	}
 

@@ -38,7 +38,7 @@ type gitSourceRecord struct {
 
 var _ SourceRecord = gitSourceRecord{}
 
-func (g gitSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+func (g gitSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
 	if g.isDeleted {
 		return nil, errors.New("cannot open a deleted record")
 	}
@@ -57,6 +57,7 @@ func (g gitSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return io.NopCloser(bytes.NewReader(content)), nil
 }
 
@@ -98,6 +99,7 @@ var repoGroup singleflight.Group
 
 type sharedRepo struct {
 	*git.Repository
+
 	mu *sync.Mutex
 }
 
@@ -109,7 +111,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
-	repoInterface, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (interface{}, error) {
+	repoInterface, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (any, error) {
 		// Temporary migration from Python to Go
 		// If the sha name of the repo doesn't exist, check if the source repo name exists from python.
 		// If it does, move it and use it.
@@ -127,6 +129,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		if err != nil {
 			return nil, err
 		}
+
 		return sharedRepo{
 			Repository: repo,
 			mu:         &sync.Mutex{},
@@ -166,6 +169,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		if shouldIgnore(path.Base(p), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			return ""
 		}
+
 		return p
 	}
 	for _, fileChange := range changedFiles {
@@ -183,6 +187,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 				isDeleted:        true,
 				strict:           sourceRepo.Strictness,
 			}
+
 			continue
 		}
 		// object created/modified - send to channel
@@ -206,6 +211,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 	logger.Info("Finished importing git source repository",
 		slog.String("source", sourceRepo.Name),
 		slog.String("url", sourceRepo.Git.URL))
+
 	return nil
 }
 
@@ -255,7 +261,7 @@ func changedFiles(ctx context.Context, repo sharedRepo, sourceRepo *models.Sourc
 	if err != nil {
 		return nil, nil, err
 	}
-	var changedFiles []fileChange
+	changedFiles := make([]fileChange, 0, len(diff))
 	for _, d := range diff {
 		// Note: since we're doing child.Diff(parent), to/from are reversed from what you might expect.
 		changedFiles = append(changedFiles, fileChange{
@@ -263,5 +269,6 @@ func changedFiles(ctx context.Context, repo sharedRepo, sourceRepo *models.Sourc
 			to:   d.From.Name,
 		})
 	}
+
 	return changedFiles, currentCommit, nil
 }

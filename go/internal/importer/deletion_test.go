@@ -59,7 +59,7 @@ func TestHandleDeleteBucket(t *testing.T) {
 	}
 	close(workCh)
 
-	var records []SourceRecord
+	records := make([]SourceRecord, 0, 10)
 	for r := range workCh {
 		records = append(records, r)
 	}
@@ -134,8 +134,10 @@ func TestHandleDeleteREST(t *testing.T) {
 	ctx := t.Context()
 
 	// Mock Server returns 1 remaining ID
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`[{"id": "STILL-THERE"}]`))
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if _, err := w.Write([]byte(`[{"id": "STILL-THERE"}]`)); err != nil {
+			t.Fatalf("Failed to write response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -174,7 +176,7 @@ func TestHandleDeleteREST(t *testing.T) {
 	}
 	close(workCh)
 
-	var records []SourceRecord
+	records := make([]SourceRecord, 0, 10)
 	for r := range workCh {
 		records = append(records, r)
 	}

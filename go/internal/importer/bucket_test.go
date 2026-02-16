@@ -69,7 +69,7 @@ func TestHandleImportBucket(t *testing.T) {
 	}
 
 	mockStore := &mockSourceRepositoryStore{
-		updates: make(map[string]interface{}),
+		updates: make(map[string]any),
 	}
 
 	config := Config{
@@ -97,7 +97,7 @@ func TestHandleImportBucket(t *testing.T) {
 	}
 
 	close(ch)
-	var records []bucketSourceRecord
+	records := make([]bucketSourceRecord, 0, 10)
 	for r := range ch {
 		records = append(records, r.(bucketSourceRecord))
 	}

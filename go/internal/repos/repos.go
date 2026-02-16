@@ -1,3 +1,4 @@
+// Package repos provides utilities for managing and cloning source repositories.
 package repos
 
 import (
@@ -17,19 +18,20 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
-var ErrRepoInaccessible = fmt.Errorf("repo inaccessible")
+var ErrRepoInaccessible = errors.New("repo inaccessible")
 
 // More performant mirrors for large/popular repos.
 var gitMirrors = map[string]string{
 	"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
 }
 
-func gitMirror(gitUrl string) string {
-	if mirror, ok := gitMirrors[strings.TrimRight(gitUrl, "/")]; ok {
-		logger.Info("Using mirror for git URL", slog.String("mirror", mirror), slog.String("git_url", gitUrl))
+func gitMirror(gitURL string) string {
+	if mirror, ok := gitMirrors[strings.TrimRight(gitURL, "/")]; ok {
+		logger.Info("Using mirror for git URL", slog.String("mirror", mirror), slog.String("git_url", gitURL))
 		return mirror
 	}
-	return gitUrl
+
+	return gitURL
 }
 
 func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate bool) (*git.Repository, error) {
@@ -57,6 +59,7 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 					logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir))
 				}
 			}
+
 			return repo, nil
 		}
 		logger.Warn("Could not open existing directory as git repo. Deleting it and cloning from scratch", slog.String("dir", dir), slog.Any("error", err))
@@ -119,15 +122,16 @@ func cloneToDirGitter(ctx context.Context, gitterHost, repoURL, dir string, forc
 	if err := os.RemoveAll(tmpDir); err != nil {
 		logger.Error("Failed to remove temp dir", slog.String("dir", tmpDir), slog.Any("error", err))
 	}
+
 	return git.PlainOpen(dir)
 }
 
 func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool) (io.ReadCloser, error) {
-	url, err := url.JoinPath(gitterHost, "getgit")
+	getGitURL, err := url.JoinPath(gitterHost, "getgit")
 	if err != nil {
 		return nil, fmt.Errorf("failed to join path: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getGitURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -148,5 +152,6 @@ func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to clone repo: %s", resp.Status)
 	}
+
 	return resp.Body, nil
 }

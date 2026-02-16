@@ -20,6 +20,7 @@ func negatedPrefix(regex string) (string, bool) {
 	if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, suffix) {
 		return strings.TrimSuffix(strings.TrimPrefix(regex, prefix), suffix), true
 	}
+
 	return "", false
 }
 
@@ -39,10 +40,13 @@ func compileIgnorePatterns(sourceRepo *models.SourceRepository) []*regexp.Regexp
 				slog.String("source", sourceRepo.Name),
 				slog.String("pattern", pattern),
 				slog.Any("error", err))
+
 			continue
 		}
+
 		compiledIgnorePatterns = append(compiledIgnorePatterns, compiledPattern)
 	}
+
 	return compiledIgnorePatterns
 }
 
@@ -66,5 +70,6 @@ func shouldIgnore(name string, idPrefixes []string, ignorePatterns []*regexp.Reg
 			return true
 		}
 	}
+
 	return false
 }

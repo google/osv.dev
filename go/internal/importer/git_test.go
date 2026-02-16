@@ -15,12 +15,7 @@ import (
 
 func TestGitSourceRecord_Open(t *testing.T) {
 	// Setup a temporary git repo
-	dir, err := os.MkdirTemp("", "osv-git-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(dir)
-
+	dir := t.TempDir()
 	repo, err := git.PlainInit(dir, false)
 	if err != nil {
 		t.Fatalf("Failed to init git repo: %v", err)
@@ -32,7 +27,7 @@ func TestGitSourceRecord_Open(t *testing.T) {
 
 	// Create a file
 	filePath := filepath.Join(dir, "test.json")
-	if err := os.WriteFile(filePath, []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte("data"), 0600); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 	if _, err := wt.Add("test.json"); err != nil {
@@ -79,12 +74,7 @@ func TestGitSourceRecord_Open(t *testing.T) {
 
 func TestHandleImportGit(t *testing.T) {
 	// Setup a temporary git repo acting as the remote source
-	remoteDir, err := os.MkdirTemp("", "osv-git-remote-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(remoteDir)
-
+	remoteDir := t.TempDir()
 	remoteRepo, err := git.PlainInit(remoteDir, false)
 	if err != nil {
 		t.Fatalf("Failed to init remote repo: %v", err)
@@ -95,28 +85,43 @@ func TestHandleImportGit(t *testing.T) {
 	}
 
 	// Initial commit: ignored file and old file
-	os.WriteFile(filepath.Join(remoteDir, "ignore.json"), []byte("{}"), 0644)
-	os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0644)
-	remoteWt.Add("ignore.json")
-	remoteWt.Add("CVE-A.json")
+	if err := os.WriteFile(filepath.Join(remoteDir, "ignore.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if _, err := remoteWt.Add("ignore.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
+	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
 	commitA, _ := remoteWt.Commit("Initial", &git.CommitOptions{
 		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
 	})
 
 	// Second commit: Modify old file, add new file
-	os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte(`{"modified": true}`), 0644)
-	os.WriteFile(filepath.Join(remoteDir, "CVE-B.json"), []byte("{}"), 0644)
-	remoteWt.Add("CVE-A.json")
-	remoteWt.Add("CVE-B.json")
+	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte(`{"modified": true}`), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-B.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
+	if _, err := remoteWt.Add("CVE-B.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
 	commitB, _ := remoteWt.Commit("Second", &git.CommitOptions{
 		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
 	})
 
 	mockStore := &mockSourceRepositoryStore{
-		updates: make(map[string]interface{}),
+		updates: make(map[string]any),
 	}
-	workDir, _ := os.MkdirTemp("", "osv-git-work-*")
-	defer os.RemoveAll(workDir)
+	workDir := t.TempDir()
 
 	config := Config{
 		SourceRepoStore: mockStore,
@@ -141,7 +146,7 @@ func TestHandleImportGit(t *testing.T) {
 	}
 	close(ch)
 
-	var records []gitSourceRecord
+	records := make([]gitSourceRecord, 0, 10)
 	for r := range ch {
 		records = append(records, r.(gitSourceRecord))
 	}
@@ -172,11 +177,7 @@ func TestHandleImportGit(t *testing.T) {
 
 func TestHandleImportGit_Deletion(t *testing.T) {
 	// Setup a temporary git repo acting as the remote source
-	remoteDir, err := os.MkdirTemp("", "osv-git-remote-del-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(remoteDir)
+	remoteDir := t.TempDir()
 
 	remoteRepo, err := git.PlainInit(remoteDir, false)
 	if err != nil {
@@ -188,8 +189,12 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	}
 
 	// Initial commit: one file
-	os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0644)
-	remoteWt.Add("CVE-A.json")
+	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
 	commitA, _ := remoteWt.Commit("Initial", &git.CommitOptions{
 		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
 	})
@@ -201,10 +206,9 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	})
 
 	mockStore := &mockSourceRepositoryStore{
-		updates: make(map[string]interface{}),
+		updates: make(map[string]any),
 	}
-	workDir, _ := os.MkdirTemp("", "osv-git-work-del-*")
-	defer os.RemoveAll(workDir)
+	workDir := t.TempDir()
 
 	config := Config{
 		SourceRepoStore: mockStore,
@@ -228,7 +232,7 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	}
 	close(ch)
 
-	var records []gitSourceRecord
+	records := make([]gitSourceRecord, 0, 10)
 	for r := range ch {
 		records = append(records, r.(gitSourceRecord))
 	}

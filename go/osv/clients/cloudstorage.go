@@ -82,4 +82,3 @@ type CloudStorage interface {
 type CloudStorageProvider interface {
 	Bucket(name string) CloudStorage
 }
-

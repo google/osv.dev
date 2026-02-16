@@ -37,6 +37,7 @@ func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
@@ -157,7 +158,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	}
 
 	// Get all non-withdrawn vulnerabilities in Datastore for this source
-	var vulnsInDatastore []*models.VulnSourceRef
+	vulnsInDatastore := make([]*models.VulnSourceRef, 0, len(objectsInBucket))
 	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, true) {
 		if err != nil {
 			return err
@@ -196,6 +197,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 			slog.Int("total", len(vulnsInDatastore)),
 			slog.Float64("percentage", percentage),
 			slog.Float64("threshold", threshold))
+
 		return errors.New("deletion threshold exceeded")
 	}
 

@@ -1,3 +1,4 @@
+// Package main for importer synchronizes vulnerability data from various sources into the OSV ecosystem.
 package main
 
 import (
@@ -22,7 +23,7 @@ func main() {
 	logger.InitGlobalLogger()
 
 	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation.")
-	delete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
+	runDelete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
 	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
 	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for importing")
@@ -68,7 +69,7 @@ func main() {
 	}
 	config.GCSProvider = clients.NewGCSStorageProvider(storageClient)
 
-	if *delete {
+	if *runDelete {
 		if err := importer.RunDeletions(context.Background(), config); err != nil {
 			logger.Fatal("Importer-deleter failed", slog.Any("error", err))
 		}

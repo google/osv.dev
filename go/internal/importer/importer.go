@@ -1,3 +1,4 @@
+// Package importer provides functionality for importing vulnerability records from various sources.
 package importer
 
 import (
@@ -42,19 +43,19 @@ type RetryableHTTPLeveledLogger struct{}
 
 var _ retryablehttp.LeveledLogger = RetryableHTTPLeveledLogger{}
 
-func (r RetryableHTTPLeveledLogger) Error(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Error(msg string, keysAndValues ...any) {
 	logger.Error(msg, keysAndValues...)
 }
 
-func (r RetryableHTTPLeveledLogger) Info(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Info(msg string, keysAndValues ...any) {
 	logger.Info(msg, keysAndValues...)
 }
 
-func (r RetryableHTTPLeveledLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Debug(msg string, keysAndValues ...any) {
 	logger.Debug(msg, keysAndValues...)
 }
 
-func (r RetryableHTTPLeveledLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (r RetryableHTTPLeveledLogger) Warn(msg string, keysAndValues ...any) {
 	logger.Warn(msg, keysAndValues...)
 }
 
@@ -96,6 +97,7 @@ func Run(ctx context.Context, config Config) error {
 	wg.Wait()
 	close(workCh)
 	workWg.Wait()
+
 	return nil
 }
 
@@ -136,6 +138,7 @@ func RunDeletions(ctx context.Context, config Config) error {
 	wg.Wait()
 	close(workCh)
 	workWg.Wait()
+
 	return nil
 }
 
@@ -149,7 +152,7 @@ const (
 
 type SourceRecord interface {
 	// Open the source record
-	Open(context.Context) (io.ReadCloser, error)
+	Open(ctx context.Context) (io.ReadCloser, error)
 	// KeyPath is the key path to the vulnerability within the source record
 	// equal to the SourceRepo.KeyPath
 	KeyPath() string
@@ -193,6 +196,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 						slog.String("source", sourceRepoName),
 						slog.String("path", sourcePath))
 				}
+
 				continue
 			}
 
@@ -202,6 +206,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 					slog.Any("error", err),
 					slog.String("source", sourceRepoName),
 					slog.String("path", sourcePath))
+
 				continue
 			}
 			data, err := io.ReadAll(r)
@@ -211,6 +216,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 					slog.Any("error", err),
 					slog.String("source", sourceRepoName),
 					slog.String("path", sourcePath))
+
 				continue
 			}
 			hash := computeHash(data)
@@ -224,9 +230,11 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 						slog.Any("error", err),
 						slog.String("source", sourceRepoName),
 						slog.String("path", sourcePath))
+
 					continue
 				}
 				data = json
+
 				fallthrough
 			case RecordFormatJSON:
 				// unmarshal JSON to proto
@@ -237,6 +245,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 							slog.String("key_path", keyPath),
 							slog.String("source", sourceRepoName),
 							slog.String("path", sourcePath))
+
 						continue
 					}
 					data = []byte(res.Raw)
@@ -248,6 +257,7 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 							slog.Any("error", err),
 							slog.String("source", sourceRepoName),
 							slog.String("path", sourcePath))
+
 						continue
 					}
 				}
@@ -257,12 +267,18 @@ func importerWorker(ctx context.Context, ch <-chan SourceRecord, config Config) 
 						slog.Any("error", err),
 						slog.String("source", sourceRepoName),
 						slog.String("path", sourcePath))
+
 					continue
 				}
+			default:
+				logger.Error("Unknown record format",
+					slog.String("source", sourceRepoName),
+					slog.String("path", sourcePath))
 
+				continue
 			}
 			// Skip if the record is older than the last update time
-			modified := vulnProto.Modified.AsTime()
+			modified := vulnProto.GetModified().AsTime()
 			if t, ok := sourceRecord.LastUpdated(); ok {
 				if t.After(modified) {
 					continue
@@ -285,6 +301,7 @@ func sendToWorker(ctx context.Context, config Config, sourceRecord SourceRecord,
 	if sourceRecord.ShouldSendModifiedTime() {
 		srcTimestamp = &modifiedTime
 	}
+
 	return publishUpdate(ctx, config.Publisher, sourceRecord.SourceRepository(), sourceRecord.SourcePath(), hash, false, srcTimestamp)
 }
 
@@ -311,5 +328,6 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 	}
 	result := publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)
+
 	return err
 }

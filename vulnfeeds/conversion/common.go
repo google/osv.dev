@@ -207,12 +207,12 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			if introduced == "0" {
 				introducedCommit = "0"
 			} else {
-				introducedCommit = resolveVersionToCommit(metrics.CVEID, introduced, "introduced", repo, normalizedTags)
+				introducedCommit = resolveVersionToCommit(introduced, normalizedTags)
 			}
-			fixedCommit := resolveVersionToCommit(metrics.CVEID, fixed, "fixed", repo, normalizedTags)
-			lastAffectedCommit := resolveVersionToCommit(metrics.CVEID, lastAffected, "last_affected", repo, normalizedTags)
+			fixedCommit := resolveVersionToCommit(fixed, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(lastAffected, normalizedTags)
 
-			if fixedCommit != "" || lastAffectedCommit != "" {
+			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
@@ -257,16 +257,14 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.
 // It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(cveID models.CVEID, version, versionType, repo string, normalizedTags map[string]git.NormalizedTag) string {
+func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
 	if version == "" {
 		return ""
 	}
 	commit, err := git.VersionToCommit(version, normalizedTags)
 	if err != nil {
-		// logger.Warn("Failed to get Git commit for version", slog.String("cve", string(cveID)), slog.String("version", version), slog.String("type", versionType), slog.String("repo", repo), slog.Any("err", err))
 		return ""
 	}
-	// logger.Info("Successfully derived commit for version", slog.String("cve", string(cveID)), slog.String("commit", commit), slog.String("version", version), slog.String("type", versionType))
 
 	return commit
 }

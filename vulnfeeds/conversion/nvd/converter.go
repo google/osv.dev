@@ -4,6 +4,7 @@ package nvd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -43,27 +44,27 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
 	cpeRanges := cves.ExtractVersionsFromCPEs(cve, nil, metrics)
-	
+
 	// if there are no repos, there are no commits from the refs either
-	if len(cpeRanges) == 0 && len(repos) == 0{
-		outputFiles(v,directory,maybeVendorName,maybeProductName,metrics,rejectFailed,outputMetrics)
+	if len(cpeRanges) == 0 && len(repos) == 0 {
+		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 		return models.NoRepos
 	}
 
 	successfulRepos := make(map[string]bool)
-	var resolvedRanges, unresolvedRanges  []*osvschema.Range
+	var resolvedRanges, unresolvedRanges []*osvschema.Range
 	if len(cpeRanges) > 0 {
 		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
-		for _, s := range sR{
+		for _, s := range sR {
 			successfulRepos[s] = true
 		}
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
 	} else if len(repos) == 0 {
 		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
-		outputFiles(v,directory,maybeVendorName,maybeProductName,metrics,rejectFailed,outputMetrics)
+		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 		return models.NoRepos
 	}
 
@@ -89,13 +90,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		r, un, sR := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
-		for _, s := range sR{
+		for _, s := range sR {
 			successfulRepos[s] = true
 		}
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
 	}
 
-	if len(resolvedRanges) == 0 && len(commits) == 0{
+	if len(resolvedRanges) == 0 && len(commits) == 0 {
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
 		metrics.Outcome = models.NoRanges
 	} else {
@@ -132,18 +133,46 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
 	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
-	// metrics.Outcome = ResolveVersionsToCommits(&versions, repos, cache, metrics)
+	if len(versions.AffectedVersions) != 0 {
+		// There are some AffectedVersions to try and resolve to AffectedCommits.
+		if len(repos) == 0 {
+			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
+			return models.NoRepos
+		}
+		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
+		cves.VersionInfoToCommits(&versions, repos, cache, metrics)
+	}
 
-	// if len(versions.AffectedCommits) == 0 {
-	// 	metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
-	// 	metrics.Outcome = models.NoCommitRanges
-	// }
+	hasAnyFixedCommits := false
+	for _, repo := range repos {
+		if versions.HasFixedCommits(repo) {
+			hasAnyFixedCommits = true
+		}
+	}
 
-	// if rejectFailed && metrics.Outcome != models.Successful {
-	// 	return metrics.Outcome
-	// }
+	if versions.HasFixedVersions() && !hasAnyFixedCommits {
+		metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
+		return models.NoCommitRanges
+	}
 
-	// versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
+	hasAnyLastAffectedCommits := false
+	for _, repo := range repos {
+		if versions.HasLastAffectedCommits(repo) {
+			hasAnyLastAffectedCommits = true
+		}
+	}
+
+	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
+		metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
+		return models.NoCommitRanges
+	}
+
+	if len(versions.AffectedCommits) == 0 {
+		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
+		return models.NoCommitRanges
+	}
+
+	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
 	// slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
 
@@ -266,7 +295,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	return reposForCVE
 }
 
-func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) (*osvschema.Affected) {
+func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
 	if len(resolvedRanges) > 0 {

@@ -1,8 +1,6 @@
 package cvelist2osv
 
 import (
-	"log/slog"
-
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
@@ -40,27 +38,13 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
 	if len(ranges) != 0 {
-		resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
-		if err != nil {
-			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+		resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
+		if len(resolvedRanges) == 0 {
+			metrics.AddNote("Failed to convert git versions to commits")
 		} else {
 			gotVersions = true
 		}
-
-		if len(resolvedRanges) > 0 {
-			aff := &osvschema.Affected{
-				Ranges: resolvedRanges,
-			}
-			if len(unresolvedRanges) > 0 {
-				databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-				if err != nil {
-					logger.Warn("failed to make database specific: %v", err)
-				} else {
-					aff.DatabaseSpecific = databaseSpecific
-				}
-			}
-			conversion.AddAffected(v, aff, metrics)
-		}
+		addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 	}
 
 	if !gotVersions {
@@ -68,27 +52,13 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			} else {
 				gotVersions = true
 			}
-
-			if len(resolvedRanges) > 0 {
-				aff := &osvschema.Affected{
-					Ranges: resolvedRanges,
-				}
-				if len(unresolvedRanges) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
-					} else {
-						aff.DatabaseSpecific = databaseSpecific
-					}
-				}
-				conversion.AddAffected(v, aff, metrics)
-			}
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 
@@ -96,25 +66,12 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versionRanges := textVersionExtraction(cve, metrics)
 		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, err := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			}
 
-			if len(resolvedRanges) > 0 {
-				aff := &osvschema.Affected{
-					Ranges: resolvedRanges,
-				}
-				if len(unresolvedRanges) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
-					} else {
-						aff.DatabaseSpecific = databaseSpecific
-					}
-				}
-				conversion.AddAffected(v, aff, metrics)
-			}
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 }
@@ -176,4 +133,21 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 	}
 
 	return versionRanges, mostFrequentVersionType
+}
+
+func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
+	if len(resolvedRanges) > 0 {
+		aff := &osvschema.Affected{
+			Ranges: resolvedRanges,
+		}
+		if len(unresolvedRanges) > 0 {
+			databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+			if err != nil {
+				logger.Warn("failed to make database specific: %v", err)
+			} else {
+				aff.DatabaseSpecific = databaseSpecific
+			}
+		}
+		conversion.AddAffected(v, aff, metrics)
+	}
 }

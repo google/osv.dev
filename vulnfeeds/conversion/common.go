@@ -111,3 +111,29 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 
 	return nil
 }
+
+
+// BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
+// events to an OSV version range. If 'intro' is empty, it defaults to "0".
+func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
+	var versionRange osvschema.Range
+	var i string
+	if intro == "" {
+		i = "0"
+	} else {
+		i = intro
+	}
+	versionRange.Events = append(versionRange.Events, &osvschema.Event{
+		Introduced: i})
+
+	if fixed != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			Fixed: fixed})
+	} else if lastAff != "" {
+		versionRange.Events = append(versionRange.Events, &osvschema.Event{
+			LastAffected: lastAff,
+		})
+	}
+
+	return &versionRange
+}

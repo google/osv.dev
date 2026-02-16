@@ -4,7 +4,6 @@ package conversion
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -116,10 +115,10 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 }
 
 // Examines repos and tries to convert versions to commits by treating them as Git tags.
-func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) (*osvschema.Affected, error) {
-	var newAff osvschema.Affected
+func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
+	var successfulRepos []string
 
 	for _, repo := range repos {
 		if len(unresolvedRanges) == 0 {
@@ -173,13 +172,13 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				} else {
 					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
 				}
-
+				successfulRepos = append(successfulRepos, repo)
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
 				if len(vr.GetEvents()) > 0 {
 					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
 					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
+						metrics.AddNote("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}
@@ -193,26 +192,19 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		unresolvedRanges = stillUnresolvedRanges
 	}
 
-	var err error
-	if len(unresolvedRanges) > 0 {
-		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-		if err != nil {
-			logger.Warn("failed to make database specific: %v", err)
-		} else {
-			newAff.DatabaseSpecific = databaseSpecific
-		}
-
-		metrics.UnresolvedRangesCount += len(unresolvedRanges)
-	}
-
 	if len(newVersionRanges) > 0 {
-		newAff.Ranges = newVersionRanges
 		metrics.ResolvedRangesCount += len(newVersionRanges)
-	} else if len(unresolvedRanges) > 0 { // Only error if there were ranges to resolve but none were.
-		err = errors.New("was not able to get git version ranges")
+		metrics.Outcome = models.Successful
 	}
 
-	return &newAff, err
+	if len(unresolvedRanges) > 0 {
+		metrics.UnresolvedRangesCount += len(unresolvedRanges)
+		if len(newVersionRanges) == 0 {
+			metrics.Outcome = models.NoCommitRanges
+		}
+	}
+
+	return newVersionRanges, unresolvedRanges, successfulRepos
 }
 
 // BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'

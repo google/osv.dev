@@ -62,7 +62,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
-# Build/push core worker/importer/alias images.
+# Build/push core worker/recoverer images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
   id: 'build-worker'
@@ -70,15 +70,6 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker']
   waitFor: ['build-worker', 'cloud-build-queue']
-
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/importer'
-  id: 'build-importer'
-  waitFor: ['build-worker']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/importer']
-  waitFor: ['build-importer', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '.']
@@ -107,6 +98,20 @@ steps:
   waitFor: ['build-oss-fuzz-importer', 'cloud-build-queue']
 
 # Build/push go images
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/importer:latest || exit 0']
+  id: 'pull-importer'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '-f', 'cmd/importer/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/importer:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-importer'
+  waitFor: ['pull-importer']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/importer']
+  waitFor: ['build-importer', 'cloud-build-queue']
+
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/exporter:latest || exit 0']

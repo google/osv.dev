@@ -44,21 +44,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		} else {
 			gotVersions = true
 		}
-
-		if len(resolvedRanges) > 0 {
-			aff := &osvschema.Affected{
-				Ranges: resolvedRanges,
-			}
-			if len(unresolvedRanges) > 0 {
-				databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-				if err != nil {
-					logger.Warn("failed to make database specific: %v", err)
-				} else {
-					aff.DatabaseSpecific = databaseSpecific
-				}
-			}
-			conversion.AddAffected(v, aff, metrics)
-		}
+		addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 	}
 
 	if !gotVersions {
@@ -72,21 +58,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			} else {
 				gotVersions = true
 			}
-
-			if len(resolvedRanges) > 0 {
-				aff := &osvschema.Affected{
-					Ranges: resolvedRanges,
-				}
-				if len(unresolvedRanges) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
-					} else {
-						aff.DatabaseSpecific = databaseSpecific
-					}
-				}
-				conversion.AddAffected(v, aff, metrics)
-			}
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 
@@ -99,20 +71,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 				metrics.AddNote("Failed to convert git versions to commits")
 			}
 
-			if len(resolvedRanges) > 0 {
-				aff := &osvschema.Affected{
-					Ranges: resolvedRanges,
-				}
-				if len(unresolvedRanges) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-					if err != nil {
-						logger.Warn("failed to make database specific: %v", err)
-					} else {
-						aff.DatabaseSpecific = databaseSpecific
-					}
-				}
-				conversion.AddAffected(v, aff, metrics)
-			}
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 }
@@ -174,4 +133,21 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 	}
 
 	return versionRanges, mostFrequentVersionType
+}
+
+func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics){
+	if len(resolvedRanges) > 0 {
+		aff := &osvschema.Affected{
+			Ranges: resolvedRanges,
+		}
+		if len(unresolvedRanges) > 0 {
+			databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+			if err != nil {
+				logger.Warn("failed to make database specific: %v", err)
+			} else {
+				aff.DatabaseSpecific = databaseSpecific
+			}
+		}
+		conversion.AddAffected(v, aff, metrics)
+	}
 }

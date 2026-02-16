@@ -6,7 +6,9 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -22,7 +24,8 @@ import (
 func main() {
 	logger.InitGlobalLogger()
 
-	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation.")
+	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation. "+
+		"Note: this only applies to SourceRepositories with strict_validation=true")
 	runDelete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
 	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
@@ -49,7 +52,10 @@ func main() {
 	httpClient.Logger = importer.RetryableHTTPLeveledLogger{}
 	config.HTTPClient = httpClient.StandardClient()
 
-	datastoreClient, err := datastore.NewClient(context.Background(), project)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	datastoreClient, err := datastore.NewClient(ctx, project)
 	if err != nil {
 		logger.Fatal("Failed to create datastore client", slog.Any("error", err))
 	}
@@ -57,24 +63,24 @@ func main() {
 	// Needed for deletions only
 	config.VulnerabilityStore = db.NewVulnerabilityStore(datastoreClient)
 
-	psClient, err := pubsub.NewClient(context.Background(), project)
+	psClient, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		logger.Fatal("Failed to create pubsub client", slog.Any("error", err))
 	}
 	config.Publisher = &clients.GCPPublisher{Publisher: psClient.Publisher(importer.TasksTopic)}
 
-	storageClient, err := storage.NewClient(context.Background())
+	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		logger.Fatal("Failed to create GCS client", slog.Any("error", err))
 	}
 	config.GCSProvider = clients.NewGCSStorageProvider(storageClient)
 
 	if *runDelete {
-		if err := importer.RunDeletions(context.Background(), config); err != nil {
+		if err := importer.RunDeletions(ctx, config); err != nil {
 			logger.Fatal("Importer-deleter failed", slog.Any("error", err))
 		}
 	} else {
-		if err := importer.Run(context.Background(), config); err != nil {
+		if err := importer.Run(ctx, config); err != nil {
 			logger.Fatal("Importer failed", slog.Any("error", err))
 		}
 	}

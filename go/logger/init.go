@@ -132,6 +132,7 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 				default:
 					levelStr = "DEFAULT"
 				}
+
 				return slog.String("severity", levelStr)
 			}
 			// Remap "msg" to "message"
@@ -142,8 +143,10 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 			if a.Key == slog.SourceKey {
 				source := a.Value.Any().(*slog.Source)
 				source.File = filepath.Base(source.File)
+
 				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
 			}
+
 			return a
 		},
 	}

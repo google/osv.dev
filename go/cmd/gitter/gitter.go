@@ -206,8 +206,7 @@ func main() {
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
-		logger.Error("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
-		os.Exit(1)
+		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
 
 	loadMap()

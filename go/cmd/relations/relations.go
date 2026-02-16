@@ -49,8 +49,7 @@ func main() {
 
 	gc, err := setupClients(ctx)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logger.FatalContext(ctx, "failed to setup clients", slog.Any("err", err))
 	}
 	defer gc.closeAll()
 

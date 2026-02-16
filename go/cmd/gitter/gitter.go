@@ -114,7 +114,11 @@ func isAuthError(err error) bool {
 }
 
 func isIndexLockError(err error) bool {
+	if err == nil {
+		return false
+	}
 	errString := err.Error()
+
 	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
 }
 
@@ -145,7 +149,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 				return nil, fmt.Errorf("git fetch failed: %w", err)
 			}
 			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-			if isIndexLockError(err) {
+			if err != nil && isIndexLockError(err) {
 				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
 				// We can remove the file and retry the command
 				logger.Warn("index.lock exists, attempting to remove and retry", slog.String("url", ctx.Value(urlKey).(string)))
@@ -156,7 +160,6 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 				// One more attempt at git reset
 				err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
 			}
-
 			if err != nil {
 				return nil, fmt.Errorf("git reset failed: %w", err)
 			}

@@ -150,19 +150,10 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			if introduced == "0" {
 				introducedCommit = "0"
 			} else {
-				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
-				if err != nil {
-					metrics.AddNote("Failed to resolve version to commit - %s", introduced)
-				}
+				introducedCommit = resolveVersionToCommit(introduced, normalizedTags)
 			}
-			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
-			if err != nil {
-				metrics.AddNote("Failed to resolve version to commit - %s", fixed)
-			}
-			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
-			if err != nil {
-				metrics.AddNote("Failed to resolve version to commit - %s", lastAffected)
-			}
+			fixedCommit := resolveVersionToCommit(fixed, normalizedTags)
+			lastAffectedCommit := resolveVersionToCommit(lastAffected, normalizedTags)
 
 			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
 				var newVR *osvschema.Range
@@ -230,4 +221,18 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	}
 
 	return &versionRange
+}
+
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		return ""
+	}
+	
+	return commit
 }

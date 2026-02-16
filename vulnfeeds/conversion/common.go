@@ -233,6 +233,6 @@ func resolveVersionToCommit(version string, normalizedTags map[string]git.Normal
 	if err != nil {
 		return ""
 	}
-	
+
 	return commit
 }

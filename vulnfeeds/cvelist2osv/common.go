@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"

@@ -23,7 +23,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "net/http/pprof"
+	_ "net/http/pprof" //nolint:gosec // Profiling is exposed on a separate, optional port
 
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/singleflight"

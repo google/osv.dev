@@ -251,6 +251,10 @@ func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerab
 		}
 	}
 
+	if len(nvd.GetSeverity()) > 0 {
+		baseOSV.Severity = nvd.GetSeverity()
+	}
+
 	return baseOSV
 }
 

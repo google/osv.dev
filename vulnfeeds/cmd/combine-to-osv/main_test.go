@@ -379,6 +379,12 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 				Package: &osvschema.Package{Name: "package-a"},
 			},
 		},
+		Severity: []*osvschema.Severity{
+			{
+				Type:  osvschema.Severity_CVSS_V3,
+				Score: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+			},
+		},
 	}
 
 	nvd := &osvschema.Vulnerability{
@@ -398,6 +404,12 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 				Package: &osvschema.Package{Name: "package-b"},
 			},
 		},
+		Severity: []*osvschema.Severity{
+			{
+				Type:  osvschema.Severity_CVSS_V3,
+				Score: "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N",
+			},
+		},
 	}
 
 	expected := &osvschema.Vulnerability{
@@ -411,6 +423,12 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 		},
 		// pickAffectedInformation prefers nvd if it has more packages
 		Affected: nvd.GetAffected(),
+		Severity: []*osvschema.Severity{ // Should take severity from NVD
+			{
+				Type:  osvschema.Severity_CVSS_V3,
+				Score: "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N",
+			},
+		},
 	}
 
 	got := combineTwoOSVRecords(cve5, nvd)

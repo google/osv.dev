@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/singleflight"
 )
@@ -197,6 +199,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 
 func main() {
 	port := flag.Int("port", 8888, "Listen port")
+	profilePort := flag.Int("profile_port", 0, "Listen port for profiling, if 0, profiling is disabled")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	flag.Parse()
@@ -215,7 +218,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	http.HandleFunc(getGitEndpoint, gitHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc(getGitEndpoint, gitHandler)
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -232,6 +236,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", *port),
+		Handler:           mux,
 		ReadHeaderTimeout: 3 * time.Second,
 		BaseContext: func(_ net.Listener) context.Context {
 			// Return the context tied to the termination signal.
@@ -244,6 +249,24 @@ func main() {
 			logger.Error("Gitter failed to start", slog.Int("port", *port), slog.Any("error", err))
 		}
 	}()
+
+	var profilingServer *http.Server
+	if *profilePort != 0 {
+		profilingServer = &http.Server{
+			Addr:              fmt.Sprintf(":%d", *profilePort),
+			ReadHeaderTimeout: 3 * time.Second,
+			BaseContext: func(_ net.Listener) context.Context {
+				return ctx
+			},
+		}
+
+		go func() {
+			logger.Info("Starting profiling server", slog.Int("port", *profilePort))
+			if err := profilingServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logger.Error("Profiling server failed to start", slog.Int("port", *profilePort), slog.Any("error", err))
+			}
+		}()
+	}
 
 	// Listen for the interrupt signal.
 	<-ctx.Done()
@@ -258,6 +281,12 @@ func main() {
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Error("Server forced to shutdown", slog.Any("error", err))
+	}
+
+	if profilingServer != nil {
+		if err := profilingServer.Shutdown(ctx); err != nil {
+			logger.Error("Profiling server forced to shutdown", slog.Any("error", err))
+		}
 	}
 
 	saveMap()

@@ -27,6 +27,7 @@ spec:
         imagePullPolicy: Always
         args:
           - "--port=8888"
+          - "--profile_port=6060"
           - "--work_dir=/work/gitter"
           - "--fetch_timeout=1h"
         volumeMounts:
@@ -83,6 +84,10 @@ spec:
     targetPort: 8888
     protocol: TCP
     name: http
+  - port: 6060
+    targetPort: 6060
+    protocol: TCP
+    name: profiling
   selector:
     name: gitter
   type: ClusterIP

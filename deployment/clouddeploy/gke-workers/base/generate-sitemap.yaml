@@ -22,4 +22,7 @@ spec:
               limits:
                 cpu: "1"
                 memory: "6G"
+            env:
+              - name: TRACE_SAMPLE_RATE
+                value: "1.0"
           restartPolicy: OnFailure

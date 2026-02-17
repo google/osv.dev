@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "net/http/pprof" //nolint:gosec // This is a internal only service not public to the internet
+
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"

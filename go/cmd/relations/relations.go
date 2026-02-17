@@ -29,6 +29,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/api/option"
 )
 
 type gClients struct {
@@ -97,11 +98,11 @@ func setupClients(ctx context.Context) (gClients, error) {
 	}
 
 	// Initialize clients
-	dsClient, err := datastore.NewClient(ctx, projectID)
+	dsClient, err := datastore.NewClient(ctx, projectID, option.WithTelemetryDisabled())
 	if err != nil {
 		return gClients{}, fmt.Errorf("failed to create datastore client: %w", err)
 	}
-	storageClient, err := storage.NewClient(ctx)
+	storageClient, err := storage.NewClient(ctx, option.WithTelemetryDisabled())
 	if err != nil {
 		dsClient.Close()
 		return gClients{}, fmt.Errorf("failed to create storage client: %w", err)

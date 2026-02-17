@@ -97,6 +97,7 @@ func initTracing(ctx context.Context, projectID, serviceName string) {
 		res = resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(serviceName))
 	}
 
+	// If TRACE_SAMPLE_RATE is unset, default to 5% to prevent unintentional cost and performance impact on high-traffic services.
 	sampleRate := 0.05
 	if r := os.Getenv("TRACE_SAMPLE_RATE"); r != "" {
 		if parsed, err := strconv.ParseFloat(r, 64); err == nil {

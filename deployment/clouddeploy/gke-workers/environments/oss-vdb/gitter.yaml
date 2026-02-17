@@ -9,7 +9,7 @@ spec:
       - name: gitter
         args:
           - "--port=8888"
-          - "--profile_port=6060"
+          - "--enable_profiling=true"
           - "--work_dir=/work/gitter"
           - "--fetch_timeout=1h"
         env:

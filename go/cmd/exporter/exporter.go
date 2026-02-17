@@ -16,6 +16,7 @@ import (
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/api/option"
 )
 
 const gcsProtoPrefix = "all/pb/"
@@ -49,7 +50,7 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	storageClient, err := storage.NewClient(ctx)
+	storageClient, err := storage.NewClient(ctx, option.WithTelemetryDisabled())
 	if err != nil {
 		logger.FatalContext(ctx, "failed to create storage client", slog.Any("err", err))
 	}

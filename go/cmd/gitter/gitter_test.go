@@ -199,6 +199,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		fixed        []string
 		lastAffected []string
 		limit        []string
+		invalid_type []string
 		expectedCode int
 	}{
 		{
@@ -222,22 +223,31 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			introduced:   []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
 			expectedCode: http.StatusForbidden,
 		},
+		{
+			name:         "Invalid event type",
+			url:          "https://github.com/google/oss-fuzz-vulns.git",
+			invalid_type: []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
+			expectedCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var events []Event
 			for _, h := range tt.introduced {
-				events = append(events, Event{EventType: "introduced", Hash: h})
+					events = append(events, Event{Type: "introduced", Hash: h})
 			}
 			for _, h := range tt.fixed {
-				events = append(events, Event{EventType: "fixed", Hash: h})
+				events = append(events, Event{Type: "fixed", Hash: h})
 			}
 			for _, h := range tt.lastAffected {
-				events = append(events, Event{EventType: "last_affected", Hash: h})
+				events = append(events, Event{Type: "last_affected", Hash: h})
 			}
 			for _, h := range tt.limit {
-				events = append(events, Event{EventType: "limit", Hash: h})
+				events = append(events, Event{Type: "limit", Hash: h})
+			}
+			for _, h := range tt.invalid_type {
+				events = append(events, Event{Type: "invalid_type", Hash: h})
 			}
 
 			reqBody := map[string]any{

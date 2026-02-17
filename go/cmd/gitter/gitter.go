@@ -28,9 +28,17 @@ import (
 )
 
 type contextKey string
+type EventType string
 
 const (
 	urlKey contextKey = "url"
+)
+
+const (
+	EventTypeIntroduced   EventType = "introduced"
+	EventTypeFixed        EventType = "fixed"
+	EventTypeLastAffected EventType = "last_affected"
+	EventTypeLimit        EventType = "limit"
 )
 
 const defaultGitterWorkDir = "/work/gitter"
@@ -54,8 +62,8 @@ var (
 )
 
 type Event struct {
-	EventType string `json:"eventType"` // TODO: enum this
-	Hash      string `json:"hash"`
+	Type EventType `json:"eventType"`
+	Hash string    `json:"hash"`
 }
 
 const shutdownTimeout = 10 * time.Second
@@ -473,21 +481,23 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		hash, err := hex.DecodeString(event.Hash)
 		if err != nil {
 			logger.Error("Error parsing hash", slog.String("hash", event.Hash), slog.Any("error", err))
-			continue
+			http.Error(w, fmt.Sprintf("Invalid hash: %s", event.Hash), http.StatusBadRequest)
+			return
 		}
 
-		switch event.EventType {
-		case "introduced":
+		switch event.Type {
+		case EventTypeIntroduced:
 			introduced = append(introduced, SHA1(hash))
-		case "fixed":
+		case EventTypeFixed:
 			fixed = append(fixed, SHA1(hash))
-		case "last_affected":
+		case EventTypeLastAffected:
 			lastAffected = append(lastAffected, SHA1(hash))
-		case "limit":
+		case EventTypeLimit:
 			limit = append(limit, SHA1(hash))
 		default:
-			logger.Error("Invalid event type", slog.String("event_type", event.EventType))
-			continue
+			logger.Error("Invalid event type", slog.String("event_type", string(event.Type)))
+			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
+			return
 		}
 	}
 	logger.Info("Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))

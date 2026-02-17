@@ -33,5 +33,5 @@ spec:
                 memory: "64Gi"
             env:
               - name: TRACE_SAMPLE_RATE
-                value: "1.0"
+                value: "0.0"
           restartPolicy: Never

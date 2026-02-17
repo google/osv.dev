@@ -40,11 +40,10 @@ type gClients struct {
 
 func main() {
 	// Set up logging / other clients
-	ctx := context.Background()
-	logger.InitGlobalLogger(ctx)
+	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("relations").Start(ctx, "relations")
+	ctx, span := otel.Tracer("relations").Start(context.Background(), "relations")
 	defer span.End()
 
 	gc, err := setupClients(ctx)

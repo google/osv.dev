@@ -65,18 +65,11 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	}
 }
 
-func ensureInit(ctx context.Context) {
-	if slogLogger == nil {
-		InitGlobalLogger(ctx)
-	}
-}
-
 // Debug prints a Debug level log.
 //
 //nolint:contextcheck,nolintlint
 func Debug(msg string, a ...any) {
 	// We don't call DebugContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelDebug, msg, a)
 }
 
@@ -84,7 +77,6 @@ func Debug(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func DebugContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelDebug, msg, a)
 }
 
@@ -93,7 +85,6 @@ func DebugContext(ctx context.Context, msg string, a ...any) {
 //nolint:contextcheck,nolintlint
 func Info(msg string, a ...any) {
 	// We don't call InfoContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelInfo, msg, a)
 }
 
@@ -101,7 +92,6 @@ func Info(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func InfoContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelInfo, msg, a)
 }
 
@@ -110,7 +100,6 @@ func InfoContext(ctx context.Context, msg string, a ...any) {
 //nolint:contextcheck,nolintlint
 func Warn(msg string, a ...any) {
 	// We don't call WarnContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelWarn, msg, a)
 }
 
@@ -118,7 +107,6 @@ func Warn(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func WarnContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelWarn, msg, a)
 }
 
@@ -127,7 +115,6 @@ func WarnContext(ctx context.Context, msg string, a ...any) {
 //nolint:contextcheck,nolintlint
 func Error(msg string, a ...any) {
 	// We don't call ErrorContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelError, msg, a)
 }
 
@@ -135,7 +122,6 @@ func Error(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func ErrorContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 }
 
@@ -144,7 +130,6 @@ func ErrorContext(ctx context.Context, msg string, a ...any) {
 //nolint:contextcheck,nolintlint
 func Fatal(msg string, a ...any) {
 	// We don't call FatalContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelError, msg, a)
 	Close()
 	os.Exit(1)
@@ -154,7 +139,6 @@ func Fatal(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func FatalContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 	Close()
 	os.Exit(1)
@@ -165,7 +149,6 @@ func FatalContext(ctx context.Context, msg string, a ...any) {
 //nolint:contextcheck,nolintlint
 func Panic(msg string, a ...any) {
 	// We don't call PanicContext because we want to make sure call stack calculation is correct.
-	ensureInit(context.Background())
 	log(context.Background(), slog.LevelError, msg, a)
 	Close()
 	panic(msg)
@@ -175,7 +158,6 @@ func Panic(msg string, a ...any) {
 //
 //nolint:contextcheck,nolintlint
 func PanicContext(ctx context.Context, msg string, a ...any) {
-	ensureInit(ctx)
 	log(ctx, slog.LevelError, msg, a)
 	Close()
 	panic(msg)

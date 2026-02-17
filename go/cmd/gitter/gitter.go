@@ -194,7 +194,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 }
 
 func main() {
-	logger.InitGlobalLogger(context.Background())
+	logger.InitGlobalLogger()
 	defer logger.Close()
 
 	port := flag.Int("port", 8888, "Listen port")

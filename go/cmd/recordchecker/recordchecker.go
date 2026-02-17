@@ -309,11 +309,10 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.Cl
 }
 
 func main() {
-	ctx := context.Background()
-	logger.InitGlobalLogger(ctx)
+	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("recordchecker").Start(ctx, "recordchecker")
+	ctx, span := otel.Tracer("recordchecker").Start(context.Background(), "recordchecker")
 	defer span.End()
 
 	env, err := setup(ctx)

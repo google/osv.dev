@@ -25,11 +25,10 @@ const (
 )
 
 func main() {
-	ctx := context.Background()
-	logger.InitGlobalLogger(ctx)
+	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("custommetrics").Start(ctx, "custommetrics")
+	ctx, span := otel.Tracer("custommetrics").Start(context.Background(), "custommetrics")
 	defer span.End()
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")

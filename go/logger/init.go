@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	slogLogger  *slog.Logger
+	slogLogger  = slog.New(newLocalHandler(os.Stdout))
 	errorClient *errorreporting.Client
 	once        sync.Once
 	tp          *sdktrace.TracerProvider
@@ -28,33 +28,29 @@ var (
 )
 
 // InitGlobalLogger initializes the global slog logger and GCP observability clients.
-func InitGlobalLogger(ctx context.Context) {
+// Users should call Close() before the program exits.
+func InitGlobalLogger() {
 	once.Do(func() {
-		if slogLogger != nil {
-			return
-		}
-
 		inGKE := os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 		inCloudRun := os.Getenv("K_SERVICE") != ""
 		inCloud := inGKE || inCloudRun
-
-		var handler slog.Handler
-		if inCloud {
-			projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
-			if projectID != "" {
-				serviceName := os.Getenv("K_SERVICE")
-				if serviceName == "" {
-					// Fallback to binary name for GKE services where K_SERVICE is not set.
-					serviceName = filepath.Base(os.Args[0])
-				}
-
-				initErrorReporting(ctx, projectID, serviceName)
-				initTracing(ctx, projectID, serviceName)
-			}
-			handler = slog.NewJSONHandler(os.Stdout, cloudHandlerOptions())
-		} else {
-			handler = newLocalHandler(os.Stdout)
+		if !inCloud {
+			// The local handler is initialized by default.
+			return
 		}
+
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+		if projectID != "" {
+			serviceName := os.Getenv("K_SERVICE")
+			if serviceName == "" {
+				// Fallback to binary name for GKE services where K_SERVICE is not set.
+				serviceName = filepath.Base(os.Args[0])
+			}
+
+			initErrorReporting(context.Background(), projectID, serviceName)
+			initTracing(context.Background(), projectID, serviceName)
+		}
+		handler := slog.NewJSONHandler(os.Stdout, cloudHandlerOptions())
 		slogLogger = slog.New(handler)
 	})
 }

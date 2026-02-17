@@ -23,11 +23,10 @@ const gcsProtoPrefix = "all/pb/"
 // main is the entry point for the exporter. It initializes the GCS clients,
 // sets up the worker pipeline, and starts the GCS object iteration.
 func main() {
-	ctx := context.Background()
-	logger.InitGlobalLogger(ctx)
+	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("exporter").Start(ctx, "exporter")
+	ctx, span := otel.Tracer("exporter").Start(context.Background(), "exporter")
 	defer span.End()
 
 	outBucketName := flag.String("bucket", "osv-test-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")

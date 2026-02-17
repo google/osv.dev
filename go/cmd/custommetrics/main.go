@@ -12,6 +12,7 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/google/osv.dev/go/logger"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -24,14 +25,19 @@ const (
 )
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
+
+	ctx, span := otel.Tracer("custommetrics").Start(context.Background(), "custommetrics")
+	defer span.End()
+
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
-		logger.Fatal("GOOGLE_CLOUD_PROJECT must be set")
+		logger.FatalContext(ctx, "GOOGLE_CLOUD_PROJECT must be set")
 	}
-	ctx := context.Background()
 	cl, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
-		logger.Fatal("failed to create monitoring client", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed to create monitoring client", slog.Any("err", err))
 	}
 	defer cl.Close()
 
@@ -40,10 +46,10 @@ func main() {
 	for _, cron := range crons {
 		timeSince, err := getCronFreshness(ctx, cl, project, cron)
 		if err != nil {
-			logger.Fatal("error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
+			logger.FatalContext(ctx, "error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
 		}
 		if err := writeCronFreshness(ctx, cl, project, cron, timeSince); err != nil {
-			logger.Fatal("error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
+			logger.FatalContext(ctx, "error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
 		}
 	}
 }
@@ -59,14 +65,14 @@ func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project 
 	it := cl.ListTimeSeries(ctx, req)
 	ts, err := it.Next()
 	if errors.Is(err, iterator.Done) {
-		logger.Warn("last_successful_time was not found for past day", slog.String("cronjob", cronjob))
+		logger.WarnContext(ctx, "last_successful_time was not found for past day", slog.String("cronjob", cronjob))
 		return int64(lookbackDuration / time.Second), nil
 	} else if err != nil {
 		return 0, err
 	}
 	points := ts.GetPoints()
 	if len(points) == 0 { // I'm pretty sure iterator.Done would be returned instead.
-		logger.Warn("time series has no points", slog.String("cronjob", cronjob))
+		logger.WarnContext(ctx, "time series has no points", slog.String("cronjob", cronjob))
 		return int64(lookbackDuration / time.Second), nil
 	}
 	val := points[0].GetValue().GetDoubleValue()

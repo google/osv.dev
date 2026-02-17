@@ -15,6 +15,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"go.opentelemetry.io/otel"
 )
 
 const gcsProtoPrefix = "all/pb/"
@@ -23,6 +24,10 @@ const gcsProtoPrefix = "all/pb/"
 // sets up the worker pipeline, and starts the GCS object iteration.
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
+
+	ctx, span := otel.Tracer("exporter").Start(context.Background(), "exporter")
+	defer span.End()
 
 	outBucketName := flag.String("bucket", "osv-test-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from. Can also be set with the OSV_VULNERABILITIES_BUCKET environment variable.")
@@ -31,22 +36,22 @@ func main() {
 
 	flag.Parse()
 
-	logger.Info("exporter starting",
+	logger.InfoContext(ctx, "exporter starting",
 		slog.String("bucket", *outBucketName),
 		slog.String("osv-vulns-bucket", *vulnBucketName),
 		slog.Bool("upload-to-gcs", *uploadToGCS),
 		slog.Int("workers", *numWorkers))
 
 	if *vulnBucketName == "" {
-		logger.Fatal("OSV_VULNERABILITIES_BUCKET must be set")
+		logger.FatalContext(ctx, "OSV_VULNERABILITIES_BUCKET must be set")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
-		logger.Fatal("failed to create storage client", slog.Any("err", err))
+		logger.FatalContext(ctx, "failed to create storage client", slog.Any("err", err))
 	}
 	defer storageClient.Close()
 
@@ -93,13 +98,13 @@ func main() {
 MainLoop:
 	for path, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
 		if err != nil {
-			logger.Fatal("failed to list objects", slog.Any("err", err))
+			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
 		prefix := filepath.Base(path)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.Info("iterating vulnerabilities", slog.String("now_at", path))
+			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", path))
 			prevPrefix = prefix
 		}
 		select {
@@ -117,9 +122,9 @@ MainLoop:
 	writerWg.Wait()
 
 	if ctx.Err() != nil {
-		logger.Fatal("exporter cancelled")
+		logger.FatalContext(ctx, "exporter cancelled")
 	}
-	logger.Info("export completed successfully")
+	logger.InfoContext(ctx, "export completed successfully")
 }
 
 // ecosystemRouter receives vulnerabilities from inCh and fans them out to the
@@ -127,7 +132,7 @@ MainLoop:
 // ecosystem encountered. It also sends every vulnerability to the allEcosystemWorker.
 func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
-	logger.Info("ecosystem router starting")
+	logger.InfoContext(ctx, "ecosystem router starting")
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
 	vulnCounter := 0
@@ -190,8 +195,8 @@ RouterLoop:
 	allEcosystemWorker.Finish()
 	workersWg.Wait()
 	if ctx.Err() == nil {
-		logger.Info("ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
+		logger.InfoContext(ctx, "ecosystem router finished, all vulnerabilities dispatched", slog.Int("total_vulnerabilities", vulnCounter))
 	} else {
-		logger.Info("ecosystem router cancelled", slog.Any("err", ctx.Err()))
+		logger.InfoContext(ctx, "ecosystem router cancelled", slog.Any("err", ctx.Err()))
 	}
 }

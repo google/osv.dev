@@ -204,15 +204,16 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		{
 			name:         "Valid range in public repo",
 			url:          "https://github.com/google/oss-fuzz-vulns.git",
-			introduced:   []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-			fixed:        []string{"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+			introduced:   []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
+			fixed:        []string{"8920ed8e47c660a0c20c28cb1004a600780c5b59"},
 			expectedCode: http.StatusOK,
 		},
 		{
 			name:         "Invalid mixed limit and fixed",
 			url:          "https://github.com/google/oss-fuzz-vulns.git",
-			fixed:        []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-			limit:        []string{"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+			introduced:   []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
+			fixed:        []string{"8920ed8e47c660a0c20c28cb1004a600780c5b59"},
+			limit:        []string{"996962b987c856bf751948e55b9366751e806c64"},
 			expectedCode: http.StatusBadRequest,
 		},
 		{

@@ -94,7 +94,6 @@ func saveRepositoryCache(cachePath string, repo *Repository) error {
 		cache.Commits = append(cache.Commits, &pb.CommitDetail{
 			Hash:    commit.Hash[:],
 			PatchId: commit.PatchID[:],
-			Tags:    commit.Tags,
 		})
 	}
 

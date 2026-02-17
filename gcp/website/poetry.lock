@@ -1163,14 +1163,14 @@ protobuf = ">=6.31.1,<7.0.0"
 
 [[package]]
 name = "gunicorn"
-version = "25.0.3"
+version = "25.1.0"
 description = "WSGI HTTP Server for UNIX"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "gunicorn-25.0.3-py3-none-any.whl", hash = "sha256:aca364c096c81ca11acd4cede0aaeea91ba76ca74e2c0d7f879154db9d890f35"},
-    {file = "gunicorn-25.0.3.tar.gz", hash = "sha256:b53a7fff1a07b825b962af320554de44ae77a26abfa373711ff3f83d57d3506d"},
+    {file = "gunicorn-25.1.0-py3-none-any.whl", hash = "sha256:d0b1236ccf27f72cfe14bce7caadf467186f19e865094ca84221424e839b8b8b"},
+    {file = "gunicorn-25.1.0.tar.gz", hash = "sha256:1426611d959fa77e7de89f8c0f32eed6aa03ee735f98c01efba3e281b1c47616"},
 ]
 
 [package.dependencies]
@@ -2174,4 +2174,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "2ad2ab3bbc7f59dcdb02eb108466b9211c547331f670d8130a9d66c49823fa0e"
+content-hash = "48fe67a4ddc8ff27a1f97522ee0c09db7ec9a0cb320f3b923cfe6e874d04e19b"

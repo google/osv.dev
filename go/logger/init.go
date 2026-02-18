@@ -118,8 +118,13 @@ func initTracing(ctx context.Context, projectID, serviceName string) {
 }
 
 func cloudHandlerOptions() *slog.HandlerOptions {
+	level := slog.LevelInfo
+	if os.Getenv("DEBUG_LOG") != "" {
+		level = slog.LevelDebug
+	}
 	return &slog.HandlerOptions{
 		AddSource: true,
+		Level:     level,
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			// Remap "level" to "severity"
 			if a.Key == slog.LevelKey {

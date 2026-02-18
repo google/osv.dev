@@ -306,6 +306,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
 		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return fetchBlob(ctx, url, forceUpdate)
 	})
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
@@ -18,7 +19,7 @@ func TestConcurrencyLimit(t *testing.T) {
 	}()
 
 	// Mock fetchBlob
-	fetchBlob = func(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
+	fetchBlob = func(_ context.Context, _ string, _ bool) ([]byte, error) {
 		time.Sleep(200 * time.Millisecond)
 		return []byte("mock data"), nil
 	}
@@ -35,7 +36,7 @@ func TestConcurrencyLimit(t *testing.T) {
 	// Launch 2 requests
 	go func() {
 		defer wg.Done()
-		req := httptest.NewRequest("GET", "/getgit?url=https://github.com/google/osv.dev-1.git&force-update=true", nil)
+		req := httptest.NewRequest(http.MethodGet, "/getgit?url=https://github.com/google/osv.dev-1.git&force-update=true", nil)
 		w := httptest.NewRecorder()
 		gitHandler(w, req)
 	}()
@@ -44,7 +45,7 @@ func TestConcurrencyLimit(t *testing.T) {
 		defer wg.Done()
 		// Small delay ensuring 1st starts first
 		time.Sleep(10 * time.Millisecond)
-		req := httptest.NewRequest("GET", "/getgit?url=https://github.com/google/osv.dev-2.git&force-update=true", nil)
+		req := httptest.NewRequest(http.MethodGet, "/getgit?url=https://github.com/google/osv.dev-2.git&force-update=true", nil)
 		w := httptest.NewRecorder()
 		gitHandler(w, req)
 	}()

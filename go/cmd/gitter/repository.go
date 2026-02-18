@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"maps"
 	"os"
-	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -45,7 +44,11 @@ type Repository struct {
 }
 
 // %H commit hash; %P parent hashes; %D:refs (tab delimited)
+// We use \x09 (tab) as delimiter because it is disallowed in git refs and won't appear in hashes
 const gitLogFormat = "%H%x09%P%x09%D"
+
+// Number of workers for patch ID calculation
+var workers = 16
 
 // NewRepository initializes a new Repository struct.
 func NewRepository(repoPath string) *Repository {
@@ -99,6 +102,8 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 }
 
 // buildCommitGraph builds the commit graph and associate commit details from scratch
+// Returns a list of new commit hashes that don't have cached Patch IDs.
+// The new commit list is in reverse chronological order based on commit date (the default for git log).
 func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]SHA1, error) {
 	logger.Info("Starting graph construction", slog.String("repo", r.repoPath))
 	start := time.Now()
@@ -124,8 +129,11 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	}
 	defer os.Remove(tmpFile.Name())
 
-	// Run git log via bash because redirecting to file is faster than using pipe
-	err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --topo-order --format="+gitLogFormat+" > "+tmpFile.Name())
+	// `git log --all --full-history --sparse --format=%H%x09%P%x09%D > git-log.out`
+	// --all: all branches
+	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
+	// We are also running via bash because redirecting to file is faster than using stdout pipe and git binary's own --output flag
+	err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --format="+gitLogFormat+" > "+tmpFile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
@@ -137,15 +145,13 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	}
 	defer file.Close()
 
-	reader := bufio.NewReaderSize(file, 1024*1024)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			break
-		}
-
-		line = strings.TrimSuffix(line, "\n")
-		commitInfo := strings.Split(line, "\x09")
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan(){
+		// Example of a line of git log output
+		// 4c9bdbf0e2d45a5297cc080c3ebe809c0cca3581		bc0e4b4c4dbf7932fab7d264929d4d820e82c817 65be82edcdbc5aa6eeea23655cc96b5c84547d3b		upstream/master, upstream/HEAD\n
+		// Corresponds to: commit hash \t parent hashes (space delimited) \t refs (comma delimited)
+		line := scanner.Text()
+		commitInfo := strings.Split(line, "\t")
 
 		var childHash SHA1
 		parentHashes := []SHA1{}
@@ -224,12 +230,12 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 }
 
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
+// Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) error {
 	logger.Info("Starting patch ID calculation", slog.String("repo", r.repoPath))
 	start := time.Now()
 
 	// Number of workers
-	workers := runtime.NumCPU()
 	if len(commits) < workers {
 		workers = len(commits)
 	}
@@ -238,9 +244,14 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 
 	errg, ctx := errgroup.WithContext(ctx)
 
+	// Splitting the commits into chunks for parallel processing while maintaining commit order
 	for i := range workers {
 		start := i * chunkSize
-		end := min(start+chunkSize, len(commits))
+		end := start + chunkSize
+		// Last worker takes the remainder
+		if i == workers-1 {
+			end = len(commits)
+		}
 
 		errg.Go(func() error {
 			return r.calculatePatchIDsWorker(ctx, commits[start:end])
@@ -256,10 +267,16 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 	return nil
 }
 
+// calculatePatchIDsWorker calculates patch IDs and update CommitDetail and patchIDToCommits map.
+// Essentially running `git show <flags> <commit hash> | git patch-id --stable`
 func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) error {
 	// Prepare git commands
-	// TODO: Replace with plumbing cmd `git diff-tree`, might be slightly faster
+	// `git show --stdin --patch --first-parent --no-color`:
+	// --patch to show diffs in a format that can be directly piped into `git patch-id`
+	// --first-parent: when there are multiple parents (e.g. a merge commit), full diff with respect to first parent (usually the main / master branch)
 	cmdShow := prepareCmd(ctx, r.repoPath, nil, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
+	// `git patch-id --stable`:
+	// --stable ensures that reordering file diffs does not affect the patch ID
 	cmdPatchID := prepareCmd(ctx, r.repoPath, nil, "git", "patch-id", "--stable")
 
 	// Pipe the git show with git patch-id
@@ -314,6 +331,7 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	// Read results from stdout of git patch-id
 	scanner := bufio.NewScanner(out)
 	for scanner.Scan() {
+		// Format of git patch-id result: <patch ID> <commit hash>
 		line := scanner.Text()
 
 		// The whole output of git patch-id will be empty if there is no diff (e.g. empty commit), it is safe to just continue

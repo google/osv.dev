@@ -54,8 +54,9 @@ func (t Tags) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 
 // NormalizedTag holds a normalized (as by NormalizeRepoTags) tag and corresponding commit hash.
 type NormalizedTag struct {
-	OriginalTag string
-	Commit      string
+	OriginalTag        string
+	Commit             string
+	MatchesVersionText bool
 }
 
 // RepoTagsMap holds all of the tags (naturally occurring and normalized) for a Git repo.
@@ -261,7 +262,11 @@ func NormalizeRepoTags(repoURL string, repoTagsCache *RepoTagsCache) (normalized
 			// It's conceivable that not all tags are normalizable or potentially versions.
 			continue
 		}
-		normalizedTags[normalizedTag] = NormalizedTag{OriginalTag: t.Tag, Commit: t.Commit}
+		normalizedTags[normalizedTag] = NormalizedTag{
+			OriginalTag:        t.Tag,
+			Commit:             t.Commit,
+			MatchesVersionText: validVersionText.MatchString(normalizedTag),
+		}
 	}
 	if repoTagsCache != nil {
 		// The RepoTags() call above will have cached the Tag map already

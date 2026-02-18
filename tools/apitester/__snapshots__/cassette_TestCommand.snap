@@ -113,7 +113,7 @@
         },
         {
           "id": "GO-2025-3420",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2025-3447",
@@ -273,7 +273,7 @@
         },
         {
           "id": "GO-2025-3420",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2025-3447",
@@ -425,7 +425,7 @@
         },
         {
           "id": "GO-2025-3420",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2025-3447",
@@ -585,7 +585,7 @@
         },
         {
           "id": "GO-2025-3420",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2025-3447",
@@ -3270,7 +3270,14 @@
         }
       ]
     },
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-27jp-wm6q-gp25",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {
@@ -3768,7 +3775,14 @@
         }
       ]
     },
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-27jp-wm6q-gp25",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {

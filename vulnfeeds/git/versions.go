@@ -39,10 +39,7 @@ func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]Normali
 
 	for k, v := range normalizedTags {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
-		if (v.MatchesVersionText && normalizedVersionMatchesText) && strings.HasPrefix(k, normalizedVersion) {
-			candidateTags = append(candidateTags, k)
-		}
-		if (!v.MatchesVersionText && !normalizedVersionMatchesText) && strings.HasPrefix(k, normalizedVersion) {
+		if v.MatchesVersionText == normalizedVersionMatchesText && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
 		}
 	}

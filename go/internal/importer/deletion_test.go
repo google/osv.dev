@@ -52,28 +52,27 @@ func TestHandleDeleteBucket(t *testing.T) {
 		},
 	}
 
-	workCh := make(chan SourceRecord, 10)
+	workCh := make(chan WorkItem, 10)
 	err := handleDeleteBucket(ctx, workCh, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteBucket unexpected error: %v", err)
 	}
 	close(workCh)
 
-	records := make([]SourceRecord, 0, 10)
+	items := make([]WorkItem, 0, 10)
 	for r := range workCh {
-		records = append(records, r)
+		items = append(items, r)
 	}
 
-	if len(records) != 1 {
-		t.Fatalf("Expected 1 deletion record, got %d", len(records))
+	if len(items) != 1 {
+		t.Fatalf("Expected 1 deletion record, got %d", len(items))
 	}
 
-	r := records[0]
-	if !r.IsDeleted() {
+	if !items[0].IsDeleted {
 		t.Errorf("Expected IsDeleted=true, got false")
 	}
-	if r.SourcePath() != "a/b/deleted-file.json" {
-		t.Errorf("Expected path a/b/deleted-file.json, got %s", r.SourcePath())
+	if items[0].SourcePath != "a/b/deleted-file.json" {
+		t.Errorf("Expected path a/b/deleted-file.json, got %s", items[0].SourcePath)
 	}
 }
 
@@ -118,7 +117,7 @@ func TestHandleDeleteBucket_Threshold(t *testing.T) {
 	}
 
 	// Should fail because 100% of records are missing from bucket
-	workCh := make(chan SourceRecord, 10)
+	workCh := make(chan WorkItem, 10)
 	err := handleDeleteBucket(ctx, workCh, config, sourceRepo)
 	if err == nil {
 		t.Fatal("Expected error due to threshold, got nil")
@@ -169,24 +168,24 @@ func TestHandleDeleteREST(t *testing.T) {
 		},
 	}
 
-	workCh := make(chan SourceRecord, 10)
+	workCh := make(chan WorkItem, 10)
 	err := handleDeleteREST(ctx, workCh, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleDeleteREST failed: %v", err)
 	}
 	close(workCh)
 
-	records := make([]SourceRecord, 0, 10)
+	items := make([]WorkItem, 0, 10)
 	for r := range workCh {
-		records = append(records, r)
+		items = append(items, r)
 	}
 
-	if len(records) != 1 {
-		t.Fatalf("Expected 1 deletion record, got %d", len(records))
+	if len(items) != 1 {
+		t.Fatalf("Expected 1 deletion record, got %d", len(items))
 	}
 
-	if records[0].SourcePath() != "DELETED.json" {
-		t.Errorf("Expected path DELETED.json, got %s", records[0].SourcePath())
+	if items[0].SourcePath != "DELETED.json" {
+		t.Errorf("Expected path DELETED.json, got %s", items[0].SourcePath)
 	}
 }
 

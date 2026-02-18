@@ -48,19 +48,12 @@ func TestHandleImportBucket(t *testing.T) {
 
 	// Set up mock bucket with a file
 	mockBucket := testutils.NewMockStorage()
-	lastUpdated := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	olderTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
-	newerTime := time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)
-
-	_ = mockBucket.WriteObject(ctx, "a/b/valid.json", []byte(`{}`), &clients.WriteOptions{
-		CustomTime: &olderTime, // older than last updated, will be skipped
-	})
-	_ = mockBucket.WriteObject(ctx, "a/b/newer.json", []byte(`{}`), &clients.WriteOptions{
-		CustomTime: &newerTime,
-	})
-	_ = mockBucket.WriteObject(ctx, "a/b/ignored.json", []byte(`{}`), &clients.WriteOptions{
-		CustomTime: &newerTime,
-	})
+	_ = mockBucket.WriteObject(ctx, "a/b/valid.json", []byte(`{}`), &clients.WriteOptions{})
+	time.Sleep(50 * time.Millisecond)
+	lastUpdated := time.Now()
+	time.Sleep(50 * time.Millisecond)
+	_ = mockBucket.WriteObject(ctx, "a/b/newer.json", []byte(`{}`), &clients.WriteOptions{})
+	_ = mockBucket.WriteObject(ctx, "a/b/ignored.json", []byte(`{}`), &clients.WriteOptions{})
 
 	provider := &mockCloudStorageProvider{
 		buckets: map[string]clients.CloudStorage{
@@ -89,7 +82,7 @@ func TestHandleImportBucket(t *testing.T) {
 		},
 	}
 
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 
 	err := handleImportBucket(ctx, ch, config, sourceRepo)
 	if err != nil {
@@ -99,7 +92,7 @@ func TestHandleImportBucket(t *testing.T) {
 	close(ch)
 	records := make([]bucketSourceRecord, 0, 10)
 	for r := range ch {
-		records = append(records, r.(bucketSourceRecord))
+		records = append(records, r.SourceRecord.(bucketSourceRecord))
 	}
 
 	if len(records) != 1 {

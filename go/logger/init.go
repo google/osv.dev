@@ -109,13 +109,35 @@ func initTracing(ctx context.Context, projectID, serviceName string) {
 	tp = sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(sampleRate))),
+		sdktrace.WithSampler(sdktrace.ParentBased(toggleSampler{
+			delegate: sdktrace.TraceIDRatioBased(sampleRate),
+		})),
 	)
 
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 	))
+}
+
+// toggleSampler allows overriding the sampling rate via span attributes.
+// Use trace.WithAttributes(attribute.Float64("override_sample_rate", 1.0)) to force sampling.
+type toggleSampler struct {
+	delegate sdktrace.Sampler
+}
+
+func (s toggleSampler) ShouldSample(p sdktrace.SamplingParameters) sdktrace.SamplingResult {
+	for _, attr := range p.Attributes {
+		if attr.Key == "override_sample_rate" {
+			return sdktrace.TraceIDRatioBased(attr.Value.AsFloat64()).ShouldSample(p)
+		}
+	}
+
+	return s.delegate.ShouldSample(p)
+}
+
+func (s toggleSampler) Description() string {
+	return "toggleSampler"
 }
 
 func cloudHandlerOptions() *slog.HandlerOptions {
@@ -139,22 +161,23 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			// Remap "level" to "severity"
 			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				var levelStr string
-				switch level {
-				case slog.LevelDebug:
-					levelStr = "DEBUG"
-				case slog.LevelInfo:
-					levelStr = "INFO"
-				case slog.LevelWarn:
-					levelStr = "WARNING"
-				case slog.LevelError:
-					levelStr = "ERROR"
-				default:
-					levelStr = "DEFAULT"
-				}
+				if level, ok := a.Value.Any().(slog.Level); ok {
+					var levelStr string
+					switch level {
+					case slog.LevelDebug:
+						levelStr = "DEBUG"
+					case slog.LevelInfo:
+						levelStr = "INFO"
+					case slog.LevelWarn:
+						levelStr = "WARNING"
+					case slog.LevelError:
+						levelStr = "ERROR"
+					default:
+						levelStr = "DEFAULT"
+					}
 
-				return slog.String("severity", levelStr)
+					return slog.String("severity", levelStr)
+				}
 			}
 			// Remap "msg" to "message"
 			if a.Key == slog.MessageKey {
@@ -162,10 +185,10 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 			}
 			// Remap "source" to "sourceLocation"
 			if a.Key == slog.SourceKey {
-				source := a.Value.Any().(*slog.Source)
-				source.File = filepath.Base(source.File)
-
-				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
+				if source, ok := a.Value.Any().(*slog.Source); ok {
+					source.File = filepath.Base(source.File)
+					return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
+				}
 			}
 
 			return a

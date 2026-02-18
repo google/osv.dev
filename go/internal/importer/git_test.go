@@ -139,27 +139,27 @@ func TestHandleImportGit(t *testing.T) {
 		},
 	}
 
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 	err = handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}
 	close(ch)
 
-	records := make([]gitSourceRecord, 0, 10)
+	items := make([]WorkItem, 0, 10)
 	for r := range ch {
-		records = append(records, r.(gitSourceRecord))
+		items = append(items, r)
 	}
 
 	// We expect 2 records based on diff from commitA to commitB
 	// CVE-A.json was modified, CVE-B.json was added.
-	if len(records) != 2 {
-		t.Fatalf("Expected 2 records, got %d", len(records))
+	if len(items) != 2 {
+		t.Fatalf("Expected 2 records, got %d", len(items))
 	}
 
 	paths := make(map[string]bool)
-	for _, r := range records {
-		paths[r.path] = true
+	for _, it := range items {
+		paths[it.SourcePath] = true
 	}
 
 	if !paths["CVE-A.json"] {
@@ -225,27 +225,27 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 		},
 	}
 
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 	err = handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}
 	close(ch)
 
-	records := make([]gitSourceRecord, 0, 10)
+	items := make([]WorkItem, 0, 10)
 	for r := range ch {
-		records = append(records, r.(gitSourceRecord))
+		items = append(items, r)
 	}
 
 	// We expect 1 record: the deletion of CVE-A.json
-	if len(records) != 1 {
-		t.Fatalf("Expected 1 record, got %d", len(records))
+	if len(items) != 1 {
+		t.Fatalf("Expected 1 record, got %d", len(items))
 	}
 
-	if records[0].path != "CVE-A.json" {
-		t.Errorf("Expected path CVE-A.json, got %s", records[0].path)
+	if items[0].SourcePath != "CVE-A.json" {
+		t.Errorf("Expected path CVE-A.json, got %s", items[0].SourcePath)
 	}
-	if !records[0].isDeleted {
+	if !items[0].IsDeleted {
 		t.Errorf("Expected record to be marked as deleted")
 	}
 

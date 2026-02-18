@@ -14,15 +14,15 @@ func TestSendToWorker(t *testing.T) {
 		Publisher: mockPublisher,
 	}
 	ctx := context.Background()
-	mockRecord := mockSourceRecord{
-		MockSourceRepository: "test-repo",
-		MockSourcePath:       "test-path.json",
-		MockSendModifiedTime: true,
+	item := WorkItem{
+		SourceRepository:       "test-repo",
+		SourcePath:             "test-path.json",
+		ShouldSendModifiedTime: true,
 	}
 	hash := "some-hash"
 	modifiedTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	err := sendToWorker(ctx, config, mockRecord, hash, modifiedTime)
+	err := sendToWorker(ctx, config, item, hash, modifiedTime)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -61,41 +61,53 @@ func TestImporterWorker(t *testing.T) {
 		Publisher: mockPublisher,
 	}
 	ctx := t.Context()
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 
 	// Test 1: JSON format
-	ch <- mockSourceRecord{
-		MockFormat:           RecordFormatJSON,
-		DataToRead:           []byte(`{"id": "CVE-2023-1234", "modified": "2023-01-01T00:00:00Z"}`),
-		MockSourceRepository: "repo1",
-		MockSourcePath:       "1.json",
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte(`{"id": "CVE-2023-1234", "modified": "2023-01-01T00:00:00Z"}`),
+		},
+		Format:           RecordFormatJSON,
+		SourceRepository: "repo1",
+		SourcePath:       "1.json",
 	}
 
 	// Test 2: YAML format
-	ch <- mockSourceRecord{
-		MockFormat:           RecordFormatYAML,
-		DataToRead:           []byte("id: CVE-2023-1235\nmodified: 2023-01-02T00:00:00Z\n"),
-		MockSourceRepository: "repo2",
-		MockSourcePath:       "2.yaml",
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte("id: CVE-2023-1235\nmodified: 2023-01-02T00:00:00Z\n"),
+		},
+		Format:           RecordFormatYAML,
+		SourceRepository: "repo2",
+		SourcePath:       "2.yaml",
 	}
 
 	// Test 3: KeyPath extraction
-	ch <- mockSourceRecord{
-		MockFormat:           RecordFormatJSON,
-		MockKeyPath:          "data",
-		DataToRead:           []byte(`{"data": {"id": "CVE-2023-1236", "modified": "2023-01-03T00:00:00Z"}}`),
-		MockSourceRepository: "repo3",
-		MockSourcePath:       "3.json",
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte(`{"data": {"id": "CVE-2023-1236", "modified": "2023-01-03T00:00:00Z"}}`),
+		},
+		Format:           RecordFormatJSON,
+		KeyPath:          "data",
+		SourceRepository: "repo3",
+		SourcePath:       "3.json",
 	}
 
 	// Test 4: Skip older record
-	ch <- mockSourceRecord{
-		MockFormat:           RecordFormatJSON,
-		DataToRead:           []byte(`{"id": "CVE-2023-1237", "modified": "2023-01-04T00:00:00Z"}`),
-		MockLastUpdated:      time.Date(2023, 1, 5, 0, 0, 0, 0, time.UTC),
-		MockHasUpdateTime:    true,
-		MockSourceRepository: "repo4",
-		MockSourcePath:       "4.json",
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte(`{"id": "CVE-2023-1237", "modified": "2023-01-04T00:00:00Z"}`),
+		},
+		Format:           RecordFormatJSON,
+		LastUpdated:      time.Date(2023, 1, 5, 0, 0, 0, 0, time.UTC),
+		HasLastUpdated:   true,
+		SourceRepository: "repo4",
+		SourcePath:       "4.json",
 	}
 	close(ch)
 

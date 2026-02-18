@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,10 +20,18 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/api/option"
 )
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
+	ctx, span := otel.Tracer("importer").Start(context.Background(), "importer",
+		trace.WithAttributes(attribute.Float64("override_sample_rate", importerSampleRate())))
+	defer span.End()
 
 	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation. "+
 		"Note: this only applies to SourceRepositories with strict_validation=true")
@@ -35,7 +44,7 @@ func main() {
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
-		logger.Fatal("GOOGLE_CLOUD_PROJECT environment variable is not set")
+		logger.FatalContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
 	}
 
 	config := importer.Config{
@@ -43,6 +52,7 @@ func main() {
 		DeleteThreshold:  *deleteThresholdPct,
 		NumWorkers:       *numWorkers,
 		GitWorkDir:       filepath.Join(*workDir, "sources"),
+		SampleRate:       vulnerabilitySampleRate(),
 	}
 
 	httpClient := retryablehttp.NewClient()
@@ -52,12 +62,12 @@ func main() {
 	httpClient.Logger = importer.RetryableHTTPLeveledLogger{}
 	config.HTTPClient = httpClient.StandardClient()
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	datastoreClient, err := datastore.NewClient(ctx, project)
 	if err != nil {
-		logger.Fatal("Failed to create datastore client", slog.Any("error", err))
+		logger.FatalContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 	}
 	config.SourceRepoStore = db.NewSourceRepositoryStore(datastoreClient)
 	// Needed for deletions only
@@ -65,23 +75,48 @@ func main() {
 
 	psClient, err := pubsub.NewClient(ctx, project)
 	if err != nil {
-		logger.Fatal("Failed to create pubsub client", slog.Any("error", err))
+		logger.FatalContext(ctx, "Failed to create pubsub client", slog.Any("error", err))
 	}
 	config.Publisher = &clients.GCPPublisher{Publisher: psClient.Publisher(importer.TasksTopic)}
 
-	storageClient, err := storage.NewClient(ctx)
+	// We are posssibly reading a lot of vulnerabilities from GCS, so disable telemetry (disables trace spans).
+	storageClient, err := storage.NewClient(ctx, option.WithTelemetryDisabled())
 	if err != nil {
-		logger.Fatal("Failed to create GCS client", slog.Any("error", err))
+		logger.FatalContext(ctx, "Failed to create GCS client", slog.Any("error", err))
 	}
 	config.GCSProvider = clients.NewGCSStorageProvider(storageClient)
 
 	if *runDelete {
 		if err := importer.RunDeletions(ctx, config); err != nil {
-			logger.Fatal("Importer-deleter failed", slog.Any("error", err))
+			logger.FatalContext(ctx, "Importer-deleter failed", slog.Any("error", err))
 		}
 	} else {
 		if err := importer.Run(ctx, config); err != nil {
-			logger.Fatal("Importer failed", slog.Any("error", err))
+			logger.FatalContext(ctx, "Importer failed", slog.Any("error", err))
 		}
 	}
+}
+
+// importerSampleRate returns the sample rate for the importer (not the individual vulnerability entries).
+// It is set to 0.05 (5%) by default, but can be overridden by the
+// IMPORT_TRACE_SAMPLE_RATE environment variable.
+func importerSampleRate() float64 {
+	rate := 0.05
+	if val := os.Getenv("IMPORT_TRACE_SAMPLE_RATE"); val != "" {
+		rate, _ = strconv.ParseFloat(val, 64)
+	}
+
+	return rate
+}
+
+// vulnerabilitySampleRate returns the sample rate for individual vulnerability entries.
+// It is set to 0.05 (5%) by default, but can be overridden by the
+// TRACE_SAMPLE_RATE environment variable.
+func vulnerabilitySampleRate() float64 {
+	rate := 0.05
+	if val := os.Getenv("TRACE_SAMPLE_RATE"); val != "" {
+		rate, _ = strconv.ParseFloat(val, 64)
+	}
+
+	return rate
 }

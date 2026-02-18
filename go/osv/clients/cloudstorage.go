@@ -50,6 +50,8 @@ type Attrs struct {
 	CustomTime time.Time
 	// CRC32C is the CRC32 checksum of the object, using the Castagnoli93 polynomial.
 	CRC32C uint32
+	// Updated is the time the object was last updated.
+	Updated time.Time
 }
 
 // Object represents a storage object and its metadata.

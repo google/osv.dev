@@ -16,23 +16,14 @@ import (
 )
 
 type restSourceRecord struct {
-	cl               *http.Client
-	urlBase          string
-	urlPath          string
-	keyPath          string
-	hasUpdateTime    bool
-	lastUpdated      time.Time
-	sourceRepository string
-	strict           bool
-	isDeleted        bool
+	cl      *http.Client
+	urlBase string
+	urlPath string
 }
 
 var _ SourceRecord = restSourceRecord{}
 
 func (r restSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
-	if r.isDeleted {
-		return nil, errors.New("cannot open a deleted record")
-	}
 	u, err := url.JoinPath(r.urlBase, r.urlPath)
 	if err != nil {
 		return nil, err
@@ -50,43 +41,11 @@ func (r restSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func (r restSourceRecord) KeyPath() string {
-	return r.keyPath
-}
-
-func (r restSourceRecord) Format() RecordFormat {
-	return RecordFormatJSON
-}
-
-func (r restSourceRecord) LastUpdated() (time.Time, bool) {
-	return r.lastUpdated, r.hasUpdateTime
-}
-
-func (r restSourceRecord) SourceRepository() string {
-	return r.sourceRepository
-}
-
-func (r restSourceRecord) SourcePath() string {
-	return r.urlPath
-}
-
-func (r restSourceRecord) ShouldSendModifiedTime() bool {
-	return r.hasUpdateTime
-}
-
-func (r restSourceRecord) IsDeleted() bool {
-	return r.isDeleted
-}
-
-func (r restSourceRecord) Strictness() bool {
-	return r.strict
-}
-
-func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
+func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST import")
 	}
-	logger.Info("Importing REST source repository",
+	logger.InfoContext(ctx, "Importing REST source repository",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
@@ -113,18 +72,18 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		lastModified := resp.Header.Get("Last-Modified")
 		lastModTime, err = time.Parse(time.RFC1123, lastModified)
 		if err == nil && lastModTime.Before(lastUpdated) {
-			logger.Info("No changes since last update.",
+			logger.InfoContext(ctx, "No changes since last update.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
 
 			return nil
 		}
 		if lastModified == "" {
-			logger.Warn("No Last-Modified header found.",
+			logger.WarnContext(ctx, "No Last-Modified header found.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
 		} else if err != nil {
-			logger.Warn("Failed to parse Last-Modified header.",
+			logger.WarnContext(ctx, "Failed to parse Last-Modified header.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL),
 				slog.Any("error", err))
@@ -142,19 +101,19 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Failed to fetch REST API", slog.String("source", sourceRepo.Name), slog.Int("status_code", resp.StatusCode), slog.String("url", sourceRepo.REST.URL))
+		logger.ErrorContext(ctx, "Failed to fetch REST API", slog.String("source", sourceRepo.Name), slog.Int("status_code", resp.StatusCode), slog.String("url", sourceRepo.REST.URL))
 
 		return fmt.Errorf("failed to fetch REST API: %d for %s", resp.StatusCode, sourceRepo.REST.URL)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Failed to read REST API response", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to read REST API response", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.Any("error", err))
 
 		return err
 	}
 	result := gjson.ParseBytes(data)
 	if !result.IsArray() {
-		logger.Error("REST API response is not an array", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+		logger.ErrorContext(ctx, "REST API response is not an array", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
 		return fmt.Errorf("REST API response is not an array for %s", sourceRepo.REST.URL)
 	}
@@ -162,19 +121,19 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	result.ForEach(func(_, vuln gjson.Result) bool {
 		id := vuln.Get("id")
 		if !id.Exists() {
-			logger.Error("Vulnerability missing id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+			logger.ErrorContext(ctx, "Vulnerability missing id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
 			return true
 		}
 		modified := vuln.Get("modified")
 		if !modified.Exists() {
-			logger.Error("Vulnerability missing modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+			logger.ErrorContext(ctx, "Vulnerability missing modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
 
 			return true
 		}
 		mod, err := time.Parse(time.RFC3339, modified.String())
 		if err != nil {
-			logger.Error("Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.Any("error", err))
+			logger.ErrorContext(ctx, "Failed to parse modified", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()), slog.Any("error", err))
 
 			return true
 		}
@@ -187,15 +146,22 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			return true
 		}
-		ch <- restSourceRecord{
-			cl:               config.HTTPClient,
-			urlBase:          sourceRepo.Link,
-			urlPath:          id.String() + sourceRepo.Extension,
-			keyPath:          sourceRepo.KeyPath,
-			hasUpdateTime:    hasUpdateTime,
-			lastUpdated:      lastUpdated,
-			sourceRepository: sourceRepo.Name,
-			strict:           sourceRepo.Strictness,
+		path := id.String() + sourceRepo.Extension
+		ch <- WorkItem{
+			Context: ctx,
+			SourceRecord: restSourceRecord{
+				cl:      config.HTTPClient,
+				urlBase: sourceRepo.Link,
+				urlPath: path,
+			},
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             path,
+			LastUpdated:            lastUpdated,
+			HasLastUpdated:         hasUpdateTime,
+			Format:                 RecordFormatJSON,
+			KeyPath:                sourceRepo.KeyPath,
+			Strict:                 sourceRepo.Strictness,
+			ShouldSendModifiedTime: hasUpdateTime,
 		}
 
 		return true
@@ -216,23 +182,23 @@ func handleImportREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	sourceRepo.REST.LastUpdated = &timeToUpdate
 	sourceRepo.REST.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		logger.ErrorContext(ctx, "Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 
 		return err
 	}
-	logger.Info("Finished importing REST source repository",
+	logger.InfoContext(ctx, "Finished importing REST source repository",
 		slog.String("source", sourceRepo.Name),
 		slog.String("url", sourceRepo.REST.URL))
 
 	return nil
 }
 
-func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
+func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST deletion")
 	}
 
-	logger.Info("Processing REST deletions",
+	logger.InfoContext(ctx, "Processing REST deletions",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
 
 	// Fetch current IDs from REST API
@@ -277,7 +243,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 
 	if len(vulnsInDatastore) == 0 {
-		logger.Info("No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
+		logger.InfoContext(ctx, "No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
 
 		return nil
 	}
@@ -293,7 +259,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 
 	if len(toDelete) == 0 {
-		logger.Info("No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
+		logger.InfoContext(ctx, "No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
 
 		return nil
 	}
@@ -305,7 +271,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config
 	}
 	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
 	if percentage >= threshold {
-		logger.Error("Cowardly refusing to delete missing records (threshold exceeded)",
+		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
 			slog.Int("total", len(vulnsInDatastore)),
@@ -317,10 +283,16 @@ func handleDeleteREST(ctx context.Context, ch chan<- SourceRecord, config Config
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		ch <- restSourceRecord{
-			sourceRepository: entry.Source,
-			urlPath:          entry.Path,
-			isDeleted:        true,
+		ch <- WorkItem{
+			Context: ctx,
+			SourceRecord: restSourceRecord{
+				cl:      config.HTTPClient,
+				urlBase: sourceRepo.Link,
+				urlPath: entry.Path,
+			},
+			SourceRepository: entry.Source,
+			SourcePath:       entry.Path,
+			IsDeleted:        true,
 		}
 	}
 

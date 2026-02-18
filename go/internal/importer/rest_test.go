@@ -87,7 +87,7 @@ func TestHandleImportREST(t *testing.T) {
 		},
 	}
 
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 
 	// Ensure that Last-Modified logic allows the fetching
 	lastModifiedHeader = "Mon, 02 Jan 2023 00:00:00 GMT" // Newer than lastUpdated
@@ -99,7 +99,7 @@ func TestHandleImportREST(t *testing.T) {
 
 	records := make([]restSourceRecord, 0, 10)
 	for r := range ch {
-		records = append(records, r.(restSourceRecord))
+		records = append(records, r.SourceRecord.(restSourceRecord))
 	}
 
 	// We expect 1 record: CVE-NEWER
@@ -142,7 +142,7 @@ func TestHandleImportREST_HEAD_NoChanges(t *testing.T) {
 		},
 	}
 
-	ch := make(chan SourceRecord, 10)
+	ch := make(chan WorkItem, 10)
 	err := handleImportREST(ctx, ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

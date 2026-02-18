@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"iter"
-	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 )
@@ -45,18 +44,8 @@ func (m *mockVulnerabilityStore) ListBySource(_ context.Context, source string, 
 }
 
 type mockSourceRecord struct {
-	MockKeyPath          string
-	MockFormat           RecordFormat
-	MockLastUpdated      time.Time
-	MockHasUpdateTime    bool
-	MockSourceRepository string
-	MockSourcePath       string
-	MockSendModifiedTime bool
-	MockStrictness       bool
-
-	DataToRead       []byte
-	ReadError        error
-	ShouldSendUpdate bool
+	DataToRead []byte
+	ReadError  error
 }
 
 func (m mockSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
@@ -65,36 +54,4 @@ func (m mockSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
 	}
 
 	return io.NopCloser(bytes.NewReader(m.DataToRead)), nil
-}
-
-func (m mockSourceRecord) KeyPath() string {
-	return m.MockKeyPath
-}
-
-func (m mockSourceRecord) Format() RecordFormat {
-	return m.MockFormat
-}
-
-func (m mockSourceRecord) LastUpdated() (time.Time, bool) {
-	return m.MockLastUpdated, m.MockHasUpdateTime
-}
-
-func (m mockSourceRecord) SourceRepository() string {
-	return m.MockSourceRepository
-}
-
-func (m mockSourceRecord) SourcePath() string {
-	return m.MockSourcePath
-}
-
-func (m mockSourceRecord) ShouldSendModifiedTime() bool {
-	return m.MockSendModifiedTime
-}
-
-func (m mockSourceRecord) IsDeleted() bool {
-	return m.ShouldSendUpdate && m.DataToRead == nil // Simple heuristic for mock
-}
-
-func (m mockSourceRecord) Strictness() bool {
-	return m.MockStrictness
 }

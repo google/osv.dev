@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
@@ -25,23 +24,14 @@ import (
 )
 
 type gitSourceRecord struct {
-	repo             sharedRepo
-	commit           *object.Commit
-	path             string
-	keyPath          string
-	format           RecordFormat
-	sourceRepository string
-	shouldSendUpdate bool
-	isDeleted        bool
-	strict           bool
+	repo   sharedRepo
+	commit *object.Commit
+	path   string
 }
 
 var _ SourceRecord = gitSourceRecord{}
 
 func (g gitSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
-	if g.isDeleted {
-		return nil, errors.New("cannot open a deleted record")
-	}
 	g.repo.mu.Lock()
 	defer g.repo.mu.Unlock()
 	f, err := g.commit.File(g.path)
@@ -61,38 +51,6 @@ func (g gitSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(content)), nil
 }
 
-func (g gitSourceRecord) KeyPath() string {
-	return g.keyPath
-}
-
-func (g gitSourceRecord) Format() RecordFormat {
-	return g.format
-}
-
-func (g gitSourceRecord) LastUpdated() (time.Time, bool) {
-	return time.Time{}, false
-}
-
-func (g gitSourceRecord) SourceRepository() string {
-	return g.sourceRepository
-}
-
-func (g gitSourceRecord) SourcePath() string {
-	return g.path
-}
-
-func (g gitSourceRecord) ShouldSendModifiedTime() bool {
-	return g.shouldSendUpdate
-}
-
-func (g gitSourceRecord) IsDeleted() bool {
-	return g.isDeleted
-}
-
-func (g gitSourceRecord) Strictness() bool {
-	return g.strict
-}
-
 // Some sourceRepository entries share the same git repository (e.g. ubuntu).
 // We use singleflight.Group to share the repository between them.
 var repoGroup singleflight.Group
@@ -103,11 +61,11 @@ type sharedRepo struct {
 	mu *sync.Mutex
 }
 
-func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
+func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git import")
 	}
-	logger.Info("Importing git source repository",
+	logger.InfoContext(ctx, "Importing git source repository",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
@@ -136,7 +94,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		}, nil
 	})
 	if err != nil {
-		logger.Error("Failed to clone git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		logger.ErrorContext(ctx, "Failed to clone git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	repo := repoInterface.(sharedRepo)
@@ -151,7 +109,7 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 
 	changedFiles, commit, err := changedFiles(ctx, repo, sourceRepo)
 	if err != nil {
-		logger.Error("Failed to get changed files", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		logger.ErrorContext(ctx, "Failed to get changed files", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
 	filterPath := func(p string) string {
@@ -181,34 +139,46 @@ func handleImportGit(ctx context.Context, ch chan<- SourceRecord, config Config,
 		}
 		if to == "" {
 			// Object was deleted / moved to ignored
-			ch <- gitSourceRecord{
-				sourceRepository: sourceRepo.Name,
-				path:             from,
-				isDeleted:        true,
-				strict:           sourceRepo.Strictness,
+			ch <- WorkItem{
+				Context: ctx,
+				SourceRecord: gitSourceRecord{
+					path: from,
+					repo: repo,
+				},
+				SourceRepository:       sourceRepo.Name,
+				SourcePath:             from,
+				IsDeleted:              true,
+				Strict:                 sourceRepo.Strictness,
+				Format:                 format,
+				KeyPath:                sourceRepo.KeyPath,
+				ShouldSendModifiedTime: shouldSendUpdate,
 			}
 
 			continue
 		}
 		// object created/modified - send to channel
-		ch <- gitSourceRecord{
-			repo:             repo,
-			commit:           commit,
-			path:             to,
-			keyPath:          sourceRepo.KeyPath,
-			format:           format,
-			sourceRepository: sourceRepo.Name,
-			shouldSendUpdate: shouldSendUpdate,
-			strict:           sourceRepo.Strictness,
+		ch <- WorkItem{
+			Context: ctx,
+			SourceRecord: gitSourceRecord{
+				repo:   repo,
+				commit: commit,
+				path:   to,
+			},
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             to,
+			Format:                 format,
+			KeyPath:                sourceRepo.KeyPath,
+			ShouldSendModifiedTime: shouldSendUpdate,
+			Strict:                 sourceRepo.Strictness,
 		}
 	}
 
 	sourceRepo.Git.LastSyncedCommit = commit.Hash.String()
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		logger.ErrorContext(ctx, "Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
-	logger.Info("Finished importing git source repository",
+	logger.InfoContext(ctx, "Finished importing git source repository",
 		slog.String("source", sourceRepo.Name),
 		slog.String("url", sourceRepo.Git.URL))
 

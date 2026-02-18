@@ -18,6 +18,7 @@ type mockObject struct {
 	generation int64
 	customTime time.Time
 	crc32c     uint32
+	updated    time.Time
 }
 
 // crc32Table uses the Castagnoli CRC32 polynomial for checksums to match GCS.
@@ -68,6 +69,7 @@ func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.
 		Generation: obj.generation,
 		CustomTime: obj.customTime,
 		CRC32C:     obj.crc32c,
+		Updated:    obj.updated,
 	}, nil
 }
 
@@ -109,6 +111,7 @@ func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, o
 		generation: newGeneration,
 		customTime: customTime,
 		crc32c:     crc32.Checksum(data, crc32Table),
+		updated:    time.Now(),
 	}
 
 	return nil
@@ -140,6 +143,7 @@ func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clien
 					Generation: obj.generation,
 					CustomTime: obj.customTime,
 					CRC32C:     obj.crc32c,
+					Updated:    obj.updated,
 				},
 			}
 			if !yield(o, nil) {

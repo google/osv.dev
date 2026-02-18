@@ -62,13 +62,16 @@ func TestImporterWorker_StrictValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockPublisher.Messages = nil // Reset
 
-			ch := make(chan SourceRecord, 1)
+			ch := make(chan WorkItem, 1)
 			record := mockSourceRecord{
-				MockStrictness: true,
-				MockFormat:     tt.format,
-				DataToRead:     []byte(tt.data),
+				DataToRead: []byte(tt.data),
 			}
-			ch <- record
+			ch <- WorkItem{
+				Context:      t.Context(),
+				SourceRecord: record,
+				Strict:       true,
+				Format:       tt.format,
+			}
 			close(ch)
 
 			importerWorker(t.Context(), ch, config)
@@ -93,14 +96,16 @@ func TestImporterWorker_NonStrictResilience(t *testing.T) {
 	// Unknown fields should be ignored when non-strict
 	data := `{"id": "OSV-2023-127", "modified": "2023-01-01T00:00:00Z", "unknown_field": "resilience"}`
 	record := mockSourceRecord{
-		MockFormat:     RecordFormatJSON,
-		MockStrictness: false,
-		DataToRead:     []byte(data),
+		DataToRead: []byte(data),
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
-	ch := make(chan SourceRecord, 1)
-	ch <- record
+	ch := make(chan WorkItem, 1)
+	ch <- WorkItem{
+		Context:      ctx,
+		SourceRecord: record,
+		Format:       RecordFormatJSON,
+	}
 	close(ch)
 
 	importerWorker(ctx, ch, config)

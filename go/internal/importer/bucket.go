@@ -16,23 +16,13 @@ import (
 )
 
 type bucketSourceRecord struct {
-	bucket           clients.CloudStorage
-	objectPath       string
-	keyPath          string
-	hasUpdateTime    bool
-	lastUpdated      time.Time
-	format           RecordFormat
-	sourceRepository string
-	strict           bool
-	isDeleted        bool
+	bucket     clients.CloudStorage
+	objectPath string
 }
 
 var _ SourceRecord = bucketSourceRecord{}
 
 func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
-	if b.isDeleted {
-		return nil, errors.New("cannot open a deleted record")
-	}
 	data, err := b.bucket.ReadObject(ctx, b.objectPath)
 	if err != nil {
 		return nil, err
@@ -41,43 +31,11 @@ func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
-func (b bucketSourceRecord) KeyPath() string {
-	return b.keyPath
-}
-
-func (b bucketSourceRecord) Format() RecordFormat {
-	return b.format
-}
-
-func (b bucketSourceRecord) LastUpdated() (time.Time, bool) {
-	return b.lastUpdated, b.hasUpdateTime
-}
-
-func (b bucketSourceRecord) SourceRepository() string {
-	return b.sourceRepository
-}
-
-func (b bucketSourceRecord) SourcePath() string {
-	return b.objectPath
-}
-
-func (b bucketSourceRecord) ShouldSendModifiedTime() bool {
-	return b.hasUpdateTime
-}
-
-func (b bucketSourceRecord) IsDeleted() bool {
-	return b.isDeleted
-}
-
-func (b bucketSourceRecord) Strictness() bool {
-	return b.strict
-}
-
-func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
+func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket import")
 	}
-	logger.Info("Importing bucket source repository",
+	logger.InfoContext(ctx, "Importing bucket source repository",
 		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
@@ -100,7 +58,7 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 			return err
 		}
 		if hasUpdateTime {
-			if obj.Attrs.CustomTime.Before(lastUpdated) {
+			if obj.Attrs.Updated.Before(lastUpdated) {
 				continue
 			}
 		}
@@ -111,37 +69,42 @@ func handleImportBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 		if shouldIgnore(base, sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			continue
 		}
-		ch <- bucketSourceRecord{
-			bucket:           bucket,
-			objectPath:       obj.Name,
-			lastUpdated:      lastUpdated,
-			hasUpdateTime:    hasUpdateTime,
-			format:           format,
-			keyPath:          sourceRepo.KeyPath,
-			sourceRepository: sourceRepo.Name,
-			strict:           sourceRepo.Strictness,
+		ch <- WorkItem{
+			Context: ctx,
+			SourceRecord: bucketSourceRecord{
+				bucket:     bucket,
+				objectPath: obj.Name,
+			},
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             obj.Name,
+			LastUpdated:            lastUpdated,
+			HasLastUpdated:         hasUpdateTime,
+			Format:                 format,
+			KeyPath:                sourceRepo.KeyPath,
+			Strict:                 sourceRepo.Strictness,
+			ShouldSendModifiedTime: hasUpdateTime,
 		}
 	}
 
 	sourceRepo.Bucket.LastUpdated = &timeOfRun
 	sourceRepo.Bucket.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
-		logger.Error("Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		logger.ErrorContext(ctx, "Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		return err
 	}
-	logger.Info("Finished importing bucket source repository",
+	logger.InfoContext(ctx, "Finished importing bucket source repository",
 		slog.String("source", sourceRepo.Name),
 		slog.String("bucket", sourceRepo.Bucket.Name))
 
 	return nil
 }
 
-func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Config, sourceRepo *models.SourceRepository) error {
+func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket deletion")
 	}
 
-	logger.Info("Processing bucket deletions",
+	logger.InfoContext(ctx, "Processing bucket deletions",
 		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
 
 	// Get all objects in the bucket
@@ -167,7 +130,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	}
 
 	if len(vulnsInDatastore) == 0 {
-		logger.Info("No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
+		logger.InfoContext(ctx, "No vulnerabilities found in Datastore for source", slog.String("source", sourceRepo.Name))
 		return nil
 	}
 
@@ -180,7 +143,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	}
 
 	if len(toDelete) == 0 {
-		logger.Info("No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
+		logger.InfoContext(ctx, "No vulnerabilities to delete", slog.String("source", sourceRepo.Name))
 		return nil
 	}
 
@@ -191,7 +154,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 	}
 	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
 	if percentage >= threshold {
-		logger.Error("Cowardly refusing to delete missing records (threshold exceeded)",
+		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
 			slog.Int("total", len(vulnsInDatastore)),
@@ -203,10 +166,15 @@ func handleDeleteBucket(ctx context.Context, ch chan<- SourceRecord, config Conf
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		ch <- bucketSourceRecord{
-			sourceRepository: entry.Source,
-			objectPath:       entry.Path,
-			isDeleted:        true,
+		ch <- WorkItem{
+			Context: ctx,
+			SourceRecord: bucketSourceRecord{
+				bucket:     bucket,
+				objectPath: entry.Path,
+			},
+			SourceRepository: entry.Source,
+			SourcePath:       entry.Path,
+			IsDeleted:        true,
 		}
 	}
 

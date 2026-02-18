@@ -89,6 +89,7 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 		Generation: attrs.Generation,
 		CustomTime: attrs.CustomTime,
 		CRC32C:     attrs.CRC32C,
+		Updated:    attrs.Updated,
 	}, nil
 }
 

@@ -46,6 +46,7 @@ var (
 	persistancePath = path.Join(defaultGitterWorkDir, persistanceFileName)
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
+	semaphore       chan struct{}
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -205,7 +206,10 @@ func main() {
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
+	concurrentLimit := flag.Int("concurrent_limit", 100, "Concurrent limit for unique requests")
 	flag.Parse()
+
+	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistancePath = path.Join(*workDir, persistanceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
@@ -296,6 +300,10 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	fileData, err, _ := g.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return fetchBlob(ctx, url, forceUpdate)
 	})
 

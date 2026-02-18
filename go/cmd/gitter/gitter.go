@@ -138,6 +138,7 @@ func isLocalRequest(r *http.Request) bool {
 
 func getRepoDirName(url string) string {
 	base := path.Base(url)
+	base = filepath.Base(base)
 	base = strings.TrimSuffix(base, ".git")
 	hash := sha256.Sum256([]byte(url))
 
@@ -160,7 +161,7 @@ func isIndexLockError(err error) bool {
 	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
 }
 
-func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
+func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	logger.Info("Starting fetch repo", slog.String("url", url))
 	start := time.Now()
 
@@ -223,7 +224,7 @@ func fetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	return nil
 }
 
-func archiveRepo(ctx context.Context, url string) ([]byte, error) {
+func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
@@ -360,7 +361,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
 	_, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, fetchRepo(ctx, url, forceUpdate)
+		return nil, FetchRepo(ctx, url, forceUpdate)
 	})
 	if err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
@@ -377,7 +378,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// Archive repo
 	//nolint:contextcheck // I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
-		return archiveRepo(ctx, url)
+		return ArchiveRepo(ctx, url)
 	})
 	if err != nil {
 		logger.Error("Error archiving blob", slog.String("url", url), slog.Any("error", err))
@@ -422,7 +423,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, fetchRepo(ctx, url, body.ForceUpdate)
+		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
@@ -514,7 +515,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, fetchRepo(ctx, url, body.ForceUpdate)
+		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {

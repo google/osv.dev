@@ -144,13 +144,13 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
                   "introduced": "0"
                 },
                 {
-                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
+                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
                 }
               ]
             }
@@ -164,6 +164,53 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-1055",
+      "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2023-02-27T22:15:09.990Z",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "bf8929fbfb623703cf1522b372cab80002c17c95"
+                }
+              ]
+            }
+          ],
+          "versions": 202,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
         }
       ]
     },
@@ -262,6 +309,434 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-35074",
+      "details": "The issue was addressed with improved memory handling. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2023-09-27T15:18:52.800Z",
+      "related": [
+        "SUSE-SU-2023:4209-1",
+        "SUSE-SU-2023:4211-1",
+        "SUSE-SU-2023:4294-1",
+        "SUSE-SU-2023:4339-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202401-33"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213936"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213937"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213938"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213940"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213941"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
+                }
+              ]
+            }
+          ],
+          "versions": 180,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-41074",
+      "details": "The issue was addressed with improved checks. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2023-09-27T15:19:26.570Z",
+      "related": [
+        "CGA-gq9c-f99g-p3pc",
+        "MGASA-2024-0148",
+        "SUSE-SU-2023:4209-1",
+        "SUSE-SU-2023:4211-1",
+        "SUSE-SU-2023:4294-1",
+        "SUSE-SU-2023:4339-1",
+        "SUSE-SU-2023:4978-1",
+        "SUSE-SU-2024:0002-1",
+        "SUSE-SU-2024:0003-1",
+        "SUSE-SU-2024:0004-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202401-33"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213936"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213937"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213938"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213940"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/en-us/HT213941"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.debian.org/security/2023/dsa-5527"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
+                }
+              ]
+            }
+          ],
+          "versions": 180,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2023-51767",
+      "details": "OpenSSH through 10.0, when common types of DRAM are used, might allow row hammer attacks (for authentication bypass) because the integer value of authenticated in mm_answer_authpassword does not resist flips of a single bit. NOTE: this is applicable to a certain threat model of attacker-victim co-location in which the attacker has user privileges. NOTE: this is disputed by the Supplier, who states \"we do not consider it to be the application's responsibility to defend against platform architectural weaknesses.\"",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2023-12-24T07:15:07.410Z",
+      "related": ["CGA-87mg-824v-5jqp"],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/auth-passwd.c#L77"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/monitor.c#L878"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.openwall.com/lists/oss-security/2025/09/22/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/2"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/3"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/7"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/2"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/6"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/2"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/2"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/3"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/6"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/7"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/28/7"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/6"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/1"
+        },
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://access.redhat.com/security/cve/CVE-2023-51767"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240125-0006/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://ubuntu.com/security/CVE-2023-51767"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://arxiv.org/abs/2309.02545"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
+                }
+              ]
+            }
+          ],
+          "versions": 181,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -2344,10 +2819,16 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "76f83f0db23846e254d940ec7"
+                },
+                {
                   "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
                 },
                 {
-                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
+                  "fixed": "76f83f0db23846e254d940ec7"
                 }
               ]
             }

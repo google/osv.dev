@@ -122,6 +122,7 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 	if os.Getenv("DEBUG_LOG") != "" {
 		level = slog.LevelDebug
 	}
+	
 	return &slog.HandlerOptions{
 		AddSource: true,
 		Level:     level,

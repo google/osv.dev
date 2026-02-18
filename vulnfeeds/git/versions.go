@@ -23,21 +23,26 @@ import (
 	"github.com/google/osv/vulnfeeds/models"
 )
 
-var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
+var (
+	versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
+	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
+	validVersion     = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
+	validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
+)
 
 // findFuzzyCommit takes an already normalized version and the mapping of repo tags to
 // normalized tags and commits, and performs fuzzy matching to find a commit hash.
 func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]NormalizedTag) (string, bool) {
 	candidateTags := []string{} // the subset of normalizedTags tags that might be appropriate to use as a fuzzy match for normalizedVersion.
-	// Keep in sync with the regex in models.NormalizeVersion()
-	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for k := range normalizedTags {
+	normalizedVersionMatchesText := validVersionText.MatchString(normalizedVersion)
+
+	for k, v := range normalizedTags {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
-		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
+		if (v.MatchesVersionText && normalizedVersionMatchesText) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
 		}
-		if (!validVersionText.MatchString(k) && !validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
+		if (!v.MatchesVersionText && !normalizedVersionMatchesText) && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
 		}
 	}
@@ -103,9 +108,6 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 	if strings.HasPrefix(version, ".") {
 		version = "0" + version
 	}
-	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
-	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
-	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 	components := validVersion.FindAllString(version, -1)
 	if components == nil {
 		return "", fmt.Errorf("%q is not a supported version", version)

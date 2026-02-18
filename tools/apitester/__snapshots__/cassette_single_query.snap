@@ -289,13 +289,13 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "repo": "https://github.com/behdad/harfbuzz",
               "events": [
                 {
                   "introduced": "0"
                 },
                 {
-                  "fixed": "85be877925ddbf34f74a1229f3ca1716bb6170dc"
+                  "last_affected": "afcae83a064843d71d47624bc162e121cc56c08b"
                 }
               ]
             }

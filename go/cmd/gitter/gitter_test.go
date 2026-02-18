@@ -95,6 +95,9 @@ func setupTest(t *testing.T) {
 	lastFetch = make(map[string]time.Time)
 	lastFetchMu.Unlock()
 
+	// Initialize semaphore for tests
+	semaphore = make(chan struct{}, 100)
+
 	// Stop any existing timer
 	if saveTimer != nil {
 		saveTimer.Stop()

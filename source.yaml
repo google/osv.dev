@@ -101,6 +101,21 @@
   editable: False
   strict_validation: False
 
+- name: 'root'
+  versions_from_repo: False
+  type: 2
+  rest_api_url: 'https://api.root.io/external/osv/all.json'
+  ignore_patterns: ['^(?!ROOT-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ROOT-']
+  ignore_git: True
+  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  link: 'https://api.root.io/external/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'chainguard'
   versions_from_repo: False
   rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
@@ -115,6 +130,20 @@
   human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
   editable: False
   strict_validation: False
+
+- name: 'cleanstart'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!CLEANSTART-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/cleanstart-dev/cleanstart-security-advisories'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CLEANSTART-']
+  ignore_git: True
+  link: 'https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/'
+  editable: False
+  strict_validation: True
 
 - name: 'curl'
   versions_from_repo: False

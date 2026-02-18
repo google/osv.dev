@@ -29,16 +29,19 @@ spec:
           - "--port=8888"
           - "--work_dir=/work/gitter"
           - "--fetch_timeout=1h"
+        env:
+        - name: GOMEMLIMIT
+          value: "100GiB"
         volumeMounts:
         - mountPath: /work
           name: disk-data
         resources:
           requests:
             cpu: "28"
-            memory: "200Gi"
+            memory: "250G"
           limits:
             cpu: "28"
-            memory: "200Gi"
+            memory: "250G"
       volumes:
       - name: disk-data
         persistentVolumeClaim:

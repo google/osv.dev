@@ -15,8 +15,6 @@ import (
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func loadTestData2(cveName string) models.Vulnerability {
@@ -689,17 +687,17 @@ func TestExtractGitCommit(t *testing.T) {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: extractGitAffectedCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Skipf("test %q: extractGitAffectedCommit for %q (%v) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: extractGitAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Logf("test %q: extractGitAffectedCommit(%q, %v) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
-				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
 			if err == nil && tc.expectFailure {
-				t.Errorf("test %q: extractGitAffectedCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
 			}
 			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
 				t.Errorf("test %q: extractGitAffectedCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
@@ -1640,65 +1638,6 @@ func TestVPRepoCache_MaybeRemove(t *testing.T) {
 			}
 			if !reflect.DeepEqual(cache.m, tt.wantCache) {
 				t.Errorf("MaybeRemove() have %#v, wanted %#v", cache.m, tt.wantCache)
-			}
-		})
-	}
-}
-
-func TestBuildVersionRange(t *testing.T) {
-	tests := []struct {
-		name    string
-		intro   string
-		lastAff string
-		fixed   string
-		want    *osvschema.Range
-	}{
-		{
-			name:  "intro and fixed",
-			intro: "1.0.0",
-			fixed: "1.0.1",
-			want: &osvschema.Range{
-				Events: []*osvschema.Event{
-					{Introduced: "1.0.0"},
-					{Fixed: "1.0.1"},
-				},
-			},
-		},
-		{
-			name:    "intro and last_affected",
-			intro:   "1.0.0",
-			lastAff: "1.0.0",
-			want: &osvschema.Range{
-				Events: []*osvschema.Event{
-					{Introduced: "1.0.0"},
-					{LastAffected: "1.0.0"},
-				},
-			},
-		},
-		{
-			name:  "only intro",
-			intro: "1.0.0",
-			want: &osvschema.Range{
-				Events: []*osvschema.Event{
-					{Introduced: "1.0.0"},
-				},
-			},
-		},
-		{
-			name: "empty intro",
-			want: &osvschema.Range{
-				Events: []*osvschema.Event{
-					{Introduced: "0"},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := BuildVersionRange(tt.intro, tt.lastAff, tt.fixed)
-			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
-				t.Errorf("cves.BuildVersionRange() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

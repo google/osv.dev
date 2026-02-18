@@ -90,6 +90,7 @@ func TestGitHandler_Integration(t *testing.T) {
 	// but for this simple script we modify package globals.
 	gitStorePath = tmpDir
 	fetchTimeout = time.Minute
+	semaphore = make(chan struct{}, 100)
 	// Ensure lastFetch map is initialized
 	if lastFetch == nil {
 		loadMap()

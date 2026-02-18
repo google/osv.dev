@@ -23,7 +23,10 @@ import (
 	"syscall"
 	"time"
 
+	_ "net/http/pprof" //nolint:gosec // This is a internal only service not public to the internet
+
 	"github.com/google/osv.dev/go/logger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -59,6 +62,7 @@ var (
 	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
+	semaphore       chan struct{}
 )
 
 type Event struct {
@@ -71,7 +75,7 @@ const shutdownTimeout = 10 * time.Second
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
 func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	logger.Debug("Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -81,7 +85,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
-		logger.Debug("SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
 	// Ensure it eventually dies if it ignores SIGINT
@@ -91,13 +95,13 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
-			logger.Warn("Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
 			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
-	logger.Debug("Command completed successfully", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.String("out", string(out)))
+	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.String("out", string(out)))
 
 	return nil
 }
@@ -174,7 +178,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 
 	// Check if we need to fetch
 	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		logger.Info("Fetching git blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("sinceAccessTime", time.Since(accessTime)))
+		logger.InfoContext(ctx, "Fetching git blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
@@ -193,7 +197,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 			if err != nil && isIndexLockError(err) {
 				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
 				// We can remove the file and retry the command
-				logger.Warn("index.lock exists, attempting to remove and retry", slog.String("url", ctx.Value(urlKey).(string)))
+				logger.WarnContext(ctx, "index.lock exists, attempting to remove and retry", slog.String("url", ctx.Value(urlKey).(string)))
 				indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
 				if err := os.Remove(indexLockPath); err != nil {
 					return fmt.Errorf("failed to remove index.lock in %s: %w", repoPath, err)
@@ -237,7 +241,7 @@ func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
 	// We update if archive does not exist OR if it is older than the last fetch
 	stats, err := os.Stat(archivePath)
 	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
-		logger.Info("Archiving git blob", slog.String("url", url))
+		logger.InfoContext(ctx, "Archiving git blob", slog.String("url", ctx.Value(urlKey).(string)))
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
@@ -262,17 +266,21 @@ func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
 }
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
+
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
+	concurrentLimit := flag.Int("concurrent_limit", 100, "Concurrent limit for unique requests")
 	flag.Parse()
+	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
 	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
-		logger.Error("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
-		os.Exit(1)
+		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
 
 	loadLastFetchMap()
@@ -282,7 +290,7 @@ func main() {
 	defer stop()
 
 	for endpoint, handler := range endpointHandlers {
-		http.HandleFunc(endpoint, handler)
+		http.Handle(endpoint, otelhttp.NewHandler(http.HandlerFunc(handler), endpoint))
 	}
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
@@ -342,7 +350,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
-	logger.Info("Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
+	logger.InfoContext(ctx, "Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -361,10 +369,14 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	//nolint:contextcheck // I can't change singleflight's interface
 	_, err, _ := gFetch.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return nil, FetchRepo(ctx, url, forceUpdate)
 	})
 	if err != nil {
-		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 
@@ -378,6 +390,10 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// Archive repo
 	//nolint:contextcheck // I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return ArchiveRepo(ctx, url)
 	})
 	if err != nil {
@@ -392,13 +408,13 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
-		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error copying file", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 
 		return
 	}
 
-	logger.Info("Request completed successfully", slog.String("url", ctx.Value(urlKey).(string)))
+	logger.InfoContext(ctx, "Request completed successfully", slog.String("url", ctx.Value(urlKey).(string)))
 }
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
@@ -423,6 +439,10 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
@@ -441,6 +461,10 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	//nolint:contextcheck // I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {
@@ -515,6 +539,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
@@ -533,6 +561,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	//nolint:contextcheck // I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {

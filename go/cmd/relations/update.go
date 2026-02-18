@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -86,7 +87,7 @@ func (u *Updater) run(ctx context.Context) {
 			// TODO: Parallelize these updates using a worker pool.
 			for id, updates := range allUpdates {
 				// Get the vulnerability from GCS
-				path := id + ".pb"
+				path := fmt.Sprintf("all/pb/%s.pb", id)
 				data, err := u.gcsClient.ReadObject(ctx, path)
 				if err != nil {
 					if errors.Is(err, clients.ErrNotFound) {

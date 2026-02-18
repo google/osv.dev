@@ -209,9 +209,6 @@ func main() {
 	concurrentLimit := flag.Int("concurrent_limit", 100, "Concurrent limit for unique requests")
 	flag.Parse()
 
-	if *concurrentLimit <= 0 {
-		*concurrentLimit = 100
-	}
 	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistancePath = path.Join(*workDir, persistanceFileName)

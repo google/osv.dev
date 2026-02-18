@@ -126,7 +126,7 @@ func isIndexLockError(err error) bool {
 	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
 }
 
-var fetchBlob = func(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
+func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := path.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"

@@ -64,6 +64,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
+
 		return models.NoRepos
 	}
 
@@ -395,6 +396,7 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 			LastAffected: commit.LastAffected,
 		}
 	}
+
 	return nil
 }
 

@@ -551,7 +551,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
-	var commits []models.AffectedCommit //nolint:prealloc 
+	var commits []models.AffectedCommit //nolint:prealloc
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.

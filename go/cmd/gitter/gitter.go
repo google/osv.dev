@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -31,11 +32,12 @@ import (
 )
 
 type contextKey string
-type EventType string
 
 const (
 	urlKey contextKey = "url"
 )
+
+type EventType string
 
 const (
 	EventTypeIntroduced   EventType = "introduced"
@@ -43,6 +45,11 @@ const (
 	EventTypeLastAffected EventType = "last_affected"
 	EventTypeLimit        EventType = "limit"
 )
+
+type Event struct {
+	Type EventType `json:"eventType"`
+	Hash string    `json:"hash"`
+}
 
 const defaultGitterWorkDir = "/work/gitter"
 const persistenceFileName = "last-fetch.json"
@@ -62,15 +69,23 @@ var (
 	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
-	semaphore       chan struct{}
+	semaphore       chan struct{} // Request concurrency control
 )
 
-type Event struct {
-	Type EventType `json:"eventType"`
-	Hash string    `json:"hash"`
-}
-
 const shutdownTimeout = 10 * time.Second
+
+// repoLocks is a map of per-repository RWMutexes, with url as the key.
+// It coordinates access between write operations (FetchRepo) that modify the git directory on disk
+// and read operations (ArchiveRepo, LoadRepository, etc).
+// It mainly handles:
+// - Ensuring reads and writes are mutually exclusive.
+// - Allowing multiple concurrent reads.
+var repoLocks sync.Map
+
+func GetRepoLock(url string) *sync.RWMutex {
+	lock, _ := repoLocks.LoadOrStore(url, &sync.RWMutex{})
+	return lock.(*sync.RWMutex)
+}
 
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
@@ -172,6 +187,10 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
+	repoLock := GetRepoLock(url)
+	repoLock.Lock()
+	defer repoLock.Unlock()
+
 	lastFetchMu.Lock()
 	accessTime, ok := lastFetch[url]
 	lastFetchMu.Unlock()
@@ -232,6 +251,10 @@ func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
+
+	repoLock := GetRepoLock(url)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
 
 	lastFetchMu.Lock()
 	accessTime := lastFetch[url]
@@ -360,6 +383,10 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	semaphore <- struct{}{}
+	defer func() { <-semaphore }()
+	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
 	// Fetch repo first
 	// Keep the key as the url regardless of forceUpdate.
 	// Occasionally this could be problematic if an existing unforce updated
@@ -369,10 +396,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	// I can't change singleflight's interface
 	_, err, _ := gFetch.Do(url, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
-
 		return nil, FetchRepo(ctx, url, forceUpdate)
 	})
 	if err != nil {
@@ -390,10 +413,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// Archive repo
 	// I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
-
 		return ArchiveRepo(ctx, url)
 	})
 	if err != nil {
@@ -436,13 +455,13 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /cache", slog.String("url", url))
 
+	semaphore <- struct{}{}
+	defer func() { <-semaphore }()
+	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
 	// Fetch repo if it's not fresh
 	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
-
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
@@ -461,9 +480,9 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	// I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+		repoLock := GetRepoLock(url)
+		repoLock.RLock()
+		defer repoLock.RUnlock()
 
 		return LoadRepository(ctx, repoPath)
 	})
@@ -531,6 +550,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.InfoContext(ctx, "Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
 
+	semaphore <- struct{}{}
+	defer func() { <-semaphore }()
+	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
 	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
 	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
 		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
@@ -541,10 +564,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	// Fetch repo if it's not fresh
 	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
-
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
@@ -561,12 +580,12 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
+	repoLock := GetRepoLock(url)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
 	// I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
-		semaphore <- struct{}{}
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
-
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {

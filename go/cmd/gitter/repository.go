@@ -30,7 +30,8 @@ type Commit struct {
 
 // Repository holds the commit graph and other details for a git repository.
 type Repository struct {
-	repoMu sync.Mutex
+	// Protects patchIDToCommits during parallel patch ID calculations
+	patchIDMu sync.Mutex
 	// Path to the .git directory within gitter's working dir
 	repoPath string
 	// Adjacency list: Parent -> []Children
@@ -375,8 +376,8 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 }
 
 func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
-	r.repoMu.Lock()
-	defer r.repoMu.Unlock()
+	r.patchIDMu.Lock()
+	defer r.patchIDMu.Unlock()
 
 	commit := r.commitDetails[commitHash]
 	commit.PatchID = patchID
@@ -387,9 +388,6 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
 func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick bool) []*Commit {
-	r.repoMu.Lock()
-	defer r.repoMu.Unlock()
-
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
 	if cherrypick {
@@ -508,9 +506,6 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
 func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
-	r.repoMu.Lock()
-	defer r.repoMu.Unlock()
-
 	var affectedCommits []*Commit
 
 	introMap := make(map[SHA1]struct{}, len(introduced))

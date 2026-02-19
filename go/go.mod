@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	cloud.google.com/go/datastore v1.22.0
-	cloud.google.com/go/errorreporting v0.4.0
 	cloud.google.com/go/monitoring v1.24.3
 	cloud.google.com/go/pubsub/v2 v2.4.0
 	cloud.google.com/go/storage v1.60.0

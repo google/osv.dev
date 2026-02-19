@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"cloud.google.com/go/errorreporting"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel"
@@ -21,11 +20,10 @@ import (
 )
 
 var (
-	slogLogger  = slog.New(newLocalHandler(os.Stdout))
-	errorClient *errorreporting.Client
-	once        sync.Once
-	tp          *sdktrace.TracerProvider
-	projectID   string
+	slogLogger = slog.New(newLocalHandler(os.Stdout))
+	once       sync.Once
+	tp         *sdktrace.TracerProvider
+	projectID  string
 )
 
 // InitGlobalLogger initializes the global slog logger and GCP observability clients.
@@ -48,7 +46,6 @@ func InitGlobalLogger() {
 				serviceName = filepath.Base(os.Args[0])
 			}
 
-			initErrorReporting(context.Background(), projectID, serviceName)
 			initTracing(context.Background(), projectID, serviceName)
 		}
 		handler := slog.NewJSONHandler(os.Stdout, cloudHandlerOptions())
@@ -56,28 +53,12 @@ func InitGlobalLogger() {
 	})
 }
 
-// Close flushes any buffered log, trace or error reports.
+// Close flushes any buffered log or trace reports.
 func Close() {
-	if errorClient != nil {
-		errorClient.Close()
-	}
 	if tp != nil {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error shutting down tracer provider: %v", err)
 		}
-	}
-}
-
-func initErrorReporting(ctx context.Context, projectID, serviceName string) {
-	var err error
-	errorClient, err = errorreporting.NewClient(ctx, projectID, errorreporting.Config{
-		ServiceName: serviceName,
-		OnError: func(err error) {
-			fmt.Fprintf(os.Stderr, "Could not log error to Error Reporting: %v\n", err)
-		},
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create errorreporting client: %v\n", err)
 	}
 }
 
@@ -165,7 +146,7 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 				source := a.Value.Any().(*slog.Source)
 				source.File = filepath.Base(source.File)
 
-				return slog.Attr{Key: "sourceLocation", Value: slog.AnyValue(source)}
+				return slog.Attr{Key: "logging.googleapis.com/sourceLocation", Value: slog.AnyValue(source)}
 			}
 
 			return a

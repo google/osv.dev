@@ -298,14 +298,14 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 
 func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
 	// check if the ranges are the same
-	if range1.Repo != range2.Repo || range1.Type != range2.Type {
+	if range1.GetRepo() != range2.GetRepo() || range1.GetType() != range2.GetType() {
 		return nil
 	}
 
 	mergedRange := &osvschema.Range{
-		Repo:   range1.Repo,
-		Type:   range1.Type,
-		Events: append(range1.Events, range2.Events...),
+		Repo:   range1.GetRepo(),
+		Type:   range1.GetType(),
+		Events: append(range1.Events, range2.GetEvents()...),
 	}
 
 	db1 := range1.GetDatabaseSpecific()

@@ -114,7 +114,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool) models.ConversionOutcome {
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -303,7 +303,7 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 		for _, repo := range successfulRepos {
 			var mergedRange *osvschema.Range
 			for _, vr := range resolvedRanges {
-				if vr.Repo == repo {
+				if vr.GetRepo() == repo {
 					if mergedRange == nil {
 						mergedRange = vr
 					} else {
@@ -358,22 +358,22 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 
 func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	// Handle duplicate events being added
-	for _, e := range versionRange.Events {
-		if e.Introduced != "" && e.Introduced == event.Introduced {
+	for _, e := range versionRange.GetEvents() {
+		if e.GetIntroduced() != "" && e.GetIntroduced() == event.GetIntroduced() {
 			return
 		}
-		if e.Fixed != "" && e.Fixed == event.Fixed {
+		if e.GetFixed() != "" && e.GetFixed() == event.GetFixed() {
 			return
 		}
-		if e.LastAffected != "" && e.LastAffected == event.LastAffected {
+		if e.GetLastAffected() != "" && e.GetLastAffected() == event.GetLastAffected() {
 			return
 		}
 	}
 	//TODO: maybe handle if the fixed event appeards as an introduced event or similar.
 
-	if event.Introduced != "" {
-		versionRange.Events = append([]*osvschema.Event{&osvschema.Event{
-			Introduced: event.Introduced}}, versionRange.Events...)
+	if event.GetIntroduced() != "" {
+		versionRange.Events = append([]*osvschema.Event{{
+			Introduced: event.GetIntroduced()}}, versionRange.GetEvents()...)
 	} else {
 		versionRange.Events = append(versionRange.Events, event)
 	}

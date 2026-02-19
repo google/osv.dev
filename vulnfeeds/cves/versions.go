@@ -61,7 +61,7 @@ var VendorProductDenyList = []VendorProduct{
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
 	{"oracle", "zfs_storage_appliance_kit"},
 	{"gradle", "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
-	{"qualcomm", ""}, // firmware out of scope
+	{"qualcomm", ""},         // firmware out of scope
 	{"linux", "linux_kernel"},
 }
 
@@ -551,7 +551,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
-	var commits []models.AffectedCommit
+	var commits []models.AffectedCommit //nolint:prealloc 
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
@@ -580,7 +580,6 @@ func extractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 
 	return ac, nil
 }
-
 
 func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
 	if depth > 10 {
@@ -820,9 +819,10 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 			}
 		}
 	}
-	if len(versions) > 0{
+	if len(versions) > 0 {
 		metrics.AddNote("Extracted versions from CPEs: %v", versions)
 	}
+
 	return versions
 }
 

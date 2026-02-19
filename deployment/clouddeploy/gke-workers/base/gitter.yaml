@@ -32,6 +32,8 @@ spec:
         env:
         - name: GOMEMLIMIT
           value: "100GiB"
+        - name: DEBUG_LOG
+          value: "true"
         volumeMounts:
         - mountPath: /work
           name: disk-data

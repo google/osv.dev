@@ -229,7 +229,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		{
 			name:         "Invalid event type",
 			url:          "https://github.com/google/oss-fuzz-vulns.git",
-			invalidType: []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
+			invalidType:  []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
 			expectedCode: http.StatusBadRequest,
 		},
 	}

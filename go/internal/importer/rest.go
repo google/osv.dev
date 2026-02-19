@@ -136,14 +136,14 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 				urlBase: sourceRepo.Link,
 				urlPath: path,
 			},
-			SourceRepository:       sourceRepo.Name,
-			SourcePath:             path,
-			LastUpdated:            lastUpdated,
-			HasLastUpdated:         hasUpdateTime,
-			Format:                 RecordFormatJSON,
-			KeyPath:                sourceRepo.KeyPath,
-			Strict:                 sourceRepo.Strictness,
-			ShouldSendModifiedTime: hasUpdateTime,
+			SourceRepository: sourceRepo.Name,
+			SourcePath:       path,
+			LastUpdated:      lastUpdated,
+			HasLastUpdated:   hasUpdateTime,
+			Format:           RecordFormatJSON,
+			KeyPath:          sourceRepo.KeyPath,
+			Strict:           sourceRepo.Strictness,
+			IsReimport:       !hasUpdateTime,
 		}
 
 		return true
@@ -298,6 +298,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 			slog.String("source", sourceRepo.Name),
 			slog.Int("status_code", resp.StatusCode),
 			slog.String("url", sourceRepo.REST.URL))
+
 		return time.Time{}, nil
 	}
 
@@ -306,6 +307,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 		logger.WarnContext(ctx, "No Last-Modified header found.",
 			slog.String("source", sourceRepo.Name),
 			slog.String("url", sourceRepo.REST.URL))
+
 		return time.Time{}, nil
 	}
 
@@ -315,6 +317,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 			slog.String("source", sourceRepo.Name),
 			slog.String("url", sourceRepo.REST.URL),
 			slog.Any("error", err))
+
 		return time.Time{}, nil
 	}
 

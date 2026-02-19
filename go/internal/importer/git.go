@@ -101,7 +101,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	repo := repoInterface.(sharedRepo)
 
 	format := extensionToFormat(sourceRepo.Extension)
-	shouldSendUpdate := sourceRepo.Git.LastSyncedCommit != ""
+	isReimport := sourceRepo.Git.LastSyncedCommit == ""
 
 	changedFiles, commit, err := changedFiles(ctx, repo, sourceRepo)
 	if err != nil {
@@ -141,13 +141,13 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 					path: from,
 					repo: repo,
 				},
-				SourceRepository:       sourceRepo.Name,
-				SourcePath:             from,
-				IsDeleted:              true,
-				Strict:                 sourceRepo.Strictness,
-				Format:                 format,
-				KeyPath:                sourceRepo.KeyPath,
-				ShouldSendModifiedTime: shouldSendUpdate,
+				SourceRepository: sourceRepo.Name,
+				SourcePath:       from,
+				IsDeleted:        true,
+				Strict:           sourceRepo.Strictness,
+				Format:           format,
+				KeyPath:          sourceRepo.KeyPath,
+				IsReimport:       isReimport,
 			}
 
 			continue
@@ -160,12 +160,12 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 				commit: commit,
 				path:   to,
 			},
-			SourceRepository:       sourceRepo.Name,
-			SourcePath:             to,
-			Format:                 format,
-			KeyPath:                sourceRepo.KeyPath,
-			ShouldSendModifiedTime: shouldSendUpdate,
-			Strict:                 sourceRepo.Strictness,
+			SourceRepository: sourceRepo.Name,
+			SourcePath:       to,
+			Format:           format,
+			KeyPath:          sourceRepo.KeyPath,
+			IsReimport:       isReimport,
+			Strict:           sourceRepo.Strictness,
 		}
 	}
 

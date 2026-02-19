@@ -170,15 +170,15 @@ type WorkItem struct {
 	Context      context.Context //nolint:containedctx
 	SourceRecord SourceRecord
 
-	SourceRepository       string
-	SourcePath             string
-	Format                 RecordFormat
-	KeyPath                string
-	Strict                 bool
-	IsDeleted              bool
-	LastUpdated            time.Time
-	HasLastUpdated         bool
-	ShouldSendModifiedTime bool
+	SourceRepository string
+	SourcePath       string
+	Format           RecordFormat
+	KeyPath          string
+	Strict           bool
+	IsDeleted        bool
+	LastUpdated      time.Time
+	HasLastUpdated   bool
+	IsReimport       bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
@@ -323,7 +323,8 @@ func computeHash(data []byte) string {
 
 func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time) error {
 	var srcTimestamp *time.Time
-	if item.ShouldSendModifiedTime {
+	if !item.IsReimport {
+		// Only track the update latency if we're not doing a reimport of the data
 		srcTimestamp = &modifiedTime
 	}
 

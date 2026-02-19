@@ -56,37 +56,19 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		hasUpdateTime = true
 	}
 	timeOfRun := time.Now()
-	lastModTime := time.Time{}
+	var lastModTime time.Time
 	if hasUpdateTime {
-		// HEAD request to check if there are updates
-		req, err := http.NewRequest(http.MethodHead, sourceRepo.REST.URL, nil)
+		var err error
+		lastModTime, err = checkHEAD(ctx, config, sourceRepo)
 		if err != nil {
 			return err
 		}
-		req = req.WithContext(ctx)
-		resp, err := config.HTTPClient.Do(req)
-		if err != nil {
-			return err
-		}
-		resp.Body.Close()
-		lastModified := resp.Header.Get("Last-Modified")
-		lastModTime, err = time.Parse(time.RFC1123, lastModified)
-		if err == nil && lastModTime.Before(lastUpdated) {
+		if !lastModTime.IsZero() && lastModTime.Before(lastUpdated) {
 			logger.InfoContext(ctx, "No changes since last update.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
 
 			return nil
-		}
-		if lastModified == "" {
-			logger.WarnContext(ctx, "No Last-Modified header found.",
-				slog.String("source", sourceRepo.Name),
-				slog.String("url", sourceRepo.REST.URL))
-		} else if err != nil {
-			logger.WarnContext(ctx, "Failed to parse Last-Modified header.",
-				slog.String("source", sourceRepo.Name),
-				slog.String("url", sourceRepo.REST.URL),
-				slog.Any("error", err))
 		}
 	}
 
@@ -297,4 +279,44 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	}
 
 	return nil
+}
+
+// checkHEAD performs a HEAD request to check for updates
+func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepository) (time.Time, error) {
+	req, err := http.NewRequest(http.MethodHead, sourceRepo.REST.URL, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	req = req.WithContext(ctx)
+	resp, err := config.HTTPClient.Do(req)
+	if err != nil {
+		return time.Time{}, err
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.WarnContext(ctx, "HEAD request failed, falling back to GET",
+			slog.String("source", sourceRepo.Name),
+			slog.Int("status_code", resp.StatusCode),
+			slog.String("url", sourceRepo.REST.URL))
+		return time.Time{}, nil
+	}
+
+	lastModified := resp.Header.Get("Last-Modified")
+	if lastModified == "" {
+		logger.WarnContext(ctx, "No Last-Modified header found.",
+			slog.String("source", sourceRepo.Name),
+			slog.String("url", sourceRepo.REST.URL))
+		return time.Time{}, nil
+	}
+
+	lastModTime, err := time.Parse(time.RFC1123, lastModified)
+	if err != nil {
+		logger.WarnContext(ctx, "Failed to parse Last-Modified header.",
+			slog.String("source", sourceRepo.Name),
+			slog.String("url", sourceRepo.REST.URL),
+			slog.Any("error", err))
+		return time.Time{}, nil
+	}
+
+	return lastModTime, nil
 }

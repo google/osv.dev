@@ -71,6 +71,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	repoInterface, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (any, error) {
 		// Temporary migration from Python to Go
+		// TODO(michaelkedar): Remove when python is gone
 		// If the sha name of the repo doesn't exist, check if the source repo name exists from python.
 		// If it does, move it and use it.
 		sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
@@ -99,12 +100,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	}
 	repo := repoInterface.(sharedRepo)
 
-	format := RecordFormatUnknown
-	if strings.ToLower(sourceRepo.Extension) == ".yaml" || strings.ToLower(sourceRepo.Extension) == ".yml" {
-		format = RecordFormatYAML
-	} else if strings.ToLower(sourceRepo.Extension) == ".json" {
-		format = RecordFormatJSON
-	}
+	format := extensionToFormat(sourceRepo.Extension)
 	shouldSendUpdate := sourceRepo.Git.LastSyncedCommit != ""
 
 	changedFiles, commit, err := changedFiles(ctx, repo, sourceRepo)

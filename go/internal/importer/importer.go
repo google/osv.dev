@@ -75,12 +75,12 @@ func Run(ctx context.Context, config Config) error {
 		})
 	}
 
-	var wg sync.WaitGroup
+	var sourceWg sync.WaitGroup
 	for sourceRepo, err := range config.SourceRepoStore.All(ctx) {
 		if err != nil {
 			return err
 		}
-		wg.Go(func() {
+		sourceWg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
 			switch sourceRepo.Type {
@@ -101,7 +101,7 @@ func Run(ctx context.Context, config Config) error {
 			}
 		})
 	}
-	wg.Wait()
+	sourceWg.Wait()
 	close(workCh)
 	workWg.Wait()
 

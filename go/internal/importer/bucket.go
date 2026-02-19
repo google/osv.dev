@@ -46,12 +46,7 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 		lastUpdated = *sourceRepo.Bucket.LastUpdated
 		hasUpdateTime = true
 	}
-	format := RecordFormatUnknown
-	if strings.ToLower(sourceRepo.Extension) == ".yaml" || strings.ToLower(sourceRepo.Extension) == ".yml" {
-		format = RecordFormatYAML
-	} else if strings.ToLower(sourceRepo.Extension) == ".json" {
-		format = RecordFormatJSON
-	}
+	format := extensionToFormat(sourceRepo.Extension)
 	timeOfRun := time.Now()
 	for obj, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
 		if err != nil {

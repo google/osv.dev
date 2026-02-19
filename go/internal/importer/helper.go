@@ -15,6 +15,7 @@ func negatedPrefix(regex string) (string, bool) {
 	// This is silly, since we're already enforcing prefix matches
 	// This is a check to see if we can skip those ignore patterns
 	// (since go doesn't support negative lookaheads)
+	// TODO(michaelkedar): Remove this function + regexes from source repos
 	const prefix = "^(?!"
 	const suffix = ").*$"
 	if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, suffix) {
@@ -72,4 +73,15 @@ func shouldIgnore(name string, idPrefixes []string, ignorePatterns []*regexp.Reg
 	}
 
 	return false
+}
+
+func extensionToFormat(extension string) RecordFormat {
+	switch strings.ToLower(extension) {
+	case ".json":
+		return RecordFormatJSON
+	case ".yaml", ".yml":
+		return RecordFormatYAML
+	default:
+		return RecordFormatUnknown
+	}
 }

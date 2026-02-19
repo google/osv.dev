@@ -75,7 +75,7 @@ const shutdownTimeout = 10 * time.Second
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
 func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+	logger.DebugContext(ctx, "Running command", slog.String("url", ctx.Value(urlKey).(string)), slog.String("cmd", name), slog.Any("args", args))
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -85,7 +85,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
-		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("url", ctx.Value(urlKey).(string)), slog.String("cmd", name), slog.Any("args", args))
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
 	// Ensure it eventually dies if it ignores SIGINT
@@ -95,13 +95,13 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
-			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "Command cancelled", slog.String("url", ctx.Value(urlKey).(string)), slog.String("cmd", name), slog.Any("err", ctx.Err()))
 			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
-	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.String("out", string(out)))
+	logger.DebugContext(ctx, "Command completed successfully", slog.String("url", ctx.Value(urlKey).(string)), slog.String("cmd", name), slog.String("out", string(out)))
 
 	return nil
 }
@@ -166,7 +166,7 @@ func isIndexLockError(err error) bool {
 }
 
 func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
-	logger.Info("Starting fetch repo", slog.String("url", url))
+	logger.InfoContext(ctx, "Starting fetch repo", slog.String("url", ctx.Value(urlKey).(string)))
 	start := time.Now()
 
 	repoDirName := getRepoDirName(url)
@@ -223,7 +223,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	logger.Info("Fetch completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Fetch completed", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("duration", time.Since(start)))
 
 	return nil
 }
@@ -376,7 +376,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return nil, FetchRepo(ctx, url, forceUpdate)
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 
@@ -397,7 +397,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return ArchiveRepo(ctx, url)
 	})
 	if err != nil {
-		logger.Error("Error archiving blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error archiving blob", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
 
 		return
@@ -414,7 +414,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.InfoContext(ctx, "Request completed successfully", slog.String("url", ctx.Value(urlKey).(string)))
+	logger.InfoContext(ctx, "Request completed successfully", slog.String("url", url))
 }
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
@@ -434,7 +434,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	url := body.URL
 	ctx := context.WithValue(r.Context(), urlKey, url)
-	logger.Info("Received request: /cache", slog.String("url", url))
+	logger.InfoContext(ctx, "Received request: /cache", slog.String("url", url))
 
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
@@ -445,7 +445,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
-		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 
@@ -468,14 +468,14 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {
-		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
 
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	logger.Info("Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }
 
 func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
@@ -502,10 +502,12 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	limit := []SHA1{}
 	cherrypick := body.DetectCherrypicks
 
+	ctx := context.WithValue(r.Context(), urlKey, url)
+
 	for _, event := range body.Events {
 		hash, err := hex.DecodeString(event.Hash)
 		if err != nil {
-			logger.Error("Error parsing hash", slog.String("hash", event.Hash), slog.Any("error", err))
+			logger.ErrorContext(ctx, "Error parsing hash", slog.String("url", url), slog.String("hash", event.Hash), slog.Any("error", err))
 			http.Error(w, fmt.Sprintf("Invalid hash: %s", event.Hash), http.StatusBadRequest)
 			return
 		}
@@ -520,12 +522,12 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		case EventTypeLimit:
 			limit = append(limit, SHA1(hash))
 		default:
-			logger.Error("Invalid event type", slog.String("event_type", string(event.Type)))
+			logger.ErrorContext(ctx, "Invalid event type", slog.String("url", url), slog.String("event_type", string(event.Type)))
 			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
 			return
 		}
 	}
-	logger.Info("Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.String("url", url), slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
 
 	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
 	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
@@ -533,8 +535,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-
-	ctx := context.WithValue(r.Context(), urlKey, url)
 
 	// Fetch repo if it's not fresh
 	//nolint:contextcheck // I can't change singleflight's interface
@@ -545,7 +545,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
-		logger.Error("Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 
@@ -568,7 +568,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {
-		logger.Error("Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to load repository", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
 
 		return
@@ -585,10 +585,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
-		logger.Error("Error encoding affected commits", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error encoding affected commits", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
 
 		return
 	}
-	logger.Info("Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.String("url", url), slog.Duration("duration", time.Since(start)))
 }

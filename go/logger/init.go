@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"cloud.google.com/go/errorreporting"
@@ -119,8 +120,17 @@ func initTracing(ctx context.Context, projectID, serviceName string) {
 
 func cloudHandlerOptions() *slog.HandlerOptions {
 	level := slog.LevelInfo
-	if os.Getenv("DEBUG_LOG") != "" {
-		level = slog.LevelDebug
+	if lvl := os.Getenv("LOG_LEVEL"); lvl != "" {
+		switch strings.ToLower(lvl) {
+		case "debug":
+			level = slog.LevelDebug
+		case "info":
+			level = slog.LevelInfo
+		case "warn":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		}
 	}
 
 	return &slog.HandlerOptions{

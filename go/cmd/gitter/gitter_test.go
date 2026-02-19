@@ -202,7 +202,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		fixed        []string
 		lastAffected []string
 		limit        []string
-		invalid_type []string
+		invalidType  []string
 		expectedCode int
 	}{
 		{
@@ -229,7 +229,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		{
 			name:         "Invalid event type",
 			url:          "https://github.com/google/oss-fuzz-vulns.git",
-			invalid_type: []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
+			invalidType: []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
 			expectedCode: http.StatusBadRequest,
 		},
 	}
@@ -238,7 +238,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var events []Event
 			for _, h := range tt.introduced {
-					events = append(events, Event{Type: "introduced", Hash: h})
+				events = append(events, Event{Type: "introduced", Hash: h})
 			}
 			for _, h := range tt.fixed {
 				events = append(events, Event{Type: "fixed", Hash: h})
@@ -249,7 +249,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			for _, h := range tt.limit {
 				events = append(events, Event{Type: "limit", Hash: h})
 			}
-			for _, h := range tt.invalid_type {
+			for _, h := range tt.invalidType {
 				events = append(events, Event{Type: "invalid_type", Hash: h})
 			}
 

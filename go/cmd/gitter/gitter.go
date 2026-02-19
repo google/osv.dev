@@ -290,7 +290,7 @@ func main() {
 	defer stop()
 
 	for endpoint, handler := range endpointHandlers {
-		http.Handle(endpoint, otelhttp.NewHandler(http.HandlerFunc(handler), endpoint))
+		http.Handle(endpoint, otelhttp.NewHandler(handler, endpoint))
 	}
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
@@ -367,7 +367,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// That is highly unlikely in our use case, as importer only queries
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	_, err, _ := gFetch.Do(url, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
@@ -388,7 +388,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Archive repo
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
@@ -437,7 +437,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.InfoContext(ctx, "Received request: /cache", slog.String("url", url))
 
 	// Fetch repo if it's not fresh
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
@@ -459,7 +459,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
@@ -508,7 +508,8 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		hash, err := hex.DecodeString(event.Hash)
 		if err != nil {
 			logger.ErrorContext(ctx, "Error parsing hash", slog.String("url", url), slog.String("hash", event.Hash), slog.Any("error", err))
-			http.Error(w, fmt.Sprintf("Invalid hash: %s", event.Hash), http.StatusBadRequest)
+			http.Error(w, "Invalid hash: "+event.Hash, http.StatusBadRequest)
+
 			return
 		}
 
@@ -524,6 +525,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		default:
 			logger.ErrorContext(ctx, "Invalid event type", slog.String("url", url), slog.String("event_type", string(event.Type)))
 			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
+
 			return
 		}
 	}
@@ -537,7 +539,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch repo if it's not fresh
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()
@@ -559,7 +561,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
-	//nolint:contextcheck // I can't change singleflight's interface
+	// I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
 		semaphore <- struct{}{}
 		defer func() { <-semaphore }()

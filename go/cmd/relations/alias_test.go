@@ -57,13 +57,13 @@ func TestBasic(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "aaa-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "aaa-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
 	v2 := &osvschema.Vulnerability{Id: "aaa-124", Modified: timestamppb.Now()}
 	v2Data, _ := proto.Marshal(v2)
-	if err := gcsClient.WriteObject(ctx, "aaa-124.pb", v2Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-124.pb", v2Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -87,7 +87,7 @@ func TestBasic(t *testing.T) {
 	}
 
 	// Check GCS
-	data, err := gcsClient.ReadObject(ctx, "aaa-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/aaa-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestMissingVuln(t *testing.T) {
 	// Setup GCS only for vuln1
 	v1 := &osvschema.Vulnerability{Id: "aaa-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "aaa-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -141,7 +141,7 @@ func TestMissingVuln(t *testing.T) {
 	}
 
 	// Check GCS for vuln1
-	data, err := gcsClient.ReadObject(ctx, "aaa-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/aaa-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestMissingVuln(t *testing.T) {
 	}
 
 	// Verify non-existent-123 was not created in GCS
-	_, err = gcsClient.ReadObject(ctx, "non-existent-123.pb")
+	_, err = gcsClient.ReadObject(ctx, "all/pb/non-existent-123.pb")
 	if !errors.Is(err, clients.ErrNotFound) {
 		t.Errorf("expected non-existent-123.pb to not exist, got err: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestMissingGCSButInDatastore(t *testing.T) {
 	// Setup GCS only for vuln1
 	v1 := &osvschema.Vulnerability{Id: "aaa-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "aaa-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -249,18 +249,18 @@ func TestGenerationMismatch(t *testing.T) {
 	// Setup GCS with an older generation
 	v1 := &osvschema.Vulnerability{Id: "aaa-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "aaa-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
 	v2 := &osvschema.Vulnerability{Id: "aaa-124", Modified: timestamppb.Now()}
 	v2Data, _ := proto.Marshal(v2)
-	if err := gcsClient.WriteObject(ctx, "aaa-124.pb", v2Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-124.pb", v2Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
 	// Simulate a concurrent update by setting WriteErrors for aaa-123.pb
-	gcsClient.WriteErrors["aaa-123.pb"] = clients.ErrPreconditionFailed
+	gcsClient.WriteErrors["all/pb/aaa-123.pb"] = clients.ErrPreconditionFailed
 
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
 	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch); err != nil {
@@ -301,7 +301,7 @@ func TestBugReachesLimit(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "aaa-111", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "aaa-111.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/aaa-111.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -322,7 +322,7 @@ func TestBugReachesLimit(t *testing.T) {
 	}
 
 	// Check GCS to ensure aliases are empty
-	data, err := gcsClient.ReadObject(ctx, "aaa-111.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/aaa-111.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -374,7 +374,7 @@ func TestUpdateAliasGroup(t *testing.T) {
 	// Setup GCS for bbb-123 (to check update)
 	v1 := &osvschema.Vulnerability{Id: "bbb-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "bbb-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/bbb-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -419,7 +419,7 @@ func TestUpdateAliasGroup(t *testing.T) {
 	}
 
 	// Check GCS for bbb-123
-	data, err := gcsClient.ReadObject(ctx, "bbb-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/bbb-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -465,7 +465,7 @@ func TestCreateAliasGroup(t *testing.T) {
 	// Setup GCS for test-123
 	v1 := &osvschema.Vulnerability{Id: "test-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "test-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/test-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -509,7 +509,7 @@ func TestCreateAliasGroup(t *testing.T) {
 	}
 
 	// Check GCS for test-123
-	data, err := gcsClient.ReadObject(ctx, "test-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/test-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -555,7 +555,7 @@ func TestDeleteAliasGroup(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "ccc-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "ccc-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/ccc-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -577,7 +577,7 @@ func TestDeleteAliasGroup(t *testing.T) {
 	}
 
 	// Check GCS for ccc-123
-	data, err := gcsClient.ReadObject(ctx, "ccc-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/ccc-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -626,13 +626,13 @@ func TestSplitAliasGroup(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "ddd-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "ddd-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/ddd-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
 	v2 := &osvschema.Vulnerability{Id: "ddd-124", Modified: timestamppb.Now()}
 	v2Data, _ := proto.Marshal(v2)
-	if err := gcsClient.WriteObject(ctx, "ddd-124.pb", v2Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/ddd-124.pb", v2Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -653,7 +653,7 @@ func TestSplitAliasGroup(t *testing.T) {
 	}
 
 	// Check GCS
-	data, err := gcsClient.ReadObject(ctx, "ddd-123.pb")
+	data, err := gcsClient.ReadObject(ctx, "all/pb/ddd-123.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -665,7 +665,7 @@ func TestSplitAliasGroup(t *testing.T) {
 		t.Errorf("expected 0 aliases for ddd-123, got %v", updatedV1.GetAliases())
 	}
 
-	data, err = gcsClient.ReadObject(ctx, "ddd-124.pb")
+	data, err = gcsClient.ReadObject(ctx, "all/pb/ddd-124.pb")
 	if err != nil {
 		t.Fatalf("failed to read GCS object: %v", err)
 	}
@@ -705,7 +705,7 @@ func TestAllowList(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "eee-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "eee-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/eee-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -777,7 +777,7 @@ func TestDenyList(t *testing.T) {
 	// Setup GCS
 	v1 := &osvschema.Vulnerability{Id: "fff-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "fff-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/fff-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -840,7 +840,7 @@ func TestMergeAliasGroup(t *testing.T) {
 	// Setup GCS for ggg-123
 	v1 := &osvschema.Vulnerability{Id: "ggg-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "ggg-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/ggg-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -911,7 +911,7 @@ func TestPartialMergeAliasGroup(t *testing.T) {
 	// Setup GCS for hhh-123
 	v1 := &osvschema.Vulnerability{Id: "hhh-123", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "hhh-123.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/hhh-123.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 
@@ -986,7 +986,7 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 	// Setup GCS for iii-new
 	v1 := &osvschema.Vulnerability{Id: "iii-new", Modified: timestamppb.Now()}
 	v1Data, _ := proto.Marshal(v1)
-	if err := gcsClient.WriteObject(ctx, "iii-new.pb", v1Data, nil); err != nil {
+	if err := gcsClient.WriteObject(ctx, "all/pb/iii-new.pb", v1Data, nil); err != nil {
 		t.Fatalf("failed to write GCS object: %v", err)
 	}
 

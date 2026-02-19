@@ -29,6 +29,11 @@ spec:
           - "--port=8888"
           - "--work_dir=/work/gitter"
           - "--fetch_timeout=1h"
+        env:
+        - name: GOMEMLIMIT
+          value: "100GiB"
+        - name: DEBUG_LOG
+          value: "true"
         volumeMounts:
         - mountPath: /work
           name: disk-data

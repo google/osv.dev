@@ -23,7 +23,10 @@ import (
 	"syscall"
 	"time"
 
+	_ "net/http/pprof" //nolint:gosec // This is a internal only service not public to the internet
+
 	"github.com/google/osv.dev/go/logger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -43,6 +46,7 @@ var (
 	persistancePath = path.Join(defaultGitterWorkDir, persistanceFileName)
 	gitStorePath    = path.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
+	semaphore       chan struct{}
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -50,7 +54,7 @@ const shutdownTimeout = 10 * time.Second
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
 func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	logger.Debug("Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -60,7 +64,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
-		logger.Debug("SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
 	// Ensure it eventually dies if it ignores SIGINT
@@ -70,13 +74,13 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
-			logger.Warn("Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
 			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
-	logger.Debug("Command completed successfully", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.String("out", string(out)))
+	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.String("out", string(out)))
 
 	return nil
 }
@@ -133,7 +137,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 
 	// Check if we need to fetch
 	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		logger.Info("Fetching git blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("sinceAccessTime", time.Since(accessTime)))
+		logger.InfoContext(ctx, "Fetching git blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(path.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
@@ -152,7 +156,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			if err != nil && isIndexLockError(err) {
 				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
 				// We can remove the file and retry the command
-				logger.Warn("index.lock exists, attempting to remove and retry", slog.String("url", ctx.Value(urlKey).(string)))
+				logger.WarnContext(ctx, "index.lock exists, attempting to remove and retry", slog.String("url", ctx.Value(urlKey).(string)))
 				indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
 				if err := os.Remove(indexLockPath); err != nil {
 					return nil, fmt.Errorf("failed to remove index.lock in %s: %w", repoPath, err)
@@ -165,7 +169,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 			}
 		}
 
-		logger.Info("Archiving git blob", slog.String("url", ctx.Value(urlKey).(string)))
+		logger.InfoContext(ctx, "Archiving git blob", slog.String("url", ctx.Value(urlKey).(string)))
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
@@ -196,17 +200,22 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 }
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
+
 	port := flag.Int("port", 8888, "Listen port")
 	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
+	concurrentLimit := flag.Int("concurrent_limit", 100, "Concurrent limit for unique requests")
 	flag.Parse()
+
+	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistancePath = path.Join(*workDir, persistanceFileName)
 	gitStorePath = path.Join(*workDir, gitStoreFileName)
 
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
-		logger.Error("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
-		os.Exit(1)
+		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
 
 	loadMap()
@@ -215,7 +224,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	http.HandleFunc(getGitEndpoint, gitHandler)
+	http.Handle(getGitEndpoint, otelhttp.NewHandler(http.HandlerFunc(gitHandler), "getgit"))
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -274,7 +283,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
-	logger.Info("Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
+	logger.InfoContext(ctx, "Received request", slog.String("url", url), slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -291,11 +300,15 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
 	fileData, err, _ := g.Do(url, func() (any, error) {
+		semaphore <- struct{}{}
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent processes", slog.Int("count", len(semaphore)))
+
 		return fetchBlob(ctx, url, forceUpdate)
 	})
 
 	if err != nil {
-		logger.Error("Error fetching/archiving blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching/archiving blob", slog.String("url", ctx.Value(urlKey).(string)), slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 			return
@@ -309,11 +322,11 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=\"git-blob.zst\"")
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, bytes.NewReader(fileData.([]byte))); err != nil {
-		logger.Error("Error copying file", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error copying file", slog.String("url", url), slog.Any("error", err))
 		http.Error(w, "Error copying file", http.StatusInternalServerError)
 
 		return
 	}
 
-	logger.Info("Request completed successfully", slog.String("url", ctx.Value(urlKey).(string)))
+	logger.InfoContext(ctx, "Request completed successfully", slog.String("url", ctx.Value(urlKey).(string)))
 }

@@ -1,5 +1,5 @@
 # Use an official Ruby runtime as a parent image.
-FROM ruby:4
+FROM ruby:3.3
 
 # Set the working directory in the container.
 WORKDIR /usr/src/app
@@ -7,7 +7,6 @@ WORKDIR /usr/src/app
 # Copy the Gemfile and Gemfile.lock, and the bundle config.
 # This is done first to leverage Docker's layer caching.
 COPY ./Gemfile* ./
-COPY .bundle ./.bundle
 
 # Install the dependencies.
 RUN bundle install

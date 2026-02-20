@@ -43,8 +43,8 @@ const gitStoreFileName = "git-store"
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"GET /git":               gitHandler,
-	"POST /cache":            cacheHandler,
+	"GET /git":    gitHandler,
+	"POST /cache": cacheHandler,
 }
 
 var (

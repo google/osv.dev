@@ -22,20 +22,31 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	runGit("init")
+	runGit("config", "user.email", "test@test.com")
+	runGit("config", "user.name", "Test Name")
 
 	// Commit 1
-	os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0644)
+	err := os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file1 for git repo setup: %v", err)
+	}
 	runGit("add", "file1")
 	runGit("commit", "-m", "commit 1")
 
 	// Commit 2 + Tag
-	os.WriteFile(filepath.Join(repoPath, "file2"), []byte("2"), 0644)
+	err = os.WriteFile(filepath.Join(repoPath, "file2"), []byte("2"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file2 for git repo setup: %v", err)
+	}
 	runGit("add", "file2")
 	runGit("commit", "-m", "commit 2")
 	runGit("tag", "v1.0.0")
 
 	// Commit 3 + Tag
-	os.WriteFile(filepath.Join(repoPath, "file3"), []byte("3"), 0644)
+	err = os.WriteFile(filepath.Join(repoPath, "file3"), []byte("3"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file3 for git repo setup: %v", err)
+	}
 	runGit("add", "file3")
 	runGit("commit", "-m", "commit 3")
 	runGit("tag", "v1.1.0")

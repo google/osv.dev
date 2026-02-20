@@ -27,8 +27,8 @@ spec:
         imagePullPolicy: Always
         args:
           - "--port=8888"
-          - "--work-dir=/work/gitter"
-          - "--fetch-timeout=1h"
+          - "--work_dir=/work/gitter"
+          - "--fetch_timeout=1h"
         env:
         - name: GOMEMLIMIT
           value: "100GiB"

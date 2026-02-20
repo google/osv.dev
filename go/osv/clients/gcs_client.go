@@ -40,6 +40,20 @@ func NewGCSClient(client *storage.Client, bucketName string) *GCSClient {
 	return &GCSClient{client: client, bucket: bucket}
 }
 
+// GCSStorageProvider is a concrete implementation of CloudStorageProvider for Google Cloud Storage.
+type GCSStorageProvider struct {
+	client *storage.Client
+}
+
+// NewGCSStorageProvider creates a new GCSStorageProvider.
+func NewGCSStorageProvider(client *storage.Client) *GCSStorageProvider {
+	return &GCSStorageProvider{client: client}
+}
+
+func (p *GCSStorageProvider) Bucket(name string) CloudStorage {
+	return NewGCSClient(p.client, name)
+}
+
 func (c *GCSClient) ReadObject(ctx context.Context, path string) ([]byte, error) {
 	obj := c.bucket.Object(path)
 	reader, err := obj.NewReader(ctx)
@@ -75,6 +89,7 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 		Generation: attrs.Generation,
 		CustomTime: attrs.CustomTime,
 		CRC32C:     attrs.CRC32C,
+		Updated:    attrs.Updated,
 	}, nil
 }
 
@@ -134,19 +149,27 @@ func (c *GCSClient) Close() error {
 	return c.client.Close()
 }
 
-func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[string, error] {
-	return func(yield func(string, error) bool) {
+func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error] {
+	return func(yield func(*Object, error) bool) {
 		it := c.bucket.Objects(ctx, &storage.Query{Prefix: prefix})
 		for {
 			attrs, err := it.Next()
 			if err != nil {
 				if !errors.Is(err, iterator.Done) {
-					yield("", err)
+					yield(nil, err)
 				}
 
 				return
 			}
-			if !yield(attrs.Name, nil) {
+			obj := &Object{
+				Name: attrs.Name,
+				Attrs: Attrs{
+					Generation: attrs.Generation,
+					CustomTime: attrs.CustomTime,
+					CRC32C:     attrs.CRC32C,
+				},
+			}
+			if !yield(obj, nil) {
 				return
 			}
 		}

@@ -25,6 +25,10 @@ spec:
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
+              - name: IMPORT_TRACE_SAMPLE_RATE # for the overall importer trace
+                value: "1.0"
+              - name: TRACE_SAMPLE_RATE # for the individual vulnerability entries
+                value: "0.05"
             securityContext:
               privileged: true
             resources:

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -62,7 +64,7 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		req, err := http.NewRequest(http.MethodGet, "/getgit?url="+tt.url, nil)
+		req, err := http.NewRequest(http.MethodGet, "/git?url="+tt.url, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -77,24 +79,38 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}
 }
 
+// Override global variables for test
+// Note: In a real app we might want to dependency inject these,
+// but for this simple script we modify package globals.
+func setupTest(t *testing.T) {
+	t.Helper()
+	tmpDir := t.TempDir()
+
+	gitStorePath = tmpDir
+	persistencePath = tmpDir + "/last-fetch.json" // Use simple path join for test
+	fetchTimeout = time.Minute
+
+	// Reset lastFetch map
+	lastFetchMu.Lock()
+	lastFetch = make(map[string]time.Time)
+	lastFetchMu.Unlock()
+
+	// Initialize semaphore for tests
+	semaphore = make(chan struct{}, 100)
+
+	// Stop any existing timer
+	if saveTimer != nil {
+		saveTimer.Stop()
+		saveTimer = nil
+	}
+}
+
 func TestGitHandler_Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Setup valid workdir
-	tmpDir := t.TempDir()
-
-	// Override global variables for test
-	// Note: In a real app we might want to dependency inject these,
-	// but for this simple script we modify package globals.
-	gitStorePath = tmpDir
-	fetchTimeout = time.Minute
-	semaphore = make(chan struct{}, 100)
-	// Ensure lastFetch map is initialized
-	if lastFetch == nil {
-		loadMap()
-	}
+	setupTest(t)
 
 	tests := []struct {
 		name         string
@@ -115,12 +131,54 @@ func TestGitHandler_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/getgit?url="+tt.url, nil)
+			req, err := http.NewRequest(http.MethodGet, "/git?url="+tt.url, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			rr := httptest.NewRecorder()
 			gitHandler(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v",
+					status, tt.expectedCode)
+			}
+		})
+	}
+}
+
+func TestCacheHandler(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	setupTest(t)
+
+	tests := []struct {
+		name         string
+		url          string
+		expectedCode int
+	}{
+		{
+			name:         "Valid public repo",
+			url:          "https://github.com/google/oss-fuzz-vulns.git", // Small repo
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "Non-existent repo",
+			url:          "https://github.com/google/this-repo-does-not-exist-12345.git",
+			expectedCode: http.StatusForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body, _ := json.Marshal(map[string]string{"url": tt.url})
+			req, err := http.NewRequest(http.MethodPost, "/cache", bytes.NewBuffer(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+			cacheHandler(rr, req)
 
 			if status := rr.Code; status != tt.expectedCode {
 				t.Errorf("handler returned wrong status code: got %v want %v",

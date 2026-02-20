@@ -278,8 +278,8 @@ func main() {
 	defer logger.Close()
 
 	port := flag.Int("port", 8888, "Listen port")
-	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
-	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
+	workDir := flag.String("work_dir", defaultGitterWorkDir, "Work directory")
+	flag.DurationVar(&fetchTimeout, "fetch_timeout", time.Hour, "Fetch timeout duration")
 	concurrentLimit := flag.Int("concurrent_limit", 100, "Concurrent limit for unique requests")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)

@@ -28,6 +28,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
+	"golang.org/x/sys/unix"
 )
 
 type contextKey string
@@ -187,13 +188,24 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		return nil, ctx.Err()
 	}
 
-	fileData, err := os.ReadFile(archivePath)
+	f, err := os.OpenFile(archivePath, os.O_RDWR, 0644)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			deleteLastFetch(url)
 		}
 
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer f.Close()
+
+	fileData, err := io.ReadAll(f)
+	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Tell the kernel: "I don't need this in my cache anymore"
+	if err := unix.Fadvise(int(f.Fd()), 0, 0, unix.FADV_DONTNEED); err != nil {
+		logger.WarnContext(ctx, "Failed to fadvise file", slog.String("path", archivePath), slog.Any("error", err))
 	}
 
 	return fileData, nil

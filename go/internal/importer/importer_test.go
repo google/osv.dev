@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/testutils"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestSendToWorker(t *testing.T) {
@@ -21,8 +24,12 @@ func TestSendToWorker(t *testing.T) {
 	}
 	hash := "some-hash"
 	modifiedTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	vuln := &osvschema.Vulnerability{
+		Id:       "CVE-2023-1234",
+		Modified: timestamppb.New(modifiedTime),
+	}
 
-	err := sendToWorker(ctx, config, item, hash, modifiedTime)
+	err := sendToWorker(ctx, config, item, hash, modifiedTime, vuln)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -52,6 +59,19 @@ func TestSendToWorker(t *testing.T) {
 	}
 	if msg.Attributes["src_timestamp"] != "1672531200" {
 		t.Errorf("Expected src_timestamp=1672531200, got %s", msg.Attributes["src_timestamp"])
+	}
+	if len(msg.Data) == 0 {
+		t.Errorf("Expected vulnerability data to be present")
+	}
+	var parsedVuln osvschema.Vulnerability
+	if err := proto.Unmarshal(msg.Data, &parsedVuln); err != nil {
+		t.Errorf("Failed to unmarshal vulnerability: %v", err)
+	}
+	if parsedVuln.Id != "CVE-2023-1234" {
+		t.Errorf("Expected vulnerability ID CVE-2023-1234, got %s", parsedVuln.Id)
+	}
+	if parsedVuln.Modified.AsTime() != modifiedTime {
+		t.Errorf("Expected vulnerability modified time %v, got %v", modifiedTime, parsedVuln.Modified.AsTime())
 	}
 }
 

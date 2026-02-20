@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -311,7 +312,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			return
 		}
 	}
-	if err := sendToWorker(ctx, config, item, hash, modified); err != nil {
+	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
 		logger.ErrorContext(ctx, "Failed to send to worker", slog.Any("error", err), slog.String("source", sourceRepoName), slog.String("path", sourcePath))
 	}
 }
@@ -321,23 +322,32 @@ func computeHash(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time) error {
+func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time, vuln *osvschema.Vulnerability) error {
 	var srcTimestamp *time.Time
 	if !item.IsReimport {
 		// Only track the update latency if we're not doing a reimport of the data
 		srcTimestamp = &modifiedTime
 	}
 
-	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, hash, false, srcTimestamp)
+	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, hash, false, srcTimestamp, vuln)
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
-	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, "", true, nil)
+	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, "", true, nil, nil)
 }
 
-func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time) error {
+func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
+	// Send the vulnerability proto in the message data
+	var data []byte
+	if vuln != nil {
+		var err error
+		data, err = proto.Marshal(vuln)
+		if err != nil {
+			return err
+		}
+	}
 	msg := &pubsub.Message{
-		Data: []byte(""),
+		Data: data,
 		Attributes: map[string]string{
 			"type":            "update",
 			"source":          source,

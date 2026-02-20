@@ -125,6 +125,238 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 	}
 }
 
+func TestFindCPEVersionRanges(t *testing.T) {
+	tests := []struct {
+		name              string
+		cve               models.CVE5
+		wantVersionRanges []*osvschema.Range
+		wantCPEs          []string
+		wantErr           bool
+	}{
+		{
+			name: "No CPE applicability",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{},
+				},
+			},
+			wantVersionRanges: nil,
+			wantCPEs:          nil,
+			wantErr:           true,
+		},
+		{
+			name: "Non-OR operator",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						CPEApplicability: []models.CPE{
+							{
+								Nodes: []models.CPENode{
+									{
+										Operator: "AND",
+										CPEMatch: []struct {
+											Vulnerable            bool   `json:"vulnerable,omitempty"`
+											Criteria              string `json:"criteria,omitempty"`
+											VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+											VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+											VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+											VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+										}{
+											{Vulnerable: true, Criteria: "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", VersionEndExcluding: "2.0"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantVersionRanges: nil,
+			wantCPEs:          nil,
+			wantErr:           true,
+		},
+		{
+			name: "Non-vulnerable match",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						CPEApplicability: []models.CPE{
+							{
+								Nodes: []models.CPENode{
+									{
+										Operator: "OR",
+										CPEMatch: []struct {
+											Vulnerable            bool   `json:"vulnerable,omitempty"`
+											Criteria              string `json:"criteria,omitempty"`
+											VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+											VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+											VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+											VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+										}{
+											{Vulnerable: false, Criteria: "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*", VersionEndExcluding: "2.0"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantVersionRanges: nil,
+			wantCPEs:          nil,
+			wantErr:           true,
+		},
+		{
+			name: "VersionEndExcluding",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						CPEApplicability: []models.CPE{
+							{
+								Nodes: []models.CPENode{
+									{
+										Operator: "OR",
+										CPEMatch: []struct {
+											Vulnerable            bool   `json:"vulnerable,omitempty"`
+											Criteria              string `json:"criteria,omitempty"`
+											VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+											VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+											VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+											VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+										}{
+											{Vulnerable: true, Criteria: "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*", VersionStartIncluding: "1.0", VersionEndExcluding: "2.0"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantVersionRanges: []*osvschema.Range{
+				{
+					Events: []*osvschema.Event{
+						{Introduced: "1.0"},
+						{Fixed: "2.0"},
+					},
+				},
+			},
+			wantCPEs: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+			wantErr:  false,
+		},
+		{
+			name: "VersionEndIncluding",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						CPEApplicability: []models.CPE{
+							{
+								Nodes: []models.CPENode{
+									{
+										Operator: "OR",
+										CPEMatch: []struct {
+											Vulnerable            bool   `json:"vulnerable,omitempty"`
+											Criteria              string `json:"criteria,omitempty"`
+											VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+											VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+											VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+											VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+										}{
+											{Vulnerable: true, Criteria: "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*", VersionStartIncluding: "1.0", VersionEndIncluding: "2.0"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantVersionRanges: []*osvschema.Range{
+				{
+					Events: []*osvschema.Event{
+						{Introduced: "1.0"},
+						{LastAffected: "2.0"},
+					},
+				},
+			},
+			wantCPEs: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+			wantErr:  false,
+		},
+		{
+			name: "Missing VersionStartIncluding",
+			cve: models.CVE5{
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						CPEApplicability: []models.CPE{
+							{
+								Nodes: []models.CPENode{
+									{
+										Operator: "OR",
+										CPEMatch: []struct {
+											Vulnerable            bool   `json:"vulnerable,omitempty"`
+											Criteria              string `json:"criteria,omitempty"`
+											VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+											VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+											VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+											VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+										}{
+											{Vulnerable: true, Criteria: "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*", VersionEndExcluding: "2.0"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantVersionRanges: []*osvschema.Range{
+				{
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{Fixed: "2.0"},
+					},
+				},
+			},
+			wantCPEs: []string{"cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*"},
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotVersionRanges, gotCPEs, err := findCPEVersionRanges(tt.cve)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("findCPEVersionRanges() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.wantVersionRanges, gotVersionRanges, protocmp.Transform()); diff != "" {
+				t.Errorf("findCPEVersionRanges() versionRanges mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tt.wantCPEs, gotCPEs); diff != "" {
+				t.Errorf("findCPEVersionRanges() cpes mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCompareSemverLike(t *testing.T) {
 	tests := []struct {
 		name string
@@ -136,6 +368,12 @@ func TestCompareSemverLike(t *testing.T) {
 		{"a == b", "2.0.0", "2.0.0", 0},
 		{"major diff", "3.0.0", "2.0.0", 1},
 		{"minor diff", "2.1.0", "2.2.0", -1},
+		{"a < b (longer a)", "1.2.3.4", "1.2.4", -1},
+		{"a longer, extra zero", "1.2.0", "1.2", 0},
+		{"a longer, extra non-zero", "1.2.1", "1.2", 1},
+		{"b longer, extra zero", "1.2", "1.2.0", 0},
+		{"b longer, extra non-zero", "1.2", "1.2.1", -1},
+		{"non-numeric parts", "1.2.a", "1.2.b", 0}, // Atoi fails, both become 0
 	}
 
 	for _, tt := range tests {

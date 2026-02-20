@@ -26,9 +26,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/conversion/pypi"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/pypi"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -170,7 +170,7 @@ func main() {
 			}
 			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics)
+			versions := conversion.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics)
 
 			vulns.AttachExtractedVersionInfo(v, versions)
 			if len(v.Affected[0].GetRanges()) == 0 {

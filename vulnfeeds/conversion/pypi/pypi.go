@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	version "github.com/aquasecurity/go-pep440-version"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -268,7 +268,7 @@ func (p *PyPI) Matches(cve models.NVDCVE, falsePositives *triage.FalsePositives)
 
 	// As a last resort, extract the vendor and product from the CPE and try to match that
 	// against vendor/product combinations extracted from e.g. GitHub links.
-	cpes := cves.CPEs(cve)
+	cpes := conversion.CPEs(cve)
 	if len(cpes) == 0 {
 		return processMatches(matches)
 	}

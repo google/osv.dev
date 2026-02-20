@@ -3,7 +3,6 @@ package nvd
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 	"slices"
 
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -21,20 +19,16 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-var ErrNoRanges = errors.New("no ranges")
-
-var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
-
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
-	CPEs := cves.CPEs(cve)
+	CPEs := conversion.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, _ := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, _ := conversion.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 	}
@@ -42,7 +36,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
-	cpeRanges := cves.ExtractVersionsFromCPEs(cve, nil, metrics)
+	cpeRanges := conversion.ExtractVersionsFromCPEs(cve, nil, metrics)
 
 	// if there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
@@ -69,7 +63,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// Extract Commits
-	commits, err := cves.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	commits, err := conversion.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
 	}
@@ -83,7 +77,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Extract Versions From Text if no CPE versions found
 	if len(resolvedRanges) == 0 {
-		textRanges := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
+		textRanges := conversion.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
@@ -116,13 +110,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
 func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
-	CPEs := cves.CPEs(cve)
+	CPEs := conversion.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, err := conversion.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
@@ -131,7 +125,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	}
 
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
+	versions := conversion.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
@@ -140,7 +134,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 			return models.NoRepos
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		cves.VersionInfoToCommits(&versions, repos, cache, metrics)
+		conversion.VersionInfoToCommits(&versions, repos, cache, metrics)
 	}
 
 	hasAnyFixedCommits := false
@@ -216,11 +210,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 }
 
 // FindRepos attempts to find the source code repositories for a given CVE.
-func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
+func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
 	refs := cve.References
 	conversion.DeduplicateRefs(refs)
-	CPEs := cves.CPEs(cve)
+	CPEs := conversion.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string
 
@@ -233,7 +227,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	}
 
 	if len(refs) > 0 && len(CPEs) == 0 {
-		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
+		repos := conversion.ReposFromReferences(nil, nil, refs, conversion.RefTagDenyList, repoTagsCache, metrics, httpClient)
 		if len(repos) == 0 {
 			metrics.AddNote("Failed to derive any repos and there were no CPEs")
 			return nil
@@ -241,9 +235,9 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
-	vendorProductCombinations := make(map[cves.VendorProduct]bool)
+	vendorProductCombinations := make(map[conversion.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
-		CPE, err := cves.ParseCPE(CPEstr)
+		CPE, err := conversion.ParseCPE(CPEstr)
 		if err != nil {
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
@@ -251,7 +245,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		if CPE.Part != "a" && CPE.Part != "o" { // only care about application and operating system CPEs
 			continue
 		}
-		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+		vendorProductCombinations[conversion.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
 	}
 
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
@@ -269,10 +263,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			}
 		}
 		if len(reposForCVE) == 0 && len(refs) > 0 {
-			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
+			if slices.Contains(conversion.VendorProductDenyList, vendorProductKey) {
 				continue
 			}
-			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
+			repos := conversion.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, conversion.RefTagDenyList, repoTagsCache, metrics, httpClient)
 			if len(repos) == 0 {
 				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
 				continue

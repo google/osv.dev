@@ -1,4 +1,4 @@
-package cves
+package conversion
 
 import (
 	"encoding/json"

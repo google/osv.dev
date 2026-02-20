@@ -1,8 +1,7 @@
-package cvelist2osv
+package cve5
 
 import (
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -108,7 +107,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		}
 
 		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions := cves.ExtractVersionsFromText(nil, vers.Version, metrics)
+		possibleVersions := conversion.ExtractVersionsFromText(nil, vers.Version, metrics)
 
 		if possibleVersions != nil {
 			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")

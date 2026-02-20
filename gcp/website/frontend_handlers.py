@@ -220,6 +220,8 @@ def docs():
 
 @blueprint.route('/linter', strict_slashes=False)
 def linter():
+  if request.host_url == 'osv.dev':
+    return redirect(request.url.replace('osv.dev', 'test.osv.dev'), code=302)
   return render_template('linter.html')
 
 

@@ -1,5 +1,3 @@
-// contextHandler is a wrapper around slog.Handler that automatically
-// extracts registered context keys and logs their values as part of the attributes.
 package logger
 
 import (
@@ -21,6 +19,8 @@ func RegisterContextKey(ctxKey any, logKey string) {
 	ctxKeys[ctxKey] = logKey
 }
 
+// contextHandler is a wrapper around slog.Handler that automatically
+// extracts registered context keys and logs their values as part of the attributes.
 type contextHandler struct {
 	slog.Handler
 }

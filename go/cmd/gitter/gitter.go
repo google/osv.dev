@@ -171,15 +171,64 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		}
 
 		logger.InfoContext(ctx, "Archiving git blob", slog.String("url", ctx.Value(urlKey).(string)))
+
+		// TODO: This will be refactored in the gitter V1 PR anyway, so avoiding doing the refactor of runCmd here and just copy pasting.
 		// Archive
-		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
+		// tar --zstd -cf - -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", path.Join(gitStorePath, repoDirName), ".")
+		// Output to stdout to read into memory
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		
+		name := "tar"
+		args := []string{"--zstd", "-cf", "-", "-C", path.Join(gitStorePath, repoDirName), "."}
+		
+		logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+		cmd := exec.CommandContext(ctx, name, args...)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		
+		// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
+		cmd.Cancel = func() error {
+			logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("args", args))
+			return cmd.Process.Signal(syscall.SIGINT)
+		}
+		// Ensure it eventually dies if it ignores SIGINT
+		cmd.WaitDelay = shutdownTimeout / 2
+
+		if err := cmd.Run(); err != nil {
+			if ctx.Err() != nil {
+				// Log separately if cancelled
+				logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", ctx.Err()))
+				return nil, fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
+			}
+			return nil, fmt.Errorf("tar zstd failed: %w, stderr: %s", err, stderr.String())
+		}
+
+		fileData := stdout.Bytes()
+		
+		// Write to disk
+		f, err := os.OpenFile(archivePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
-			return nil, fmt.Errorf("tar zstd failed: %w", err)
+			return nil, fmt.Errorf("failed to create archive file: %w", err)
+		}
+		
+		if _, err := f.Write(fileData); err != nil {
+			f.Close()
+			return nil, fmt.Errorf("failed to write archive: %w", err)
+		}
+		
+		// Tell the kernel: "I don't need this in my cache anymore"
+		if err := unix.Fadvise(int(f.Fd()), 0, 0, unix.FADV_DONTNEED); err != nil {
+			logger.WarnContext(ctx, "Failed to fadvise file", slog.String("path", archivePath), slog.Any("error", err))
+		}
+		
+		if err := f.Close(); err != nil {
+			return nil, fmt.Errorf("failed to close archive file: %w", err)
 		}
 
 		updateLastFetch(url)
+		return fileData, nil
 	}
 
 	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
@@ -188,7 +237,7 @@ func fetchBlob(ctx context.Context, url string, forceUpdate bool) ([]byte, error
 		return nil, ctx.Err()
 	}
 
-	f, err := os.OpenFile(archivePath, os.O_RDWR, 0644)
+	f, err := os.Open(archivePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			deleteLastFetch(url)

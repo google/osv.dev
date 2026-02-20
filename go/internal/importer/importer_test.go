@@ -67,11 +67,11 @@ func TestSendToWorker(t *testing.T) {
 	if err := proto.Unmarshal(msg.Data, &parsedVuln); err != nil {
 		t.Errorf("Failed to unmarshal vulnerability: %v", err)
 	}
-	if parsedVuln.Id != "CVE-2023-1234" {
-		t.Errorf("Expected vulnerability ID CVE-2023-1234, got %s", parsedVuln.Id)
+	if parsedVuln.GetId() != "CVE-2023-1234" {
+		t.Errorf("Expected vulnerability ID CVE-2023-1234, got %s", parsedVuln.GetId())
 	}
-	if parsedVuln.Modified.AsTime() != modifiedTime {
-		t.Errorf("Expected vulnerability modified time %v, got %v", modifiedTime, parsedVuln.Modified.AsTime())
+	if parsedVuln.GetModified().AsTime() != modifiedTime {
+		t.Errorf("Expected vulnerability modified time %v, got %v", modifiedTime, parsedVuln.GetModified().AsTime())
 	}
 }
 

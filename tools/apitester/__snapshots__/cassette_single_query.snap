@@ -289,13 +289,13 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
                   "introduced": "0"
                 },
                 {
-                  "last_affected": "afcae83a064843d71d47624bc162e121cc56c08b"
+                  "fixed": "85be877925ddbf34f74a1229f3ca1716bb6170dc"
                 }
               ]
             }
@@ -561,182 +561,6 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-51767",
-      "details": "OpenSSH through 10.0, when common types of DRAM are used, might allow row hammer attacks (for authentication bypass) because the integer value of authenticated in mm_answer_authpassword does not resist flips of a single bit. NOTE: this is applicable to a certain threat model of attacker-victim co-location in which the attacker has user privileges. NOTE: this is disputed by the Supplier, who states \"we do not consider it to be the application's responsibility to defend against platform architectural weaknesses.\"",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-12-24T07:15:07.410Z",
-      "related": ["CGA-87mg-824v-5jqp"],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/auth-passwd.c#L77"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/monitor.c#L878"
-        },
-        {
-          "type": "WEB",
-          "url": "https://www.openwall.com/lists/oss-security/2025/09/22/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/3"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/3"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/28/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://access.redhat.com/security/cve/CVE-2023-51767"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240125-0006/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://ubuntu.com/security/CVE-2023-51767"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://arxiv.org/abs/2309.02545"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "last_affected": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 181,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -2385,11 +2209,17 @@
                 },
                 {
                   "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+                },
+                {
+                  "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
+                },
+                {
+                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
               ]
             }
           ],
-          "versions": 209,
+          "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
@@ -3575,6 +3405,55 @@
         }
       ],
       "schema_version": "1.7.3"
+    },
+    {
+      "id": "GHSA-wx95-c6cv-8532",
+      "summary": "Nokogiri does not check the return value from xmlC14NExecute",
+      "details": "## Summary\n\nNokogiri's CRuby extension fails to check the return value from `xmlC14NExecute` in the method `Nokogiri::XML::Document#canonicalize` and `Nokogiri::XML::Node#canonicalize`. When canonicalization fails, an empty string is returned instead of raising an exception. This incorrect return value may allow downstream libraries to accept invalid or incomplete canonicalized XML, which has been demonstrated to enable signature validation bypass in SAML libraries.\n\nJRuby is not affected, as the Java implementation correctly raises `RuntimeError` on canonicalization failure.\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.1`.\n\n## Severity\n\nThe maintainers have assessed this as **Medium** severity. Nokogiri itself is a parsing library without a clear security boundary related to canonicalization, so the direct impact is that a method returns incorrect data on invalid input. However, this behavior was exploited in practice to bypass SAML signature validation in downstream libraries (see References).\n\n## Credit\n\nThis vulnerability was responsibly reported by HackerOne researcher `d4d`.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-02-18T21:57:38Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wx95-c6cv-8532"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "1.5.1"
+                },
+                {
+                  "fixed": "1.19.1"
+                }
+              ]
+            }
+          ],
+          "versions": 155,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+        }
+      ]
     }
   ]
 }

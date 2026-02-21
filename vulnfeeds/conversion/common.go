@@ -181,7 +181,9 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		if len(unresolvedRanges) == 0 {
 			break // All ranges have been resolved.
 		}
-
+		if cache.IsInvalid(repo) {
+			continue
+		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags - %s", repo)
@@ -255,6 +257,20 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 	return newVersionRanges, unresolvedRanges, successfulRepos
 }
 
+// resolveVersionToCommit is a helper to convert a version string to a commit hash.
+// It logs the outcome of the conversion attempt and returns an empty string on failure.
+func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
+	if version == "" {
+		return ""
+	}
+	commit, err := git.VersionToCommit(version, normalizedTags)
+	if err != nil {
+		return ""
+	}
+
+	return commit
+}
+
 // BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
 // events to an OSV version range. If 'intro' is empty, it defaults to "0".
 func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Range {
@@ -280,16 +296,56 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	return &versionRange
 }
 
-// resolveVersionToCommit is a helper to convert a version string to a commit hash.
-// It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
-	if version == "" {
-		return ""
-	}
-	commit, err := git.VersionToCommit(version, normalizedTags)
-	if err != nil {
-		return ""
+func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
+	// check if the ranges are the same
+	if range1.GetRepo() != range2.GetRepo() || range1.GetType() != range2.GetType() {
+		return nil
 	}
 
-	return commit
+	mergedRange := &osvschema.Range{
+		Repo:   range1.GetRepo(),
+		Type:   range1.GetType(),
+		Events: append(range1.Events, range2.GetEvents()...),
+	}
+
+	db1 := range1.GetDatabaseSpecific()
+	db2 := range2.GetDatabaseSpecific()
+
+	if db1 == nil && db2 == nil {
+		return mergedRange
+	}
+
+	mergedMap := make(map[string]any)
+
+	if db1 != nil {
+		for k, v := range db1.GetFields() {
+			mergedMap[k] = v.AsInterface()
+		}
+	}
+
+	if db2 != nil {
+		for k, v := range db2.GetFields() {
+			if existing, ok := mergedMap[k]; ok {
+				// If both are lists, append them
+				if list1, ok := existing.([]any); ok {
+					if list2, ok := v.AsInterface().([]any); ok {
+						mergedMap[k] = append(list1, list2...)
+						continue
+					}
+				}
+			}
+			// Otherwise overwrite or add new
+			mergedMap[k] = v.AsInterface()
+		}
+	}
+
+	if len(mergedMap) > 0 {
+		if ds, err := utility.NewStructpbFromMap(mergedMap); err == nil {
+			mergedRange.DatabaseSpecific = ds
+		} else {
+			logger.Warn("Failed to create DatabaseSpecific for merged range: %v", err)
+		}
+	}
+
+	return mergedRange
 }

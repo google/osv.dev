@@ -73,6 +73,7 @@ const (
 	VersionSourceGit         VersionSource = "GITVERS"
 	VersionSourceCPE         VersionSource = "CPEVERS"
 	VersionSourceDescription VersionSource = "DESCRVERS"
+	VersionSourceRefs        VersionSource = "REFS"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {

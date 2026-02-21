@@ -29,8 +29,10 @@ import (
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 )
@@ -59,6 +61,8 @@ var VendorProductDenyList = []VendorProduct{
 	// [CVE-2021-28957]: Incorrectly associates with github.com/lxml/lxml
 	{"oracle", "zfs_storage_appliance_kit"},
 	{"gradle", "enterprise"}, // The OSS repo gets mis-attributed via CVE-2020-15767
+	{"qualcomm", ""},         // firmware out of scope
+	{"linux", "linux_kernel"},
 }
 
 type VendorProduct struct {
@@ -546,10 +550,26 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
+func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
+	var commits []models.AffectedCommit //nolint:prealloc
+
+	for _, ref := range references {
+		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
+		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient)
+		if err != nil {
+			continue
+		}
+
+		commits = append(commits, ac)
+	}
+
+	return commits, nil
+}
+
+// For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
 	c, r, err := ExtractGitCommit(link, httpClient, 0)
-
 	if err != nil {
 		return ac, err
 	}
@@ -637,7 +657,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []models.AffectedVersion {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []*osvschema.Range {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -650,7 +670,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		return nil
 	}
 
-	versions := make([]models.AffectedVersion, 0, len(matches))
+	versions := make([]*osvschema.Range, 0, len(matches))
 
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
@@ -688,11 +708,8 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		versions = append(versions, models.AffectedVersion{
-			Introduced:   introduced,
-			Fixed:        fixed,
-			LastAffected: lastaffected,
-		})
+		vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+		versions = append(versions, vr)
 	}
 
 	return versions
@@ -718,10 +735,110 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.AffectedVersion {
-	versions := []models.AffectedVersion{}
-	seen := make(map[models.AffectedVersion]bool)
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []*osvschema.Range {
+	versions := []*osvschema.Range{}
 
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			if node.Operator != "OR" {
+				continue
+			}
+
+			for _, match := range node.CPEMatch {
+				if !match.Vulnerable {
+					continue
+				}
+
+				introduced := ""
+				fixed := ""
+				lastaffected := ""
+				if match.VersionStartIncluding != nil {
+					introduced = cleanVersion(*match.VersionStartIncluding)
+				} else if match.VersionStartExcluding != nil {
+					var err error
+					introduced, err = nextVersion(validVersions, cleanVersion(*match.VersionStartExcluding))
+					if err != nil {
+						metrics.AddNote("%v", err.Error())
+					}
+				}
+
+				if match.VersionEndExcluding != nil {
+					fixed = cleanVersion(*match.VersionEndExcluding)
+				} else if match.VersionEndIncluding != nil {
+					var err error
+					// Infer the fixed version from the next version after.
+					fixed, err = nextVersion(validVersions, cleanVersion(*match.VersionEndIncluding))
+					if err != nil {
+						metrics.AddNote("%v", err.Error())
+						// if that inference failed, we know this version was definitely still vulnerable.
+						lastaffected = cleanVersion(*match.VersionEndIncluding)
+						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
+					}
+				}
+
+				if introduced == "" && fixed == "" && lastaffected == "" {
+					// See if a last affected version is inferable from the CPE string.
+					// In this situation there is no known introduced version.
+					CPE, err := ParseCPE(match.Criteria)
+					if err != nil {
+						continue
+					}
+					if CPE.Part != "a" && CPE.Part != "o" {
+						continue
+					}
+					if slices.Contains([]string{"NA", "ANY"}, CPE.Version) {
+						// These are meaningless converting to commits.
+						continue
+					}
+					lastaffected = CPE.Version
+					if CPE.Update != "ANY" {
+						lastaffected += "-" + CPE.Update
+					}
+				}
+
+				if introduced == "" {
+					if fixed == "" && lastaffected == "" {
+						continue
+					}
+					introduced = "0"
+				}
+
+				if introduced != "" && !HasVersion(validVersions, introduced) {
+					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
+				}
+
+				if introduced == "" {
+					introduced = "0"
+				}
+
+				if fixed != "" && !HasVersion(validVersions, fixed) {
+					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
+				}
+				vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+				versions = append(versions, vr)
+			}
+		}
+	}
+	if len(versions) > 0 {
+		metrics.AddNote("Extracted versions from CPEs: %v", versions)
+	}
+
+	return versions
+}
+
+// ExtractVersionInfo extracts version information from a CVE.
+// Deprecated: Use ExtractVersions instead.
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
+	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
+		v.AffectedCommits = append(v.AffectedCommits, commit...)
+	}
+
+	if v.AffectedCommits != nil {
+		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
+		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
+	}
+
+	// gotVersions := false
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			if node.Operator != "OR" {
@@ -789,54 +906,30 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 					metrics.AddNote("Warning: %s is not a valid introduced version", introduced)
 				}
 
-				if introduced == "" {
-					introduced = "0"
-				}
-
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
 
+				// gotVersions = true
 				possibleNewAffectedVersion := models.AffectedVersion{
 					Introduced:   introduced,
 					Fixed:        fixed,
 					LastAffected: lastaffected,
 				}
-
-				if seen[possibleNewAffectedVersion] {
+				if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+					// Avoid appending duplicates
 					continue
 				}
-				seen[possibleNewAffectedVersion] = true
-				versions = append(versions, possibleNewAffectedVersion)
-				metrics.AddNote("Extracted version %+v", possibleNewAffectedVersion)
+				v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 			}
 		}
 	}
-
-	return versions
-}
-
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	for _, reference := range cve.References {
-		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		if commit, err := extractGitAffectedCommit(reference.URL, models.Fixed, httpClient); err == nil {
-			v.AffectedCommits = append(v.AffectedCommits, commit)
-		}
-	}
-	if len(v.AffectedCommits) > 0 {
-		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
-	}
-
-	v.AffectedVersions = ExtractVersionsFromCPEs(cve, validVersions, metrics)
-	if len(v.AffectedVersions) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", v.AffectedVersions)
-	} else {
-		v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
-		if len(v.AffectedVersions) > 0 {
-			metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
-		}
-	}
+	// if !gotVersions {
+	// 	v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
+	// 	if len(v.AffectedVersions) > 0 {
+	// 		metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
+	// 	}
+	// }
 
 	if len(v.AffectedVersions) == 0 {
 		metrics.AddNote("No versions detected.")
@@ -945,6 +1038,7 @@ func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 }
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
+// *** Does external calls to verify repos ***
 func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
 	if vp == nil {
 		return
@@ -1001,20 +1095,16 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func VersionInfoToCommits(versions models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (v models.VersionInfo) {
+func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
-	v = versions
 	for _, repo := range repos {
-		if cache.IsInvalid(repo) {
-			continue
-		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
 			continue
 		}
-		for _, av := range versions.AffectedVersions {
+		for _, av := range v.AffectedVersions {
 			metrics.AddNote("Attempting version resolution for %s in %s", av, repo)
 			introducedEquivalentCommit := ""
 			if av.Introduced != "" && av.Introduced != "0" {
@@ -1034,7 +1124,7 @@ func VersionInfoToCommits(versions models.VersionInfo, repos []string, cache *gi
 			// AffectedCommits (with Fixed commits) when the CVE has appropriate references, and assuming these references are indeed
 			// Fixed commits, they're also assumed to be more precise than what may be derived from tag to commit mapping.
 			fixedEquivalentCommit := ""
-			if v.HasFixedCommits(repo) && av.Fixed != "" && len(versions.AffectedVersions) == 1 {
+			if v.HasFixedCommits(repo) && av.Fixed != "" && len(v.AffectedVersions) == 1 {
 				fixedEquivalentCommit = v.FixedCommits(repo)[0]
 				metrics.AddNote("Using preassumed fixed commits instead of deriving from fixed version %s", av.Fixed)
 			} else if av.Fixed != "" {
@@ -1088,12 +1178,10 @@ func VersionInfoToCommits(versions models.VersionInfo, repos []string, cache *gi
 			v.AffectedCommits = append(v.AffectedCommits, ac)
 		}
 	}
-
-	return v
 }
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
-// TODO (jesslowe): refactor with below
+// *** Does external calls to verify repos ***
 func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.

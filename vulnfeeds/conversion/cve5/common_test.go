@@ -601,6 +601,7 @@ func TestGetVersionExtractor(t *testing.T) {
 	}
 }
 
+
 func TestExtractVersions(t *testing.T) {
 	testCases := []struct {
 		name             string
@@ -801,4 +802,180 @@ func TestExtractVersions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddRangesToAffected(t *testing.T) {
+	tests := []struct {
+		name             string
+		resolvedRanges   []*osvschema.Range
+		unresolvedRanges []*osvschema.Range
+		wantAffectedLen  int
+		wantHasDB        bool
+	}{
+		{
+			name: "Resolved ranges only",
+			resolvedRanges: []*osvschema.Range{
+				{Type: osvschema.Range_GIT, Repo: "https://github.com/example/repo"},
+			},
+			unresolvedRanges: nil,
+			wantAffectedLen:  1,
+			wantHasDB:        false,
+		},
+		{
+			name: "Resolved and unresolved ranges",
+			resolvedRanges: []*osvschema.Range{
+				{Type: osvschema.Range_GIT, Repo: "https://github.com/example/repo"},
+			},
+			unresolvedRanges: []*osvschema.Range{
+				{Type: osvschema.Range_GIT, Repo: "https://github.com/example/repo2"},
+			},
+			wantAffectedLen: 1,
+			wantHasDB:       true,
+		},
+		{
+			name:             "No resolved ranges",
+			resolvedRanges:   nil,
+			unresolvedRanges: []*osvschema.Range{{Type: osvschema.Range_GIT}},
+			wantAffectedLen:  0,
+			wantHasDB:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{},
+			}
+			metrics := &models.ConversionMetrics{}
+			addRangesToAffected(tt.resolvedRanges, tt.unresolvedRanges, v, metrics)
+
+			if len(v.Affected) != tt.wantAffectedLen {
+				t.Errorf("addRangesToAffected() added %d affected, want %d", len(v.Affected), tt.wantAffectedLen)
+			}
+
+			if tt.wantAffectedLen > 0 {
+				hasDB := v.Affected[0].DatabaseSpecific != nil
+				if hasDB != tt.wantHasDB {
+					t.Errorf("addRangesToAffected() databaseSpecific present = %v, want %v", hasDB, tt.wantHasDB)
+				}
+			}
+		})
+	}
+}
+
+func TestDefaultExtractorExtractVersions(t *testing.T) {
+	// This test focuses on the fallback logic in DefaultVersionExtractor.ExtractVersions
+	extractor := &DefaultVersionExtractor{}
+
+	t.Run("Extract from Affected", func(t *testing.T) {
+		cve := models.CVE5{
+			Containers: struct {
+				CNA models.CNA `json:"cna"`
+				ADP []models.CNA `json:"adp,omitempty"`
+			}{
+				CNA: models.CNA{
+					Affected: []models.Affected{
+						{
+							Versions: []models.Versions{
+								{Version: "1.0.0", Status: "affected"},
+							},
+						},
+					},
+				},
+			},
+		}
+		v := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		metrics := &models.ConversionMetrics{}
+		extractor.ExtractVersions(cve, v, metrics, nil)
+
+		if len(v.Affected) == 0 {
+			t.Errorf("Expected affected ranges to be added from Affected field")
+		}
+	})
+
+	t.Run("Extract from CPE", func(t *testing.T) {
+		cve := models.CVE5{
+			Containers: struct {
+				CNA models.CNA `json:"cna"`
+				ADP []models.CNA `json:"adp,omitempty"`
+			}{
+				CNA: models.CNA{
+					CPEApplicability: []models.CPE{
+						{
+							Nodes: []models.CPENode{
+								{
+									Operator: "OR",
+									CPEMatch: []struct {
+										Vulnerable            bool   `json:"vulnerable,omitempty"`
+										Criteria              string `json:"criteria,omitempty"`
+										VersionEndIncluding   string `json:"versionEndIncluding,omitempty"`
+										VersionStartExcluding string `json:"versionStartExcluding,omitempty" mapstructure:"versionStartExcluding,omitempty" yaml:"versionStartExcluding,omitempty"`
+										VersionStartIncluding string `json:"versionStartIncluding,omitempty" mapstructure:"versionStartIncluding,omitempty" yaml:"versionStartIncluding,omitempty"`
+										VersionEndExcluding   string `json:"versionEndExcluding,omitempty"`
+									}{
+										{Vulnerable: true, Criteria: "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*", VersionStartIncluding: "1.0", VersionEndExcluding: "2.0"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		v := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		metrics := &models.ConversionMetrics{}
+		extractor.ExtractVersions(cve, v, metrics, nil)
+
+		if len(v.Affected) == 0 {
+			t.Errorf("Expected affected ranges to be added from CPE field")
+		}
+	})
+
+	t.Run("Extract from Description", func(t *testing.T) {
+		cve := models.CVE5{
+			Containers: struct {
+				CNA models.CNA `json:"cna"`
+				ADP []models.CNA `json:"adp,omitempty"`
+			}{
+				CNA: models.CNA{
+					Descriptions: []models.LangString{
+						{Lang: "en", Value: "Vulnerability in product before 1.2.3"},
+					},
+				},
+			},
+		}
+		v := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		metrics := &models.ConversionMetrics{}
+		extractor.ExtractVersions(cve, v, metrics, nil)
+
+		if len(v.Affected) == 0 {
+			t.Errorf("Expected affected ranges to be added from Description field")
+		}
+	})
+
+	t.Run("No versions extracted", func(t *testing.T) {
+		cve := models.CVE5{
+			Containers: struct {
+				CNA models.CNA `json:"cna"`
+				ADP []models.CNA `json:"adp,omitempty"`
+			}{
+				CNA: models.CNA{},
+			},
+		}
+		v := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{},
+		}
+		metrics := &models.ConversionMetrics{}
+		extractor.ExtractVersions(cve, v, metrics, nil)
+
+		if len(v.Affected) != 0 {
+			t.Errorf("Expected no affected ranges to be added")
+		}
+	})
 }

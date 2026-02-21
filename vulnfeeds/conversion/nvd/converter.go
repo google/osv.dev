@@ -364,7 +364,7 @@ func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 			return
 		}
 	}
-	//TODO: maybe handle if the fixed event appeards as an introduced event or similar.
+	//TODO: maybe handle if the fixed event appears as an introduced event or similar.
 
 	if event.GetIntroduced() != "" {
 		versionRange.Events = append([]*osvschema.Event{{

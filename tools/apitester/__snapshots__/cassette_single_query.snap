@@ -3,85 +3,6 @@
 {
   "vulns": [
     {
-      "id": "CVE-2021-45931",
-      "details": "HarfBuzz 2.9.0 has an out-of-bounds write in hb_bit_set_invertible_t::set (called from hb_sparseset_t\u003chb_bit_set_invertible_t\u003e::set and hb_set_copy).",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2022-01-01T01:15:08.477Z",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/4EAIZKL4O67FN2CWJYHYKZEMNYWNWO3D/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/5A7TCR2MY46YK3NHQZB3SLESUH354IEA/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202209-11"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
-                }
-              ]
-            }
-          ],
-          "versions": 138,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
-        }
-      ]
-    },
-    {
       "id": "CVE-2022-33068",
       "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
       "aliases": [
@@ -561,182 +482,6 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-51767",
-      "details": "OpenSSH through 10.0, when common types of DRAM are used, might allow row hammer attacks (for authentication bypass) because the integer value of authenticated in mm_answer_authpassword does not resist flips of a single bit. NOTE: this is applicable to a certain threat model of attacker-victim co-location in which the attacker has user privileges. NOTE: this is disputed by the Supplier, who states \"we do not consider it to be the application's responsibility to defend against platform architectural weaknesses.\"",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-12-24T07:15:07.410Z",
-      "related": ["CGA-87mg-824v-5jqp"],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/auth-passwd.c#L77"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/openssh/openssh-portable/blob/8241b9c0529228b4b86d88b1a6076fb9f97e4a99/monitor.c#L878"
-        },
-        {
-          "type": "WEB",
-          "url": "https://www.openwall.com/lists/oss-security/2025/09/22/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/22/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/3"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/23/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/24/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/25/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/26/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/2"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/3"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/27/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/28/7"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/09/29/6"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/1"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2025/10/01/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://access.redhat.com/security/cve/CVE-2023-51767"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240125-0006/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://ubuntu.com/security/CVE-2023-51767"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2255850"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://arxiv.org/abs/2309.02545"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "last_affected": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 181,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -1725,6 +1470,408 @@
       ]
     },
     {
+      "id": "CVE-2018-14618",
+      "details": "curl before version 7.61.1 is vulnerable to a buffer overrun in the NTLM authentication code. The internal function Curl_ntlm_core_mk_nt_hash multiplies the length of the password by two (SUM) to figure out how large temporary storage area to allocate from the heap. The length value is then subsequently used to iterate over the password and generate output into the allocated storage buffer. On systems with a 32 bit size_t, the math to calculate SUM triggers an integer overflow when the password length exceeds 2GB (2^31 bytes). This integer overflow usually causes a very small buffer to actually get allocated instead of the intended very huge one, making the use of that buffer end up in a heap buffer overflow. (This bug is almost identical to CVE-2017-8816.)",
+      "aliases": ["CURL-CVE-2018-14618"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2018-09-05T19:29:00.420Z",
+      "related": [
+        "MGASA-2018-0423",
+        "SUSE-SU-2018:2629-1",
+        "SUSE-SU-2018:2714-1",
+        "SUSE-SU-2018:2715-1",
+        "SUSE-SU-2018:2717-1",
+        "openSUSE-SU-2024:10582-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.securitytracker.com/id/1041605"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://access.redhat.com/errata/RHSA-2018:3558"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://access.redhat.com/errata/RHSA-2019:1880"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.haxx.se/docs/CVE-2018-14618.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/201903-03"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3765-1/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3765-2/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.debian.org/security/2018/dsa-4286"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "ed4474316d24db7bdf8753d77d78fd4de5713876"
+                }
+              ]
+            }
+          ],
+          "versions": 230,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2018-16839",
+      "details": "Curl versions 7.33.0 through 7.61.1 are vulnerable to a buffer overrun in the SASL authentication code that may lead to denial of service.",
+      "aliases": ["CURL-CVE-2018-16839"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2018-10-31T18:29:00.230Z",
+      "related": [
+        "SUSE-SU-2018:3624-1",
+        "SUSE-SU-2019:0339-1",
+        "SUSE-SU-2019:0996-1",
+        "openSUSE-SU-2024:10582-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://lists.apache.org/thread.html/8338a0f605bdbb3a6098bb76f666a95fc2b2f53f37fa1ecc89f1146f%40%3Cdevnull.infra.apache.org%3E"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.securitytracker.com/id/1042012"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16839"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16839.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/curl/curl/commit/f3a24d7916b9173c69a3e0ee790102993833d6c5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.debian.org/debian-lts-announce/2018/11/msg00005.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/201903-03"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3805-1/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.debian.org/security/2018/dsa-4331"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16839"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16839.html"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/curl/curl/commit/f3a24d7916b9173c69a3e0ee790102993833d6c5"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://lists.debian.org/debian-lts-announce/2018/11/msg00005.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "last_affected": "ed4474316d24db7bdf8753d77d78fd4de5713876"
+                }
+              ]
+            }
+          ],
+          "versions": 114,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2018-16842",
+      "details": "Curl versions 7.14.1 through 7.61.1 are vulnerable to a heap-based buffer over-read in the tool_msgs.c:voutf() function that may result in information exposure and denial of service.",
+      "aliases": ["CURL-CVE-2018-16842"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2018-10-31T19:29:00.690Z",
+      "related": [
+        "SUSE-SU-2018:3607-1",
+        "SUSE-SU-2018:3608-1",
+        "SUSE-SU-2018:3624-1",
+        "SUSE-SU-2018:3681-1",
+        "SUSE-SU-2019:0339-1",
+        "openSUSE-SU-2024:10582-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "http://www.securitytracker.com/id/1042014"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://access.redhat.com/errata/RHSA-2019:2181"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16842"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16842.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/curl/curl/commit/d530e92f59ae9bb2d47066c3c460b25d2ffeb211"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.debian.org/debian-lts-announce/2018/11/msg00005.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/201903-03"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3805-1/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3805-2/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.debian.org/security/2018/dsa-4331"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.oracle.com/technetwork/security-advisory/cpuoct2019-5072832.html"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16842"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16842.html"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/curl/curl/commit/d530e92f59ae9bb2d47066c3c460b25d2ffeb211"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "https://lists.debian.org/debian-lts-announce/2018/11/msg00005.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e1a986e0f35cf36618bd88f42e14ea856b6951b"
+                },
+                {
+                  "last_affected": "ed4474316d24db7bdf8753d77d78fd4de5713876"
+                }
+              ]
+            }
+          ],
+          "versions": 164,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2018-16890",
+      "details": "libcurl versions from 7.36.0 to before 7.64.0 is vulnerable to a heap buffer out-of-bounds read. The function handling incoming NTLM type-2 messages (`lib/vauth/ntlm.c:ntlm_decode_type2_target`) does not validate incoming data correctly and is subject to an integer overflow vulnerability. Using that overflow, a malicious or broken NTLM server could trick libcurl to accept a bad length + offset combination that would lead to a buffer read out-of-bounds.",
+      "aliases": ["CURL-CVE-2018-16890"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2019-02-06T20:29:00.243Z",
+      "related": [
+        "SUSE-SU-2019:0248-1",
+        "SUSE-SU-2019:0249-1",
+        "SUSE-SU-2019:0249-2",
+        "SUSE-SU-2019:0339-1",
+        "openSUSE-SU-2019:0174-1",
+        "openSUSE-SU-2024:10582-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://lists.apache.org/thread.html/8338a0f605bdbb3a6098bb76f666a95fc2b2f53f37fa1ecc89f1146f%40%3Cdevnull.infra.apache.org%3E"
+        },
+        {
+          "type": "WEB",
+          "url": "https://support.f5.com/csp/article/K03314397?utm_source=f5support&amp%3Butm_medium=RSS"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.securityfocus.com/bid/106947"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://access.redhat.com/errata/RHSA-2019:3701"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16890"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16890.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20190315-0001/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://usn.ubuntu.com/3882-1/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.debian.org/security/2019/dsa-4386"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://www.oracle.com/technetwork/security-advisory/cpujul2019-5072835.html"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16890"
+        },
+        {
+          "type": "FIX",
+          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-16890"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.haxx.se/docs/CVE-2018-16890.html"
+        },
+        {
+          "type": "FIX",
+          "url": "https://security.netapp.com/advisory/ntap-20190315-0001/"
+        },
+        {
+          "type": "FIX",
+          "url": "https://www.oracle.com/technetwork/security-advisory/cpuapr2019-5072813.html"
+        },
+        {
+          "type": "FIX",
+          "url": "https://www.oracle.com/technetwork/security-advisory/cpujul2019-5072835.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "4f041c9d6e61829310eb0715d8edb2a232478123"
+                },
+                {
+                  "fixed": "55d1974913cae8b5ee6d01667a282531ff17d096"
+                }
+              ]
+            }
+          ],
+          "versions": 111,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
       "id": "CVE-2024-0853",
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even when the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh, which then skipped the verify status check.",
       "aliases": ["CURL-CVE-2024-0853"],
@@ -2381,15 +2528,15 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "0"
+                  "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
-                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
                 }
               ]
             }
           ],
-          "versions": 209,
+          "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
@@ -2819,16 +2966,10 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "76f83f0db23846e254d940ec7"
-                },
-                {
                   "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
                 },
                 {
-                  "fixed": "76f83f0db23846e254d940ec7"
+                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
               ]
             }
@@ -3575,6 +3716,55 @@
         }
       ],
       "schema_version": "1.7.3"
+    },
+    {
+      "id": "GHSA-wx95-c6cv-8532",
+      "summary": "Nokogiri does not check the return value from xmlC14NExecute",
+      "details": "## Summary\n\nNokogiri's CRuby extension fails to check the return value from `xmlC14NExecute` in the method `Nokogiri::XML::Document#canonicalize` and `Nokogiri::XML::Node#canonicalize`. When canonicalization fails, an empty string is returned instead of raising an exception. This incorrect return value may allow downstream libraries to accept invalid or incomplete canonicalized XML, which has been demonstrated to enable signature validation bypass in SAML libraries.\n\nJRuby is not affected, as the Java implementation correctly raises `RuntimeError` on canonicalization failure.\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.1`.\n\n## Severity\n\nThe maintainers have assessed this as **Medium** severity. Nokogiri itself is a parsing library without a clear security boundary related to canonicalization, so the direct impact is that a method returns incorrect data on invalid input. However, this behavior was exploited in practice to bypass SAML signature validation in downstream libraries (see References).\n\n## Credit\n\nThis vulnerability was responsibly reported by HackerOne researcher `d4d`.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-02-18T21:57:38Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wx95-c6cv-8532"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "1.5.1"
+                },
+                {
+                  "fixed": "1.19.1"
+                }
+              ]
+            }
+          ],
+          "versions": 155,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+        }
+      ]
     }
   ]
 }

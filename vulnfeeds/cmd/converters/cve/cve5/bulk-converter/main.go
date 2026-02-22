@@ -25,12 +25,12 @@ var (
 	localOutputDir = flag.String("out-dir", "cvelist2osv", "Path to output results.")
 	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
 	workers        = flag.Int("workers", 30, "The number of concurrent workers to use for processing CVEs.")
-	cnaAllowList   = flag.String("cnas-allowlist", "", "A comma-separated list of CNAs to process. If not provided, defaults to cna_allowlist.txt.")
+	cnaDenyList    = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
 	rejectFailed   = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
 )
 
-//go:embed cna_allowlist.txt
-var cnaAllowlistData []byte
+//go:embed cna_denylist.txt
+var cnaDenylistData []byte
 
 func main() {
 	flag.Parse()
@@ -44,10 +44,10 @@ func main() {
 	jobs := make(chan string)
 	var wg sync.WaitGroup
 	var cnaList []string
-	if *cnaAllowList != "" {
-		cnaList = strings.Split(*cnaAllowList, ",")
+	if *cnaDenyList != "" {
+		cnaList = strings.Split(*cnaDenyList, ",")
 	} else {
-		for _, cna := range strings.Split(string(cnaAllowlistData), "\n") {
+		for _, cna := range strings.Split(string(cnaDenylistData), "\n") {
 			cna = strings.TrimSpace(cna)
 			if cna != "" {
 				cnaList = append(cnaList, cna)
@@ -112,7 +112,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 			continue
 		}
 
-		if !slices.Contains(cnas, cve.Metadata.AssignerShortName) || cve.Metadata.State != "PUBLISHED" {
+		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || cve.Metadata.State != "PUBLISHED" {
 			continue
 		}
 		cveID := cve.Metadata.CVEID

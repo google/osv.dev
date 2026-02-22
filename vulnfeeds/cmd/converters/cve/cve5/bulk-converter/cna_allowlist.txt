@@ -1,5 +1,0 @@
-Linux
-GitHub_M
-GitLab
-Centreon
-@huntrdev

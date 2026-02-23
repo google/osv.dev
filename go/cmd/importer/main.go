@@ -97,7 +97,9 @@ func main() {
 	}
 }
 
-// importerSampleRate returns the sample rate for the importer (not the individual vulnerability entries).
+// importerSampleRate returns the sample rate for the high-level importer orchestration.
+// This covers the discovery process: starting up, listing repositories, and identifying changed files.
+// e.g. importer start -> handleImportGit -> identify changed files -> end
 // It is set to 0.05 (5%) by default, but can be overridden by the
 // IMPORT_TRACE_SAMPLE_RATE environment variable.
 func importerSampleRate() float64 {
@@ -110,6 +112,9 @@ func importerSampleRate() float64 {
 }
 
 // vulnerabilitySampleRate returns the sample rate for individual vulnerability entries.
+// This decision is made in the importer but persists as the record is published to
+// Pub/Sub and processed by the downstream worker.
+// e.g. read/parse record -> publish to Pub/Sub -> [worker picks up] -> enumerate versions/commits
 // It is set to 0.05 (5%) by default, but can be overridden by the
 // TRACE_SAMPLE_RATE environment variable.
 func vulnerabilitySampleRate() float64 {

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	slogLogger = slog.New(newLocalHandler(os.Stdout))
+	slogLogger = slog.New(&contextHandler{newLocalHandler(os.Stdout)})
 	once       sync.Once
 	tp         *sdktrace.TracerProvider
 	projectID  string

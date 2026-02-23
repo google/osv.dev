@@ -249,7 +249,7 @@ func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
 	// We update if archive does not exist OR if it is older than the last fetch
 	stats, err := os.Stat(archivePath)
 	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
-		logger.InfoContext(ctx, "Archiving git blob", slog.String("url", ctx.Value(urlKey).(string)))
+		logger.InfoContext(ctx, "Archiving git blob")
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
@@ -359,7 +359,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
-	logger.InfoContext(ctx, "Received request", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
+	logger.InfoContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -402,7 +402,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return ArchiveRepo(ctx, url)
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Error archiving blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
 
 		return
@@ -419,7 +419,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.InfoContext(ctx, "Request completed successfully", slog.String("url", url))
+	logger.InfoContext(ctx, "Request completed successfully: /git")
 }
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
@@ -439,7 +439,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	url := body.URL
 	ctx := context.WithValue(r.Context(), urlKey, url)
-	logger.InfoContext(ctx, "Received request: /cache", slog.String("url", url))
+	logger.InfoContext(ctx, "Received request: /cache")
 
 	semaphore <- struct{}{}
 	defer func() { <-semaphore }()
@@ -450,7 +450,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
 
@@ -473,12 +473,12 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		return LoadRepository(ctx, repoPath)
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to load repository", slog.String("url", url), slog.Any("error", err))
+		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
 
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.String("url", url), slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.Duration("duration", time.Since(start)))
 }

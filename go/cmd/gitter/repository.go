@@ -70,11 +70,11 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	// Load cache pb file of the repo if exist
 	if c, err := loadRepositoryCache(cachePath); err == nil {
 		cache = c
-		logger.InfoContext(ctx, "Loaded repository cache", slog.String("url", ctx.Value(urlKey).(string)), slog.Int("commits", len(cache.GetCommits())))
+		logger.InfoContext(ctx, "Loaded repository cache", slog.Int("commits", len(cache.GetCommits())))
 	} else {
 		if errors.Is(err, os.ErrNotExist) {
 			// It's fine if cache doesn't exist, log it just in case
-			logger.InfoContext(ctx, "No repository cache found", slog.String("url", ctx.Value(urlKey).(string)))
+			logger.InfoContext(ctx, "No repository cache found")
 		} else {
 			return nil, fmt.Errorf("failed to load repository cache: %w", err)
 		}
@@ -94,7 +94,7 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 
 	// Save cache
 	if err := saveRepositoryCache(cachePath, repo); err != nil {
-		logger.ErrorContext(ctx, "Failed to save repository cache", slog.String("url", ctx.Value(urlKey).(string)), slog.Any("err", err))
+		logger.ErrorContext(ctx, "Failed to save repository cache", slog.Any("err", err))
 	}
 
 	return repo, nil
@@ -104,7 +104,7 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 // Returns a list of new commit hashes that don't have cached Patch IDs.
 // The new commit list is in reverse chronological order based on commit date (the default for git log).
 func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]SHA1, error) {
-	logger.InfoContext(ctx, "Starting graph construction", slog.String("url", ctx.Value(urlKey).(string)))
+	logger.InfoContext(ctx, "Starting graph construction")
 	start := time.Now()
 
 	// Build cache map
@@ -174,7 +174,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			for _, parent := range parents {
 				hash, err := hex.DecodeString(parent)
 				if err != nil {
-					logger.ErrorContext(ctx, "Failed to decode hash", slog.String("url", ctx.Value(urlKey).(string)), slog.String("parent", parent), slog.Any("err", err))
+					logger.ErrorContext(ctx, "Failed to decode hash", slog.String("parent", parent), slog.Any("err", err))
 					continue
 				}
 				parentHashes = append(parentHashes, SHA1(hash))
@@ -184,13 +184,13 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		case 1:
 			hash, err := hex.DecodeString(commitInfo[0])
 			if err != nil {
-				logger.ErrorContext(ctx, "Failed to decode hash", slog.String("url", ctx.Value(urlKey).(string)), slog.String("child", commitInfo[0]), slog.Any("err", err))
+				logger.ErrorContext(ctx, "Failed to decode hash", slog.String("child", commitInfo[0]), slog.Any("err", err))
 				continue
 			}
 			childHash = SHA1(hash)
 		default:
 			// No line should be completely empty (doesn't even have a commit hash) so error
-			logger.ErrorContext(ctx, "Invalid commit info", slog.String("url", ctx.Value(urlKey).(string)), slog.String("line", line))
+			logger.ErrorContext(ctx, "Invalid commit info", slog.String("line", line))
 			continue
 		}
 
@@ -223,7 +223,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 	}
 
-	logger.InfoContext(ctx, "Commit graph completed", slog.String("url", ctx.Value(urlKey).(string)), slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Commit graph completed", slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
 
 	return newCommits, nil
 }
@@ -231,7 +231,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) error {
-	logger.InfoContext(ctx, "Starting patch ID calculation", slog.String("url", ctx.Value(urlKey).(string)))
+	logger.InfoContext(ctx, "Starting patch ID calculation")
 	start := time.Now()
 
 	// Number of workers
@@ -261,7 +261,7 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 		return fmt.Errorf("failed to calculate patch IDs: %w", err)
 	}
 
-	logger.InfoContext(ctx, "Patch ID calculation completed", slog.String("url", ctx.Value(urlKey).(string)), slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Patch ID calculation completed", slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
 
 	return nil
 }

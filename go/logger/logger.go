@@ -3,14 +3,12 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
 	"time"
 
-	"cloud.google.com/go/errorreporting"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -29,39 +27,15 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 				slog.Bool("logging.googleapis.com/trace_sampled", spanContext.IsSampled()),
 			)
 		}
+
+		if level >= slog.LevelError {
+			r.Add(slog.String("@type", "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent"))
+		}
 	}
 
 	if slogLogger.Handler().Enabled(ctx, level) {
 		//nolint:errcheck
 		slogLogger.Handler().Handle(ctx, r)
-	}
-
-	if level >= slog.LevelError && errorClient != nil {
-		// Try find an error in the attributes
-		var err error
-		hasErr := false
-		for _, attr := range a {
-			if att, ok := attr.(slog.Attr); ok {
-				if attrErr, ok := att.Value.Any().(error); ok {
-					err = attrErr
-					hasErr = true
-
-					break
-				}
-			}
-		}
-		// Fallback to using the message as the error if no error was provided.
-		if !hasErr {
-			err = errors.New(msg)
-		}
-		// Report the error to Google Cloud Error Reporting.
-		// We leave Stack nil to let the client automatically capture the stack trace.
-		// Note: This will include the logger functions at the top of the stack.
-		// If we want to hide them, we would need to manually capture and trim the stack.
-		errorClient.Report(errorreporting.Entry{
-			Error: err,
-			Stack: nil,
-		})
 	}
 }
 

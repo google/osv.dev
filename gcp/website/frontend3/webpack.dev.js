@@ -24,7 +24,7 @@ module.exports = {
         vendorsJs: {
           test: /node_modules/,
           chunks: 'initial',
-          filename: 'static/vendors.js',
+          name: 'vendors',
           priority: 1,
           maxInitialRequests: 2,
           minChunks: 1,

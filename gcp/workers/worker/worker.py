@@ -335,7 +335,8 @@ class TaskRunner:
           source_repo.repo_url,
           os.path.join(self._sources_dir, source),
           git_callbacks=self._git_callbacks(source_repo),
-          branch=source_repo.repo_branch)
+          branch=source_repo.repo_branch,
+          force_update=True)
 
       vuln_path = os.path.join(osv.repo_path(repo), path)
       if not os.path.exists(vuln_path):

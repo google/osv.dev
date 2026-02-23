@@ -33,7 +33,7 @@ import (
 type contextKey string
 
 const (
-	urlKey contextKey = "url"
+	urlKey contextKey = "repoURL"
 )
 
 const getGitEndpoint = "/getgit"

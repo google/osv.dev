@@ -85,11 +85,9 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 	// regular clone
 	cmd := exec.CommandContext(ctx, "git", "clone", "--", repoURL, dir)
 	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
-	var sb strings.Builder
-	cmd.Stdout = &sb
-	cmd.Stderr = &sb
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to clone repo: %w\n%s", err, sb.String())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to clone repo: %w\n%s", err, string(output))
 	}
 
 	return git.PlainOpen(dir)
@@ -121,11 +119,9 @@ func cloneToDirGitter(ctx context.Context, gitterHost, repoURL, dir string, forc
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 	cmd := exec.CommandContext(ctx, "tar", "-xf", tarPath, "-C", dir)
-	var sb strings.Builder
-	cmd.Stdout = &sb
-	cmd.Stderr = &sb
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to untar repo: %w\n%s", err, sb.String())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to untar repo: %w\n%s", err, string(output))
 	}
 	// clean up
 	if err := os.RemoveAll(tmpDir); err != nil {

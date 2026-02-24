@@ -47,13 +47,11 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 				cmd := exec.CommandContext(ctx, "git", "pull")
 				cmd.Dir = dir
 				cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
-				var sb strings.Builder
-				cmd.Stdout = &sb
-				cmd.Stderr = &sb
-				if err := cmd.Run(); err != nil {
-					return nil, fmt.Errorf("failed to pull repo: %w\n%s", err, sb.String())
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					return nil, fmt.Errorf("failed to pull repo: %w\n%s", err, string(output))
 				}
-				logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir), slog.String("output", sb.String()))
+				logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir), slog.String("output", string(output)))
 
 				// re-open the repo to get the new HEAD
 				return git.PlainOpen(dir)

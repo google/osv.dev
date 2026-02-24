@@ -1,7 +1,7 @@
 import { submitForm } from './index.js';
 
 const MIN_QUERY_LENGTH = 3;
-const NAV_SEARCH_CLOSE_FALLBACK_MS = 380;
+const NAV_SEARCH_CLOSE_FALLBACK_MS = 450;
 
 export class ExpandableSearch {
   constructor() {

@@ -1992,7 +1992,7 @@ $navbar-search-divider: rgba(255, 255, 255, 0.16);
   align-items: center;
   width: 0;
   overflow: hidden;
-  transition: width 0.3s ease-in-out 0.1s, opacity 0.1s ease-in-out, visibility 0s linear 0.1s;
+  transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
   background: $navbar-search-surface;
   border-radius: $navbar-search-radius;
   z-index: 1000;

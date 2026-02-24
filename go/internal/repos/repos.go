@@ -44,20 +44,15 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 		if err == nil {
 			// It's a git repo, pull the latest changes.
 			if forceUpdate {
-				wt, err := repo.Worktree()
-				if err != nil {
-					return nil, fmt.Errorf("failed to get worktree: %w", err)
+				cmd := exec.CommandContext(ctx, "git", "pull", "--", repoURL, dir)
+				cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
+				if err := cmd.Run(); err != nil {
+					return nil, fmt.Errorf("failed to pull repo: %w", err)
 				}
-				err = wt.Pull(&git.PullOptions{
-					RemoteName: "origin",
-					Force:      true,
-				})
-				if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-					return nil, fmt.Errorf("failed to pull from remote: %w", err)
-				}
-				if err == nil {
-					logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir))
-				}
+				logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir))
+
+				// re-open the repo to get the new HEAD
+				return git.PlainOpen(dir)
 			}
 
 			return repo, nil
@@ -84,9 +79,13 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 	}
 
 	// regular clone
-	return git.PlainCloneContext(ctx, dir, &git.CloneOptions{
-		URL: repoURL,
-	})
+	cmd := exec.CommandContext(ctx, "git", "clone", "--", repoURL, dir)
+	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to clone repo: %w", err)
+	}
+
+	return git.PlainOpen(dir)
 }
 
 func cloneToDirGitter(ctx context.Context, gitterHost, repoURL, dir string, forceUpdate bool) (*git.Repository, error) {
@@ -127,7 +126,7 @@ func cloneToDirGitter(ctx context.Context, gitterHost, repoURL, dir string, forc
 }
 
 func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool) (io.ReadCloser, error) {
-	getGitURL, err := url.JoinPath(gitterHost, "getgit")
+	getGitURL, err := url.JoinPath(gitterHost, "git")
 	if err != nil {
 		return nil, fmt.Errorf("failed to join path: %w", err)
 	}

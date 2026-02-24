@@ -1927,6 +1927,12 @@ div.highlight {
 }
 
 /* Navbar search styles */
+$navbar-search-surface: rgba(41, 41, 41, 0.95);
+$navbar-search-border: rgba(255, 255, 255, 0.3);
+$navbar-search-radius: 19px;
+$navbar-search-divider: rgba(255, 255, 255, 0.16);
+$navbar-search-control-height: 38px;
+
 .search-container-nav {
   position: relative;
   display: flex;
@@ -1954,7 +1960,7 @@ div.highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, opacity 0.3s ease, visibility 0.3s ease;
+  transition: background-color 0.2s ease-in-out, opacity 0.15s ease-in-out, visibility 0s linear 0.15s;
   border-radius: 50%;
 
   &:hover {
@@ -1980,19 +1986,20 @@ div.highlight {
 .search-form {
   position: absolute;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: calc(50% - 19px);
+  transform: none;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   width: 0;
   overflow: hidden;
-  transition: width 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
-  background: rgba(41, 41, 41, 0.95);
-  border-radius: 24px;
+  transition: width 0.3s ease-in-out 0.1s, opacity 0.1s ease-in-out, visibility 0s linear 0.1s;
+  background: $navbar-search-surface;
+  border-radius: $navbar-search-radius;
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid $navbar-search-border;
   box-sizing: border-box;
 
   &.active {
@@ -2000,10 +2007,12 @@ div.highlight {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     opacity: 1;
     visibility: visible;
+    transition: width 0.3s ease-in-out, opacity 0.15s ease-in-out 0.1s, visibility 0s linear;
   }
 
   .search-input {
     flex: 1;
+    min-width: 0;
     border: none;
     padding: 10px 16px;
     font-size: 14px;
@@ -2036,7 +2045,7 @@ div.highlight {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease-in-out;
     height: 36px;
     width: 36px;
 
@@ -2087,8 +2096,8 @@ div.highlight {
 }
 
 .search-form.suggestions-active {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  flex-wrap: wrap;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
 }
 
 
@@ -2112,13 +2121,15 @@ div.highlight {
 
 /* --- Styles for the Navbar Search Bar --- */
 .search-suggestions--nav {
-  background: rgba(41, 41, 41, 0.95); 
-  border: 1px solid rgba(255, 255, 255, 0.3); 
-  border-top: none;
-  border-radius: 0 0 24px 24px; 
-  width: 280px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-  margin-top: -1px; 
+  position: static;
+  flex-basis: 100%;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid $navbar-search-divider;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
   
   .search-suggestions__item {
     &:hover,

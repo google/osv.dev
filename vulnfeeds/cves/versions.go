@@ -1133,7 +1133,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		repos = append(repos, repo)
-		cache.MaybeUpdate(vp, repo)
+		// cache.MaybeUpdate(vp, repo) // TODO: fix this so that only relevant repos to the project are added to cache
 	}
 	if len(repos) == 0 {
 		return repos

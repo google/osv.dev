@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	slogLogger = slog.New(newLocalHandler(os.Stdout))
+	slogLogger = slog.New(&contextHandler{newLocalHandler(os.Stdout)})
 	once       sync.Once
 	tp         *sdktrace.TracerProvider
 	projectID  string
@@ -49,7 +49,7 @@ func InitGlobalLogger() {
 			initTracing(context.Background(), projectID, serviceName)
 		}
 		handler := slog.NewJSONHandler(os.Stdout, cloudHandlerOptions())
-		slogLogger = slog.New(handler)
+		slogLogger = slog.New(&contextHandler{handler})
 	})
 }
 

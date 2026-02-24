@@ -33,7 +33,7 @@ func main() {
 		trace.WithAttributes(attribute.Float64("override_sample_rate", importerSampleRate())))
 	defer span.End()
 
-	strictValidation := flag.Bool("strict-validation", false, "Fail to import entries that do not pass validation. "+
+	strictValidation := flag.Bool("strict-validation", false, "Do not import entries if they fail validation. "+
 		"Note: this only applies to SourceRepositories with strict_validation=true")
 	runDelete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")

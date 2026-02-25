@@ -141,6 +141,18 @@
       "matchDatasources": [
         "docker"
       ],
+      "matchPackageNames": [
+        "ruby"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "docker"
     },
     {

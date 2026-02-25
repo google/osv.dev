@@ -16,11 +16,12 @@ name: OSV PR format check
 
 on:
   # `pull_request_target` is only required when editing PRs from forks.
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - edited
       - reopened
+      - synchronize
 
 permissions:
   pull-requests: read

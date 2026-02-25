@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	"github.com/google/osv.dev/go/logger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var ErrRepoInaccessible = errors.New("repo inaccessible")
@@ -134,6 +135,8 @@ func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool
 	if err != nil {
 		return nil, fmt.Errorf("failed to join path: %w", err)
 	}
+	// Use a custom transport to add OpenTelemetry tracing.
+	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getGitURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -145,7 +148,7 @@ func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool
 	}
 	req.URL.RawQuery = vals.Encode()
 	logger.Info("Getting repo from gitter", slog.String("url", req.URL.String()))
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repo from gitter: %w", err)
 	}

@@ -58,6 +58,7 @@ func TestHandleImportREST(t *testing.T) {
 		jsonResp := `[
 			{"id": "CVE-NEWER", "modified": "2023-01-02T00:00:00Z"},
 			{"id": "CVE-OLDER", "modified": "2022-12-31T00:00:00Z"},
+			{"id": "CVE-EQUAL", "modified": "2023-01-01T00:00:00Z"},
 			{"id": "IGNORE-ME", "modified": "2023-01-02T00:00:00Z"}
 		]`
 		w.Header().Set("Content-Type", "application/json")

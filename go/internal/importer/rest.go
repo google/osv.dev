@@ -63,7 +63,7 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		if err != nil {
 			return err
 		}
-		if !lastModTime.IsZero() && lastModTime.Before(lastUpdated) {
+		if !lastModTime.IsZero() && (lastModTime.Before(lastUpdated) || lastModTime.Equal(lastUpdated)) {
 			logger.InfoContext(ctx, "No changes since last update.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
@@ -122,7 +122,7 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		if mod.After(maxModified) {
 			maxModified = mod
 		}
-		if hasUpdateTime && mod.Before(lastUpdated) {
+		if hasUpdateTime && (mod.Before(lastUpdated) || mod.Equal(lastUpdated)) {
 			return true
 		}
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {

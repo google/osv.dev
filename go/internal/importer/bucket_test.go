@@ -50,7 +50,11 @@ func TestHandleImportBucket(t *testing.T) {
 	mockBucket := testutils.NewMockStorage()
 	_ = mockBucket.WriteObject(ctx, "a/b/valid.json", []byte(`{}`), &clients.WriteOptions{})
 	time.Sleep(50 * time.Millisecond)
-	lastUpdated := time.Now()
+	_ = mockBucket.WriteObject(ctx, "a/b/equal.json", []byte(`{}`), &clients.WriteOptions{})
+	// Read the lastUpdated time from the mock object's time.Now() call.
+	attrs, _ := mockBucket.ReadObjectAttrs(ctx, "a/b/equal.json")
+	lastUpdated := attrs.Updated
+	// Now write a newer one (after lastUpdated)
 	time.Sleep(50 * time.Millisecond)
 	_ = mockBucket.WriteObject(ctx, "a/b/newer.json", []byte(`{}`), &clients.WriteOptions{})
 	_ = mockBucket.WriteObject(ctx, "a/b/ignored.json", []byte(`{}`), &clients.WriteOptions{})

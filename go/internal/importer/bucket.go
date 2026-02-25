@@ -53,7 +53,7 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			return err
 		}
 		if hasUpdateTime {
-			if obj.Attrs.Updated.Before(lastUpdated) {
+			if obj.Attrs.Updated.Before(lastUpdated) || obj.Attrs.Updated.Equal(lastUpdated) {
 				continue
 			}
 		}

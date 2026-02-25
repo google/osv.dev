@@ -313,8 +313,18 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		}
 	}
 	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
-		logger.ErrorContext(ctx, "Failed to send to worker", slog.Any("error", err), slog.String("source", sourceRepoName), slog.String("path", sourcePath))
+		logger.ErrorContext(ctx, "Failed to send to worker",
+			slog.Any("error", err),
+			slog.String("source", sourceRepoName),
+			slog.String("path", sourcePath),
+			slog.String("id", vulnProto.GetId()))
+
+		return
 	}
+	logger.InfoContext(ctx, "Sent to worker",
+		slog.String("source", sourceRepoName),
+		slog.String("path", sourcePath),
+		slog.String("id", vulnProto.GetId()))
 }
 
 func computeHash(data []byte) string {

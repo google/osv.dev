@@ -76,7 +76,8 @@ Certain tests require you to auth with the Google Cloud SDK and to install the
 Firestore Emulator:
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 gcloud components install cloud-firestore-emulator
 ```
 
@@ -118,7 +119,8 @@ default credentials. This is required so that the ESP container has credentials
 to download API configuration.
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make run-api-server
 ```
 
@@ -127,7 +129,8 @@ make run-api-server
 If you have made any changes to the API, please update the API query snapshots with
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make update-api-snapshots
 ```
 
@@ -138,7 +141,8 @@ and check the git diff to see if the API result changes are expected.
 #### Running a local UI instance (maintainers only)
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make run-website
 ```
 

@@ -90,10 +90,12 @@ func main() {
 		if err := importer.RunDeletions(ctx, config); err != nil {
 			logger.FatalContext(ctx, "Importer-deleter failed", slog.Any("error", err))
 		}
+		logger.InfoContext(ctx, "Importer-deleter completed successfully")
 	} else {
 		if err := importer.Run(ctx, config); err != nil {
 			logger.FatalContext(ctx, "Importer failed", slog.Any("error", err))
 		}
+		logger.InfoContext(ctx, "Importer completed successfully")
 	}
 }
 

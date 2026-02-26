@@ -173,6 +173,13 @@ func cloudHandlerOptions() *slog.HandlerOptions {
 				}
 			}
 
+			if a.Key == "err" || a.Key == "error" {
+				if err, ok := a.Value.Any().(error); ok {
+					// Attach the error as an exception (which error reporting looks for) to the log record.
+					return slog.Any("exception", err)
+				}
+			}
+
 			return a
 		},
 	}

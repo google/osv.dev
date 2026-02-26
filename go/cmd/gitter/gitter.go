@@ -117,8 +117,11 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
+		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.Any("args", args))
 		return cmd.Process.Signal(syscall.SIGINT)
 	}
+	// Ensure it eventually dies if it ignores SIGINT
+	cmd.WaitDelay = shutdownTimeout / 2
 
 	return cmd
 }
@@ -369,8 +372,14 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	semaphore <- struct{}{}
-	defer func() { <-semaphore }()
+	select {
+	case semaphore <- struct{}{}:
+		defer func() { <-semaphore }()
+	case <-ctx.Done():
+		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
+		return
+	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	// Fetch repo first
@@ -441,8 +450,14 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /cache")
 
-	semaphore <- struct{}{}
-	defer func() { <-semaphore }()
+	select {
+	case semaphore <- struct{}{}:
+		defer func() { <-semaphore }()
+	case <-ctx.Done():
+		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
+		return
+	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	// Fetch repo if it's not fresh

@@ -146,6 +146,10 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		// Handle context cancel within the loop to exit faster if we're processing a very large repo
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		// Example of a line of git log output
 		// 4c9bdbf0e2d45a5297cc080c3ebe809c0cca3581		bc0e4b4c4dbf7932fab7d264929d4d820e82c817 65be82edcdbc5aa6eeea23655cc96b5c84547d3b		upstream/master, upstream/HEAD\n
 		// Corresponds to: commit hash \t parent hashes (space delimited) \t refs (comma delimited)
@@ -316,6 +320,10 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	go func() {
 		defer in.Close()
 		for _, hash := range chunk {
+			// Handle context cancel
+			if ctx.Err() != nil {
+				return
+			}
 			fmt.Fprintf(in, "%s\n", hex.EncodeToString(hash[:]))
 		}
 	}()
@@ -330,6 +338,10 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	// Read results from stdout of git patch-id
 	scanner := bufio.NewScanner(out)
 	for scanner.Scan() {
+		// Handle context cancel to exit faster as this can be a long process
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		// Format of git patch-id result: <patch ID> <commit hash>
 		line := scanner.Text()
 

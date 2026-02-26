@@ -82,6 +82,89 @@
       ]
     },
     {
+      "id": "CVE-2022-33068",
+      "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
+      "aliases": ["ROOT-OS-DEBIAN-11-CVE-2022-33068"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2022-06-23T17:15:14.350Z",
+      "related": [
+        "ALSA-2022:8384",
+        "SUSE-SU-2022:2663-1",
+        "SUSE-SU-2022:2664-1",
+        "openSUSE-SU-2022:2663-1",
+        "openSUSE-SU-2024:12168-1"
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.gentoo.org/glsa/202209-11"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        },
+        {
+          "type": "EVIDENCE",
+          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                }
+              ]
+            }
+          ],
+          "versions": 154,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.3",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
       "id": "CVE-2023-1055",
       "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
       "modified": "<RFC3339 date with the year 2026>",
@@ -131,12 +214,6 @@
     {
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
-      "aliases": [
-        "ROOT-OS-DEBIAN-11-CVE-2023-25193",
-        "ROOT-OS-DEBIAN-12-CVE-2023-25193",
-        "ROOT-OS-DEBIAN-bookworm-CVE-2023-25193",
-        "ROOT-OS-DEBIAN-bullseye-CVE-2023-25193"
-      ],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2023-02-04T20:15:08.027Z",
       "related": [
@@ -952,11 +1029,7 @@
       "id": "CURL-CVE-2024-9681",
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": [
-        "CVE-2024-9681",
-        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
-        "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
-      ],
+      "aliases": ["CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -2119,15 +2192,15 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "0"
+                  "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
-                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
                 }
               ]
             }
           ],
-          "versions": 209,
+          "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
@@ -2226,11 +2299,7 @@
     {
       "id": "CVE-2024-9681",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": [
-        "CURL-CVE-2024-9681",
-        "ROOT-OS-DEBIAN-11-CVE-2024-9681",
-        "ROOT-OS-DEBIAN-bullseye-CVE-2024-9681"
-      ],
+      "aliases": ["CURL-CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-06T08:15:03.740Z",
       "related": [

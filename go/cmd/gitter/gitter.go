@@ -378,6 +378,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	case <-ctx.Done():
 		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
 		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
+
 		return
 	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
@@ -456,6 +457,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	case <-ctx.Done():
 		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
 		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
+
 		return
 	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))

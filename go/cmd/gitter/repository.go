@@ -42,6 +42,9 @@ type Repository struct {
 	tagToCommit map[string]SHA1
 	// For cherry-pick detection: PatchID -> []commit hash
 	patchIDToCommits map[SHA1][]SHA1
+	// Root commits (commits with no parents)
+	// In a typical repository this is the initial commit
+	rootCommits []SHA1
 }
 
 // %H commit hash; %P parent hashes; %D:refs (tab delimited)
@@ -198,6 +201,11 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			// No line should be completely empty (doesn't even have a commit hash) so error
 			logger.ErrorContext(ctx, "Invalid commit info", slog.String("line", line))
 			continue
+		}
+
+		// We want to keep the root commit (no parent) easily accessible
+		if len(parentHashes) == 0 {
+			r.rootCommits = append(r.rootCommits, childHash)
 		}
 
 		// Add commit to graph (parent -> []child)
@@ -398,8 +406,60 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
 }
 
+func parseHash(hash string) (SHA1, error) {
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		return SHA1{}, fmt.Errorf("failed to decode hash: %w", err)
+	}
+	return SHA1(hashBytes), nil
+}
+
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
-func (r *Repository) Affected(introduced, fixed, lastAffected []SHA1, cherrypick bool) []*Commit {
+func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypick bool) []*Commit {
+	introduced := []SHA1{}
+	fixed := []SHA1{}
+	lastAffected := []SHA1{}
+
+	// Convert string input into SHA1
+	// Introduced can be 0 and we'll replace it with the root commit
+	for _, s := range introStrs {
+		if s == "0" {
+			introduced = append(introduced, r.rootCommits...)
+			continue
+		}
+
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		introduced = append(introduced, sha)
+	}
+
+	for _, s := range fixedStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		fixed = append(fixed, sha)
+	}
+
+	for _, s := range laStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		lastAffected = append(lastAffected, sha)
+	}
+
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
 	if cherrypick {
@@ -517,7 +577,39 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 }
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
-func (r *Repository) Between(introduced, limit []SHA1) []*Commit {
+func (r *Repository) Between(ctx context.Context, introStrs, limitStrs []string) []*Commit {
+	introduced := []SHA1{}
+	limit := []SHA1{}
+
+	// Convert string input into SHA1
+	// Introduced can be 0 and we'll replace it with the root commit
+	for _, s := range introStrs {
+		if s == "0" {
+			introduced = append(introduced, r.rootCommits...)
+			continue
+		}
+
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		introduced = append(introduced, sha)
+	}
+
+	for _, s := range limitStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		limit = append(limit, sha)
+	}
+
 	var affectedCommits []*Commit
 
 	introMap := make(map[SHA1]struct{}, len(introduced))

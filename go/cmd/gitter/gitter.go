@@ -533,32 +533,24 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	url := body.URL
-	introduced := []SHA1{}
-	fixed := []SHA1{}
-	lastAffected := []SHA1{}
-	limit := []SHA1{}
+	introduced := []string{}
+	fixed := []string{}
+	lastAffected := []string{}
+	limit := []string{}
 	cherrypick := body.DetectCherrypicks
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
 	for _, event := range body.Events {
-		hash, err := hex.DecodeString(event.Hash)
-		if err != nil {
-			logger.ErrorContext(ctx, "Error parsing hash", slog.String("hash", event.Hash), slog.Any("error", err))
-			http.Error(w, "Invalid hash: "+event.Hash, http.StatusBadRequest)
-
-			return
-		}
-
 		switch event.Type {
 		case EventTypeIntroduced:
-			introduced = append(introduced, SHA1(hash))
+			introduced = append(introduced, event.Hash)
 		case EventTypeFixed:
-			fixed = append(fixed, SHA1(hash))
+			fixed = append(fixed, event.Hash)
 		case EventTypeLastAffected:
-			lastAffected = append(lastAffected, SHA1(hash))
+			lastAffected = append(lastAffected, event.Hash)
 		case EventTypeLimit:
-			limit = append(limit, SHA1(hash))
+			limit = append(limit, event.Hash)
 		default:
 			logger.ErrorContext(ctx, "Invalid event type", slog.String("event_type", string(event.Type)))
 			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
@@ -616,9 +608,9 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var affectedCommits []*Commit
 	if len(limit) > 0 {
-		affectedCommits = repo.Between(introduced, limit)
+		affectedCommits = repo.Between(ctx, introduced, limit)
 	} else {
-		affectedCommits = repo.Affected(introduced, fixed, lastAffected, cherrypick)
+		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypick)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

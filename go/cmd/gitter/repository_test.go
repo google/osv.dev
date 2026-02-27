@@ -152,8 +152,13 @@ func decodeSHA1(s string) SHA1 {
 	return hash
 }
 
-// Helper to encode SHA1 into string (leading 0's removed)
+// Helper to encode SHA1 into string
 func encodeSHA1(hash SHA1) string {
+	return hex.EncodeToString(hash[:])
+}
+
+// Helper to pretty print SHA1 as string (leading 0's removed)
+func printSHA1(hash SHA1) string {
 	// Remove padding zeros for a cleaner results
 	str := hex.EncodeToString(hash[:])
 
@@ -291,7 +296,22 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(tt.introduced, tt.fixed, tt.lastAffected, false)
+			// Convert SHA1 to string for the new API
+			introStrs := make([]string, len(tt.introduced))
+			for i, h := range tt.introduced {
+				introStrs[i] = encodeSHA1(h)
+			}
+			fixedStrs := make([]string, len(tt.fixed))
+			for i, h := range tt.fixed {
+				fixedStrs[i] = encodeSHA1(h)
+			}
+			laStrs := make([]string, len(tt.lastAffected))
+			for i, h := range tt.lastAffected {
+				laStrs[i] = encodeSHA1(h)
+			}
+
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false)
+
 			var got []SHA1
 			for _, c := range gotCommits {
 				got = append(got, c.Hash)
@@ -309,11 +329,11 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 				// Turn them back into strings so it's easier to read
 				gotStr := make([]string, len(got))
 				for i, c := range got {
-					gotStr[i] = encodeSHA1(c)
+					gotStr[i] = printSHA1(c)
 				}
 				expectedStr := make([]string, len(tt.expected))
 				for i, c := range tt.expected {
-					expectedStr[i] = encodeSHA1(c)
+					expectedStr[i] = printSHA1(c)
 				}
 
 				t.Errorf("TestAffected_Introduced_Fixed() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
@@ -397,7 +417,22 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(tt.introduced, tt.fixed, tt.lastAffected, false)
+			// Convert SHA1 to string for the new API
+			introStrs := make([]string, len(tt.introduced))
+			for i, h := range tt.introduced {
+				introStrs[i] = encodeSHA1(h)
+			}
+			fixedStrs := make([]string, len(tt.fixed))
+			for i, h := range tt.fixed {
+				fixedStrs[i] = encodeSHA1(h)
+			}
+			laStrs := make([]string, len(tt.lastAffected))
+			for i, h := range tt.lastAffected {
+				laStrs[i] = encodeSHA1(h)
+			}
+
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false)
+
 			var got []SHA1
 			for _, c := range gotCommits {
 				got = append(got, c.Hash)
@@ -415,11 +450,11 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 				// Turn them back into strings so it's easier to read
 				gotStr := make([]string, len(got))
 				for i, c := range got {
-					gotStr[i] = encodeSHA1(c)
+					gotStr[i] = printSHA1(c)
 				}
 				expectedStr := make([]string, len(tt.expected))
 				for i, c := range tt.expected {
-					expectedStr[i] = encodeSHA1(c)
+					expectedStr[i] = printSHA1(c)
 				}
 
 				t.Errorf("TestAffected_Introduced_LastAffected() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
@@ -427,6 +462,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 		})
 	}
 }
+
 
 func TestBetween(t *testing.T) {
 	repo := NewRepository("/repo")
@@ -491,7 +527,18 @@ func TestBetween(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Between(tt.introduced, tt.limit)
+			// Convert SHA1 to string for the new API
+			introStrs := make([]string, len(tt.introduced))
+			for i, h := range tt.introduced {
+				introStrs[i] = encodeSHA1(h)
+			}
+			limitStrs := make([]string, len(tt.limit))
+			for i, h := range tt.limit {
+				limitStrs[i] = encodeSHA1(h)
+			}
+
+			gotCommits := repo.Between(t.Context(), introStrs, limitStrs)
+
 			var got []SHA1
 			for _, c := range gotCommits {
 				got = append(got, c.Hash)
@@ -509,11 +556,11 @@ func TestBetween(t *testing.T) {
 				// Turn them back into strings so it's easier to read
 				gotStr := make([]string, len(got))
 				for i, c := range got {
-					gotStr[i] = encodeSHA1(c)
+					gotStr[i] = printSHA1(c)
 				}
 				expectedStr := make([]string, len(tt.expected))
 				for i, c := range tt.expected {
-					expectedStr[i] = encodeSHA1(c)
+					expectedStr[i] = printSHA1(c)
 				}
 
 				t.Errorf("TestBetween() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
@@ -521,3 +568,4 @@ func TestBetween(t *testing.T) {
 		})
 	}
 }
+

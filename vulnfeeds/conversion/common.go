@@ -258,7 +258,6 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 }
 
 // resolveVersionToCommit is a helper to convert a version string to a commit hash.
-// It logs the outcome of the conversion attempt and returns an empty string on failure.
 func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
 	if version == "" {
 		return ""

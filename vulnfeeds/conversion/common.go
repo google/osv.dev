@@ -171,7 +171,8 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 	return nil
 }
 
-// Examines repos and tries to convert versions to commits by treating them as Git tags.
+// GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
+// Returns the resolved ranges, unresolved ranges, and successful repos involved.
 func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges

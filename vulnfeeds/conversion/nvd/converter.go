@@ -42,9 +42,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
+	// At the bare minimum, we want to attempt to extract the raw version information
+	// from CPEs, whether or not they can resolve to commits.
 	cpeRanges := cves.ExtractVersionsFromCPEs(cve, nil, metrics)
 
-	// if there are no repos, there are no commits from the refs either
+	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 		return models.NoRepos
@@ -52,6 +54,18 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	successfulRepos := make(map[string]bool)
 	var resolvedRanges, unresolvedRanges []*osvschema.Range
+
+	// Exit early if there are no repositories
+	if len(repos) == 0 {
+		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
+		v.Affected = append(v.Affected, affected)
+		// Exit early
+		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
+
+		return models.NoRepos
+	}
+
+	// If we have ranges, try to resolve them
 	if len(cpeRanges) > 0 {
 		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
 		resolvedRanges = append(resolvedRanges, r...)
@@ -60,12 +74,6 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			successfulRepos[s] = true
 		}
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
-	} else if len(repos) == 0 {
-		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
-		v.Affected = append(v.Affected, affected)
-		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
-
-		return models.NoRepos
 	}
 
 	// Extract Commits
@@ -174,7 +182,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
-	// slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
 
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
@@ -295,6 +303,15 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	return reposForCVE
 }
 
+// MergeRangesAndCreateAffected combines resolved and unresolved ranges with commits to create an OSV Affected object.
+// It merges ranges for the same repository and adds commit events to the appropriate ranges at the end.
+//
+// Arguments:
+//   - resolvedRanges: A slice of resolved OSV ranges to be merged.
+//   - unresolvedRanges: A slice of unresolved OSV ranges to be included in the database specific field.
+//   - commits: A slice of affected commits to be converted into events and added to ranges.
+//   - successfulRepos: A slice of repository URLs that were successfully processed.
+//   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
 func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
@@ -357,6 +374,12 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	return newAffected
 }
 
+// addEventToRange adds an event to a version range, avoiding duplicates.
+// Introduced events are prepended to the events list, while others are appended.
+//
+// Arguments:
+//   - versionRange: The OSV range to which the event will be added.
+//   - event: The OSV event (Introduced, Fixed, or LastAffected) to add.
 func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	// Handle duplicate events being added
 	for _, e := range versionRange.GetEvents() {
@@ -370,7 +393,7 @@ func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 			return
 		}
 	}
-	//TODO: maybe handle if the fixed event appeards as an introduced event or similar.
+	//TODO: maybe handle if the fixed event appears as an introduced event or similar.
 
 	if event.GetIntroduced() != "" {
 		versionRange.Events = append([]*osvschema.Event{{
@@ -380,6 +403,8 @@ func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	}
 }
 
+// convertCommitToEvent creates an OSV Event from an AffectedCommit.
+// It returns an event with the Introduced, Fixed, or LastAffected value from the commit.
 func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	if commit.Introduced != "" {
 		return &osvschema.Event{
@@ -400,6 +425,19 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	return nil
 }
 
+
+// outputFiles writes the OSV vulnerability record and conversion metrics to files in the specified directory.
+// It creates the necessary subdirectories based on the vendor and product names and handles whether or not
+// the files should be written based on the rejectFailed and outputMetrics flags.
+//
+// Arguments:
+//   - v: The OSV Vulnerability object to be written to a file.
+//   - dir: The base directory where the output files should be created.
+//   - vendor: The vendor name used to create the subdirectory.
+//   - product: The product name used to create the subdirectory.
+//   - metrics: A pointer to ConversionMetrics to be written to a metrics file.
+//   - rejectFailed: A boolean indicating whether to skip writing the OSV file if the conversion was not successful.
+//   - outputMetrics: A boolean indicating whether to write the metrics file.
 func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) {
 	cveID := v.Id
 	vulnDir := filepath.Join(dir, vendor, product)

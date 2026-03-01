@@ -826,8 +826,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 	return versions
 }
 
-// ExtractVersionInfo extracts version information from a CVE.
-// Deprecated: Use ExtractVersions instead.
+// ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
+// This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters. 
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
@@ -838,7 +838,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
 	}
 
-	// gotVersions := false
+	// Extract versions from CPEs.
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			if node.Operator != "OR" {
@@ -924,12 +924,6 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 			}
 		}
 	}
-	// if !gotVersions {
-	// 	v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
-	// 	if len(v.AffectedVersions) > 0 {
-	// 		metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
-	// 	}
-	// }
 
 	if len(v.AffectedVersions) == 0 {
 		metrics.AddNote("No versions detected.")

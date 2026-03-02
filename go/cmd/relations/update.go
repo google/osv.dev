@@ -135,13 +135,12 @@ ConsumerLoop:
 		for _, u := range updates {
 			switch u.Field {
 			case updateFieldAlias:
-				val := u.Value
-				if slices.Compare(v.GetAliases(), val) == 0 {
+				if slices.Compare(v.GetAliases(), u.Value) == 0 {
 					// No actual changes, do not update
 					continue
 				}
 				hasUpdates = true
-				v.Aliases = val
+				v.Aliases = u.Value
 				updatedFields = append(updatedFields, "aliases")
 				if u.Timestamp.After(modified) {
 					modified = u.Timestamp

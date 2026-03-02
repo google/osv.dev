@@ -59,6 +59,14 @@ func (m *ConversionMetrics) AddNote(format string, a ...any) {
 	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }
 
+// SetOutcome sets the outcome of the conversion only if it's not already set, or has become successful.
+func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
+	if m.Outcome != ConversionUnknown || outcome != Successful {
+		return
+	}
+	m.Outcome = outcome
+}
+
 // AddSource appends a source to the ConversionMetrics
 func (m *ConversionMetrics) AddSource(source VersionSource) {
 	m.VersionSources = append(m.VersionSources, source)
@@ -80,15 +88,15 @@ func DetermineOutcome(metrics *ConversionMetrics) {
 	// check if we have affected ranges/versions.
 	if len(metrics.Repos) == 0 {
 		// Fix unlikely, as no repos to resolve
-		metrics.Outcome = NoRepos
+		metrics.SetOutcome(NoRepos)
 		return
 	}
 
 	if metrics.ResolvedRangesCount > 0 {
-		metrics.Outcome = Successful
+		metrics.SetOutcome(Successful)
 	} else if metrics.UnresolvedRangesCount > 0 {
-		metrics.Outcome = NoCommitRanges
+		metrics.SetOutcome(NoCommitRanges)
 	} else {
-		metrics.Outcome = NoRanges
+		metrics.SetOutcome(NoRanges)
 	}
 }

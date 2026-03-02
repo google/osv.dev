@@ -61,7 +61,9 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Exit early if there are no repositories
 	if len(repos) == 0 {
-		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
+		metrics.SetOutcome(models.NoRepos)
+		metrics.UnresolvedRangesCount += len(cpeRanges)
+		affected := MergeRangesAndCreateAffected(resolvedRanges, cpeRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
 		// Exit early
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
@@ -72,8 +74,20 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// If we have ranges, try to resolve them
 	if len(cpeRanges) > 0 {
 		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
-		resolvedRanges = append(resolvedRanges, r...)
-		unresolvedRanges = append(unresolvedRanges, un...)
+		if len(r) > 0 {
+			metrics.ResolvedRangesCount += len(r)
+			resolvedRanges = append(resolvedRanges, r...)
+			metrics.SetOutcome(models.Successful)
+		}
+
+		if len(un) > 0 {
+			metrics.UnresolvedRangesCount += len(un)
+			unresolvedRanges = append(unresolvedRanges, un...)
+			if len(r) == 0 {
+				metrics.SetOutcome(models.NoCommitRanges)
+			}
+		}
+
 		for _, s := range sR {
 			successfulRepos[s] = true
 		}
@@ -90,6 +104,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		for _, commit := range commits {
 			successfulRepos[commit.Repo] = true
 		}
+		metrics.SetOutcome(models.Successful)
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceRefs)
 	}
 
@@ -100,8 +115,19 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
 		r, un, sR := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
-		resolvedRanges = append(resolvedRanges, r...)
-		unresolvedRanges = append(unresolvedRanges, un...)
+		if len(r) > 0 {
+			metrics.ResolvedRangesCount += len(r)
+			resolvedRanges = append(resolvedRanges, r...)
+			metrics.SetOutcome(models.Successful)
+		}
+
+		if len(un) > 0 {
+			metrics.UnresolvedRangesCount += len(un)
+			unresolvedRanges = append(unresolvedRanges, un...)
+			if len(r) == 0 {
+				metrics.SetOutcome(models.NoCommitRanges)
+			}
+		}
 		for _, s := range sR {
 			successfulRepos[s] = true
 		}
@@ -110,12 +136,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	if len(resolvedRanges) == 0 && len(commits) == 0 {
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
-		metrics.Outcome = models.NoRanges
-	} else {
-		keys := slices.Collect(maps.Keys(successfulRepos))
-		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
-		v.Affected = append(v.Affected, affected)
+		metrics.SetOutcome(models.NoRanges)
 	}
+
+	// Use the successful repos for more efficient merging.
+	keys := slices.Collect(maps.Keys(successfulRepos))
+	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
+	v.Affected = append(v.Affected, affected)
 
 	if !outputMetrics && rejectFailed && metrics.Outcome != models.Successful {
 		return metrics.Outcome
@@ -239,7 +266,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	if len(refs) == 0 && len(CPEs) == 0 {
 		metrics.AddNote("Skipping due to lack of CPEs and lack of references")
 		// 100% of these in 2022 were rejected CVEs
-		metrics.Outcome = models.Rejected
+		metrics.SetOutcome(models.Rejected)
 
 		return nil
 	}
@@ -297,7 +324,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope
 		metrics.AddNote("Passing due to lack of viable repository")
-		metrics.Outcome = models.NoRepos
 
 		return nil
 	}
@@ -360,7 +386,6 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 			newResolvedRanges = append(newResolvedRanges, conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
 			metrics.ResolvedRangesCount++
 		}
-		metrics.Outcome = models.Successful
 	}
 
 	newAffected := &osvschema.Affected{

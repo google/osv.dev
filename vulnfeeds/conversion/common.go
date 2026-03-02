@@ -243,18 +243,6 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		unresolvedRanges = stillUnresolvedRanges
 	}
 
-	if len(newVersionRanges) > 0 {
-		metrics.ResolvedRangesCount += len(newVersionRanges)
-		metrics.Outcome = models.Successful
-	}
-
-	if len(unresolvedRanges) > 0 {
-		metrics.UnresolvedRangesCount += len(unresolvedRanges)
-		if len(newVersionRanges) == 0 {
-			metrics.Outcome = models.NoCommitRanges
-		}
-	}
-
 	return newVersionRanges, unresolvedRanges, successfulRepos
 }
 

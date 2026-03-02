@@ -46,7 +46,7 @@ type Update struct {
 	ID        string
 	Timestamp time.Time
 	Field     updateField
-	Value     any
+	Value     []string
 }
 
 type Updater struct {
@@ -131,11 +131,7 @@ func (u *Updater) run(ctx context.Context) {
 				for _, u := range updates {
 					switch u.Field {
 					case updateFieldAlias:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated aliases are not []string", slog.String("id", id))
-							continue
-						}
+						val := u.Value
 						if slices.Compare(v.GetAliases(), val) == 0 {
 							// No actual changes, do not update
 							continue
@@ -147,31 +143,21 @@ func (u *Updater) run(ctx context.Context) {
 							modified = u.Timestamp
 						}
 					case updateFieldUpstream:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated upstreams are not []string", slog.String("id", id))
-							continue
-						}
-						if slices.Compare(v.GetUpstream(), val) == 0 {
+						if slices.Compare(v.GetUpstream(), u.Value) == 0 {
 							continue
 						}
 						hasUpdates = true
-						v.Upstream = val
+						v.Upstream = u.Value
 						updatedFields = append(updatedFields, "upstream")
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp
 						}
 					case updateFieldRelated:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated related are not []string", slog.String("id", id))
-							continue
-						}
-						if slices.Compare(v.GetRelated(), val) == 0 {
+						if slices.Compare(v.GetRelated(), u.Value) == 0 {
 							continue
 						}
 						hasUpdates = true
-						v.Related = val
+						v.Related = u.Value
 						updatedFields = append(updatedFields, "related")
 						if u.Timestamp.After(modified) {
 							modified = u.Timestamp

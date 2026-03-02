@@ -34,9 +34,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, _ := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
+		if err != nil {
+			metrics.AddNote("Can't generate an OSV record without valid CPE data")
+			return models.ConversionUnknown
+		}
 	}
 
 	// Create basic OSV record
@@ -424,7 +428,6 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 
 	return nil
 }
-
 
 // outputFiles writes the OSV vulnerability record and conversion metrics to files in the specified directory.
 // It creates the necessary subdirectories based on the vendor and product names and handles whether or not

@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
-  function syntaxHighlight(json) {
+  function syntaxHighlight(json) { // credit to https://codepen.io/absolutedevelopment/pen/EpwVzN
     if (typeof json !== 'string') {
       json = JSON.stringify(json, undefined, 2);
     }

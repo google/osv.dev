@@ -54,6 +54,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	if len(cpeRanges) == 0 && len(repos) == 0 {
 		metrics.SetOutcome(models.NoRepos)
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
+
 		return models.NoRepos
 	}
 

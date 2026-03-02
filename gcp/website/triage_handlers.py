@@ -117,7 +117,7 @@ def triage_proxy():
   url = None
   if source == 'cve':
     # Construct GitHub raw URL for CVE data
-    match = re.match(_CVE_ID_REGEX, vuln_id)
+    match = re.match(r'^CVE-(\d{4})-(\d+)$', vuln_id, re.IGNORECASE)
     if not match:
       return jsonify({'error': 'Invalid ID format'}), 400
     year = match.group(1)

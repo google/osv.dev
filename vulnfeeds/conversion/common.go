@@ -284,10 +284,16 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	return &versionRange
 }
 
-func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
+// MergeTwoRanges combines two osvschema.Range objects into a single range.
+// It merges the events and the DatabaseSpecific fields. If the ranges are
+// not for the same repository or are of different types, it returns an error.
+// When merging DatabaseSpecific fields, it handles lists, maps, and simple
+// strings. If there are mismatching types for the same key, it returns an error.
+func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 	// check if the ranges are the same
 	if range1.GetRepo() != range2.GetRepo() || range1.GetType() != range2.GetType() {
-		return nil
+		// return an error if not the case
+		return nil, fmt.Errorf("ranges are not the same repo or type")
 	}
 
 	mergedRange := &osvschema.Range{
@@ -300,7 +306,7 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
 	db2 := range2.GetDatabaseSpecific()
 
 	if db1 == nil && db2 == nil {
-		return mergedRange
+		return mergedRange, nil
 	}
 
 	mergedMap := make(map[string]any)
@@ -313,17 +319,16 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
 
 	if db2 != nil {
 		for k, v := range db2.GetFields() {
+			val2 := v.AsInterface()
 			if existing, ok := mergedMap[k]; ok {
-				// If both are lists, append them
-				if list1, ok := existing.([]any); ok {
-					if list2, ok := v.AsInterface().([]any); ok {
-						mergedMap[k] = append(list1, list2...)
-						continue
-					}
+				mergedVal, err := mergeDatabaseSpecificValues(existing, val2)
+				if err != nil {
+					return nil, fmt.Errorf("failed to merge database specific key %q: %w", k, err)
 				}
+				mergedMap[k] = mergedVal
+			} else {
+				mergedMap[k] = val2
 			}
-			// Otherwise overwrite or add new
-			mergedMap[k] = v.AsInterface()
 		}
 	}
 
@@ -335,5 +340,55 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) *osvschema.Range {
 		}
 	}
 
-	return mergedRange
+	return mergedRange, nil
+}
+
+// mergeDatabaseSpecificValues is a helper function that recursively merges two
+// values from a DatabaseSpecific field. It handles lists (by appending), maps
+// (by recursively merging keys), and simple strings (by creating a list if they
+// differ). It returns an error if the types of the two values do not match.
+func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
+	switch v1 := val1.(type) {
+	case []any:
+		if v2, ok := val2.([]any); ok {
+			return append(v1, v2...), nil
+		}
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	case map[string]any:
+		if v2, ok := val2.(map[string]any); ok {
+			merged := make(map[string]any)
+			for k, v := range v1 {
+				merged[k] = v
+			}
+			for k, v := range v2 {
+				if existing, ok := merged[k]; ok {
+					mergedVal, err := mergeDatabaseSpecificValues(existing, v)
+					if err != nil {
+						return nil, err
+					}
+					merged[k] = mergedVal
+				} else {
+					merged[k] = v
+				}
+			}
+			return merged, nil
+		}
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	case string:
+		if v2, ok := val2.(string); ok {
+			if v1 == v2 {
+				return v1, nil
+			}
+			return []any{v1, v2}, nil
+		}
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	default:
+		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
+			return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+		}
+		if val1 == val2 {
+			return val1, nil
+		}
+		return []any{val1, val2}, nil
+	}
 }

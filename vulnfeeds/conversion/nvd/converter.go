@@ -357,7 +357,11 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 					if mergedRange == nil {
 						mergedRange = vr
 					} else {
-						mergedRange = conversion.MergeTwoRanges(mergedRange, vr)
+						var err error
+						mergedRange, err = conversion.MergeTwoRanges(mergedRange, vr)
+						if err != nil {
+							metrics.AddNote("Failed to merge ranges: %v", err)
+						}
 					}
 				}
 			}

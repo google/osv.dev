@@ -242,8 +242,6 @@ ConsumerLoop:
 		}
 		logger.Info("updated vuln", slog.String("id", id))
 	}
-
-	return
 }
 
 func (u *Updater) Finish() {

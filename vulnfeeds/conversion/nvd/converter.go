@@ -74,26 +74,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// If we have ranges, try to resolve them
-	if len(cpeRanges) > 0 {
-		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
-		if len(r) > 0 {
-			metrics.ResolvedRangesCount += len(r)
-			resolvedRanges = append(resolvedRanges, r...)
-			metrics.SetOutcome(models.Successful)
-		}
-
-		if len(un) > 0 {
-			metrics.UnresolvedRangesCount += len(un)
-			unresolvedRanges = append(unresolvedRanges, un...)
-			if len(r) == 0 {
-				metrics.SetOutcome(models.NoCommitRanges)
-			}
-		}
-
-		for _, s := range sR {
-			successfulRepos[s] = true
-		}
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
+	r, un, sR := processRanges(cpeRanges, repos, metrics, cache, models.VersionSourceCPE)
+	resolvedRanges = append(resolvedRanges, r...)
+	unresolvedRanges = append(unresolvedRanges, un...)
+	for _, s := range sR {
+		successfulRepos[s] = true
 	}
 
 	// Extract Commits
@@ -116,24 +101,12 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
-		r, un, sR := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
-		if len(r) > 0 {
-			metrics.ResolvedRangesCount += len(r)
-			resolvedRanges = append(resolvedRanges, r...)
-			metrics.SetOutcome(models.Successful)
-		}
-
-		if len(un) > 0 {
-			metrics.UnresolvedRangesCount += len(un)
-			unresolvedRanges = append(unresolvedRanges, un...)
-			if len(r) == 0 {
-				metrics.SetOutcome(models.NoCommitRanges)
-			}
-		}
+		r, un, sR := processRanges(textRanges, repos, metrics, cache, models.VersionSourceDescription)
+		resolvedRanges = append(resolvedRanges, r...)
+		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {
 			successfulRepos[s] = true
 		}
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
 	}
 
 	if len(resolvedRanges) == 0 && len(commits) == 0 {
@@ -500,4 +473,28 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 		}
 		metricsFile.Close()
 	}
+}
+
+// processRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
+func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []*osvschema.Range, []string) {
+	if len(ranges) == 0 {
+		return nil, nil, nil
+	}
+
+	r, un, sR := conversion.GitVersionsToCommits(ranges, repos, metrics, cache)
+	if len(r) > 0 {
+		metrics.ResolvedRangesCount += len(r)
+		metrics.SetOutcome(models.Successful)
+	}
+
+	if len(un) > 0 {
+		metrics.UnresolvedRangesCount += len(un)
+		if len(r) == 0 {
+			metrics.SetOutcome(models.NoCommitRanges)
+		}
+	}
+
+	metrics.VersionSources = append(metrics.VersionSources, source)
+
+	return r, un, sR
 }

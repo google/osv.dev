@@ -5,6 +5,7 @@ package conversion
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -293,7 +294,7 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 	// check if the ranges are the same
 	if range1.GetRepo() != range2.GetRepo() || range1.GetType() != range2.GetType() {
 		// return an error if not the case
-		return nil, fmt.Errorf("ranges are not the same repo or type")
+		return nil, errors.New("ranges are not the same repo or type")
 	}
 
 	mergedRange := &osvschema.Range{
@@ -353,6 +354,7 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 		if v2, ok := val2.([]any); ok {
 			return append(v1, v2...), nil
 		}
+
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
@@ -371,16 +373,20 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 					merged[k] = v
 				}
 			}
+
 			return merged, nil
 		}
+
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	case string:
 		if v2, ok := val2.(string); ok {
 			if v1 == v2 {
 				return v1, nil
 			}
+
 			return []any{v1, v2}, nil
 		}
+
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	default:
 		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
@@ -389,6 +395,7 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 		if val1 == val2 {
 			return val1, nil
 		}
+
 		return []any{val1, val2}, nil
 	}
 }

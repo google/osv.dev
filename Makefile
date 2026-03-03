@@ -89,17 +89,17 @@ build-api-protos:
 build-protos: build-osv-protos build-api-protos
 
 run-website:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
 run-website-staging:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
 run-website-emulator:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 

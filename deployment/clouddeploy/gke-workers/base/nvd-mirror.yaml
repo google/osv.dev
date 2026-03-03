@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "240"
 spec:
-  schedule: "0 */2 * * *"
+  schedule: "5 */2 * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:

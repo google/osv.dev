@@ -20,6 +20,7 @@
 # gcp/api/**/*.py
 # osv/*.py
 # osv/**/*.py
+# tools/apitester/**
 steps:
 - name: 'gcr.io/oss-vdb/ci'
   id: 'sync'

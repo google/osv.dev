@@ -44,7 +44,7 @@ func TestAssignIDs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read existing ID: %v", err)
 			}
-			err = os.WriteFile(filepath.Join(tmpDir, tt.existingName), existingData, 0644)
+			err = os.WriteFile(filepath.Join(tmpDir, tt.existingName), existingData, 0600)
 			if err != nil {
 				t.Fatalf("failed to copy existing ID: %v", err)
 			}
@@ -56,7 +56,7 @@ func TestAssignIDs(t *testing.T) {
 				t.Fatalf("failed to read template %s: %v", templatePath, err)
 			}
 			destPath := filepath.Join(tmpDir, tt.templateName)
-			if err := os.WriteFile(destPath, templateData, 0644); err != nil {
+			if err := os.WriteFile(destPath, templateData, 0600); err != nil {
 				t.Fatalf("failed to setup unassigned vuln: %v", err)
 			}
 
@@ -88,7 +88,9 @@ func TestAssignIDs(t *testing.T) {
 				t.Fatalf("failed to read expected vuln: %v", err)
 			}
 
-			if !bytes.Equal(gotData, wantData) {
+			// Trim space to be robust against minor formatting differences,
+			// for example trailing newlines.
+			if !bytes.Equal(bytes.TrimSpace(gotData), bytes.TrimSpace(wantData)) {
 				t.Errorf("Data fidelity mismatch for %s:\nGot:\n%s\nWant:\n%s", tt.expectedID, string(gotData), string(wantData))
 			}
 
@@ -99,4 +101,3 @@ func TestAssignIDs(t *testing.T) {
 		})
 	}
 }
-

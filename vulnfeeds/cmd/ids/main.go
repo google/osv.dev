@@ -112,8 +112,8 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 	// If the vulnerability has a published date, use the year from that.
 	// Otherwise, just default to the current year.
 	year := defaultYear
-	if vuln.Published != nil {
-		year = vuln.Published.AsTime().Year()
+	if vuln.GetPublished() != nil {
+		year = vuln.GetPublished().AsTime().Year()
 	}
 
 	// Allocate a new ID and write the new file.
@@ -121,7 +121,7 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 	yearCounters[year] = id
 
 	vuln.Id = fmt.Sprintf("%s-%d-%d", prefix, year, id)
-	newPath := filepath.Join(filepath.Dir(path), vuln.Id+formatToExtension[format])
+	newPath := filepath.Join(filepath.Dir(path), vuln.GetId()+formatToExtension[format])
 
 	writef, err := os.Create(newPath)
 	if err != nil {
@@ -244,6 +244,13 @@ func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFor
 		return fmt.Errorf("unknown file format: %v", format)
 	}
 
+	// Ensure the output has a trailing newline to match the behavior of
+	// json.Encoder, which was previously used.
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		data = append(data, '\n')
+	}
+
 	_, err = w.Write(data)
+
 	return err
 }

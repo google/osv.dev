@@ -3383,6 +3383,7 @@
       "details": "## Summary\n\nNokogiri's CRuby extension fails to check the return value from `xmlC14NExecute` in the method `Nokogiri::XML::Document#canonicalize` and `Nokogiri::XML::Node#canonicalize`. When canonicalization fails, an empty string is returned instead of raising an exception. This incorrect return value may allow downstream libraries to accept invalid or incomplete canonicalized XML, which has been demonstrated to enable signature validation bypass in SAML libraries.\n\nJRuby is not affected, as the Java implementation correctly raises `RuntimeError` on canonicalization failure.\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.1`.\n\n## Severity\n\nThe maintainers have assessed this as **Medium** severity. Nokogiri itself is a parsing library without a clear security boundary related to canonicalization, so the direct impact is that a method returns incorrect data on invalid input. However, this behavior was exploited in practice to bypass SAML signature validation in downstream libraries (see References).\n\n## Credit\n\nThis vulnerability was responsibly reported by HackerOne researcher `d4d`.",
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-02-18T21:57:38Z",
+      "related": ["CGA-wm7m-2wf3-587h"],
       "database_specific": "<Any value>",
       "references": [
         {

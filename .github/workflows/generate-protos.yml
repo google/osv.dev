@@ -7,6 +7,7 @@ on:
       - 'osv/osv-schema/proto/vulnerability.proto'
       - 'osv/importfinding.proto'
       - 'gcp/api/v1/osv_service_v1.proto'
+  pull_request:
   workflow_dispatch:
 
 concurrency:

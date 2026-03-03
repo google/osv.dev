@@ -64,10 +64,15 @@ jobs:
       - name: Generate protos
         run: make build-protos
 
-      - name: Verify no changes
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Generated proto files are out of sync. Please run 'make build-protos' locally and commit the changes."
-            git diff
-            exit 1
-          fi
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          token: ${{ secrets.PR_TOKEN_BOT }}
+          title: "chore: regenerate protos"
+          body: >
+            The proto files have been updated. This PR contains the regenerated code.
+
+            Please review and merge!
+          branch: "bot/regenerate-protos"
+          author: "osv-robot <osv-robot@google.com>"
+          commit-message: "chore: regenerate protos"

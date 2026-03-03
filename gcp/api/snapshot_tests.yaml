@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# api test runner
+# api e2e test runner
 # This should be triggered on changes to the following:
 # gcp/api/poetry.lock
-# gcp/api/run_tests.sh
+# gcp/api/run_tests_e2e.sh
 # gcp/api/*.py
 # gcp/api/**/*.py
 # osv/*.py
 # osv/**/*.py
-
+# tools/apitester/**
 steps:
-- name: 'gcr.io/cloud-builders/git'
-  id: 'init'
-  args: ['submodule', 'update', '--init']
-  # if this is invoked from another cloud build, this will fail as it is not a git repo
-  # the invoking cloud build file should run this step.
-  allowFailure: true
 - name: 'gcr.io/oss-vdb/ci'
   id: 'sync'
   dir: gcp/api
   args: ['poetry', 'sync']
-  waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'api-tests'
+  id: 'api-snapshot-tests'
   dir: gcp/api
-  #TODO: Update test scripts to support not supplying a credential.
-  args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
-  waitFor: ['init', 'sync']
+  args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
 
 timeout: 7200s
 serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'

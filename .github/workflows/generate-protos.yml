@@ -4,10 +4,9 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'osv/osv-schema/proto/vulnerability.proto'
-      - 'osv/importfinding.proto'
       - 'gcp/api/v1/osv_service_v1.proto'
-  pull_request: 
+      - 'osv/importfinding.proto'
+      - 'osv/osv-schema/proto/vulnerability.proto'
   workflow_dispatch:
 
 concurrency:
@@ -61,6 +60,7 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
       - name: Generate protos
         run: make build-protos
 

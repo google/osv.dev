@@ -82,6 +82,24 @@ const (
 	Filler                             // Has been determined to be a filler word
 )
 
+// refTypePriority is a read-only map ReferenceType to priority.
+// When multiple references are associated with the same URL, we deduplicate and only keep the type with the highest priority.
+// Priority (highest to lowest):
+// FIX > INTRODUCED > DETECTION > REPORT > PACKAGE > EVIDENCE > ADVISORY > ARTICLE > DISCUSSION > WEB > GIT
+var refTypePriority = map[osvschema.Reference_Type]int{
+	osvschema.Reference_FIX: 11,
+	osvschema.Reference_INTRODUCED: 10,
+	osvschema.Reference_DETECTION: 9,
+	osvschema.Reference_REPORT: 8,
+	osvschema.Reference_PACKAGE: 7,
+	osvschema.Reference_EVIDENCE: 6,
+	osvschema.Reference_ADVISORY: 5,
+	osvschema.Reference_ARTICLE: 4,
+	osvschema.Reference_DISCUSSION: 3,
+	osvschema.Reference_WEB: 2,
+	osvschema.Reference_GIT: 1,
+}
+
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
 func AttachExtractedVersionInfo(v *Vulnerability, version models.VersionInfo) {
 	// commit holds a commit hash of one of the supported commit types.
@@ -662,37 +680,37 @@ func Unique[T comparable](s []T) []T {
 }
 
 // ClassifyReferences annotates reference links based on their tags or their shape.
+// References with the same URL are deduplicated, and only keep the RefType of the highest priority (see refTypePriority).
 func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 	var references []*osvschema.Reference
-	refMap := make(map[string]map[osvschema.Reference_Type]bool)
+	bestTypes := make(map[string]osvschema.Reference_Type)
 
-	for _, reference := range refs {
-		if _, ok := refMap[reference.URL]; !ok {
-			refMap[reference.URL] = make(map[osvschema.Reference_Type]bool)
-		}
-
-		if len(reference.Tags) > 0 {
-			for _, tag := range reference.Tags {
-				refType := ClassifyReferenceLink(reference.URL, tag)
-				if !refMap[reference.URL][refType] {
-					references = append(references, &osvschema.Reference{
-						Type: refType,
-						Url:  reference.URL,
-					})
-					refMap[reference.URL][refType] = true
+	for _, ref := range refs {
+		url := ref.URL
+		if len(ref.Tags) > 0 {
+			for _, tag := range ref.Tags {
+				refType := ClassifyReferenceLink(url, tag)
+				bestType, ok := bestTypes[url]
+				if !ok || refTypePriority[refType] > refTypePriority[bestType] {
+					bestTypes[url] = refType
 				}
 			}
 		} else {
-			refType := ClassifyReferenceLink(reference.URL, "")
-			if !refMap[reference.URL][refType] {
-				references = append(references, &osvschema.Reference{
-					Type: refType,
-					Url:  reference.URL,
-				})
-				refMap[reference.URL][refType] = true
+			refType := ClassifyReferenceLink(url, "")
+			bestType, ok := bestTypes[url]
+			if !ok || refTypePriority[refType] > refTypePriority[bestType] {
+				bestTypes[url] = refType
 			}
 		}
 	}
+
+	for url, refType := range bestTypes {
+		references = append(references, &osvschema.Reference{
+			Type: refType,
+			Url:  url,
+		})
+	}
+
 	sort.SliceStable(references, func(i, j int) bool {
 		return references[i].GetType() < references[j].GetType()
 	})

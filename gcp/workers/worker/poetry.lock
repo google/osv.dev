@@ -396,14 +396,14 @@ grpc = ["grpcio (>=1.33.2,<2.0.0)", "grpcio (>=1.49.1,<2.0.0) ; python_version >
 
 [[package]]
 name = "google-api-python-client"
-version = "2.190.0"
+version = "2.191.0"
 description = "Google API Client Library for Python"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_api_python_client-2.190.0-py3-none-any.whl", hash = "sha256:d9b5266758f96c39b8c21d9bbfeb4e58c14dbfba3c931f7c5a8d7fdcd292dd57"},
-    {file = "google_api_python_client-2.190.0.tar.gz", hash = "sha256:5357f34552e3724d80d2604c8fa146766e0a9d6bb0afada886fafed9feafeef6"},
+    {file = "google_api_python_client-2.191.0-py3-none-any.whl", hash = "sha256:0768dde3202121abb3e897c4ee5150e58a25f32ee843780f6bee636dccc7ef23"},
+    {file = "google_api_python_client-2.191.0.tar.gz", hash = "sha256:858c22fd46f51a65cee365a78aec2054e6d47b50434bee4ba62e91ac0944aea1"},
 ]
 
 [package.dependencies]
@@ -936,6 +936,7 @@ optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
+    {file = "jsonpath_ng-1.8.0-py3-none-any.whl", hash = "sha256:b8dde192f8af58d646fc031fac9c99fe4d00326afc4148f1f043c601a8cfe138"},
     {file = "jsonpath_ng-1.8.0.tar.gz", hash = "sha256:54252968134b5e549ea5b872f1df1168bd7defe1a52fed5a358c194e1943ddc3"},
 ]
 
@@ -2037,4 +2038,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "96e2b674940189ac382ffb57b0c57e2a3879fb2a5532eab0ddc256c7fc50fd9a"
+content-hash = "fda27060c3c9379138ade788503a37d4c6a0ea12cb9ae1de81b93c38ff1116c7"

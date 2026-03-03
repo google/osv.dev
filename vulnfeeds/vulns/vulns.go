@@ -87,17 +87,17 @@ const (
 // Priority (highest to lowest):
 // FIX > INTRODUCED > DETECTION > REPORT > PACKAGE > EVIDENCE > ADVISORY > ARTICLE > DISCUSSION > WEB > GIT
 var refTypePriority = map[osvschema.Reference_Type]int{
-	osvschema.Reference_FIX: 11,
+	osvschema.Reference_FIX:        11,
 	osvschema.Reference_INTRODUCED: 10,
-	osvschema.Reference_DETECTION: 9,
-	osvschema.Reference_REPORT: 8,
-	osvschema.Reference_PACKAGE: 7,
-	osvschema.Reference_EVIDENCE: 6,
-	osvschema.Reference_ADVISORY: 5,
-	osvschema.Reference_ARTICLE: 4,
+	osvschema.Reference_DETECTION:  9,
+	osvschema.Reference_REPORT:     8,
+	osvschema.Reference_PACKAGE:    7,
+	osvschema.Reference_EVIDENCE:   6,
+	osvschema.Reference_ADVISORY:   5,
+	osvschema.Reference_ARTICLE:    4,
 	osvschema.Reference_DISCUSSION: 3,
-	osvschema.Reference_WEB: 2,
-	osvschema.Reference_GIT: 1,
+	osvschema.Reference_WEB:        2,
+	osvschema.Reference_GIT:        1,
 }
 
 // AttachExtractedVersionInfo converts the models.VersionInfo struct to OSV GIT and ECOSYSTEM AffectedRanges and AffectedPackage.
@@ -682,32 +682,31 @@ func Unique[T comparable](s []T) []T {
 // ClassifyReferences annotates reference links based on their tags or their shape.
 // References with the same URL are deduplicated, and only keep the RefType of the highest priority (see refTypePriority).
 func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
-	var references []*osvschema.Reference
+	references := make([]*osvschema.Reference, 0, len(refs))
 	bestTypes := make(map[string]osvschema.Reference_Type)
 
 	for _, ref := range refs {
-		url := ref.URL
 		if len(ref.Tags) > 0 {
 			for _, tag := range ref.Tags {
-				refType := ClassifyReferenceLink(url, tag)
-				bestType, ok := bestTypes[url]
+				refType := ClassifyReferenceLink(ref.URL, tag)
+				bestType, ok := bestTypes[ref.URL]
 				if !ok || refTypePriority[refType] > refTypePriority[bestType] {
-					bestTypes[url] = refType
+					bestTypes[ref.URL] = refType
 				}
 			}
 		} else {
-			refType := ClassifyReferenceLink(url, "")
-			bestType, ok := bestTypes[url]
+			refType := ClassifyReferenceLink(ref.URL, "")
+			bestType, ok := bestTypes[ref.URL]
 			if !ok || refTypePriority[refType] > refTypePriority[bestType] {
-				bestTypes[url] = refType
+				bestTypes[ref.URL] = refType
 			}
 		}
 	}
 
-	for url, refType := range bestTypes {
+	for refURL, refType := range bestTypes {
 		references = append(references, &osvschema.Reference{
 			Type: refType,
-			Url:  url,
+			Url:  refURL,
 		})
 	}
 

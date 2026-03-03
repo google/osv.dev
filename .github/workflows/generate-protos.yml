@@ -7,7 +7,7 @@ on:
       - 'osv/osv-schema/proto/vulnerability.proto'
       - 'osv/importfinding.proto'
       - 'gcp/api/v1/osv_service_v1.proto'
-  pull_request:
+  pull_request: 
   workflow_dispatch:
 
 concurrency:
@@ -50,26 +50,22 @@ jobs:
           go-version: '1.26.0'
 
       - name: Install protoc
-        run: sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
 
       - name: Install Go proto plugins
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
       - name: Generate protos
         run: make build-protos
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
-        with:
-          token: ${{ secrets.PR_TOKEN_BOT }}
-          title: "chore: regenerate protos"
-          body: >
-            The proto files have been updated. This PR contains the regenerated code.
-
-            Please review and merge!
-          branch: "bot/regenerate-protos"
-          author: "osv-robot <osv-robot@google.com>"
-          commit-message: "chore: regenerate protos"
+      - name: Verify no changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated proto files are out of sync. Please run 'make build-protos' locally and commit the changes."
+            git diff
+            exit 1
+          fi

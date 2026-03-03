@@ -42,7 +42,9 @@ jobs:
         run: pip install poetry==2.2.1
 
       - name: Set up poetry
-        run: poetry install
+        run: |
+          poetry install
+          cd gcp/api && poetry install
 
       - name: Set up Go
         uses: actions/setup-go@v5

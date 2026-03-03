@@ -199,21 +199,21 @@ func readVulnWithFormat(r io.Reader, format fileFormat) (*osvschema.Vulnerabilit
 		return nil, err
 	}
 
-	var v osvschema.Vulnerability
+	var jsonBytes []byte
 	switch format {
 	case fileFormatJSON:
-		err = protojson.Unmarshal(data, &v)
+		jsonBytes = data
 	case fileFormatYAML:
-		jsonBytes, err := yaml.YAMLToJSON(data)
+		jsonBytes, err = yaml.YAMLToJSON(data)
 		if err != nil {
 			return nil, err
 		}
-		err = protojson.Unmarshal(jsonBytes, &v)
 	default:
 		return nil, fmt.Errorf("unknown file format: %v", format)
 	}
 
-	if err != nil {
+	var v osvschema.Vulnerability
+	if err := protojson.Unmarshal(jsonBytes, &v); err != nil {
 		return nil, err
 	}
 
@@ -226,26 +226,24 @@ func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFor
 		Indent:    "  ",
 	}
 
+	jsonBytes, err := marshaler.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	var data []byte
 	switch format {
 	case fileFormatJSON:
-		data, err := marshaler.Marshal(v)
-		if err != nil {
-			return err
-		}
-		_, err = w.Write(data)
-		return err
+		data = jsonBytes
 	case fileFormatYAML:
-		jsonBytes, err := marshaler.Marshal(v)
+		data, err = yaml.JSONToYAML(jsonBytes)
 		if err != nil {
 			return err
 		}
-		yamlBytes, err := yaml.JSONToYAML(jsonBytes)
-		if err != nil {
-			return err
-		}
-		_, err = w.Write(yamlBytes)
-		return err
 	default:
 		return fmt.Errorf("unknown file format: %v", format)
 	}
+
+	_, err = w.Write(data)
+	return err
 }

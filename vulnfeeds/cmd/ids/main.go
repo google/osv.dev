@@ -4,7 +4,6 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -17,9 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv-scanner/pkg/models"
+	"github.com/goccy/go-yaml"
 	"github.com/google/osv/vulnfeeds/utility/logger"
-	"gopkg.in/yaml.v2"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -112,16 +112,16 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 	// If the vulnerability has a published date, use the year from that.
 	// Otherwise, just default to the current year.
 	year := defaultYear
-	if !vuln.Published.IsZero() {
-		year = vuln.Published.Year()
+	if vuln.Published != nil {
+		year = vuln.Published.AsTime().Year()
 	}
 
 	// Allocate a new ID and write the new file.
 	id := yearCounters[year] + 1
 	yearCounters[year] = id
 
-	vuln.ID = fmt.Sprintf("%s-%d-%d", prefix, year, id)
-	newPath := filepath.Join(filepath.Dir(path), vuln.ID+formatToExtension[format])
+	vuln.Id = fmt.Sprintf("%s-%d-%d", prefix, year, id)
+	newPath := filepath.Join(filepath.Dir(path), vuln.Id+formatToExtension[format])
 
 	writef, err := os.Create(newPath)
 	if err != nil {
@@ -193,36 +193,58 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0600)
 }
 
-func readVulnWithFormat(r io.Reader, format fileFormat) (*models.Vulnerability, error) {
-	var v models.Vulnerability
+func readVulnWithFormat(r io.Reader, format fileFormat) (*osvschema.Vulnerability, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var v osvschema.Vulnerability
 	switch format {
 	case fileFormatJSON:
-		dec := json.NewDecoder(r)
-		if err := dec.Decode(&v); err != nil {
-			return nil, err
-		}
+		err = protojson.Unmarshal(data, &v)
 	case fileFormatYAML:
-		dec := yaml.NewDecoder(r)
-		if err := dec.Decode(&v); err != nil {
+		jsonBytes, err := yaml.YAMLToJSON(data)
+		if err != nil {
 			return nil, err
 		}
+		err = protojson.Unmarshal(jsonBytes, &v)
 	default:
 		return nil, fmt.Errorf("unknown file format: %v", format)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &v, nil
 }
 
-func writeVulnWithFormat(v *models.Vulnerability, w io.Writer, format fileFormat) error {
+func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFormat) error {
+	marshaler := protojson.MarshalOptions{
+		Multiline: true,
+		Indent:    "  ",
+	}
+
 	switch format {
 	case fileFormatJSON:
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(v)
+		data, err := marshaler.Marshal(v)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(data)
+		return err
 	case fileFormatYAML:
-		enc := yaml.NewEncoder(w)
-		return enc.Encode(v)
+		jsonBytes, err := marshaler.Marshal(v)
+		if err != nil {
+			return err
+		}
+		yamlBytes, err := yaml.JSONToYAML(jsonBytes)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(yamlBytes)
+		return err
 	default:
 		return fmt.Errorf("unknown file format: %v", format)
 	}

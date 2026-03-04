@@ -369,7 +369,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 }
 
 func generateVulnerabilities(advisories Advisories) ([]*osvschema.Vulnerability, error) {
-	var vulnerabilities []*osvschema.Vulnerability
+	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(advisories))
 	for dsaID, advisory := range advisories {
 		if len(advisory.Affected) == 0 {
 			slog.Info("Skipping because no affected versions", "dsaID", dsaID)
@@ -420,6 +420,7 @@ func generateVulnerabilities(advisories Advisories) ([]*osvschema.Vulnerability,
 
 		vulnerabilities = append(vulnerabilities, osv)
 	}
+
 	return vulnerabilities, nil
 }
 
@@ -454,10 +455,11 @@ func convertDebian(webwmlRepo, securityTrackerRepo string, advType AdvisoryType)
 
 func cloneRepo(url, dest string) error {
 	slog.Info("Cloning repository", "url", url, "dest", dest)
-	//nolint:gosec // url and dest are safe
+
 	cmd := exec.Command("git", "clone", "--quiet", url, dest, "--depth=1")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }
 
@@ -477,32 +479,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *webwmlRepo == "" {
+	if err := run(*webwmlRepo, *securityTrackerRepo, *outputDir, *outputBucket, *uploadToGCS, *doDeletions, *numWorkers); err != nil {
+		slog.Error("Execution failed", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, uploadToGCS, doDeletions bool, numWorkers int) error {
+	if webwmlRepo == "" {
 		tempDir, err := os.MkdirTemp("", "webwml-*")
 		if err != nil {
-			slog.Error("Failed to create temp dir for webwml", "err", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to create temp dir for webwml: %w", err)
 		}
 		defer os.RemoveAll(tempDir)
 		if err := cloneRepo("https://salsa.debian.org/webmaster-team/webwml.git", tempDir); err != nil {
-			slog.Error("Failed to clone webwml", "err", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to clone webwml: %w", err)
 		}
-		*webwmlRepo = tempDir
+		webwmlRepo = tempDir
 	}
 
-	if *securityTrackerRepo == "" {
+	if securityTrackerRepo == "" {
 		tempDir, err := os.MkdirTemp("", "security-tracker-*")
 		if err != nil {
-			slog.Error("Failed to create temp dir for security-tracker", "err", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to create temp dir for security-tracker: %w", err)
 		}
 		defer os.RemoveAll(tempDir)
 		if err := cloneRepo("https://salsa.debian.org/security-tracker-team/security-tracker.git", tempDir); err != nil {
-			slog.Error("Failed to clone security-tracker", "err", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to clone security-tracker: %w", err)
 		}
-		*securityTrackerRepo = tempDir
+		securityTrackerRepo = tempDir
 	}
 
 	advisoryTypes := []AdvisoryType{AdvisoryTypeDSA, AdvisoryTypeDLA, AdvisoryTypeDTSA}
@@ -511,32 +516,30 @@ func main() {
 	for _, advType := range advisoryTypes {
 		slog.Info("Converting advisories", "type", advType)
 
-		vulns, err := convertDebian(*webwmlRepo, *securityTrackerRepo, advType)
+		vulns, err := convertDebian(webwmlRepo, securityTrackerRepo, advType)
 		if err != nil {
-			slog.Error("Error converting", "type", advType, "err", err)
-			os.Exit(1)
+			return fmt.Errorf("error converting type %s: %w", advType, err)
 		}
 
 		allVulnerabilities = append(allVulnerabilities, vulns...)
 
-		if !*uploadToGCS {
-			advOutputDir := filepath.Join(*outputDir, strings.ToLower(string(advType)))
+		if !uploadToGCS {
+			advOutputDir := filepath.Join(outputDir, strings.ToLower(string(advType)))
 			if err := os.MkdirAll(advOutputDir, 0755); err != nil {
-				slog.Error("Failed to create output dir", "dir", advOutputDir, "err", err)
-				os.Exit(1)
+				return fmt.Errorf("failed to create output dir %s: %w", advOutputDir, err)
 			}
 
 			for _, vuln := range vulns {
 				b, err := marshaler.Marshal(vuln)
 				if err != nil {
-					slog.Error("Failed to marshal vulnerability", "id", vuln.Id, "err", err)
+					slog.Error("Failed to marshal vulnerability", "id", vuln.GetId(), "err", err)
 					continue
 				}
 
-				outPath := filepath.Join(advOutputDir, vuln.Id+".json")
+				outPath := filepath.Join(advOutputDir, vuln.GetId()+".json")
 				//nolint:gosec // 0644 is fine for public vulnerability data
 				if err := os.WriteFile(outPath, b, 0644); err != nil {
-					slog.Error("Failed to write vulnerability", "id", vuln.Id, "err", err)
+					slog.Error("Failed to write vulnerability", "id", vuln.GetId(), "err", err)
 					continue
 				}
 				slog.Info("Writing", "path", outPath)
@@ -544,11 +547,13 @@ func main() {
 		}
 	}
 
-	if *uploadToGCS {
-		slog.Info("Uploading to GCS", "bucket", *outputBucket)
+	if uploadToGCS {
+		slog.Info("Uploading to GCS", "bucket", outputBucket)
 		ctx := context.Background()
-		upload.Upload(ctx, "debian-osv", *uploadToGCS, *outputBucket, "", *numWorkers, *outputDir, allVulnerabilities, *doDeletions)
+		upload.Upload(ctx, "debian-osv", uploadToGCS, outputBucket, "", numWorkers, outputDir, allVulnerabilities, doDeletions)
 	} else {
 		slog.Info("Skipping GCS upload")
 	}
+
+	return nil
 }

@@ -20,12 +20,15 @@ OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=debian-osv}"
 cd "$(dirname "$0")"
 
 # Use the first_package_finder script to generate a first version cache.
-pushd ./debian_converter
 echo "Finding first packages"
-poetry run python3 first_package_finder.py
+
+FINDER_CMD="go run main.go"
+if [ -f "./first_package_finder_bin" ]; then
+  FINDER_CMD="./first_package_finder_bin"
+fi
+
+$FINDER_CMD
 
 echo "Syncing with cloud first_package_output ${OUTPUT_BUCKET}"
 gsutil -q -m rsync -c -d 'first_package_output' "gs://${OUTPUT_BUCKET}/first_package_output"
 echo "Successfully synced with cloud"
-
-popd

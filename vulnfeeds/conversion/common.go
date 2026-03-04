@@ -324,7 +324,7 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 			if existing, ok := mergedMap[k]; ok {
 				mergedVal, err := mergeDatabaseSpecificValues(existing, val2)
 				if err != nil {
-					return nil, fmt.Errorf("failed to merge database specific key %q: %w", k, err)
+					logger.Info("Failed to merge database specific key", "key", k, "err", err)
 				}
 				mergedMap[k] = mergedVal
 			} else {

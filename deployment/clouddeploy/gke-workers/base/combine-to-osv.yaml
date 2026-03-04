@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: combine-to-osv
   labels:
-    cronLastSuccessfulTimeMins: "90"
+    cronLastSuccessfulTimeMins: "2160"
 spec:
   schedule: "30 13,21 * * *"
   concurrencyPolicy: Forbid

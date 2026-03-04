@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.0-alpine@sha256:2d40d4fc278dad38be0777d5e2a88a2c6dee51b0b29c97a764fc6c6a11ca893c AS GO_BUILD
+FROM golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5 AS build
 
-RUN mkdir /src
 WORKDIR /src
 
 COPY ./go.mod /src/go.mod
 COPY ./go.sum /src/go.sum
-RUN go mod download
+RUN go mod download && go mod verify
 
 COPY ./ /src/
-RUN go build -o first_package_finder_bin ./tools/debian/first_package_finder/
-
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:d2f3fd4000e4c9c641ab75898da682b771528f60f08f65e0c3a88fcdff2eaf92
+RUN CGO_ENABLED=0 go build -o first_package_finder ./cmd/first_package_finder/
 
 WORKDIR /src
-COPY --from=GO_BUILD /src/first_package_finder_bin ./first_package_finder_bin
-COPY vulnfeeds/tools/debian/run_*.sh ./
+COPY --from=GO_BUILD /src/first_package_finder ./first_package_finder
 
-RUN chmod +x ./run_*.sh
+ENTRYPOINT ["/first_package_finder"]

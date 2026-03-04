@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.0-alpine@sha256:2d40d4fc278dad38be0777d5e2a88a2c6dee51b0b29c97a764fc6c6a11ca893c AS GO_BUILD
+FROM golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5 AS build
 
-RUN mkdir /src
 WORKDIR /src
 
 COPY ./go.mod /src/go.mod
 COPY ./go.sum /src/go.sum
-RUN go mod download
+RUN go mod download && go mod verify
 
 COPY ./ /src/
-RUN go build -o convert_debian_bin ./cmd/converters/dsa-dla-dtsa/
-
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:d2f3fd4000e4c9c641ab75898da682b771528f60f08f65e0c3a88fcdff2eaf92
+RUN CGO_ENABLED=0 go build -o dsa-dla-dtsa ./cmd/converters/dsa-dla-dtsa/main.go
 
 WORKDIR /src
-COPY --from=GO_BUILD /src/convert_debian_bin ./convert_debian_bin
-COPY cmd/converters/dsa-dla-dtsa/run_convert_debian.sh ./
+COPY --from=GO_BUILD /src/dsa-dla-dtsa ./dsa-dla-dtsa
 
-RUN chmod +x ./run_convert_debian.sh
+ENTRYPOINT ["/dsa-dla-dtsa"]
+

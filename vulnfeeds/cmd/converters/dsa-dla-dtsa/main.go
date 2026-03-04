@@ -81,7 +81,8 @@ var marshaler = protojson.MarshalOptions{
 }
 
 func createCodenameToVersion() (map[string]string, error) {
-	resp, err := http.Get("https://debian.pages.debian.net/distro-info-data/debian.csv")
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get("https://debian.pages.debian.net/distro-info-data/debian.csv")
 	if err != nil {
 		return nil, err
 	}

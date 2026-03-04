@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"errors"
 	"flag"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
+	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/text/encoding/charmap"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -196,10 +198,17 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 				// Fallback to the old format just in case
 				parsedDate, err = time.Parse("02 Jan 2006", dsaMatch[1])
 				if err != nil {
-					return fmt.Errorf("invalid date: %s", dsaMatch[1])
+					// Fallback for DTSA format like "August 26th, 2005"
+					cleanDate := strings.ReplaceAll(dsaMatch[1], "st,", ",")
+					cleanDate = strings.ReplaceAll(cleanDate, "nd,", ",")
+					cleanDate = strings.ReplaceAll(cleanDate, "rd,", ",")
+					cleanDate = strings.ReplaceAll(cleanDate, "th,", ",")
+					parsedDate, err = time.Parse("January 2, 2006", cleanDate)
+					if err != nil {
+						return fmt.Errorf("invalid date: %s", dsaMatch[1])
+					}
 				}
 			}
-			slog.Info("Parsed date", "date", parsedDate)
 
 			currentAdvisory = dsaMatch[2]
 			advisories[currentAdvisory] = &AdvisoryInfo{
@@ -358,7 +367,8 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 	return nil
 }
 
-func writeOutput(outputDir string, advisories Advisories) error {
+func generateVulnerabilities(advisories Advisories) ([]*osvschema.Vulnerability, error) {
+	var vulnerabilities []*osvschema.Vulnerability
 	for dsaID, advisory := range advisories {
 		if len(advisory.Affected) == 0 {
 			slog.Info("Skipping because no affected versions", "dsaID", dsaID)
@@ -407,57 +417,57 @@ func writeOutput(outputDir string, advisories Advisories) error {
 			osv.Affected = append(osv.Affected, affected)
 		}
 
-		b, err := marshaler.Marshal(osv)
-		if err != nil {
-			return err
-		}
-
-		outPath := filepath.Join(outputDir, dsaID+".json")
-		//nolint:gosec // 0644 is fine for public vulnerability data
-		if err := os.WriteFile(outPath, b, 0644); err != nil {
-			return err
-		}
-		slog.Info("Writing", "path", outPath)
+		vulnerabilities = append(vulnerabilities, osv)
 	}
-	slog.Info("Complete")
-
-	return nil
+	return vulnerabilities, nil
 }
 
-func convertDebian(webwmlRepo, securityTrackerRepo, outputDir string, advType AdvisoryType) error {
+func convertDebian(webwmlRepo, securityTrackerRepo string, advType AdvisoryType) ([]*osvschema.Vulnerability, error) {
 	advisories := make(Advisories)
 
 	switch advType {
 	case AdvisoryTypeDLA:
 		if err := parseSecurityTrackerFile(advisories, securityTrackerRepo, securityTrackerDlaPath); err != nil {
-			return err
+			return nil, err
 		}
 		if err := parseWebwmlFiles(advisories, webwmlRepo, webwmlLtsSecurityPath); err != nil {
-			return err
+			return nil, err
 		}
 	case AdvisoryTypeDSA:
 		if err := parseSecurityTrackerFile(advisories, securityTrackerRepo, securityTrackerDsaPath); err != nil {
-			return err
+			return nil, err
 		}
 		if err := parseWebwmlFiles(advisories, webwmlRepo, webwmlSecurityPath); err != nil {
-			return err
+			return nil, err
 		}
 	case AdvisoryTypeDTSA:
 		if err := parseSecurityTrackerFile(advisories, securityTrackerRepo, securityTrackerDtsaPath); err != nil {
-			return err
+			return nil, err
 		}
 	default:
-		return errors.New("invalid advisory type")
+		return nil, errors.New("invalid advisory type")
 	}
 
-	return writeOutput(outputDir, advisories)
+	return generateVulnerabilities(advisories)
+}
+
+func cloneRepo(url, dest string) error {
+	slog.Info("Cloning repository", "url", url, "dest", dest)
+	//nolint:gosec // url and dest are safe
+	cmd := exec.Command("git", "clone", "--quiet", url, dest, "--depth=1")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func main() {
 	outputDir := flag.String("o", "", "Output directory")
-	advTypeStr := flag.String("adv-type", "", "Advisory type (DSA, DLA, DTSA)")
 	webwmlRepo := flag.String("webwml", "", "Webwml repository")
 	securityTrackerRepo := flag.String("security-tracker", "", "Security tracker repository")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "Upload to GCS")
+	outputBucket := flag.String("output-bucket", "debian-osv", "Output bucket")
+	numWorkers := flag.Int("num-workers", 10, "Number of workers")
+	doDeletions := flag.Bool("do-deletions", false, "Do deletions")
 
 	flag.Parse()
 
@@ -466,14 +476,78 @@ func main() {
 		os.Exit(1)
 	}
 
-	advType := AdvisoryType(*advTypeStr)
-	if advType != AdvisoryTypeDSA && advType != AdvisoryTypeDLA && advType != AdvisoryTypeDTSA {
-		slog.Error("Invalid advisory type", "type", *advTypeStr)
-		os.Exit(1)
+	if *webwmlRepo == "" {
+		tempDir, err := os.MkdirTemp("", "webwml-*")
+		if err != nil {
+			slog.Error("Failed to create temp dir for webwml", "err", err)
+			os.Exit(1)
+		}
+		defer os.RemoveAll(tempDir)
+		if err := cloneRepo("https://salsa.debian.org/webmaster-team/webwml.git", tempDir); err != nil {
+			slog.Error("Failed to clone webwml", "err", err)
+			os.Exit(1)
+		}
+		*webwmlRepo = tempDir
 	}
 
-	if err := convertDebian(*webwmlRepo, *securityTrackerRepo, *outputDir, advType); err != nil {
-		slog.Error("Error", "err", err)
-		os.Exit(1)
+	if *securityTrackerRepo == "" {
+		tempDir, err := os.MkdirTemp("", "security-tracker-*")
+		if err != nil {
+			slog.Error("Failed to create temp dir for security-tracker", "err", err)
+			os.Exit(1)
+		}
+		defer os.RemoveAll(tempDir)
+		if err := cloneRepo("https://salsa.debian.org/security-tracker-team/security-tracker.git", tempDir); err != nil {
+			slog.Error("Failed to clone security-tracker", "err", err)
+			os.Exit(1)
+		}
+		*securityTrackerRepo = tempDir
+	}
+
+	advisoryTypes := []AdvisoryType{AdvisoryTypeDSA, AdvisoryTypeDLA, AdvisoryTypeDTSA}
+	var allVulnerabilities []*osvschema.Vulnerability
+
+	for _, advType := range advisoryTypes {
+		slog.Info("Converting advisories", "type", advType)
+
+		vulns, err := convertDebian(*webwmlRepo, *securityTrackerRepo, advType)
+		if err != nil {
+			slog.Error("Error converting", "type", advType, "err", err)
+			os.Exit(1)
+		}
+
+		allVulnerabilities = append(allVulnerabilities, vulns...)
+
+		if !*uploadToGCS {
+			advOutputDir := filepath.Join(*outputDir, strings.ToLower(string(advType)))
+			if err := os.MkdirAll(advOutputDir, 0755); err != nil {
+				slog.Error("Failed to create output dir", "dir", advOutputDir, "err", err)
+				os.Exit(1)
+			}
+
+			for _, vuln := range vulns {
+				b, err := marshaler.Marshal(vuln)
+				if err != nil {
+					slog.Error("Failed to marshal vulnerability", "id", vuln.Id, "err", err)
+					continue
+				}
+
+				outPath := filepath.Join(advOutputDir, vuln.Id+".json")
+				//nolint:gosec // 0644 is fine for public vulnerability data
+				if err := os.WriteFile(outPath, b, 0644); err != nil {
+					slog.Error("Failed to write vulnerability", "id", vuln.Id, "err", err)
+					continue
+				}
+				slog.Info("Writing", "path", outPath)
+			}
+		}
+	}
+
+	if *uploadToGCS {
+		slog.Info("Uploading to GCS", "bucket", *outputBucket)
+		ctx := context.Background()
+		upload.Upload(ctx, "debian-osv", *uploadToGCS, *outputBucket, "", *numWorkers, *outputDir, allVulnerabilities, *doDeletions)
+	} else {
+		slog.Info("Skipping GCS upload")
 	}
 }

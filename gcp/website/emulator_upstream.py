@@ -23,7 +23,6 @@ from google.cloud import exceptions
 from google.cloud import ndb
 
 import osv
-import osv.logs
 from osv import gcs, pubsub
 
 
@@ -196,7 +195,7 @@ def compute_upstream_hierarchy(
     target_upstream_group.put()
 
 
-def main():
+def run():
   """Updates all upstream groups in the datastore by re-computing existing
   UpstreamGroups and creating new UpstreamGroups for un-computed bugs."""
 
@@ -242,10 +241,3 @@ def main():
     # Recompute the upstream hierarchies
     compute_upstream_hierarchy(group, upstream_groups)
     logging.info('Upstream hierarchy updated for bug: %s', group.db_id)
-
-
-if __name__ == '__main__':
-  _ndb_client = ndb.Client()
-  osv.logs.setup_gcp_logging('upstream')
-  with _ndb_client.context():
-    main()

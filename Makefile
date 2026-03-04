@@ -25,9 +25,6 @@ worker-tests:
 importer-tests:
 	cd gcp/workers/importer && ./run_tests.sh
 
-alias-tests:
-	cd gcp/workers/alias && ./run_tests.sh
-
 recoverer-tests:
 	cd gcp/workers/recoverer && ./run_tests.sh
 

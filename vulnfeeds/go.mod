@@ -13,7 +13,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4
 	github.com/sethvargo/go-retry v0.3.0
 	google.golang.org/api v0.268.0
 	google.golang.org/protobuf v1.36.11

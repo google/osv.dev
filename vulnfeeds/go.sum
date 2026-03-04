@@ -150,8 +150,8 @@ github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a h1:XHKiGf7vsACh43gFCBb5lOxDjnY6CQYNoQXsO/SlI6k=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260129002236-09a17f85b44a/go.mod h1:Eo7R19vlnflsCRdHW1ynyNUyoRwxdaTmTWD9MtKnJTc=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4 h1:4zC49SlXs2waAuZJFEP1lAGf9Bgjg8SQww6y8C9znJ0=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4/go.mod h1:NJzqZPEfOy3B1dWe9pKRtmxJ/UF1++6apnQLjz3du8E=
 github.com/pjbgf/sha1cd v0.3.2 h1:a9wb0bp1oC2TGwStyn0Umc/IGKQnEgF0vVaZ8QF8eo4=
 github.com/pjbgf/sha1cd v0.3.2/go.mod h1:zQWigSxVmsHEZow5qaLtPYxpcKMMQpa09ixqBxuCS6A=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=

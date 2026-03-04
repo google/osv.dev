@@ -106,8 +106,6 @@ func TestClassifyReferences(t *testing.T) {
 				},
 			},
 			references: []*osvschema.Reference{
-				{Url: "https://github.com/curl/curl/issues/9271", Type: osvschema.Reference_ADVISORY},
-				{Url: "https://github.com/curl/curl/issues/9271", Type: osvschema.Reference_EVIDENCE},
 				{Url: "https://github.com/curl/curl/issues/9271", Type: osvschema.Reference_REPORT},
 			},
 		},

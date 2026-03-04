@@ -4,17 +4,20 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cloud.google.com/go/storage"
 )
 
 const (
@@ -39,6 +42,16 @@ var (
 	firstSnapshotDate = time.Date(2005, 3, 12, 0, 0, 0, 0, time.UTC)
 )
 
+// HTTPError represents an error from an HTTP request, including the status code.
+type HTTPError struct {
+	StatusCode int
+	URL        string
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("HTTP %d for URL: %s", e.StatusCode, e.URL)
+}
+
 func convertDatetimeToStrDatetime(t time.Time) string {
 	return t.UTC().Format("20060102T150405Z")
 }
@@ -56,7 +69,8 @@ type DebianVersionInfo struct {
 }
 
 func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
-	resp, err := http.Get(debianReleaseVersionsURL)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(debianReleaseVersionsURL)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +130,7 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 
 		releaseDate, err := time.Parse("2006-01-02", releaseStr)
 		if err != nil {
-			log.Printf("Warning: failed to parse date %s for series %s", releaseStr, series)
+			slog.Warn("Failed to parse date", "date", releaseStr, "series", series)
 			continue
 		}
 
@@ -141,15 +155,16 @@ func parseCreatedDatesAndSetTime(date time.Time) time.Time {
 
 func loadSources(date time.Time, dist string) (map[string]string, error) {
 	url := getDebianSourcesURL(date, dist)
-	//nolint:gosec // URL is constructed from trusted source
-	resp, err := http.Get(url)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+		return nil, &HTTPError{StatusCode: resp.StatusCode, URL: url}
 	}
 
 	gzReader, err := gzip.NewReader(resp.Body)
@@ -191,18 +206,19 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 		date := parseCreatedDatesAndSetTime(info.Release)
 		for i := 0; i <= firstReleaseLookahead; i++ {
 			actualDate := date.Add(time.Duration(i) * 24 * time.Hour)
-			log.Printf("attempting load of version %s at %s", series, actualDate)
+			slog.Info("Attempting load of version", "series", series, "date", actualDate)
 
 			sources, err := loadSources(actualDate, series)
 			if err == nil {
 				info.Sources = sources
-				log.Printf("loaded version %s at %s", series, actualDate)
+				slog.Info("Loaded version", "series", series, "date", actualDate)
 
 				break
 			}
 
-			if !strings.Contains(err.Error(), "HTTP 404") {
-				log.Printf("Error loading sources for %s at %s: %v", series, actualDate, err)
+			var httpErr *HTTPError
+			if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusNotFound {
+				slog.Error("Error loading sources", "series", series, "date", actualDate, "err", err)
 			}
 
 			if actualDate.After(time.Now()) {
@@ -216,21 +232,40 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 
 func main() {
 	var outputDir string
+	var uploadToGCS bool
+	var outputBucket string
+
 	flag.StringVar(&outputDir, "o", "first_package_output", "Output folder")
 	flag.StringVar(&outputDir, "output-dir", "first_package_output", "Output folder")
+	flag.BoolVar(&uploadToGCS, "upload-to-gcs", false, "Upload to GCS")
+	flag.StringVar(&outputBucket, "output-bucket", "debian-osv", "Output bucket")
 	flag.Parse()
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	flag.Parse()
 
 	codenameToVersion, err := loadFirstPackages()
 	if err != nil {
-		log.Fatalf("Failed to load first packages: %v", err)
+		slog.Error("Failed to load first packages", "err", err)
+		os.Exit(1)
 	}
 
-	log.Println("first_package loaded, begin writing out data")
+	slog.Info("first_package loaded, begin writing out data")
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		log.Fatalf("Failed to create output directory: %v", err)
+	var outBkt *storage.BucketHandle
+	var ctx context.Context
+	if uploadToGCS {
+		ctx = context.Background()
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			slog.Error("Failed to create storage client", "err", err)
+			os.Exit(1)
+		}
+		outBkt = storageClient.Bucket(outputBucket)
+	} else {
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			slog.Error("Failed to create output directory", "err", err)
+			os.Exit(1)
+		}
 	}
 
 	for _, info := range codenameToVersion {
@@ -238,16 +273,34 @@ func main() {
 			continue
 		}
 
-		outPath := filepath.Join(outputDir, info.Version+".json")
 		b, err := json.Marshal(info.Sources)
 		if err != nil {
-			log.Printf("Failed to marshal sources for %s: %v", info.Version, err)
+			slog.Error("Failed to marshal sources", "version", info.Version, "err", err)
 			continue
 		}
 
-		//nolint:gosec // 0644 is fine for public vulnerability data
-		if err := os.WriteFile(outPath, b, 0644); err != nil {
-			log.Printf("Failed to write to %s: %v", outPath, err)
+		if uploadToGCS {
+			objName := filepath.Join(outputDir, info.Version+".json")
+			obj := outBkt.Object(objName)
+			wc := obj.NewWriter(ctx)
+			wc.ContentType = "application/json"
+			if _, err := wc.Write(b); err != nil {
+				slog.Error("Failed to write to GCS object", "objName", objName, "err", err)
+				wc.Close()
+
+				continue
+			}
+			if err := wc.Close(); err != nil {
+				slog.Error("Failed to close GCS writer", "objName", objName, "err", err)
+			}
+			slog.Info("Uploaded to GCS", "objName", objName)
+		} else {
+			outPath := filepath.Join(outputDir, info.Version+".json")
+			//nolint:gosec // 0644 is fine for public vulnerability data
+			if err := os.WriteFile(outPath, b, 0644); err != nil {
+				slog.Error("Failed to write to file", "outPath", outPath, "err", err)
+			}
 		}
 	}
+	slog.Info("Finished")
 }

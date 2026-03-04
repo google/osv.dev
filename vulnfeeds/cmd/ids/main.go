@@ -2,8 +2,10 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -221,12 +223,7 @@ func readVulnWithFormat(r io.Reader, format fileFormat) (*osvschema.Vulnerabilit
 }
 
 func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFormat) error {
-	marshaler := protojson.MarshalOptions{
-		Multiline: true,
-		Indent:    "  ",
-	}
-
-	jsonBytes, err := marshaler.Marshal(v)
+	jsonBytes, err := protojson.Marshal(v)
 	if err != nil {
 		return err
 	}
@@ -234,7 +231,11 @@ func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFor
 	var data []byte
 	switch format {
 	case fileFormatJSON:
-		data = jsonBytes
+		var buf bytes.Buffer
+		if err := json.Indent(&buf, jsonBytes, "", "  "); err != nil {
+			return err
+		}
+		data = buf.Bytes()
 	case fileFormatYAML:
 		data, err = yaml.JSONToYAML(jsonBytes)
 		if err != nil {

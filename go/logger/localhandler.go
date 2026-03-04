@@ -62,7 +62,7 @@ func (h *localHandler) Enabled(_ context.Context, level slog.Level) bool {
 func (h *localHandler) Handle(_ context.Context, r slog.Record) error {
 	// INFO:  message foo=bar
 	sb := &strings.Builder{}
-	sb.WriteString(levelStyle.Foreground(levelColors[r.Level]).Render(r.Level.String()+":"))
+	sb.WriteString(levelStyle.Foreground(levelColors[r.Level]).Render(r.Level.String() + ":"))
 	sb.WriteString(messageStyle.Render(r.Message))
 	r.Attrs(func(a slog.Attr) bool {
 		keyStyle := keyStyle

@@ -64,7 +64,8 @@ func main() {
 
 	if err := assignIDs(*prefix, *dir, fileFormat(*format)); err != nil {
 		logger.Info("Failed to assign IDs", slog.Any("err", err))
-		os.Exit(1)
+		logger.Close() // os.Exit() doesn't call deferred functions
+		os.Exit(1)     //nolint:gocritic
 	}
 }
 

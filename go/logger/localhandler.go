@@ -3,16 +3,17 @@ package logger
 import (
 	"context"
 	"fmt"
+	"image/color"
 	"io"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 var (
-	levelColors = map[slog.Level]lipgloss.Color{
+	levelColors = map[slog.Level]color.Color{
 		slog.LevelDebug: lipgloss.Color("5"), // Purple
 		slog.LevelInfo:  lipgloss.Color("4"), // Blue
 		slog.LevelWarn:  lipgloss.Color("3"), // Yellow
@@ -61,20 +62,20 @@ func (h *localHandler) Enabled(_ context.Context, level slog.Level) bool {
 func (h *localHandler) Handle(_ context.Context, r slog.Record) error {
 	// INFO:  message foo=bar
 	sb := &strings.Builder{}
-	fmt.Fprint(sb, levelStyle.Foreground(levelColors[r.Level]).Render(r.Level.String()+":"))
-	fmt.Fprint(sb, messageStyle.Render(r.Message))
+	sb.WriteString(levelStyle.Foreground(levelColors[r.Level]).Render(r.Level.String()+":"))
+	sb.WriteString(messageStyle.Render(r.Message))
 	r.Attrs(func(a slog.Attr) bool {
 		keyStyle := keyStyle
 		if a.Key == "err" || a.Key == "error" {
 			// Make the error key bright red.
 			keyStyle = keyStyle.Foreground(lipgloss.Color("9"))
 		}
-		fmt.Fprint(sb, " "+keyStyle.Render(a.Key+"="))
-		fmt.Fprint(sb, valueStyle.Render(fmt.Sprintf("%v", a.Value)))
+		sb.WriteString(" " + keyStyle.Render(a.Key+"="))
+		sb.WriteString(valueStyle.Render(fmt.Sprintf("%v", a.Value)))
 
 		return true
 	})
-	_, err := fmt.Fprintln(h.w, sb.String())
+	_, err := lipgloss.Fprintln(h.w, sb.String())
 
 	return err
 }

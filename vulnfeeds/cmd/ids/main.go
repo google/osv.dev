@@ -50,6 +50,7 @@ func main() {
 	flag.Parse()
 
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	if *prefix == "" || *dir == "" {
 		flag.Usage()

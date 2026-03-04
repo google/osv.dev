@@ -1,8 +1,10 @@
+// Package main provides a converter for Debian Security Advisories (DSA, DLA, DTSA) to OSV format.
 package main
 
 import (
 	"bufio"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -66,7 +68,7 @@ type AdvisoryInfo struct {
 	Modified   time.Time
 	Affected   []AffectedInfo
 	Upstream   []string
-	References []osvschema.Reference
+	References []*osvschema.Reference
 }
 
 type Advisories map[string]*AdvisoryInfo
@@ -91,7 +93,7 @@ func createCodenameToVersion() (map[string]string, error) {
 	}
 
 	if len(records) == 0 {
-		return nil, fmt.Errorf("empty csv")
+		return nil, errors.New("empty csv")
 	}
 
 	headers := records[0]
@@ -107,7 +109,7 @@ func createCodenameToVersion() (map[string]string, error) {
 	}
 
 	if seriesIdx == -1 || versionIdx == -1 {
-		return nil, fmt.Errorf("missing series or version column")
+		return nil, errors.New("missing series or version column")
 	}
 
 	result := make(map[string]string)
@@ -115,6 +117,7 @@ func createCodenameToVersion() (map[string]string, error) {
 		result[row[seriesIdx]] = row[versionIdx]
 	}
 	result["sid"] = "unstable"
+
 	return result, nil
 }
 
@@ -141,7 +144,7 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 
 		if leadingWhitespacePattern.MatchString(line) {
 			if currentAdvisory == "" {
-				return fmt.Errorf("unexpected tab")
+				return errors.New("unexpected tab")
 			}
 
 			line = strings.TrimLeft(line, " \t")
@@ -151,6 +154,7 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 					advisories[currentAdvisory].Upstream = append(advisories[currentAdvisory].Upstream, "DEBIAN-"+u)
 					advisories[currentAdvisory].Upstream = append(advisories[currentAdvisory].Upstream, u)
 				}
+
 				continue
 			}
 
@@ -220,6 +224,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 		if !d.IsDir() {
 			filePathMap[d.Name()] = path
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -281,7 +286,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 		advisoryURLPath := strings.TrimSuffix(relWmlPath, filepath.Ext(relWmlPath))
 		advisoryURL := fmt.Sprintf("%s/%s", debianBaseURL, advisoryURLPath)
 
-		advisory.References = append(advisory.References, osvschema.Reference{
+		advisory.References = append(advisory.References, &osvschema.Reference{
 			Type: osvschema.Reference_ADVISORY,
 			Url:  advisoryURL,
 		})
@@ -294,6 +299,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 
 	modifiedDateDict := make(map[string]time.Time)
 
+	//nolint:gosec // gitDatePrefix is a constant
 	cmd := exec.Command("git", "log", fmt.Sprintf("--pretty=%s%%aI", gitDatePrefix), "--name-only", "--author-date-order")
 	cmd.Dir = webwmlRepoPath
 	stdout, err := cmd.StdoutPipe()
@@ -319,6 +325,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 			if err == nil {
 				currentDate = parsedDate.UTC()
 			}
+
 			continue
 		}
 
@@ -372,8 +379,8 @@ func writeOutput(outputDir string, advisories Advisories) error {
 
 		for _, ref := range advisory.References {
 			osv.References = append(osv.References, &osvschema.Reference{
-				Type: ref.Type,
-				Url:  ref.Url,
+				Type: ref.GetType(),
+				Url:  ref.GetUrl(),
 			})
 		}
 
@@ -406,12 +413,14 @@ func writeOutput(outputDir string, advisories Advisories) error {
 		}
 
 		outPath := filepath.Join(outputDir, dsaID+".json")
+		//nolint:gosec // 0644 is fine for public vulnerability data
 		if err := os.WriteFile(outPath, b, 0644); err != nil {
 			return err
 		}
 		slog.Info("Writing", "path", outPath)
 	}
 	slog.Info("Complete")
+
 	return nil
 }
 
@@ -438,7 +447,7 @@ func convertDebian(webwmlRepo, securityTrackerRepo, outputDir string, advType Ad
 			return err
 		}
 	default:
-		return fmt.Errorf("invalid advisory type")
+		return errors.New("invalid advisory type")
 	}
 
 	return writeOutput(outputDir, advisories)

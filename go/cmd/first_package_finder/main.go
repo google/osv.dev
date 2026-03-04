@@ -1,3 +1,4 @@
+// Package main finds the first package versions for Debian releases.
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -68,7 +70,7 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 	}
 
 	if len(records) == 0 {
-		return nil, fmt.Errorf("empty csv")
+		return nil, errors.New("empty csv")
 	}
 
 	headers := records[0]
@@ -87,7 +89,7 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 	}
 
 	if seriesIdx == -1 || versionIdx == -1 || releaseIdx == -1 || createdIdx == -1 {
-		return nil, fmt.Errorf("missing required columns in csv")
+		return nil, errors.New("missing required columns in csv")
 	}
 
 	result := make(map[string]*DebianVersionInfo)
@@ -133,11 +135,13 @@ func parseCreatedDatesAndSetTime(date time.Time) time.Time {
 	if result.Before(firstSnapshotDate) {
 		return firstSnapshotDate
 	}
+
 	return result
 }
 
 func loadSources(date time.Time, dist string) (map[string]string, error) {
 	url := getDebianSourcesURL(date, dist)
+	//nolint:gosec // URL is constructed from trusted source
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -193,6 +197,7 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 			if err == nil {
 				info.Sources = sources
 				log.Printf("loaded version %s at %s", series, actualDate)
+
 				break
 			}
 
@@ -240,6 +245,7 @@ func main() {
 			continue
 		}
 
+		//nolint:gosec // 0644 is fine for public vulnerability data
 		if err := os.WriteFile(outPath, b, 0644); err != nil {
 			log.Printf("Failed to write to %s: %v", outPath, err)
 		}

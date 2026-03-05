@@ -21,9 +21,15 @@ Query for multiple packages (by either package and version or git commit hash) a
 
 ## Parameters
 
-The parameters are the same as those in found [here](post-v1-query.md#parameters), but you can make multiple queries.
+The parameters are the same as those in [POST /v1/query](post-v1-query.md#parameters), but you can make multiple queries.
 
 [Instructions are available](#pagination) for handling pagination for querybatch requests. 
+
+### Version rules
+
+Each query item must follow the same rules as `/v1/query`:
+- Use either `version` or a versioned purl, not both.
+- Items with both will return **400 Bad Request**.
 
 ## Payload
 ```json

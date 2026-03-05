@@ -125,7 +125,7 @@ class QueryCursor:
     try:
       self._ndb_cursor = typing.cast(ndb.Cursor, it.cursor_after())
       self._cursor_state = _QueryCursorState.IN_PROGRESS
-    except ndb_exceptions.BadArgumentError:
+    except ndb_exceptions.BadArgumentError as e:
       # This exception can happen when iterator has not begun iterating
       # and it.next() is the very first element.
       #
@@ -133,8 +133,11 @@ class QueryCursor:
       # throwing this exception.
 
       # We represent this by setting the state to STARTED.
-      self._ndb_cursor = None
-      self._cursor_state = _QueryCursorState.STARTED
+      if 'There is no cursor currently' in str(e):
+        self._ndb_cursor = None
+        self._cursor_state = _QueryCursorState.STARTED
+      else:
+        raise
 
   @property
   def ndb_cursor(self) -> ndb.Cursor | None:

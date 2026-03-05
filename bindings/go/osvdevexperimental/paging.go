@@ -5,17 +5,18 @@ import (
 	"context"
 	"errors"
 
-	"osv.dev/bindings/go/osvdev"
+	"google.golang.org/protobuf/proto"
+	"osv.dev/bindings/go/api"
 )
 
 type OSVClientInterface interface {
-	Query(ctx context.Context, query *osvdev.Query) (*osvdev.Response, error)
-	QueryBatch(ctx context.Context, queries []*osvdev.Query) (*osvdev.BatchedResponse, error)
+	Query(ctx context.Context, query *api.Query) (*api.VulnerabilityList, error)
+	QueryBatch(ctx context.Context, queries []*api.Query) (*api.BatchVulnerabilityList, error)
 }
 
 // QueryPaging performs a single query with the given OSVClient, and handles
 // paging logic to return all results.
-func QueryPaging(ctx context.Context, c OSVClientInterface, query *osvdev.Query) (*osvdev.Response, error) {
+func QueryPaging(ctx context.Context, c OSVClientInterface, query *api.Query) (*api.VulnerabilityList, error) {
 	queryResponse, err := c.Query(ctx, query)
 
 	if err != nil {
@@ -24,7 +25,7 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *osvdev.Query)
 	// --- Paging logic ---
 	var errToReturn error
 
-	if queryResponse.NextPageToken == "" {
+	if queryResponse.GetNextPageToken() == "" {
 		return queryResponse, nil
 	}
 
@@ -35,9 +36,9 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *osvdev.Query)
 		}
 	}
 
-	newQuery := *query
-	newQuery.PageToken = queryResponse.NextPageToken
-	nextPageResponse, err := QueryPaging(ctx, c, &newQuery)
+	newQuery := proto.Clone(query).(*api.Query)
+	newQuery.PageToken = queryResponse.GetNextPageToken()
+	nextPageResponse, err := QueryPaging(ctx, c, newQuery)
 
 	if err != nil {
 		var dpe *DuringPagingError
@@ -54,15 +55,15 @@ func QueryPaging(ctx context.Context, c OSVClientInterface, query *osvdev.Query)
 		return queryResponse, errToReturn
 	}
 
-	queryResponse.Vulns = append(queryResponse.Vulns, nextPageResponse.Vulns...)
-	queryResponse.NextPageToken = nextPageResponse.NextPageToken
+	queryResponse.Vulns = append(queryResponse.GetVulns(), nextPageResponse.GetVulns()...)
+	queryResponse.NextPageToken = nextPageResponse.GetNextPageToken()
 
 	return queryResponse, errToReturn
 }
 
 // BatchQueryPaging performs a batch query with the given OSVClient, and handles
 // paging logic for each query to return all results.
-func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*osvdev.Query) (*osvdev.BatchedResponse, error) {
+func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*api.Query) (*api.BatchVulnerabilityList, error) {
 	batchResp, err := c.QueryBatch(ctx, queries)
 
 	if err != nil {
@@ -71,17 +72,17 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*osvd
 	// --- Paging logic ---
 	var errToReturn error
 	//nolint:prealloc
-	var nextPageQueries []*osvdev.Query
+	var nextPageQueries []*api.Query
 	//nolint:prealloc
 	var nextPageIndexMap []int
-	for i, res := range batchResp.Results {
-		if res.NextPageToken == "" {
+	for i, res := range batchResp.GetResults() {
+		if res.GetNextPageToken() == "" {
 			continue
 		}
 
-		query := *queries[i]
-		query.PageToken = res.NextPageToken
-		nextPageQueries = append(nextPageQueries, &query)
+		clonedQuery := proto.Clone(queries[i]).(*api.Query)
+		clonedQuery.PageToken = res.GetNextPageToken()
+		nextPageQueries = append(nextPageQueries, clonedQuery)
 		nextPageIndexMap = append(nextPageIndexMap, i)
 	}
 
@@ -111,11 +112,11 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*osvd
 		// Whether there is an error or not, if there is any data,
 		// we want to save and return what we got.
 		if nextPageResp != nil {
-			for i, res := range nextPageResp.Results {
-				batchResp.Results[nextPageIndexMap[i]].Vulns = append(batchResp.Results[nextPageIndexMap[i]].Vulns, res.Vulns...)
+			for i, res := range nextPageResp.GetResults() {
+				batchResp.GetResults()[nextPageIndexMap[i]].Vulns = append(batchResp.GetResults()[nextPageIndexMap[i]].GetVulns(), res.GetVulns()...)
 				// Set next page token so caller knows whether this is all of the results
 				// even if it is being cancelled.
-				batchResp.Results[nextPageIndexMap[i]].NextPageToken = res.NextPageToken
+				batchResp.GetResults()[nextPageIndexMap[i]].NextPageToken = res.GetNextPageToken()
 			}
 		}
 	}

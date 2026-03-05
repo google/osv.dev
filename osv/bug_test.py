@@ -43,7 +43,7 @@ class NormalizeTest(unittest.TestCase):
         '1-0',
         '22-3-rc1',
         '1-2-3-4-5-rc1',
-        '1',
+        '0-1',
         '0-1-11-1',
         '123-1',
         '123-1-RC',

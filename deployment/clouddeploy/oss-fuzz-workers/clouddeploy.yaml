@@ -1,0 +1,23 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: oss-fuzz-workers
+description: oss-fuzz worker and importer pipeline
+serialPipeline:
+  stages:
+  - targetId: production-oss-fuzz-workers
+    profiles: [ prod ]
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: production-oss-fuzz-workers
+description: oss-vdb oss-fuzz worker cluster
+gke:
+  cluster: projects/oss-vdb/locations/us-central1-f/clusters/oss-fuzz-workers
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com

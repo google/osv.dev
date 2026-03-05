@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import requests
+from google.protobuf import json_format
 from requests.adapters import HTTPAdapter
 import shutil
 import threading
@@ -42,6 +43,7 @@ import pygit2.enums
 
 import osv
 import osv.logs
+from osv import vulnerability_pb2
 
 DEFAULT_WORK_DIR = '/work'
 DEFAULT_PUBLIC_LOGGING_BUCKET = 'osv-public-import-logs'
@@ -54,6 +56,7 @@ _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _TIMEOUT_SECONDS = 60
+_NDB_PUT_BATCH_SIZE = 500
 
 _client_store = threading.local()
 
@@ -173,37 +176,31 @@ class Importer:
                                  self._ssh_key_public_path,
                                  self._ssh_key_private_path)
 
-  def _request_analysis(self, bug, source_repo, repo):
-    """Request analysis."""
-    if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
-      path = osv.source_path(source_repo, bug)
-      file_path = os.path.join(osv.repo_path(repo), path)
-      if not os.path.exists(file_path):
-        logging.info(
-            'Skipping analysis for %s as the source file no longer exists.',
-            path)
-        return
-
-      original_sha256 = osv.sha256(file_path)
-      self._request_analysis_external(source_repo, original_sha256, path)
-    else:
-      self._request_internal_analysis(bug)
-
   def _request_analysis_external(self,
                                  source_repo,
                                  original_sha256,
                                  path,
-                                 deleted=False):
+                                 deleted=False,
+                                 source_timestamp=None):
     """Request analysis."""
+    # TODO(michaelkedar): Making a distinction for oss-fuzz updates so we can
+    # track the logic flow for our eventual decoupling of the special logic.
+    src_ts = ''
+    if source_timestamp is not None:
+      src_ts = str(int(source_timestamp.timestamp()))
+    task_type = 'update'
+    if source_repo.name == 'oss-fuzz':
+      task_type = 'update-oss-fuzz'
     self._publisher.publish(
         self._tasks_topic,
         data=b'',
-        type='update',
+        type=task_type,
         source=source_repo.name,
         path=path,
         original_sha256=original_sha256,
         deleted=str(deleted).lower(),
-        req_timestamp=str(int(time.time())))
+        req_timestamp=str(int(time.time())),
+        src_timestamp=src_ts)
 
   def _request_internal_analysis(self, bug):
     """Request internal analysis."""
@@ -216,7 +213,7 @@ class Importer:
         req_timestamp=str(int(time.time())))
 
   def _infer_id_from_invalid_data(self, name: str, content: bytes) -> str:
-    """Best effort infer the bug ID for data that failed to parse.
+    """Best effort infer the vulnerability ID for data that failed to parse.
 
     First try and extract something that looks like an "id" field, and failing
     that, try to  infer from the filename.
@@ -283,9 +280,9 @@ class Importer:
   def run(self):
     """Run importer."""
     for source_repo in osv.SourceRepository.query():
+      if source_repo.name == 'oss-fuzz':
+        continue
       try:
-        if not self._delete and source_repo.name == 'oss-fuzz':
-          self.process_oss_fuzz(source_repo)
         self.validate_source_repo(source_repo)
         if not self._delete:
           self.process_updates(source_repo)
@@ -300,85 +297,8 @@ class Importer:
         source_repo.repo_url,
         os.path.join(self._sources_dir, source_repo.name),
         git_callbacks=self._git_callbacks(source_repo),
-        branch=source_repo.repo_branch)
-
-  def import_new_oss_fuzz_entries(self, repo, oss_fuzz_source):
-    """Import new entries."""
-    exported = []
-    for bug in osv.Bug.query(
-        osv.Bug.source_of_truth == osv.SourceOfTruth.INTERNAL):
-      if bug.status != osv.BugStatus.PROCESSED:
-        continue
-
-      if not bug.public:
-        continue
-
-      # We don't index this as INTERNAL generally implies OSS-Fuzz anyway (at
-      # time of writing).
-      source_name, _ = osv.parse_source_id(bug.source_id)
-      if source_name != oss_fuzz_source.name:
-        continue
-
-      vulnerability_path = os.path.join(
-          osv.repo_path(repo), osv.source_path(oss_fuzz_source, bug))
-      os.makedirs(os.path.dirname(vulnerability_path), exist_ok=True)
-      if os.path.exists(vulnerability_path):
-        continue
-
-      logging.info('Writing %s', bug.key.id())
-      osv.write_vulnerability(bug.to_vulnerability(), vulnerability_path)
-      # The source of truth is now this yaml file.
-      bug.source_of_truth = osv.SourceOfTruth.SOURCE_REPO
-      exported.append(bug)
-
-    # Commit Vulnerability changes back to the oss-fuzz source repository.
-    repo.index.add_all()
-    diff = repo.index.diff_to_tree(repo.head.peel().tree)
-    if not diff:
-      logging.info('No new entries, skipping committing.')
-      return
-
-    logging.info('Committing and pushing new entries')
-    if osv.push_source_changes(repo, 'Import from OSS-Fuzz',
-                               self._git_callbacks(oss_fuzz_source)):
-      ndb.put_multi(exported)
-
-  def schedule_regular_updates(self, repo, source_repo: osv.SourceRepository):
-    """Schedule regular updates."""
-    aest_time_now = aestnow()
-
-    if (source_repo.last_update_date and
-        # OSV devs are mostly located in australia,
-        # so only schedule update near midnight sydney time
-        source_repo.last_update_date.date() >= aest_time_now.date()):
-      return
-
-    for bug in osv.Bug.query(
-        osv.Bug.status == osv.BugStatus.PROCESSED,
-        osv.Bug.is_fixed == False,  # pylint: disable=singleton-comparison
-        osv.Bug.source == source_repo.name):
-      self._request_analysis(bug, source_repo, repo)
-
-    # yapf: disable
-    # Perform a re-analysis on existing oss-fuzz bugs for a period of time,
-    # more vulnerable releases might be made even though fixes have
-    # already been merged into master/main
-    cutoff_time = aest_time_now - datetime.timedelta(days=_BUG_REDO_DAYS)
-    query = osv.Bug.query(osv.Bug.status == osv.BugStatus.PROCESSED,
-                          osv.Bug.source == source_repo.name,
-                          osv.Bug.timestamp >= cutoff_time)
-    # yapf: enable
-
-    for bug in query:
-      logging.info('Re-requesting impact for %s.', bug.key.id())
-      if not bug.is_fixed:
-        # Previous query already requested impact tasks for unfixed bugs.
-        continue
-
-      self._request_analysis(bug, source_repo, repo)
-
-    source_repo.last_update_date = aest_time_now
-    source_repo.put()
+        branch=source_repo.repo_branch,
+        force_update=True)
 
   def _vuln_ids_from_gcs_blob(self, client: storage.Client,
                               source_repo: osv.SourceRepository,
@@ -430,8 +350,11 @@ class Importer:
   def _convert_blob_to_vuln(
       self, storage_client: storage.Client, ndb_client: ndb.Client,
       source_repo: osv.SourceRepository, blob: storage.Blob,
-      ignore_last_import_time: bool) -> Optional[Tuple[str]]:
-    """Parse a GCS blob into a tuple of hash and Vulnerability
+      ignore_last_import_time: bool
+  ) -> None | Tuple[str, str, None | datetime.datetime,
+                    List[vulnerability_pb2.Vulnerability]]:
+    """Parse a GCS blob into a tuple of hash, path, updated, and Vulnerability
+    list.
 
     Criteria for returning a tuple:
     - any record in the blob is new (i.e. a new ID) or modified since last run,
@@ -456,8 +379,8 @@ class Importer:
       input fails OSV JSON Schema validation
 
     Returns:
-      a list of one or more tuples of (hash, vulnerability) (from the
-      Vulnerability proto) or None when the blob has an unexpected name
+      a tuple of (hash, path, updated, vulnerability_list) or None when the blob
+      has an unexpected name or doesn't meet the import criteria.
     """
     if not _is_vulnerability_file(source_repo, blob.name):
       return None
@@ -492,13 +415,14 @@ class Importer:
 
     # This is the atypical execution path (when reimporting is triggered)
     if ignore_last_import_time:
-      return blob_hash, blob.name
+      # do not log updated date for reimports
+      return blob_hash, blob.name, None, vulns
 
     # If being run under test, reuse existing NDB client.
     ndb_ctx = ndb.context.get_context(False)
     if ndb_ctx is None:
       # Production. Use the NDB client passed in.
-      ndb_ctx = ndb_client.context()
+      ndb_ctx = ndb_client.context(cache_policy=False)
     else:
       # Unit testing. Reuse the unit test's existing NDB client to avoid
       # "RuntimeError: Context is already created for this thread."
@@ -507,15 +431,13 @@ class Importer:
     # This is the typical execution path (when reimporting not triggered)
     with ndb_ctx:
       for vuln in vulns:
-        bug = osv.Bug.get_by_id(vuln.id)
-        # The bug already exists and has been modified since last import
-        if (bug is None or
-            bug.import_last_modified != vuln.modified.ToDatetime(datetime.UTC)):
-          return blob_hash, blob.name
+        v = osv.Vulnerability.get_by_id(vuln.id)
+        # The vuln already exists and has been modified since last import
+        if (v is None or
+            v.modified_raw != vuln.modified.ToDatetime(datetime.UTC)):
+          return blob_hash, blob.name, blob.updated, vulns
 
       return None
-
-    return None
 
   def _sync_from_previous_commit(self, source_repo, repo):
     """Sync the repository from the previous commit.
@@ -528,11 +450,11 @@ class Importer:
       repo: the checked out Git source repository.
 
     Returns:
-      changed_entries: the set of repository paths that have changed.
-      deleted_entries: the set of repository paths that have been deleted.
+      changed_entries: the dict of {path: timestamp} that have changed.
+      deleted_entries: the dict of {path: timestamp} that have been deleted.
     """
-    changed_entries = set()
-    deleted_entries = set()
+    changed_entries = {}
+    deleted_entries = {}
 
     walker = repo.walk(repo.head.target, pygit2.enums.SortMode.TOPOLOGICAL)
     walker.hide(source_repo.last_synced_hash)
@@ -554,14 +476,20 @@ class Importer:
           if delta.old_file and _is_vulnerability_file(source_repo,
                                                        delta.old_file.path):
             if delta.status == pygit2.enums.DeltaStatus.DELETED:
-              deleted_entries.add(delta.old_file.path)
+              deleted_entries[
+                  delta.old_file.path] = datetime.datetime.fromtimestamp(
+                      commit.commit_time, datetime.UTC)
               continue
 
-            changed_entries.add(delta.old_file.path)
+            changed_entries[
+                delta.old_file.path] = datetime.datetime.fromtimestamp(
+                    commit.commit_time, datetime.UTC)
 
           if delta.new_file and _is_vulnerability_file(source_repo,
                                                        delta.new_file.path):
-            changed_entries.add(delta.new_file.path)
+            changed_entries[
+                delta.new_file.path] = datetime.datetime.fromtimestamp(
+                    commit.commit_time, datetime.UTC)
 
     return changed_entries, deleted_entries
 
@@ -572,7 +500,7 @@ class Importer:
     repo = self.checkout(source_repo)
 
     # Get list of changed files since last sync.
-    changed_entries = set()
+    changed_entries = {}
 
     if source_repo.last_synced_hash:
       # Syncing from a previous commit.
@@ -586,18 +514,20 @@ class Importer:
           path = os.path.join(root, filename)
           rel_path = os.path.relpath(path, osv.repo_path(repo))
           if _is_vulnerability_file(source_repo, rel_path):
-            changed_entries.add(rel_path)
+            # set the timestamp to None when syncing from scratch
+            changed_entries[rel_path] = None
 
     import_failure_logs = []
+    changed_entries_to_process = []
     # Create tasks for changed files.
-    for changed_entry in changed_entries:
+    for changed_entry, ts in changed_entries.items():
       path = os.path.join(osv.repo_path(repo), changed_entry)
       if not os.path.exists(path):
         # Path no longer exists. It must have been deleted in another commit.
         continue
 
       try:
-        _ = osv.parse_vulnerability(
+        vuln = osv.parse_vulnerability(
             path,
             key_path=source_repo.key_path,
             strict=source_repo.strict_validation and self._strict_validation)
@@ -610,9 +540,9 @@ class Importer:
         logging.error('Failed to parse %s: %s', changed_entry, str(e))
         with open(path, "rb") as f:
           content = f.read()
-        bug_id = self._infer_id_from_invalid_data(
+        vuln_id = self._infer_id_from_invalid_data(
             os.path.basename(path), content)
-        self._record_quality_finding(source_repo.name, bug_id)
+        self._record_quality_finding(source_repo.name, vuln_id)
         # Don't include error stack trace as that might leak sensitive info
         import_failure_logs.append('Failed to parse vulnerability "' + path +
                                    '"')
@@ -620,8 +550,17 @@ class Importer:
 
       logging.info('Re-analysis triggered for %s', changed_entry)
       original_sha256 = osv.sha256(path)
-      self._request_analysis_external(source_repo, original_sha256,
-                                      changed_entry)
+      # Collect for batch processing
+      changed_entries_to_process.append(
+          (vuln, path, ts, original_sha256, changed_entry))
+
+    if changed_entries_to_process:
+      put_if_newer_batch(
+          [(v, p) for v, p, _, _, _ in changed_entries_to_process],
+          source_repo.name)
+      for vuln, path, ts, orig_sha256, entry in changed_entries_to_process:
+        self._request_analysis_external(
+            source_repo, orig_sha256, entry, source_timestamp=ts)
 
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
@@ -689,25 +628,34 @@ class Importer:
       for future in concurrent.futures.as_completed(future_to_blob):
         blob = future_to_blob[future]
         try:
-          if future.result():
-            converted_vulns.append(([vuln for vuln in future.result() if vuln]))
+          if result := future.result():
+            converted_vulns.append(result)
         except Exception as e:
           # Don't include error stack trace as that might leak sensitive info
           logging.error('Failed to parse vulnerability %s: %s', blob.name, e)
           # TODO(apollock): log finding here
           # This feels gross to redownload it again.
-          bug_id = self._infer_id_from_invalid_data(blob.name,
-                                                    blob.download_as_bytes())
-          self._record_quality_finding(source_repo.name, bug_id)
+          vuln_id = self._infer_id_from_invalid_data(blob.name,
+                                                     blob.download_as_bytes())
+          self._record_quality_finding(source_repo.name, vuln_id)
           import_failure_logs.append(
               'Failed to parse vulnerability (when considering for import) "' +
               blob.name + '"')
 
-      for cv in converted_vulns:
-        if cv:
-          logging.info('Requesting analysis of bucket entry: %s/%s',
-                       source_repo.bucket, cv[1])
-          self._request_analysis_external(source_repo, cv[0], cv[1])
+      for cv_result in converted_vulns:
+        if not cv_result:
+          continue
+        blob_hash, blob_name, source_timestamp, vulns = cv_result
+        logging.info('Requesting analysis of bucket entry: %s/%s',
+                     source_repo.bucket, blob_name)
+
+        put_if_newer_batch([(v, blob_name) for v in vulns], source_repo.name)
+
+        self._request_analysis_external(
+            source_repo,
+            blob_hash,
+            blob_name,
+            source_timestamp=source_timestamp)
 
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
@@ -722,10 +670,10 @@ class Importer:
                                 threshold: float = 10.0):
     """Process deletions from a GCS bucket source.
 
-    This validates the continued existence of every Bug in Datastore (for the
-    given source) against every bug currently in that source's GCS bucket,
-    calculating the delta. The bugs determined to have been
-    deleted from GCS are then flagged for treatment by the worker.
+    This validates the continued existence of every Vulnerability in Datastore
+    (for the given source) against every vulnerability currently in that
+    source's GCS bucket, calculating the delta. The vulnerabilities determined
+    to have been deleted from GCS are then flagged for treatment by the worker.
 
     If the delta is too large, something undesirable has been assumed to have
     happened and further processing is aborted.
@@ -737,30 +685,29 @@ class Importer:
 
     logging.info('Begin processing bucket for deletions: %s', source_repo.name)
 
-    # Get all the existing non-withdrawn Bug IDs for
+    # Get all the existing non-withdrawn Vulnerability IDs for
     # source_repo.name in Datastore
-    query = osv.Bug.query()
-    query = query.filter(osv.Bug.source == source_repo.name)
+    query = osv.Vulnerability.query()
+    # everything with source_id starting with 'name:'
+    query = query.filter(osv.Vulnerability.source_id > source_repo.name + ':',
+                         osv.Vulnerability.source_id < source_repo.name + ';')
     result = list(query.fetch(keys_only=False))
-    result.sort(key=lambda r: r.id())
+    result.sort(key=lambda r: r.key.id())
     VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
     logging.info('Retrieved %s results from query', len(result))
 
     vuln_ids_for_source = [
-        VulnAndSource(id=r.id(), path=r.source_id.partition(':')[2])
+        VulnAndSource(id=r.key.id(), path=r.source_id.partition(':')[2])
         for r in result
-        if not r.withdrawn
+        if not r.is_withdrawn
     ]
     logging.info(
-        'Counted %d Bugs for %s in Datastore',
+        'Counted %d Vulnerabilities for %s in Datastore',
         len(vuln_ids_for_source),
         source_repo.name,
-        extra={
-            'json_fields': {
-                'vuln_ids_for_source': vuln_ids_for_source,
-                'source_repo': source_repo.name,
-            }
-        })
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
 
     storage_client = storage.Client()
     # Get all of the existing records in the GCS bucket
@@ -813,11 +760,13 @@ class Importer:
         v for v in vuln_ids_for_source if v.id not in vuln_ids_in_gcs
     ]
 
-    logging.info('%d Bugs in Datastore considered deleted from GCS for %s',
-                 len(vulns_to_delete), source_repo.name)
+    logging.info(
+        '%d Vulnerabilities in Datastore considered deleted from GCS for %s',
+        len(vulns_to_delete), source_repo.name)
 
     if len(vulns_to_delete) == 0:
-      logging.info('No bugs to delete from GCS for %s', source_repo.name)
+      logging.info('No vulnerabilities to delete from GCS for %s',
+                   source_repo.name)
       replace_importer_log(storage_client, source_repo.name,
                            self._public_log_bucket, import_failure_logs)
       return
@@ -847,7 +796,7 @@ class Importer:
 
   def _process_updates_rest(self, source_repo: osv.SourceRepository):
     """Process updates from REST API.
-    
+
     To find new updates, first makes a HEAD request to check the 'Last-Modified'
     header, and skips processing if it's before the source's last_modified_date
     (and ignore_last_import_time isn't set).
@@ -863,7 +812,8 @@ class Importer:
     last_update_date = (
         source_repo.last_update_date or
         datetime.datetime.min.replace(tzinfo=datetime.UTC))
-    if source_repo.ignore_last_import_time:
+    ignore_last_import = source_repo.ignore_last_import_time
+    if ignore_last_import:
       last_update_date = datetime.datetime.min.replace(tzinfo=datetime.UTC)
       source_repo.ignore_last_import_time = False
       source_repo.put()
@@ -881,7 +831,8 @@ class Importer:
       logging.exception('Exception querying REST API:')
       return
     if request.status_code != 200:
-      logging.error('Failed to fetch REST API: %s', request.status_code)
+      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
+                    source_repo.rest_api_url)
       return
 
     request_last_modified = None
@@ -903,15 +854,22 @@ class Importer:
     except Exception:
       logging.exception('Exception querying REST API:')
       return
-    # Parse vulns into Vulnerability objects from the REST API request.
-    vulns = osv.parse_vulnerabilities_from_data(
-        request.text,
-        source_repo.extension,
-        strict=source_repo.strict_validation and self._strict_validation)
+
+    data = json.loads(request.text)
+    vulns = []
+    for datum in data:
+      vulnerability = vulnerability_pb2.Vulnerability()
+      json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
+      if not vulnerability.id:
+        raise ValueError('Missing id field. Invalid vulnerability.')
+      if not vulnerability.modified:
+        raise ValueError('Missing modified field. Invalid vulnerability.')
+      vulns.append(vulnerability)
 
     vulns_last_modified = last_update_date
     logging.info('%d records to consider', len(vulns))
     # Create tasks for changed files.
+    vulns_to_process = []
     for vuln in vulns:
       import_failure_logs = []
       vuln_modified = vuln.modified.ToDatetime(datetime.UTC)
@@ -926,24 +884,24 @@ class Importer:
         single_vuln = s.get(
             source_repo.link + vuln.id + source_repo.extension,
             timeout=_TIMEOUT_SECONDS)
-        # Validate the individual request
+        # Validate the individual request and parse the vulnerability.
         try:
-          _ = osv.parse_vulnerability_from_dict(
+          v = osv.parse_vulnerability_from_dict(
               single_vuln.json(),
               source_repo.key_path,
               strict=source_repo.strict_validation and self._strict_validation)
         except Exception as e:
           logging.error('Failed to parse %s: %s', str(single_vuln.content),
                         str(e))
-          bug_id = self._infer_id_from_invalid_data(
+          vuln_id = self._infer_id_from_invalid_data(
               source_repo.link + vuln.id + source_repo.extension,
               single_vuln.content)
-          self._record_quality_finding(source_repo.name, bug_id)
-        logging.info('Requesting analysis of REST record: %s',
-                     vuln.id + source_repo.extension)
-        self._request_analysis_external(
-            source_repo, osv.sha256_bytes(single_vuln.text.encode()),
-            vuln.id + source_repo.extension)
+          self._record_quality_finding(source_repo.name, vuln_id)
+          continue
+
+        ts = None if ignore_last_import else vuln_modified
+        vulns_to_process.append((v, vuln.id + source_repo.extension, ts,
+                                 osv.sha256_bytes(single_vuln.text.encode())))
       except osv.sources.KeyPathError:
         # Key path doesn't exist in the vulnerability.
         # No need to log a full error, as this is expected result.
@@ -955,6 +913,13 @@ class Importer:
         import_failure_logs.append(f'Failed to parse vulnerability "{vuln.id}"')
         continue
 
+    if vulns_to_process:
+      put_if_newer_batch([(v, p) for v, p, _, _ in vulns_to_process],
+                         source_repo.name)
+      for v, path, ts, sha256 in vulns_to_process:
+        self._request_analysis_external(
+            source_repo, sha256, path, source_timestamp=ts)
+
     replace_importer_log(storage.Client(), source_repo.name,
                          self._public_log_bucket, import_failure_logs)
 
@@ -963,9 +928,110 @@ class Importer:
 
     logging.info('Finished processing REST: %s', source_repo.name)
 
-  def _process_deletions_rest(self, source_repo: osv.SourceRepository):
-    """Process deletions from a REST bucket source."""
-    raise NotImplementedError
+  def _process_deletions_rest(self,
+                              source_repo: osv.SourceRepository,
+                              threshold: float = 10.0):
+    """Process deletions from a REST bucket source.
+
+    This validates the continued existence of every Vulnerability in Datastore
+    (for the given source) against every vulnerability currently in that
+    source's REST API, calculating the delta. The vulnerabilities determined
+    to have been deleted from the REST API are then flagged for treatment by
+    the worker.
+
+    If the number of deletions exceeds the safety threshold (default 10%),
+    the operation is aborted unless ignore_deletion_threshold is set on the
+    SourceRepository.
+    """
+    logging.info('Begin processing REST for deletions: %s', source_repo.name)
+
+    # Get all the existing non-withdrawn Vulnerability IDs for
+    # source_repo.name in Datastore
+    query = osv.Vulnerability.query()
+    # everything with source_id starting with 'name:'
+    query = query.filter(osv.Vulnerability.source_id > source_repo.name + ':',
+                         osv.Vulnerability.source_id < source_repo.name + ';')
+    result = list(query.fetch(keys_only=False))
+    result.sort(key=lambda r: r.key.id())
+    VulnAndSource = namedtuple('VulnAndSource', ['id', 'path'])
+    logging.info('Retrieved %s results from query', len(result))
+
+    vuln_ids_for_source = [
+        VulnAndSource(id=r.key.id(), path=r.source_id.partition(':')[2])
+        for r in result
+        if not r.is_withdrawn
+    ]
+    logging.info(
+        'Counted %d Vulnerabilities for %s in Datastore',
+        len(vuln_ids_for_source),
+        source_repo.name,
+        extra={'json_fields': {
+            'source_repo': source_repo.name,
+        }})
+
+    s = requests.Session()
+    adapter = HTTPAdapter(
+        max_retries=Retry(
+            total=3, status_forcelist=[502, 503, 504], backoff_factor=1))
+    s.mount('http://', adapter)
+    s.mount('https://', adapter)
+
+    try:
+      request = s.get(source_repo.rest_api_url, timeout=_TIMEOUT_SECONDS)
+    except Exception:
+      logging.exception('Exception querying REST API:')
+      return
+
+    if request.status_code != 200:
+      logging.error('Failed to fetch REST API: %s for %s', request.status_code,
+                    source_repo.rest_api_url)
+      return
+
+    data = json.loads(request.text)
+    vuln_ids_in_rest = []
+    for datum in data:
+      vulnerability = vulnerability_pb2.Vulnerability()
+      json_format.ParseDict(datum, vulnerability, ignore_unknown_fields=True)
+      if not vulnerability.id:
+        logging.warning('Missing id field in REST response. Skipping.')
+        continue
+      vuln_ids_in_rest.append(vulnerability.id)
+
+    logging.info('Counted %d vulnerabilities from REST API for %s',
+                 len(vuln_ids_in_rest), source_repo.name)
+
+    # diff what's in Datastore with what was seen in REST.
+    vulns_to_delete = [
+        v for v in vuln_ids_for_source if v.id not in vuln_ids_in_rest
+    ]
+
+    logging.info(
+        '%d Vulnerabilities in Datastore considered deleted from REST for %s',
+        len(vulns_to_delete), source_repo.name)
+
+    if len(vulns_to_delete) == 0:
+      logging.info('No vulnerabilities to delete from REST for %s',
+                   source_repo.name)
+      return
+
+    # sanity check: deleting a lot/all of the records for source in Datastore is
+    # probably worth flagging for review.
+    if (len(vulns_to_delete) / len(vuln_ids_for_source) * 100) >= threshold:
+      logging.error(
+          'Cowardly refusing to delete %d missing records from '
+          'REST for: %s',
+          len(vulns_to_delete),
+          source_repo.name,
+          extra={})
+      vulns = [v.id for v in vulns_to_delete]
+      logging.info('Vulnerabilities to delete: %s', vulns)
+      return
+
+    # Request deletion.
+    for v in vulns_to_delete:
+      logging.info('Requesting deletion of REST entry: %s for %s', v.path, v.id)
+      self._request_analysis_external(
+          source_repo, original_sha256='', path=v.path, deleted=True)
 
   def validate_source_repo(self, source_repo: osv.SourceRepository):
     """Validate the source_repo for correctness."""
@@ -997,61 +1063,215 @@ class Importer:
       # see discussion on https://github.com/google/osv.dev/pull/2133
       return
 
+    threshold = self._deletion_safety_threshold_pct
+    if source_repo.ignore_deletion_threshold:
+      threshold = 101.0
+
     if source_repo.type == osv.SourceRepositoryType.BUCKET:
-      self._process_deletions_bucket(source_repo,
-                                     self._deletion_safety_threshold_pct)
+      self._process_deletions_bucket(source_repo, threshold)
       return
 
     if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      # TODO: To be implemented.
+      self._process_deletions_rest(source_repo, threshold)
       return
 
     logging.error('Invalid repo type: %s - %d', source_repo.name,
                   source_repo.type)
 
-  def process_oss_fuzz(self, oss_fuzz_source):
-    """Process OSS-Fuzz source data."""
-    # Export OSS-Fuzz Vulnerability data into source repository.
-    # OSS-Fuzz data is first imported via a special Pub/Sub pipeline into OSV.
-    # This data needs to be dumped into a publicly accessible/editable place for
-    # manual/human editing if required.
-    #
-    # This then becomes the source of truth where any edits are imported back
-    # into OSV.
-    repo = self.checkout(oss_fuzz_source)
-    self.schedule_regular_updates(repo, oss_fuzz_source)
-    self.import_new_oss_fuzz_entries(repo, oss_fuzz_source)
-    self.export_oss_fuzz_to_bucket()
 
-  def export_oss_fuzz_to_bucket(self):
-    """Export OSS-Fuzz vulns to bucket."""
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(self._oss_fuzz_export_bucket)
+def preprocess_vuln(vuln: vulnerability_pb2.Vulnerability):
+  """Do preprocessing steps on vulnerability that the worker does."""
+  # Duplicating parts of _do_update() in worker.py
+  # maybe_normalize_package_names:
+  for affected in vuln.affected:
+    if not affected.package.ecosystem:
+      continue
+    affected.package.name = osv.ecosystems.maybe_normalize_package_names(
+        affected.package.name, affected.package.ecosystem)
+  # skipping fix_invalid_ghsa because I don't think it's a problem anymore.
+  # filter_unknown_ecoystems:
+  filtered = []
+  for affected in vuln.affected:
+    if not affected.HasField('package'):
+      filtered.append(affected)
+    elif osv.ecosystems.is_known(affected.package.ecosystem):
+      filtered.append(affected)
+    else:
+      logging.error('%s contains unknown ecosystem "%s"', vuln.id,
+                    affected.package.ecosystem)
+  del vuln.affected[:]
+  vuln.affected.extend(filtered)
 
-    def export_oss_fuzz(vulnerability, testcase_id, issue_id):
-      """Export a single vulnerability."""
-      try:
-        blob = bucket.blob(f'testcase/{testcase_id}.json')
-        data = json.dumps(osv.vulnerability_to_dict(vulnerability))
-        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
 
-        if not issue_id:
-          return
+def new_bug_from_vuln(vuln: vulnerability_pb2.Vulnerability, source: str,
+                      path: str) -> osv.Bug:
+  """Create a new Bug entity from a vulnerability, following similar logic to
+  worker._do_update()"""
+  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+  bug = osv.Bug(
+      db_id=vuln.id,
+      timestamp=osv.utcnow(),
+      status=osv.BugStatus.PROCESSED,
+      source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
+  bug.update_from_vulnerability(vuln)
+  bug.public = True
+  bug.import_last_modified = orig_modified
+  if source != 'oss-fuzz' or not bug.source_id:
+    bug.source_id = f'{source}:{path}'
+  if bug.withdrawn:
+    bug.status = osv.BugStatus.INVALID
+  else:
+    bug.status = osv.BugStatus.PROCESSED
 
-        blob = bucket.blob(f'issue/{issue_id}.json')
-        blob.upload_from_string(data, retry=retry.DEFAULT_RETRY)
-      except Exception as e:
-        logging.error('Failed to export: %s', e)
+  if not vuln.affected:
+    logging.info('%s does not affect any packages. Marking as invalid.',
+                 vuln.id)
+    bug.status = osv.BugStatus.INVALID
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=_EXPORT_WORKERS) as executor:
-      for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz'):
-        if not bug.public:
-          continue
+  bug.affected_checksum = compute_raw_affected_checksum(vuln)
 
-        _, source_id = osv.parse_source_id(bug.source_id)
-        executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
-                        bug.issue_id)
+  return bug
+
+
+def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
+                         source: str, path: str):
+  """Updates a Bug entity from a vulnerability, following similar logic to 
+  worker._do_update(), with special handling to check if the raw affected
+  packages has changed."""
+  import_modified = vuln.modified.ToDatetime(datetime.UTC)
+  prev_modified = bug.last_modified
+  prev_affected = bug.affected_packages
+  bug.update_from_vulnerability(vuln)
+  bug.public = True
+  bug.import_last_modified = import_modified
+  if source != 'oss-fuzz' or not bug.source_id:
+    bug.source_id = f'{source}:{path}'
+  if bug.withdrawn:
+    bug.status = osv.BugStatus.INVALID
+  else:
+    bug.status = osv.BugStatus.PROCESSED
+
+  if not vuln.affected:
+    logging.info('%s does not affect any packages. Marking as invalid.',
+                 vuln.id)
+    bug.status = osv.BugStatus.INVALID
+
+  if bug.last_modified < prev_modified:
+    # Prevent the modified date going backwards,
+    # e.g. if source updated the bug again before the worker finished
+    bug.last_modified = osv.utcnow()
+
+  new_checksum = compute_raw_affected_checksum(vuln)
+  if bug.affected_checksum == new_checksum:
+    # The checksum of the raw affected packages is unchanged (so no change has
+    # been made to the affected packages). Restore the previously enriched,
+    # affected_packages from the workers.
+    bug.affected_packages = prev_affected
+  bug.affected_checksum = new_checksum
+
+
+def compute_raw_affected_checksum(vuln: vulnerability_pb2.Vulnerability):
+  """Computes a checksum of the affected array from a vulnerability."""
+  # Grab the minimum information out of afftected and sort.
+  #TODO(michaelkedar): This should be in models.py
+  aff = []
+  # (ecocystem, package, [
+  #   (type, repo, [(introduced, fixed, last_affected, limit)])
+  # ], [versions])
+  for affected in vuln.affected:
+    ecosystem = affected.package.ecosystem
+    package = affected.package.name
+    versions = sorted(affected.versions)
+    ranges = []
+    for r in affected.ranges:
+      t = r.type
+      repo = r.repo
+      events = sorted(
+          (e.introduced, e.fixed, e.last_affected, e.limit) for e in r.events)
+      ranges.append((t, repo, events))
+    ranges.sort()
+    aff.append((ecosystem, package, ranges, versions))
+  aff.sort()
+  b = json.dumps(aff).encode()
+  return osv.sha256_bytes(b)
+
+
+def log_update_latency(bug: osv.Bug):
+  now = int(time.time())
+  source_time = int(bug.import_last_modified.timestamp())
+  logging.info(
+      'Importer put Bug',
+      extra={
+          'json_fields': {
+              'vuln_id': bug.db_id,
+              'latency': str(now - source_time),
+          }
+      })
+
+
+def put_if_newer(vuln: vulnerability_pb2.Vulnerability, source: str, path: str):
+  """Try to write vulnerability to datastore, keeping enumerated versions if
+  unchanged. Does not write if vuln's modified date is older than what's already
+  in datastore.
+  """
+  put_if_newer_batch([(vuln, path)], source)
+
+
+def put_if_newer_batch(
+    vulns_and_paths: list[tuple[vulnerability_pb2.Vulnerability,
+                                str]], source: str):
+  """Try to write vulnerabilities to datastore in batch, keeping enumerated
+  versions if unchanged. Does not write if vuln's modified date is older than
+  what's already in datastore.
+  """
+  # TODO(michaelkedar): Putting so many records is causing slowdowns on the
+  # importer, need to reconsider the approach.
+  # TODO(michaelkedar): This code is still using old Bug entities.
+  return
+  # pylint: disable=unreachable
+  if not vulns_and_paths:
+    return
+
+  # Deduplicate by vuln.id, keeping the last one.
+  unique_vulns_and_paths = {}
+  for vuln, path in vulns_and_paths:
+    unique_vulns_and_paths[vuln.id] = (vuln, path)
+  vulns_and_paths = list(unique_vulns_and_paths.values())
+
+  for vuln, _ in vulns_and_paths:
+    preprocess_vuln(vuln)
+
+  keys = [ndb.Key(osv.Bug, v.id) for v, _ in vulns_and_paths]
+  existing_bugs = []
+  for i in range(0, len(keys), _NDB_PUT_BATCH_SIZE):
+    batch_keys = keys[i:i + _NDB_PUT_BATCH_SIZE]
+    existing_bugs.extend(ndb.get_multi(batch_keys))
+
+  bugs_to_put = []
+  for i, (vuln, path) in enumerate(vulns_and_paths):
+    bug = existing_bugs[i]
+    if bug is None:
+      bug = new_bug_from_vuln(vuln, source, path)
+      bugs_to_put.append(bug)
+      continue
+
+    # Only update if the incoming vulnerability is newer.
+    orig_modified = vuln.modified.ToDatetime(datetime.UTC)
+    if bug.import_last_modified and orig_modified <= bug.import_last_modified:
+      logging.info(
+          'Skipping update for %s because incoming modification time'
+          ' (%s) is not newer than existing record (%s)', vuln.id,
+          orig_modified, bug.import_last_modified)
+      continue
+    update_bug_from_vuln(bug, vuln, source, path)
+    bugs_to_put.append(bug)
+
+  if bugs_to_put:
+    for i in range(0, len(bugs_to_put), _NDB_PUT_BATCH_SIZE):
+      batch = bugs_to_put[i:i + _NDB_PUT_BATCH_SIZE]
+      ndb.put_multi(batch)
+      for bug in batch:
+        log_update_latency(bug)
 
 
 def main():
@@ -1104,5 +1324,5 @@ if __name__ == '__main__':
   atexit.register(log_run_duration, time.time())
   osv.logs.setup_gcp_logging('importer')
   _ndb_client = ndb.Client()
-  with _ndb_client.context():
+  with _ndb_client.context(cache_policy=False):
     main()

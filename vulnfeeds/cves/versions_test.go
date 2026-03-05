@@ -4,25 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
-	"slices"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
 )
 
-func loadTestData2(cveName string) Vulnerability {
+func loadTestData2(cveName string) models.Vulnerability {
 	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatalf("Failed to load test data from %q", fileName)
 	}
-	var nvdCves CVEAPIJSON20Schema
+	var nvdCves models.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
 		log.Fatalf("Failed to decode %q: %+v", fileName, err)
@@ -34,14 +35,14 @@ func loadTestData2(cveName string) Vulnerability {
 	}
 	log.Fatalf("test data doesn't contain %q", cveName)
 
-	return Vulnerability{}
+	return models.Vulnerability{}
 }
 
 func TestParseCPE(t *testing.T) {
 	tests := []struct {
 		description       string
 		inputCPEString    string
-		expectedCPEStruct *models.CPE
+		expectedCPEStruct *models.CPEString
 		expectedOk        bool
 	}{
 		{
@@ -65,7 +66,7 @@ func TestParseCPE(t *testing.T) {
 		},
 		{
 			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "h",
 				Vendor:     "intel",
@@ -84,7 +85,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software)",
 			inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "gitlab",
@@ -103,7 +104,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with embedded colons",
 			inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "http::daemon_project",
@@ -122,7 +123,7 @@ func TestParseCPE(t *testing.T) {
 		{
 			description:    "valid input (software) with escaped characters",
 			inputCPEString: "cpe:2.3:a:bloodshed:dev-c\\+\\+:4.9.9.2:*:*:*:*:*:*:*",
-			expectedCPEStruct: &models.CPE{
+			expectedCPEStruct: &models.CPEString{
 				CPEVersion: "2.3",
 				Part:       "a",
 				Vendor:     "bloodshed",
@@ -686,20 +687,20 @@ func TestExtractGitCommit(t *testing.T) {
 				t.Skipf("test %q: running on Cloud Build", tc.description)
 			}
 			if time.Now().Before(tc.disableExpiryDate) {
-				t.Skipf("test %q: extractGitCommit for %q (%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Skipf("test %q: extractGitAffectedCommit for %q (%v) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
-				t.Logf("test %q: extractGitCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+				t.Logf("test %q: extractGitAffectedCommit(%q, %v) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := ExtractGitCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
 			if err != nil && !tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
 			if err == nil && tc.expectFailure {
-				t.Errorf("test %q: extractGitCommit for %q (%q) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
 			}
 			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
-				t.Errorf("test %q: extractGitCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
+				t.Errorf("test %q: extractGitAffectedCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
 			}
 		})
 	}
@@ -708,7 +709,7 @@ func TestExtractGitCommit(t *testing.T) {
 func TestExtractVersionInfo(t *testing.T) {
 	tests := []struct {
 		description         string
-		inputCVEItem        Vulnerability
+		inputCVEItem        models.Vulnerability
 		inputValidVersions  []string
 		expectedVersionInfo models.VersionInfo
 		expectedNotes       []string
@@ -748,7 +749,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "14.4.5",
 						LastAffected: "",
 					},
@@ -774,7 +775,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "",
 						LastAffected: "2.4.0",
 					},
@@ -789,8 +790,9 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/joewalnes/smoothie",
-						Fixed: "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
+						Repo:       "https://github.com/joewalnes/smoothie",
+						Introduced: "0",
+						Fixed:      "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
@@ -810,29 +812,34 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "33ed2b11cb8e879d86c371700e6573db1814a69e",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "33ed2b11cb8e879d86c371700e6573db1814a69e",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
 					},
 					{
-						Repo:  "https://github.com/tensorflow/tensorflow",
-						Fixed: "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
 					},
 				},
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "",
+						Introduced:   "0",
 						Fixed:        "2.6.4",
 						LastAffected: "",
 					},
@@ -865,8 +872,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-46285"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Fixed: "a3a7c6dcc3b629d7650148"}},
-				AffectedVersions: []models.AffectedVersion{{Fixed: "3.5.15"}},
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},
@@ -874,8 +881,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
-				AffectedVersions: []models.AffectedVersion{{LastAffected: "4.3.2"}},
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", LastAffected: "4.3.2"}},
 			},
 		},
 		{
@@ -891,16 +898,18 @@ func TestExtractVersionInfo(t *testing.T) {
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits: []models.AffectedCommit{
 					{
-						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
 					},
 					{
-						Repo:  "https://github.com/open62541/open62541",
-						Fixed: "b79db1ac78146fc06b0b8435773d3967de2d659c",
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "b79db1ac78146fc06b0b8435773d3967de2d659c",
 					},
 				},
 
-				AffectedVersions: []models.AffectedVersion{{Fixed: "1.2.5"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "1.2.5"}},
 			},
 		},
 	}
@@ -917,7 +926,8 @@ func TestExtractVersionInfo(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
-			gotVersionInfo, _ := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client)
+			metrics := &models.ConversionMetrics{}
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -928,7 +938,7 @@ func TestExtractVersionInfo(t *testing.T) {
 func TestCPEs(t *testing.T) {
 	tests := []struct {
 		description  string
-		inputCVEItem Vulnerability
+		inputCVEItem models.Vulnerability
 		expectedCPEs []string
 	}{
 		{
@@ -1087,7 +1097,7 @@ func TestDeduplicateAffectedCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := deduplicateAffectedCommits(tt.input)
+			got := DeduplicateAffectedCommits(tt.input)
 
 			slices.SortStableFunc(got, models.AffectedCommitCompare)
 			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
@@ -1282,9 +1292,9 @@ func TestCommit(t *testing.T) {
 func TestReposFromReferences(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
+		cache       *VPRepoCache
 		vp          *VendorProduct
-		refs        []Reference
+		refs        []models.Reference
 		tagDenyList []string
 	}
 	tests := []struct {
@@ -1296,9 +1306,9 @@ func TestReposFromReferences(t *testing.T) {
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
 				CVE:   "CVE-2023-0327",
-				cache: nil,
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
-				refs: []Reference{
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1311,10 +1321,8 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
-				refs: []Reference{
+				CVE: "CVE-2025-0211",
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
@@ -1327,10 +1335,8 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
-				refs: []Reference{
+				CVE: "CVE-2025-26519",
+				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
@@ -1344,10 +1350,8 @@ func TestReposFromReferences(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
-				refs: []Reference{
+				CVE: "CVE-2016-10525",
+				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1358,11 +1362,29 @@ func TestReposFromReferences(t *testing.T) {
 			},
 			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
 		},
+		{
+			name: "A CVE with a repo that redirects (docker/docker -> moby/moby)",
+			args: args{
+				CVE: "CVE-2017-12345", // Dummy CVE
+				refs: []models.Reference{
+					{
+						Source: "cna@docker.com",
+						Tags:   []string{"Third Party Advisory"},
+						URL:    "https://github.com/docker/docker",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/moby/moby"},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos := ReposFromReferences(tt.args.CVE, tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			metrics := &models.ConversionMetrics{}
+			repoTagsCache := &git.RepoTagsCache{}
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1372,9 +1394,7 @@ func TestReposFromReferences(t *testing.T) {
 func TestReposFromReferencesCVEList(t *testing.T) {
 	type args struct {
 		CVE         string
-		cache       VendorProductToRepoMap
-		vp          *VendorProduct
-		refs        []Reference
+		refs        []models.Reference
 		tagDenyList []string
 	}
 	tests := []struct {
@@ -1385,10 +1405,8 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
 			args: args{
-				CVE:   "CVE-2023-0327",
-				cache: nil,
-				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
-				refs: []Reference{
+				CVE: "CVE-2023-0327",
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1396,15 +1414,13 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 				},
 				tagDenyList: RefTagDenyList,
 			},
-			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
 		},
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
 			args: args{
-				CVE:   "CVE-2025-0211",
-				cache: nil,
-				vp:    &VendorProduct{"campcodes", "school_faculty_scheduling_system"},
-				refs: []Reference{
+				CVE: "CVE-2025-0211",
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Exploit", "Third Party Advisory"},
@@ -1417,10 +1433,8 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a cgit repo reference that does not work without transformation",
 			args: args{
-				CVE:   "CVE-2025-26519",
-				cache: nil,
-				vp:    nil,
-				refs: []Reference{
+				CVE: "CVE-2025-26519",
+				refs: []models.Reference{
 					{
 						Source: "cna@mitre.org",
 						Tags:   nil,
@@ -1434,10 +1448,8 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		{
 			name: "A CVE with a valid GitHub repo that stopped working",
 			args: args{
-				CVE:   "CVE-2016-10525",
-				cache: nil,
-				vp:    nil,
-				refs: []Reference{
+				CVE: "CVE-2016-10525",
+				refs: []models.Reference{
 					{
 						Source: "support@hackerone.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1450,10 +1462,8 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 		}, {
 			name: "A CVE with a repo not already present)",
 			args: args{
-				CVE:   "CVE-2024-7790",
-				cache: nil,
-				vp:    &VendorProduct{"Devikia", "DevikaAI"},
-				refs: []Reference{
+				CVE: "CVE-2024-7790",
+				refs: []models.Reference{
 					{
 						Source: "cna@vuldb.com",
 						Tags:   []string{"Patch", "Third Party Advisory"},
@@ -1467,16 +1477,17 @@ func TestReposFromReferencesCVEList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
-			if gotRepos, _ := ReposFromReferencesCVEList(tt.args.CVE, tt.args.refs, tt.args.tagDenyList); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
-				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferencesCVEList(tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferencesCVEList() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
 	}
 }
 
-func Test_MaybeUpdateVPRepoCache(t *testing.T) {
+func Test_MaybeUpdate(t *testing.T) {
 	type args struct {
-		cache VendorProductToRepoMap
+		cache *VPRepoCache
 		vp    *VendorProduct
 		repos []string
 	}
@@ -1486,18 +1497,9 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		wantCache VendorProductToRepoMap
 	}{
 		{
-			name: "Test with no cache",
-			args: args{
-				cache: nil,
-				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv.dev"},
-			},
-			wantCache: nil,
-		},
-		{
 			name: "Test with an empty cache",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev"},
 			},
@@ -1508,7 +1510,7 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an empty cache and an unusable repo",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/vendor/repo"},
 			},
@@ -1517,20 +1519,25 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 		{
 			name: "Test with an existing cache",
 			args: args{
-				cache: VendorProductToRepoMap{
-					VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{
+							"avendor",
+							"aproduct",
+						}: []string{"https://github.com/google/osv-scanner"},
+					},
 				},
 				vp:    &VendorProduct{"avendor", "aproduct"},
-				repos: []string{"https://github.com/google/osv-scanner"},
+				repos: []string{"https://github.com/google/osv.dev"},
 			},
 			wantCache: VendorProductToRepoMap{
-				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner", "https://github.com/google/osv.dev"},
 			},
 		},
 		{
 			name: "Test with an empty cache adding two values",
 			args: args{
-				cache: VendorProductToRepoMap{},
+				cache: NewVPRepoCache(),
 				vp:    &VendorProduct{"avendor", "aproduct"},
 				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
 			},
@@ -1539,14 +1546,220 @@ func Test_MaybeUpdateVPRepoCache(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
+			cache := tt.args.cache
 			for _, repo := range tt.args.repos {
-				MaybeUpdateVPRepoCache(tt.args.cache, tt.args.vp, repo)
+				cache.MaybeUpdate(tt.args.vp, repo)
 			}
-			if !reflect.DeepEqual(tt.args.cache, tt.wantCache) {
-				t.Errorf("maybeUpdateVPRepoCache() have %#v, wanted %#v", tt.args.cache, tt.wantCache)
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeUpdate() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVPRepoCache_MaybeRemove(t *testing.T) {
+	type args struct {
+		cache *VPRepoCache
+		vp    *VendorProduct
+		repo  string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with a nil vp",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    nil,
+				repo:  "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test removing existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing non-existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing last repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := tt.args.cache
+			cache.MaybeRemove(tt.args.vp, tt.args.repo)
+			if cache == nil {
+				if tt.wantCache != nil {
+					t.Errorf("MaybeRemove() cache is nil, wanted %#v", tt.wantCache)
+				}
+
+				return
+			}
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeRemove() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_MarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		vp      VendorProduct
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			vp: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+			want: "google:chrome",
+		},
+		{
+			name: "with spaces",
+			vp: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+			want: "adobe:acrobat+reader",
+		},
+		{
+			name: "with colons",
+			vp: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+			want: "foo%3Abar:baz",
+		},
+		{
+			name: "empty",
+			vp: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+			want: ":",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vp.MarshalText()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.MarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if string(got) != tt.want {
+				t.Errorf("VendorProduct.MarshalText() = %v, want %v", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		want    VendorProduct
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			text: "google:chrome",
+			want: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+		},
+		{
+			name: "with spaces",
+			text: "adobe:acrobat+reader",
+			want: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+		},
+		{
+			name: "with colons encoded",
+			text: "foo%3Abar:baz",
+			want: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+		},
+		{
+			name: "empty",
+			text: ":",
+			want: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+		},
+		{
+			name:    "no colon",
+			text:    "invalid",
+			wantErr: true,
+		},
+		{
+			name:    "too many colons",
+			text:    "too:many:colons",
+			wantErr: true,
+		},
+		{
+			name:    "bad encoding",
+			text:    "bad%encoding:foo",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var vp VendorProduct
+			if err := vp.UnmarshalText([]byte(tt.text)); (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && vp != tt.want {
+				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
 			}
 		})
 	}

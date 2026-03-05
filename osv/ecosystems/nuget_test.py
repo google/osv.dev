@@ -18,6 +18,7 @@
 """NuGet ecosystem helper tests."""
 
 import unittest
+
 import vcr.unittest
 import warnings
 
@@ -30,11 +31,11 @@ class NuGetVersionTest(unittest.TestCase):
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
+    self.ecosystem = nuget.NuGet()
 
   def check_order(self, comparison, first, second):
     """Check order."""
-    comparison(
-        nuget.Version.from_string(first), nuget.Version.from_string(second))
+    comparison(self.ecosystem.sort_key(first), self.ecosystem.sort_key(second))
 
   def test_equals(self):
     """Test version equals."""
@@ -83,6 +84,30 @@ class NuGetVersionTest(unittest.TestCase):
     self.check_order(self.assertLess, '1.0.0-pre', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '1.0.0', '1.0.0.1-alpha')
     self.check_order(self.assertLess, '0.9.9.1', '1.0.0')
+
+    # Check the 0 sentinel value.
+    self.check_order(self.assertLess, '0', '0.0.0-0')
+
+  def test_ge_le(self):
+    """Test version >=/<=."""
+    self.check_order(self.assertGreaterEqual, '1.10.0', '1.2.0')
+    self.check_order(self.assertLessEqual, '1.2.0', '1.10.0')
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = nuget.NuGet()
+    self.assertEqual('00:00000000.00000000.00000000',
+                     ecosystem.coarse_version('0'))
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3.5'))
+    self.assertEqual('00:00000010.00000020.00000030',
+                     ecosystem.coarse_version('10.20.30-alpha.1'))
+    self.assertEqual('00:00000000.00000002.00000000',
+                     ecosystem.coarse_version('0.2.0.1+a'))
+    self.assertEqual('00:00000000.00000000.00000099',
+                     ecosystem.coarse_version('0.0.99.10-pre+b'))
+    self.assertEqual('00:00000002.99999999.99999999',
+                     ecosystem.coarse_version('2.100000000.1.1'))
 
 
 class NuGetEcosystemTest(vcr.unittest.VCRTestCase):

@@ -3,9 +3,9 @@ kind: CronJob
 metadata:
   name: combine-to-osv
   labels:
-    cronLastSuccessfulTimeMins: "90"
+    cronLastSuccessfulTimeMins: "2160"
 spec:
-  schedule: "30 * * * *"
+  schedule: "30 13,21 * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -26,10 +26,10 @@ spec:
             resources:
               requests:
                 cpu: "30"
-                memory: "4G"
+                memory: "16G"
               limits:
                 cpu: "30"
-                memory: "8G"
+                memory: "24G"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
           restartPolicy: Never # on the assumption that the next scheduled run is soon enough

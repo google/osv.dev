@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/pypi"
 	"github.com/google/osv/vulnfeeds/triage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -62,9 +63,9 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.ID+"/"+vuln.Affected[0].Package.Name] = true
-		for _, alias := range vuln.Aliases {
-			ids[alias+"/"+vuln.Affected[0].Package.Name] = true
+		ids[vuln.GetId()+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
+		for _, alias := range vuln.GetAliases() {
+			ids[alias+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
 		}
 
 		return nil
@@ -78,14 +79,14 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 
 func anyUnbounded(v *vulns.Vulnerability) bool {
 	for _, affected := range v.Affected {
-		for _, ranges := range affected.Ranges {
+		for _, ranges := range affected.GetRanges() {
 			hasFixed := false
 			hasLastAffected := false
-			for _, event := range ranges.Events {
-				if event.Fixed != "" {
+			for _, event := range ranges.GetEvents() {
+				if event.GetFixed() != "" {
 					hasFixed = true
 				}
-				if event.LastAffected != "" {
+				if event.GetLastAffected() != "" {
 					hasLastAffected = true
 				}
 			}
@@ -110,12 +111,13 @@ func main() {
 	flag.Parse()
 
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {
 		logger.Fatal("Failed to open file", slog.Any("err", err))
 	}
-	var parsed cves.CVEAPIJSON20Schema
+	var parsed models.CVEAPIJSON20Schema
 	err = json.Unmarshal(data, &parsed)
 	if err != nil {
 		logger.Fatal("Failed to parse NVD CVE JSON", slog.Any("err", err))
@@ -164,13 +166,15 @@ func main() {
 				Ecosystem: "PyPI",
 				PURL:      purl,
 			}
-
+			metrics := &models.ConversionMetrics{
+				CVEID: cve.CVE.ID,
+			}
 			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions, notes := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient)
+			versions := cves.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics)
 
-			vulns.AttachExtractedVersionInfo(&v.Affected[0], versions)
-			if len(v.Affected[0].Ranges) == 0 {
+			vulns.AttachExtractedVersionInfo(v, versions)
+			if len(v.Affected[0].GetRanges()) == 0 {
 				logger.Info("No affected versions detected")
 			}
 
@@ -185,13 +189,13 @@ func main() {
 				logger.Fatal("Failed to create dir", slog.Any("err", err))
 			}
 
-			vulnPath := filepath.Join(pkgDir, v.ID+extension)
+			vulnPath := filepath.Join(pkgDir, v.Id+extension)
 			if _, err := os.Stat(vulnPath); err == nil {
 				logger.Info("Skipping as it already exists", slog.String("path", vulnPath))
 				continue
 			}
 
-			if len(notes) > 0 && *withoutNotes {
+			if len(metrics.Notes) > 0 && *withoutNotes {
 				logger.Info("Skipping as there are notes associated with it", slog.String("path", vulnPath))
 				continue
 			}
@@ -207,9 +211,9 @@ func main() {
 			}
 
 			// If there are notes that require human intervention, write them to the end of the YAML.
-			if len(notes) > 0 {
-				notesPath := filepath.Join(pkgDir, v.ID+".notes")
-				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(notes, "\n# "))
+			if len(metrics.Notes) > 0 {
+				notesPath := filepath.Join(pkgDir, v.Id+".notes")
+				_, err = f.WriteString("\n# <Vulnfeeds Notes>\n# " + strings.Join(metrics.Notes, "\n# "))
 				if err != nil {
 					logger.Panic("Failed to write", slog.String("path", notesPath), slog.Any("err", err))
 				}

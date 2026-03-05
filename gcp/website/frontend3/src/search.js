@@ -21,12 +21,15 @@ export class ExpandableSearch {
       if (window.OSVSearchInstance.documentKeydownHandler) {
         document.removeEventListener('keydown', window.OSVSearchInstance.documentKeydownHandler);
       }
+      if (window.OSVSearchInstance.cacheHandler) {
+        document.removeEventListener('turbo:before-cache', window.OSVSearchInstance.cacheHandler);
+      }
       // Cleanup existing suggestions manager
       if (window.OSVSearchInstance.suggestionsManager) {
         window.OSVSearchInstance.suggestionsManager.destroy();
       }
     }
-    
+
     // Store this instance globally
     window.OSVSearchInstance = this;
   }
@@ -34,11 +37,29 @@ export class ExpandableSearch {
   setupGlobalListeners() {
     this.documentClickHandler = this.handleDocumentClick.bind(this);
     this.documentKeydownHandler = this.handleDocumentKeydown.bind(this);
-    
+    this.cacheHandler = this.preCache.bind(this);
+
     document.addEventListener('click', this.documentClickHandler);
     document.addEventListener('keydown', this.documentKeydownHandler);
+    document.addEventListener('turbo:before-cache', this.cacheHandler);
   }
-   handleDocumentClick(e) {
+
+  detachElementHandlers(searchToggle, searchForm) {
+    if (searchToggle && searchToggle.__osvSearchToggleHandler) {
+      searchToggle.removeEventListener('click', searchToggle.__osvSearchToggleHandler);
+      delete searchToggle.__osvSearchToggleHandler;
+    }
+    if (searchForm && searchForm.__osvSearchSubmitHandler) {
+      searchForm.removeEventListener('submit', searchForm.__osvSearchSubmitHandler);
+      delete searchForm.__osvSearchSubmitHandler;
+    }
+  }
+
+  preCache() {
+    this.detachElementHandlers(this.container?.toggle, this.container?.form);
+  }
+
+  handleDocumentClick(e) {
     if (this.container && this.container.element && 
         !this.container.element.contains(e.target) && 
         this.container.form.classList.contains('active')) {
@@ -77,6 +98,8 @@ export class ExpandableSearch {
       input: searchInput
     };
 
+    this.detachElementHandlers(searchToggle, searchForm);
+
     const toggleHandler = (e) => {
       e.preventDefault();
       const isActive = searchForm.classList.contains('active');
@@ -87,11 +110,8 @@ export class ExpandableSearch {
         this.openSearch();
       }
     };
-    
-    if (!searchToggle.hasAttribute('data-search-initialized')) {
-      searchToggle.addEventListener('click', toggleHandler);
-      searchToggle.setAttribute('data-search-initialized', 'true');
-    }
+    searchToggle.addEventListener('click', toggleHandler);
+    searchToggle.__osvSearchToggleHandler = toggleHandler;
 
     const submitHandler = (e) => {
       const query = searchInput.value.trim();
@@ -99,11 +119,8 @@ export class ExpandableSearch {
         e.preventDefault();
       }
     };
-    
-    if (!searchForm.hasAttribute('data-search-initialized')) {
-      searchForm.addEventListener('submit', submitHandler);
-      searchForm.setAttribute('data-search-initialized', 'true');
-    }
+    searchForm.addEventListener('submit', submitHandler);
+    searchForm.__osvSearchSubmitHandler = submitHandler;
   }
 
   openSearch() {

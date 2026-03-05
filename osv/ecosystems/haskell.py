@@ -23,7 +23,11 @@ if something is broken and you need help to fix it.
 import requests
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_from_ints,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 from .semver_ecosystem_helper import SemverLike
 
 
@@ -32,19 +36,24 @@ class Hackage(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://hackage.haskell.org/package/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key.
 
     The Haskell package version data type is defined at
     https://hackage.haskell.org/package/Cabal-syntax/docs/Distribution-Types-Version.html
 
     """
-    # If version is not valid, it is most likely an invalid input version
-    # then sort it to the last/largest element
     try:
       return [int(x) for x in version.split('.')]
-    except ValueError:
-      return [999999]
+    except ValueError as exc:
+      raise ValueError(f'Invalid version: {version}') from exc
+
+  def coarse_version(self, version):
+    """Coarse version.
+    
+    Hackage versions are treated as dot-separated integers.
+    """
+    return coarse_version_from_ints(self._sort_key(version))
 
   def enumerate_versions(self,
                          package,
@@ -123,7 +132,7 @@ class GHC(EnumerableEcosystem, SemverLike):
   def is_major_minor_patch(s: str) -> bool:
     """Check that string matches ``<int>.<int>.<int>``."""
     parts = s.split('.')
-    return len(parts) == 3 and all(x.isdigit() for x in parts)
+    return len(parts) == 3 and all(x.isdecimal() for x in parts)
 
   def enumerate_versions(self,
                          package,

@@ -16,14 +16,16 @@ syntax = "proto3";
 
 package osv.v1;
 
-import "osv/vulnerability.proto";
-import "osv/importfinding.proto";
+import "vulnerability.proto";
+import "importfinding.proto";
 import "google/api/annotations.proto";
+
+option go_package = "osv.dev/bindings/go/internal/api";
 
 // A list of Vulnerability entries.
 message VulnerabilityList {
   repeated osv.Vulnerability vulns = 1;
-  string next_page_token = 2;
+  string next_page_token = 2 [json_name="next_page_token"];
 }
 
 // Batched lists of Vulnerability entries.
@@ -44,7 +46,7 @@ message Query {
   // The package to query against. When a `commit` hash is given, this is
   // optional.
   osv.Package package = 4;
-  string page_token = 5;
+  string page_token = 5 [json_name="page_token"];
 }
 
 // Batch query format.
@@ -82,7 +84,7 @@ message ImportFindingsParameters {
 message VersionQuery {
   // The name of the dependency. Can be empty.
   string name = 1;
-  repeated FileHash file_hashes = 2;
+  repeated FileHash file_hashes = 2 [json_name="file_hashes"];
 }
 
 // Information about the files in the repository
@@ -93,8 +95,8 @@ message FileHash {
   }
 
   // The file path inside the repository, relative to the repository root.
-  string file_path = 1;
-  HashType hash_type = 2;
+  string file_path = 1 [json_name="file_path"];
+  HashType hash_type = 2 [json_name="hash_type"];
   bytes hash = 3;
 }
 
@@ -105,7 +107,7 @@ message VersionMatchList {
 
 // Result of ImportFindings.
 message ImportFindingList {
-  repeated osv.ImportFinding invalid_records = 1;
+  repeated osv.ImportFinding invalid_records = 1 [json_name="invalid_records"];
 }
 
 // Match information for the provided VersionQuery.
@@ -116,13 +118,13 @@ message VersionMatch {
   // Information about the upstream repository.
   VersionRepositoryInformation repo_info = 2;
   // The OSV identifier.
-  osv.Package osv_identifier = 3;
+  osv.Package osv_identifier = 3 [json_name="osv_identifier"];
   // CPE 2.3.
   string cpe23 = 5;
   // Definite number of files that have matched.
-  int64 minimum_file_matches = 6;
+  int64 minimum_file_matches = 6 [json_name="minimum_file_matches"];
   // Estimated number of files that are different.
-  int64 estimated_diff_files = 7;
+  int64 estimated_diff_files = 7 [json_name="estimated_diff_files"];
 }
 
 message VersionRepositoryInformation {

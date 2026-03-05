@@ -21,6 +21,7 @@ from whitenoise import WhiteNoise
 import cache
 import frontend_handlers
 import handlers
+import linter_api
 import osv.logs
 
 ndb_client = ndb.Client()
@@ -44,6 +45,7 @@ def create_app():
       __name__, template_folder='dist', static_folder='dist/static')
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
+  flask_app.register_blueprint(linter_api.blueprint)
   flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
   flask_app.config['COMPRESS_MIMETYPES'] = ['text/html']
 

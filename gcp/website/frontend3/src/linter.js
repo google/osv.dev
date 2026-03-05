@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Get the detailed linter results from GCS bucket
     const linterPromise = (async () => {
       const linterPromises = sourceNames.map((sourceName) => {
-        const url = `https://storage.googleapis.com/osv-test-public-import-logs/linter-result/${sourceName}/result.json`;
+        const url = `/linter-findings/${sourceName}`;
         return fetch(url)
           .then((res) => (res.ok ? res.json() : {}))
           .catch(() => ({}));
@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", function () {
       paginatedIssues.forEach((issue) => {
         let row = tableBody.insertRow();
         row.classList.add("clickable");
-        row.addEventListener("click", (e) => {
+        row.addEventListener("click", () => {
           openCombinedView(issue.bug_id);
         });
 
@@ -437,7 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
           <div class="details-column">
               <h2>Linter Findings</h2>
-              <pre id="${findingsJsonId}" class="json-pre">Loading...</pre>
+              <div id="${findingsJsonId}" class="json-pre">Loading...</div>
           </div>
       </div>
                 `;
@@ -462,13 +462,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Display finding data
     const details = findingDetails[bugId];
-    const findingsPre = document.getElementById(findingsJsonId);
-    if (details) {
-      findingsPre.textContent = JSON.stringify(details, null, 2);
+    const findingsEl = document.getElementById(findingsJsonId);
+    if (details?.length) {
+      findingsEl.textContent = ''; // Clear "Loading..."
+      findingsEl.appendChild(formatFindings(details));
+      findingsEl.classList.remove("json-pre");
     } else {
-      findingsPre.textContent =
-        "No linter findings available for this vulnerability.";
+      findingsEl.textContent =
+          "No linter findings available for this vulnerability.";
     }
+  }
+
+  function formatFindings(details) {
+    const table = document.createElement('table');
+    table.className = 'findings-table';
+
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    ['Code', 'Message'].forEach(headerText => {
+      const th = document.createElement('th');
+      th.textContent = headerText;
+      headerRow.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    details.forEach((finding) => {
+      const row = tbody.insertRow();
+      row.insertCell().textContent = finding.Code || '';
+      row.insertCell().textContent = finding.Message || '';
+    });
+
+    return table;
   }
 
   function handleTabClick(e) {

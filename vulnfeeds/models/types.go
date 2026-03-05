@@ -15,6 +15,20 @@ type AffectedCommit struct {
 	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
 }
 
+// SetCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.
+func SetCommitByType(ac *AffectedCommit, commitType CommitType, commitHash string) {
+	switch commitType {
+	case Introduced:
+		ac.SetIntroduced(commitHash)
+	case LastAffected:
+		ac.SetLastAffected(commitHash)
+	case Limit:
+		ac.SetLimit(commitHash)
+	case Fixed:
+		ac.SetFixed(commitHash)
+	}
+}
+
 func (ac *AffectedCommit) SetRepo(repo string) {
 	// GitHub.com repos are demonstrably case-insensitive, and frequently
 	// expressed in URLs with varying cases, so normalize them to lowercase.
@@ -61,14 +75,20 @@ func AffectedCommitCompare(i, j AffectedCommit) int {
 	if n := cmp.Compare(i.Repo, j.Repo); n != 0 {
 		return n
 	}
+	if i.Introduced == "" && j.Introduced != "" {
+		return 1
+	}
+	if i.Introduced != "" && j.Introduced == "" {
+		return -1
+	}
+	if n := cmp.Compare(i.Introduced, j.Introduced); n != 0 {
+		return n
+	}
 	if n := cmp.Compare(i.Fixed, j.Fixed); n != 0 {
 		return n
 	}
-	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
-		return n
-	}
 
-	return cmp.Compare(i.Introduced, j.Introduced)
+	return cmp.Compare(i.LastAffected, j.LastAffected)
 }
 
 type AffectedVersion struct {
@@ -205,7 +225,7 @@ func (vi *VersionInfo) Duplicated(candidate AffectedCommit) bool {
 	return false
 }
 
-type CPE struct {
+type CPEString struct {
 	CPEVersion string
 	Part       string
 	Vendor     string

@@ -18,6 +18,7 @@ import datetime
 import json
 import logging
 import os
+import pygit2
 import redis
 import requests
 import resource
@@ -32,14 +33,15 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
-from google.protobuf import json_format
+from google.protobuf import json_format, timestamp_pb2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
-import osv.ecosystems
 import osv.cache
+import osv.ecosystems
+import osv.gcs
 import osv.logs
-from osv import vulnerability_pb2
+from osv import vulnerability_pb2, purl_helpers
 import oss_fuzz
 
 from vanir import vulnerability_manager
@@ -82,29 +84,27 @@ class UpdateConflictError(Exception):
   """Update conflict exception."""
 
 
-def _setup_logging_extra_info():
-  """Set up extra GCP logging information."""
+class _ContextFilter(logging.Filter):
+  """Context filter to add extra GCP logging information."""
 
-  old_factory = logging.getLogRecordFactory()
-
-  def record_factory(*args, **kwargs):
-    """Insert jsonPayload fields to all logs."""
-
-    record = old_factory(*args, **kwargs)
-    if not hasattr(record, 'json_fields'):
-      record.json_fields = {}
+  def filter(self, record):
+    """Add extra fields to the log record."""
+    json_fields = getattr(record, 'json_fields', {})
 
     if getattr(_state, 'source_id', None):
-      record.json_fields['source_id'] = _state.source_id
+      json_fields['source_id'] = _state.source_id
 
     if getattr(_state, 'bug_id', None):
-      record.json_fields['bug_id'] = _state.bug_id
+      json_fields['bug_id'] = _state.bug_id
 
-    record.json_fields['thread'] = record.thread
+    json_fields['thread'] = record.thread
+    record.json_fields = json_fields
+    return True
 
-    return record
 
-  logging.setLogRecordFactory(record_factory)
+def _setup_logging_extra_info():
+  """Set up extra GCP logging information."""
+  logging.getLogger().addFilter(_ContextFilter())
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -161,17 +161,6 @@ def clean_artifacts(oss_fuzz_dir):
   build_dir = os.path.join(oss_fuzz_dir, 'build')
   if os.path.exists(build_dir):
     shutil.rmtree(build_dir, ignore_errors=True)
-
-
-def mark_bug_invalid(message):
-  """Mark a bug as invalid."""
-  source_id = get_source_id(message)
-  for bug in osv.Bug.query(osv.Bug.source_id == source_id):
-    bug.withdrawn = datetime.datetime.now(datetime.UTC)
-    bug.status = osv.BugStatus.INVALID
-    bug.put()
-
-    osv.delete_affected_commits(bug.key.id())
 
 
 def get_source_id(message):
@@ -280,7 +269,9 @@ def fix_invalid_ghsa(vulnerability):
   return True
 
 
-def maybe_normalize_package_names(vulnerability):
+def maybe_normalize_package_names(
+    vulnerability: vulnerability_pb2.Vulnerability
+) -> vulnerability_pb2.Vulnerability:
   """Normalize package names as necessary."""
   for affected in vulnerability.affected:
     if not affected.package.ecosystem:
@@ -333,6 +324,7 @@ class TaskRunner:
     path = message.attributes['path']
     original_sha256 = message.attributes['original_sha256']
     deleted = message.attributes['deleted'] == 'true'
+    skip_hash_check = message.attributes.get('skip_hash_check') == 'true'
 
     source_repo = osv.get_source_repository(source)
     if source_repo is None:
@@ -343,13 +335,14 @@ class TaskRunner:
           source_repo.repo_url,
           os.path.join(self._sources_dir, source),
           git_callbacks=self._git_callbacks(source_repo),
-          branch=source_repo.repo_branch)
+          branch=source_repo.repo_branch,
+          force_update=True)
 
       vuln_path = os.path.join(osv.repo_path(repo), path)
       if not os.path.exists(vuln_path):
         logging.info('%s was deleted.', vuln_path)
-        if deleted:
-          self._handle_deleted(source_repo, path)
+        if deleted or skip_hash_check:
+          self._handle_deleted(path)
 
         return
 
@@ -367,7 +360,7 @@ class TaskRunner:
       current_sha256 = osv.sha256(vuln_path)
     elif source_repo.type == osv.SourceRepositoryType.BUCKET:
       if deleted:
-        self._handle_deleted(source_repo, path)
+        self._handle_deleted(path)
         return
       storage_client = storage.Client()
       bucket = storage_client.bucket(source_repo.bucket)
@@ -375,6 +368,8 @@ class TaskRunner:
         blob = bucket.blob(path).download_as_bytes(retry=retry.DEFAULT_RETRY)
       except google.cloud.exceptions.NotFound:
         logging.exception('Bucket path %s does not exist.', path)
+        if skip_hash_check:
+          self._handle_deleted(path)
         return
 
       current_sha256 = osv.sha256_bytes(blob)
@@ -389,10 +384,15 @@ class TaskRunner:
 
       repo = None
     elif source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      if deleted:
+        self._handle_deleted(path)
+        return
       vulnerabilities = []
       request = requests.get(source_repo.link + path, timeout=_TIMEOUT_SECONDS)
       if request.status_code != 200:
         logging.error('Failed to fetch REST API: %s', request.status_code)
+        if request.status_code == 404 and skip_hash_check:
+          self._handle_deleted(path)
         return
       vuln = request.json()
       try:
@@ -405,40 +405,92 @@ class TaskRunner:
     else:
       raise RuntimeError('Unsupported SourceRepository type.')
 
-    if current_sha256 != original_sha256:
+    if not skip_hash_check and current_sha256 != original_sha256:
       logging.warning(
           'sha256sum of %s no longer matches (expected=%s vs current=%s).',
           path, original_sha256, current_sha256)
       return
 
+    if len(vulnerabilities) > 1:
+      # While the code allows for having multiple vulnerabilities in a file,
+      # it's not really documented anywhere, and no one seems to be doing this.
+      # I (michaelkedar) think we should stop supporting this, so adding this
+      # log here to verify if it's okay to remove.
+      logging.error(
+          'file has multiple vulnerabilities',
+          extra={'json_fields': {
+              'source': source,
+              'path': path,
+          }})
+
     for vulnerability in vulnerabilities:
       self._do_update(source_repo, repo, vulnerability, path, original_sha256)
 
-  def _handle_deleted(self, source_repo, vuln_path):
-    """Handle existing bugs that have been subsequently deleted at their source.
+  def _handle_deleted(self, vuln_path: str):
+    """Handle existing vulns that have been subsequently deleted at their
+    source.
 
     Args:
-      source_repo: Source repository.
       vuln_path: Path to vulnerability.
 
-    This marks the Bug as INVALID and as withdrawn.
+    This marks the Vulnerability as withdrawn.
     """
     vuln_id = os.path.splitext(os.path.basename(vuln_path))[0]
-    bug = osv.Bug.get_by_id(vuln_id)
-    if not bug:
-      logging.error('Failed to find Bug with ID %s', vuln_id)
-      return
+    vuln_and_gen = osv.gcs.get_by_id_with_generation(vuln_id)
+    gcs_gen = None
+    proto_vuln = None
 
-    bug_source_path = osv.source_path(source_repo, bug)
-    if bug_source_path != vuln_path:
-      logging.error('Request path %s does not match %s, aborting.', vuln_path,
-                    bug_source_path)
-      return
+    def xact():
+      nonlocal gcs_gen
+      nonlocal proto_vuln
+      ds_vuln: osv.Vulnerability = osv.Vulnerability.get_by_id(vuln_id)
+      if not ds_vuln:
+        logging.error('Failed to find Vulnerability with ID %s', vuln_id)
+        return
 
-    logging.info('Marking %s as invalid and withdrawn.', vuln_id)
-    bug.status = osv.BugStatus.INVALID
-    bug.withdrawn = datetime.datetime.now(datetime.UTC)
-    bug.put()
+      _, _, ds_path = ds_vuln.source_id.partition(':')
+
+      if ds_path != vuln_path:
+        logging.error('Request path %s does not match %s, aborting.', vuln_path,
+                      ds_path)
+        return
+
+      logging.info('Marking %s as withdrawn.', vuln_id)
+      if not vuln_and_gen:
+        logging.error('Failed to find Vulnerability with ID %s in GCS', vuln_id)
+        # contruct an empty withdrawn vuln
+        proto_vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
+      else:
+        proto_vuln, gcs_gen = vuln_and_gen
+
+      if not proto_vuln.HasField('withdrawn'):
+        # in case this was already withdrawn for some reason
+        proto_vuln.withdrawn.FromDatetime(datetime.datetime.now(datetime.UTC))
+      if (not proto_vuln.HasField('modified') or
+          proto_vuln.withdrawn.ToDatetime(
+              datetime.UTC) > proto_vuln.modified.ToDatetime(datetime.UTC)):
+        proto_vuln.modified.CopyFrom(proto_vuln.withdrawn)
+      ds_vuln.is_withdrawn = True
+      ds_vuln.modified = proto_vuln.modified.ToDatetime(datetime.UTC)
+      osv.models.put_entities(ds_vuln, proto_vuln)
+
+    try:
+      ndb.transaction(xact)
+    except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
+      e.add_note(f'Happened processing {vuln_id}')
+      logging.exception('Unexpected exception while writing %s to Datastore',
+                        vuln_id)
+      raise
+    if not proto_vuln:
+      return
+    try:
+      osv.gcs.upload_vulnerability(proto_vuln, gcs_gen)
+    except Exception:
+      # Writing to bucket failed for some reason.
+      # Send a pub/sub message to retry.
+      logging.error('Writing to bucket failed for %s', vuln_id)
+      data = proto_vuln.SerializeToString(deterministic=True)
+      osv.pubsub.publish_failure(data, type='gcs_retry')
 
   def _push_new_ranges_and_versions(self, source_repo, repo, vulnerability,
                                     output_path, original_sha256):
@@ -454,30 +506,28 @@ class TaskRunner:
             output_path: original_sha256,
         })
 
-  def _analyze_vulnerability(self, source_repo, repo, vulnerability, path,
-                             original_sha256):
+  def _analyze_vulnerability(self, source_repo: osv.SourceRepository,
+                             repo: pygit2.Repository | None,
+                             vulnerability: vulnerability_pb2.Vulnerability,
+                             path: str,
+                             original_sha256: str) -> osv.AnalyzeResult:
     """Analyze vulnerability and push new changes."""
-    # Add OSS-Fuzz
-    added_fix_info = False
-    bug = osv.Bug.get_by_id(vulnerability.id)
-    if bug:
-      fix_result = osv.FixResult.get_by_id(bug.source_id)
-      if fix_result:
-        added_fix_info = add_fix_information(vulnerability, fix_result)
-
     result = osv.analyze(
         vulnerability,
+        checkout_path=os.path.join(self._work_dir, 'checkout'),
         analyze_git=not source_repo.ignore_git,
         detect_cherrypicks=source_repo.detect_cherrypicks,
         versions_from_repo=source_repo.versions_from_repo,
         consider_all_branches=source_repo.consider_all_branches)
 
-    if not result.has_changes and not added_fix_info:
+    if not result.has_changes:
       return result
 
     if not source_repo.editable:
       return result
-
+    # NB: Only OSS-Fuzz is editable - all other sources are read-only.
+    # This should not be reachable by this worker.
+    logging.error('Source %s flagged as editable', source_repo.name)
     output_path = os.path.join(osv.repo_path(repo), path)
     if self._push_new_ranges_and_versions(source_repo, repo, vulnerability,
                                           output_path, original_sha256):
@@ -489,7 +539,9 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
-  def _generate_vanir_signatures(self, vulnerability):
+  def _generate_vanir_signatures(
+      self, vulnerability: vulnerability_pb2.Vulnerability
+  ) -> vulnerability_pb2.Vulnerability:
     """Generates Vanir signatures for a vulnerability."""
     if not any(r.type == vulnerability_pb2.Range.GIT
                for affected in vulnerability.affected
@@ -497,6 +549,13 @@ class TaskRunner:
       logging.info(
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
+      return vulnerability
+    if any(affected.package.name == "Kernel" and
+           affected.package.ecosystem == "Linux"
+           for affected in vulnerability.affected):
+      logging.info(
+          'Skipping Vanir signature generation for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
       return vulnerability
 
     logging.info('Generating Vanir signatures for %s', vulnerability.id)
@@ -519,8 +578,10 @@ class TaskRunner:
                         vulnerability.id)
       return vulnerability
 
-  def _do_update(self, source_repo, repo, vulnerability, relative_path,
-                 original_sha256):
+  def _do_update(self, source_repo: osv.SourceRepository,
+                 repo: pygit2.Repository | None,
+                 vulnerability: vulnerability_pb2.Vulnerability,
+                 relative_path: str, original_sha256: str):
     """Process updates on a vulnerability."""
     _state.bug_id = vulnerability.id
     logging.info('Processing update for vulnerability %s', vulnerability.id)
@@ -531,12 +592,11 @@ class TaskRunner:
 
     filter_unknown_ecosystems(vulnerability)
 
-    # Generate Vanir signatures for test instance.
-    project = osv.utils.get_google_cloud_project()
-    if project in ('oss-vdb-test', 'test-osv'):
-      vulnerability = self._generate_vanir_signatures(vulnerability)
-
+    # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
+
+    # Fully enrich the vulnerability object in memory.
+    vulnerability = self._generate_vanir_signatures(vulnerability)
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)
@@ -544,45 +604,144 @@ class TaskRunner:
       # Discard changes due to conflict.
       return
 
-    # Update datastore with new information.
-    bug = osv.Bug.get_by_id(vulnerability.id)
-    if not bug:
-      if source_repo.name == 'oss-fuzz':
-        logging.warning('%s not found for OSS-Fuzz source.', vulnerability.id)
-        return
+    vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
+    gcs_gen = None
 
-      bug = osv.Bug(
-          db_id=vulnerability.id,
-          timestamp=osv.utcnow(),
-          status=osv.BugStatus.PROCESSED,
-          source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
+    def xact():
+      # Fetch the current state from Datastore.
+      nonlocal gcs_gen
+      ds_vuln = osv.Vulnerability.get_by_id(vulnerability.id)
+      is_new_bug = ds_vuln is None
 
-    bug.update_from_vulnerability(vulnerability)
-    bug.public = True
-    bug.import_last_modified = orig_modified_date
-    # OSS-Fuzz sourced bugs use a different format for source_id.
-    if source_repo.name != 'oss-fuzz' or not bug.source_id:
-      bug.source_id = f'{source_repo.name}:{relative_path}'
+      old_published = None
 
-    if bug.withdrawn:
-      bug.status = osv.BugStatus.INVALID
-    else:
-      bug.status = osv.BugStatus.PROCESSED
+      # Update the schema version
+      # TODO(michaelkedar): osv.SCHEMA_VERSION is not kept up to date with
+      # the osv-schema submodule
+      vulnerability.schema_version = osv.SCHEMA_VERSION
+      # Add PURLs and source if they are missing.
+      source_link = None
+      if source_repo and source_repo.link:
+        source_link = source_repo.link + relative_path
+      for affected in vulnerability.affected:
+        if not affected.package.purl:
+          if purl := purl_helpers.package_to_purl(
+              osv.ecosystems.normalize(affected.package.ecosystem),
+              affected.package.name):
+            affected.package.purl = purl
+        if source_link:
+          affected.database_specific.update({'source': source_link})
 
-    if not vulnerability.affected:
-      logging.info('%s does not affect any packages. Marking as invalid.',
-                   vulnerability.id)
-      bug.status = osv.BugStatus.INVALID
+      has_changed = False
+      if is_new_bug:
+        has_changed = True
+        ds_vuln = osv.Vulnerability(
+            id=vulnerability.id,
+            source_id=f'{source_repo.name}:{relative_path}',
+        )
+      else:
+        # Compare the newly enriched vulnerability with the stored one.
+        # Create a 'pure' vulnerability object from the existing vuln for
+        # comparison, excluding external data that would cause false positives.
+        if vuln_and_gen is None:
+          logging.warning('Vulnerability %s found in Datastore but not in GCS.',
+                          vulnerability.id)
+          # We need to write the vuln in this case
+          has_changed = True
+        else:
+          old_vulnerability, gcs_gen = vuln_and_gen
+          if old_vulnerability.HasField('published'):
+            old_published = timestamp_pb2.Timestamp()
+            old_published.CopyFrom(old_vulnerability.published)
+          new_vulnerability = vulnerability_pb2.Vulnerability()
+          new_vulnerability.CopyFrom(vulnerability)
+
+          # Clear modified/published timestamps for a clean comparison.
+          old_vulnerability.modified.Clear()
+          new_vulnerability.modified.Clear()
+          old_vulnerability.published.Clear()
+          new_vulnerability.published.Clear()
+          # Clear aliases and upstream, as they are computed separately.
+          old_vulnerability.aliases.clear()
+          new_vulnerability.aliases.clear()
+          old_vulnerability.upstream.clear()
+          new_vulnerability.upstream.clear()
+          old_vulnerability.related.clear()
+          new_vulnerability.related.clear()
+
+          has_changed = old_vulnerability != new_vulnerability
+
+      ds_vuln.is_withdrawn = vulnerability.HasField('withdrawn')
+      ds_vuln.modified_raw = orig_modified_date
+      ds_vuln.alias_raw = list(vulnerability.aliases)
+      ds_vuln.related_raw = list(vulnerability.related)
+      ds_vuln.upstream_raw = list(vulnerability.upstream)
+      # Update the bug entity based on the comparison.
+      if has_changed:
+        ds_vuln.modified = osv.utcnow()
+      else:
+        # If no meaningful change, ensure last_modified reflects the source
+        # file's modified date, as only metadata might have changed.
+        ds_vuln.modified = orig_modified_date
+
+      # Overwrite aliases / upstream from computation
+      alias_group = osv.AliasGroup.query(
+          osv.AliasGroup.bug_ids == vulnerability.id).get()
+      if alias_group:
+        aliases = sorted(set(alias_group.bug_ids) - {vulnerability.id})
+        vulnerability.aliases[:] = aliases
+        ds_vuln.modified = max(alias_group.last_modified, ds_vuln.modified)
+      upstream_group = osv.UpstreamGroup.query(
+          osv.UpstreamGroup.db_id == vulnerability.id).get()
+      if upstream_group:
+        vulnerability.upstream[:] = sorted(upstream_group.upstream_ids)
+        ds_vuln.modified = max(upstream_group.last_modified, ds_vuln.modified)
+      related_group = osv.RelatedGroup.get_by_id(vulnerability.id)
+      if related_group:
+        vulnerability.related[:] = sorted(related_group.related_ids)
+        ds_vuln.modified = max(related_group.modified, ds_vuln.modified)
+      # Make sure modified date is >= withdrawn date
+      if ds_vuln.is_withdrawn and vulnerability.withdrawn.ToDatetime(
+          datetime.UTC) > ds_vuln.modified:
+        ds_vuln.modified = vulnerability.withdrawn.ToDatetime(datetime.UTC)
+
+      vulnerability.modified.FromDatetime(ds_vuln.modified)
+
+      # Make sure vuln has a published date
+      if not vulnerability.HasField('published'):
+        if old_published:
+          vulnerability.published.CopyFrom(old_published)
+        else:
+          vulnerability.published.CopyFrom(vulnerability.modified)
+
+      osv.models.put_entities(ds_vuln, vulnerability)
+
     try:
-      bug.put()
+      ndb.transaction(xact)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
       e.add_note(f'Happened processing {vulnerability.id}')
       logging.exception('Unexpected exception while writing %s to Datastore',
                         vulnerability.id)
+      raise
+    try:
+      osv.gcs.upload_vulnerability(vulnerability, gcs_gen)
+    except Exception:
+      # Writing to bucket failed for some reason.
+      # Send a pub/sub message to retry.
+      logging.error('Writing to bucket failed for %s', vulnerability.id)
+      data = vulnerability.SerializeToString(deterministic=True)
+      osv.pubsub.publish_failure(data, type='gcs_retry')
 
-    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
+    try:
+      osv.update_affected_commits(vulnerability.id, result.commits, True)
+    except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
+      e.add_note(f'Happened processing {vulnerability.id}')
+      logging.exception(
+          'Unexpected exception while updating affected commits for %s',
+          vulnerability.id)
+      raise
     self._notify_ecosystem_bridge(vulnerability)
-    self._maybe_remove_import_findings(bug)
+    self._maybe_remove_import_findings(vulnerability.id)
 
   def _notify_ecosystem_bridge(self, vulnerability):
     """Notify ecosystem bridges."""
@@ -602,12 +761,12 @@ class TaskRunner:
             push_topic,
             data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
-  def _maybe_remove_import_findings(self, vulnerability: osv.Bug):
-    """Remove any stale import findings for a successfully processed Bug,"""
+  def _maybe_remove_import_findings(self, vuln_id: str):
+    """Remove any stale import findings for a successfully processed Vuln,"""
 
-    finding = osv.ImportFinding.get_by_id(vulnerability.id())
+    finding = osv.ImportFinding.get_by_id(vuln_id)
     if finding:
-      logging.info('Removing stale import finding for %s', vulnerability.id())
+      logging.info('Removing stale import finding for %s', vuln_id)
       finding.key.delete()
 
   def _do_process_task(self, subscriber, subscription, ack_id, message,
@@ -621,16 +780,26 @@ class TaskRunner:
         _state.bug_id = message.attributes.get('allocated_bug_id', None)
 
         task_type = message.attributes['type']
-        if task_type in ('regressed', 'fixed'):
-          oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
-                                       message)
-        elif task_type == 'impact':
-          try:
-            oss_fuzz.process_impact_task(source_id, message)
-          except osv.ImpactError:
-            logging.exception('Failed to process impact: ')
-        elif task_type == 'invalid':
-          mark_bug_invalid(message)
+
+        # Validating that oss-fuzz-related tasks are only sent by oss-fuzz and
+        # the non-oss-fuzz task is not used by oss-fuzz.
+        if not source_id:
+          logging.error('got message without source_id: %s', message)
+        elif source_id.startswith('oss-fuzz'):
+          if task_type not in ('regressed', 'fixed', 'impact', 'invalid',
+                               'update-oss-fuzz'):
+            logging.error('got unexpected \'%s\' task for oss-fuzz source %s',
+                          task_type, source_id)
+        elif task_type != 'update':
+          logging.error('got unexpected \'%s\' task for non-oss-fuzz source %s',
+                        task_type, source_id)
+
+        if task_type in ('regressed', 'fixed', 'impact', 'invalid',
+                         'update-oss-fuzz'):
+          # TODO(michaelkedar): Remove this once the cutover is complete and the
+          # subscription filter is updated.
+          logging.info('Ignoring OSS-Fuzz task %s for source %s', task_type,
+                       source_id)
         elif task_type == 'update':
           self._source_update(message)
 
@@ -660,14 +829,30 @@ class TaskRunner:
     Log how long it took to be serviced."""
     request_time = message.attributes.get('req_timestamp')
     if request_time:
+      now = int(time.time())
       request_time = int(request_time)
-      latency = int(time.time()) - request_time
+      latency = now - request_time
+
+      json_fields = {
+          'source': message.attributes.get('source'),
+          'path': message.attributes.get('path'),
+          'latency': latency,
+      }
+      if source_time := message.attributes.get('src_timestamp'):
+        source_time = int(source_time)
+        src_latency = now - source_time
+        json_fields['src_latency'] = src_latency
+
       task_type = message.attributes['type']
       source_id = get_source_id(message) or message.attributes.get(
           'source', None)
 
-      logging.info('Task %s (source_id=%s) latency %d', task_type, source_id,
-                   latency)
+      logging.info(
+          'Task %s (source_id=%s) latency %d',
+          task_type,
+          source_id,
+          latency,
+          extra={'json_fields': json_fields})
 
   def loop(self):
     """Task loop."""

@@ -23,35 +23,23 @@ import (
 	"github.com/google/osv/vulnfeeds/models"
 )
 
-var versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
-
-// setCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.
-func setCommitByType(ac *models.AffectedCommit, commitType models.CommitType, commitHash string) {
-	switch commitType {
-	case models.Introduced:
-		ac.SetIntroduced(commitHash)
-	case models.LastAffected:
-		ac.SetLastAffected(commitHash)
-	case models.Limit:
-		ac.SetLimit(commitHash)
-	case models.Fixed:
-		ac.SetFixed(commitHash)
-	}
-}
+var (
+	versionRangeRegex = regexp.MustCompile(`^(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+)(?:,\s*(>=|<=|~|\^|>|<|=)\s*([0-9a-zA-Z\.\-]+))?$`) // Used to parse version strings from the GitHub CNA.
+	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
+	validVersion     = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
+	validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
+)
 
 // findFuzzyCommit takes an already normalized version and the mapping of repo tags to
 // normalized tags and commits, and performs fuzzy matching to find a commit hash.
 func findFuzzyCommit(normalizedVersion string, normalizedTags map[string]NormalizedTag) (string, bool) {
 	candidateTags := []string{} // the subset of normalizedTags tags that might be appropriate to use as a fuzzy match for normalizedVersion.
-	// Keep in sync with the regex in models.NormalizeVersion()
-	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
 
-	for k := range normalizedTags {
+	normalizedVersionMatchesText := validVersionText.MatchString(normalizedVersion)
+
+	for k, v := range normalizedTags {
 		// "1-8-0-RC0" (normalized from "1.8.0-RC0") shouldn't be considered a fuzzy match for "1-8-0" (normalized from "1.8.0")
-		if (validVersionText.MatchString(k) && validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
-			candidateTags = append(candidateTags, k)
-		}
-		if (!validVersionText.MatchString(k) && !validVersionText.MatchString(normalizedVersion)) && strings.HasPrefix(k, normalizedVersion) {
+		if v.MatchesVersionText == normalizedVersionMatchesText && strings.HasPrefix(k, normalizedVersion) {
 			candidateTags = append(candidateTags, k)
 		}
 	}
@@ -87,13 +75,14 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 		return ac, err
 	}
 	ac.SetRepo(repo)
-	setCommitByType(&ac, commitType, commitHash)
+	models.SetCommitByType(&ac, commitType, commitHash)
 
 	return ac, nil
 }
 
 // Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
 func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
+	// TODO: try unnormalized version first.
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
 		return "", err
@@ -107,15 +96,15 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 		return commitHash, nil
 	}
 
-	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q in %+v", version, normalizedVersion, normalizedTags)
+	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 }
 
 // Normalize version strings found in CVE CPE Match data or Git tags.
 // Use the same logic and behaviour as normalize_tag() osv/bug.py for consistency.
 func NormalizeVersion(version string) (normalizedVersion string, e error) {
-	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
-	var validVersion = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
-	var validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
+	if strings.HasPrefix(version, ".") {
+		version = "0" + version
+	}
 	components := validVersion.FindAllString(version, -1)
 	if components == nil {
 		return "", fmt.Errorf("%q is not a supported version", version)
@@ -133,7 +122,7 @@ func NormalizeVersion(version string) (normalizedVersion string, e error) {
 // Parse a version range string into an models.AffectedVersion struct,
 // which aligns with the structure used by GitHub CNA feeds.
 func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
-	matches := versionRangeRegex.FindStringSubmatch(strings.TrimSpace(versionRange))
+	matches := versionRangeRegex.FindStringSubmatch(strings.ReplaceAll(versionRange, " ", ""))
 
 	if len(matches) == 0 {
 		return models.AffectedVersion{}, fmt.Errorf("invalid version range format: %s", versionRange)
@@ -164,9 +153,13 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 		}
 	} else {
 		// Two constraints
-		if op1 == ">=" {
+		switch op1 {
+		case ">=":
 			av.Introduced = ver1
-		} else {
+		case ">":
+			// this is technically incorrect but better than introduced being 0
+			av.Introduced = ver1
+		default:
 			return models.AffectedVersion{}, fmt.Errorf("unexpected operator at start of range: %s", op1)
 		}
 

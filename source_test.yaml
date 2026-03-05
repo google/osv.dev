@@ -9,7 +9,7 @@
   extension: '.json'
   db_prefix: ['ALBA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -24,7 +24,7 @@
   extension: '.json'
   db_prefix: ['ALEA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -39,8 +39,23 @@
   extension: '.json'
   db_prefix: ['ALSA-']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
+  editable: False
+  strict_validation: True
+
+- name: 'alpine'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!ALPINE-).*$']
+  directory_path: 'alpine'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'osv-test-cve-osv-conversion'
+  db_prefix: ['ALPINE-']
+  ignore_git: True
+  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
   editable: False
   strict_validation: True
 
@@ -101,6 +116,20 @@
   editable: False
   strict_validation: True
 
+- name: 'cleanstart'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!CLEANSTART-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/cleanstart-dev/cleanstart-security-advisories'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CLEANSTART-']
+  ignore_git: True
+  link: 'https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'curl'
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
@@ -126,8 +155,23 @@
   bucket: 'osv-test-cve-osv-conversion'
   db_prefix: ['CVE-']
   ignore_git: False
-  human_link: 'https://nvd.nist.gov/vuln/detail/{{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
   link: 'https://storage.googleapis.com/osv-test-cve-osv-conversion/'
+  editable: False
+  strict_validation: True
+
+- name: 'debian-cve'
+  versions_from_repo: False
+  type: 1
+  ignore_patterns: ['^(?!DEBIAN-).*$']
+  directory_path: 'debian-cve-osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  bucket: 'osv-test-debian-osv'
+  db_prefix: ['DEBIAN-']
+  ignore_git: True
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
+  link: 'https://storage.googleapis.com/osv-test-debian-osv/'
   editable: False
   strict_validation: True
 
@@ -176,6 +220,20 @@
   editable: False
   strict_validation: True
 
+- name: 'drupal'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!DRUPAL-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DRUPAL-']
+  ignore_git: True
+  link: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'echo'
   versions_from_repo: False
   rest_api_url: 'https://advisory.echohq.com/osv/all.json'
@@ -189,6 +247,20 @@
   link: 'https://advisory.echohq.com/osv/'
   editable: False
   strict_validation: True
+
+- name: 'eef'
+  type: 2
+  rest_api_url: 'https://cna.erlef.org/osv/all.json'
+  db_prefix: ['EEF-']
+  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
+  link:  'https://cna.erlef.org/osv/'
+  directory_path: 'osv'
+  extension: '.json'
+  ignore_patterns: ['^(?!EEF-).*$']
+  # Not directly editable, but we're happy to take suggestions:
+  # https://cna.erlef.org/contact
+  editable: False
+  versions_from_repo: True
 
 - name: 'ghsa'
   versions_from_repo: False
@@ -235,6 +307,22 @@
   repo_username: 'git'
   strict_validation: True
 
+- name: 'julia'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!JLSEC-).*$']
+  repo_branch: 'generated/osv'
+  repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['JLSEC-']
+  ignore_git: False
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
+  link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
+  editable: False
+  repo_username: 'git'
+  strict_validation: True
+
 - name: 'mageia'
   versions_from_repo: False
   rest_api_url: 'https://advisories.mageia.org/vulns.json'
@@ -276,6 +364,21 @@
   ignore_git: True
   link: 'https://packages.mini.dev/advisories/osv/'
   editable: False
+  strict_validation: True
+
+- name: 'opam'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!OSEC-).*$']
+  repo_branch: 'generated-osv'
+  repo_url: 'https://github.com/ocaml/security-advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['OSEC-']
+  ignore_git: False
+  link: 'https://github.com/ocaml/security-advisories/blob/generated-osv/'
+  editable: False
+  repo_username: 'git'
   strict_validation: True
 
 - name: 'openeuler'
@@ -393,6 +496,21 @@
   editable: False
   strict_validation: True
 
+- name: 'root'
+  versions_from_repo: False
+  type: 2
+  rest_api_url: 'https://api.root.io/external/osv/all.json'
+  ignore_patterns: ['^(?!ROOT-).*$']
+  directory_path: 'osv'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['ROOT-']
+  ignore_git: True
+  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  link: 'https://api.root.io/external/osv/'
+  editable: False
+  strict_validation: True
+
 - name: 'rust'
   versions_from_repo: True
   type: 0
@@ -490,6 +608,7 @@
   versions_from_repo: True
   type: 0
   ignore_patterns: [ '^(?!V8-advisory).*$' ]
+  directory_path: 'advisories'
   repo_url: 'https://github.com/google/chromium-policy-vulnfeed.git'
   detect_cherrypicks: False
   consider_all_branches: True

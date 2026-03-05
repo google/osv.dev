@@ -42,6 +42,7 @@ Not everything here needs to be managed by Terraform, this is just for reference
   - `esp-test`
   - `osv-user` (unused?)
   - `terraform-plan`
+  - `api-e2e-tester`
   - `worker` (unused?)
 - A number of IAM permissions
 - `osv-vulnerabilities GCS bucket health` Monitoring Alert Policy

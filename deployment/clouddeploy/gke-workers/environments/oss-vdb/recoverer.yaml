@@ -10,4 +10,5 @@ spec:
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb
-
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-vulnerabilities

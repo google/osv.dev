@@ -1,0 +1,172 @@
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_individually - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_individually#01 - 1]
+{
+  "results": [
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_specified_together - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_specified_together#01 - 1]
+{
+  "results": [
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_an_extractor_that_does_not_exist - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_an_extractor_that_does_not_exist#01 - 1]
+{
+  "results": [
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_disabled - 1]
+{
+  "results": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {},
+    {},
+    {},
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_disabled#01 - 1]
+{
+  "results": [
+    {},
+    {},
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_enabled_and_no_defaults - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_enabled_and_no_defaults#01 - 1]
+{
+  "results": [
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_file_with_one_specific_extractor_enabled - 1]
+{
+  "results": [
+    {
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_file_with_one_specific_extractor_enabled#01 - 1]
+{
+  "results": [
+    {}
+  ]
+}
+
+---

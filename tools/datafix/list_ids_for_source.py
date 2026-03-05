@@ -45,25 +45,27 @@ def main() -> None:
 
   ds_client = datastore.Client(project=args.project)
 
-  query = ds_client.query(kind="Bug")
-  query.add_filter(filter=PropertyFilter("source", "=", args.source_id))
-  query.add_filter(filter=PropertyFilter("status", "=", 1))
+  query = ds_client.query(kind="Vulnerability")
+  query.add_filter(
+      filter=PropertyFilter("source_id", ">", args.source_id + ':'))
+  query.add_filter(
+      filter=PropertyFilter("source_id", "<", args.source_id + ';'))
   print(f"Running query {query.filters} "
         f"on {query.kind} (in {query.project})...")
   result = list(query.fetch())
-  print(f"Retrieved {len(result)} bugs")
+  print(f"Retrieved {len(result)} vulnerabilities")
 
-  bugs = []
+  vulnerabilities = []
   # Chunk the results to modify in acceptibly sized batches for the API.
   for batch in range(0, len(result), MAX_BATCH_SIZE):
-    for bug in result[batch:batch + MAX_BATCH_SIZE]:
-      print(f"{bug['db_id']}")
-      bugs.append(bug['db_id'])
+    for vuln in result[batch:batch + MAX_BATCH_SIZE]:
+      print(f"{vuln.key.name}")
+      vulnerabilities.append(vuln.key.name)
 
   if args.txt:
-    with open('bug_ids.txt', 'w') as f:
-      for bug in bugs:
-        f.write(f'{bug}\n')
+    with open('vuln_ids.txt', 'w') as f:
+      for vuln in vulnerabilities:
+        f.write(f'{vuln}\n')
 
 
 if __name__ == "__main__":

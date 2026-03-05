@@ -1,47 +1,4 @@
 {
-  "busybox": {
-    "CVE-2018-1000500": {
-      "description": "Busybox contains a Missing SSL certificate validation vulnerability in The \"busybox wget\" applet that can result in arbitrary code execution. This attack appear to be exploitable via Simply download any file over HTTPS using \"busybox wget https://compromised-domain.com/important-file\".",
-      "scope": "local",
-      "releases": {
-        "bookworm": {
-          "status": "open",
-          "repositories": {
-            "bookworm": "1:1.35.0-4"
-          },
-          "urgency": "unimportant"
-        },
-        "bullseye": {
-          "status": "open",
-          "repositories": {
-            "bullseye": "1:1.30.1-6"
-          },
-          "urgency": "unimportant"
-        },
-        "buster": {
-          "status": "open",
-          "repositories": {
-            "buster": "1:1.30.1-4"
-          },
-          "urgency": "end-of-life"
-        },
-        "sid": {
-          "status": "open",
-          "repositories": {
-            "sid": "1:1.36.1-6"
-          },
-          "urgency": "unimportant"
-        },
-        "trixie": {
-          "status": "open",
-          "repositories": {
-            "trixie": "1:1.36.1-6"
-          },
-          "urgency": "unimportant"
-        }
-      }
-    }
-  },
   "apparmor": {
     "CVE-2014-1424": {
       "description": "apparmor_parser in the apparmor package before 2.8.95~2430-0ubuntu5.1 in Ubuntu 14.04 allows attackers to bypass AppArmor policies via unspecified vectors, related to a \"miscompilation flaw.\"",

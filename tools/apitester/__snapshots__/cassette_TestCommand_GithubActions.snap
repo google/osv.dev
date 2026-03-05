@@ -1,0 +1,44 @@
+
+[Test/cassette_TestCommand_GithubActions/TestCommand_GithubActions/scanning_osv-scanner_custom_format - 1]
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "CVE-2023-39137",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "CVE-2023-39139",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_GithubActions/TestCommand_GithubActions/scanning_osv-scanner_custom_format_output_json - 1]
+{
+  "results": [
+    {},
+    {
+      "vulns": [
+        {
+          "id": "CVE-2023-39137",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "CVE-2023-39139",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {}
+  ]
+}
+
+---

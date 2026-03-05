@@ -118,6 +118,12 @@ class ModelsTest(unittest.TestCase):
                         type='GIT', repo_url='https://github.com/test/test')
                 ],
                 versions=['v1', 'v2']),
+            models.AffectedPackage(
+                package=models.Package(ecosystem='', name=''),
+                ranges=[
+                    models.AffectedRange2(
+                        type='GIT', repo_url='https://github.com/test/test2')
+                ]),
         ],
     ).put()
     put_bug = models.Bug.get_by_id(vuln_id)
@@ -149,7 +155,7 @@ class ModelsTest(unittest.TestCase):
     self.assertListEqual(['GIT', 'Ubuntu', 'npm'], listed_vuln.ecosystems)
     self.assertListEqual([
         'Ubuntu:24.04:LTS/test', 'Ubuntu:25.04/test', 'github.com/test/test',
-        'npm/testjs'
+        'github.com/test/test2', 'npm/testjs'
     ], listed_vuln.packages)
     self.assertEqual('This is a vuln', listed_vuln.summary)
     self.assertTrue(listed_vuln.is_fixed)
@@ -158,9 +164,10 @@ class ModelsTest(unittest.TestCase):
         models.Severity(type='Ubuntu', score='High'),
         models.Severity(type='Ubuntu', score='Low')
     ], listed_vuln.severities)
-    self.assertListEqual(
-        ['https://github.com/test/test', 'test', 'test-123', 'testjs'],
-        listed_vuln.autocomplete_tags)
+    self.assertListEqual([
+        'https://github.com/test/test', 'https://github.com/test/test2', 'test',
+        'test-123', 'testjs'
+    ], listed_vuln.autocomplete_tags)
     # search_indices should include all the original search indices,
     # plus the transitive alias & upstream ids
     search_indices = sorted(put_bug.search_indices +
@@ -174,21 +181,27 @@ class ModelsTest(unittest.TestCase):
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='GIT',
-            name='https://github.com/test/test',
+            name='github.com/test/test',
             versions=['v1', 'v2']),
         models.AffectedVersions(
+            vuln_id=vuln_id, ecosystem='GIT', name='github.com/test/test2'),
+        models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu',
             name='test',
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04',
@@ -196,12 +209,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04:LTS',
@@ -209,12 +226,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04:LTS',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:25.04',
@@ -222,12 +243,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:25.04',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
@@ -235,7 +260,9 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
@@ -243,12 +270,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='2.0.0'),
                 models.AffectedEvent(type='last_affected', value='2.2.0')
-            ]),
+            ],
+            coarse_min='00:00000002.00000000.00000000',
+            coarse_max='00:00000002.00000002.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
             name='testjs',
-            versions=['0.1.0', '0.2.0', '0.3.0', '2.0.0', '2.1.0', '2.2.0']),
+            versions=['0.1.0', '0.2.0', '0.3.0', '2.0.0', '2.1.0', '2.2.0'],
+            coarse_min='00:00000000.00000001.00000000',
+            coarse_max='00:00000002.00000002.00000000'),
     ]
     self.assertListEqual([a.to_dict() for a in want],
                          [a.to_dict() for a in affected])
@@ -374,6 +405,38 @@ class ModelsTest(unittest.TestCase):
     bucket = gcs.get_osv_bucket()
     blob = bucket.get_blob(os.path.join(gcs.VULN_PB_PATH, f'{vuln_id}.pb'))
     self.assertIsNone(blob)
+
+  def test_normalize_repo(self):
+    """Test normalize_repo_package function."""
+    test_cases = [
+        # protocol normalization
+        ('http://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+        ('https://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+        ('git://git.musl-libc.org/git/musl', 'git.musl-libc.org/git/musl'),
+
+        # github examples
+        ('http://github.com/user/repo', 'github.com/user/repo'),
+        ('https://github.com/user/repo', 'github.com/user/repo'),
+        ('git://github.com/user/repo', 'github.com/user/repo'),
+
+        # trailing slash
+        ('https://github.com/user/repo/', 'github.com/user/repo'),
+        ('http://git.example.com/path/', 'git.example.com/path'),
+
+        # .git suffix removed
+        ('https://github.com/user/repo.git', 'github.com/user/repo'),
+        ('http://git.example.com/repo.git', 'git.example.com/repo'),
+
+        # edge cases
+        ('', ''),
+        ('invalid-url', 'invalid-url'),
+        ('http://', ''),
+        ('https://hostname', 'hostname'),
+    ]
+
+    for repo_url, expected in test_cases:
+      with self.subTest(repo_url=repo_url):
+        self.assertEqual(expected, models.normalize_repo_package(repo_url))
 
 
 def setUpModule():

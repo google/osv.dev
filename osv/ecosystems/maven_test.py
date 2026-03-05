@@ -16,6 +16,7 @@
 # Many tests are ported from
 # https://github.com/apache/maven/blob/c3cf29438e3d65d6ee5c5726f8611af99d9a649a/maven-artifact/src/test/java/org/apache/maven/artifact/versioning/ComparableVersionTest.java.
 """Maven ecosystem helper tests."""
+
 import unittest
 import vcr.unittest
 import warnings
@@ -29,10 +30,11 @@ class MavenVersionTest(unittest.TestCase):
 
   def setUp(self):
     self.maxDiff = None  # pylint: disable=invalid-name
+    self.ecosystem = maven.Maven()
 
   def check_versions_order(self, *versions):
     """Check that our precedence logic matches the expected order."""
-    parsed_versions = [maven.Version.from_string(v) for v in versions]
+    parsed_versions = [self.ecosystem.sort_key(v) for v in versions]
 
     # pylint: disable=consider-using-enumerate
     for i in range(len(parsed_versions)):
@@ -52,7 +54,7 @@ class MavenVersionTest(unittest.TestCase):
 
   def check_versions_equal(self, *versions):
     """Check that the provided versions are equivalent."""
-    parsed_versions = [maven.Version.from_string(v) for v in versions]
+    parsed_versions = [self.ecosystem.sort_key(v) for v in versions]
 
     # pylint: disable=consider-using-enumerate
     for i in range(len(parsed_versions)):
@@ -89,15 +91,16 @@ class MavenVersionTest(unittest.TestCase):
         '1', '1.1', '1-snapshot', '1', '1-sp', '1-foo2', '1-foo10', '1.foo',
         '1-foo', '1-1', '1.1', '1.ga', '1-ga', '1-0', '1.0', '1', '1-sp',
         '1-ga', '1-sp.1', '1-ga.1', '1-sp-1', '1-ga-1', '1-1', '1-a1',
-        '1-alpha-1', '2', 'invalid', '0'
+        '1-alpha-1', '2', 'valid', '0.0'
     ]
 
     sorted_versions = [
-        str(v) for v in sorted(maven.Version.from_string(v) for v in unsorted)
+        str(vk._key) for vk in sorted(  # pylint: disable=protected-access
+            self.ecosystem.sort_key(v) for v in unsorted)
     ]
 
     self.assertListEqual([
-        'invalid', '0', '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1',
+        'valid', '0', '1-alpha-1', '1-alpha-1', '1-snapshot', '1', '1', '1',
         '1', '1', '1', '1', '1', '1.foo', '1-.1', '1-sp', '1-sp', '1-sp-1',
         '1-sp.1', '1-foo', '1-foo-2', '1-foo-10', '1-1', '1-1', '1-1', '1.1',
         '1.1', '2'
@@ -152,6 +155,8 @@ class MavenVersionTest(unittest.TestCase):
 
     self.check_versions_order('2.0.1', '2.0.1-123')
     self.check_versions_order('2.0.1-xyz', '2.0.1-123')
+    self.check_versions_order('0-alpha-alpha', '0-alpha')
+    self.check_versions_order('alpha', '0.0')
 
   def test_versions_order_mng_5568(self):
     """Regression test for MNG 5568."""
@@ -234,12 +239,39 @@ class MavenVersionTest(unittest.TestCase):
 
   def test_version_zero(self):
     """Test comparison and equality with versions 0.0.0"""
-    self.check_versions_equal('0.0.0', '0.0', '0')
-    self.check_versions_equal('0.0.0-0.0.0', '0-final-ga', '0')
-    self.check_versions_order('0', '1')
+    self.check_versions_equal('0.0.0', '0.0', '0-0')
+    self.check_versions_equal('0.0.0-0.0.0', '0-final-ga', '0-0')
+    self.check_versions_order('0.0', '1')
+
+    # Check the 0 sentinel value.
+    # This is technically incorrect per Maven's ordering rules, but osv-schema
+    # says "introduced allows a version of the value "0" to represent a version
+    # that sorts before any other version."
+    # The minimal Maven version is alpha-alpha-alpha-... infinitely
+    self.check_versions_order('0', 'alpha-alpha-alpha-alpha')
 
     # actual case from com.graphql-java:graphql-java
     self.check_versions_order('0.0.0-2021-05-17T01-01-51-5ec03a8b', '20.0.0')
+
+  def test_version_ge_le(self):
+    """Test >= and <=."""
+    self.assertGreaterEqual(
+        self.ecosystem.sort_key('1.10.0'), self.ecosystem.sort_key('1.2.0'))
+    self.assertLessEqual(
+        self.ecosystem.sort_key('1.2.0'), self.ecosystem.sort_key('1.10.0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version."""
+    self.assertEqual('00:00000001.00000002.00000003',
+                     self.ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00000002.00000003.00000000',
+                     self.ecosystem.coarse_version('2.3-5.4'))
+    self.assertEqual('00:00000000.00000000.00000000',
+                     self.ecosystem.coarse_version('alpha-alpha'))
+    self.assertEqual('00:00000005.00000010.00000000',
+                     self.ecosystem.coarse_version('5.10.foo-6'))
+    self.assertEqual('00:00000001.00000000.00000009',
+                     self.ecosystem.coarse_version('1..9foo'))
 
 
 class MavenEcosystemTest(vcr.unittest.VCRTestCase):

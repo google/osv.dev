@@ -3,7 +3,7 @@
  'https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064\\n\\nCrash type: '
  'Heap-buffer-overflow READ 1\\nCrash '
  'state:\\ncdf_file_property_info\\ncdf_file_summary_info\\ncdf_check_summary_info\\n", '
- '"modified": "2021-01-01T00:00:00Z", "published": '
+ '"modified": "3000-01-01T00:00:00Z", "published": '
  '"2021-01-15T00:00:24.559102Z", "database_specific": {"database_specific": '
  '1337.0}, "references": [{"type": "REPORT", "url": '
  '"https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=1064"}], "affected": '

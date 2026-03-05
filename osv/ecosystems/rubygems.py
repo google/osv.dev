@@ -18,7 +18,11 @@ import requests
 from ..third_party.univers.gem import GemVersion, InvalidVersionError
 
 from . import config
-from .ecosystems_base import EnumerableEcosystem, EnumerateError
+from .ecosystems_base import (
+    coarse_version_generic,
+    EnumerableEcosystem,
+    EnumerateError,
+)
 
 
 class RubyGems(EnumerableEcosystem):
@@ -26,14 +30,30 @@ class RubyGems(EnumerableEcosystem):
 
   _API_PACKAGE_URL = 'https://rubygems.org/api/v1/versions/{package}.json'
 
-  def sort_key(self, version):
+  def _sort_key(self, version):
     """Sort key."""
     # If version is not valid, it is most likely an invalid input
     # version then sort it to the last/largest element
     try:
       return GemVersion(version)
-    except InvalidVersionError:
-      return GemVersion('999999')
+    except InvalidVersionError as exc:
+      raise ValueError(f'Invalid version: {version}') from exc
+
+  def coarse_version(self, version: str) -> str:
+    """Coarse version.
+
+    Treats version as dot-separated integers.
+    Trims at hyphens to ensure monotonicity (e.g. 1.2-3 < 1.2).
+    """
+    # Call sort key to validate the version
+    self._sort_key(version)
+
+    return coarse_version_generic(
+        version.strip(),
+        separators_regex=r'[.]',
+        truncate_regex=r'[-]',
+        implicit_split=True,
+        empty_as='')
 
   def enumerate_versions(self,
                          package,

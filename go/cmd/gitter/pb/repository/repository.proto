@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package gitter;
+
+option go_package = "./repository";
+
+message CommitDetail {
+    bytes hash = 1;
+    bytes patch_id = 2;
+}
+
+// RepositoryCache contains only immutable information of a repository (commit hash and the associated patch ID)
+// Other git-related structures such as refs and the actual graph are to be constructed when a request comes in.
+message RepositoryCache {
+    repeated CommitDetail commits = 1;
+}

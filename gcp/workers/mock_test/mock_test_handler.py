@@ -22,6 +22,11 @@ class MockDataHandler(http.server.BaseHTTPRequestHandler):
     except Exception:
       self.send_error(404, 'File not found')
 
+  def load_data(self, data):
+    """Load from in-memory"""
+    self.data = json.loads(data)
+    self.cve_count = len(self.data)
+
   def do_GET(self):  # pylint: disable=invalid-name
     """Serve a mock GET request."""
     if self.cve_count == -1:

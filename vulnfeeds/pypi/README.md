@@ -12,7 +12,7 @@ This is also continuously updated and available at
 <https://storage.googleapis.com/pypa-advisory-db/triage/pypi_links.json>
 
 However this includes packages that no longer exist or were deleted, so we check
-against the [pypi simple API](https://warehouse.pypa.io/api-reference/legacy.html)
+against the [pypi simple API](https://docs.pypi.org/api/index-api/)
 to make sure any matches actually exist.
 
 ## Version matching

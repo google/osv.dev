@@ -28,11 +28,30 @@ To query multiple packages at once, see further information [here](post-v1-query
 | Parameter    | Type   | Description                                                                                                                                                                                 |
 | ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `commit`     | string | The commit hash to query for. If specified, `version` should not be set.                                                                                                                    |
-| `version`    | string | The version string to query for. A fuzzy match is done against upstream versions. If specified, `commit` should not be set.                                                                 |
+| `version`    | string | The version string to query for. A fuzzy match is done against upstream versions. If set, `commit` must not be used, and `package.purl` must not include a version.                                                                 |
 | `package`    | object | The package to query against. When a `commit` hash is given, this is optional.                                                                                                              |
 | `page_token` | string | If your previous query fetched a large number of results, the response will be paginated. This is an optional field. Please see the [pagination section](#pagination) for more information. |
 
 Package Objects can be described by package name AND ecosystem OR by the package URL. 
+
+### Version rules
+
+- Use either the top-level `version` field or a versioned purl (`pkg:...@<version>`), but not both.
+- Requests that specify the version in both places return **400 Bad Request**.
+
+Examples:
+
+Valid:
+```json
+{ "package": { "name": "jinja2", "ecosystem": "PyPI" }, "version": "3.1.4" }
+{ "package": { "purl": "pkg:pypi/jinja2@3.1.4" } }
+{ "package": { "purl": "pkg:pypi/jinja2" }, "version": "3.1.4" }
+```
+
+Invalid (400 Bad Request):
+```json
+{ "package": { "purl": "pkg:pypi/jinja2@3.1.4" }, "version": "3.1.4" }
+```
 
 |---
 | Attribute   | Type   | Description                                                                                                                                                                                                                                                                                     |

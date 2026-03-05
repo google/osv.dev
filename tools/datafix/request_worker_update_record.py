@@ -79,7 +79,7 @@ def request_url_update(record_url, project_id, source, path, timeout,
     if not allow_delete or e.response.status_code != 404:
       print(e)
       return
-    print(f'Bug was deleted: {record_url}')
+    print(f'Vulnerability was deleted: {record_url}')
     deleted = True
 
   publish_update_message(project_id, PUBSUB_TOPIC_ID, source, path,
@@ -101,37 +101,60 @@ def main():
       "--allow-delete",
       action="store_true",
       default=False,
-      help="Delete bugs if not found in source (GIT only)")
+      help="Delete vulns if not found in source (GIT only)")
   parser.add_argument(
-      "bugs", action="append", nargs="+", help="The bug IDs to operate on")
+      "vulns",
+      action="append",
+      nargs="*",
+      help="The vuln IDs to operate on. If not specified, all vulns from the "
+      "source will be processed.")
 
   args = parser.parse_args()
 
   datastore_client = ndb.Client(args.project_id)
 
   with datastore_client.context():
-    source = osv.SourceRepository.get_by_id(args.source)
+    source_repo = osv.SourceRepository.get_by_id(args.source)
+    if not source_repo:
+      raise ValueError(f"Source repository '{args.source}' not found.")
 
-    if source.type == osv.SourceRepositoryType.REST_ENDPOINT:
-      for bug in args.bugs[0]:
-        record_url = f'{source.link}{bug}{source.extension}'
-        path = f'{bug}{source.extension}'
+    vulns_to_process = []
+    if args.vulns and args.vulns[0]:
+      vulns_to_process = args.vulns[0]
+    else:
+      print('No vuln IDs provided. '
+            'Querying all vulns for source {args.source}...')
+      query = osv.Vulnerability.query(
+          osv.Vulnerability.source_id > args.source + ':',
+          osv.Vulnerability.source_id < (args.source + ';'))
+      vulns_to_process = [b.id() for b in query.iter(keys_only=True)]
+      print(f'Found {len(vulns_to_process)} bugs to update.')
+      confirm = input('Are you sure you want to proceed? (y/N) ')
+      if confirm.lower() not in ('y', 'yes'):
+        print('Aborting.')
+        return
+
+    if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+      for vuln in vulns_to_process:
+        record_url = f'{source_repo.link}{vuln}{source_repo.extension}'
+        path = f'{vuln}{source_repo.extension}'
         request_url_update(record_url, args.project_id, args.source, path,
                            args.timeout, False)
 
-    if source.type == osv.SourceRepositoryType.GIT:
-      for bug in args.bugs[0]:
-        entity = osv.Bug.get_by_id(bug)
+    if source_repo.type == osv.SourceRepositoryType.GIT:
+      for vuln in vulns_to_process:
+        entity = osv.Vulnerability.get_by_id(vuln)
         if not entity:
-          raise ValueError(f'{bug} does not exist in Datastore')
+          print(f'Warning: {vuln} does not exist in Datastore, skipping.')
+          continue
 
         path = entity.source_id.split(':')[1]
 
-        record_url = github_raw_url(source.repo_url, path)
+        record_url = github_raw_url(source_repo.repo_url, path)
         request_url_update(record_url, args.project_id, args.source, path,
                            args.timeout, args.allow_delete)
 
-    if source.type == osv.SourceRepositoryType.BUCKET:
+    if source_repo.type == osv.SourceRepositoryType.BUCKET:
       raise NotImplementedError("Use reimport_gcs_record.py for now")
 
 

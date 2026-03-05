@@ -24,7 +24,7 @@ module.exports = {
         vendorsJs: {
           test: /node_modules/,
           chunks: 'initial',
-          filename: 'static/vendors.js',
+          name: 'vendors',
           priority: 1,
           maxInitialRequests: 2,
           minChunks: 1,
@@ -35,7 +35,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/*.html', to: '[name].html' },
+        { from: './src/templates', to: '.', globOptions: { ignore: ['**/base.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),

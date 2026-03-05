@@ -357,7 +357,7 @@ def get_digit_prefix(characters):
     Return the digit prefix from a list of characters.
     """
     value = 0
-    while characters and characters[0].isdigit():
+    while characters and characters[0].isdecimal():
         value = value * 10 + int(characters.pop(0))
     return value
 
@@ -367,7 +367,7 @@ def get_non_digit_prefix(characters):
     Return the non-digit prefix from a list of characters.
     """
     prefix = []
-    while characters and not characters[0].isdigit():
+    while characters and not characters[0].isdecimal():
         prefix.append(characters.pop(0))
     return prefix
 

@@ -455,3 +455,39 @@ tr.clickable {
   cursor: pointer;
   position: relative;
 }
+
+.findings-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  border: 1px solid var(--osv-border-color);
+}
+
+.findings-table th,
+.findings-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--osv-border-color);
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--osv-heading-font-family);
+}
+
+.findings-table th {
+  background-color: var(--osv-surface-color);
+  font-family: var(--osv-heading-font-family);
+  font-weight: 500;
+}
+
+.findings-table th:first-child {
+  width: 30%;
+}
+
+.findings-table th:nth-child(2) {
+  width: 70%;
+}
+
+.findings-table tr:hover {
+  background-color: var(--osv-grey-800);
+}

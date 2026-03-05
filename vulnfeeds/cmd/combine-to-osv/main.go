@@ -32,6 +32,7 @@ const (
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	cve5Path := flag.String("cve5-path", defaultCVE5Path, "Path to CVE5 OSV files")
 	nvdPath := flag.String("nvd-path", defaultNVDOSVPath, "Path to NVD OSV files")

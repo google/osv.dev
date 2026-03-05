@@ -1,5 +1,4 @@
-#!/bin/bash -x
-# Copyright 2025 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-echo "Starting alias computation"
-python3 /usr/local/bin/alias_computation.py
-echo "Completed alias computation"
 
-echo "Starting upstream computation"
-python3 /usr/local/bin/upstream_computation.py
-echo "Completed upstream computation"
+name: Title
+
+on:
+  # `pull_request_target` is only required when editing PRs from forks.
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title-check:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

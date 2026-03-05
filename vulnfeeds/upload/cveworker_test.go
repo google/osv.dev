@@ -143,15 +143,17 @@ func TestHandleOverride(t *testing.T) {
 
 		obj := bkt.Object(path.Join(overrideFolder, "CVE-2023-1234.json"))
 		w := obj.NewWriter(ctx)
-		w.Write(overrideBuf)
+		if _, err := w.Write(overrideBuf); err != nil {
+			t.Fatalf("Failed to write override object: %v", err)
+		}
 		w.Close()
 
 		outV2, outBuf2, err := handleOverride(ctx, v, bkt)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-		if outV2.Summary != "Overridden summary" {
-			t.Errorf("Expected overridden summary, got %s", outV2.Summary)
+		if outV2.GetSummary() != "Overridden summary" {
+			t.Errorf("Expected overridden summary, got %s", outV2.GetSummary())
 		}
 		if !bytes.Equal(outBuf2, overrideBuf) {
 			t.Errorf("Expected buffer %s, got %s", overrideBuf, outBuf2)
@@ -163,15 +165,17 @@ func TestHandleOverride(t *testing.T) {
 
 		obj := bkt.Object(path.Join(overrideFolder, "CVE-2023-1234.json"))
 		w := obj.NewWriter(ctx)
-		w.Write(overrideJSON)
+		if _, err := w.Write(overrideJSON); err != nil {
+			t.Fatalf("Failed to write override object: %v", err)
+		}
 		w.Close()
 
 		outV3, outBuf3, err := handleOverride(ctx, v, bkt)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
-		if outV3.Summary != "Overridden summary" {
-			t.Errorf("Expected overridden summary, got %s", outV3.Summary)
+		if outV3.GetSummary() != "Overridden summary" {
+			t.Errorf("Expected overridden summary, got %s", outV3.GetSummary())
 		}
 		if !bytes.Equal(outBuf3, overrideJSON) {
 			t.Errorf("Expected buffer %s, got %s", overrideJSON, outBuf3)
@@ -220,7 +224,9 @@ func TestWorker(t *testing.T) {
 	overrideBuf, _ := protojson.Marshal(overrideV2)
 	obj := overridesBkt.Object(path.Join(overrideFolder, "CVE-2023-5678.json"))
 	w := obj.NewWriter(ctx)
-	w.Write(overrideBuf)
+	if _, err := w.Write(overrideBuf); err != nil {
+		t.Fatalf("Failed to write override object: %v", err)
+	}
 	w.Close()
 
 	Worker(ctx, vulnChan, outBkt, overridesBkt, "")
@@ -241,9 +247,11 @@ func TestWorker(t *testing.T) {
 	defer r.Close()
 	content, _ := io.ReadAll(r)
 	var uploadedV2 osvschema.Vulnerability
-	protojson.Unmarshal(content, &uploadedV2)
-	if uploadedV2.Summary != "Overridden summary" {
-		t.Errorf("Expected v2 to have overridden summary, got %s", uploadedV2.Summary)
+	if err := protojson.Unmarshal(content, &uploadedV2); err != nil {
+		t.Fatalf("Failed to unmarshal uploaded v2: %v", err)
+	}
+	if uploadedV2.GetSummary() != "Overridden summary" {
+		t.Errorf("Expected v2 to have overridden summary, got %s", uploadedV2.GetSummary())
 	}
 }
 
@@ -256,8 +264,7 @@ func TestUpload(t *testing.T) {
 	}
 	defer server.Stop()
 
-	os.Setenv("STORAGE_EMULATOR_HOST", server.URL())
-	defer os.Unsetenv("STORAGE_EMULATOR_HOST")
+	t.Setenv("STORAGE_EMULATOR_HOST", server.URL())
 
 	ctx := context.Background()
 
@@ -295,11 +302,15 @@ func TestHandleDeletion(t *testing.T) {
 
 	// Create some existing objects
 	w1 := bkt.Object("CVE-2023-1111.json").NewWriter(ctx)
-	w1.Write([]byte("{}"))
+	if _, err := w1.Write([]byte("{}")); err != nil {
+		t.Fatalf("Failed to write object: %v", err)
+	}
 	w1.Close()
 
 	w2 := bkt.Object("CVE-2023-2222.json").NewWriter(ctx)
-	w2.Write([]byte("{}"))
+	if _, err := w2.Write([]byte("{}")); err != nil {
+		t.Fatalf("Failed to write object: %v", err)
+	}
 	w2.Close()
 
 	vulnerabilities := []*osvschema.Vulnerability{

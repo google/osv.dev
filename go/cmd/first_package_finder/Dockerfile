@@ -23,7 +23,9 @@ RUN go mod download && go mod verify
 COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o first_package_finder ./cmd/first_package_finder/
 
+FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
+
 WORKDIR /src
-COPY --from=GO_BUILD /src/first_package_finder ./first_package_finder
+COPY --from=build /src/first_package_finder ./first_package_finder
 
 ENTRYPOINT ["/first_package_finder"]

@@ -16,4 +16,4 @@ spec:
               value: debian-osv
             args:
             - "--upload-to-gcs"
-            - "--output-bucket ${OUTPUT_GCS_BUCKET}"
+            - "--output-bucket=$(OUTPUT_GCS_BUCKET)"

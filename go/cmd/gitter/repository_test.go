@@ -205,6 +205,13 @@ func TestExpandByCherrypick(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := repo.expandByCherrypick(tt.input)
 
+			sort.Slice(got, func(i, j int) bool {
+				return string(got[i][:]) < string(got[j][:])
+			})
+			sort.Slice(tt.expected, func(i, j int) bool {
+				return string(tt.expected[i][:]) < string(tt.expected[j][:])
+			})
+
 			if diff := cmp.Diff(tt.expected, got); diff != "" {
 				t.Errorf("expandByCherrypick() mismatch (-want +got):\n%s", diff)
 			}

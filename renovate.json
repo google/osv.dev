@@ -230,8 +230,7 @@
       ],
       "packageNameTemplate": "ossf/osv-schema",
       "datasourceTemplate": "github-tags",
-      "versioningTemplate": "semver",
-      "extractVersion": "^v(?<version>.*)$"
+      "versioningTemplate": "semver"
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

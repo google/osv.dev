@@ -2123,6 +2123,10 @@ $navbar-search-divider: rgba(255, 255, 255, 0.16);
   .search-suggestions__item {
     border-bottom: 1px dashed $osv-grey-600;
 
+    &:last-child {
+      border-bottom: none;
+    }
+
     &:hover,
     &--selected {
       background-color: $osv-grey-800;

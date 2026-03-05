@@ -6,15 +6,20 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
 )
 
 // ToGCS uploads data from an io.Reader to a GCS bucket.
-func ToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, data io.Reader) error {
+func ToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, data io.Reader, contentType string) error {
 	obj := bkt.Object(objectName)
 	wc := obj.NewWriter(ctx)
+	if contentType != "" {
+		wc.ContentType = contentType
+	}
 
 	if _, err := io.Copy(wc, data); err != nil {
 		if closeErr := wc.Close(); closeErr != nil {
@@ -38,13 +43,22 @@ func UploadFile(ctx context.Context, bkt *storage.BucketHandle, objectName strin
 	}
 	defer f.Close()
 
-	return ToGCS(ctx, bkt, objectName, f)
+	return ToGCS(ctx, bkt, objectName, f, "")
 }
 
 // DownloadBucket downloads all objects from a GCS bucket to a local directory.
 func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix string, destDir string) error {
 	it := bkt.Objects(ctx, &storage.Query{Prefix: prefix})
+
+	g, ctx := errgroup.WithContext(ctx)
+	// Limit concurrency to avoid running out of file descriptors or overwhelming the network
+	g.SetLimit(10)
+
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		attrs, err := it.Next()
 		if err == iterator.Done {
 			break
@@ -54,34 +68,45 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 		}
 
 		// Skip directories
-		if attrs.Name[len(attrs.Name)-1] == '/' {
+		if strings.HasSuffix(attrs.Name, "/") {
 			continue
 		}
 
 		destPath := filepath.Join(destDir, attrs.Name)
-		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-			return fmt.Errorf("os.MkdirAll: %w", err)
+		if !strings.HasPrefix(destPath, filepath.Clean(destDir)+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid object name %q: path traversal attempt", attrs.Name)
 		}
 
-		f, err := os.Create(destPath)
-		if err != nil {
-			return fmt.Errorf("os.Create: %w", err)
-		}
+		// Capture loop variable for the goroutine
+		objName := attrs.Name
 
-		rc, err := bkt.Object(attrs.Name).NewReader(ctx)
-		if err != nil {
-			f.Close()
-			return fmt.Errorf("Object(%q).NewReader: %w", attrs.Name, err)
-		}
+		g.Go(func() error {
+			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+				return fmt.Errorf("os.MkdirAll: %w", err)
+			}
 
-		if _, err := io.Copy(f, rc); err != nil {
-			rc.Close()
-			f.Close()
-			return fmt.Errorf("io.Copy: %w", err)
-		}
+			f, err := os.Create(destPath)
+			if err != nil {
+				return fmt.Errorf("os.Create: %w", err)
+			}
+			defer f.Close()
 
-		rc.Close()
-		f.Close()
+			rc, err := bkt.Object(objName).NewReader(ctx)
+			if err != nil {
+				return fmt.Errorf("Object(%q).NewReader: %w", objName, err)
+			}
+			defer rc.Close()
+
+			if _, err := io.Copy(f, rc); err != nil {
+				return fmt.Errorf("io.Copy: %w", err)
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	return nil

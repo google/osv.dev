@@ -14,7 +14,7 @@ spec:
         spec:
           containers:
           - name: debian-first-version
-            image: 
+            image: run_first_package_finder
             imagePullPolicy: Always
             volumeMounts:
               - mountPath: "/work"

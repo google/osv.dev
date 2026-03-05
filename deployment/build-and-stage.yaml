@@ -417,6 +417,7 @@ steps:
      staging-api-test=gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA,\
      osv-linter=gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
+     run_first_package_finder=gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
      debian-cve-convert=gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA,\

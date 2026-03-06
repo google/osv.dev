@@ -1,5 +1,5 @@
-// Package upload handles allocating workers to intelligently uploading OSV records to a bucket
-package upload
+// Package gcs handles allocating workers to intelligently uploading OSV records to a bucket
+package gcs
 
 import (
 	"bytes"

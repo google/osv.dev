@@ -1,6 +1,4 @@
-#!/bin/bash -e
-
-# Copyright 2022 OSV Schema Authors
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=debian-osv}"
+FROM golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0734277e69905473e5 AS build
 
-# Set working dir to script dir
-cd "$(dirname "$0")"
+WORKDIR /src
 
-# Use the first_package_finder script to generate a first version cache.
-pushd ./debian_converter
-echo "Finding first packages"
-poetry run python3 first_package_finder.py
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download && go mod verify
 
-echo "Syncing with cloud first_package_output ${OUTPUT_BUCKET}"
-gsutil -q -m rsync -c -d 'first_package_output' "gs://${OUTPUT_BUCKET}/first_package_output"
-echo "Successfully synced with cloud"
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o dsa-dla-dtsa ./cmd/converters/dsa-dla-dtsa/main.go
 
-popd
+FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
+
+WORKDIR /src
+COPY --from=build /src/dsa-dla-dtsa ./dsa-dla-dtsa
+
+ENTRYPOINT ["/dsa-dla-dtsa"]
+

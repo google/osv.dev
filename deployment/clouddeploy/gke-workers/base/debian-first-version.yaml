@@ -14,10 +14,8 @@ spec:
         spec:
           containers:
           - name: debian-first-version
-            image: debian-convert
+            image: run_first_package_finder
             imagePullPolicy: Always
-            command:
-              - "/src/run_first_package_finder.sh"
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"

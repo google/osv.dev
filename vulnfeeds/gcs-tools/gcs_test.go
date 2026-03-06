@@ -12,7 +12,7 @@ import (
 
 func TestToGCS(t *testing.T) {
 	server := fakestorage.NewServer([]fakestorage.Object{})
-	defer server.Stop()
+	t.Cleanup(server.Stop)
 
 	client := server.Client()
 	bkt := client.Bucket("test-bucket")
@@ -41,7 +41,7 @@ func TestToGCS(t *testing.T) {
 
 func TestUploadFile(t *testing.T) {
 	server := fakestorage.NewServer([]fakestorage.Object{})
-	defer server.Stop()
+	t.Cleanup(server.Stop)
 
 	client := server.Client()
 	bkt := client.Bucket("test-bucket")
@@ -49,11 +49,10 @@ func TestUploadFile(t *testing.T) {
 		t.Fatalf("failed to create bucket: %v", err)
 	}
 
-	tmpFile, err := os.CreateTemp("", "test-upload-*.txt")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-upload-*.txt")
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
 
 	content := []byte("file content")
 	if _, err := tmpFile.Write(content); err != nil {
@@ -110,18 +109,14 @@ func TestDownloadBucket(t *testing.T) {
 		}
 
 		server := fakestorage.NewServer(objects)
-		defer server.Stop()
+		t.Cleanup(server.Stop)
 
 		client := server.Client()
 		bkt := client.Bucket("test-bucket")
 
-		tmpDir, err := os.MkdirTemp("", "test-download-*")
-		if err != nil {
-			t.Fatalf("failed to create temp dir: %v", err)
-		}
-		defer os.RemoveAll(tmpDir)
+		tmpDir := t.TempDir()
 
-		err = DownloadBucket(context.Background(), bkt, "folder/", tmpDir)
+		err := DownloadBucket(context.Background(), bkt, "folder/", tmpDir)
 		if err != nil {
 			t.Fatalf("DownloadBucket failed: %v", err)
 		}
@@ -162,18 +157,14 @@ func TestDownloadBucket(t *testing.T) {
 		}
 
 		server := fakestorage.NewServer(objects)
-		defer server.Stop()
+		t.Cleanup(server.Stop)
 
 		client := server.Client()
 		bkt := client.Bucket("test-bucket")
 
-		tmpDir, err := os.MkdirTemp("", "test-download-*")
-		if err != nil {
-			t.Fatalf("failed to create temp dir: %v", err)
-		}
-		defer os.RemoveAll(tmpDir)
+		tmpDir := t.TempDir()
 
-		err = DownloadBucket(context.Background(), bkt, "", tmpDir)
+		err := DownloadBucket(context.Background(), bkt, "", tmpDir)
 		if err == nil {
 			t.Fatalf("expected path traversal error, got nil")
 		}
@@ -194,14 +185,14 @@ func TestDownloadBucket(t *testing.T) {
 		}
 
 		server := fakestorage.NewServer(objects)
-		defer server.Stop()
+		t.Cleanup(server.Stop)
 
 		client := server.Client()
 		bkt := client.Bucket("test-bucket")
 
 		// Use a relative directory
 		destDir := "test-relative-dir"
-		defer os.RemoveAll(destDir)
+		t.Cleanup(func() { os.RemoveAll(destDir) })
 
 		err := DownloadBucket(context.Background(), bkt, "", destDir)
 		if err != nil {

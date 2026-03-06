@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,6 +17,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -130,7 +130,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 	}
 
 	var overrideV osvschema.Vulnerability
-	if err := json.Unmarshal(overrideBuf, &overrideV); err != nil {
+	if err := protojson.Unmarshal(overrideBuf, &overrideV); err != nil {
 		logger.Error("failed to unmarshal override object", slog.String("id", v.GetId()), slog.Any("err", err))
 		return nil, nil, err
 	}

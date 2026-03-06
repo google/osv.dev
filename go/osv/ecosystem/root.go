@@ -91,6 +91,8 @@ func (e rootEcosystem) Parse(version string) (Version, error) {
 	var err error
 
 	// Extract Root-specific suffixes
+	// TODO(michaelkedar): Ported from python. Sequential checks could allow
+	// rootPatch to be overwritten and suffixes not stripped.
 	if m := rootIOPlusRegexp.FindStringSubmatch(version); m != nil {
 		upstreamVersion = m[1]
 		rootPatch, err = strconv.Atoi(m[2])

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 var ErrCoarseNotSupported = errors.New("coarse version not supported")
@@ -31,7 +32,7 @@ var ErrVersionEcosystemMismatch = errors.New("version ecosystem mismatch")
 // The ecosystem name can optionally include a version suffix (e.g. "Debian:10").
 func Get(ecosystem string) (Ecosystem, bool) {
 	name, suffix, _ := strings.Cut(ecosystem, ":")
-	f, ok := ecosystems[name]
+	f, ok := ecosystems[osvconstants.Ecosystem(name)]
 	if !ok {
 		return nil, false
 	}
@@ -53,45 +54,45 @@ func statelessFactory[E Ecosystem](_ string) Ecosystem {
 	return e
 }
 
-var ecosystems = map[string]ecosystemFactory{
-	"AlmaLinux":                statelessFactory[rpmEcosystem],
-	"Alpaquita":                statelessFactory[apkEcosystem],
-	"Alpine":                   statelessFactory[apkEcosystem],
-	"BellSoft Hardened Images": statelessFactory[apkEcosystem],
-	"Bioconductor":             statelessFactory[bioconductorEcosystem],
-	"Bitnami":                  statelessFactory[semverEcosystem],
-	"Chainguard":               statelessFactory[apkEcosystem],
-	"CleanStart":               statelessFactory[apkEcosystem],
-	"CRAN":                     statelessFactory[cranEcosystem],
-	"crates.io":                statelessFactory[semverEcosystem],
-	"Debian":                   statelessFactory[debianEcosystem],
-	"Docker Hardened Images":   statelessFactory[semverEcosystem],
-	"Echo":                     statelessFactory[dpkgEcosystem],
-	"GHC":                      statelessFactory[ghcEcosystem],
-	"Go":                       statelessFactory[semverEcosystem],
-	"Hackage":                  statelessFactory[hackageEcosystem],
-	"Hex":                      statelessFactory[hexEcosystem],
-	"Julia":                    statelessFactory[semverEcosystem],
-	"Mageia":                   statelessFactory[rpmEcosystem],
-	"Maven":                    statelessFactory[mavenEcosystem],
-	"MinimOS":                  statelessFactory[apkEcosystem],
-	"npm":                      statelessFactory[semverEcosystem],
-	"NuGet":                    statelessFactory[nugetEcosystem],
-	"opam":                     statelessFactory[opamEcosystem],
-	"openEuler":                statelessFactory[rpmEcosystem],
-	"openSUSE":                 statelessFactory[rpmEcosystem],
-	"Packagist":                statelessFactory[packagistEcosystem],
-	"Pub":                      statelessFactory[pubEcosystem],
-	"PyPI":                     statelessFactory[pyPIEcosystem],
-	"Red Hat":                  statelessFactory[rpmEcosystem],
-	"Rocky Linux":              statelessFactory[rpmEcosystem],
-	"Root":                     rootEcosystemFactory,
-	"RubyGems":                 statelessFactory[rubyGemsEcosystem],
-	"SUSE":                     statelessFactory[rpmEcosystem],
-	"SwiftURL":                 statelessFactory[semverEcosystem],
-	"Ubuntu":                   statelessFactory[dpkgEcosystem],
-	"VSCode":                   statelessFactory[semverLikeEcosystem],
-	"Wolfi":                    statelessFactory[apkEcosystem],
+var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
+	osvconstants.EcosystemAlmaLinux:                  statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemAlpaquita:                  statelessFactory[apkEcosystem],
+	osvconstants.EcosystemAlpine:                     statelessFactory[apkEcosystem],
+	osvconstants.EcosystemBellSoftHardenedContainers: statelessFactory[apkEcosystem],
+	osvconstants.EcosystemBioconductor:               statelessFactory[bioconductorEcosystem],
+	osvconstants.EcosystemBitnami:                    statelessFactory[semverEcosystem],
+	osvconstants.EcosystemChainguard:                 statelessFactory[apkEcosystem],
+	osvconstants.EcosystemCleanStart:                 statelessFactory[apkEcosystem],
+	osvconstants.EcosystemCRAN:                       statelessFactory[cranEcosystem],
+	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
+	osvconstants.EcosystemDebian:                     statelessFactory[debianEcosystem],
+	osvconstants.EcosystemDockerHardenedImages:       statelessFactory[semverEcosystem],
+	osvconstants.EcosystemEcho:                       statelessFactory[dpkgEcosystem],
+	osvconstants.EcosystemGHC:                        statelessFactory[ghcEcosystem],
+	osvconstants.EcosystemGo:                         statelessFactory[semverEcosystem],
+	osvconstants.EcosystemHackage:                    statelessFactory[hackageEcosystem],
+	osvconstants.EcosystemHex:                        statelessFactory[hexEcosystem],
+	osvconstants.EcosystemJulia:                      statelessFactory[semverEcosystem],
+	osvconstants.EcosystemMageia:                     statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemMaven:                      statelessFactory[mavenEcosystem],
+	osvconstants.EcosystemMinimOS:                    statelessFactory[apkEcosystem],
+	osvconstants.EcosystemNPM:                        statelessFactory[semverEcosystem],
+	osvconstants.EcosystemNuGet:                      statelessFactory[nugetEcosystem],
+	osvconstants.EcosystemOpam:                       statelessFactory[opamEcosystem],
+	osvconstants.EcosystemOpenEuler:                  statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemOpenSUSE:                   statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemPackagist:                  statelessFactory[packagistEcosystem],
+	osvconstants.EcosystemPub:                        statelessFactory[pubEcosystem],
+	osvconstants.EcosystemPyPI:                       statelessFactory[pyPIEcosystem],
+	osvconstants.EcosystemRedHat:                     statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemRockyLinux:                 statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemRoot:                       rootEcosystemFactory,
+	osvconstants.EcosystemRubyGems:                   statelessFactory[rubyGemsEcosystem],
+	osvconstants.EcosystemSUSE:                       statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemSwiftURL:                   statelessFactory[semverEcosystem],
+	osvconstants.EcosystemUbuntu:                     statelessFactory[dpkgEcosystem],
+	osvconstants.EcosystemVSCode:                     statelessFactory[semverLikeEcosystem],
+	osvconstants.EcosystemWolfi:                      statelessFactory[apkEcosystem],
 }
 
 // Version is a parsed version that can be compared.

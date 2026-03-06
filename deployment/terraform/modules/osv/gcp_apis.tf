@@ -103,9 +103,3 @@ resource "google_project_service" "certificate_manager" {
   service            = "certificatemanager.googleapis.com"
   disable_on_destroy = false
 }
-
-resource "google_project_service" "error_reporting" {
-  project            = var.project_id
-  service            = "clouderrorreporting.googleapis.com"
-  disable_on_destroy = false
-}

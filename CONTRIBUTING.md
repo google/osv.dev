@@ -52,7 +52,8 @@ You must install:
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
+5.  [pnpm](https://pnpm.io/installation) (install via `npm install -g pnpm --prefix ~/.local` or `corepack enable pnpm`)
+6.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.
@@ -68,13 +69,16 @@ poetry self add poetry-plugin-shell
 poetry shell
 ```
 
-### Running tests
+### Backend development
+
+#### Running tests
 
 Certain tests require you to auth with the Google Cloud SDK and to install the
 Firestore Emulator:
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 gcloud components install cloud-firestore-emulator
 ```
 
@@ -93,7 +97,7 @@ By default, this skips long tests, enable them by setting the `LONG_TESTS` varia
 LONG_TESTS=1 make api-server-tests
 ```
 
-#### Test result generation
+##### Test result generation
 
 Many tests are written using a
 [simple framework](https://github.com/google/osv.dev/blob/a4b682a32575cc3314a5ef83c8e91b70c60f7b77/osv/tests.py#L32)
@@ -109,6 +113,54 @@ the environment variable `TESTS_GENERATE=1` and run the tests:
 TESTS_GENERATE=1 make all-tests
 ```
 
+#### Running a local API instance (maintainers only)
+
+Running a local instance of the API server requires the path to application
+default credentials. This is required so that the ESP container has credentials
+to download API configuration.
+
+```shell
+gcloud auth login
+gcloud auth application-default login
+make run-api-server
+```
+
+#### API E2E Snapshots
+
+If you have made any changes to the API, please update the API query snapshots with
+
+```shell
+gcloud auth login
+gcloud auth application-default login
+make update-api-snapshots
+```
+
+and check the git diff to see if the API result changes are expected.
+
+### Frontend development
+
+#### Running a local UI instance (maintainers only)
+
+```shell
+gcloud auth login
+gcloud auth application-default login
+make run-website
+```
+
+#### Running a local UI instance
+
+For contributors without access to the GCP project, you can use the website emulator which does
+not require Google Cloud project access. This emulator uses a local datastore
+and loads data from a local directory.
+
+```shell
+make run-website-emulator
+```
+
+You can add testcase records to `gcp/website/testdata/osv/` to test odd cases.
+See [gcp/website/testdata/osv/README.md](gcp/website/testdata/osv/README.md)
+for more information on the format of these records.
+
 ### Linting and formatting
 
 To lint your code, run
@@ -121,37 +173,6 @@ To format your code, run
 ```shell
 yapf -i <file>.py
 ```
-
-### Running local UI and API instances (maintainers only)
-
-#### UI
-
-```shell
-gcloud auth login --update-adc
-make run-website
-```
-
-#### API
-
-Running a local instance of the API server requires the path to application
-default credentials. The is required so that the ESP container has credentials
-to download API configuration.
-
-```shell
-gcloud auth login --update-adc
-make run-api-server
-```
-
-#### API E2E Snapshots
-
-If you have made any changes to the API, please update the API query snapshots with
-
-```shell
-gcloud auth login --update-adc
-make update-api-snapshots
-```
-
-and check the git diff to see if the API result changes are expected.
 
 ### Making commits
 

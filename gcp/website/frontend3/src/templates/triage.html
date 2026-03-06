@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% set active_section = 'triage' %}
+
+{% block content %}
+<div class="triage-container">
+  <div class="header-container">
+  <h1>CVE Conversion Triager</h1>
+
+  <div class="input-section">
+    <md-filled-text-field id="vuln-id-input" label="Vulnerability ID" placeholder="e.g. CVE-2023-1234" class="standard-input"></md-filled-text-field>
+    <md-filled-button id="load-btn">Load</md-filled-button>
+  </div>
+</div>
+  <div class="triage-grid">
+    {% for i in range(1, 4) %}
+    <div class="triage-column" id="column-{{ i }}">
+      <div class="column-header">
+        <label for="source-select-{{ i }}">Source:</label>
+        <div class="select-wrapper">
+          <select id="source-select-{{ i }}" class="source-select">
+            <option value="">Select Source...</option>
+            <optgroup label="External APIs">
+              <option value="cve-org">CVE.org API</option>
+              <option value="nvd-api">NVD API 2.0</option>
+            </optgroup>
+            <optgroup label="Test Instance (gs://osv-test-cve-osv-conversion)">
+              <option value="test-nvd">NVD-OSV (JSON)</option>
+              <option value="test-cve5">CVE5 (JSON)</option>
+              <option value="test-osv">OSV Output (JSON)</option>
+              <option value="test-nvd-metrics">NVD Metrics</option>
+              <option value="test-cve5-metrics">CVE5 Metrics</option>
+            </optgroup>
+            <optgroup label="Prod Instance (gs://cve-osv-conversion)">
+              <option value="prod-nvd">NVD-OSV (JSON)</option>
+              <option value="prod-cve5">CVE5 (JSON)</option>
+              <option value="prod-osv">OSV Output (JSON)</option>
+              <option value="prod-nvd-metrics">NVD Metrics</option>
+              <option value="prod-cve5-metrics">CVE5 Metrics</option>
+            </optgroup>
+            <optgroup label="API">
+              <option value="api-test">api.test.osv.dev</option>
+              <option value="api-prod">api.osv.dev</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="content-display">
+        <div class="loading-spinner hidden">
+          <md-circular-progress indeterminate></md-circular-progress>
+        </div>
+        <pre class="json-content">Select a source to view content</pre>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

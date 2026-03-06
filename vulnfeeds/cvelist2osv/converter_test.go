@@ -238,8 +238,6 @@ func TestFromCVE5(t *testing.T) {
 						},
 					},
 					References: []*osvschema.Reference{
-						{Type: osvschema.Reference_ARTICLE, Url: "https://hackerone.com/reports/2972576"},
-						{Type: osvschema.Reference_EVIDENCE, Url: "https://hackerone.com/reports/2972576"},
 						{Type: osvschema.Reference_REPORT, Url: "https://hackerone.com/reports/2972576"},
 						{Type: osvschema.Reference_REPORT, Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
 					},

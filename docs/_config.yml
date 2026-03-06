@@ -35,6 +35,8 @@ plugins:
 color_scheme: custom_dark
 markdown: kramdown
 
+theme: just-the-docs
+
 logo: "/assets/logo-dark.png"
 favicon_ico: "/assets/icon.png"
 

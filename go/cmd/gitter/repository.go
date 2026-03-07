@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -40,6 +42,9 @@ type Repository struct {
 	tagToCommit map[string]SHA1
 	// For cherry-pick detection: PatchID -> []commit hash
 	patchIDToCommits map[SHA1][]SHA1
+	// Root commits (commits with no parents)
+	// In a typical repository this is the initial commit
+	rootCommits []SHA1
 }
 
 // %H commit hash; %P parent hashes; %D:refs (tab delimited)
@@ -196,6 +201,11 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			// No line should be completely empty (doesn't even have a commit hash) so error
 			logger.ErrorContext(ctx, "Invalid commit info", slog.String("line", line))
 			continue
+		}
+
+		// We want to keep the root commit (no parent) easily accessible
+		if len(parentHashes) == 0 {
+			r.rootCommits = append(r.rootCommits, childHash)
 		}
 
 		// Add commit to graph (parent -> []child)
@@ -394,4 +404,261 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.commitDetails[commitHash] = commit
 
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
+}
+
+func parseHash(hash string) (SHA1, error) {
+	hashBytes, err := hex.DecodeString(hash)
+	if err != nil {
+		return SHA1{}, fmt.Errorf("failed to decode hash: %w", err)
+	}
+	return SHA1(hashBytes), nil
+}
+
+// Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
+func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypick bool) []*Commit {
+	introduced := []SHA1{}
+	fixed := []SHA1{}
+	lastAffected := []SHA1{}
+
+	// Convert string input into SHA1
+	// Introduced can be 0 and we'll replace it with the root commit
+	for _, s := range introStrs {
+		if s == "0" {
+			introduced = append(introduced, r.rootCommits...)
+			continue
+		}
+
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		introduced = append(introduced, sha)
+	}
+
+	for _, s := range fixedStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		fixed = append(fixed, sha)
+	}
+
+	for _, s := range laStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		lastAffected = append(lastAffected, sha)
+	}
+
+	// Expands the introduced and fixed commits to include cherrypick equivalents
+	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
+	if cherrypick {
+		introduced = r.expandByCherrypick(introduced)
+		fixed = r.expandByCherrypick(fixed)
+	}
+
+	safeCommits := r.findSafeCommits(introduced, fixed, lastAffected)
+
+	var affectedCommits []*Commit
+
+	stack := make([]SHA1, 0, len(introduced))
+	stack = append(stack, introduced...)
+
+	visited := make(map[SHA1]struct{})
+
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if _, ok := visited[curr]; ok {
+			continue
+		}
+		visited[curr] = struct{}{}
+
+		// If commit is in safe set, we can stop the traversal
+		if _, ok := safeCommits[curr]; ok {
+			continue
+		}
+
+		// Otherwise, add to affected commits
+		affectedCommits = append(affectedCommits, r.commitDetails[curr])
+
+		// Add children to DFS stack
+		if children, ok := r.commitGraph[curr]; ok {
+			stack = append(stack, children...)
+		}
+	}
+
+	return affectedCommits
+}
+
+// findSafeCommits returns a set of commits that are non-vulnerable
+// Traversing from fixed and children of last affected to the next introduced (if exist)
+func (r *Repository) findSafeCommits(introduced, fixed, lastAffected []SHA1) map[SHA1]struct{} {
+	introducedMap := make(map[SHA1]struct{})
+	for _, commit := range introduced {
+		introducedMap[commit] = struct{}{}
+	}
+
+	safeSet := make(map[SHA1]struct{})
+	stack := make([]SHA1, 0, len(fixed)+len(lastAffected))
+	stack = append(stack, fixed...)
+
+	// All children of last affected commits are root for traversal
+	for _, commit := range lastAffected {
+		if children, ok := r.commitGraph[commit]; ok {
+			for _, child := range children {
+				// Except if child is an introduced commit
+				if _, ok := introducedMap[child]; ok {
+					continue
+				}
+				stack = append(stack, child)
+			}
+		}
+	}
+
+	// DFS until we hit an "introduced" commit
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if _, ok := safeSet[curr]; ok {
+			continue
+		}
+		safeSet[curr] = struct{}{}
+
+		if children, ok := r.commitGraph[curr]; ok {
+			for _, child := range children {
+				// vuln re-introduced at a later commit, subsequent commits are no longer safe
+				if _, ok := introducedMap[child]; ok {
+					continue
+				}
+				stack = append(stack, child)
+			}
+		}
+	}
+
+	return safeSet
+}
+
+// expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits PLUS any other commits that share the same Patch ID
+func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
+	unique := make(map[SHA1]struct{}, len(commits)) // avoid duplication
+	var zeroPatchID SHA1
+
+	for _, hash := range commits {
+		// Find patch ID from commit details
+		details, ok := r.commitDetails[hash]
+		if !ok || details.PatchID == zeroPatchID {
+			unique[hash] = struct{}{}
+			continue
+		}
+
+		// Add equivalent commits with the same Patch ID (including the current commit)
+		equivalents := r.patchIDToCommits[details.PatchID]
+		for _, eq := range equivalents {
+			unique[eq] = struct{}{}
+		}
+	}
+
+	keys := slices.Collect(maps.Keys(unique))
+
+	return keys
+}
+
+// Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
+func (r *Repository) Between(ctx context.Context, introStrs, limitStrs []string) []*Commit {
+	introduced := []SHA1{}
+	limit := []SHA1{}
+
+	// Convert string input into SHA1
+	// Introduced can be 0 and we'll replace it with the root commit
+	for _, s := range introStrs {
+		if s == "0" {
+			introduced = append(introduced, r.rootCommits...)
+			continue
+		}
+
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		introduced = append(introduced, sha)
+	}
+
+	for _, s := range limitStrs {
+		sha, err := parseHash(s)
+		if err != nil {
+			// Log error and continue if a commit hash is invalid
+			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			continue
+		}
+
+		limit = append(limit, sha)
+	}
+
+	var affectedCommits []*Commit
+
+	introMap := make(map[SHA1]struct{}, len(introduced))
+	for _, commit := range introduced {
+		introMap[commit] = struct{}{}
+	}
+
+	// DFS to walk from limit(s) to introduced (follow first parent)
+	stack := make([]SHA1, 0, len(limit))
+	// Start from limits' parents
+	for _, commit := range limit {
+		details, ok := r.commitDetails[commit]
+		if !ok {
+			continue
+		}
+		if len(details.Parents) > 0 {
+			stack = append(stack, details.Parents[0])
+		}
+	}
+
+	visited := make(map[SHA1]struct{})
+
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if _, ok := visited[curr]; ok {
+			continue
+		}
+		visited[curr] = struct{}{}
+
+		// Add current node to affected commits
+		details, ok := r.commitDetails[curr]
+		if !ok {
+			continue
+		}
+
+		affectedCommits = append(affectedCommits, details)
+
+		// If commit is in introduced, we can stop the traversal after adding it to affected
+		if _, ok := introMap[curr]; ok {
+			continue
+		}
+
+		// Add first parent to stack to only walk the linear branch
+		if len(details.Parents) > 0 {
+			stack = append(stack, details.Parents[0])
+		}
+	}
+
+	return affectedCommits
 }

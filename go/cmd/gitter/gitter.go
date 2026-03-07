@@ -45,6 +45,21 @@ const gitStoreFileName = "git-store"
 var endpointHandlers = map[string]http.HandlerFunc{
 	"GET /git":    gitHandler,
 	"POST /cache": cacheHandler,
+	"POST /affected-commits": affectedCommitsHandler,
+}
+
+type EventType string
+
+const (
+	EventTypeIntroduced   EventType = "introduced"
+	EventTypeFixed        EventType = "fixed"
+	EventTypeLastAffected EventType = "last_affected"
+	EventTypeLimit        EventType = "limit"
+)
+
+type Event struct {
+	Type EventType `json:"eventType"`
+	Hash string    `json:"hash"`
 }
 
 var (
@@ -498,4 +513,113 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.Duration("duration", time.Since(start)))
+}
+
+func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	// POST requets body processing
+	var body struct {
+		URL               string  `json:"url"`
+		Events            []Event `json:"events"`
+		DetectCherrypicks bool    `json:"detect_cherrypicks"`
+		ForceUpdate       bool    `json:"force_update"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+
+		return
+	}
+	defer r.Body.Close()
+
+	url := body.URL
+	introduced := []string{}
+	fixed := []string{}
+	lastAffected := []string{}
+	limit := []string{}
+	cherrypick := body.DetectCherrypicks
+
+	ctx := context.WithValue(r.Context(), urlKey, url)
+
+	for _, event := range body.Events {
+		switch event.Type {
+		case EventTypeIntroduced:
+			introduced = append(introduced, event.Hash)
+		case EventTypeFixed:
+			fixed = append(fixed, event.Hash)
+		case EventTypeLastAffected:
+			lastAffected = append(lastAffected, event.Hash)
+		case EventTypeLimit:
+			limit = append(limit, event.Hash)
+		default:
+			logger.ErrorContext(ctx, "Invalid event type", slog.String("event_type", string(event.Type)))
+			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
+
+			return
+		}
+	}
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
+
+	semaphore <- struct{}{}
+	defer func() { <-semaphore }()
+	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
+	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
+	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
+		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
+
+		return
+	}
+
+	// Fetch repo if it's not fresh
+	// I can't change singleflight's interface
+	if _, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, FetchRepo(ctx, url, body.ForceUpdate)
+	}); err != nil {
+		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+
+			return
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	repoDirName := getRepoDirName(url)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
+
+	repoLock := GetRepoLock(url)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
+	// I can't change singleflight's interface
+	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+		return LoadRepository(ctx, repoPath)
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+	repo := repoAny.(*Repository)
+
+	var affectedCommits []*Commit
+	if len(limit) > 0 {
+		affectedCommits = repo.Between(ctx, introduced, limit)
+	} else {
+		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypick)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
+		logger.ErrorContext(ctx, "Error encoding affected commits", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.Duration("duration", time.Since(start)))
 }

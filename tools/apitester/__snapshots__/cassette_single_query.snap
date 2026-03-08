@@ -1029,7 +1029,7 @@
       "id": "CURL-CVE-2024-9681",
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
+      "aliases": ["CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -2299,7 +2299,7 @@
     {
       "id": "CVE-2024-9681",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CURL-CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
+      "aliases": ["CURL-CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-06T08:15:03.740Z",
       "related": [
@@ -2314,19 +2314,7 @@
       "references": [
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
-        },
-        {
-          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
         },
         {
           "type": "WEB",
@@ -2338,15 +2326,23 @@
         },
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
-        },
-        {
-          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-9681.html"
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
         },
         {
           "type": "ADVISORY",
@@ -2354,39 +2350,19 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2764830"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
         },
         {
-          "type": "REPORT",
+          "type": "FIX",
           "url": "https://hackerone.com/reports/2764830"
+        },
+        {
+          "type": "FIX",
+          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
         },
         {
           "type": "FIX",
           "url": "https://curl.se/docs/CVE-2024-9681.html"
-        },
-        {
-          "type": "FIX",
-          "url": "https://hackerone.com/reports/2764830"
-        },
-        {
-          "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2764830"
         }
       ],
       "affected": [

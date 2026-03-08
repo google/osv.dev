@@ -271,28 +271,34 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 			expected:   []SHA1{hA},
 		},
 		{
-			name:       "Branch propagation: A introduced, D fixed",
+			name:       "Branch propagation: A introduced, C fixed",
 			introduced: []SHA1{hA},
-			fixed:      []SHA1{hD},
-			expected:   []SHA1{hA, hB, hC, hF, hG, hH},
+			fixed:      []SHA1{hC},
+			expected:   []SHA1{hA, hB, hH, hD, hE},
 		},
 		{
-			name:       "Diverged before introduce: C introduced, E fixed",
-			introduced: []SHA1{hC},
-			fixed:      []SHA1{hE},
-			expected:   []SHA1{hC, hD, hF, hG},
-		},
-		{
-			name:       "Two sets: (A,C) introduced, (B,D,G) fixed",
+			name:       "Re-introduced: (A,C) introduced, (B,D,G) fixed",
 			introduced: []SHA1{hA, hC},
 			fixed:      []SHA1{hB, hD, hG},
 			expected:   []SHA1{hA, hC, hF},
 		},
 		{
-			name:       "Merge fix: A introduced, H fixed",
+			name:       "Merge intro: H introduced, E fixed",
+			introduced: []SHA1{hH},
+			fixed:      []SHA1{hE},
+			expected:   []SHA1{hH, hD},
+		},
+		{
+			name:       "Merge fix (explicit merge commit): A introduced, (H, D) fixed",
+			introduced: []SHA1{hA},
+			fixed:      []SHA1{hH, hD},
+			expected:   []SHA1{hA, hB, hC, hF, hG},
+		},
+		{
+			name:       "Merge fix (non-explicit): A introduced, H fixed",
 			introduced: []SHA1{hA},
 			fixed:      []SHA1{hH},
-			expected:   []SHA1{hA, hB, hC, hF, hG},
+			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG},
 		},
 		{
 			name:       "Everything affected if no fix",
@@ -317,7 +323,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 				laStrs[i] = encodeSHA1(h)
 			}
 
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false)
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -353,9 +359,11 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 	repo := NewRepository("/repo")
 
 	// Graph: (Parent -> Child)
-	// A -> B -> C -> D -> E -> F
-	//      \ 	     /
-	//       ->  G ->  H
+	//            -> F -> G
+	//           /
+	// A -> B -> C -> D -> E
+	//      \        /
+	//       -> H ->
 
 	hA := decodeSHA1("aaaa")
 	hB := decodeSHA1("bbbb")
@@ -368,11 +376,11 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 	// Setup graph (Parent -> Children)
 	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC, hG}
-	repo.commitGraph[hC] = []SHA1{hD}
+	repo.commitGraph[hB] = []SHA1{hC, hH}
+	repo.commitGraph[hC] = []SHA1{hD, hF}
 	repo.commitGraph[hD] = []SHA1{hE}
-	repo.commitGraph[hE] = []SHA1{hF}
-	repo.commitGraph[hG] = []SHA1{hD, hH}
+	repo.commitGraph[hF] = []SHA1{hG}
+	repo.commitGraph[hH] = []SHA1{hD}
 
 	// Setup details
 	repo.commitDetails[hA] = &Commit{Hash: hA}
@@ -392,28 +400,40 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 		expected     []SHA1
 	}{
 		{
-			name:         "Linear: E introduced, F lastAffected",
-			introduced:   []SHA1{hE},
-			lastAffected: []SHA1{hF},
-			expected:     []SHA1{hE, hF},
+			name:         "Linear: D introduced, E lastAffected",
+			introduced:   []SHA1{hD},
+			lastAffected: []SHA1{hE},
+			expected:     []SHA1{hD, hE},
 		},
 		{
-			name:         "Branch propagation: A introduced, D lastAffected",
+			name:         "Branch propagation (affected): A introduced, D lastAffected",
 			introduced:   []SHA1{hA},
 			lastAffected: []SHA1{hD},
-			expected:     []SHA1{hA, hB, hC, hD, hG, hH},
+			expected:     []SHA1{hA, hB, hC, hD, hF, hG, hH},
 		},
 		{
-			name:         "Diverged before introduce: C introduced, E lastAffected",
-			introduced:   []SHA1{hC},
-			lastAffected: []SHA1{hE},
-			expected:     []SHA1{hC, hD, hE},
+			name:         "Branch propagation (unaffected): A introduced, B lastAffected",
+			introduced:   []SHA1{hA},
+			lastAffected: []SHA1{hB},
+			expected:     []SHA1{hA, hB},
 		},
 		{
-			name:         "Two sets: (C,E) introduced, (D,F) lastAffected",
-			introduced:   []SHA1{hC, hE},
-			lastAffected: []SHA1{hD, hF},
-			expected:     []SHA1{hC, hD, hE, hF},
+			name:         "Re-introduced: (A,D) introduced, (B,E) lastAffected",
+			introduced:   []SHA1{hA, hD},
+			lastAffected: []SHA1{hB, hE},
+			expected:     []SHA1{hA, hB, hD, hE},
+		},
+		{
+			name:         "Merge intro: H introduced, D lastAffected",
+			introduced:   []SHA1{hH},
+			lastAffected: []SHA1{hD},
+			expected:     []SHA1{hH, hD},
+		},
+		{
+			name:         "Merge lastAffected: A introduced, H lastAffected", // TODO: Discuss!!
+			introduced:   []SHA1{hA},
+			lastAffected: []SHA1{hH},
+			expected:     []SHA1{hA, hB, hC, hF, hG, hH},
 		},
 		{
 			name:       "Everything affected if no lastAffected",
@@ -438,7 +458,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 				laStrs[i] = encodeSHA1(h)
 			}
 
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false)
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -470,8 +490,135 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 	}
 }
 
+// Testing with both fixed and lastAffected
+func TestAffected_Combined(t *testing.T) {
+	repo := NewRepository("/repo")
 
-func TestBetween(t *testing.T) {
+	// Graph: (Parent -> Child)
+	//            -> F -> G
+	//           /
+	// A -> B -> C -> D -> E
+	//      \        /
+	//       -> H ->
+
+	hA := decodeSHA1("aaaa")
+	hB := decodeSHA1("bbbb")
+	hC := decodeSHA1("cccc")
+	hD := decodeSHA1("dddd")
+	hE := decodeSHA1("eeee")
+	hF := decodeSHA1("ffff")
+	hG := decodeSHA1("abab")
+	hH := decodeSHA1("acac")
+
+	// Setup graph (Parent -> Children)
+	repo.commitGraph[hA] = []SHA1{hB}
+	repo.commitGraph[hB] = []SHA1{hC, hH}
+	repo.commitGraph[hC] = []SHA1{hD, hF}
+	repo.commitGraph[hD] = []SHA1{hE}
+	repo.commitGraph[hF] = []SHA1{hG}
+	repo.commitGraph[hH] = []SHA1{hD}
+
+	// Setup details
+	repo.commitDetails[hA] = &Commit{Hash: hA}
+	repo.commitDetails[hB] = &Commit{Hash: hB}
+	repo.commitDetails[hC] = &Commit{Hash: hC}
+	repo.commitDetails[hD] = &Commit{Hash: hD}
+	repo.commitDetails[hE] = &Commit{Hash: hE}
+	repo.commitDetails[hF] = &Commit{Hash: hF}
+	repo.commitDetails[hG] = &Commit{Hash: hG}
+	repo.commitDetails[hH] = &Commit{Hash: hH}
+
+	tests := []struct {
+		name         string
+		introduced   []SHA1
+		fixed        []SHA1
+		lastAffected []SHA1
+		expected     []SHA1
+	}{
+		{
+			name:         "Branching out: C introduced, G fixed, D lastAffected",
+			introduced:   []SHA1{hC},
+			fixed:        []SHA1{hG},
+			lastAffected: []SHA1{hD},
+			expected:     []SHA1{hC, hD, hF},
+		},
+		{
+			name:         "Redundant Blocking: A introduced, B fixed, E lastAffected",
+			introduced:   []SHA1{hA},
+			fixed:        []SHA1{hB},
+			lastAffected: []SHA1{hE},
+			expected:     []SHA1{hA},
+		},
+		{
+			name:       "Conflicting events: Fixed equals Introduced", // TODO will this happen?
+			introduced: []SHA1{hA, hB},
+			fixed:      []SHA1{hB},
+			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
+		},
+		{
+			name:         "Conflicting events: LastAffected equals Introduced", // TODO: Will this happen??
+			introduced:   []SHA1{hB, hH},
+			lastAffected: []SHA1{hC, hH},
+			expected:     []SHA1{hB, hC, hH, hD, hE},
+		},
+		{
+			name:         "Conflicting events: Fixed equals LastAffected", // TODO: DISCUSS?
+			introduced:   []SHA1{hA},
+			fixed:        []SHA1{hB},
+			lastAffected: []SHA1{hB},
+			expected:     []SHA1{hA},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Convert SHA1 to string for the new API
+			introStrs := make([]string, len(tt.introduced))
+			for i, h := range tt.introduced {
+				introStrs[i] = encodeSHA1(h)
+			}
+			fixedStrs := make([]string, len(tt.fixed))
+			for i, h := range tt.fixed {
+				fixedStrs[i] = encodeSHA1(h)
+			}
+			laStrs := make([]string, len(tt.lastAffected))
+			for i, h := range tt.lastAffected {
+				laStrs[i] = encodeSHA1(h)
+			}
+
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
+
+			var got []SHA1
+			for _, c := range gotCommits {
+				got = append(got, c.Hash)
+			}
+
+			// Sort got and expected for comparison
+			sort.Slice(got, func(i, j int) bool {
+				return string(got[i][:]) < string(got[j][:])
+			})
+			sort.Slice(tt.expected, func(i, j int) bool {
+				return string(tt.expected[i][:]) < string(tt.expected[j][:])
+			})
+
+			if diff := cmp.Diff(tt.expected, got); diff != "" {
+				// Turn them back into strings so it's easier to read
+				gotStr := make([]string, len(got))
+				for i, c := range got {
+					gotStr[i] = printSHA1(c)
+				}
+				expectedStr := make([]string, len(tt.expected))
+				for i, c := range tt.expected {
+					expectedStr[i] = printSHA1(c)
+				}
+
+				t.Errorf("TestAffected_Introduced_LastAffected() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			}
+		})
+	}
+}
+
+func TestLimit(t *testing.T) {
 	repo := NewRepository("/repo")
 
 	// Graph: (Parent -> Child)
@@ -544,7 +691,7 @@ func TestBetween(t *testing.T) {
 				limitStrs[i] = encodeSHA1(h)
 			}
 
-			gotCommits := repo.Between(t.Context(), introStrs, limitStrs)
+			gotCommits := repo.Limit(t.Context(), introStrs, limitStrs)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -570,9 +717,8 @@ func TestBetween(t *testing.T) {
 					expectedStr[i] = printSHA1(c)
 				}
 
-				t.Errorf("TestBetween() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+				t.Errorf("TestLimit() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
 			}
 		})
 	}
 }
-

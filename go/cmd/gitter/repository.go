@@ -415,10 +415,10 @@ func parseHash(hash string) (SHA1, error) {
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
-func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypick bool) []*Commit {
-	introduced := []SHA1{}
-	fixed := []SHA1{}
-	lastAffected := []SHA1{}
+func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypickIntro, cherrypickFixed bool) []*Commit {
+	introduced := make([]SHA1, 0, len(introStrs))
+	fixed := make([]SHA1, 0, len(fixedStrs))
+	lastAffected := make([]SHA1, 0, len(laStrs))
 
 	// Convert string input into SHA1
 	// Introduced can be 0 and we'll replace it with the root commit
@@ -431,7 +431,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		sha, err := parseHash(s)
 		if err != nil {
 			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to parse commit hash: introduced", slog.String("hash", s), slog.Any("err", err))
 			continue
 		}
 
@@ -442,7 +442,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		sha, err := parseHash(s)
 		if err != nil {
 			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to parse commit hash: fixed", slog.String("hash", s), slog.Any("err", err))
 			continue
 		}
 
@@ -453,7 +453,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		sha, err := parseHash(s)
 		if err != nil {
 			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to parse commit hash: last_affected", slog.String("hash", s), slog.Any("err", err))
 			continue
 		}
 
@@ -462,15 +462,40 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
-	if cherrypick {
+	if cherrypickIntro {
 		introduced = r.expandByCherrypick(introduced)
+	}
+	if cherrypickFixed {
 		fixed = r.expandByCherrypick(fixed)
 	}
 
-	safeCommits := r.findSafeCommits(introduced, fixed, lastAffected)
-
 	var affectedCommits []*Commit
 
+	// Fixed commits and children of last affected are both in this set
+	// For graph traversal sake they are both considered the fix
+	fixedMap := make(map[SHA1]struct{}, len(fixed)+len(lastAffected))
+
+	for _, commit := range fixed {
+		fixedMap[commit] = struct{}{}
+	}
+
+	for _, commit := range lastAffected {
+		if _, ok := r.commitGraph[commit]; ok {
+			for _, child := range r.commitGraph[commit] {
+				fixedMap[child] = struct{}{}
+			}
+		}
+	}
+
+	// In the case that a commit in fixedMap is also in introduced
+	// we should remove it from the fixedMap (the commit fixed one but introduced another vuln)
+	for _, commit := range introduced {
+		if _, ok := fixedMap[commit]; ok {
+			delete(fixedMap, commit)
+		}
+	}
+
+	// The graph traversal
 	stack := make([]SHA1, 0, len(introduced))
 	stack = append(stack, introduced...)
 
@@ -485,13 +510,15 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		}
 		visited[curr] = struct{}{}
 
-		// If commit is in safe set, we can stop the traversal
-		if _, ok := safeCommits[curr]; ok {
+		// Stop traversal if the commit is in the fixed set (fixed or children of last_affected)
+		if _, ok := fixedMap[curr]; ok {
 			continue
 		}
 
 		// Otherwise, add to affected commits
-		affectedCommits = append(affectedCommits, r.commitDetails[curr])
+		if details, ok := r.commitDetails[curr]; ok {
+			affectedCommits = append(affectedCommits, details)
+		}
 
 		// Add children to DFS stack
 		if children, ok := r.commitGraph[curr]; ok {
@@ -502,56 +529,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 	return affectedCommits
 }
 
-// findSafeCommits returns a set of commits that are non-vulnerable
-// Traversing from fixed and children of last affected to the next introduced (if exist)
-func (r *Repository) findSafeCommits(introduced, fixed, lastAffected []SHA1) map[SHA1]struct{} {
-	introducedMap := make(map[SHA1]struct{})
-	for _, commit := range introduced {
-		introducedMap[commit] = struct{}{}
-	}
-
-	safeSet := make(map[SHA1]struct{})
-	stack := make([]SHA1, 0, len(fixed)+len(lastAffected))
-	stack = append(stack, fixed...)
-
-	// All children of last affected commits are root for traversal
-	for _, commit := range lastAffected {
-		if children, ok := r.commitGraph[commit]; ok {
-			for _, child := range children {
-				// Except if child is an introduced commit
-				if _, ok := introducedMap[child]; ok {
-					continue
-				}
-				stack = append(stack, child)
-			}
-		}
-	}
-
-	// DFS until we hit an "introduced" commit
-	for len(stack) > 0 {
-		curr := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if _, ok := safeSet[curr]; ok {
-			continue
-		}
-		safeSet[curr] = struct{}{}
-
-		if children, ok := r.commitGraph[curr]; ok {
-			for _, child := range children {
-				// vuln re-introduced at a later commit, subsequent commits are no longer safe
-				if _, ok := introducedMap[child]; ok {
-					continue
-				}
-				stack = append(stack, child)
-			}
-		}
-	}
-
-	return safeSet
-}
-
-// expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits PLUS any other commits that share the same Patch ID
+// expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits + any other commits that share the same Patch ID
 func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 	unique := make(map[SHA1]struct{}, len(commits)) // avoid duplication
 	var zeroPatchID SHA1
@@ -577,7 +555,7 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 }
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
-func (r *Repository) Between(ctx context.Context, introStrs, limitStrs []string) []*Commit {
+func (r *Repository) Limit(ctx context.Context, introStrs, limitStrs []string) []*Commit {
 	introduced := []SHA1{}
 	limit := []SHA1{}
 

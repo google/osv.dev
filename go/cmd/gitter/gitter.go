@@ -43,8 +43,8 @@ const gitStoreFileName = "git-store"
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"GET /git":    gitHandler,
-	"POST /cache": cacheHandler,
+	"GET /git":               gitHandler,
+	"POST /cache":            cacheHandler,
 	"POST /affected-commits": affectedCommitsHandler,
 }
 
@@ -519,10 +519,11 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// POST requets body processing
 	var body struct {
-		URL               string  `json:"url"`
-		Events            []Event `json:"events"`
-		DetectCherrypicks bool    `json:"detect_cherrypicks"`
-		ForceUpdate       bool    `json:"force_update"`
+		URL                         string  `json:"url"`
+		Events                      []Event `json:"events"`
+		DetectCherrypicksIntroduced bool    `json:"detect_cherrypicks_introduced"`
+		DetectCherrypicksFixed      bool    `json:"detect_cherrypicks_fixed"`
+		ForceUpdate                 bool    `json:"force_update"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
@@ -537,7 +538,8 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	fixed := []string{}
 	lastAffected := []string{}
 	limit := []string{}
-	cherrypick := body.DetectCherrypicks
+	cherrypickIntro := body.DetectCherrypicksIntroduced
+	cherrypickFixed := body.DetectCherrypicksFixed
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
@@ -558,7 +560,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypick", cherrypick))
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
 
 	semaphore <- struct{}{}
 	defer func() { <-semaphore }()
@@ -608,9 +610,9 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var affectedCommits []*Commit
 	if len(limit) > 0 {
-		affectedCommits = repo.Between(ctx, introduced, limit)
+		affectedCommits = repo.Limit(ctx, introduced, limit)
 	} else {
-		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypick)
+		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypickIntro, cherrypickFixed)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -411,6 +411,7 @@ func parseHash(hash string) (SHA1, error) {
 	if err != nil {
 		return SHA1{}, fmt.Errorf("failed to decode hash: %w", err)
 	}
+
 	return SHA1(hashBytes), nil
 }
 
@@ -490,9 +491,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 	// In the case that a commit in fixedMap is also in introduced
 	// we should remove it from the fixedMap (the commit fixed one but introduced another vuln)
 	for _, commit := range introduced {
-		if _, ok := fixedMap[commit]; ok {
-			delete(fixedMap, commit)
-		}
+    delete(fixedMap, commit)
 	}
 
 	// The graph traversal

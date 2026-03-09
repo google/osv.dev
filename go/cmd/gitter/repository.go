@@ -178,11 +178,8 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 					r.tagToCommit[tag] = childHash
 				} else {
 					// clean up HEAD -> branch-name to just keep the branch name
-					cleanRef := ref
-					if strings.HasPrefix(cleanRef, "HEAD -> ") {
-						cleanRef = strings.TrimPrefix(cleanRef, "HEAD -> ")
-					}
-					refs = append(refs, cleanRef)
+					ref = strings.TrimPrefix(ref, "HEAD -> ")
+					refs = append(refs, ref)
 				}
 			}
 

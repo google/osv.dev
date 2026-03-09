@@ -7,12 +7,11 @@
 package repository
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -120,6 +119,102 @@ func (x *RepositoryCache) GetCommits() []*CommitDetail {
 	return nil
 }
 
+type AffectedCommit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Hash          []byte                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	Refs          []string               `protobuf:"bytes,2,rep,name=refs,proto3" json:"refs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AffectedCommit) Reset() {
+	*x = AffectedCommit{}
+	mi := &file_repository_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AffectedCommit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AffectedCommit) ProtoMessage() {}
+
+func (x *AffectedCommit) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AffectedCommit.ProtoReflect.Descriptor instead.
+func (*AffectedCommit) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AffectedCommit) GetHash() []byte {
+	if x != nil {
+		return x.Hash
+	}
+	return nil
+}
+
+func (x *AffectedCommit) GetRefs() []string {
+	if x != nil {
+		return x.Refs
+	}
+	return nil
+}
+
+type AffectedCommitsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Commits       []*AffectedCommit      `protobuf:"bytes,1,rep,name=commits,proto3" json:"commits,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AffectedCommitsResponse) Reset() {
+	*x = AffectedCommitsResponse{}
+	mi := &file_repository_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AffectedCommitsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AffectedCommitsResponse) ProtoMessage() {}
+
+func (x *AffectedCommitsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AffectedCommitsResponse.ProtoReflect.Descriptor instead.
+func (*AffectedCommitsResponse) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AffectedCommitsResponse) GetCommits() []*AffectedCommit {
+	if x != nil {
+		return x.Commits
+	}
+	return nil
+}
+
 var File_repository_proto protoreflect.FileDescriptor
 
 const file_repository_proto_rawDesc = "" +
@@ -129,7 +224,12 @@ const file_repository_proto_rawDesc = "" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x19\n" +
 	"\bpatch_id\x18\x02 \x01(\fR\apatchId\"A\n" +
 	"\x0fRepositoryCache\x12.\n" +
-	"\acommits\x18\x01 \x03(\v2\x14.gitter.CommitDetailR\acommitsB\x0eZ\f./repositoryb\x06proto3"
+	"\acommits\x18\x01 \x03(\v2\x14.gitter.CommitDetailR\acommits\"8\n" +
+	"\x0eAffectedCommit\x12\x12\n" +
+	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x12\n" +
+	"\x04refs\x18\x02 \x03(\tR\x04refs\"K\n" +
+	"\x17AffectedCommitsResponse\x120\n" +
+	"\acommits\x18\x01 \x03(\v2\x16.gitter.AffectedCommitR\acommitsB\x0eZ\f./repositoryb\x06proto3"
 
 var (
 	file_repository_proto_rawDescOnce sync.Once
@@ -143,18 +243,21 @@ func file_repository_proto_rawDescGZIP() []byte {
 	return file_repository_proto_rawDescData
 }
 
-var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_repository_proto_goTypes = []any{
-	(*CommitDetail)(nil),    // 0: gitter.CommitDetail
-	(*RepositoryCache)(nil), // 1: gitter.RepositoryCache
+	(*CommitDetail)(nil),            // 0: gitter.CommitDetail
+	(*RepositoryCache)(nil),         // 1: gitter.RepositoryCache
+	(*AffectedCommit)(nil),          // 2: gitter.AffectedCommit
+	(*AffectedCommitsResponse)(nil), // 3: gitter.AffectedCommitsResponse
 }
 var file_repository_proto_depIdxs = []int32{
 	0, // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.AffectedCommit
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_repository_proto_init() }
@@ -168,7 +271,7 @@ func file_repository_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

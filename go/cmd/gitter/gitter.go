@@ -29,6 +29,9 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/protobuf/proto"
+
+	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
 )
 
 type contextKey string
@@ -615,13 +618,26 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypickIntro, cherrypickFixed)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(affectedCommits); err != nil {
-		logger.ErrorContext(ctx, "Error encoding affected commits", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Error encoding affected commits: %v", err), http.StatusInternalServerError)
+	resp := &pb.AffectedCommitsResponse{}
+	for _, c := range affectedCommits {
+		resp.Commits = append(resp.Commits, &pb.AffectedCommit{
+			Hash: c.Hash[:],
+			Refs: c.Refs,
+		})
+	}
+
+	out, err := proto.Marshal(resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), http.StatusInternalServerError)
 
 		return
+	}
+
+	w.Header().Set("Content-Type", "application/x-protobuf")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
 	}
 	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.Duration("duration", time.Since(start)))
 }

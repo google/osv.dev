@@ -22,10 +22,10 @@ import (
 type SHA1 [20]byte
 
 type Commit struct {
-	Hash    SHA1     `json:"hash"`
-	PatchID SHA1     `json:"patch_id"`
-	Parents []SHA1   `json:"parents"`
-	Tags    []string `json:"tags"`
+	Hash    SHA1
+	PatchID SHA1
+	Parents []SHA1
+	Refs    []string
 }
 
 // Repository holds the commit graph and other details for a git repository.
@@ -163,16 +163,26 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 		var childHash SHA1
 		parentHashes := []SHA1{}
-		tags := []string{}
+		refs := []string{}
 
 		switch len(commitInfo) {
 		case 3:
 			// refs are separated by commas
-			refs := strings.Split(commitInfo[2], ", ")
-			for _, ref := range refs {
-				// Remove prefixes from tags, other refs such as HEAD will be left as is
-				if strings.Contains(ref, "tag: ") {
-					tags = append(tags, strings.TrimPrefix(ref, "tag: "))
+			rawRefs := strings.Split(commitInfo[2], ", ")
+			for _, ref := range rawRefs {
+				// Remove prefixes from tags, other refs such as branches will be left as is
+				if strings.HasPrefix(ref, "tag: ") {
+					tag := strings.TrimPrefix(ref, "tag: ")
+					refs = append(refs, tag)
+					// Also populate the tag-to-commit map
+					r.tagToCommit[tag] = childHash
+				} else {
+					// clean up HEAD -> branch-name to just keep the branch name
+					cleanRef := ref
+					if strings.HasPrefix(cleanRef, "HEAD -> ") {
+						cleanRef = strings.TrimPrefix(cleanRef, "HEAD -> ")
+					}
+					refs = append(refs, cleanRef)
 				}
 			}
 
@@ -215,7 +225,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 		commit := Commit{
 			Hash:    childHash,
-			Tags:    tags,
+			Refs:    refs,
 			Parents: parentHashes,
 		}
 
@@ -230,11 +240,6 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 
 		r.commitDetails[childHash] = &commit
-
-		// Also populate the tag-to-commit map
-		for _, tag := range tags {
-			r.tagToCommit[tag] = childHash
-		}
 	}
 
 	logger.InfoContext(ctx, "Commit graph completed", slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))

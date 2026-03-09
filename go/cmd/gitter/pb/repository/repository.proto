@@ -14,3 +14,12 @@ message CommitDetail {
 message RepositoryCache {
     repeated CommitDetail commits = 1;
 }
+
+message AffectedCommit {
+    bytes hash = 1;
+    repeated string refs = 2;
+}
+
+message AffectedCommitsResponse {
+    repeated AffectedCommit commits = 1;
+}

@@ -317,6 +317,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 					newRange.Repo = repo
 					newRange.Type = osvschema.Range_GIT // Preserve the repo
 					newAffectedRanges = append(newAffectedRanges, newRange)
+				} else {
+					newAffectedRanges = cveRanges
 				}
 			} else {
 				newAffectedRanges = cveRanges
@@ -348,7 +350,14 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 	// sort by repo
 	slices.SortFunc(combinedAffected, func(a, b *osvschema.Affected) int {
-		return cmp.Compare(a.GetRanges()[0].GetRepo(), b.GetRanges()[0].GetRepo())
+		var repoA, repoB string
+		if len(a.GetRanges()) > 0 {
+			repoA = a.GetRanges()[0].GetRepo()
+		}
+		if len(b.GetRanges()) > 0 {
+			repoB = b.GetRanges()[0].GetRepo()
+		}
+		return cmp.Compare(repoA, repoB)
 	})
 
 	return combinedAffected

@@ -38,8 +38,8 @@ type Repository struct {
 	commitGraph map[SHA1][]SHA1
 	// Actual commit details
 	commitDetails map[SHA1]*Commit
-	// Store tags to commit because it's useful for CVE conversion
-	tagToCommit map[string]SHA1
+	// Store refs to commit because it's useful for CVE conversion
+	refToCommit map[string]SHA1
 	// For cherry-pick detection: PatchID -> []commit hash
 	patchIDToCommits map[SHA1][]SHA1
 	// Root commits (commits with no parents)
@@ -60,7 +60,7 @@ func NewRepository(repoPath string) *Repository {
 		repoPath:         repoPath,
 		commitGraph:      make(map[SHA1][]SHA1),
 		commitDetails:    make(map[SHA1]*Commit),
-		tagToCommit:      make(map[string]SHA1),
+		refToCommit:      make(map[string]SHA1),
 		patchIDToCommits: make(map[SHA1][]SHA1),
 	}
 }
@@ -170,12 +170,13 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			// refs are separated by commas
 			rawRefs := strings.Split(commitInfo[2], ", ")
 			for _, ref := range rawRefs {
+				if ref == "" {
+					continue
+				}
 				// Remove prefixes from tags, other refs such as branches will be left as is
 				if strings.HasPrefix(ref, "tag: ") {
 					tag := strings.TrimPrefix(ref, "tag: ")
 					refs = append(refs, tag)
-					// Also populate the tag-to-commit map
-					r.tagToCommit[tag] = childHash
 				} else {
 					// clean up HEAD -> branch-name to just keep the branch name
 					ref = strings.TrimPrefix(ref, "HEAD -> ")
@@ -237,6 +238,11 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 
 		r.commitDetails[childHash] = &commit
+
+		// Also populate the ref-to-commit map
+		for _, ref := range refs {
+			r.refToCommit[ref] = childHash
+		}
 	}
 
 	logger.InfoContext(ctx, "Commit graph completed", slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))

@@ -470,7 +470,6 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		fixed = r.expandByCherrypick(fixed)
 	}
 
-	var affectedCommits []*Commit
 
 	// Fixed commits and children of last affected are both in this set
 	// For graph traversal sake they are both considered the fix
@@ -533,6 +532,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 						}
 					}
 				}
+
 				continue
 			}
 
@@ -550,36 +550,12 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 	}
 
 	// Return the affected commit details
+	affectedCommits := make([]*Commit, 0, len(affectedMap))
 	for commit := range affectedMap {
 		affectedCommits = append(affectedCommits, r.commitDetails[commit])
 	}
 
 	return affectedCommits
-}
-
-// getTree returns all descendants of a commit (including the root itself)
-func (r *Repository) getTree(root SHA1) []SHA1 {
-	stack := []SHA1{root}
-	visited := make(map[SHA1]struct{})
-	var result []SHA1
-
-	for len(stack) > 0 {
-		curr := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if _, ok := visited[curr]; ok {
-			continue
-		}
-		visited[curr] = struct{}{}
-		result = append(result, curr)
-
-		// Add children to stack
-		if children, ok := r.commitGraph[curr]; ok {
-			stack = append(stack, children...)
-		}
-	}
-
-	return result
 }
 
 // expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits + any other commits that share the same Patch ID

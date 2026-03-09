@@ -29,8 +29,6 @@ spec:
                 value: "1.0"
               - name: TRACE_SAMPLE_RATE # for the individual vulnerability entries
                 value: "0.05"
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

@@ -94,7 +94,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -102,7 +102,18 @@
     {},
     {},
     {},
-    {}
+    {
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2026-22184",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-27171",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    }
   ]
 }
 
@@ -134,7 +145,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -142,7 +153,18 @@
     {},
     {},
     {},
-    {}
+    {
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2026-22184",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-27171",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    }
   ]
 }
 
@@ -197,7 +219,7 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -207,7 +229,18 @@
     {},
     {},
     {},
-    {}
+    {
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2026-22184",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-27171",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    }
   ]
 }
 

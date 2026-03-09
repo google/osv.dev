@@ -3,8 +3,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -74,11 +76,6 @@ type AdvisoryInfo struct {
 }
 
 type Advisories map[string]*AdvisoryInfo
-
-var marshaler = protojson.MarshalOptions{
-	Multiline: true, // Enables multiline output
-	Indent:    "  ", // Specifies the indentation string (e.g., two spaces)
-}
 
 func createCodenameToVersion() (map[string]string, error) {
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -551,12 +548,16 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 			}
 
 			for _, vuln := range vulns {
-				b, err := marshaler.Marshal(vuln)
+				b, err := protojson.Marshal(vuln)
 				if err != nil {
 					logger.Error("Failed to marshal vulnerability", "id", vuln.GetId(), "err", err)
 					continue
 				}
-
+				var buf bytes.Buffer
+				if err := json.Indent(&buf, b, "", "  "); err != nil {
+					logger.Error("Failed to indent vulnerability", "id", vuln.GetId(), "err", err)
+					continue
+				}
 				outPath := filepath.Join(advOutputDir, vuln.GetId()+".json")
 				//nolint:gosec // 0644 is fine for public vulnerability data
 				if err := os.WriteFile(outPath, b, 0644); err != nil {

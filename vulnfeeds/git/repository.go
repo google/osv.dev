@@ -40,6 +40,8 @@ const (
 	peeledSuffix = "^{}"
 )
 
+var ErrRateLimit = errors.New("rate limit exceeded")
+
 // A GitTag holds a Git tag and corresponding commit hash.
 type Tag struct {
 	Tag    string // Git tag
@@ -132,6 +134,9 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
 				return retry.RetryableError(err)
+			}
+			if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+				return ErrRateLimit
 			}
 
 			return err

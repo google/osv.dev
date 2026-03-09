@@ -50,7 +50,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		metrics.AddNote("Trying to convert version tags to commits: %v with repos: %v", versions, repos)
-		versions = cves.VersionInfoToCommits(versions, repos, cache, metrics)
+		var err error
+		versions, err = cves.VersionInfoToCommits(versions, repos, cache, metrics)
+		if err != nil {
+			return fmt.Errorf("failed to convert version tags to commits: %w", err)
+		}
 		hasAnyFixedCommits := false
 		for _, ac := range versions.AffectedCommits {
 			if ac.Fixed != "" {
@@ -140,7 +144,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 			return fmt.Errorf("no affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		versions = cves.VersionInfoToCommits(versions, repos, cache, metrics)
+		var err error
+		versions, err = cves.VersionInfoToCommits(versions, repos, cache, metrics)
+		if err != nil {
+			return fmt.Errorf("failed to convert version tags to commits: %w", err)
+		}
 	}
 
 	hasAnyFixedCommits := false

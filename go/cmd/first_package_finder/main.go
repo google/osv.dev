@@ -18,17 +18,19 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/logger"
 )
 
 const (
 	debianReleaseVersionsURL = "https://salsa.debian.org/debian/distro-info-data/-/raw/main/debian.csv"
 	debianSnapshotURL        = "https://snapshot.debian.org/archive/debian/%s/dists/"
-	debianSourcesURLExt      = "%s/main/source/Sources.gz"
-	firstReleaseLookahead    = 10
-	packageKey               = "Package: "
+	debianSourcesURLExt      = "%s/main/source/Sources.gz" // `.gz` format always exist for all snapshots
+	firstReleaseLookahead    = 10 // Number of days to search (day by day) if the initial date returns 404
+	packageKey               = "Package: " // Prefixes used in the Sources file
 	versionKey               = "Version: "
 )
 
+// List of ignored versions, mostly too early to be in snapshots
 var (
 	ignoredDebianVersions = map[string]bool{
 		"experimental": true,
@@ -39,7 +41,7 @@ var (
 		"slink":        true,
 		"potato":       true,
 	}
-	firstSnapshotDate = time.Date(2005, 3, 12, 0, 0, 0, 0, time.UTC)
+	firstSnapshotDate = time.Date(2005, 3, 12, 0, 0, 0, 0, time.UTC) // First snapshot date for Debian
 )
 
 // HTTPError represents an error from an HTTP request, including the status code.
@@ -52,10 +54,12 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("HTTP %d for URL: %s", e.StatusCode, e.URL)
 }
 
+// convertDatetimeToStrDatetime converts datetime object to debian snapshot url string
 func convertDatetimeToStrDatetime(t time.Time) string {
 	return t.UTC().Format("20060102T150405Z")
 }
 
+// getDebianSourcesURL creates an url for snapshot.debian.org
 func getDebianSourcesURL(date time.Time, version string) string {
 	formattedDate := convertDatetimeToStrDatetime(date)
 	return fmt.Sprintf(debianSnapshotURL, formattedDate) + fmt.Sprintf(debianSourcesURLExt, version)
@@ -68,6 +72,7 @@ type DebianVersionInfo struct {
 	Sources map[string]string
 }
 
+// retrieveCodenameToVersion returns the codename to version mapping
 func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Get(debianReleaseVersionsURL)
@@ -117,6 +122,7 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 			version = row[versionIdx]
 		}
 		if version == "" {
+			// series appears to be codename but with no caps
 			version = series
 		}
 
@@ -125,6 +131,7 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 			releaseStr = row[releaseIdx]
 		}
 		if releaseStr == "" && createdIdx < len(row) {
+			// Set release to created if not yet released
 			releaseStr = row[createdIdx]
 		}
 
@@ -144,15 +151,18 @@ func retrieveCodenameToVersion() (map[string]*DebianVersionInfo, error) {
 	return result, nil
 }
 
+// parseCreatedDatesAndSetTime parses created date in debian version csv to datetime plus one day
 func parseCreatedDatesAndSetTime(date time.Time) time.Time {
 	result := date.Add(24 * time.Hour)
 	if result.Before(firstSnapshotDate) {
+		// Set minimum date to first debian snapshot
 		return firstSnapshotDate
 	}
 
 	return result
 }
 
+// loadSources loads the sources file and store in a dictionary of {name: version}
 func loadSources(date time.Time, dist string) (map[string]string, error) {
 	url := getDebianSourcesURL(date, dist)
 
@@ -192,6 +202,7 @@ func loadSources(date time.Time, dist string) (map[string]string, error) {
 	return packageVersionDict, scanner.Err()
 }
 
+// loadFirstPackages loads the dataframe containing the first version of packages per distro
 func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 	codenameToVersion, err := retrieveCodenameToVersion()
 	if err != nil {
@@ -204,6 +215,7 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 		}
 
 		date := parseCreatedDatesAndSetTime(info.Release)
+		// retry for n days into the future if the first request doesn't work
 		for i := 0; i <= firstReleaseLookahead; i++ {
 			actualDate := date.Add(time.Duration(i) * 24 * time.Hour)
 			slog.Info("Attempting load of version", "series", series, "date", actualDate)
@@ -217,11 +229,13 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 			}
 
 			var httpErr *HTTPError
+			// Expect 404 errors for releases before snapshot exists
 			if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusNotFound {
 				slog.Error("Error loading sources", "series", series, "date", actualDate, "err", err)
 			}
 
 			if actualDate.After(time.Now()) {
+				// No need to keep trying future dates
 				break
 			}
 		}
@@ -231,6 +245,8 @@ func loadFirstPackages() (map[string]*DebianVersionInfo, error) {
 }
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
 	var outputDir string
 	var uploadToGCS bool
 	var outputBucket string
@@ -245,11 +261,11 @@ func main() {
 
 	codenameToVersion, err := loadFirstPackages()
 	if err != nil {
-		slog.Error("Failed to load first packages", "err", err)
+		logger.Error("Failed to load first packages", "err", err)
 		os.Exit(1)
 	}
 
-	slog.Info("first_package loaded, begin writing out data")
+	logger.Info("first_package loaded, begin writing out data")
 
 	var outBkt *storage.BucketHandle
 	var ctx context.Context
@@ -257,13 +273,13 @@ func main() {
 		ctx = context.Background()
 		storageClient, err := storage.NewClient(ctx)
 		if err != nil {
-			slog.Error("Failed to create storage client", "err", err)
+			logger.Error("Failed to create storage client", "err", err)
 			os.Exit(1)
 		}
 		outBkt = storageClient.Bucket(outputBucket)
 	} else {
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
-			slog.Error("Failed to create output directory", "err", err)
+			logger.Error("Failed to create output directory", "err", err)
 			os.Exit(1)
 		}
 	}
@@ -275,7 +291,7 @@ func main() {
 
 		b, err := json.Marshal(info.Sources)
 		if err != nil {
-			slog.Error("Failed to marshal sources", "version", info.Version, "err", err)
+			logger.Error("Failed to marshal sources", "version", info.Version, "err", err)
 			continue
 		}
 
@@ -285,22 +301,22 @@ func main() {
 			wc := obj.NewWriter(ctx)
 			wc.ContentType = "application/json"
 			if _, err := wc.Write(b); err != nil {
-				slog.Error("Failed to write to GCS object", "objName", objName, "err", err)
+				logger.Error("Failed to write to GCS object", "objName", objName, "err", err)
 				wc.Close()
 
 				continue
 			}
 			if err := wc.Close(); err != nil {
-				slog.Error("Failed to close GCS writer", "objName", objName, "err", err)
+				logger.Error("Failed to close GCS writer", "objName", objName, "err", err)
 			}
-			slog.Info("Uploaded to GCS", "objName", objName)
+			logger.Info("Uploaded to GCS", "objName", objName)
 		} else {
 			outPath := filepath.Join(outputDir, info.Version+".json")
 			//nolint:gosec // 0644 is fine for public vulnerability data
 			if err := os.WriteFile(outPath, b, 0644); err != nil {
-				slog.Error("Failed to write to file", "outPath", outPath, "err", err)
+				logger.Error("Failed to write to file", "outPath", outPath, "err", err)
 			}
 		}
 	}
-	slog.Info("Finished")
+	logger.Info("Finished")
 }

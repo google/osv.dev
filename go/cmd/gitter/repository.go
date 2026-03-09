@@ -470,7 +470,6 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		fixed = r.expandByCherrypick(fixed)
 	}
 
-
 	// Fixed commits and children of last affected are both in this set
 	// For graph traversal sake they are both considered the fix
 	fixedMap := make(map[SHA1]struct{}, len(fixed)+len(lastAffected))

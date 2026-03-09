@@ -410,6 +410,9 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 
 func parseHash(hash string) (SHA1, error) {
 	hashBytes, err := hex.DecodeString(hash)
+	if len(hashBytes) != 20 {
+		return SHA1{}, fmt.Errorf("invalid hash length: %d", len(hashBytes))
+	}
 	if err != nil {
 		return SHA1{}, fmt.Errorf("failed to decode hash: %w", err)
 	}

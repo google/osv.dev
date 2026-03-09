@@ -466,6 +466,15 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	url := body.URL
+	// If request came from a local ip, don't do the check
+	if !isLocalRequest(r) {
+		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
+		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
+			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /cache")
 
@@ -537,6 +546,15 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	url := body.URL
+	// If request came from a local ip, don't do the check
+	if !isLocalRequest(r) {
+		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
+		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
+			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
+			return
+		}
+	}
+
 	introduced := []string{}
 	fixed := []string{}
 	lastAffected := []string{}
@@ -618,7 +636,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypickIntro, cherrypickFixed)
 	}
 
-	resp := &pb.AffectedCommitsResponse{}
+	resp := &pb.AffectedCommitsResponse{Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits))}
 	for _, c := range affectedCommits {
 		resp.Commits = append(resp.Commits, &pb.AffectedCommit{
 			Hash: c.Hash[:],

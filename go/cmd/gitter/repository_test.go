@@ -639,7 +639,7 @@ func TestAffected_Cherrypick(t *testing.T) {
 	repo.commitDetails[hC] = &Commit{Hash: hC, Parents: []SHA1{hB}, PatchID: c2}
 	repo.commitDetails[hD] = &Commit{Hash: hD, Parents: []SHA1{hC}}
 	repo.commitDetails[hE] = &Commit{Hash: hE, PatchID: c1}
-	repo.commitDetails[hF] = &Commit{Hash: hF, Parents: []SHA1{hB}}
+	repo.commitDetails[hF] = &Commit{Hash: hF, Parents: []SHA1{hE}}
 	repo.commitDetails[hG] = &Commit{Hash: hG, Parents: []SHA1{hF}, PatchID: c2}
 	repo.commitDetails[hH] = &Commit{Hash: hH, Parents: []SHA1{hG}}
 

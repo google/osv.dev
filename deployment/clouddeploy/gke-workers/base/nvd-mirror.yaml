@@ -24,8 +24,6 @@ spec:
               value: /tmp
             image: nvd-mirror
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "30"

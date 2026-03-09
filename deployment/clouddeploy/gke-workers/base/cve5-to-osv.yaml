@@ -17,8 +17,6 @@ spec:
           - name: cve5-to-osv
             image: cve5-to-osv
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "8"

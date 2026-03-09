@@ -41,11 +41,11 @@ const (
 
 var (
 	leadingWhitespacePattern = regexp.MustCompile(`^\s`)
-	dsaPattern               = regexp.MustCompile(`\[(.*?)]\s*([\w-]+)\s*(.*)`) // e.g. [25 Apr 2022] DSA-5124-1 ffmpeg - security update
-	versionPattern           = regexp.MustCompile(`\[(.*?)]\s*-\s*([^\s]+)\s*([^\s]+)`) // e.g. [buster] - xz-utils 5.2.4-1+deb10u1
+	dsaPattern               = regexp.MustCompile(`\[(.*?)]\s*([\w-]+)\s*(.*)`)                  // e.g. [25 Apr 2022] DSA-5124-1 ffmpeg - security update
+	versionPattern           = regexp.MustCompile(`\[(.*?)]\s*-\s*([^\s]+)\s*([^\s]+)`)          // e.g. [buster] - xz-utils 5.2.4-1+deb10u1
 	wmlDescriptionPattern    = regexp.MustCompile(`(?s)<define-tag moreinfo>(.*?)</define-tag>`) // e.g. <define-tag moreinfo>\n Some html here \n</define-tag>
-	wmlReportDatePattern     = regexp.MustCompile(`<define-tag report_date>(.*?)</define-tag>`) // e.g. <define-tag report_date>2022-1-04</define-tag>
-	dsaOrDlaWithNoExtPattern = regexp.MustCompile(`d[sl]a-\d+`) // e.g. DSA-12345-2, -2 is the extension
+	wmlReportDatePattern     = regexp.MustCompile(`<define-tag report_date>(.*?)</define-tag>`)  // e.g. <define-tag report_date>2022-1-04</define-tag>
+	dsaOrDlaWithNoExtPattern = regexp.MustCompile(`d[sl]a-\d+`)                                  // e.g. DSA-12345-2, -2 is the extension
 )
 
 type AdvisoryType string
@@ -495,14 +495,14 @@ func main() {
 
 	if *outputDir == "" {
 		logger.Error("Output directory is required")
-		logger.Close() 
-		os.Exit(1) //nolint:errcheck
+		logger.Close()
+		os.Exit(1) //nolint:gocritic
 	}
 
 	if err := run(*webwmlRepo, *securityTrackerRepo, *outputDir, *outputBucket, *uploadToGCS, *doDeletions, *numWorkers); err != nil {
 		logger.Error("Execution failed", "err", err)
-		logger.Close() 
-		os.Exit(1) //nolint:errcheck
+		logger.Close()
+		os.Exit(1) //nolint:gocritic
 	}
 }
 

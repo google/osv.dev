@@ -262,8 +262,8 @@ func main() {
 	codenameToVersion, err := loadFirstPackages()
 	if err != nil {
 		logger.Error("Failed to load first packages", "err", err)
-		logger.Close() //nolint:errcheck
-		os.Exit(1)
+		logger.Close()
+		os.Exit(1) //nolint:gocritic
 	}
 
 	logger.Info("first_package loaded, begin writing out data")

@@ -36,16 +36,16 @@ const (
 	notAffectedVersion      = "<not-affected>"
 	unfixedVersion          = "<unfixed>"
 	endOfLifeVersion        = "<end-of-life>"
-	gitDatePrefix           = "-----"
+	gitDatePrefix           = "-----" // Prefix used to identify a new date line
 )
 
 var (
 	leadingWhitespacePattern = regexp.MustCompile(`^\s`)
-	dsaPattern               = regexp.MustCompile(`\[(.*?)]\s*([\w-]+)\s*(.*)`)
-	versionPattern           = regexp.MustCompile(`\[(.*?)]\s*-\s*([^\s]+)\s*([^\s]+)`)
-	wmlDescriptionPattern    = regexp.MustCompile(`(?s)<define-tag moreinfo>(.*?)</define-tag>`)
-	wmlReportDatePattern     = regexp.MustCompile(`<define-tag report_date>(.*?)</define-tag>`)
-	dsaOrDlaWithNoExtPattern = regexp.MustCompile(`d[sl]a-\d+`)
+	dsaPattern               = regexp.MustCompile(`\[(.*?)]\s*([\w-]+)\s*(.*)`) // e.g. [25 Apr 2022] DSA-5124-1 ffmpeg - security update
+	versionPattern           = regexp.MustCompile(`\[(.*?)]\s*-\s*([^\s]+)\s*([^\s]+)`) // e.g. [buster] - xz-utils 5.2.4-1+deb10u1
+	wmlDescriptionPattern    = regexp.MustCompile(`(?s)<define-tag moreinfo>(.*?)</define-tag>`) // e.g. <define-tag moreinfo>\n Some html here \n</define-tag>
+	wmlReportDatePattern     = regexp.MustCompile(`<define-tag report_date>(.*?)</define-tag>`) // e.g. <define-tag report_date>2022-1-04</define-tag>
+	dsaOrDlaWithNoExtPattern = regexp.MustCompile(`d[sl]a-\d+`) // e.g. DSA-12345-2, -2 is the extension
 )
 
 type AdvisoryType string
@@ -139,6 +139,7 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 	scanner := bufio.NewScanner(file)
 	var currentAdvisory string
 
+	// Enumerate advisories + version info from security-tracker.
 	for scanner.Scan() {
 		line := strings.TrimRight(scanner.Text(), " \t\r\n")
 		if line == "" {
@@ -154,6 +155,8 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 			if strings.HasPrefix(line, "{") {
 				upstreams := strings.Fields(strings.Trim(line, "{}"))
 				for _, u := range upstreams {
+					// This is not ideal, in the cases that there are missing
+					// Debian Security Tracker CVEs, but it's better than not having them
 					advisories[currentAdvisory].Upstream = append(advisories[currentAdvisory].Upstream, "DEBIAN-"+u)
 					advisories[currentAdvisory].Upstream = append(advisories[currentAdvisory].Upstream, u)
 				}
@@ -174,7 +177,10 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 			packageName := versionMatch[2]
 			fixedVer := versionMatch[3]
 
+			// Only create advisory if the version is affected.
 			if fixedVer != notAffectedVersion {
+				// If fixed version is one of the following special values
+				// fixed version essentially doesn't exist, so blank it
 				if fixedVer == unfixedVersion || fixedVer == endOfLifeVersion {
 					fixedVer = ""
 				}
@@ -243,7 +249,9 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 
 	gitRelativePaths := make(map[string][]string)
 
+	// Add descriptions to advisories from wml files
 	for dsaID, advisory := range advisories {
+		// Remove potential extension (e.g. DSA-12345-2, -2 is the extension)
 		matches := dsaOrDlaWithNoExtPattern.FindAllString(strings.ToLower(dsaID), -1)
 		if len(matches) == 0 {
 			continue
@@ -283,6 +291,11 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 				return err
 			}
 			reportDateMatches := wmlReportDatePattern.FindAllStringSubmatch(string(dataBytes), -1)
+			// Split by ',' here for the occasional case where there
+			// are two dates in the 'publish' field.
+			// Multiple dates are caused by major modification later on.
+			// This is accounted for with the modified timestamp with git
+			// below though, so we don't need to parse them here
 			if len(reportDateMatches) > 0 {
 				reportDateStr := strings.Split(reportDateMatches[0][1], ",")[0]
 				parsedDate, err := time.Parse("2006-1-02", reportDateStr)
@@ -323,7 +336,8 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 
 	scanner := bufio.NewScanner(stdout)
 	var currentDate time.Time
-
+	// Loop through each commit to get the first time a file is mentioned
+	// Save the date as the last modified date of said file
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -345,12 +359,14 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 		}
 
 		for _, dsaID := range dsaIDs {
+			// Set modified date to the latest of the .data and .wml files.
 			if currentDate.After(modifiedDateDict[dsaID]) {
 				modifiedDateDict[dsaID] = currentDate
 			}
 		}
 		delete(gitRelativePaths, line)
-
+		// Empty dictionary means no more files need modification dates
+		// Safely skip rest of the commits
 		if len(gitRelativePaths) == 0 {
 			break
 		}

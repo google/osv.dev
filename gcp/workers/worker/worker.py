@@ -714,6 +714,7 @@ class TaskRunner:
         else:
           vulnerability.published.CopyFrom(vulnerability.modified)
 
+      ds_vuln.source_id = f'{source_repo.name}:{relative_path}'
       osv.models.put_entities(ds_vuln, vulnerability)
 
     try:

@@ -167,6 +167,7 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 					Generation: attrs.Generation,
 					CustomTime: attrs.CustomTime,
 					CRC32C:     attrs.CRC32C,
+					Updated:    attrs.Updated,
 				},
 			}
 			if !yield(obj, nil) {

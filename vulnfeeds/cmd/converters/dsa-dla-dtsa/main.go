@@ -502,7 +502,7 @@ func main() {
 	if err := run(*webwmlRepo, *securityTrackerRepo, *outputDir, *outputBucket, *uploadToGCS, *doDeletions, *numWorkers); err != nil {
 		logger.Error("Execution failed", "err", err)
 		logger.Close()
-		os.Exit(1) //nolint:gocritic
+		os.Exit(1)
 	}
 }
 

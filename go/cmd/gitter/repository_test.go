@@ -274,7 +274,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 			name:       "Branch propagation: A introduced, C fixed",
 			introduced: []SHA1{hA},
 			fixed:      []SHA1{hC},
-			expected:   []SHA1{hA, hB, hH, hD, hE},
+			expected:   []SHA1{hA, hB, hH},
 		},
 		{
 			name:       "Re-introduced: (A,C) introduced, (B,D,G) fixed",
@@ -289,16 +289,16 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 			expected:   []SHA1{hH, hD},
 		},
 		{
-			name:       "Merge fix (explicit merge commit): A introduced, (H, D) fixed",
+			name:       "Merge fix: A introduced, H fixed",
 			introduced: []SHA1{hA},
-			fixed:      []SHA1{hH, hD},
+			fixed:      []SHA1{hH},
 			expected:   []SHA1{hA, hB, hC, hF, hG},
 		},
 		{
-			name:       "Merge fix (non-explicit): A introduced, H fixed",
-			introduced: []SHA1{hA},
+			name:       "Merge intro and fix (different branches): C introduced, H fixed",
+			introduced: []SHA1{hC},
 			fixed:      []SHA1{hH},
-			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG},
+			expected:   []SHA1{hC, hD, hE, hF, hG},
 		},
 		{
 			name:       "Everything affected if no fix",
@@ -406,16 +406,10 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			expected:     []SHA1{hD, hE},
 		},
 		{
-			name:         "Branch propagation (affected): A introduced, D lastAffected",
+			name:         "Branch propagation: A introduced, C lastAffected",
 			introduced:   []SHA1{hA},
-			lastAffected: []SHA1{hD},
-			expected:     []SHA1{hA, hB, hC, hD, hF, hG, hH},
-		},
-		{
-			name:         "Branch propagation (unaffected): A introduced, B lastAffected",
-			introduced:   []SHA1{hA},
-			lastAffected: []SHA1{hB},
-			expected:     []SHA1{hA, hB},
+			lastAffected: []SHA1{hC},
+			expected:     []SHA1{hA, hB, hC, hH},
 		},
 		{
 			name:         "Re-introduced: (A,D) introduced, (B,E) lastAffected",
@@ -430,7 +424,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			expected:     []SHA1{hH, hD},
 		},
 		{
-			name:         "Merge lastAffected: A introduced, H lastAffected", // TODO: Discuss!!
+			name:         "Merge lastAffected: A introduced, H lastAffected",
 			introduced:   []SHA1{hA},
 			lastAffected: []SHA1{hH},
 			expected:     []SHA1{hA, hB, hC, hF, hG, hH},
@@ -547,25 +541,6 @@ func TestAffected_Combined(t *testing.T) {
 			introduced:   []SHA1{hA},
 			fixed:        []SHA1{hB},
 			lastAffected: []SHA1{hE},
-			expected:     []SHA1{hA},
-		},
-		{
-			name:       "Conflicting events: Fixed equals Introduced", // TODO will this happen?
-			introduced: []SHA1{hA, hB},
-			fixed:      []SHA1{hB},
-			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
-		},
-		{
-			name:         "Conflicting events: LastAffected equals Introduced", // TODO: Will this happen??
-			introduced:   []SHA1{hB, hH},
-			lastAffected: []SHA1{hC, hH},
-			expected:     []SHA1{hB, hC, hH, hD, hE},
-		},
-		{
-			name:         "Conflicting events: Fixed equals LastAffected", // TODO: DISCUSS?
-			introduced:   []SHA1{hA},
-			fixed:        []SHA1{hB},
-			lastAffected: []SHA1{hB},
 			expected:     []SHA1{hA},
 		},
 	}

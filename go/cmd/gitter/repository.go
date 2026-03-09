@@ -488,17 +488,80 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 		}
 	}
 
-	// In the case that a commit in fixedMap is also in introduced
-	// we should remove it from the fixedMap (the commit fixed one but introduced another vuln)
-	for _, commit := range introduced {
-    delete(fixedMap, commit)
+	// The graph traversal
+	// affectedMap deduplicates the affected commits from the graph walk from each introduced commit
+	affectedMap := make(map[SHA1]struct{})
+
+	// Walk each introduced commit and find its affected commit
+	for _, intro := range introduced {
+		// BFS from intro
+		queue := []SHA1{intro}
+		terminateMap := maps.Clone(fixedMap)
+		affectedFromIntro := make(map[SHA1]struct{})
+		visited := make(map[SHA1]struct{})
+
+		for len(queue) > 0 {
+			curr := queue[0]
+			queue = queue[1:]
+
+			if _, ok := visited[curr]; ok {
+				continue
+			}
+			visited[curr] = struct{}{}
+
+			// When we hit a fixed commit (or its descendants), we aggressively map its
+			// entire downstream tree as terminated to satisfy the "any path blocked" rule.
+			if _, ok := terminateMap[curr]; ok {
+				// Inline DFS from current node to make all descendants unaffected / unaffectable
+				// 1. If a previous path added it to affected list, remove
+				// 2. Add to terminate set
+				stack := []SHA1{curr}
+				for len(stack) > 0 {
+					unaffected := stack[len(stack)-1]
+					stack = stack[:len(stack)-1]
+
+					// Remove from affected list if a bypass path added it previously
+					delete(affectedFromIntro, unaffected)
+
+					if children, ok := r.commitGraph[unaffected]; ok {
+						for _, child := range children {
+							// If child is not already in the terminateSet, we want to traverse that path and mark descendants as unaffectable
+							if _, ok := terminateMap[child]; !ok {
+								terminateMap[child] = struct{}{}
+								stack = append(stack, child)
+							}
+						}
+					}
+				}
+				continue
+			}
+
+			// If not in terminateSet, add to the intro-specific affected list and continue
+			affectedFromIntro[curr] = struct{}{}
+			if children, ok := r.commitGraph[curr]; ok {
+				queue = append(queue, children...)
+			}
+		}
+
+		// Add the final affected list of this introduced commit to the global set
+		for commit := range affectedFromIntro {
+			affectedMap[commit] = struct{}{}
+		}
 	}
 
-	// The graph traversal
-	stack := make([]SHA1, 0, len(introduced))
-	stack = append(stack, introduced...)
+	// Return the affected commit details
+	for commit := range affectedMap {
+		affectedCommits = append(affectedCommits, r.commitDetails[commit])
+	}
 
+	return affectedCommits
+}
+
+// getTree returns all descendants of a commit (including the root itself)
+func (r *Repository) getTree(root SHA1) []SHA1 {
+	stack := []SHA1{root}
 	visited := make(map[SHA1]struct{})
+	var result []SHA1
 
 	for len(stack) > 0 {
 		curr := stack[len(stack)-1]
@@ -508,24 +571,15 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 			continue
 		}
 		visited[curr] = struct{}{}
+		result = append(result, curr)
 
-		// Stop traversal if the commit is in the fixed set (fixed or children of last_affected)
-		if _, ok := fixedMap[curr]; ok {
-			continue
-		}
-
-		// Otherwise, add to affected commits
-		if details, ok := r.commitDetails[curr]; ok {
-			affectedCommits = append(affectedCommits, details)
-		}
-
-		// Add children to DFS stack
+		// Add children to stack
 		if children, ok := r.commitGraph[curr]; ok {
 			stack = append(stack, children...)
 		}
 	}
 
-	return affectedCommits
+	return result
 }
 
 // expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits + any other commits that share the same Patch ID

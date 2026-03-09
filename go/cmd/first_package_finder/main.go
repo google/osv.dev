@@ -25,8 +25,8 @@ const (
 	debianReleaseVersionsURL = "https://salsa.debian.org/debian/distro-info-data/-/raw/main/debian.csv"
 	debianSnapshotURL        = "https://snapshot.debian.org/archive/debian/%s/dists/"
 	debianSourcesURLExt      = "%s/main/source/Sources.gz" // `.gz` format always exist for all snapshots
-	firstReleaseLookahead    = 10 // Number of days to search (day by day) if the initial date returns 404
-	packageKey               = "Package: " // Prefixes used in the Sources file
+	firstReleaseLookahead    = 10                          // Number of days to search (day by day) if the initial date returns 404
+	packageKey               = "Package: "                 // Prefixes used in the Sources file
 	versionKey               = "Version: "
 )
 
@@ -262,6 +262,7 @@ func main() {
 	codenameToVersion, err := loadFirstPackages()
 	if err != nil {
 		logger.Error("Failed to load first packages", "err", err)
+		logger.Close() //nolint:errcheck
 		os.Exit(1)
 	}
 

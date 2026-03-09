@@ -357,6 +357,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 		if len(b.GetRanges()) > 0 {
 			repoB = b.GetRanges()[0].GetRepo()
 		}
+
 		return cmp.Compare(repoA, repoB)
 	})
 

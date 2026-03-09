@@ -69,7 +69,7 @@ func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.
 		Generation: obj.generation,
 		CustomTime: obj.customTime,
 		CRC32C:     obj.crc32c,
-		Updated:    obj.updated,
+		Modified:   obj.updated,
 	}, nil
 }
 
@@ -143,7 +143,7 @@ func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clien
 					Generation: obj.generation,
 					CustomTime: obj.customTime,
 					CRC32C:     obj.crc32c,
-					Updated:    obj.updated,
+					Modified:   obj.updated,
 				},
 			}
 			if !yield(o, nil) {

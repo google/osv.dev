@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -20,6 +19,7 @@ import (
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
 	"github.com/google/osv/vulnfeeds/upload"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/text/encoding/charmap"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -262,7 +262,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 		dataPath, dataOk := filePathMap[mappedKeyNoExt+".data"]
 
 		if !wmlOk {
-			// slog.Info("No WML file yet for this, creating partial schema", "dsaID", mappedKeyNoExt)
+			// logger.Info("No WML file yet for this, creating partial schema", "dsaID", mappedKeyNoExt)
 			continue
 		}
 
@@ -388,7 +388,7 @@ func generateVulnerabilities(advisories Advisories) ([]*osvschema.Vulnerability,
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(advisories))
 	for dsaID, advisory := range advisories {
 		if len(advisory.Affected) == 0 {
-			slog.Info("Skipping because no affected versions", "dsaID", dsaID)
+			logger.Info("Skipping because no affected versions", "dsaID", dsaID)
 			continue
 		}
 
@@ -470,7 +470,7 @@ func convertDebian(webwmlRepo, securityTrackerRepo string, advType AdvisoryType)
 }
 
 func cloneRepo(url, dest string) error {
-	slog.Info("Cloning repository", "url", url, "dest", dest)
+	logger.Info("Cloning repository", "url", url, "dest", dest)
 
 	cmd := exec.Command("git", "clone", "--quiet", url, dest, "--depth=1")
 	cmd.Stdout = os.Stdout
@@ -480,6 +480,9 @@ func cloneRepo(url, dest string) error {
 }
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
+
 	outputDir := flag.String("o", "", "Output directory")
 	webwmlRepo := flag.String("webwml", "", "Webwml repository")
 	securityTrackerRepo := flag.String("security-tracker", "", "Security tracker repository")
@@ -491,13 +494,15 @@ func main() {
 	flag.Parse()
 
 	if *outputDir == "" {
-		slog.Error("Output directory is required")
-		os.Exit(1)
+		logger.Error("Output directory is required")
+		logger.Close() 
+		os.Exit(1) //nolint:errcheck
 	}
 
 	if err := run(*webwmlRepo, *securityTrackerRepo, *outputDir, *outputBucket, *uploadToGCS, *doDeletions, *numWorkers); err != nil {
-		slog.Error("Execution failed", "err", err)
-		os.Exit(1)
+		logger.Error("Execution failed", "err", err)
+		logger.Close() 
+		os.Exit(1) //nolint:errcheck
 	}
 }
 
@@ -530,7 +535,7 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 	var allVulnerabilities []*osvschema.Vulnerability
 
 	for _, advType := range advisoryTypes {
-		slog.Info("Converting advisories", "type", advType)
+		logger.Info("Converting advisories", "type", advType)
 
 		vulns, err := convertDebian(webwmlRepo, securityTrackerRepo, advType)
 		if err != nil {
@@ -548,27 +553,27 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 			for _, vuln := range vulns {
 				b, err := marshaler.Marshal(vuln)
 				if err != nil {
-					slog.Error("Failed to marshal vulnerability", "id", vuln.GetId(), "err", err)
+					logger.Error("Failed to marshal vulnerability", "id", vuln.GetId(), "err", err)
 					continue
 				}
 
 				outPath := filepath.Join(advOutputDir, vuln.GetId()+".json")
 				//nolint:gosec // 0644 is fine for public vulnerability data
 				if err := os.WriteFile(outPath, b, 0644); err != nil {
-					slog.Error("Failed to write vulnerability", "id", vuln.GetId(), "err", err)
+					logger.Error("Failed to write vulnerability", "id", vuln.GetId(), "err", err)
 					continue
 				}
-				slog.Info("Writing", "path", outPath)
+				logger.Info("Writing", "path", outPath)
 			}
 		}
 	}
 
 	if uploadToGCS {
-		slog.Info("Uploading to GCS", "bucket", outputBucket)
+		logger.Info("Uploading to GCS", "bucket", outputBucket)
 		ctx := context.Background()
 		upload.Upload(ctx, "debian-osv", uploadToGCS, outputBucket, "", numWorkers, outputDir, allVulnerabilities, doDeletions)
 	} else {
-		slog.Info("Skipping GCS upload")
+		logger.Info("Skipping GCS upload")
 	}
 
 	return nil

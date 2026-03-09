@@ -430,6 +430,12 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			expected:     []SHA1{hA, hB, hC, hF, hG, hH},
 		},
 		{
+			name:         "Merge intro and lastAffected (different branches): C introduced, H lastAffected",
+			introduced:   []SHA1{hC},
+			lastAffected: []SHA1{hH},
+			expected:     []SHA1{hC},
+		},
+		{
 			name:       "Everything affected if no lastAffected",
 			introduced: []SHA1{hA},
 			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
@@ -587,7 +593,129 @@ func TestAffected_Combined(t *testing.T) {
 					expectedStr[i] = printSHA1(c)
 				}
 
-				t.Errorf("TestAffected_Introduced_LastAffected() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+				t.Errorf("TestAffected_Combined() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			}
+		})
+	}
+}
+
+func TestAffected_Cherrypick(t *testing.T) {
+	repo := NewRepository("/repo")
+
+	// Graph: (Parent -> Child)
+	// A -> B -> C -> D
+	// |				 |
+	// | (cherrypick)
+	// | 				 |
+	// E -> F -> G -> H
+
+	hA := decodeSHA1("aaaa")
+	hB := decodeSHA1("bbbb")
+	hC := decodeSHA1("cccc")
+	hD := decodeSHA1("dddd")
+	hE := decodeSHA1("eeee")
+	hF := decodeSHA1("ffff")
+	hG := decodeSHA1("abab")
+	hH := decodeSHA1("acac")
+
+	c1 := decodeSHA1("c1")
+	c2 := decodeSHA1("c2")
+
+	// Setup graph (Parent -> Children)
+	repo.commitGraph[hA] = []SHA1{hB}
+	repo.commitGraph[hB] = []SHA1{hC}
+	repo.commitGraph[hC] = []SHA1{hD}
+	repo.commitGraph[hE] = []SHA1{hF}
+	repo.commitGraph[hF] = []SHA1{hG}
+	repo.commitGraph[hG] = []SHA1{hH}
+
+	// Setup PatchID map for cherrypicking
+	repo.patchIDToCommits[c1] = []SHA1{hA, hE}
+	repo.patchIDToCommits[c2] = []SHA1{hC, hG}
+
+	// Setup details
+	repo.commitDetails[hA] = &Commit{Hash: hA, PatchID: c1}
+	repo.commitDetails[hB] = &Commit{Hash: hB, Parents: []SHA1{hA}}
+	repo.commitDetails[hC] = &Commit{Hash: hC, Parents: []SHA1{hB}, PatchID: c2}
+	repo.commitDetails[hD] = &Commit{Hash: hD, Parents: []SHA1{hC}}
+	repo.commitDetails[hE] = &Commit{Hash: hE, PatchID: c1}
+	repo.commitDetails[hF] = &Commit{Hash: hF, Parents: []SHA1{hB}}
+	repo.commitDetails[hG] = &Commit{Hash: hG, Parents: []SHA1{hF}, PatchID: c2}
+	repo.commitDetails[hH] = &Commit{Hash: hH, Parents: []SHA1{hG}}
+
+	tests := []struct {
+		name            string
+		introduced      []SHA1
+		fixed           []SHA1
+		cherrypickIntro bool
+		cherrypickFixed bool
+		expected        []SHA1
+	}{
+		{
+			name:            "Cherrypick Introduced Only: A introduced, G fixed",
+			introduced:      []SHA1{hA},
+			fixed:           []SHA1{hG},
+			cherrypickIntro: true,
+			cherrypickFixed: false,
+			expected:        []SHA1{hA, hB, hC, hD, hE, hF},
+		},
+		{
+			name:            "Cherrypick Fixed Only: A introduced, G fixed",
+			introduced:      []SHA1{hA},
+			fixed:           []SHA1{hG},
+			cherrypickIntro: false,
+			cherrypickFixed: true,
+			expected:        []SHA1{hA, hB},
+		},
+		{
+			name:            "Cherrypick Introduced and Fixed: A introduced, G fixed",
+			introduced:      []SHA1{hA},
+			fixed:           []SHA1{hG},
+			cherrypickIntro: true,
+			cherrypickFixed: true,
+			expected:        []SHA1{hA, hB, hE, hF},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Convert SHA1 to string for the new API
+			introStrs := make([]string, len(tt.introduced))
+			for i, h := range tt.introduced {
+				introStrs[i] = encodeSHA1(h)
+			}
+			fixedStrs := make([]string, len(tt.fixed))
+			for i, h := range tt.fixed {
+				fixedStrs[i] = encodeSHA1(h)
+			}
+
+			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, nil, tt.cherrypickIntro, tt.cherrypickFixed)
+
+			var got []SHA1
+			for _, c := range gotCommits {
+				got = append(got, c.Hash)
+			}
+
+			// Sort got and expected for comparison
+			sort.Slice(got, func(i, j int) bool {
+				return string(got[i][:]) < string(got[j][:])
+			})
+			sort.Slice(tt.expected, func(i, j int) bool {
+				return string(tt.expected[i][:]) < string(tt.expected[j][:])
+			})
+
+			if diff := cmp.Diff(tt.expected, got); diff != "" {
+				// Turn them back into strings so it's easier to read
+				gotStr := make([]string, len(got))
+				for i, c := range got {
+					gotStr[i] = printSHA1(c)
+				}
+				expectedStr := make([]string, len(tt.expected))
+				for i, c := range tt.expected {
+					expectedStr[i] = printSHA1(c)
+				}
+
+				t.Errorf("TestAffected_Cherrypick() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
 			}
 		})
 	}

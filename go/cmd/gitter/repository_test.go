@@ -433,7 +433,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			name:         "Merge intro and lastAffected (different branches): C introduced, H lastAffected",
 			introduced:   []SHA1{hC},
 			lastAffected: []SHA1{hH},
-			expected:     []SHA1{hC},
+			expected:     []SHA1{hC, hF, hG},
 		},
 		{
 			name:       "Everything affected if no lastAffected",

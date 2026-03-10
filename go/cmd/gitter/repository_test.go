@@ -7,11 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 // A very simple test repository with 3 commits and 2 tags.
@@ -104,7 +104,7 @@ func TestCalculatePatchIDs(t *testing.T) {
 	for _, hash := range newCommits {
 		details := r.commitDetails[hash]
 		if details.PatchID == [20]byte{} {
-			t.Errorf("missing patch ID for commit %x", hash)
+			t.Errorf("missing patch ID for commit %s", printSHA1(hash))
 		}
 	}
 }
@@ -134,7 +134,7 @@ func TestLoadRepository(t *testing.T) {
 	// Check that the two sets of Patch IDs are the same
 	for hash, details := range r1.commitDetails {
 		if details.PatchID != r2.commitDetails[hash].PatchID {
-			t.Errorf("patch ID mismatch for commit %x", hash)
+			t.Errorf("patch ID mismatch for commit %s", printSHA1(hash))
 		}
 	}
 }
@@ -164,6 +164,19 @@ func printSHA1(hash SHA1) string {
 	str := hex.EncodeToString(hash[:])
 
 	return strings.TrimLeft(str, "0")
+}
+
+var cmpSHA1Opts = []cmp.Option{
+	cmp.Transformer("SHA1s", func(in []SHA1) []string {
+		out := make([]string, len(in))
+		for i, h := range in {
+			out[i] = printSHA1(h)
+		}
+		return out
+	}),
+	cmpopts.SortSlices(func(a, b string) bool {
+		return a < b
+	}),
 }
 
 func TestExpandByCherrypick(t *testing.T) {
@@ -206,14 +219,7 @@ func TestExpandByCherrypick(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := repo.expandByCherrypick(tt.input)
 
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
 				t.Errorf("expandByCherrypick() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -331,26 +337,8 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 				got = append(got, c.Hash)
 			}
 
-			// Sort got and expected for comparison
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
-				// Turn them back into strings so it's easier to read
-				gotStr := make([]string, len(got))
-				for i, c := range got {
-					gotStr[i] = printSHA1(c)
-				}
-				expectedStr := make([]string, len(tt.expected))
-				for i, c := range tt.expected {
-					expectedStr[i] = printSHA1(c)
-				}
-
-				t.Errorf("TestAffected_Introduced_Fixed() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestAffected_Introduced_Fixed() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -466,26 +454,8 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 				got = append(got, c.Hash)
 			}
 
-			// Sort got and expected for comparison
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
-				// Turn them back into strings so it's easier to read
-				gotStr := make([]string, len(got))
-				for i, c := range got {
-					gotStr[i] = printSHA1(c)
-				}
-				expectedStr := make([]string, len(tt.expected))
-				for i, c := range tt.expected {
-					expectedStr[i] = printSHA1(c)
-				}
-
-				t.Errorf("TestAffected_Introduced_LastAffected() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestAffected_Introduced_LastAffected() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -575,26 +545,8 @@ func TestAffected_Combined(t *testing.T) {
 				got = append(got, c.Hash)
 			}
 
-			// Sort got and expected for comparison
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
-				// Turn them back into strings so it's easier to read
-				gotStr := make([]string, len(got))
-				for i, c := range got {
-					gotStr[i] = printSHA1(c)
-				}
-				expectedStr := make([]string, len(tt.expected))
-				for i, c := range tt.expected {
-					expectedStr[i] = printSHA1(c)
-				}
-
-				t.Errorf("TestAffected_Combined() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestAffected_Combined() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -697,26 +649,8 @@ func TestAffected_Cherrypick(t *testing.T) {
 				got = append(got, c.Hash)
 			}
 
-			// Sort got and expected for comparison
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
-				// Turn them back into strings so it's easier to read
-				gotStr := make([]string, len(got))
-				for i, c := range got {
-					gotStr[i] = printSHA1(c)
-				}
-				expectedStr := make([]string, len(tt.expected))
-				for i, c := range tt.expected {
-					expectedStr[i] = printSHA1(c)
-				}
-
-				t.Errorf("TestAffected_Cherrypick() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestAffected_Cherrypick() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -802,26 +736,8 @@ func TestLimit(t *testing.T) {
 				got = append(got, c.Hash)
 			}
 
-			// Sort got and expected for comparison
-			sort.Slice(got, func(i, j int) bool {
-				return string(got[i][:]) < string(got[j][:])
-			})
-			sort.Slice(tt.expected, func(i, j int) bool {
-				return string(tt.expected[i][:]) < string(tt.expected[j][:])
-			})
-
-			if diff := cmp.Diff(tt.expected, got); diff != "" {
-				// Turn them back into strings so it's easier to read
-				gotStr := make([]string, len(got))
-				for i, c := range got {
-					gotStr[i] = printSHA1(c)
-				}
-				expectedStr := make([]string, len(tt.expected))
-				for i, c := range tt.expected {
-					expectedStr[i] = printSHA1(c)
-				}
-
-				t.Errorf("TestLimit() mismatch\nGot: %v\nExpected: %v", gotStr, expectedStr)
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestLimit() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

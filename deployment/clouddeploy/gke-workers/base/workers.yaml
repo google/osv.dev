@@ -36,6 +36,8 @@ spec:
         env:
           - name: GITTER_HOST
             value: http://gitter-service:8888
+        securityContext:
+          privileged: true
         resources:
           requests:
             cpu: 1

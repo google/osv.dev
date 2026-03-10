@@ -156,9 +156,14 @@ func RunDeletions(ctx context.Context, config Config) error {
 
 // reconcileSkipSources is a list of source names to skip during reconciliation.
 var reconcileSkipSources = []string{
+	// Upstream records are completely deprecated and archived now.
 	"uvi",
+	// Currently an upstream issue that we can't fix.
 	"almalinux-alsa",
-	"oss-fuzz",
+	
+	// "oss-fuzz",
+	// "debian-cve",
+	// "cve-osv",
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
@@ -603,8 +608,8 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 	// Inject the current trace into the message
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
 
-	// result := publisher.Publish(ctx, msg)
-	// _, err := result.Get(ctx)
+	result := publisher.Publish(ctx, msg)
+	_, err := result.Get(ctx)
 
-	return nil
+	return err
 }

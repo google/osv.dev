@@ -2,12 +2,17 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestGetRepoDirName(t *testing.T) {
@@ -211,6 +216,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		limit        []string
 		invalidType  []string
 		expectedCode int
+		expectedBody []string
 	}{
 		{
 			name:         "Valid range in public repo",
@@ -218,6 +224,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			introduced:   []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
 			fixed:        []string{"8920ed8e47c660a0c20c28cb1004a600780c5b59"},
 			expectedCode: http.StatusOK,
+			expectedBody: []string{"3350c55f9525cb83fc3e0b61bde076433c2da8dc"},
 		},
 		{
 			name:         "Invalid mixed limit and fixed",
@@ -276,6 +283,27 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			if status := rr.Code; status != tt.expectedCode {
 				t.Errorf("handler returned wrong status code: got %v want %v",
 					status, tt.expectedCode)
+			}
+
+			if tt.expectedBody == nil {
+				return
+			}
+
+			respBody := &pb.AffectedCommitsResponse{}
+			if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+				t.Fatalf("Failed to unmarshal response: %v", err)
+			}
+
+			var gotHashes []string
+			for _, c := range respBody.GetCommits() {
+				gotHashes = append(gotHashes, hex.EncodeToString(c.GetHash()))
+			}
+			if gotHashes == nil {
+				gotHashes = []string{}
+			}
+
+			if diff := cmp.Diff(tt.expectedBody, gotHashes); diff != "" {
+				t.Errorf("handler returned wrong body (-want +got):\n%s", diff)
 			}
 		})
 	}

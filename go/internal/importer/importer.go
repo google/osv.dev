@@ -2,6 +2,7 @@
 package importer
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -248,6 +249,9 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		return
 	}
 	hash := computeHash(data)
+	// protojson does not like invalid UTF-8,
+	// so replace invalid UTF-8 with U+FFFD (replacement character)
+	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
 	var vulnProto osvschema.Vulnerability
 	switch item.Format {
 	case RecordFormatYAML:
@@ -355,6 +359,15 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 		if err != nil {
 			return err
 		}
+	}
+	if len(data) > 10_000_000 { // Pub/Sub limit is 10 MB
+		logger.WarnContext(ctx, "Vulnerability proto is too large",
+			slog.String("source", source),
+			slog.String("path", path),
+			slog.Int("size", len(data)))
+
+		// Set data to nil so that the worker will re-download the vulnerability
+		data = nil
 	}
 	msg := &pubsub.Message{
 		Data: data,

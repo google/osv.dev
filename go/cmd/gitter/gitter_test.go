@@ -79,13 +79,24 @@ func TestGitHandler_InvalidURL(t *testing.T) {
 	}
 }
 
+func resetSaveTimer() {
+	lastFetchMu.Lock()
+	defer lastFetchMu.Unlock()
+	if saveTimer != nil {
+		saveTimer.Stop()
+		saveTimer = nil
+	}
+}
+
 // Override global variables for test
 // Note: In a real app we might want to dependency inject these,
 // but for this simple script we modify package globals.
 func setupTest(t *testing.T) {
 	t.Helper()
-	tmpDir := t.TempDir()
 
+	resetSaveTimer()
+
+	tmpDir := t.TempDir()
 	gitStorePath = tmpDir
 	persistencePath = tmpDir + "/last-fetch.json" // Use simple path join for test
 	fetchTimeout = time.Minute
@@ -98,11 +109,7 @@ func setupTest(t *testing.T) {
 	// Initialize semaphore for tests
 	semaphore = make(chan struct{}, 100)
 
-	// Stop any existing timer
-	if saveTimer != nil {
-		saveTimer.Stop()
-		saveTimer = nil
-	}
+	t.Cleanup(resetSaveTimer)
 }
 
 func TestGitHandler_Integration(t *testing.T) {

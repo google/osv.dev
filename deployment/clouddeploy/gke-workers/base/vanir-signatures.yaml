@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vanir-signatures
+  labels:
+    cronLastSuccessfulTimeMins: "60"
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: vanir-signatures
+            image: vanir-signatures
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "1"
+                memory: "10G"
+              limits:
+                cpu: "1"
+                memory: "13G"
+          restartPolicy: Never

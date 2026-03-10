@@ -216,6 +216,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-linter']
   waitFor: ['build-osv-linter', 'cloud-build-queue']
 
+# Build/push vanir-signatures images to gcr.io/oss-vdb.
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/vanir-signatures:latest', '-t', 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA', '.']
+  dir: 'gcp/workers/vanir_signatures'
+  id: 'build-vanir-signatures'
+  waitFor: ['build-worker']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-signatures']
+  waitFor: ['build-vanir-signatures', 'cloud-build-queue']
+
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
@@ -432,6 +442,7 @@ steps:
      relations=gcr.io/oss-vdb/relations:$COMMIT_SHA,\
      generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA,\
      gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA,\
+     vanir-signatures=gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA,\
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
@@ -496,3 +507,4 @@ images:
 - 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA'

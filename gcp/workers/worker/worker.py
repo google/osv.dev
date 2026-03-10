@@ -44,8 +44,6 @@ import osv.logs
 from osv import vulnerability_pb2, purl_helpers
 import oss_fuzz
 
-from vanir import vulnerability_manager
-
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
 TASK_SUBSCRIPTION = 'tasks'
@@ -551,43 +549,6 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
-  def _generate_vanir_signatures(
-      self, vulnerability: vulnerability_pb2.Vulnerability
-  ) -> vulnerability_pb2.Vulnerability:
-    """Generates Vanir signatures for a vulnerability."""
-    if not any(r.type == vulnerability_pb2.Range.GIT
-               for affected in vulnerability.affected
-               for r in affected.ranges):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it has no '
-          'GIT affected ranges.', vulnerability.id)
-      return vulnerability
-    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it is a '
-          'Kernel vulnerability.', vulnerability.id)
-      return vulnerability
-
-    logging.info('Generating Vanir signatures for %s', vulnerability.id)
-    try:
-      vuln_manager = vulnerability_manager.generate_from_json_string(
-          content=json.dumps([
-              json_format.MessageToDict(
-                  vulnerability, preserving_proto_field_name=True)
-          ]),)
-      vuln_manager.generate_signatures()
-
-      if not vuln_manager.vulnerabilities:
-        logging.warning('Vanir signature generation resulted in no '
-                        'vulnerabilities.')
-        return vulnerability
-
-      return vuln_manager.vulnerabilities[0].to_proto()
-    except Exception:
-      logging.exception('Failed to generate Vanir signatures for %s',
-                        vulnerability.id)
-      return vulnerability
-
   def _do_update(self, source_repo: osv.SourceRepository,
                  repo: pygit2.Repository | None,
                  vulnerability: vulnerability_pb2.Vulnerability,
@@ -605,20 +566,12 @@ class TaskRunner:
     # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
 
-    # Fully enrich the vulnerability object in memory.
-    vulnerability = self._generate_vanir_signatures(vulnerability)
-    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
-      result = None
-      logging.info(
-          'Skipping Vuln Analysis for %s as it is a '
-          'Kernel vulnerability.', vulnerability.id)
-    else:
-      try:
-        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                             relative_path, original_sha256)
-      except UpdateConflictError:
-        # Discard changes due to conflict.
-        return
+    try:
+      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                           relative_path, original_sha256)
+    except UpdateConflictError:
+      # Discard changes due to conflict.
+      return
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None

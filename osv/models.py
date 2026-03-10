@@ -947,7 +947,7 @@ class Vulnerability(ndb.Model):
   """A Vulnerability entry.
   
   Contains a minimal amount of information of an OSV record, including the
-  overall modified date, an some raw fields that are  overwritten by our
+  overall modified date, an some raw fields that are overwritten by our
   enrichment.
   
   The entity's key/id is ID in OSV.
@@ -971,6 +971,14 @@ class Vulnerability(ndb.Model):
   related_raw: list[str] = ndb.StringProperty(repeated=True)
   # The reported upstream IDs.
   upstream_raw: list[str] = ndb.StringProperty(repeated=True)
+
+
+# --- JobData ---
+
+
+class JobData(ndb.Model):
+  """Job data."""
+  value = ndb.GenericProperty()
 
 
 # --- Affected versions for matching ---

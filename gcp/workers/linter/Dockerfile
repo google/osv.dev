@@ -20,7 +20,7 @@ RUN apk add --no-cache git
 WORKDIR /src
 
 # Using osv-schema v1.7.3+
-RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 09a17f85b44a24ec25d29f5b482ea57667b71f48
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 62cec4e773c3e701dd0cf3e4a81ae686e452e719
 
 WORKDIR /src/osv-schema/tools/osv-linter
 

@@ -16,8 +16,6 @@ spec:
           - name: cpe-repo-gen
             image: cpe-repo-gen
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

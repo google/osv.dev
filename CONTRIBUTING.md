@@ -52,7 +52,8 @@ You must install:
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
+5.  [pnpm](https://pnpm.io/installation) (install via `npm install -g pnpm --prefix ~/.local` or `corepack enable pnpm`)
+6.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.
@@ -76,7 +77,8 @@ Certain tests require you to auth with the Google Cloud SDK and to install the
 Firestore Emulator:
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 gcloud components install cloud-firestore-emulator
 ```
 
@@ -118,7 +120,8 @@ default credentials. This is required so that the ESP container has credentials
 to download API configuration.
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make run-api-server
 ```
 
@@ -127,7 +130,8 @@ make run-api-server
 If you have made any changes to the API, please update the API query snapshots with
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make update-api-snapshots
 ```
 
@@ -138,7 +142,8 @@ and check the git diff to see if the API result changes are expected.
 #### Running a local UI instance (maintainers only)
 
 ```shell
-gcloud auth login --update-adc
+gcloud auth login
+gcloud auth application-default login
 make run-website
 ```
 

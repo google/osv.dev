@@ -216,6 +216,5 @@
                           'url': 'https://git.kernel.org/stable/c/aace6b63892ce8307e502a60fe2f5a4bc6e1cfe7'},
                       {   'type': 'REPORT',
                           'url': 'https://git.kernel.org/stable/c/c92d6089d8ad7d4d815ebcedee3f3907b539ff1f'}],
-    'schema_version': '1.7.3',
     'severity': [{'score': 'medium', 'type': 'Ubuntu'}],
     'upstream': ['CVE-2025-38094']}

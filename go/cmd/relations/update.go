@@ -46,7 +46,7 @@ type Update struct {
 	ID        string
 	Timestamp time.Time
 	Field     updateField
-	Value     any
+	Value     []string
 }
 
 type Updater struct {
@@ -73,189 +73,174 @@ func NewUpdater(ctx context.Context, dsClient *datastore.Client, gcsClient clien
 
 func (u *Updater) run(ctx context.Context) {
 	allUpdates := make(map[string][]Update)
+ConsumerLoop:
 	for {
 		select {
 		case <-ctx.Done():
 			logger.Info("updater context cancelled")
 			return
 		case update, ok := <-u.Ch:
-			if ok {
-				allUpdates[update.ID] = append(allUpdates[update.ID], update)
-				continue
+			if !ok {
+				break ConsumerLoop // Channel closed
 			}
-			// Channel was closed, collate updates and write
-			// TODO: Parallelize these updates using a worker pool.
-			for id, updates := range allUpdates {
-				// Get the vulnerability from GCS
-				path := fmt.Sprintf("all/pb/%s.pb", id)
-				data, err := u.gcsClient.ReadObject(ctx, path)
-				if err != nil {
-					if errors.Is(err, clients.ErrNotFound) {
-						// Check if it exists in Datastore. If it does, it's an error that it's missing from GCS.
-						// If it doesn't exist in Datastore either, it's likely just an alias ID that isn't a full OSV record,
-						// which is expected and we can safely skip it.
-						var vuln models.Vulnerability
-						key := datastore.NameKey("Vulnerability", id, nil)
-						if err := u.dsClient.Get(ctx, key, &vuln); err == nil {
-							logger.Error("vulnerability exists in Datastore but missing from GCS", slog.String("id", id))
-							msg := &pubsub.Message{
-								Attributes: map[string]string{
-									"type": "gcs_missing",
-									"id":   id,
-								},
-							}
-							u.publisher.Publish(ctx, msg)
-						}
+			allUpdates[update.ID] = append(allUpdates[update.ID], update)
+		}
+	}
 
-						continue
-					}
-					logger.Error("failed to read vuln from GCS", slog.String("id", id), slog.Any("err", err))
-
-					continue
-				}
-				attrs, err := u.gcsClient.ReadObjectAttrs(ctx, path)
-				if err != nil {
-					logger.Error("failed to read vuln attrs from GCS", slog.String("id", id), slog.Any("err", err))
-					continue
-				}
-
-				v := &osvschema.Vulnerability{}
-				if err := proto.Unmarshal(data, v); err != nil {
-					logger.Error("failed to unmarshal vuln", slog.String("id", id), slog.Any("err", err))
-					continue
-				}
-
-				hasUpdates := false
-				var modified time.Time
-				updatedFields := []string{}
-				for _, u := range updates {
-					switch u.Field {
-					case updateFieldAlias:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated aliases are not []string", slog.String("id", id))
-							continue
-						}
-						if slices.Compare(v.GetAliases(), val) == 0 {
-							// No actual changes, do not update
-							continue
-						}
-						hasUpdates = true
-						v.Aliases = val
-						updatedFields = append(updatedFields, "aliases")
-						if u.Timestamp.After(modified) {
-							modified = u.Timestamp
-						}
-					case updateFieldUpstream:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated upstreams are not []string", slog.String("id", id))
-							continue
-						}
-						if slices.Compare(v.GetUpstream(), val) == 0 {
-							continue
-						}
-						hasUpdates = true
-						v.Upstream = val
-						updatedFields = append(updatedFields, "upstream")
-						if u.Timestamp.After(modified) {
-							modified = u.Timestamp
-						}
-					case updateFieldRelated:
-						val, ok := u.Value.([]string)
-						if !ok {
-							logger.Error("updated related are not []string", slog.String("id", id))
-							continue
-						}
-						if slices.Compare(v.GetRelated(), val) == 0 {
-							continue
-						}
-						hasUpdates = true
-						v.Related = val
-						updatedFields = append(updatedFields, "related")
-						if u.Timestamp.After(modified) {
-							modified = u.Timestamp
-						}
-					default:
-						logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
-					}
-				}
-				if !hasUpdates {
-					continue
-				}
-				v.Modified = timestamppb.New(modified)
-
-				// Update Datastore
-				tx, err := u.dsClient.NewTransaction(ctx)
-				if err != nil {
-					logger.Error("failed to start transaction", slog.String("id", id), slog.Any("err", err))
-					continue
-				}
+	// Channel was closed, collate updates and write
+	// TODO: Parallelize these updates using a worker pool.
+	for id, updates := range allUpdates {
+		// Get the vulnerability from GCS
+		path := fmt.Sprintf("all/pb/%s.pb", id)
+		data, err := u.gcsClient.ReadObject(ctx, path)
+		if err != nil {
+			if errors.Is(err, clients.ErrNotFound) {
+				// Check if it exists in Datastore. If it does, it's an error that it's missing from GCS.
+				// If it doesn't exist in Datastore either, it's likely just an alias ID that isn't a full OSV record,
+				// which is expected and we can safely skip it.
 				var vuln models.Vulnerability
 				key := datastore.NameKey("Vulnerability", id, nil)
-				if err := tx.Get(key, &vuln); err != nil {
-					logger.Error("failed to get vuln from Datastore", slog.String("id", id), slog.Any("err", err))
-					if err := tx.Rollback(); err != nil {
-						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
-					}
-
-					continue
-				}
-				vuln.Modified = modified
-				if _, err := tx.Put(key, &vuln); err != nil {
-					logger.Error("failed to put vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-					if err := tx.Rollback(); err != nil {
-						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
-					}
-
-					continue
-				}
-				listedVuln := models.NewListedVulnerabilityFromProto(v)
-				listedKey := datastore.NameKey("ListedVulnerability", id, nil)
-				if _, err := tx.Put(listedKey, listedVuln); err != nil {
-					logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-					if err := tx.Rollback(); err != nil {
-						logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
-					}
-
-					continue
-				}
-				if _, err := tx.Commit(); err != nil {
-					logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))
-					continue
-				}
-
-				// Update GCS
-				newData, err := proto.Marshal(v)
-				if err != nil {
-					logger.Error("failed to marshal vuln", slog.String("id", id), slog.Any("err", err))
-					continue
-				}
-				opts := &clients.WriteOptions{
-					IfGenerationMatches: &attrs.Generation,
-				}
-				if err := u.gcsClient.WriteObject(ctx, path, newData, opts); err != nil {
-					logger.Error("failed to write vuln to GCS", slog.String("id", id), slog.Any("err", err))
+				if err := u.dsClient.Get(ctx, key, &vuln); err == nil {
+					logger.Error("vulnerability exists in Datastore but missing from GCS", slog.String("id", id))
 					msg := &pubsub.Message{
-						Attributes: map[string]string{},
-					}
-					if errors.Is(err, clients.ErrPreconditionFailed) {
-						msg.Attributes["type"] = "gcs_gen_mismatch"
-						msg.Attributes["id"] = id
-						msg.Attributes["field"] = strings.Join(updatedFields, ",")
-					} else {
-						msg.Data = newData
-						msg.Attributes["type"] = "gcs_retry"
+						Attributes: map[string]string{
+							"type": "gcs_missing",
+							"id":   id,
+						},
 					}
 					u.publisher.Publish(ctx, msg)
+				}
 
+				continue
+			}
+			logger.Error("failed to read vuln from GCS", slog.String("id", id), slog.Any("err", err))
+
+			continue
+		}
+		attrs, err := u.gcsClient.ReadObjectAttrs(ctx, path)
+		if err != nil {
+			logger.Error("failed to read vuln attrs from GCS", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+
+		v := &osvschema.Vulnerability{}
+		if err := proto.Unmarshal(data, v); err != nil {
+			logger.Error("failed to unmarshal vuln", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+
+		hasUpdates := false
+		var modified time.Time
+		updatedFields := []string{}
+		for _, u := range updates {
+			switch u.Field {
+			case updateFieldAlias:
+				if slices.Compare(v.GetAliases(), u.Value) == 0 {
+					// No actual changes, do not update
 					continue
 				}
-				logger.Info("updated vuln", slog.String("id", id))
+				hasUpdates = true
+				v.Aliases = u.Value
+				updatedFields = append(updatedFields, "aliases")
+				if u.Timestamp.After(modified) {
+					modified = u.Timestamp
+				}
+			case updateFieldUpstream:
+				if slices.Compare(v.GetUpstream(), u.Value) == 0 {
+					continue
+				}
+				hasUpdates = true
+				v.Upstream = u.Value
+				updatedFields = append(updatedFields, "upstream")
+				if u.Timestamp.After(modified) {
+					modified = u.Timestamp
+				}
+			case updateFieldRelated:
+				if slices.Compare(v.GetRelated(), u.Value) == 0 {
+					continue
+				}
+				hasUpdates = true
+				v.Related = u.Value
+				updatedFields = append(updatedFields, "related")
+				if u.Timestamp.After(modified) {
+					modified = u.Timestamp
+				}
+			default:
+				logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
+			}
+		}
+		if !hasUpdates {
+			continue
+		}
+		v.Modified = timestamppb.New(modified)
+
+		// Update Datastore
+		tx, err := u.dsClient.NewTransaction(ctx)
+		if err != nil {
+			logger.Error("failed to start transaction", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+		var vuln models.Vulnerability
+		key := datastore.NameKey("Vulnerability", id, nil)
+		if err := tx.Get(key, &vuln); err != nil {
+			logger.Error("failed to get vuln from Datastore", slog.String("id", id), slog.Any("err", err))
+			if err := tx.Rollback(); err != nil {
+				logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
 			}
 
-			return
+			continue
 		}
+		vuln.Modified = modified
+		if _, err := tx.Put(key, &vuln); err != nil {
+			logger.Error("failed to put vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+			if err := tx.Rollback(); err != nil {
+				logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+			}
+
+			continue
+		}
+		listedVuln := models.NewListedVulnerabilityFromProto(v)
+		listedKey := datastore.NameKey("ListedVulnerability", id, nil)
+		if _, err := tx.Put(listedKey, listedVuln); err != nil {
+			logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+			if err := tx.Rollback(); err != nil {
+				logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+			}
+
+			continue
+		}
+		if _, err := tx.Commit(); err != nil {
+			logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+
+		// Update GCS
+		newData, err := proto.Marshal(v)
+		if err != nil {
+			logger.Error("failed to marshal vuln", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+		opts := &clients.WriteOptions{
+			IfGenerationMatches: &attrs.Generation,
+		}
+		if err := u.gcsClient.WriteObject(ctx, path, newData, opts); err != nil {
+			logger.Error("failed to write vuln to GCS", slog.String("id", id), slog.Any("err", err))
+			msg := &pubsub.Message{
+				Attributes: map[string]string{},
+			}
+			if errors.Is(err, clients.ErrPreconditionFailed) {
+				msg.Attributes["type"] = "gcs_gen_mismatch"
+				msg.Attributes["id"] = id
+				msg.Attributes["field"] = strings.Join(updatedFields, ",")
+			} else {
+				msg.Data = newData
+				msg.Attributes["type"] = "gcs_retry"
+			}
+			u.publisher.Publish(ctx, msg)
+
+			continue
+		}
+		logger.Info("updated vuln", slog.String("id", id))
 	}
 }
 

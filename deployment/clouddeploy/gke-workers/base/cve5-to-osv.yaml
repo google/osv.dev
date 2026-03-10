@@ -6,7 +6,7 @@ metadata:
     cronLastSuccessfulTimeMins: "2160"
 spec:
   timeZone: Australia/Sydney
-  schedule: "0 6,13 * * *"
+  schedule: "30 5,1 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -17,8 +17,6 @@ spec:
           - name: cve5-to-osv
             image: cve5-to-osv
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "8"

@@ -3,6 +3,7 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -28,7 +29,7 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 			)
 		}
 
-		if level >= slog.LevelError {
+		if level >= slog.LevelError && !ignoreError(r) {
 			r.Add(slog.String("@type", "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent"))
 		}
 	}
@@ -37,6 +38,27 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 		//nolint:errcheck
 		slogLogger.Handler().Handle(ctx, r)
 	}
+}
+
+func ignoreError(r slog.Record) bool {
+	ignore := false
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == "exception" || a.Key == "err" || a.Key == "error" {
+			if err, ok := a.Value.Any().(error); ok {
+				// We want to ignore context cancelled errors, since they're usually caused by something else
+				// and we don't want to be alerted about them.
+				if errors.Is(err, context.Canceled) {
+					ignore = true
+
+					return false
+				}
+			}
+		}
+
+		return true
+	})
+
+	return ignore
 }
 
 // Debug prints a Debug level log.

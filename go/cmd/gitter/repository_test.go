@@ -172,6 +172,7 @@ var cmpSHA1Opts = []cmp.Option{
 		for i, h := range in {
 			out[i] = printSHA1(h)
 		}
+
 		return out
 	}),
 	cmpopts.SortSlices(func(a, b string) bool {

@@ -4,10 +4,10 @@ go 1.26.1
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4
-	golang.org/x/sync v0.19.0
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260310022832-644d53a46020
+	golang.org/x/sync v0.20.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 )
 
 require (

@@ -380,6 +380,7 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 		}
 
 		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON)
+
 		return true
 	})
 

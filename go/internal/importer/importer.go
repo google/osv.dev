@@ -83,6 +83,7 @@ func Run(ctx context.Context, config Config) error {
 		if err != nil {
 			return err
 		}
+		//nolint:dupl // Some duplication here is fine
 		sourceWg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
@@ -160,7 +161,7 @@ var reconcileSkipSources = []string{
 	"uvi",
 	// Currently an upstream issue that we can't fix.
 	"almalinux-alsa",
-	
+
 	// "oss-fuzz",
 	// "debian-cve",
 	// "cve-osv",
@@ -182,6 +183,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 	}
 
 	var wg sync.WaitGroup
+	//nolint:prealloc // Size is unknown since All() returns an iterator
 	var sourceRepos []*models.SourceRepository
 	gitBranches := make(map[string]string) // url -> branch
 
@@ -213,7 +215,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 			logger.InfoContext(ctx, "Skipping reconciliation for source", slog.String("source", sourceRepo.Name))
 			continue
 		}
-
+		//nolint:dupl // Some duplication here is fine
 		wg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
@@ -256,6 +258,7 @@ func fetchDBRecords(ctx context.Context, config Config, sourceRepo *models.Sourc
 		}
 		dbRecords[entry.Path] = entry.ModifiedRaw
 	}
+
 	return dbRecords, nil
 }
 
@@ -299,6 +302,7 @@ func checkReconcile(
 			slog.String("path", path))
 		// panic("Found missing vulnerability in datastore during reconcile")
 		ch <- recordTemplate
+
 		return
 	}
 
@@ -312,6 +316,7 @@ func checkReconcile(
 				slog.Any("error", err),
 				slog.String("source", recordTemplate.SourceRepository),
 				slog.String("path", path))
+
 			return
 		}
 		data, err := io.ReadAll(r)
@@ -321,6 +326,7 @@ func checkReconcile(
 				slog.Any("error", err),
 				slog.String("source", recordTemplate.SourceRepository),
 				slog.String("path", path))
+
 			return
 		}
 
@@ -331,6 +337,7 @@ func checkReconcile(
 					slog.Any("error", err),
 					slog.String("source", recordTemplate.SourceRepository),
 					slog.String("path", path))
+
 				return
 			}
 			data = json
@@ -343,6 +350,7 @@ func checkReconcile(
 					slog.String("key_path", keyPath),
 					slog.String("source", recordTemplate.SourceRepository),
 					slog.String("path", path))
+
 				return
 			}
 			data = []byte(res.Raw)
@@ -355,6 +363,7 @@ func checkReconcile(
 		logger.ErrorContext(ctx, "Vulnerability missing id in reconcile",
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path))
+
 		return
 	}
 
@@ -363,6 +372,7 @@ func checkReconcile(
 		logger.WarnContext(ctx, "Vulnerability missing modified in reconcile",
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path))
+
 		return
 	}
 
@@ -372,6 +382,7 @@ func checkReconcile(
 			slog.Any("error", err),
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path))
+
 		return
 	}
 

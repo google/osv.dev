@@ -244,7 +244,7 @@ type localFileSourceRecord struct {
 	path string
 }
 
-func (r localFileSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+func (r localFileSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
 	return os.Open(r.path)
 }
 
@@ -303,12 +303,13 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	err = filepath.WalkDir(searchDir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if d.IsDir() {
 			if d.Name() == ".git" {
 				return filepath.SkipDir
 			}
+
 			return nil
 		}
 
@@ -318,7 +319,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 		relPath, err := filepath.Rel(pathStr, p)
 		if err != nil {
-			return nil
+			return err
 		}
 		// Always use forward slashes for relative paths inside git repositories
 		relPath = filepath.ToSlash(relPath)

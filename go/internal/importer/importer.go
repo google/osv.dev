@@ -157,7 +157,13 @@ func RunDeletions(ctx context.Context, config Config) error {
 // reconcileSkipSources is a list of source names to skip during reconciliation.
 var reconcileSkipSources = []string{
 	"uvi",
+	"almalinux-alsa",
+	"oss-fuzz",
 }
+
+// ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
+// This needs to be some time as importer detecting the change to worker importing it is not instant.
+const ReconcileLeniencyDuration = time.Hour * 6
 
 func RunReconcile(ctx context.Context, config Config) error {
 	logger.InfoContext(ctx, "Reconciler started")
@@ -364,7 +370,7 @@ func checkReconcile(
 		return
 	}
 
-	if modified.After(dbMod) {
+	if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
 		logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path),

@@ -25,9 +25,6 @@ worker-tests:
 importer-tests:
 	cd gcp/workers/importer && ./run_tests.sh
 
-alias-tests:
-	cd gcp/workers/alias && ./run_tests.sh
-
 recoverer-tests:
 	cd gcp/workers/recoverer && ./run_tests.sh
 
@@ -55,7 +52,7 @@ update-api-snapshots:
 	cd gcp/api && UPDATE_SNAPS=true ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	GOTOOLCHAIN=go1.26.0 $(run-cmd) tools/lint_and_format.sh
+	GOTOOLCHAIN=go1.26.1 $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
@@ -89,17 +86,17 @@ build-api-protos:
 build-protos: build-osv-protos build-api-protos
 
 run-website:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
 run-website-staging:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
 run-website-emulator:
-	cd gcp/website/frontend3 && npm install && npm run build
+	cd gcp/website/frontend3 && pnpm install && pnpm run build
 	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 

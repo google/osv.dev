@@ -105,6 +105,5 @@
                           'url': 'https://vuldb.com/?ctiid.217549'},
                       {   'type': 'REPORT',
                           'url': 'https://vuldb.com/?id.217549'}],
-    'schema_version': '1.7.3',
     'severity': [   {   'score': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
                         'type': 'CVSS_V3'}]}

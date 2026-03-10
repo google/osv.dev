@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,6 @@ from google.cloud import ndb
 
 import osv
 from osv import gcs, pubsub
-import osv.logs
 
 ALIAS_GROUP_VULN_LIMIT = 32
 VULN_ALIASES_LIMIT = 5
@@ -139,7 +137,7 @@ def _update_vuln_with_group(vuln_id: str, alias_group: osv.AliasGroup | None):
         vuln_proto.SerializeToString(deterministic=True), type='gcs_retry')
 
 
-def main():
+def run():
   """Updates all alias groups in the datastore by re-computing existing
   AliasGroups and creating new AliasGroups for un-computed bugs."""
 
@@ -203,10 +201,3 @@ def main():
   # For each updated vulnerability, update them in Datastore & GCS
   for vuln_id, alias_group in changed_vulns.items():
     _update_vuln_with_group(vuln_id, alias_group)
-
-
-if __name__ == '__main__':
-  _ndb_client = ndb.Client()
-  osv.logs.setup_gcp_logging('alias')
-  with _ndb_client.context():
-    main()

@@ -1106,7 +1106,7 @@ class Importer:
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=_EXPORT_WORKERS) as executor:
       for bug in osv.Bug.query(osv.Bug.ecosystem == 'OSS-Fuzz',
-                               osv.Bug.public == True):
+                               osv.Bug.public == True):  # pylint: disable=singleton-comparison
         _, source_id = osv.parse_source_id(bug.source_id)
         executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
                         bug.issue_id)

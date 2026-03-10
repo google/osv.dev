@@ -75,6 +75,8 @@ var (
 	semaphore       chan struct{} // Request concurrency control
 )
 
+var validURLRegex = regexp.MustCompile(`^(https?|git|ssh)://`)
+
 const shutdownTimeout = 10 * time.Second
 
 // repoLocks is a map of per-repository RWMutexes, with url as the key.
@@ -384,7 +386,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
+		if !validURLRegex.MatchString(url) {
 			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
 			return
 		}
@@ -469,7 +471,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
+		if !validURLRegex.MatchString(url) {
 			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
 			return
 		}
@@ -549,7 +551,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
+		if !validURLRegex.MatchString(url) {
 			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
 			return
 		}

@@ -238,16 +238,16 @@ func TestAffectedCommitsHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var events []Event
 			for _, h := range tt.introduced {
-				events = append(events, Event{Type: "introduced", Hash: h})
+				events = append(events, Event{Type: EventTypeIntroduced, Hash: h})
 			}
 			for _, h := range tt.fixed {
-				events = append(events, Event{Type: "fixed", Hash: h})
+				events = append(events, Event{Type: EventTypeFixed, Hash: h})
 			}
 			for _, h := range tt.lastAffected {
-				events = append(events, Event{Type: "last_affected", Hash: h})
+				events = append(events, Event{Type: EventTypeLastAffected, Hash: h})
 			}
 			for _, h := range tt.limit {
-				events = append(events, Event{Type: "limit", Hash: h})
+				events = append(events, Event{Type: EventTypeLimit, Hash: h})
 			}
 			for _, h := range tt.invalidType {
 				events = append(events, Event{Type: "invalid_type", Hash: h})

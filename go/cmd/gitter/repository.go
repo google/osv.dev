@@ -622,7 +622,7 @@ func (r *Repository) Limit(ctx context.Context, introStrs, limitStrs []string) [
 			continue
 		}
 
-		// Add first parent to stack to only walk the linear branch
+		// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
 		if len(details.Parents) > 0 {
 			stack = append(stack, details.Parents[0])
 		}

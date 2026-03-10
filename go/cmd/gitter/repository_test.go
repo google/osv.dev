@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -143,7 +142,7 @@ func TestLoadRepository(t *testing.T) {
 func decodeSHA1(s string) SHA1 {
 	var hash SHA1
 	// Pad with zeros because the test strings are shorter than 40 char
-	padded := fmt.Sprintf("%040s", s)
+	padded := strings.Repeat("0", 40-len(s)) + s
 	b, err := hex.DecodeString(padded)
 	if err != nil {
 		panic(err)

@@ -505,7 +505,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 	for _, intro := range introduced {
 		// BFS from intro
 		queue := []SHA1{intro}
-		terminateMap := maps.Clone(fixedMap)
+		unaffectableMap := make(map[SHA1]struct{})
 		affectedFromIntro := make(map[SHA1]struct{})
 		visited := make(map[SHA1]struct{})
 
@@ -518,25 +518,31 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 			}
 			visited[curr] = struct{}{}
 
-			// When we hit a fixed commit (or its descendants), we aggressively map its
-			// entire downstream tree as terminated to satisfy the "any path blocked" rule.
-			if _, ok := terminateMap[curr]; ok {
-				// Inline DFS from current node to make all descendants unaffected / unaffectable
-				// 1. If a previous path added it to affected list, remove
-				// 2. Add to terminate set
+			// Descendant of a fixed commit
+			if _, ok := unaffectableMap[curr]; ok {
+				continue
+			}
+
+			// If we hit a fixed commit, its entire tree is treated as a unaffectable
+			// as any downstream commit can go through this fixed commit to become unaffected
+			if _, ok := fixedMap[curr]; ok {
+				unaffectableMap[curr] = struct{}{}
+				// Inline DFS from current (fixed) node to make all descendants as unaffected / unaffectable
+				// 1. If a previous path added the descendant to affected list, remove it
+				// 2. Add to the unaffectable set to block future paths
 				stack := []SHA1{curr}
 				for len(stack) > 0 {
 					unaffected := stack[len(stack)-1]
 					stack = stack[:len(stack)-1]
 
-					// Remove from affected list if a bypass path added it previously
+					// Remove from affected list if it was reached via a previous non-fixed path.
 					delete(affectedFromIntro, unaffected)
 
 					if children, ok := r.commitGraph[unaffected]; ok {
 						for _, child := range children {
-							// If child is not already in the terminateSet, we want to traverse that path and mark descendants as unaffectable
-							if _, ok := terminateMap[child]; !ok {
-								terminateMap[child] = struct{}{}
+							// Continue down the path if the child isn't already blocked.
+							if _, ok := unaffectableMap[child]; !ok {
+								unaffectableMap[child] = struct{}{}
 								stack = append(stack, child)
 							}
 						}
@@ -546,7 +552,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 				continue
 			}
 
-			// If not in terminateSet, add to the intro-specific affected list and continue
+			// Otherwise, add to the intro-specific affected list and continue
 			affectedFromIntro[curr] = struct{}{}
 			if children, ok := r.commitGraph[curr]; ok {
 				queue = append(queue, children...)

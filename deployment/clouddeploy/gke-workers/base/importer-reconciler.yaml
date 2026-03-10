@@ -5,7 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "1500" # Expected latency once a day
 spec:
-  schedule: "0 0 * * *"
+  schedule: "23 4 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

@@ -5,12 +5,12 @@ go 1.26.1
 require (
 	cloud.google.com/go/datastore v1.22.0
 	cloud.google.com/go/pubsub v1.50.1
-	cloud.google.com/go/storage v1.60.0
+	cloud.google.com/go/storage v1.61.0
 	github.com/go-git/go-git/v5 v5.17.0
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/api v0.270.0
+	google.golang.org/api v0.271.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -67,10 +67,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect

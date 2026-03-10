@@ -3,9 +3,9 @@ kind: CronJob
 metadata:
   name: combine-to-osv
   labels:
-    cronLastSuccessfulTimeMins: "90"
+    cronLastSuccessfulTimeMins: "2160"
 spec:
-  schedule: "30 * * * *"
+  schedule: "30 13,21 * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -21,8 +21,6 @@ spec:
           - name: combine-to-osv
             image: combine-to-osv
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "30"

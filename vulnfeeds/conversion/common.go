@@ -5,6 +5,7 @@ package conversion
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -171,7 +172,8 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 	return nil
 }
 
-// Examines repos and tries to convert versions to commits by treating them as Git tags.
+// GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
+// Returns the resolved ranges, unresolved ranges, and successful repos involved.
 func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
@@ -181,9 +183,15 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		if len(unresolvedRanges) == 0 {
 			break // All ranges have been resolved.
 		}
-
+		if cache.IsInvalid(repo) {
+			continue
+		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
+			if strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
 			metrics.AddNote("Failed to normalize tags - %s", repo)
 			continue
 		}
@@ -207,10 +215,19 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			if introduced == "0" {
 				introducedCommit = "0"
 			} else {
-				introducedCommit = resolveVersionToCommit(introduced, normalizedTags)
+				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
+				if err != nil {
+					metrics.AddNote("error resolving version to commit - %s - %s", introduced, err)
+				}
 			}
-			fixedCommit := resolveVersionToCommit(fixed, normalizedTags)
-			lastAffectedCommit := resolveVersionToCommit(lastAffected, normalizedTags)
+			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
+			if err != nil {
+				metrics.AddNote("error resolving version to commit - %s - %s", fixed, err)
+			}
+			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
+			if err != nil {
+				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
+			}
 
 			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
 				var newVR *osvschema.Range
@@ -238,18 +255,6 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			}
 		}
 		unresolvedRanges = stillUnresolvedRanges
-	}
-
-	if len(newVersionRanges) > 0 {
-		metrics.ResolvedRangesCount += len(newVersionRanges)
-		metrics.Outcome = models.Successful
-	}
-
-	if len(unresolvedRanges) > 0 {
-		metrics.UnresolvedRangesCount += len(unresolvedRanges)
-		if len(newVersionRanges) == 0 {
-			metrics.Outcome = models.NoCommitRanges
-		}
 	}
 
 	return newVersionRanges, unresolvedRanges, successfulRepos
@@ -280,16 +285,117 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	return &versionRange
 }
 
-// resolveVersionToCommit is a helper to convert a version string to a commit hash.
-// It logs the outcome of the conversion attempt and returns an empty string on failure.
-func resolveVersionToCommit(version string, normalizedTags map[string]git.NormalizedTag) string {
-	if version == "" {
-		return ""
-	}
-	commit, err := git.VersionToCommit(version, normalizedTags)
-	if err != nil {
-		return ""
+// MergeTwoRanges combines two osvschema.Range objects into a single range.
+// It merges the events and the DatabaseSpecific fields. If the ranges are
+// not for the same repository or are of different types, it returns an error.
+// When merging DatabaseSpecific fields, it handles lists, maps, and simple
+// strings. If there are mismatching types for the same key, it returns an error.
+func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
+	// check if the ranges are the same
+	if range1.GetRepo() != range2.GetRepo() || range1.GetType() != range2.GetType() {
+		// return an error if not the case
+		return nil, errors.New("ranges are not the same repo or type")
 	}
 
-	return commit
+	mergedRange := &osvschema.Range{
+		Repo:   range1.GetRepo(),
+		Type:   range1.GetType(),
+		Events: append(range1.Events, range2.GetEvents()...),
+	}
+
+	db1 := range1.GetDatabaseSpecific()
+	db2 := range2.GetDatabaseSpecific()
+
+	if db1 == nil && db2 == nil {
+		return mergedRange, nil
+	}
+
+	mergedMap := make(map[string]any)
+
+	if db1 != nil {
+		for k, v := range db1.GetFields() {
+			mergedMap[k] = v.AsInterface()
+		}
+	}
+
+	if db2 != nil {
+		for k, v := range db2.GetFields() {
+			val2 := v.AsInterface()
+			if existing, ok := mergedMap[k]; ok {
+				mergedVal, err := mergeDatabaseSpecificValues(existing, val2)
+				if err != nil {
+					logger.Info("Failed to merge database specific key", "key", k, "err", err)
+				}
+				mergedMap[k] = mergedVal
+			} else {
+				mergedMap[k] = val2
+			}
+		}
+	}
+
+	if len(mergedMap) > 0 {
+		if ds, err := utility.NewStructpbFromMap(mergedMap); err == nil {
+			mergedRange.DatabaseSpecific = ds
+		} else {
+			logger.Warn("Failed to create DatabaseSpecific for merged range: %v", err)
+		}
+	}
+
+	return mergedRange, nil
+}
+
+// mergeDatabaseSpecificValues is a helper function that recursively merges two
+// values from a DatabaseSpecific field. It handles lists (by appending), maps
+// (by recursively merging keys), and simple strings (by creating a list if they
+// differ). It returns an error if the types of the two values do not match.
+func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
+	switch v1 := val1.(type) {
+	case []any:
+		if v2, ok := val2.([]any); ok {
+			return append(v1, v2...), nil
+		}
+
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	case map[string]any:
+		if v2, ok := val2.(map[string]any); ok {
+			merged := make(map[string]any)
+			for k, v := range v1 {
+				merged[k] = v
+			}
+			for k, v := range v2 {
+				if existing, ok := merged[k]; ok {
+					mergedVal, err := mergeDatabaseSpecificValues(existing, v)
+					if err != nil {
+						return nil, err
+					}
+					merged[k] = mergedVal
+				} else {
+					merged[k] = v
+				}
+			}
+
+			return merged, nil
+		}
+
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	case string:
+		if v2, ok := val2.(string); ok {
+			if v1 == v2 {
+				return v1, nil
+			}
+
+			return []any{v1, v2}, nil
+		}
+
+		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+	default:
+		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
+			return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+		}
+		if val1 == val2 {
+			return val1, nil
+		}
+
+		return []any{val1, val2}, nil
+	}
 }

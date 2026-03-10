@@ -1,0 +1,78 @@
+name: Generate Protos
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'gcp/api/v1/osv_service_v1.proto'
+      - 'osv/importfinding.proto'
+      - 'osv/osv-schema/proto/vulnerability.proto'
+  workflow_dispatch:
+
+concurrency:
+  # Pushing new changes to a branch will cancel any in-progress CI runs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
+jobs:
+  generate:
+    permissions:
+      contents: write # to fetch and commit code
+      actions: write # to manually dispatch checks on the pull request
+      pull-requests: write # Create pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.13'
+
+      - name: Install poetry
+        run: pip install poetry==2.2.1
+
+      - name: Set up poetry
+        run: |
+          poetry install
+          cd gcp/api && poetry install
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: '1.26.0'
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Install Go proto plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Generate protos
+        run: make build-protos
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          token: ${{ secrets.PR_TOKEN_BOT }}
+          title: "chore: regenerate protos"
+          body: >
+            The proto files have been updated. This PR contains the regenerated code.
+
+            Please review and merge!
+          branch: "bot/regenerate-protos"
+          author: "osv-robot <osv-robot@google.com>"
+          commit-message: "chore: regenerate protos"

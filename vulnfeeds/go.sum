@@ -210,8 +210,8 @@ github.com/muesli/cancelreader v0.2.2 h1:3I4Kt4BQjOR54NavqnDogx/MIoWBFa0StPA8ELU
 github.com/muesli/cancelreader v0.2.2/go.mod h1:3XuTXfFS2VjM+HTLZY9Ak0l6eUKfijIfMUZ4EgX0QYo=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4 h1:4zC49SlXs2waAuZJFEP1lAGf9Bgjg8SQww6y8C9znJ0=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4/go.mod h1:NJzqZPEfOy3B1dWe9pKRtmxJ/UF1++6apnQLjz3du8E=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260310022832-644d53a46020 h1:MoMyWGelNqNElnsO/z0S/WC13zC+0qc5c+6fjC2GdEM=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260310022832-644d53a46020/go.mod h1:IrUa4QzZUi03J3WXDzZYXVawYipHownNfqqZrqeGXfg=
 github.com/philhofer/fwd v1.2.0 h1:e6DnBTl7vGY+Gz322/ASL4Gyp1FspeMvx1RNDoToZuM=
 github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJFxsJM=
 github.com/pjbgf/sha1cd v0.3.2 h1:a9wb0bp1oC2TGwStyn0Umc/IGKQnEgF0vVaZ8QF8eo4=

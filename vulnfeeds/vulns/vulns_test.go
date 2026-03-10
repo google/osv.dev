@@ -139,6 +139,19 @@ func TestClassifyReferences(t *testing.T) {
 				{Url: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Type: osvschema.Reference_ARTICLE},
 			},
 		},
+		{
+			refData: []models.Reference{
+				{
+					Source: "https://example.com/some/valid/link", URL: "https://example.com/some/valid/link", Tags: []string{"mailing-list"},
+				},
+				{
+					Source: "https://example.com/some/invalid/link", URL: "", Tags: []string{"mailing-list"},
+				},
+			},
+			references: []*osvschema.Reference{
+				{Url: "https://example.com/some/valid/link", Type: osvschema.Reference_ARTICLE},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)

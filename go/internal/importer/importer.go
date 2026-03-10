@@ -5,9 +5,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -110,7 +112,7 @@ func Run(ctx context.Context, config Config) error {
 }
 
 func RunDeletions(ctx context.Context, config Config) error {
-	logger.Info("Deletion reconciler started")
+	logger.InfoContext(ctx, "Deletion reconciler started")
 
 	workCh := make(chan WorkItem)
 	var workWg sync.WaitGroup
@@ -150,6 +152,226 @@ func RunDeletions(ctx context.Context, config Config) error {
 	workWg.Wait()
 
 	return nil
+}
+
+// reconcileSkipSources is a list of source names to skip during reconciliation.
+var reconcileSkipSources = []string{
+	"uvi",
+}
+
+func RunReconcile(ctx context.Context, config Config) error {
+	logger.InfoContext(ctx, "Reconciler started")
+
+	workCh := make(chan WorkItem)
+	var workWg sync.WaitGroup
+	for range config.NumWorkers {
+		workWg.Go(func() {
+			importerWorker(ctx, workCh, config)
+		})
+	}
+
+	var wg sync.WaitGroup
+	var sourceRepos []*models.SourceRepository
+	gitBranches := make(map[string]string) // url -> branch
+
+	for sourceRepo, err := range config.SourceRepoStore.All(ctx) {
+		if err != nil {
+			return err
+		}
+
+		// Sanity check for multiple sources with same git url but different branches.
+		// This is not currently supported.
+		if sourceRepo.Type == models.SourceRepositoryTypeGit && sourceRepo.Git != nil {
+			if existingBranch, ok := gitBranches[sourceRepo.Git.URL]; ok {
+				if existingBranch != sourceRepo.Git.Branch {
+					return fmt.Errorf("multiple sources with same git url %q but different branches (%q and %q) is not supported",
+						sourceRepo.Git.URL, existingBranch, sourceRepo.Git.Branch)
+				}
+			} else {
+				gitBranches[sourceRepo.Git.URL] = sourceRepo.Git.Branch
+			}
+		}
+
+		sourceRepos = append(sourceRepos, sourceRepo)
+	}
+
+	for _, sr := range sourceRepos {
+		sourceRepo := sr // capture loop variable cleanly
+
+		if slices.Contains(reconcileSkipSources, sourceRepo.Name) {
+			logger.InfoContext(ctx, "Skipping reconciliation for source", slog.String("source", sourceRepo.Name))
+			continue
+		}
+
+		wg.Go(func() {
+			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
+			defer span.End()
+			switch sourceRepo.Type {
+			case models.SourceRepositoryTypeGit:
+				if err := handleReconcileGit(ctx, workCh, config, sourceRepo); err != nil {
+					logger.ErrorContext(ctx, "Failed to reconcile git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+				}
+			case models.SourceRepositoryTypeBucket:
+				if err := handleReconcileBucket(ctx, workCh, config, sourceRepo); err != nil {
+					logger.ErrorContext(ctx, "Failed to reconcile bucket source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+				}
+			case models.SourceRepositoryTypeREST:
+				if err := handleReconcileREST(ctx, workCh, config, sourceRepo); err != nil {
+					logger.ErrorContext(ctx, "Failed to reconcile REST source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+				}
+			default:
+				logger.ErrorContext(ctx, "Unsupported source repository type for reconciliation", slog.String("source", sourceRepo.Name), slog.Any("type", sourceRepo.Type))
+			}
+		})
+	}
+	wg.Wait()
+	close(workCh)
+	workWg.Wait()
+
+	return nil
+}
+
+// fetchDBRecords retrieves the modified dates for all vulnerability records associated with a given source repository.
+//
+// Arguments:
+//   - ctx: Context used for datastore queries.
+//   - config: Configuration containing the VulnerabilityStore.
+//   - sourceRepo: The SourceRepository configuration to fetch existing records for.
+func fetchDBRecords(ctx context.Context, config Config, sourceRepo *models.SourceRepository) (map[string]time.Time, error) {
+	dbRecords := make(map[string]time.Time)
+	for entry, err := range config.VulnerabilityStore.ListBySource(ctx, sourceRepo.Name, false) {
+		if err != nil {
+			return nil, err
+		}
+		dbRecords[entry.Path] = entry.ModifiedRaw
+	}
+	return dbRecords, nil
+}
+
+// checkReconcile checks the upstream modified date against the datastore and triggers a reimport if necessary.
+// It constructs the WorkItem template and manages the logic entirely.
+//
+// Arguments:
+//   - ctx: Processing context.
+//   - ch: Channel to push the WorkItem to for re-importing.
+//   - sourceRepo: The configuration of the repository being imported.
+//   - dbRecords: A map containing the datastore 'modified_raw' timestamps for this source.
+//   - path: The relative path or ID representing this specific vulnerability record upstream.
+//   - parsed: A pointer to a pre-parsed gjson.Result if already available. If nil, sourceRecord is opened and parsed dynamically.
+//   - sourceRecord: The interface used to lazily retrieve file contents (from a bucket, git, or REST).
+//   - format: RecordFormat representing the format we expect to decode (JSON, YAML, etc.).
+func checkReconcile(
+	ctx context.Context,
+	ch chan<- WorkItem,
+	sourceRepo *models.SourceRepository,
+	dbRecords map[string]time.Time,
+	path string,
+	parsed *gjson.Result,
+	sourceRecord SourceRecord,
+	format RecordFormat,
+) {
+	recordTemplate := WorkItem{
+		Context:          ctx,
+		SourceRecord:     sourceRecord,
+		SourceRepository: sourceRepo.Name,
+		SourcePath:       path,
+		Format:           format,
+		KeyPath:          sourceRepo.KeyPath,
+		Strict:           sourceRepo.Strictness,
+		IsReimport:       true,
+	}
+
+	dbMod, exists := dbRecords[path]
+	if !exists {
+		logger.ErrorContext(ctx, "Found missing vulnerability in datastore during reconcile",
+			slog.String("source", recordTemplate.SourceRepository),
+			slog.String("path", path))
+		// panic("Found missing vulnerability in datastore during reconcile")
+		ch <- recordTemplate
+		return
+	}
+
+	var parsedToUse gjson.Result
+	if parsed != nil {
+		parsedToUse = *parsed
+	} else {
+		r, err := sourceRecord.Open(ctx)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to open source record during reconcile",
+				slog.Any("error", err),
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+			return
+		}
+		data, err := io.ReadAll(r)
+		r.Close()
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to read source record during reconcile",
+				slog.Any("error", err),
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+			return
+		}
+
+		if format == RecordFormatYAML {
+			json, err := yaml.ToJSON(data)
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to convert YAML to JSON in reconcile",
+					slog.Any("error", err),
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path))
+				return
+			}
+			data = json
+		}
+
+		if keyPath := sourceRepo.KeyPath; keyPath != "" {
+			res := gjson.GetBytes(data, keyPath)
+			if !res.Exists() {
+				logger.ErrorContext(ctx, "Key path not found in reconcile",
+					slog.String("key_path", keyPath),
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path))
+				return
+			}
+			data = []byte(res.Raw)
+		}
+
+		parsedToUse = gjson.ParseBytes(data)
+	}
+
+	if !parsedToUse.Get("id").Exists() {
+		logger.ErrorContext(ctx, "Vulnerability missing id in reconcile",
+			slog.String("source", recordTemplate.SourceRepository),
+			slog.String("path", path))
+		return
+	}
+
+	modifiedObj := parsedToUse.Get("modified")
+	if !modifiedObj.Exists() {
+		logger.WarnContext(ctx, "Vulnerability missing modified in reconcile",
+			slog.String("source", recordTemplate.SourceRepository),
+			slog.String("path", path))
+		return
+	}
+
+	modified, err := time.Parse(time.RFC3339, modifiedObj.String())
+	if err != nil {
+		logger.WarnContext(ctx, "Failed to parse modified in reconcile",
+			slog.Any("error", err),
+			slog.String("source", recordTemplate.SourceRepository),
+			slog.String("path", path))
+		return
+	}
+
+	if modified.After(dbMod) {
+		logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
+			slog.String("source", recordTemplate.SourceRepository),
+			slog.String("path", path),
+			slog.Time("datastore_modified", dbMod),
+			slog.Time("upstream_modified", modified))
+		ch <- recordTemplate
+	}
 }
 
 type RecordFormat int
@@ -375,8 +597,8 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 	// Inject the current trace into the message
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
 
-	result := publisher.Publish(ctx, msg)
-	_, err := result.Get(ctx)
+	// result := publisher.Publish(ctx, msg)
+	// _, err := result.Get(ctx)
 
-	return err
+	return nil
 }

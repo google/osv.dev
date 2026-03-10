@@ -175,3 +175,50 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	return nil
 }
+
+func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
+		return errors.New("invalid SourceRepository for bucket reconcile")
+	}
+
+	logger.InfoContext(ctx, "Processing bucket reconcile",
+		slog.String("source", sourceRepo.Name), slog.String("bucket", sourceRepo.Bucket.Name))
+
+	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
+
+	// Fetch datastore records for the source
+	dbRecords, err := fetchDBRecords(ctx, config, sourceRepo)
+	if err != nil {
+		return err
+	}
+
+	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
+
+	format := extensionToFormat(sourceRepo.Extension)
+
+	for obj, err := range bucket.Objects(ctx, sourceRepo.Bucket.Path) {
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(obj.Name, sourceRepo.Extension) {
+			continue
+		}
+		base := path.Base(obj.Name)
+		if shouldIgnore(base, sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			continue
+		}
+
+		sourceRecord := bucketSourceRecord{
+			bucket:     bucket,
+			objectPath: obj.Name,
+		}
+
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format)
+	}
+
+	logger.InfoContext(ctx, "Finished reconciling bucket source repository",
+		slog.String("source", sourceRepo.Name),
+		slog.String("bucket", sourceRepo.Bucket.Name))
+
+	return nil
+}

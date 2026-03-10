@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importer-reconciler
+  labels:
+    cronLastSuccessfulTimeMins: "1500" # Expected latency once a day
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: importer
+            image: importer
+            imagePullPolicy: Always
+            args: ["--reconcile=true"]
+            volumeMounts:
+              - mountPath: "/work"
+                name: git-cache
+            env:
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
+              - name: IMPORT_TRACE_SAMPLE_RATE # for the overall importer trace
+                value: "1.0"
+              - name: TRACE_SAMPLE_RATE # for the individual vulnerability entries
+                value: "0.05"
+            resources:
+              requests:
+                cpu: "1"
+                memory: "10G"
+              limits:
+                cpu: "2"
+                memory: "11G"
+          restartPolicy: Never
+          volumes:
+            - name: git-cache
+              persistentVolumeClaim:
+                claimName: importer-reconciler-git-cache-pvc
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: importer-reconciler-git-cache-pv
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 200Gi
+  accessModes:
+    - ReadWriteOnce
+  csi:
+    driver: pd.csi.storage.gke.io
+    volumeHandle: projects/oss-vdb/zones/us-central1-f/disks/importer-reconciler-git-cache
+    fsType: ext4
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: importer-reconciler-git-cache-pvc
+spec:
+  storageClassName: ""
+  volumeName: importer-reconciler-git-cache-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Gi

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path"
@@ -197,7 +198,7 @@ func changedFiles(ctx context.Context, repo sharedRepo, sourceRepo *models.Sourc
 		}
 		current = ref.Hash()
 	} else {
-		ref, err := repo.Head()
+		ref, err := repo.Reference(plumbing.NewRemoteHEADReferenceName("origin"), true)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -237,4 +238,111 @@ func changedFiles(ctx context.Context, repo sharedRepo, sourceRepo *models.Sourc
 	}
 
 	return changedFiles, currentCommit, nil
+}
+
+type localFileSourceRecord struct {
+	path string
+}
+
+func (r localFileSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+	return os.Open(r.path)
+}
+
+func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
+		return errors.New("invalid SourceRepository for git reconcile")
+	}
+	logger.InfoContext(ctx, "Processing git reconcile",
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
+
+	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
+
+	sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
+	pathStr := hex.EncodeToString(sha[:])
+	pathStr = filepath.Join(config.GitWorkDir, pathStr)
+
+	// TODO: We don't support multiple sources with the same repo but different branches.
+	_, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (any, error) {
+		repo, err := repos.CloneToDir(ctx, sourceRepo.Git.URL, pathStr, true)
+		if err != nil {
+			return nil, err
+		}
+
+		if sourceRepo.Git.Branch != "" {
+			wt, err := repo.Worktree()
+			if err == nil {
+				_ = wt.Checkout(&git.CheckoutOptions{
+					Branch: plumbing.NewRemoteReferenceName("origin", sourceRepo.Git.Branch),
+					Force:  true,
+				})
+			}
+		}
+
+		return sharedRepo{
+			Repository: repo,
+			mu:         &sync.Mutex{},
+		}, nil
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to clone git source repository for reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		return err
+	}
+
+	// Fetch datastore records for the source
+	dbRecords, err := fetchDBRecords(ctx, config, sourceRepo)
+	if err != nil {
+		return err
+	}
+
+	format := extensionToFormat(sourceRepo.Extension)
+
+	searchDir := pathStr
+	if sourceRepo.Git.Path != "" {
+		searchDir = filepath.Join(pathStr, sourceRepo.Git.Path)
+	}
+
+	err = filepath.WalkDir(searchDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			if d.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if !strings.HasSuffix(p, sourceRepo.Extension) {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(pathStr, p)
+		if err != nil {
+			return nil
+		}
+		// Always use forward slashes for relative paths inside git repositories
+		relPath = filepath.ToSlash(relPath)
+
+		if shouldIgnore(path.Base(p), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return nil
+		}
+
+		sourceRecord := localFileSourceRecord{
+			path: p, // Absolute path on disk
+		}
+
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format)
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	logger.InfoContext(ctx, "Finished reconciling git source repository",
+		slog.String("source", sourceRepo.Name),
+		slog.String("url", sourceRepo.Git.URL))
+
+	return nil
 }

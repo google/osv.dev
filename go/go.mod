@@ -12,6 +12,7 @@ require (
 	github.com/go-git/go-git/v6 v6.0.0-20260304174202-7077091fca9c
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
+	github.com/klauspost/compress v1.18.4
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260304051245-ec3272c283e4
 	github.com/tidwall/gjson v1.18.0
 	github.com/xeipuuv/gojsonschema v1.2.0

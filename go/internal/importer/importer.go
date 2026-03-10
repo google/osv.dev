@@ -18,6 +18,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
@@ -29,7 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-const TasksTopic = "tasks"
+const (
+	TasksTopic           = "tasks"
+	maxUncompressedSize  = 1024
+	maxPubSubMessageSize = 10_000_000
+)
 
 type Config struct {
 	NumWorkers int
@@ -353,14 +358,23 @@ func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) err
 func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
 	// Send the vulnerability proto in the message data
 	var data []byte
+	contentEncoding := ""
 	if vuln != nil {
 		var err error
 		data, err = proto.Marshal(vuln)
 		if err != nil {
 			return err
 		}
+		contentEncoding = "uncompressed"
 	}
-	if len(data) > 10_000_000 { // Pub/Sub limit is 10 MB
+	if len(data) > maxUncompressedSize {
+		// make sure we have enough capacity for the compressed data
+		// to avoid reallocations
+		buf := make([]byte, 0, len(data))
+		data = zstd.EncodeTo(buf, data)
+		contentEncoding = "zstd"
+	}
+	if len(data) > maxPubSubMessageSize {
 		logger.WarnContext(ctx, "Vulnerability proto is too large",
 			slog.String("source", source),
 			slog.String("path", path),
@@ -368,16 +382,18 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 
 		// Set data to nil so that the worker will re-download the vulnerability
 		data = nil
+		contentEncoding = ""
 	}
 	msg := &pubsub.Message{
 		Data: data,
 		Attributes: map[string]string{
-			"type":            "update",
-			"source":          source,
-			"path":            path,
-			"original_sha256": hash,
-			"deleted":         strconv.FormatBool(deleted),
-			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
+			"type":             "update",
+			"source":           source,
+			"path":             path,
+			"original_sha256":  hash,
+			"deleted":          strconv.FormatBool(deleted),
+			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
+			"content_encoding": contentEncoding,
 		},
 	}
 	if srcTimestamp != nil {

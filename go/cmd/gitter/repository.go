@@ -414,63 +414,37 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
 }
 
-func parseHash(hash string) (SHA1, error) {
-	hashBytes, err := hex.DecodeString(hash)
-	if len(hashBytes) != 20 {
-		return SHA1{}, fmt.Errorf("invalid hash length: %d", len(hashBytes))
-	}
-	if err != nil {
-		return SHA1{}, fmt.Errorf("failed to decode hash: %w", err)
+// parseHashes converts slice of string hashes input into slice of SHA1
+func (r *Repository) parseHashes(ctx context.Context, hashesStr []string, isIntroduced bool) []SHA1 {
+	hashes := make([]SHA1, 0, len(hashesStr))
+	for _, hash := range hashesStr {
+		if isIntroduced && hash == "0" {
+			hashes = append(hashes, r.rootCommits...)
+			continue
+		}
+
+		hashBytes, err := hex.DecodeString(hash)
+		// Log error but continue with the rest of the hashes if a commit hash is invalid
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
+			continue
+		}
+		if len(hashBytes) != 20 {
+			logger.ErrorContext(ctx, "invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
+			continue
+		}
+
+		hashes = append(hashes, SHA1(hashBytes))
 	}
 
-	return SHA1(hashBytes), nil
+	return hashes
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
 func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypickIntro, cherrypickFixed bool) []*Commit {
-	introduced := make([]SHA1, 0, len(introStrs))
-	fixed := make([]SHA1, 0, len(fixedStrs))
-	lastAffected := make([]SHA1, 0, len(laStrs))
-
-	// Convert string input into SHA1
-	// Introduced can be 0 and we'll replace it with the root commit
-	for _, s := range introStrs {
-		if s == "0" {
-			introduced = append(introduced, r.rootCommits...)
-			continue
-		}
-
-		sha, err := parseHash(s)
-		if err != nil {
-			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash: introduced", slog.String("hash", s), slog.Any("err", err))
-			continue
-		}
-
-		introduced = append(introduced, sha)
-	}
-
-	for _, s := range fixedStrs {
-		sha, err := parseHash(s)
-		if err != nil {
-			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash: fixed", slog.String("hash", s), slog.Any("err", err))
-			continue
-		}
-
-		fixed = append(fixed, sha)
-	}
-
-	for _, s := range laStrs {
-		sha, err := parseHash(s)
-		if err != nil {
-			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash: last_affected", slog.String("hash", s), slog.Any("err", err))
-			continue
-		}
-
-		lastAffected = append(lastAffected, sha)
-	}
+	introduced := r.parseHashes(ctx, introStrs, true)
+	fixed := r.parseHashes(ctx, fixedStrs, false)
+	lastAffected := r.parseHashes(ctx, laStrs, false)
 
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
@@ -523,7 +497,7 @@ func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs 
 				continue
 			}
 
-			// If we hit a fixed commit, its entire tree is treated as a unaffectable
+			// If we hit a fixed commit, its entire tree is treated as unaffectable
 			// as any downstream commit can go through this fixed commit to become unaffected
 			if _, ok := fixedMap[curr]; ok {
 				unaffectableMap[curr] = struct{}{}
@@ -601,37 +575,8 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
 func (r *Repository) Limit(ctx context.Context, introStrs, limitStrs []string) []*Commit {
-	introduced := []SHA1{}
-	limit := []SHA1{}
-
-	// Convert string input into SHA1
-	// Introduced can be 0 and we'll replace it with the root commit
-	for _, s := range introStrs {
-		if s == "0" {
-			introduced = append(introduced, r.rootCommits...)
-			continue
-		}
-
-		sha, err := parseHash(s)
-		if err != nil {
-			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
-			continue
-		}
-
-		introduced = append(introduced, sha)
-	}
-
-	for _, s := range limitStrs {
-		sha, err := parseHash(s)
-		if err != nil {
-			// Log error and continue if a commit hash is invalid
-			logger.ErrorContext(ctx, "failed to parse commit hash", slog.String("hash", s), slog.Any("err", err))
-			continue
-		}
-
-		limit = append(limit, sha)
-	}
+	introduced := r.parseHashes(ctx, introStrs, true)
+	limit := r.parseHashes(ctx, limitStrs, false)
 
 	var affectedCommits []*Commit
 

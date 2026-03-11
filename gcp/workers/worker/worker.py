@@ -609,8 +609,8 @@ class TaskRunner:
     else:
       result = None
       logging.info(
-        'Skipping Vuln Analysis for %s as it is a '
-        'Kernel vulnerability.', vulnerability.id)
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None

@@ -193,6 +193,7 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				return nil, nil, nil
 			}
 			metrics.AddNote("Failed to normalize tags - %s", repo)
+
 			continue
 		}
 

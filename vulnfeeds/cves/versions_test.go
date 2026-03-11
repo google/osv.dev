@@ -954,7 +954,7 @@ func TestExtractVersionInfo_429(t *testing.T) {
 			}, nil
 		}),
 	}
-	
+
 	cve := models.NVDCVE{
 		References: []models.Reference{
 			{
@@ -1259,7 +1259,7 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 
 func TestValidateAndCanonicalizeLink_429(t *testing.T) {
 	requests := 0
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++
 		w.WriteHeader(http.StatusTooManyRequests)
 	}))

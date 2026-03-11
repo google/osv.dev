@@ -76,10 +76,11 @@ func TestCVEToOSV_429(t *testing.T) {
 	files, _ := os.ReadDir(outDir)
 	if len(files) > 0 {
 		// It creates a directory for the vendor/product, let's check if any .json files exist
-		err := filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(outDir, func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && filepath.Ext(path) == ".json" {
 				t.Errorf("Expected no OSV file to be created, but found %s", path)
 			}
+
 			return nil
 		})
 		if err != nil {

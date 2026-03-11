@@ -823,6 +823,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 		return nil
 	}
 	metrics.AddNote("Extracted versions from CPEs: %v", versions)
+
 	return versions
 }
 
@@ -1100,6 +1101,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 				return
 			}
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
+
 			continue
 		}
 		for _, av := range v.AffectedVersions {

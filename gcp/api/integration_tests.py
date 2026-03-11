@@ -689,12 +689,13 @@ class IntegrationTests(unittest.TestCase,
   def test_get_vuln_by_alias_not_in_db(self):
     """ Test search by ID for a vuln not in db, but alias is"""
     response = requests.get(
-        _api() + '/v1/vulns/CVE-2018-18420', timeout=_TIMEOUT)
+        _api() + '/v1/vulns/SNYK-JS-ADMINHUBPAGEEMAILS-5666437',
+        timeout=_TIMEOUT)
     self.assert_results_equal(
         {
             'code': 5,
             'message': 'Bug not found, but the following aliases were: '
-                       'GHSA-22cq-xxr9-jrrv'
+                       'MAL-2024-2291'
         }, response.json())
 
   def test_query_batch(self):

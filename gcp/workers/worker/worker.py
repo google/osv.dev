@@ -602,8 +602,8 @@ class TaskRunner:
            for affected in vulnerability.affected):
       result = None
       logging.info(
-        'Skipping Vuln Analysis for %s as it is a '
-        'Kernel vulnerability.', vulnerability.id)
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
     else:
       try:
         result = self._analyze_vulnerability(source_repo, repo, vulnerability,

@@ -108,7 +108,9 @@ func TestSendToWorker_TooBig(t *testing.T) {
 	}
 	var sb strings.Builder
 	enc := base64.NewEncoder(base64.StdEncoding, &sb)
-	enc.Write(buf)
+	if _, err := enc.Write(buf); err != nil {
+		t.Fatalf("Failed to encode data: %v", err)
+	}
 	enc.Close()
 	summary := sb.String()
 	vuln := &osvschema.Vulnerability{

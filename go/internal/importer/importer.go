@@ -364,21 +364,21 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 		if err != nil {
 			return err
 		}
-	}
-	// make sure we have enough capacity for the compressed data
-	// to avoid reallocations
-	buf := make([]byte, 0, len(data))
-	data = zstd.EncodeTo(buf, data)
-	contentEncoding = "zstd"
-	if len(data) > maxPubSubMessageSize {
-		logger.WarnContext(ctx, "Vulnerability proto is too large",
-			slog.String("source", source),
-			slog.String("path", path),
-			slog.Int("size", len(data)))
+		// make sure we have enough capacity for the compressed data
+		// to avoid reallocations
+		buf := make([]byte, 0, len(data))
+		data = zstd.EncodeTo(buf, data)
+		contentEncoding = "zstd"
+		if len(data) > maxPubSubMessageSize {
+			logger.WarnContext(ctx, "Vulnerability proto is too large",
+				slog.String("source", source),
+				slog.String("path", path),
+				slog.Int("size", len(data)))
 
-		// Set data to nil so that the worker will re-download the vulnerability
-		data = nil
-		contentEncoding = ""
+			// Set data to nil so that the worker will re-download the vulnerability
+			data = nil
+			contentEncoding = ""
+		}
 	}
 	msg := &pubsub.Message{
 		Data: data,

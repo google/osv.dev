@@ -55,6 +55,12 @@ func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 			},
 		},
 		{
+			Path: "vulns.#.affected.#.ranges.#.database_specific",
+			ReplaceFunc: func(_ gjson.Result) any {
+				return "<Any value>"
+			},
+		},
+		{
 			Path: "vulns.#.database_specific",
 			ReplaceFunc: func(_ gjson.Result) any {
 				return "<Any value>"

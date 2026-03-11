@@ -1621,22 +1621,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-11053.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-11053.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2829063"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250124-0012/"
         },
         {
@@ -1648,15 +1632,19 @@
           "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
         },
         {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2829063"
-        },
-        {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-11053.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-11053.json"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2829063"
         }
       ],
@@ -1673,14 +1661,15 @@
                 {
                   "fixed": "75a2079d5c28debb2eaa848ca9430f1fe0d7844c"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 36,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",

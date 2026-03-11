@@ -108,7 +108,8 @@ def _setup_logging_extra_info():
 
 
 def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
-  if affected.package.name == 'Kernel' and affected.package.ecosystem == 'Linux':
+  if affected.package.name == 'Kernel' and \
+     affected.package.ecosystem == 'Linux':
     return True
 
   if any('git.kernel.org/pub/scm/linux/kernel/git' in ar.repo
@@ -561,9 +562,7 @@ class TaskRunner:
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
       return vulnerability
-    if any(
-        affected_is_kernel(affected)
-        for affected in vulnerability.affected):
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
       logging.info(
           'Skipping Vanir signature generation for %s as it is a '
           'Kernel vulnerability.', vulnerability.id)
@@ -608,9 +607,7 @@ class TaskRunner:
 
     # Fully enrich the vulnerability object in memory.
     vulnerability = self._generate_vanir_signatures(vulnerability)
-    if any(
-        affected_is_kernel(affected)
-        for affected in vulnerability.affected):
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
       result = None
       logging.info(
           'Skipping Vuln Analysis for %s as it is a '

@@ -84,7 +84,7 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 // Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
 func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
 	if version == "" {
-		return "", errors.New("version cannot be empty")
+		return "", nil
 	}
 	// TODO: try unnormalized version first.
 	normalizedVersion, err := NormalizeVersion(version)

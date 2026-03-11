@@ -20,6 +20,9 @@ import semver
 _PAD_WIDTH = 8
 _FAKE_PRE_WIDTH = 16
 
+_SUFFIX_PATTERN = re.compile(r'^(-[^+]*)?(\+.*)?(.*)$')
+_VERSION_PATTERN = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
+
 
 def _strip_leading_v(version):
   """Strip leading v from the version, if any."""
@@ -52,8 +55,7 @@ def _coerce_suffix(suffix):
   if not suffix:
     return suffix
 
-  suffix_pattern = re.compile(r'^(-[^+]*)?(\+.*)?(.*)$')
-  match = suffix_pattern.match(suffix)
+  match = _SUFFIX_PATTERN.match(suffix)
 
   pre = ''
   if match.group(1):
@@ -83,8 +85,7 @@ def _coerce_suffix(suffix):
 def coerce(version: str):
   """Coerce a potentially invalid semver into valid semver."""
   version = _strip_leading_v(version)
-  version_pattern = re.compile(r'^(\d+)(\.\d+)?(\.\d+)?(.*)$')
-  match = version_pattern.match(version)
+  match = _VERSION_PATTERN.match(version)
   if not match:
     return version
 

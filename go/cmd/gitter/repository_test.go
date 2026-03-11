@@ -165,6 +165,9 @@ func printSHA1(hash SHA1) string {
 	return strings.TrimLeft(str, "0")
 }
 
+// cmpSHA1Opts are applied to the cmp.Diff function to make the output more readable
+// 1. Transform SHA1s to pretty strings
+// 2. Sorts slices to ensure deterministic comparisons
 var cmpSHA1Opts = []cmp.Option{
 	cmp.Transformer("SHA1s", func(in []SHA1) []string {
 		out := make([]string, len(in))

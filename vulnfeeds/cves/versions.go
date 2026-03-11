@@ -819,10 +819,10 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 			}
 		}
 	}
-	if len(versions) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", versions)
+	if len(versions) == 0 {
+		return nil
 	}
-
+	metrics.AddNote("Extracted versions from CPEs: %v", versions)
 	return versions
 }
 

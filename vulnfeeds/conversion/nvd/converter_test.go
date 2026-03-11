@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 )
@@ -19,7 +21,7 @@ func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 func TestCVEToOSV_429(t *testing.T) {
 	originalTransport := http.DefaultTransport
 	requests := 0
-	http.DefaultTransport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+	customTransport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		requests++
 		return &http.Response{
 			StatusCode: http.StatusTooManyRequests,
@@ -27,7 +29,12 @@ func TestCVEToOSV_429(t *testing.T) {
 			Request:    req,
 		}, nil
 	})
+	http.DefaultTransport = customTransport
 	defer func() { http.DefaultTransport = originalTransport }()
+
+	customClient := &http.Client{Transport: customTransport}
+	client.InstallProtocol("https", githttp.NewClient(customClient))
+	defer client.InstallProtocol("https", githttp.DefaultClient)
 
 	cve := models.NVDCVE{
 		ID: "CVE-2025-12345",
@@ -44,7 +51,7 @@ func TestCVEToOSV_429(t *testing.T) {
 						CPEMatch: []models.CPEMatch{
 							{
 								Vulnerable: true,
-								Criteria:   "cpe:2.3:a:foo:bar:*:*:*:*:*:*:*:*",
+								Criteria:   "cpe:2.3:a:foo:bar:1.5:*:*:*:*:*:*:*",
 							},
 						},
 					},
@@ -58,11 +65,11 @@ func TestCVEToOSV_429(t *testing.T) {
 	cache := &git.RepoTagsCache{}
 	outDir := t.TempDir()
 
-	err := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, outDir, metrics)
+	outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, outDir, metrics, false, false)
 
 	// It should fail because of the 429 error causing unresolved fixes
-	if err == nil {
-		t.Errorf("Expected error from CVEToOSV due to 429, got nil")
+	if outcome != models.Error {
+		t.Errorf("Expected error from CVEToOSV due to 429, got %v", outcome)
 	}
 
 	// Verify that no OSV file was created

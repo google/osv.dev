@@ -188,7 +188,7 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			if strings.Contains(err.Error(), "429") {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}

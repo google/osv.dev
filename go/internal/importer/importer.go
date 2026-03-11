@@ -32,7 +32,6 @@ import (
 
 const (
 	TasksTopic           = "tasks"
-	maxUncompressedSize  = 1024
 	maxPubSubMessageSize = 10_000_000
 )
 
@@ -365,15 +364,12 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 		if err != nil {
 			return err
 		}
-		contentEncoding = "uncompressed"
 	}
-	if len(data) > maxUncompressedSize {
-		// make sure we have enough capacity for the compressed data
-		// to avoid reallocations
-		buf := make([]byte, 0, len(data))
-		data = zstd.EncodeTo(buf, data)
-		contentEncoding = "zstd"
-	}
+	// make sure we have enough capacity for the compressed data
+	// to avoid reallocations
+	buf := make([]byte, 0, len(data))
+	data = zstd.EncodeTo(buf, data)
+	contentEncoding = "zstd"
 	if len(data) > maxPubSubMessageSize {
 		logger.WarnContext(ctx, "Vulnerability proto is too large",
 			slog.String("source", source),

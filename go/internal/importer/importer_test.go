@@ -64,14 +64,19 @@ func TestSendToWorker(t *testing.T) {
 	if msg.Attributes["src_timestamp"] != "1672531200" {
 		t.Errorf("Expected src_timestamp=1672531200, got %s", msg.Attributes["src_timestamp"])
 	}
-	if msg.Attributes["content_encoding"] != "uncompressed" {
-		t.Errorf("Expected content_encoding=uncompressed, got %s", msg.Attributes["content_encoding"])
+	if msg.Attributes["content_encoding"] != "zstd" {
+		t.Errorf("Expected content_encoding=zstd, got %s", msg.Attributes["content_encoding"])
 	}
 	if len(msg.Data) == 0 {
 		t.Errorf("Expected vulnerability data to be present")
 	}
+	var data []byte
+	data, err = zstd.DecodeTo(data, msg.Data)
+	if err != nil {
+		t.Errorf("Failed to decode vulnerability: %v", err)
+	}
 	var parsedVuln osvschema.Vulnerability
-	if err := proto.Unmarshal(msg.Data, &parsedVuln); err != nil {
+	if err := proto.Unmarshal(data, &parsedVuln); err != nil {
 		t.Errorf("Failed to unmarshal vulnerability: %v", err)
 	}
 	if parsedVuln.GetId() != "CVE-2023-1234" {
@@ -79,83 +84,6 @@ func TestSendToWorker(t *testing.T) {
 	}
 	if parsedVuln.GetModified().AsTime() != modifiedTime {
 		t.Errorf("Expected vulnerability modified time %v, got %v", modifiedTime, parsedVuln.GetModified().AsTime())
-	}
-}
-
-func TestSendToWorker_Compressed(t *testing.T) {
-	mockPublisher := &testutils.MockPublisher{}
-	config := Config{
-		Publisher: mockPublisher,
-	}
-	ctx := context.Background()
-	item := WorkItem{
-		SourceRepository: "test-repo",
-		SourcePath:       "test-path.json",
-		IsReimport:       false,
-	}
-	hash := "another-hash"
-	modifiedTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	summary := strings.Repeat("a", 2048)
-	vuln := &osvschema.Vulnerability{
-		Id:       "CVE-2023-5678",
-		Modified: timestamppb.New(modifiedTime),
-		Summary:  summary,
-	}
-
-	err := sendToWorker(ctx, config, item, hash, modifiedTime, vuln)
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-
-	if len(mockPublisher.Messages) != 1 {
-		t.Fatalf("Expected 1 message published, got %d", len(mockPublisher.Messages))
-	}
-
-	msg := mockPublisher.Messages[0]
-	if msg.Attributes["type"] != "update" {
-		t.Errorf("Expected type=update, got %s", msg.Attributes["type"])
-	}
-	if msg.Attributes["source"] != "test-repo" {
-		t.Errorf("Expected source=test-repo, got %s", msg.Attributes["source"])
-	}
-	if msg.Attributes["path"] != "test-path.json" {
-		t.Errorf("Expected path=test-path.json, got %s", msg.Attributes["path"])
-	}
-	if msg.Attributes["original_sha256"] != "another-hash" {
-		t.Errorf("Expected original_sha256=another-hash, got %s", msg.Attributes["original_sha256"])
-	}
-	if msg.Attributes["deleted"] != "false" {
-		t.Errorf("Expected deleted=false, got %s", msg.Attributes["deleted"])
-	}
-	if msg.Attributes["req_timestamp"] == "" {
-		t.Errorf("Expected req_timestamp to be set")
-	}
-	if msg.Attributes["src_timestamp"] != "1672531200" {
-		t.Errorf("Expected src_timestamp=1672531200, got %s", msg.Attributes["src_timestamp"])
-	}
-	if msg.Attributes["content_encoding"] != "zstd" {
-		t.Errorf("Expected content_encoding=zstd, got %s", msg.Attributes["content_encoding"])
-	}
-	if len(msg.Data) == 0 {
-		t.Errorf("Expected vulnerability data to be present")
-	}
-	var parsedVuln osvschema.Vulnerability
-	var data []byte
-	data, err = zstd.DecodeTo(data, msg.Data)
-	if err != nil {
-		t.Errorf("Failed to decode vulnerability: %v", err)
-	}
-	if err := proto.Unmarshal(data, &parsedVuln); err != nil {
-		t.Errorf("Failed to unmarshal vulnerability: %v", err)
-	}
-	if parsedVuln.GetId() != "CVE-2023-5678" {
-		t.Errorf("Expected vulnerability ID CVE-2023-5678, got %s", parsedVuln.GetId())
-	}
-	if parsedVuln.GetModified().AsTime() != modifiedTime {
-		t.Errorf("Expected vulnerability modified time %v, got %v", modifiedTime, parsedVuln.GetModified().AsTime())
-	}
-	if parsedVuln.GetSummary() != summary {
-		t.Errorf("Expected vulnerability summaries do not match")
 	}
 }
 

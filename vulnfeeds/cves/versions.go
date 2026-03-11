@@ -1095,7 +1095,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			if strings.Contains(err.Error(), "429") {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
 				metrics.Outcome = models.Error
 				return
 			}

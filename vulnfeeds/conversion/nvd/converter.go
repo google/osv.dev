@@ -245,8 +245,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 // FindRepos attempts to find the source code repositories for a given CVE.
 func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
-	refs := cve.References
-	conversion.DeduplicateRefs(refs)
+	refs := conversion.DeduplicateRefs(refs)
 	CPEs := cves.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string

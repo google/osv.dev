@@ -597,12 +597,20 @@ class TaskRunner:
 
     # Fully enrich the vulnerability object in memory.
     vulnerability = self._generate_vanir_signatures(vulnerability)
-    try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
-    except UpdateConflictError:
-      # Discard changes due to conflict.
-      return
+    if any(affected.package.name == "Kernel" and
+           affected.package.ecosystem == "Linux"
+           for affected in vulnerability.affected):
+      result = None
+      logging.info(
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+    else:
+      try:
+        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                             relative_path, original_sha256)
+      except UpdateConflictError:
+        # Discard changes due to conflict.
+        return
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None
@@ -734,7 +742,8 @@ class TaskRunner:
       osv.pubsub.publish_failure(data, type='gcs_retry')
 
     try:
-      osv.update_affected_commits(vulnerability.id, result.commits, True)
+      if result:
+        osv.update_affected_commits(vulnerability.id, result.commits, True)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
       e.add_note(f'Happened processing {vulnerability.id}')
       logging.exception(

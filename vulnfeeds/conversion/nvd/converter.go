@@ -75,6 +75,9 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// If we have ranges, try to resolve them
 	r, un, sR := processRanges(cpeRanges, repos, metrics, cache, models.VersionSourceCPE)
+	if metrics.Outcome == models.Error {
+		return models.Error
+	}
 	resolvedRanges = append(resolvedRanges, r...)
 	unresolvedRanges = append(unresolvedRanges, un...)
 	for _, s := range sR {
@@ -102,6 +105,9 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
 		r, un, sR := processRanges(textRanges, repos, metrics, cache, models.VersionSourceDescription)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {
@@ -119,7 +125,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected)
 
-	if !outputMetrics && rejectFailed && metrics.Outcome != models.Successful {
+	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
 		return metrics.Outcome
 	}
 
@@ -155,6 +161,9 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
 		cves.VersionInfoToCommits(&versions, repos, cache, metrics)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 	}
 
 	hasAnyFixedCommits := false
@@ -189,6 +198,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
 	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+
+	if metrics.Outcome == models.Error {
+		return metrics.Outcome
+	}
 
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
@@ -451,6 +464,10 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {
 		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", cveID), slog.String("path", vulnDir), slog.Any("err", err))
+	}
+
+	if metrics.Outcome == models.Error {
+		return
 	}
 
 	if !rejectFailed || metrics.Outcome == models.Successful {

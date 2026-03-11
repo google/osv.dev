@@ -74,6 +74,14 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		return structpb.NewNullValue(), nil
 	}
 
+	if msg, ok := v.(proto.Message); ok {
+		val, err := protoToAny(msg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert proto message: %w", err)
+		}
+		return structpb.NewValue(val)
+	}
+
 	val := reflect.ValueOf(v)
 	switch val.Kind() {
 	case reflect.Slice:
@@ -83,6 +91,19 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		}
 
 		return structpbValueFromList(anyList)
+	case reflect.Map:
+		if val.Type().Key().Kind() == reflect.String {
+			m := make(map[string]any)
+			for _, k := range val.MapKeys() {
+				m[k.String()] = val.MapIndex(k).Interface()
+			}
+			structpbMap, err := NewStructpbFromMap(m)
+			if err != nil {
+				return nil, err
+			}
+			return structpb.NewStructValue(structpbMap), nil
+		}
+		return structpb.NewValue(v)
 	default:
 		return structpb.NewValue(v)
 	}
@@ -93,25 +114,16 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 // It iterates through the list, converting any proto.Message elements into
 // any type via JSON marshalling, while other elements are included as-is.
 func structpbValueFromList(list []any) (*structpb.Value, error) {
-	anyList := make([]any, 0, len(list))
+	var values []*structpb.Value
 	for i, v := range list {
-		if msg, ok := v.(proto.Message); ok {
-			val, err := protoToAny(msg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert proto message for item %d: %w", i, err)
-			}
-			anyList = append(anyList, val)
-		} else {
-			anyList = append(anyList, v)
+		val, err := newStructpbValue(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert item %d: %w", i, err)
 		}
+		values = append(values, val)
 	}
 
-	val, err := structpb.NewValue(anyList)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new structpb.Value from list: %w", err)
-	}
-
-	return val, nil
+	return structpb.NewListValue(&structpb.ListValue{Values: values}), nil
 }
 
 // protoToAny converts a proto.Message to an any type by marshalling to JSON

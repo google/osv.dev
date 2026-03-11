@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -184,7 +184,8 @@ func TestCacheHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body, _ := json.Marshal(map[string]string{"url": tt.url})
+			reqProto := &pb.CacheRequest{Url: tt.url}
+			body, _ := protojson.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/cache", bytes.NewBuffer(body))
 			if err != nil {
 				t.Fatal(err)
@@ -250,29 +251,29 @@ func TestAffectedCommitsHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var events []Event
+			var events []*pb.Event
 			for _, h := range tt.introduced {
-				events = append(events, Event{Type: EventTypeIntroduced, Hash: h})
+				events = append(events, &pb.Event{EventType: pb.EventType_INTRODUCED, Hash: h})
 			}
 			for _, h := range tt.fixed {
-				events = append(events, Event{Type: EventTypeFixed, Hash: h})
+				events = append(events, &pb.Event{EventType: pb.EventType_FIXED, Hash: h})
 			}
 			for _, h := range tt.lastAffected {
-				events = append(events, Event{Type: EventTypeLastAffected, Hash: h})
+				events = append(events, &pb.Event{EventType: pb.EventType_LAST_AFFECTED, Hash: h})
 			}
 			for _, h := range tt.limit {
-				events = append(events, Event{Type: EventTypeLimit, Hash: h})
+				events = append(events, &pb.Event{EventType: pb.EventType_LIMIT, Hash: h})
 			}
 			for _, h := range tt.invalidType {
-				events = append(events, Event{Type: "invalid_type", Hash: h})
+				events = append(events, &pb.Event{EventType: 999, Hash: h})
 			}
 
-			reqBody := map[string]any{
-				"url":    tt.url,
-				"events": events,
+			reqProto := &pb.AffectedCommitsRequest{
+				Url:    tt.url,
+				Events: events,
 			}
 
-			body, _ := json.Marshal(reqBody)
+			body, _ := protojson.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/affected-commits", bytes.NewBuffer(body))
 			if err != nil {
 				t.Fatal(err)
@@ -290,8 +291,14 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			}
 
 			respBody := &pb.AffectedCommitsResponse{}
-			if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-				t.Fatalf("Failed to unmarshal response: %v", err)
+			if rr.Header().Get("Content-Type") == "application/json" {
+				if err := protojson.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+					t.Fatalf("Failed to unmarshal JSON response: %v", err)
+				}
+			} else {
+				if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+					t.Fatalf("Failed to unmarshal proto response: %v", err)
+				}
 			}
 
 			var gotHashes []string

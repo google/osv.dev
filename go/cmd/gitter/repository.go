@@ -441,10 +441,10 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string, isIntr
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
-func (r *Repository) Affected(ctx context.Context, introStrs, fixedStrs, laStrs []string, cherrypickIntro, cherrypickFixed bool) []*Commit {
-	introduced := r.parseHashes(ctx, introStrs, true)
-	fixed := r.parseHashes(ctx, fixedStrs, false)
-	lastAffected := r.parseHashes(ctx, laStrs, false)
+func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) []*Commit {
+	introduced := r.parseHashes(ctx, se.Introduced, true)
+	fixed := r.parseHashes(ctx, se.Fixed, false)
+	lastAffected := r.parseHashes(ctx, se.LastAffected, false)
 
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
@@ -574,9 +574,9 @@ func (r *Repository) expandByCherrypick(commits []SHA1) []SHA1 {
 }
 
 // Between walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
-func (r *Repository) Limit(ctx context.Context, introStrs, limitStrs []string) []*Commit {
-	introduced := r.parseHashes(ctx, introStrs, true)
-	limit := r.parseHashes(ctx, limitStrs, false)
+func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents) []*Commit {
+	introduced := r.parseHashes(ctx, se.Introduced, true)
+	limit := r.parseHashes(ctx, se.Limit, false)
 
 	var affectedCommits []*Commit
 

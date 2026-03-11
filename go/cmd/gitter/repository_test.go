@@ -329,8 +329,12 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 			for i, h := range tt.lastAffected {
 				laStrs[i] = encodeSHA1(h)
 			}
-
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
+			se := &SeparatedEvents{
+				Introduced:   introStrs,
+				Fixed:        fixedStrs,
+				LastAffected: laStrs,
+			}
+			gotCommits := repo.Affected(t.Context(), se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -446,8 +450,12 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 			for i, h := range tt.lastAffected {
 				laStrs[i] = encodeSHA1(h)
 			}
-
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
+			se := &SeparatedEvents{
+				Introduced:   introStrs,
+				Fixed:        fixedStrs,
+				LastAffected: laStrs,
+			}
+			gotCommits := repo.Affected(t.Context(), se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -537,8 +545,12 @@ func TestAffected_Combined(t *testing.T) {
 			for i, h := range tt.lastAffected {
 				laStrs[i] = encodeSHA1(h)
 			}
-
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, laStrs, false, false)
+			se := &SeparatedEvents{
+				Introduced:   introStrs,
+				Fixed:        fixedStrs,
+				LastAffected: laStrs,
+			}
+			gotCommits := repo.Affected(t.Context(), se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -642,7 +654,11 @@ func TestAffected_Cherrypick(t *testing.T) {
 				fixedStrs[i] = encodeSHA1(h)
 			}
 
-			gotCommits := repo.Affected(t.Context(), introStrs, fixedStrs, nil, tt.cherrypickIntro, tt.cherrypickFixed)
+			se := &SeparatedEvents{
+				Introduced: introStrs,
+				Fixed:      fixedStrs,
+			}
+			gotCommits := repo.Affected(t.Context(), se, tt.cherrypickIntro, tt.cherrypickFixed)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -729,7 +745,11 @@ func TestLimit(t *testing.T) {
 				limitStrs[i] = encodeSHA1(h)
 			}
 
-			gotCommits := repo.Limit(t.Context(), introStrs, limitStrs)
+			se := &SeparatedEvents{
+				Introduced: introStrs,
+				Limit:      limitStrs,
+			}
+			gotCommits := repo.Limit(t.Context(), se)
 
 			var got []SHA1
 			for _, c := range gotCommits {

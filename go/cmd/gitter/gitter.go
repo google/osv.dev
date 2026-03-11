@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -29,6 +28,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
@@ -51,20 +51,6 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /affected-commits": affectedCommitsHandler,
 }
 
-type EventType string
-
-const (
-	EventTypeIntroduced   EventType = "introduced"
-	EventTypeFixed        EventType = "fixed"
-	EventTypeLastAffected EventType = "last_affected"
-	EventTypeLimit        EventType = "limit"
-)
-
-type Event struct {
-	Type EventType `json:"eventType"`
-	Hash string    `json:"hash"`
-}
-
 var (
 	gFetch          singleflight.Group
 	gArchive        singleflight.Group
@@ -78,6 +64,37 @@ var (
 var validURLRegex = regexp.MustCompile(`^(https?|git|ssh)://`)
 
 const shutdownTimeout = 10 * time.Second
+
+type SeparatedEvents struct {
+	Introduced   []string
+	Fixed        []string
+	LastAffected []string
+	Limit        []string
+}
+
+func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
+	se := &SeparatedEvents{}
+	for _, event := range events {
+		switch event.EventType {
+		case pb.EventType_INTRODUCED:
+			se.Introduced = append(se.Introduced, event.Hash)
+		case pb.EventType_FIXED:
+			se.Fixed = append(se.Fixed, event.Hash)
+		case pb.EventType_LAST_AFFECTED:
+			se.LastAffected = append(se.LastAffected, event.Hash)
+		case pb.EventType_LIMIT:
+			se.Limit = append(se.Limit, event.Hash)
+		default:
+			return nil, fmt.Errorf("invalid event type: %s", event.EventType)
+		}
+	}
+
+	if len(se.Limit) > 0 && (len(se.Fixed) > 0 || len(se.LastAffected) > 0) {
+		return nil, fmt.Errorf("limit and fixed/last_affected shouldn't exist in the same request")
+	}
+
+	return se, nil
+}
 
 // repoLocks is a map of per-repository RWMutexes, with url as the key.
 // It coordinates access between write operations (FetchRepo) that modify the git directory on disk
@@ -453,19 +470,28 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// POST requets body processing
-	var body struct {
-		URL         string `json:"url"`
-		ForceUpdate bool   `json:"force_update"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
-
+		http.Error(w, fmt.Sprintf("Error reading body: %v", err), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	url := body.URL
+	body := &pb.CacheRequest{}
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "application/x-protobuf" {
+		err = proto.Unmarshal(data, body)
+	} else {
+		// Default to JSON/protojson
+		err = protojson.Unmarshal(data, body)
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	url := body.Url
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -528,22 +554,28 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	// POST requets body processing
-	var body struct {
-		URL                         string  `json:"url"`
-		Events                      []Event `json:"events"`
-		DetectCherrypicksIntroduced bool    `json:"detect_cherrypicks_introduced"`
-		DetectCherrypicksFixed      bool    `json:"detect_cherrypicks_fixed"`
-		ForceUpdate                 bool    `json:"force_update"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
-
+		http.Error(w, fmt.Sprintf("Error reading body: %v", err), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	url := body.URL
+	body := &pb.AffectedCommitsRequest{}
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "application/x-protobuf" {
+		err = proto.Unmarshal(data, body)
+	} else {
+		// Default to JSON/protojson
+		err = protojson.Unmarshal(data, body)
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	url := body.Url
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
@@ -553,44 +585,22 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	introduced := []string{}
-	fixed := []string{}
-	lastAffected := []string{}
-	limit := []string{}
+	se, err := separateEvents(body.Events)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	cherrypickIntro := body.DetectCherrypicksIntroduced
 	cherrypickFixed := body.DetectCherrypicksFixed
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 
-	for _, event := range body.Events {
-		switch event.Type {
-		case EventTypeIntroduced:
-			introduced = append(introduced, event.Hash)
-		case EventTypeFixed:
-			fixed = append(fixed, event.Hash)
-		case EventTypeLastAffected:
-			lastAffected = append(lastAffected, event.Hash)
-		case EventTypeLimit:
-			limit = append(limit, event.Hash)
-		default:
-			logger.ErrorContext(ctx, "Invalid event type", slog.String("event_type", string(event.Type)))
-			http.Error(w, fmt.Sprintf("Invalid event type: %s", event.Type), http.StatusBadRequest)
-
-			return
-		}
-	}
-	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("last_affected", lastAffected), slog.Any("limit", limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
 
 	semaphore <- struct{}{}
 	defer func() { <-semaphore }()
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
-
-	// Limit and fixed/last_affected shouldn't exist in the same request as it doesn't make sense
-	if (len(fixed) > 0 || len(lastAffected) > 0) && len(limit) > 0 {
-		http.Error(w, "Limit and fixed/last_affected shouldn't exist in the same request", http.StatusBadRequest)
-
-		return
-	}
 
 	// Fetch repo if it's not fresh
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
@@ -626,10 +636,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repo := repoAny.(*Repository)
 
 	var affectedCommits []*Commit
-	if len(limit) > 0 {
-		affectedCommits = repo.Limit(ctx, introduced, limit)
+	if len(se.Limit) > 0 {
+		affectedCommits = repo.Limit(ctx, se)
 	} else {
-		affectedCommits = repo.Affected(ctx, introduced, fixed, lastAffected, cherrypickIntro, cherrypickFixed)
+		affectedCommits = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}
 
 	resp := &pb.AffectedCommitsResponse{Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits))}
@@ -640,7 +650,15 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	out, err := proto.Marshal(resp)
+	var out []byte
+	if contentType == "application/x-protobuf" {
+		out, err = proto.Marshal(resp)
+		w.Header().Set("Content-Type", "application/x-protobuf")
+	} else {
+		out, err = protojson.Marshal(resp)
+		w.Header().Set("Content-Type", "application/json")
+	}
+
 	if err != nil {
 		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), http.StatusInternalServerError)
@@ -648,7 +666,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/x-protobuf")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(out); err != nil {
 		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))

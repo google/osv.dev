@@ -65,6 +65,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 
 func DeduplicateRefs(refs []models.Reference) []models.Reference {
 	// Deduplicate references by URL.
+	refs = slices.Clone(refs)
 	slices.SortStableFunc(refs, func(a, b models.Reference) int {
 		return strings.Compare(a.URL, b.URL)
 	})

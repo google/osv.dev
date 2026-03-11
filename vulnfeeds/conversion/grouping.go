@@ -21,67 +21,116 @@ func GroupAffectedRanges(affected []*osvschema.Affected) {
 			continue
 		}
 
-		// Key for grouping: Type + Repo + Introduced Value
-		type groupKey struct {
-			RangeType  osvschema.Range_Type
-			Repo       string
-			Introduced string
-		}
-
-		groups := make(map[groupKey]*osvschema.Range)
-		var order []groupKey // To maintain deterministic order of first appearance
-
-		for _, r := range aff.GetRanges() {
-			// Find the introduced event
-			var introduced string
-			var introducedCount int
-			for _, e := range r.GetEvents() {
-				if e.GetIntroduced() != "" {
-					introduced = e.GetIntroduced()
-					introducedCount++
-				}
-			}
-
-			if introducedCount > 1 {
-				logger.Error("Multiple 'introduced' events found in a single range", slog.Any("range", r))
-			}
-
-			// If no introduced event is found, we use an empty string as the introduced value.
-			key := groupKey{
-				RangeType:  r.GetType(),
-				Repo:       r.GetRepo(),
-				Introduced: introduced,
-			}
-
-			if _, exists := groups[key]; !exists {
-				// Initialize with a deep copy of the first range found for this group
-				// We need to be careful about DatabaseSpecific.
-				// We want to keep the "versions" from this first range.
-				groups[key] = &osvschema.Range{
-					Type:             r.GetType(),
-					Repo:             r.GetRepo(),
-					Events:           []*osvschema.Event{},
-					DatabaseSpecific: r.GetDatabaseSpecific(), // Start with this one's DS
-				}
-				order = append(order, key)
-			} else {
-				// Merge DatabaseSpecific "versions"
-				mergeDatabaseSpecificVersions(groups[key], r.GetDatabaseSpecific())
-			}
-
-			// Add all events to the group. Deduplication happens later in cleanEvents.
-			groups[key].Events = append(groups[key].Events, r.GetEvents()...)
-		}
-
-		// Reconstruct ranges from groups
-		var newRanges []*osvschema.Range
-		for _, key := range order {
-			r := groups[key]
-			r.Events = cleanEvents(r.GetEvents())
-			newRanges = append(newRanges, r)
-		}
-		aff.Ranges = newRanges
+		aff.Ranges = GroupRanges(aff.GetRanges())
 	}
+}
+
+func GroupRanges(ranges []*osvschema.Range) []*osvschema.Range {
+	// Key for grouping: Type + Repo + Introduced Value
+	type groupKey struct {
+		RangeType  osvschema.Range_Type
+		Repo       string
+		Introduced string
+	}
+
+	groups := make(map[groupKey]*osvschema.Range)
+	var order []groupKey // To maintain deterministic order of first appearance
+
+	for _, r := range ranges {
+		// Find the introduced event
+		var introduced string
+		var introducedCount int
+		for _, e := range r.GetEvents() {
+			if e.GetIntroduced() != "" {
+				introduced = e.GetIntroduced()
+				introducedCount++
+			}
+		}
+
+		if introducedCount > 1 {
+			logger.Error("Multiple 'introduced' events found in a single range", slog.Any("range", r))
+		}
+
+		// If no introduced event is found, we use an empty string as the introduced value.
+		key := groupKey{
+			RangeType:  r.GetType(),
+			Repo:       r.GetRepo(),
+			Introduced: introduced,
+		}
+
+		if _, exists := groups[key]; !exists {
+			// Initialize with a deep copy of the first range found for this group
+			// We need to be careful about DatabaseSpecific.
+			// We want to keep the "versions" from this first range.
+			groups[key] = &osvschema.Range{
+				Type:             r.GetType(),
+				Repo:             r.GetRepo(),
+				Events:           []*osvschema.Event{},
+				DatabaseSpecific: r.GetDatabaseSpecific(), // Start with this one's DS
+			}
+			order = append(order, key)
+		} else {
+			// Merge DatabaseSpecific
+			mergeDatabaseSpecific(groups[key], r.GetDatabaseSpecific())
+		}
+
+		// Add all events to the group. Deduplication happens later in cleanEvents.
+		groups[key].Events = append(groups[key].Events, r.GetEvents()...)
+	}
+
+	// Reconstruct ranges from groups
+	var newRanges []*osvschema.Range
+	for _, key := range order {
+		r := groups[key]
+		r.Events = cleanEvents(r.GetEvents())
+		newRanges = append(newRanges, r)
+	}
+	return newRanges
+}
+
+// mergeDatabaseSpecific merges the source DatabaseSpecific into the target DatabaseSpecific.
+// It uses MergeDatabaseSpecificValues for all fields except "versions", which is handled
+// by mergeDatabaseSpecificVersions for deduplication.
+func mergeDatabaseSpecific(target *osvschema.Range, source *structpb.Struct) {
+	if source == nil {
+		return
+	}
+
+	if target.GetDatabaseSpecific() == nil {
+		var err error
+		target.DatabaseSpecific, err = structpb.NewStruct(nil)
+		if err != nil {
+			logger.Fatal("Failed to create DatabaseSpecific", slog.Any("error", err))
+		}
+	}
+
+	targetFields := target.GetDatabaseSpecific().GetFields()
+	if targetFields == nil {
+		targetFields = make(map[string]*structpb.Value)
+		target.DatabaseSpecific.Fields = targetFields
+	}
+
+	for k, v := range source.GetFields() {
+		if k == "versions" {
+			continue // Handled separately
+		}
+		val2 := v.AsInterface()
+		if existing, ok := targetFields[k]; ok {
+			mergedVal, err := MergeDatabaseSpecificValues(existing.AsInterface(), val2)
+			if err != nil {
+				logger.Info("Failed to merge database specific key", "key", k, "err", err)
+			}
+			if newVal, err := structpb.NewValue(mergedVal); err == nil {
+				targetFields[k] = newVal
+			} else {
+				logger.Warn("Failed to create structpb.Value for merged key", "key", k, "err", err)
+			}
+		} else {
+			targetFields[k] = v
+		}
+	}
+
+	mergeDatabaseSpecificVersions(target, source)
 }
 
 // mergeDatabaseSpecificVersions merges the "versions" field from the source DatabaseSpecific

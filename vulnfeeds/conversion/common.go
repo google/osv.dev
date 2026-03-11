@@ -175,7 +175,7 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []models.RangeWithMetadata, []string) {
 	var newVersionRanges []*osvschema.Range
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
@@ -198,10 +198,10 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			continue
 		}
 
-		var stillUnresolvedRanges []*osvschema.Range
+		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
 			var introduced, fixed, lastAffected string
-			for _, e := range vr.GetEvents() {
+			for _, e := range vr.Range.GetEvents() {
 				if e.GetIntroduced() != "" {
 					introduced = e.GetIntroduced()
 				}
@@ -242,8 +242,11 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				successfulRepos = append(successfulRepos, repo)
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
-				if len(vr.GetEvents()) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
+				if len(vr.Range.GetEvents()) > 0 {
+					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{
+						"versions": vr.Range.GetEvents(),
+						"cpe":      vr.Metadata.CPE,
+					})
 					if err != nil {
 						metrics.AddNote("failed to make database specific: %v", err)
 					} else {
@@ -324,7 +327,7 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 		for k, v := range db2.GetFields() {
 			val2 := v.AsInterface()
 			if existing, ok := mergedMap[k]; ok {
-				mergedVal, err := mergeDatabaseSpecificValues(existing, val2)
+				mergedVal, err := MergeDatabaseSpecificValues(existing, val2)
 				if err != nil {
 					logger.Info("Failed to merge database specific key", "key", k, "err", err)
 				}
@@ -346,18 +349,26 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 	return mergedRange, nil
 }
 
-// mergeDatabaseSpecificValues is a helper function that recursively merges two
+// MergeDatabaseSpecificValues is a helper function that recursively merges two
 // values from a DatabaseSpecific field. It handles lists (by appending), maps
 // (by recursively merging keys), and simple strings (by creating a list if they
 // differ). It returns an error if the types of the two values do not match.
-func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
+func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	switch v1 := val1.(type) {
 	case []any:
 		if v2, ok := val2.([]any); ok {
-			return append(v1, v2...), nil
+			return deduplicateList(append(v1, v2...)), nil
 		}
 
-		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+		// Check if the list contains elements of the same type as val2
+		if len(v1) > 0 {
+			if fmt.Sprintf("%T", v1[0]) != fmt.Sprintf("%T", val2) {
+				return nil, fmt.Errorf("mismatching types: list of %T and %T", v1[0], val2)
+			}
+		}
+
+		// Append single value to list
+		return deduplicateList(append(v1, val2)), nil
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
@@ -366,7 +377,7 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 			}
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
-					mergedVal, err := mergeDatabaseSpecificValues(existing, v)
+					mergedVal, err := MergeDatabaseSpecificValues(existing, v)
 					if err != nil {
 						return nil, err
 					}
@@ -382,15 +393,27 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	case string:
 		if v2, ok := val2.(string); ok {
-			if v1 == v2 {
-				return v1, nil
+			return deduplicateList([]any{v1, v2}), nil
+		}
+		if v2, ok := val2.([]any); ok {
+			if len(v2) > 0 {
+				if _, isString := v2[0].(string); !isString {
+					return nil, fmt.Errorf("mismatching types: string and list of %T", v2[0])
+				}
 			}
-
-			return []any{v1, v2}, nil
+			return deduplicateList(append([]any{v1}, v2...)), nil
 		}
 
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	default:
+		if v2, ok := val2.([]any); ok {
+			if len(v2) > 0 {
+				if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", v2[0]) {
+					return nil, fmt.Errorf("mismatching types: %T and list of %T", val1, v2[0])
+				}
+			}
+			return deduplicateList(append([]any{val1}, v2...)), nil
+		}
 		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
 			return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 		}
@@ -398,6 +421,24 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 			return val1, nil
 		}
 
-		return []any{val1, val2}, nil
+		return deduplicateList([]any{val1, val2}), nil
 	}
+}
+
+// deduplicateList removes duplicate comparable elements (like strings) from a list.
+func deduplicateList(list []any) []any {
+	var unique []any
+	seen := make(map[any]bool)
+	for _, item := range list {
+		switch item.(type) {
+		case string, int, int32, int64, float32, float64, bool:
+			if !seen[item] {
+				seen[item] = true
+				unique = append(unique, item)
+			}
+		default:
+			unique = append(unique, item)
+		}
+	}
+	return unique
 }

@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/git"
@@ -198,7 +197,7 @@ func Repo(u string) (string, error) {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
-			// Call out to models function for GitWeb URLs
+			// Call out to m function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
 		if parsedURL.Hostname() == "git.postgresql.org" {
@@ -656,7 +655,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []*osvschema.Range {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -669,14 +668,14 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		return nil
 	}
 
-	versions := make([]*osvschema.Range, 0, len(matches))
+	versions := make([]models.RangeWithMetadata, 0, len(matches))
 
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
 		fixed := processExtractedVersion(match[3])
 		lastaffected := ""
-		if match[2] == "through" {
+		if match[2] == "through" && validVersions != nil {
 			// "Through" implies inclusive range, so the fixed version is the one that comes after.
 			var err error
 			fixed, err = nextVersion(validVersions, fixed)
@@ -707,8 +706,8 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		vr := BuildVersionRange(introduced, lastaffected, fixed)
-		versions = append(versions, vr)
+		vr := c.BuildVersionRange(introduced, lastaffected, fixed)
+		versions = append(versions, models.RangeWithMetadata{Range: vr})
 	}
 
 	return versions
@@ -734,8 +733,8 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []*osvschema.Range {
-	versions := []*osvschema.Range{}
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+	versions := []models.RangeWithMetadata{}
 
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
@@ -813,8 +812,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := BuildVersionRange(introduced, lastaffected, fixed)
-				versions = append(versions, vr)
+				vr := c.BuildVersionRange(introduced, lastaffected, fixed)
+				versions = append(versions, models.RangeWithMetadata{Range: vr, Metadata: models.Metadata{CPE: match.Criteria}})
 			}
 		}
 	}

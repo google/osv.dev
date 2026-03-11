@@ -632,7 +632,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.assertEqual(osv.SCHEMA_VERSION, d.pop('schema_version'))
     self.expect_dict_equal('update_linux', d)
 
-
     affected_commits = list(osv.AffectedCommits.query())
 
     # NOTE: Temporarily disabled

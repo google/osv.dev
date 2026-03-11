@@ -174,14 +174,9 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 					continue
 				}
 				// Remove prefixes from tags, other refs such as branches will be left as is
-				if strings.HasPrefix(ref, "tag: ") {
-					tag := strings.TrimPrefix(ref, "tag: ")
-					refs = append(refs, tag)
-				} else {
-					// clean up HEAD -> branch-name to just keep the branch name
-					ref = strings.TrimPrefix(ref, "HEAD -> ")
-					refs = append(refs, ref)
-				}
+				ref = strings.TrimPrefix(ref, "tag: ")
+				ref = strings.TrimPrefix(ref, "HEAD -> ") // clean up HEAD -> branch-name to just keep the branch name
+				refs = append(refs, ref)
 			}
 
 			fallthrough
@@ -464,10 +459,8 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 	}
 
 	for _, commit := range lastAffected {
-		if _, ok := r.commitGraph[commit]; ok {
-			for _, child := range r.commitGraph[commit] {
-				fixedMap[child] = struct{}{}
-			}
+		for _, child := range r.commitGraph[commit] {
+			fixedMap[child] = struct{}{}
 		}
 	}
 
@@ -512,13 +505,11 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 					// Remove from affected list if it was reached via a previous non-fixed path.
 					delete(affectedFromIntro, unaffected)
 
-					if children, ok := r.commitGraph[unaffected]; ok {
-						for _, child := range children {
-							// Continue down the path if the child isn't already blocked.
-							if _, ok := unaffectableMap[child]; !ok {
-								unaffectableMap[child] = struct{}{}
-								stack = append(stack, child)
-							}
+					for _, child := range r.commitGraph[unaffected] {
+						// Continue down the path if the child isn't already blocked.
+						if _, ok := unaffectableMap[child]; !ok {
+							unaffectableMap[child] = struct{}{}
+							stack = append(stack, child)
 						}
 					}
 				}

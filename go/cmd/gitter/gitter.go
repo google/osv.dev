@@ -410,7 +410,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	// That is highly unlikely in our use case, as importer only queries
 	// the repo once, and always with force update.
 	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
-	// I can't change singleflight's interface
 	_, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, FetchRepo(ctx, url, forceUpdate)
 	})
@@ -427,7 +426,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Archive repo
-	// I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
 		return ArchiveRepo(ctx, url)
 	})
@@ -492,7 +490,6 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	// Fetch repo if it's not fresh
-	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
@@ -510,7 +507,6 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	repoDirName := getRepoDirName(url)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
-	// I can't change singleflight's interface
 	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
 		repoLock := GetRepoLock(url)
 		repoLock.RLock()
@@ -597,7 +593,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch repo if it's not fresh
-	// I can't change singleflight's interface
 	if _, err, _ := gFetch.Do(url, func() (any, error) {
 		return nil, FetchRepo(ctx, url, body.ForceUpdate)
 	}); err != nil {
@@ -619,7 +614,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	repoLock.RLock()
 	defer repoLock.RUnlock()
 
-	// I can't change singleflight's interface
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
 		return LoadRepository(ctx, repoPath)
 	})

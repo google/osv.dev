@@ -24,6 +24,7 @@ const (
 	NoCommitRanges                             // No viable commit ranges could be calculated from the repository for the CVE's CPE(s).
 	NoRanges                                   // No version ranges could be extracted from the record.
 	FixUnresolvable                            // Partial resolution of versions, resulting in a false positive.
+	Error                                      // An error occurred during conversion, e.g. a rate limit.
 )
 
 // RefTagDenyList contains reference tags that are often associated with unreliable or
@@ -36,7 +37,7 @@ var RefTagDenyList = []string{
 }
 
 func (c ConversionOutcome) String() string {
-	return [...]string{"ConversionUnknown", "Successful", "Rejected", "NoSoftware", "NoRepos", "NoCommitRanges", "NoRanges", "FixUnresolvable"}[c]
+	return [...]string{"ConversionUnknown", "Successful", "Rejected", "NoSoftware", "NoRepos", "NoCommitRanges", "NoRanges", "FixUnresolvable", "Error"}[c]
 }
 
 // ConversionMetrics holds the collected data about the conversion process for a single CVE.
@@ -59,6 +60,13 @@ func (m *ConversionMetrics) AddNote(format string, a ...any) {
 	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }
 
+// SetOutcome sets the outcome of the conversion only if it's not already set, or has become successful.
+func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
+	if m.Outcome == ConversionUnknown { // TODO DOUBLE CHECK
+		m.Outcome = outcome
+	}
+}
+
 // AddSource appends a source to the ConversionMetrics
 func (m *ConversionMetrics) AddSource(source VersionSource) {
 	m.VersionSources = append(m.VersionSources, source)
@@ -73,21 +81,22 @@ const (
 	VersionSourceGit         VersionSource = "GITVERS"
 	VersionSourceCPE         VersionSource = "CPEVERS"
 	VersionSourceDescription VersionSource = "DESCRVERS"
+	VersionSourceRefs        VersionSource = "REFS"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {
 	// check if we have affected ranges/versions.
 	if len(metrics.Repos) == 0 {
 		// Fix unlikely, as no repos to resolve
-		metrics.Outcome = NoRepos
+		metrics.SetOutcome(NoRepos)
 		return
 	}
 
 	if metrics.ResolvedRangesCount > 0 {
-		metrics.Outcome = Successful
+		metrics.SetOutcome(Successful)
 	} else if metrics.UnresolvedRangesCount > 0 {
-		metrics.Outcome = NoCommitRanges
+		metrics.SetOutcome(NoCommitRanges)
 	} else {
-		metrics.Outcome = NoRanges
+		metrics.SetOutcome(NoRanges)
 	}
 }

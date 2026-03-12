@@ -21,8 +21,6 @@ spec:
           - name: combine-to-osv
             image: combine-to-osv
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "30"

@@ -217,5 +217,4 @@
     'id': 'CURL-CVE-2022-32221',
     'modified': '3000-01-01T00:00:00Z',
     'published': '2022-10-26T08:00:00Z',
-    'schema_version': '1.7.3',
     'summary': 'POST following PUT confusion'}

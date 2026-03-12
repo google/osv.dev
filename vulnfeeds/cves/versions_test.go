@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"slices"
@@ -749,7 +750,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "14.4.5",
 						LastAffected: "",
 					},
@@ -775,7 +776,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "",
 						LastAffected: "2.4.0",
 					},
@@ -839,7 +840,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				},
 				AffectedVersions: []models.AffectedVersion{
 					{
-						Introduced:   "0",
+						Introduced:   "",
 						Fixed:        "2.6.4",
 						LastAffected: "",
 					},
@@ -873,7 +874,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "3.5.15"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
 		},
@@ -882,7 +883,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: models.VersionInfo{
 				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", LastAffected: "4.3.2"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", LastAffected: "4.3.2"}},
 			},
 		},
 		{
@@ -909,7 +910,7 @@ func TestExtractVersionInfo(t *testing.T) {
 					},
 				},
 
-				AffectedVersions: []models.AffectedVersion{{Introduced: "0", Fixed: "1.2.5"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "1.2.5"}},
 			},
 		},
 	}
@@ -932,6 +933,42 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
 		})
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestExtractVersionInfo_429(t *testing.T) {
+	requests := 0
+	client := &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			return &http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       http.NoBody,
+				Request:    req,
+			}, nil
+		}),
+	}
+
+	cve := models.NVDCVE{
+		References: []models.Reference{
+			{
+				URL: "https://github.com/foo/bar/commit/1234567890abcdef1234567890abcdef12345678",
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics)
+
+	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
+	if len(gotVersionInfo.AffectedCommits) != 0 {
+		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
 	}
 }
 
@@ -1217,6 +1254,21 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 				t.Errorf("ValidateAndCanonicalizeLink() = %v, want %v", gotCanonicalLink, tt.wantCanonicalLink)
 			}
 		})
+	}
+}
+
+func TestValidateAndCanonicalizeLink_429(t *testing.T) {
+	requests := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer ts.Close()
+
+	client := ts.Client()
+	_, err := ValidateAndCanonicalizeLink(ts.URL, client)
+	if err == nil {
+		t.Errorf("ValidateAndCanonicalizeLink() expected error, got nil")
 	}
 }
 

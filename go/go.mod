@@ -11,6 +11,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.31.0
 	github.com/go-git/go-git/v6 v6.0.0-20260310141331-316f86ed9f46
 	github.com/google/go-cmp v0.7.0
+	github.com/google/osv-scalibr v0.4.5-0.20260226235539-966241b28de2
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.18.4
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260310022832-644d53a46020
@@ -83,7 +84,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect; indirecta
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
+	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opencensus.io v0.24.0 // indirect

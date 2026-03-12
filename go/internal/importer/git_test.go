@@ -245,8 +245,8 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	if items[0].SourcePath != "CVE-A.json" {
 		t.Errorf("Expected path CVE-A.json, got %s", items[0].SourcePath)
 	}
-	if !items[0].IsDeleted {
-		t.Errorf("Expected record to be marked as deleted")
+	if items[0].Action != Withdraw {
+		t.Errorf("Expected record to be marked as Action=Withdraw")
 	}
 
 	// Verify the LastSyncedCommit was updated

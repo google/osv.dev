@@ -45,6 +45,7 @@ type Config struct {
 	StrictValidation bool
 	DeleteThreshold  float64
 	SampleRate       float64
+	DryRun           bool
 }
 
 type RetryableHTTPLeveledLogger struct{}
@@ -109,7 +110,7 @@ func Run(ctx context.Context, config Config) error {
 	close(workCh)
 	workWg.Wait()
 
-	return nil
+	return ctx.Err()
 }
 
 func RunDeletions(ctx context.Context, config Config) error {
@@ -152,7 +153,7 @@ func RunDeletions(ctx context.Context, config Config) error {
 	close(workCh)
 	workWg.Wait()
 
-	return nil
+	return ctx.Err()
 }
 
 // reconcileSkipSources is a list of source names to skip during reconciliation.
@@ -241,13 +242,13 @@ func RunReconcile(ctx context.Context, config Config) error {
 	close(workCh)
 	workWg.Wait()
 
-	return nil
+	return ctx.Err()
 }
 
 // fetchDBRecords retrieves the modified dates for all vulnerability records associated with a given source repository.
 //
 // Arguments:
-//   - ctx: Context used for datastore queries.
+//   - ctx: Context used for database queries.
 //   - config: Configuration containing the VulnerabilityStore.
 //   - sourceRepo: The SourceRepository configuration to fetch existing records for.
 func fetchDBRecords(ctx context.Context, config Config, sourceRepo *models.SourceRepository) (map[string]time.Time, error) {
@@ -262,14 +263,14 @@ func fetchDBRecords(ctx context.Context, config Config, sourceRepo *models.Sourc
 	return dbRecords, nil
 }
 
-// checkReconcile checks the upstream modified date against the datastore and triggers a reimport if necessary.
+// checkReconcile checks the upstream modified date against the database and triggers a reimport if necessary.
 // It constructs the WorkItem template and manages the logic entirely.
 //
 // Arguments:
 //   - ctx: Processing context.
 //   - ch: Channel to push the WorkItem to for re-importing.
 //   - sourceRepo: The configuration of the repository being imported.
-//   - dbRecords: A map containing the datastore 'modified_raw' timestamps for this source.
+//   - dbRecords: A map containing the database 'modified_raw' timestamps for this source.
 //   - path: The relative path or ID representing this specific vulnerability record upstream.
 //   - parsed: A pointer to a pre-parsed gjson.Result if already available. If nil, sourceRecord is opened and parsed dynamically.
 //   - sourceRecord: The interface used to lazily retrieve file contents (from a bucket, git, or REST).
@@ -297,32 +298,21 @@ func checkReconcile(
 
 	dbMod, exists := dbRecords[path]
 	if !exists {
-		logger.ErrorContext(ctx, "Found missing vulnerability in datastore during reconcile",
+		logger.ErrorContext(ctx, "Found missing vulnerability in database during reconcile",
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path))
-		// panic("Found missing vulnerability in datastore during reconcile")
+		// Trigger a standard import
+		recordTemplate.Action = Import
 		ch <- recordTemplate
 
 		return
 	}
 
-	var parsedToUse gjson.Result
+	// If we already have a parsed result, use it directly
 	if parsed != nil {
-		parsedToUse = *parsed
-	} else {
-		r, err := sourceRecord.Open(ctx)
+		modified, err := getModifiedTime(parsed)
 		if err != nil {
-			logger.ErrorContext(ctx, "Failed to open source record during reconcile",
-				slog.Any("error", err),
-				slog.String("source", recordTemplate.SourceRepository),
-				slog.String("path", path))
-
-			return
-		}
-		data, err := io.ReadAll(r)
-		r.Close()
-		if err != nil {
-			logger.ErrorContext(ctx, "Failed to read source record during reconcile",
+			logger.WarnContext(ctx, "Failed to get modified time in reconcile",
 				slog.Any("error", err),
 				slog.String("source", recordTemplate.SourceRepository),
 				slog.String("path", path))
@@ -330,70 +320,45 @@ func checkReconcile(
 			return
 		}
 
-		if format == RecordFormatYAML {
-			json, err := yaml.ToJSON(data)
-			if err != nil {
-				logger.ErrorContext(ctx, "Failed to convert YAML to JSON in reconcile",
-					slog.Any("error", err),
-					slog.String("source", recordTemplate.SourceRepository),
-					slog.String("path", path))
+		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
+			logger.ErrorContext(ctx, "Found outdated vulnerability in database during reconcile",
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path),
+				slog.Time("database_modified", dbMod),
+				slog.Time("upstream_modified", modified))
 
-				return
-			}
-			data = json
+			// We found that it is outdated, trigger a standard import
+			recordTemplate.Action = Import
+			ch <- recordTemplate
 		}
-
-		if keyPath := sourceRepo.KeyPath; keyPath != "" {
-			res := gjson.GetBytes(data, keyPath)
-			if !res.Exists() {
-				logger.ErrorContext(ctx, "Key path not found in reconcile",
-					slog.String("key_path", keyPath),
-					slog.String("source", recordTemplate.SourceRepository),
-					slog.String("path", path))
-
-				return
-			}
-			data = []byte(res.Raw)
-		}
-
-		parsedToUse = gjson.ParseBytes(data)
-	}
-
-	if !parsedToUse.Get("id").Exists() {
-		logger.ErrorContext(ctx, "Vulnerability missing id in reconcile",
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path))
 
 		return
 	}
 
-	modifiedObj := parsedToUse.Get("modified")
+	// Otherwise trigger a reconcile action to get the modified date from upstream
+	recordTemplate.LastUpdated = dbMod
+	recordTemplate.HasLastUpdated = true
+	recordTemplate.Action = Reconcile
+
+	ch <- recordTemplate
+}
+
+func getModifiedTime(parsed *gjson.Result) (time.Time, error) {
+	if !parsed.Get("id").Exists() {
+		return time.Time{}, fmt.Errorf("vulnerability missing id")
+	}
+
+	modifiedObj := parsed.Get("modified")
 	if !modifiedObj.Exists() {
-		logger.WarnContext(ctx, "Vulnerability missing modified in reconcile",
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path))
-
-		return
+		return time.Time{}, fmt.Errorf("vulnerability missing modified")
 	}
 
 	modified, err := time.Parse(time.RFC3339, modifiedObj.String())
 	if err != nil {
-		logger.WarnContext(ctx, "Failed to parse modified in reconcile",
-			slog.Any("error", err),
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path))
-
-		return
+		return time.Time{}, fmt.Errorf("failed to parse modified: %w", err)
 	}
 
-	if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
-		logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path),
-			slog.Time("datastore_modified", dbMod),
-			slog.Time("upstream_modified", modified))
-		ch <- recordTemplate
-	}
+	return modified, nil
 }
 
 type RecordFormat int
@@ -402,6 +367,14 @@ const (
 	RecordFormatUnknown RecordFormat = iota
 	RecordFormatJSON
 	RecordFormatYAML
+)
+
+type Action int
+
+const (
+	Import Action = iota
+	Reconcile
+	Withdraw
 )
 
 type SourceRecord interface {
@@ -420,46 +393,38 @@ type WorkItem struct {
 	Format           RecordFormat
 	KeyPath          string
 	Strict           bool
-	IsDeleted        bool
+	Action           Action
 	LastUpdated      time.Time
 	HasLastUpdated   bool
 	IsReimport       bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case item, ok := <-ch:
-			if !ok {
-				return
-			}
-			// wrap in function so defer is called for each item
-			func() { //nolint:contextcheck
-				// create a new span for the vulnerability,
-				// not part of the importer span, but linked to it.
-				// This way, we can sample vuln updates separately
-				// and trace it all the way through to the worker.
-				link := trace.LinkFromContext(item.Context)
-				ctx, span := otel.Tracer("update").Start(item.Context, item.SourcePath,
-					trace.WithNewRoot(), trace.WithLinks(link),
-					trace.WithAttributes(attribute.Float64("override_sample_rate", config.SampleRate)))
-				defer span.End()
+	for item := range ch {
+		// wrap in function so defer is called for each item
+		func() { //nolint:contextcheck
+			// create a new span for the vulnerability,
+			// not part of the importer span, but linked to it.
+			// This way, we can sample vuln updates separately
+			// and trace it all the way through to the worker.
+			link := trace.LinkFromContext(item.Context)
+			ctx, span := otel.Tracer("update").Start(context.WithoutCancel(item.Context), item.SourcePath,
+				trace.WithNewRoot(), trace.WithLinks(link),
+				trace.WithAttributes(attribute.Float64("override_sample_rate", config.SampleRate)))
+			defer span.End()
 
-				if item.IsDeleted {
-					if err := sendDeletionToWorker(ctx, config, item); err != nil {
-						logger.ErrorContext(ctx, "Failed to send deletion to worker",
-							slog.Any("error", err),
-							slog.String("source", item.SourceRepository),
-							slog.String("path", item.SourcePath))
-					}
-
-					return
-				}
+			switch item.Action {
+			case Import, Reconcile:
 				processUpdate(ctx, config, item)
-			}()
-		}
+			case Withdraw:
+				if err := sendDeletionToWorker(ctx, config, item); err != nil {
+					logger.ErrorContext(ctx, "Failed to send deletion to worker",
+						slog.Any("error", err),
+						slog.String("source", item.SourceRepository),
+						slog.String("path", item.SourcePath))
+				}
+			}
+		}()
 	}
 }
 
@@ -491,7 +456,6 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 
 		return
 	}
-	hash := computeHash(data)
 	var vulnProto osvschema.Vulnerability
 	switch item.Format {
 	case RecordFormatYAML:
@@ -552,10 +516,32 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
 	if item.HasLastUpdated {
-		if item.LastUpdated.After(modified) {
-			return
+		switch item.Action {
+		case Import:
+			// If the record is older than the last update time, skip it
+			if item.LastUpdated.After(modified) {
+				return
+			}
+		case Reconcile:
+			// If the record is older than the last update time, skip it
+			// However, since we are reconciling, we want to add some leniency
+			// to account for the fact that the record might have been updated
+			// between the time we last imported it normally and now 
+			// (e.g. the worker might still be working on it).
+			if item.LastUpdated.Add(ReconcileLeniencyDuration).After(modified) {
+				return
+			}
+
+			logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
+				slog.String("source", sourceRepoName),
+				slog.String("path", sourcePath),
+				slog.Time("database_modified", item.LastUpdated),
+				slog.Time("upstream_modified", modified))
+		default:
+
 		}
 	}
+	hash := computeHash(data)
 	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
 		logger.ErrorContext(ctx, "Failed to send to worker",
 			slog.Any("error", err),
@@ -583,14 +569,23 @@ func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string
 		srcTimestamp = &modifiedTime
 	}
 
-	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, hash, false, srcTimestamp, vuln)
+	return publishUpdate(ctx, config, item.SourceRepository, item.SourcePath, hash, false, srcTimestamp, vuln)
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
-	return publishUpdate(ctx, config.Publisher, item.SourceRepository, item.SourcePath, "", true, nil, nil)
+	return publishUpdate(ctx, config, item.SourceRepository, item.SourcePath, "", true, nil, nil)
 }
 
-func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
+func publishUpdate(ctx context.Context, config Config, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
+	if config.DryRun {
+		logger.DebugContext(ctx, "Running in dry-run mode, skipping publish",
+			slog.String("source", source),
+			slog.String("path", path),
+			slog.String("hash", hash),
+			slog.Bool("deleted", deleted))
+		return nil
+	}
+
 	// Send the vulnerability proto in the message data
 	var data []byte
 	if vuln != nil {
@@ -619,7 +614,7 @@ func publishUpdate(ctx context.Context, publisher clients.Publisher, source, pat
 	// Inject the current trace into the message
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
 
-	result := publisher.Publish(ctx, msg)
+	result := config.Publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)
 
 	return err

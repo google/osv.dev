@@ -161,6 +161,9 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	// Trigger deletions
 	for _, entry := range toDelete {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: bucketSourceRecord{
@@ -169,7 +172,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			},
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
-			IsDeleted:        true,
+			Action:           Withdraw,
 		}
 	}
 

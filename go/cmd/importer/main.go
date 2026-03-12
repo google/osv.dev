@@ -36,10 +36,11 @@ func main() {
 	strictValidation := flag.Bool("strict-validation", false, "Do not import entries if they fail validation. "+
 		"Note: this only applies to SourceRepositories with strict_validation=true")
 	runDelete := flag.Bool("delete", false, "Bypass importing and propagate record deletions from source to Datastore")
-	runReconcile := flag.Bool("reconcile", false, "Analyze sources and trigger an import if the source modified date is newer than the Datastore record")
+	runReconcile := flag.Bool("reconcile", false, "Analyze sources and trigger an import if the source modified date is newer than the database record")
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
 	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
 	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for importing")
+	dryRun := flag.Bool("dry-run", false, "Do not send anything to the message bus if true")
 
 	flag.Parse()
 
@@ -54,6 +55,7 @@ func main() {
 		NumWorkers:       *numWorkers,
 		GitWorkDir:       filepath.Join(*workDir, "sources"),
 		SampleRate:       vulnerabilitySampleRate(),
+		DryRun:           *dryRun,
 	}
 
 	httpClient := retryablehttp.NewClient()
@@ -65,6 +67,13 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	go func() {
+		<-ctx.Done()
+		logger.InfoContext(ctx, "Context terminated, shutting down...")
+		time.Sleep(30 * time.Second)
+		logger.FatalContext(ctx, "Forced shut down after 30 seconds")
+	}()
 
 	datastoreClient, err := datastore.NewClient(ctx, project)
 	if err != nil {

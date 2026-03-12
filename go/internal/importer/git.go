@@ -128,6 +128,9 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 		return p
 	}
 	for _, fileChange := range changedFiles {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		from := filterPath(fileChange.from)
 		to := filterPath(fileChange.to)
 		if from == "" && to == "" {
@@ -144,7 +147,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 				},
 				SourceRepository: sourceRepo.Name,
 				SourcePath:       from,
-				IsDeleted:        true,
+				Action:           Withdraw,
 				Strict:           sourceRepo.Strictness,
 				Format:           format,
 				KeyPath:          sourceRepo.KeyPath,
@@ -302,6 +305,9 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 	}
 
 	err = filepath.WalkDir(searchDir, func(p string, d fs.DirEntry, err error) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err != nil {
 			return err
 		}

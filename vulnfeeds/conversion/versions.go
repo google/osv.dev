@@ -16,7 +16,6 @@
 package conversion
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,10 +25,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/knqyf263/go-cpe/naming"
-	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -503,50 +500,6 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 	return "", errors.New("no tag found")
 }
 
-// Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
-func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonicalLink string, err error) {
-	u, err := url.Parse(link)
-	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
-		// Handle what's presumably a git:// URL.
-		return link, err
-	}
-	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
-		if err != nil {
-			return err
-		}
-
-		// security.alpinelinux.org responds with text/html content.
-		// default HEAD request in Go does not provide any Accept headers, causing a 406 response.
-		req.Header.Set("Accept", "text/html")
-
-		// Send the request
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		switch resp.StatusCode / 100 {
-		// 4xx response codes are an instant fail.
-		case 4:
-			return fmt.Errorf("bad response: %v", resp.StatusCode)
-		// 5xx response codes are retriable.
-		case 5:
-			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
-		// Anything else is acceptable.
-		default:
-			canonicalLink = resp.Request.URL.String()
-			return nil
-		}
-	}); err != nil {
-		return link, fmt.Errorf("unable to determine validity of %q: %w", link, err)
-	}
-
-	return canonicalLink, nil
-}
-
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
 	var commits []models.AffectedCommit //nolint:prealloc
@@ -598,7 +551,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
-	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link, httpClient)
+	possiblyDifferentLink, err := git.ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
 		return "", "", err
 	}
@@ -1196,7 +1149,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		}
 
 		// Check if the repo URL has changed (e.g. via redirect)
-		canonicalRepo, err := ValidateAndCanonicalizeLink(repo, httpClient)
+		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
 		}

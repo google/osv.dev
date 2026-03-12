@@ -29,6 +29,7 @@ var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
+	refs := c.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
@@ -90,7 +91,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// Extract Commits
-	commits, err := c.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
 	}

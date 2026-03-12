@@ -75,7 +75,7 @@ type RepoTagsCache struct {
 
 	m       map[string]RepoTagsMap
 	invalid map[string]bool
-}
+	canonicalLink map[string]string}
 
 func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	c.RLock()
@@ -114,6 +114,25 @@ func (c *RepoTagsCache) IsInvalid(repo string) bool {
 	}
 
 	return c.invalid[repo]
+}
+
+func (c *RepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
+	c.Lock()
+	defer c.Unlock()
+	if c.canonicalLink == nil {
+		c.canonicalLink = make(map[string]string)
+	}
+	c.canonicalLink[repo] = canonicalLink
+}
+
+func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.canonicalLink == nil {
+		return "", false
+	}
+	canonicalLink, ok := c.canonicalLink[repo]
+	return canonicalLink, ok
 }
 
 // RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.

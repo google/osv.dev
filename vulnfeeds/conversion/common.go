@@ -67,6 +67,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 func DeduplicateRefs(refs []models.Reference) []models.Reference {
 	refs = slices.Clone(refs)
 	// Deduplicate references by URL.
+	refs = slices.Clone(refs)
 	slices.SortStableFunc(refs, func(a, b models.Reference) int {
 		return strings.Compare(a.URL, b.URL)
 	})
@@ -191,13 +192,22 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		
 		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s", repo)
+			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
 			continue
 		}
 
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
 			metrics.AddNote("Failed to normalize tags - %s", repo)
+
 			continue
 		}
 

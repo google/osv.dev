@@ -935,6 +935,42 @@ func TestExtractVersionInfo(t *testing.T) {
 	}
 }
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestExtractVersionInfo_429(t *testing.T) {
+	requests := 0
+	client := &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			return &http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       http.NoBody,
+				Request:    req,
+			}, nil
+		}),
+	}
+
+	cve := models.NVDCVE{
+		References: []models.Reference{
+			{
+				URL: "https://github.com/foo/bar/commit/1234567890abcdef1234567890abcdef12345678",
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics)
+
+	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
+	if len(gotVersionInfo.AffectedCommits) != 0 {
+		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
+	}
+}
+
 func TestCPEs(t *testing.T) {
 	tests := []struct {
 		description  string

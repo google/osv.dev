@@ -30,6 +30,7 @@ var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
+	refs := conversion.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
@@ -88,7 +89,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// Extract Commits
-	commits, err := cves.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	commits, err := cves.ExtractCommitsFromRefs(refs, http.DefaultClient)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
 	}
@@ -245,8 +246,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 // FindRepos attempts to find the source code repositories for a given CVE.
 func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
-	refs := cve.References
-	conversion.DeduplicateRefs(refs)
+	refs := conversion.DeduplicateRefs(cve.References)
 	CPEs := cves.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -64,6 +65,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 }
 
 func DeduplicateRefs(refs []models.Reference) []models.Reference {
+	refs = slices.Clone(refs)
 	// Deduplicate references by URL.
 	slices.SortStableFunc(refs, func(a, b models.Reference) int {
 		return strings.Compare(a.URL, b.URL)
@@ -186,6 +188,13 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		if cache.IsInvalid(repo) {
 			continue
 		}
+		
+		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		if err != nil {
+			metrics.AddNote("Failed to find canonical link - %s", repo)
+			continue
+		}
+
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			metrics.AddNote("Failed to normalize tags - %s", repo)

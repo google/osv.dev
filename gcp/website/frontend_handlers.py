@@ -958,8 +958,8 @@ def list_packages(vuln_affected: list[dict]):
 
   for affected in vuln_affected:
     if 'package' in affected:
-      package_entry = affected['package'].get('ecosystem', '') + '/' + affected[
-          'package'].get('name', '')
+      package_entry = affected['package'].get(
+          'ecosystem', '') + '/' + affected['package'].get('name', '')
       if package_entry not in packages:
         packages.append(package_entry)
     for affected_range in affected.get('ranges', []):

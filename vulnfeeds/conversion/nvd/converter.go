@@ -356,6 +356,7 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 						if mergedRange == nil {
 							mergedRange = conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
 							mergedRange.Repo = repo
+							mergedRange.Type = osvschema.Range_GIT
 						} else {
 							event := convertCommitToEvent(commit)
 							if event != nil {
@@ -374,7 +375,10 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	// if there are no resolved version but there are commits, we should create a range for each commit
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
 		for _, commit := range commits {
-			newResolvedRanges = append(newResolvedRanges, conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			newRange := conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+			newRange.Repo = commit.Repo
+			newRange.Type = osvschema.Range_GIT
+			newResolvedRanges = append(newResolvedRanges, newRange)
 			metrics.ResolvedRangesCount++
 		}
 	}

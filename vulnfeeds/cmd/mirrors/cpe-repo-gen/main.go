@@ -46,7 +46,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/google/osv/vulnfeeds/cves"
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -80,7 +80,7 @@ type CPEFeed struct {
 // VendorProducts in this denylist are known non-OSS and/or have generic
 // product names, which cause undesired and incorrect repository attribution
 // when resolved via Debian copyright metadata.
-var DebianCopyrightDenylist = []cves.VendorProduct{
+var DebianCopyrightDenylist = []c.VendorProduct{
 	{Vendor: "apple", Product: "pdfkit"},
 	{Vendor: "f-secure", Product: "safe"},
 	{Vendor: "ibm", Product: "workflow"},
@@ -144,7 +144,7 @@ func LoadCPEsFromJSONDir(dir string) ([]CPE, error) {
 }
 
 // Outputs a JSON file of the product-to-repo map.
-func outputProductToRepoMap(prm cves.VendorProductToRepoMap, f io.Writer) error {
+func outputProductToRepoMap(prm c.VendorProductToRepoMap, f io.Writer) error {
 	productsWithoutRepos := 0
 	for p := range prm {
 		if len(prm[p]) == 0 {
@@ -317,27 +317,27 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 }
 
 // Analyze CPE Dictionary and return a product-to-repo map and a reference description frequency table.
-func analyzeCPEDictionary(cpes []CPE) (productToRepo cves.VendorProductToRepoMap, descriptionFrequency map[string]int) {
-	productToRepo = make(cves.VendorProductToRepoMap)
+func analyzeCPEDictionary(cpes []CPE) (productToRepo c.VendorProductToRepoMap, descriptionFrequency map[string]int) {
+	productToRepo = make(c.VendorProductToRepoMap)
 	descriptionFrequency = make(map[string]int)
-	MaybeTryDebian := make(map[cves.VendorProduct]bool)
-	for _, c := range cpes {
-		if c.Deprecated {
-			logger.Info("Skipping deprecated", slog.String("cpe", c.Name))
+	MaybeTryDebian := make(map[c.VendorProduct]bool)
+	for _, cpe := range cpes {
+		if cpe.Deprecated {
+			logger.Info("Skipping deprecated", slog.String("cpe", cpe.Name))
 			continue
 		}
-		parsedCPE, err := cves.ParseCPE(c.Name)
+		parsedCPE, err := c.ParseCPE(cpe.Name)
 		if err != nil {
-			logger.Info("Failed to parse", slog.String("cpe", c.Name))
+			logger.Info("Failed to parse", slog.String("cpe", cpe.Name))
 			continue
 		}
 		if parsedCPE.Part != "a" {
 			// Not interested in hardware or operating systems.
 			continue
 		}
-		for _, r := range c.References {
+		for _, r := range cpe.References {
 			descriptionFrequency[r.Type] += 1
-			repo, err := cves.Repo(r.URL)
+			repo, err := c.Repo(r.URL)
 			if err != nil {
 				logger.Info("Disregarding", slog.String("url", r.URL), slog.String("vendor", parsedCPE.Vendor), slog.String("product", parsedCPE.Product), slog.String("type", r.Type), slog.Any("err", err))
 				continue
@@ -346,26 +346,26 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo cves.VendorProductToRepoMap
 				repo = strings.ToLower(repo)
 			}
 			// If we already have an entry for this repo, don't add it again.
-			if slices.Contains(productToRepo[cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}], repo) {
+			if slices.Contains(productToRepo[c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}], repo) {
 				continue
 			}
 			logger.Info("Liking", slog.String("repo", repo), slog.String("vendor", parsedCPE.Vendor), slog.String("product", parsedCPE.Product), slog.String("type", r.Type))
-			productToRepo[cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}] = append(productToRepo[cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}], repo)
+			productToRepo[c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}] = append(productToRepo[c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}], repo)
 			// If this was queued for trying to find via Debian, and subsequently found, dequeue it.
 			if *DebianMetadataPath != "" {
-				delete(MaybeTryDebian, cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product})
+				delete(MaybeTryDebian, c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product})
 			}
 		}
 		// If we've arrived to this point, we've exhausted the
 		// references and not calculated any repos for the product,
 		// flag for trying Debian afterwards.
 		// We may encounter another CPE item that *does* have a viable reference in the meantime.
-		if len(productToRepo[cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}]) == 0 && *DebianMetadataPath != "" {
+		if len(productToRepo[c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}]) == 0 && *DebianMetadataPath != "" {
 			// Check the denylist though.
-			if slices.Contains(DebianCopyrightDenylist, cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}) {
+			if slices.Contains(DebianCopyrightDenylist, c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}) {
 				continue
 			}
-			MaybeTryDebian[cves.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}] = true
+			MaybeTryDebian[c.VendorProduct{Vendor: parsedCPE.Vendor, Product: parsedCPE.Product}] = true
 		}
 	}
 	// Try any Debian possible ones as a last resort.
@@ -380,7 +380,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo cves.VendorProductToRepoMap
 			if repo != "" {
 				logger.Info("Derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 				// Now check that what Debian gave us meets our expectations and is valid.
-				repo, err := cves.Repo(repo)
+				repo, err := c.Repo(repo)
 				if err != nil {
 					logger.Info("Disregarding derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product), slog.Any("err", err))
 					continue
@@ -389,7 +389,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo cves.VendorProductToRepoMap
 					logger.Info("Disregarding derived repo as unusable", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 					continue
 				}
-				productToRepo[cves.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}] = append(productToRepo[cves.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}], repo)
+				productToRepo[c.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}] = append(productToRepo[c.VendorProduct{Vendor: vp.Vendor, Product: vp.Product}], repo)
 			}
 		}
 	}
@@ -398,8 +398,8 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo cves.VendorProductToRepoMap
 }
 
 // validateRepos takes a VendorProductToRepoMap and removes any entries where the repository fails remote validation.
-func validateRepos(prm cves.VendorProductToRepoMap) (validated cves.VendorProductToRepoMap) {
-	validated = make(cves.VendorProductToRepoMap)
+func validateRepos(prm c.VendorProductToRepoMap) (validated c.VendorProductToRepoMap) {
+	validated = make(c.VendorProductToRepoMap)
 	logger.Info("Validating repos", slog.Int("products", len(prm)))
 	// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
 	entryCount := 0

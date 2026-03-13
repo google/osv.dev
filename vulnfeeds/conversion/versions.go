@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package cves provides utilities for working with CVEs and version information.
-package cves
+package conversion
 
 import (
 	"context"
@@ -32,7 +32,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 )
@@ -708,7 +707,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+		vr := BuildVersionRange(introduced, lastaffected, fixed)
 		versions = append(versions, vr)
 	}
 
@@ -814,7 +813,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+				vr := BuildVersionRange(introduced, lastaffected, fixed)
 				versions = append(versions, vr)
 			}
 		}

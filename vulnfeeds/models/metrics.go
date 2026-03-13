@@ -45,6 +45,7 @@ func (c ConversionOutcome) String() string {
 	if int(c) >= 0 && int(c) < len(conversionOutcomeStrings) {
 		return conversionOutcomeStrings[c]
 	}
+
 	return fmt.Sprintf("ConversionOutcome(%d)", c)
 }
 
@@ -52,6 +53,7 @@ func (c ConversionOutcome) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }
 
+//nolint:recvcheck // UnmarshalJSON requires a pointer receiver
 func (c *ConversionOutcome) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
@@ -60,9 +62,11 @@ func (c *ConversionOutcome) UnmarshalJSON(b []byte) error {
 	for i, val := range conversionOutcomeStrings {
 		if val == s {
 			*c = ConversionOutcome(i)
+
 			return nil
 		}
 	}
+
 	return fmt.Errorf("invalid ConversionOutcome %q", s)
 }
 

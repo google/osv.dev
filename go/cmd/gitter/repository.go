@@ -438,12 +438,15 @@ func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], idx)
 }
 
-// parseHashes converts slice of string hashes input into slice of commit indexes
-func (r *Repository) parseHashes(ctx context.Context, hashesStr []string, isIntroduced bool) []int {
-	hashes := make([]int, 0, len(hashesStr))
+// parseHashes converts a slice of string hashes into a slice of commit indexes.
+func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int {
+	indices := make([]int, 0, len(hashesStr))
+	addedRoot := false // Only add root commits once if multiple intro=0 are provided
+
 	for _, hash := range hashesStr {
-		if isIntroduced && hash == "0" {
-			hashes = append(hashes, r.rootCommits...)
+		if hash == "0" && !addedRoot {
+			indices = append(indices, r.rootCommits...)
+			addedRoot = true
 			continue
 		}
 
@@ -460,13 +463,13 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string, isIntr
 
 		h := SHA1(hashBytes)
 		if idx, ok := r.hashToIndex[h]; ok {
-			hashes = append(hashes, idx)
+			indices = append(indices, idx)
 		} else {
 			logger.ErrorContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
 		}
 	}
 
-	return hashes
+	return indices
 }
 
 // expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits + any other commits that share the same Patch ID
@@ -499,9 +502,9 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 	logger.InfoContext(ctx, "Starting affected commit walking")
 	start := time.Now()
 
-	introduced := r.parseHashes(ctx, se.Introduced, true)
-	fixed := r.parseHashes(ctx, se.Fixed, false)
-	lastAffected := r.parseHashes(ctx, se.LastAffected, false)
+	introduced := r.parseHashes(ctx, se.Introduced)
+	fixed := r.parseHashes(ctx, se.Fixed)
+	lastAffected := r.parseHashes(ctx, se.LastAffected)
 
 	// Expands the introduced and fixed commits to include cherrypick equivalents
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
@@ -623,8 +626,8 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 
 // Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
 func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents) []*Commit {
-	introduced := r.parseHashes(ctx, se.Introduced, true)
-	limit := r.parseHashes(ctx, se.Limit, false)
+	introduced := r.parseHashes(ctx, se.Introduced)
+	limit := r.parseHashes(ctx, se.Limit)
 
 	var affectedCommits []*Commit
 

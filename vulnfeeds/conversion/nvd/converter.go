@@ -3,7 +3,6 @@ package nvd
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"

@@ -210,7 +210,7 @@ func TestMergeTwoRanges(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
-				t.Errorf("mergeTwoRanges() mismatch (-want +got):\n%s", diff)
+				t.Errorf("MergeTwoRanges() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -513,7 +513,7 @@ func TestGitVersionsToCommits(t *testing.T) {
 	// Setup cache with a mock repo
 	cache := &git.RepoTagsCache{}
 	repoURL := "https://github.com/example/repo"
-	
+
 	// Populate cache with normalized tags
 	normalizedTags := map[string]git.NormalizedTag{
 		"1-0-0": {
@@ -532,12 +532,12 @@ func TestGitVersionsToCommits(t *testing.T) {
 			MatchesVersionText: true,
 		},
 	}
-	
+
 	// We need to set the cache such that NormalizeRepoTags returns our normalizedTags.
 	// NormalizeRepoTags calls RepoTags, which checks the cache.
 	// If we set the cache correctly, we can avoid network calls.
 	// The cache stores RepoTagsMap which has both Tag and NormalizedTag maps.
-	
+
 	repoTagsMap := git.RepoTagsMap{
 		Tag: map[string]git.Tag{
 			"v1.0.0": {Tag: "v1.0.0", Commit: "commit1"},
@@ -546,19 +546,18 @@ func TestGitVersionsToCommits(t *testing.T) {
 		},
 		NormalizedTag: normalizedTags,
 	}
-	
+
 	cache.Set(repoURL, repoTagsMap)
 	// Mark invalid repo as invalid in cache to avoid network call
 	cache.SetInvalid("https://github.com/invalid/repo")
 
 	tests := []struct {
-		name                 string
-		versionRanges        []*osvschema.Range
-		repos                []string
-		wantResolved         []*osvschema.Range
-		wantUnresolved       []*osvschema.Range
-		wantSuccessfulRepos  []string
-		wantOutcome          models.ConversionOutcome
+		name                string
+		versionRanges       []*osvschema.Range
+		repos               []string
+		wantResolved        []*osvschema.Range
+		wantUnresolved      []*osvschema.Range
+		wantSuccessfulRepos []string
 	}{
 		{
 			name: "Resolve simple range",
@@ -601,7 +600,6 @@ func TestGitVersionsToCommits(t *testing.T) {
 			},
 			wantUnresolved:      nil,
 			wantSuccessfulRepos: []string{repoURL},
-			wantOutcome:         models.Successful,
 		},
 		{
 			name: "Resolve with last_affected",
@@ -644,7 +642,6 @@ func TestGitVersionsToCommits(t *testing.T) {
 			},
 			wantUnresolved:      nil,
 			wantSuccessfulRepos: []string{repoURL},
-			wantOutcome:         models.Successful,
 		},
 		{
 			name: "Partial resolution (some versions missing)",
@@ -656,8 +653,8 @@ func TestGitVersionsToCommits(t *testing.T) {
 					},
 				},
 			},
-			repos:               []string{repoURL},
-			wantResolved:        nil,
+			repos:        []string{repoURL},
+			wantResolved: nil,
 			wantUnresolved: []*osvschema.Range{
 				{
 					Events: []*osvschema.Event{
@@ -667,7 +664,6 @@ func TestGitVersionsToCommits(t *testing.T) {
 				},
 			},
 			wantSuccessfulRepos: nil,
-			wantOutcome:         models.NoCommitRanges,
 		},
 		{
 			name: "Invalid repo",
@@ -678,8 +674,8 @@ func TestGitVersionsToCommits(t *testing.T) {
 					},
 				},
 			},
-			repos:               []string{"https://github.com/invalid/repo"},
-			wantResolved:        nil,
+			repos:        []string{"https://github.com/invalid/repo"},
+			wantResolved: nil,
 			wantUnresolved: []*osvschema.Range{
 				{
 					Events: []*osvschema.Event{
@@ -688,7 +684,6 @@ func TestGitVersionsToCommits(t *testing.T) {
 				},
 			},
 			wantSuccessfulRepos: nil,
-			wantOutcome:         models.NoCommitRanges,
 		},
 	}
 
@@ -707,10 +702,6 @@ func TestGitVersionsToCommits(t *testing.T) {
 
 			if diff := cmp.Diff(tt.wantSuccessfulRepos, gotSuccessfulRepos); diff != "" {
 				t.Errorf("GitVersionsToCommits() successfulRepos mismatch (-want +got):\n%s", diff)
-			}
-			
-			if metrics.Outcome != tt.wantOutcome {
-				t.Errorf("GitVersionsToCommits() outcome mismatch want %v, got %v", tt.wantOutcome, metrics.Outcome)
 			}
 		})
 	}

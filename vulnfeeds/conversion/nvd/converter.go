@@ -245,8 +245,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 // FindRepos attempts to find the source code repositories for a given CVE.
 func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
-	refs := cve.References
-	conversion.DeduplicateRefs(refs)
+	refs := conversion.DeduplicateRefs(cve.References)
 	CPEs := cves.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string
@@ -357,6 +356,7 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 						if mergedRange == nil {
 							mergedRange = conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
 							mergedRange.Repo = repo
+							mergedRange.Type = osvschema.Range_GIT
 						} else {
 							event := convertCommitToEvent(commit)
 							if event != nil {
@@ -375,7 +375,10 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	// if there are no resolved version but there are commits, we should create a range for each commit
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
 		for _, commit := range commits {
-			newResolvedRanges = append(newResolvedRanges, conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			newRange := conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+			newRange.Repo = commit.Repo
+			newRange.Type = osvschema.Range_GIT
+			newResolvedRanges = append(newResolvedRanges, newRange)
 			metrics.ResolvedRangesCount++
 		}
 	}

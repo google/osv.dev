@@ -44,8 +44,6 @@ spec:
             volumeMounts:
               - mountPath: "/tmp"
                 name: "ssd"
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: 5

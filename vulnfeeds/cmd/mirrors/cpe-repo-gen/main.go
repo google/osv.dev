@@ -428,6 +428,8 @@ func main() {
 	flag.Parse()
 
 	logger.InitGlobalLogger()
+	defer logger.Close()
+
 	cpes, err := LoadCPEsFromJSONDir(*CPEDictionaryDir)
 	if err != nil {
 		logger.Fatal("Failed to load CPEs", slog.String("path", *CPEDictionaryDir), slog.Any("err", err))

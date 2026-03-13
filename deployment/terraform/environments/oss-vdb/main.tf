@@ -45,7 +45,7 @@ module "osv" {
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
-  esp_version    = "2.54.0"
+  esp_version    = "2.55.0"
 }
 
 module "oss_fuzz" {

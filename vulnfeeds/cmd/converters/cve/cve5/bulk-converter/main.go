@@ -35,6 +35,7 @@ var cnaAllowlistData []byte
 func main() {
 	flag.Parse()
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	logger.Info("Commencing CVE to OSV conversion run")
 	if err := os.MkdirAll(*localOutputDir, 0755); err != nil {

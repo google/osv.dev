@@ -22,6 +22,7 @@ func main() {
 	jsonPath := flag.Arg(0)
 
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	// Read the input CVE JSON file.
 	data, err := os.ReadFile(jsonPath)

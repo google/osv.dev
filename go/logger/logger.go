@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"time"
 
-	"cloud.google.com/go/errorreporting"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -29,40 +28,37 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 				slog.Bool("logging.googleapis.com/trace_sampled", spanContext.IsSampled()),
 			)
 		}
+
+		if level >= slog.LevelError && !ignoreError(r) {
+			r.Add(slog.String("@type", "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent"))
+		}
 	}
 
 	if slogLogger.Handler().Enabled(ctx, level) {
 		//nolint:errcheck
 		slogLogger.Handler().Handle(ctx, r)
 	}
+}
 
-	if level >= slog.LevelError && errorClient != nil {
-		// Try find an error in the attributes
-		var err error
-		hasErr := false
-		for _, attr := range a {
-			if att, ok := attr.(slog.Attr); ok {
-				if attrErr, ok := att.Value.Any().(error); ok {
-					err = attrErr
-					hasErr = true
+func ignoreError(r slog.Record) bool {
+	ignore := false
+	r.Attrs(func(a slog.Attr) bool {
+		if a.Key == "exception" || a.Key == "err" || a.Key == "error" {
+			if err, ok := a.Value.Any().(error); ok {
+				// We want to ignore context cancelled errors, since they're usually caused by something else
+				// and we don't want to be alerted about them.
+				if errors.Is(err, context.Canceled) {
+					ignore = true
 
-					break
+					return false
 				}
 			}
 		}
-		// Fallback to using the message as the error if no error was provided.
-		if !hasErr {
-			err = errors.New(msg)
-		}
-		// Report the error to Google Cloud Error Reporting.
-		// We leave Stack nil to let the client automatically capture the stack trace.
-		// Note: This will include the logger functions at the top of the stack.
-		// If we want to hide them, we would need to manually capture and trim the stack.
-		errorClient.Report(errorreporting.Entry{
-			Error: err,
-			Stack: nil,
-		})
-	}
+
+		return true
+	})
+
+	return ignore
 }
 
 // Debug prints a Debug level log.

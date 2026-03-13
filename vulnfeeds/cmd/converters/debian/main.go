@@ -33,6 +33,7 @@ const (
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")

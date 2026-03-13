@@ -111,6 +111,7 @@ func main() {
 	flag.Parse()
 
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	data, err := os.ReadFile(*jsonPath)
 	if err != nil {

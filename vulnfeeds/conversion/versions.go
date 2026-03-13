@@ -817,15 +817,16 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 			}
 		}
 	}
-	if len(versions) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", versions)
+	if len(versions) == 0 {
+		return nil
 	}
+	metrics.AddNote("Extracted versions from CPEs: %v", versions)
 
 	return versions
 }
 
-// ExtractVersionInfo extracts version information from a CVE.
-// Deprecated: Use ExtractVersions instead.
+// ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
+// This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters.
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
@@ -836,7 +837,7 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
 	}
 
-	// gotVersions := false
+	// Extract versions from CPEs.
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			if node.Operator != "OR" {
@@ -922,12 +923,6 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 			}
 		}
 	}
-	// if !gotVersions {
-	// 	v.AffectedVersions = ExtractVersionsFromText(validVersions, models.EnglishDescription(cve.Descriptions), metrics)
-	// 	if len(v.AffectedVersions) > 0 {
-	// 		metrics.AddNote("Extracted versions from description: %v", v.AffectedVersions)
-	// 	}
-	// }
 
 	if len(v.AffectedVersions) == 0 {
 		metrics.AddNote("No versions detected.")
@@ -1099,7 +1094,12 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return
+			}
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
+
 			continue
 		}
 		for _, av := range v.AffectedVersions {
@@ -1219,7 +1219,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		repos = append(repos, repo)
-		cache.MaybeUpdate(vp, repo)
+		// cache.MaybeUpdate(vp, repo) // TODO: fix this so that only relevant repos to the project are added to cache
 	}
 	if len(repos) == 0 {
 		return repos

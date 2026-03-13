@@ -15,7 +15,7 @@
 
 import json
 import logging
-from flask import Blueprint, abort, jsonify
+from flask import Blueprint, abort, jsonify, redirect, request
 from google.cloud import storage
 
 blueprint = Blueprint('linter_api', __name__, url_prefix='/linter-findings')
@@ -23,6 +23,19 @@ blueprint = Blueprint('linter_api', __name__, url_prefix='/linter-findings')
 # TODO: Make this configurable if needed, but for now it matches linter.py
 LINTER_BUCKET = 'osv-test-public-import-logs'
 LINTER_PREFIX = 'linter-result/'
+
+
+@blueprint.before_request
+def redirect_to_test():
+  """Redirect requests from production to test site."""
+  if request.host == 'osv.dev':
+    return redirect(request.url.replace('osv.dev', 'test.osv.dev'), code=302)
+
+  if request.host == 'api.osv.dev':
+    return redirect(
+        request.url.replace('api.osv.dev', 'api.test.osv.dev'), code=302)
+
+  return None
 
 
 def _get_storage_client():

@@ -3,6 +3,7 @@ package nvd
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -28,38 +29,54 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, _ := conversion.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, err := conversion.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
+		if err != nil {
+			metrics.AddNote("Can't generate an OSV record without valid CPE data")
+			return models.ConversionUnknown
+		}
 	}
 
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
 
+	// At the bare minimum, we want to attempt to extract the raw version information
+	// from CPEs, whether or not they can resolve to commits.
 	cpeRanges := conversion.ExtractVersionsFromCPEs(cve, nil, metrics)
 
-	// if there are no repos, there are no commits from the refs either
+	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
+		metrics.SetOutcome(models.NoRepos)
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
+
 		return models.NoRepos
 	}
 
 	successfulRepos := make(map[string]bool)
 	var resolvedRanges, unresolvedRanges []*osvschema.Range
-	if len(cpeRanges) > 0 {
-		r, un, sR := conversion.GitVersionsToCommits(cpeRanges, repos, metrics, cache)
-		resolvedRanges = append(resolvedRanges, r...)
-		unresolvedRanges = append(unresolvedRanges, un...)
-		for _, s := range sR {
-			successfulRepos[s] = true
-		}
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
-	} else if len(repos) == 0 {
-		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, nil, nil, metrics)
+
+	// Exit early if there are no repositories
+	if len(repos) == 0 {
+		metrics.SetOutcome(models.NoRepos)
+		metrics.UnresolvedRangesCount += len(cpeRanges)
+		affected := MergeRangesAndCreateAffected(resolvedRanges, cpeRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
+		// Exit early
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 
 		return models.NoRepos
+	}
+
+	// If we have ranges, try to resolve them
+	r, un, sR := processRanges(cpeRanges, repos, metrics, cache, models.VersionSourceCPE)
+	if metrics.Outcome == models.Error {
+		return models.Error
+	}
+	resolvedRanges = append(resolvedRanges, r...)
+	unresolvedRanges = append(unresolvedRanges, un...)
+	for _, s := range sR {
+		successfulRepos[s] = true
 	}
 
 	// Extract Commits
@@ -72,6 +89,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		for _, commit := range commits {
 			successfulRepos[commit.Repo] = true
 		}
+		metrics.SetOutcome(models.Successful)
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceRefs)
 	}
 
@@ -81,25 +99,28 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
-		r, un, sR := conversion.GitVersionsToCommits(textRanges, repos, metrics, cache)
+		r, un, sR := processRanges(textRanges, repos, metrics, cache, models.VersionSourceDescription)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {
 			successfulRepos[s] = true
 		}
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
 	}
 
 	if len(resolvedRanges) == 0 && len(commits) == 0 {
 		metrics.AddNote("No ranges detected for %q", maybeProductName)
-		metrics.Outcome = models.NoRanges
-	} else {
-		keys := slices.Collect(maps.Keys(successfulRepos))
-		affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
-		v.Affected = append(v.Affected, affected)
+		metrics.SetOutcome(models.NoRanges)
 	}
 
-	if !outputMetrics && rejectFailed && metrics.Outcome != models.Successful {
+	// Use the successful repos for more efficient merging.
+	keys := slices.Collect(maps.Keys(successfulRepos))
+	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
+	v.Affected = append(v.Affected, affected)
+
+	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
 		return metrics.Outcome
 	}
 
@@ -135,6 +156,9 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
 		conversion.VersionInfoToCommits(&versions, repos, cache, metrics)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 	}
 
 	hasAnyFixedCommits := false
@@ -168,7 +192,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
 
-	// slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
+
+	if metrics.Outcome == models.Error {
+		return metrics.Outcome
+	}
 
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
@@ -212,8 +240,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 // FindRepos attempts to find the source code repositories for a given CVE.
 func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
-	refs := cve.References
-	conversion.DeduplicateRefs(refs)
+	refs := conversion.DeduplicateRefs(cve.References)
 	CPEs := conversion.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string
@@ -221,7 +248,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsC
 	if len(refs) == 0 && len(CPEs) == 0 {
 		metrics.AddNote("Skipping due to lack of CPEs and lack of references")
 		// 100% of these in 2022 were rejected CVEs
-		metrics.Outcome = models.Rejected
+		metrics.SetOutcome(models.Rejected)
 
 		return nil
 	}
@@ -242,7 +269,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsC
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
 		}
-		if CPE.Part != "a" && CPE.Part != "o" { // only care about application and operating system CPEs
+		if CPE.Part != "a" { // only care about application CPEs
 			continue
 		}
 		vendorProductCombinations[conversion.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
@@ -279,7 +306,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsC
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope
 		metrics.AddNote("Passing due to lack of viable repository")
-		metrics.Outcome = models.NoRepos
 
 		return nil
 	}
@@ -289,6 +315,15 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *conversion.VPRepoCache, repoTagsC
 	return reposForCVE
 }
 
+// MergeRangesAndCreateAffected combines resolved and unresolved ranges with commits to create an OSV Affected object.
+// It merges ranges for the same repository and adds commit events to the appropriate ranges at the end.
+//
+// Arguments:
+//   - resolvedRanges: A slice of resolved OSV ranges to be merged.
+//   - unresolvedRanges: A slice of unresolved OSV ranges to be included in the database specific field.
+//   - commits: A slice of affected commits to be converted into events and added to ranges.
+//   - successfulRepos: A slice of repository URLs that were successfully processed.
+//   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
 func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
@@ -302,7 +337,11 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 					if mergedRange == nil {
 						mergedRange = vr
 					} else {
-						mergedRange = conversion.MergeTwoRanges(mergedRange, vr)
+						var err error
+						mergedRange, err = conversion.MergeTwoRanges(mergedRange, vr)
+						if err != nil {
+							metrics.AddNote("Failed to merge ranges: %v", err)
+						}
 					}
 				}
 			}
@@ -312,6 +351,7 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 						if mergedRange == nil {
 							mergedRange = conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
 							mergedRange.Repo = repo
+							mergedRange.Type = osvschema.Range_GIT
 						} else {
 							event := convertCommitToEvent(commit)
 							if event != nil {
@@ -330,10 +370,12 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	// if there are no resolved version but there are commits, we should create a range for each commit
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
 		for _, commit := range commits {
-			newResolvedRanges = append(newResolvedRanges, conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			newRange := conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+			newRange.Repo = commit.Repo
+			newRange.Type = osvschema.Range_GIT
+			newResolvedRanges = append(newResolvedRanges, newRange)
 			metrics.ResolvedRangesCount++
 		}
-		metrics.Outcome = models.Successful
 	}
 
 	newAffected := &osvschema.Affected{
@@ -351,6 +393,12 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	return newAffected
 }
 
+// addEventToRange adds an event to a version range, avoiding duplicates.
+// Introduced events are prepended to the events list, while others are appended.
+//
+// Arguments:
+//   - versionRange: The OSV range to which the event will be added.
+//   - event: The OSV event (Introduced, Fixed, or LastAffected) to add.
 func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	// Handle duplicate events being added
 	for _, e := range versionRange.GetEvents() {
@@ -374,6 +422,8 @@ func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	}
 }
 
+// convertCommitToEvent creates an OSV Event from an AffectedCommit.
+// It returns an event with the Introduced, Fixed, or LastAffected value from the commit.
 func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	if commit.Introduced != "" {
 		return &osvschema.Event{
@@ -394,12 +444,28 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	return nil
 }
 
+// outputFiles writes the OSV vulnerability record and conversion metrics to files in the specified directory.
+// It creates the necessary subdirectories based on the vendor and product names and handles whether or not
+// the files should be written based on the rejectFailed and outputMetrics flags.
+//
+// Arguments:
+//   - v: The OSV Vulnerability object to be written to a file.
+//   - dir: The base directory where the output files should be created.
+//   - vendor: The vendor name used to create the subdirectory.
+//   - product: The product name used to create the subdirectory.
+//   - metrics: A pointer to ConversionMetrics to be written to a metrics file.
+//   - rejectFailed: A boolean indicating whether to skip writing the OSV file if the conversion was not successful.
+//   - outputMetrics: A boolean indicating whether to write the metrics file.
 func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) {
 	cveID := v.Id
 	vulnDir := filepath.Join(dir, vendor, product)
 
 	if err := os.MkdirAll(vulnDir, 0755); err != nil {
 		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", cveID), slog.String("path", vulnDir), slog.Any("err", err))
+	}
+
+	if metrics.Outcome == models.Error {
+		return
 	}
 
 	if !rejectFailed || metrics.Outcome == models.Successful {
@@ -422,4 +488,28 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 		}
 		metricsFile.Close()
 	}
+}
+
+// processRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
+func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []*osvschema.Range, []string) {
+	if len(ranges) == 0 {
+		return nil, nil, nil
+	}
+
+	r, un, sR := conversion.GitVersionsToCommits(ranges, repos, metrics, cache)
+	if len(r) > 0 {
+		metrics.ResolvedRangesCount += len(r)
+		metrics.SetOutcome(models.Successful)
+	}
+
+	if len(un) > 0 {
+		metrics.UnresolvedRangesCount += len(un)
+		if len(r) == 0 {
+			metrics.SetOutcome(models.NoCommitRanges)
+		}
+	}
+
+	metrics.VersionSources = append(metrics.VersionSources, source)
+
+	return r, un, sR
 }

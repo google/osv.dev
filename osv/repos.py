@@ -140,7 +140,7 @@ def clone(git_url,
 
       # Long timeout duration (1hr) because it could be cloning a large repo
       resp = requests.get(
-          f'{GITTER_HOST}/getgit',
+          f'{GITTER_HOST}/git',
           params=params,
           stream=True,
           timeout=3600,

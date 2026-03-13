@@ -246,7 +246,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
 			}
 
-			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
+			if fixedCommit != "" || lastAffectedCommit != "" {
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {

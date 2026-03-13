@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -348,12 +349,12 @@ func checkReconcile(
 
 func getModifiedTime(parsed *gjson.Result) (time.Time, error) {
 	if !parsed.Get("id").Exists() {
-		return time.Time{}, fmt.Errorf("vulnerability missing id")
+		return time.Time{}, errors.New("vulnerability missing id")
 	}
 
 	modifiedObj := parsed.Get("modified")
 	if !modifiedObj.Exists() {
-		return time.Time{}, fmt.Errorf("vulnerability missing modified")
+		return time.Time{}, errors.New("vulnerability missing modified")
 	}
 
 	modified, err := time.Parse(time.RFC3339, modifiedObj.String())
@@ -402,7 +403,9 @@ type WorkItem struct {
 	IsReimport       bool
 }
 
-func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
+func importerWorker(_ context.Context, ch <-chan WorkItem, config Config) {
+	// We keep reading from the channel (even if context is closed)
+	// as the channel will be closed by the producer side.
 	for item := range ch {
 		// wrap in function so defer is called for each item
 		func() { //nolint:contextcheck
@@ -544,7 +547,6 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 				slog.Time("database_modified", item.LastUpdated),
 				slog.Time("upstream_modified", modified))
 		default:
-
 		}
 	}
 	hash := computeHash(data)
@@ -589,6 +591,7 @@ func publishUpdate(ctx context.Context, config Config, source, path, hash string
 			slog.String("path", path),
 			slog.String("hash", hash),
 			slog.Bool("deleted", deleted))
+
 		return nil
 	}
 

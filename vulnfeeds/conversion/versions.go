@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cves provides utilities for working with CVEs and version information.
+// Package conversion provides utilities for working with CVEs and version information.
 package conversion
 
 import (

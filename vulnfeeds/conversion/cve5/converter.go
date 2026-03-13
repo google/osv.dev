@@ -1,5 +1,5 @@
-// Package cvelist2osv converts a single given CVEList JSON to OSV format.
-package cvelist2osv
+// Package cve5 converts a single given CVEList JSON to OSV format.
+package cve5
 
 import (
 	"encoding/json"

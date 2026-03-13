@@ -1,4 +1,4 @@
-package cvelist2osv
+package cve5
 
 import (
 	"fmt"

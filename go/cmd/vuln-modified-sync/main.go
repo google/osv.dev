@@ -1,7 +1,9 @@
+// vuln-modified-sync updates the modified time of vulnerabilities in Datastore to match the modified time of the local files.
 package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -59,7 +61,7 @@ func main() {
 		slog.String("project", project))
 
 	// Setup worker pool
-	for i := 0; i < *numWorkers; i++ {
+	for range *numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -76,7 +78,7 @@ func main() {
 		if d.IsDir() {
 			return nil
 		}
-		
+
 		ext := filepath.Ext(path)
 		if ext != ".json" && ext != ".yaml" {
 			return nil
@@ -90,6 +92,7 @@ func main() {
 			FilePath: path,
 			VulnID:   vulnID,
 		}
+
 		return nil
 	})
 
@@ -129,6 +132,7 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 			logger.ErrorContext(ctx, "Failed to convert YAML to JSON",
 				slog.Any("error", err),
 				slog.String("path", task.FilePath))
+
 			return
 		}
 		data = jsonData
@@ -150,11 +154,12 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 	key := datastore.NameKey("Vulnerability", task.VulnID, nil)
 	var vuln db.Vulnerability
 	if err := client.Get(ctx, key, &vuln); err != nil {
-		if err == datastore.ErrNoSuchEntity {
+		if errors.Is(err, datastore.ErrNoSuchEntity) {
 			logger.InfoContext(ctx, "Vulnerability not found in datastore", slog.String("id", task.VulnID))
 		} else {
 			logger.ErrorContext(ctx, "Failed to get Vulnerability from datastore", slog.Any("error", err), slog.String("id", task.VulnID))
 		}
+
 		return
 	}
 
@@ -193,5 +198,6 @@ func parseTime(timeStr string) (time.Time, error) {
 			return t, nil
 		}
 	}
+
 	return time.Time{}, fmt.Errorf("unable to parse time string %q", timeStr)
 }

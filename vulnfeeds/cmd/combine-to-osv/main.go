@@ -370,6 +370,7 @@ func hasRanges(affected []*osvschema.Affected) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

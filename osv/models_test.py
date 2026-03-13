@@ -192,12 +192,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04',
@@ -205,12 +209,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04:LTS',
@@ -218,12 +226,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:24.04:LTS',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:25.04',
@@ -231,12 +243,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0-3')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='Ubuntu:25.04',
             name='test',
-            versions=['1.0.0-1', '1.0.0-2']),
+            versions=['1.0.0-1', '1.0.0-2'],
+            coarse_min='00:00000001.00000000.00000000',
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
@@ -244,7 +260,9 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='0'),
                 models.AffectedEvent(type='fixed', value='1.0.0')
-            ]),
+            ],
+            coarse_min=models.MIN_COARSE_VERSION,
+            coarse_max='00:00000001.00000000.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
@@ -252,12 +270,16 @@ class ModelsTest(unittest.TestCase):
             events=[
                 models.AffectedEvent(type='introduced', value='2.0.0'),
                 models.AffectedEvent(type='last_affected', value='2.2.0')
-            ]),
+            ],
+            coarse_min='00:00000002.00000000.00000000',
+            coarse_max='00:00000002.00000002.00000000'),
         models.AffectedVersions(
             vuln_id=vuln_id,
             ecosystem='npm',
             name='testjs',
-            versions=['0.1.0', '0.2.0', '0.3.0', '2.0.0', '2.1.0', '2.2.0']),
+            versions=['0.1.0', '0.2.0', '0.3.0', '2.0.0', '2.1.0', '2.2.0'],
+            coarse_min='00:00000000.00000001.00000000',
+            coarse_max='00:00000002.00000002.00000000'),
     ]
     self.assertListEqual([a.to_dict() for a in want],
                          [a.to_dict() for a in affected])

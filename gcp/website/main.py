@@ -22,6 +22,7 @@ import cache
 import frontend_handlers
 import handlers
 import linter_api
+import triage_handlers
 import osv.logs
 
 ndb_client = ndb.Client()
@@ -46,6 +47,7 @@ def create_app():
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
   flask_app.register_blueprint(linter_api.blueprint)
+  flask_app.register_blueprint(triage_handlers.blueprint)
   flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
   flask_app.config['COMPRESS_MIMETYPES'] = ['text/html']
 

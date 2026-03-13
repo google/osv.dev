@@ -25,7 +25,6 @@ import os
 import threading
 import time
 import concurrent.futures
-from typing import Callable
 
 from collections import defaultdict
 
@@ -99,11 +98,6 @@ _VENDORED_LIB_NAMES = frozenset((
 _TAG_PREFIX = "refs/tags/"
 
 _TEST_INSTANCE = 'oss-vdb-test'
-
-# ----
-# Type Aliases:
-
-ToResponseCallable = Callable[[osv.Bug], ndb.Future]
 
 # ----
 
@@ -392,9 +386,9 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
     del request  # Unused.
     del context  # Unused.
 
-    # Read up to a single Bug entity from the DB. This should not cause an
-    # exception or time out.
-    osv.Bug.query().fetch(1)
+    # Read up to a single Vulnerability entity from the DB.
+    # This should not cause an exception or time out.
+    osv.Vulnerability.query().fetch(1)
     return health_pb2.HealthCheckResponse(
         status=health_pb2.HealthCheckResponse.ServingStatus.SERVING)
 
@@ -965,12 +959,6 @@ def query_package(context: QueryContext,
   if not package_name:
     return []
 
-  if (package_name.startswith('linux') and ecosystem.startswith('Ubuntu') and
-      version):
-    result = yield query_ubuntu_linux(context, package_name, ecosystem, version,
-                                      include_details)
-    return result
-
   # Ideally, we'd check both unnormalized and normalized named at once, if there
   # is no provided ecosystem (even though that is not explicitly supported), but
   # Datastore cannot give cursors for 'OR' queries, so just only normalize if
@@ -981,6 +969,18 @@ def query_package(context: QueryContext,
   query = osv.AffectedVersions.query(osv.AffectedVersions.name == package_name)
   if ecosystem:
     query = query.filter(osv.AffectedVersions.ecosystem == ecosystem)
+    if version:
+      helper = ecosystems.get(ecosystem)
+      if helper is not None:
+        try:
+          coarse = helper.coarse_version(version)
+          query = query.filter(osv.AffectedVersions.coarse_min <= coarse)
+          query = query.filter(osv.AffectedVersions.coarse_max >= coarse)
+        except (ValueError, NotImplementedError):
+          # We want to avoid logging user requests.
+          pass
+          # TODO(michaelkedar): I think a ValueError would mean the version
+          # would not match any affected versions, so we may be able to return.
   query = query.order(osv.AffectedVersions.vuln_id)
 
   bugs = []
@@ -1145,56 +1145,6 @@ def get_vuln_async(vuln_id: str) -> ndb.Future:
   future = async_poll_result()
   future.add_done_callback(cleanup)
   return future
-
-
-@ndb.tasklet
-def query_ubuntu_linux(context: QueryContext,
-                       package_name: str,
-                       ecosystem: str,
-                       version: str,
-                       include_details: bool = True) -> list[ndb.Future]:
-  """Workaround query for linux kernel vulns in Ubuntu, because there's heaps of
-  them and it takes a while to check all the version ranges.
-  
-  The logic here is copied from the original implementation of server.py,
-  using the Bug entity to perform matching on only the version strings, and not
-  doing range-based matching.
-  """
-
-  query = osv.Bug.query(
-      osv.Bug.status == osv.BugStatus.PROCESSED,
-      osv.Bug.project == package_name,
-      # pylint: disable=singleton-comparison
-      osv.Bug.public == True,
-      osv.Bug.ecosystem == ecosystem,
-      osv.Bug.affected_fuzzy == version)
-
-  bugs = []
-  it: ndb.QueryIterator = query.iter(start_cursor=context.cursor_at_current())
-  while (yield it.has_next_async()):
-    if context.should_break_page(len(bugs)):
-      context.save_cursor_at_page_break(it)
-      break
-
-    bug: osv.Bug = it.next()
-    for affected in bug.affected_packages:
-      eco = affected.package.ecosystem
-      if ecosystem not in (eco, ecosystems.normalize(eco),
-                           ecosystems.remove_variants(eco)):
-        continue
-      if package_name != affected.package.name:
-        continue
-      if version not in affected.versions:
-        continue
-      # Found a match: retrieve the proto from the bucket / Vulnerability entity
-      if include_details:
-        bugs.append(get_vuln_async(bug.db_id))
-      else:
-        bugs.append(get_minimal_async(bug.db_id))
-      context.total_responses.add(1)
-      break
-
-  return bugs
 
 
 def serve(port: int, local: bool):

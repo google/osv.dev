@@ -16,6 +16,7 @@
 # Many tests are ported from
 # https://github.com/apache/maven/blob/c3cf29438e3d65d6ee5c5726f8611af99d9a649a/maven-artifact/src/test/java/org/apache/maven/artifact/versioning/ComparableVersionTest.java.
 """Maven ecosystem helper tests."""
+
 import unittest
 import vcr.unittest
 import warnings
@@ -258,6 +259,19 @@ class MavenVersionTest(unittest.TestCase):
         self.ecosystem.sort_key('1.10.0'), self.ecosystem.sort_key('1.2.0'))
     self.assertLessEqual(
         self.ecosystem.sort_key('1.2.0'), self.ecosystem.sort_key('1.10.0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version."""
+    self.assertEqual('00:00000001.00000002.00000003',
+                     self.ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00000002.00000003.00000000',
+                     self.ecosystem.coarse_version('2.3-5.4'))
+    self.assertEqual('00:00000000.00000000.00000000',
+                     self.ecosystem.coarse_version('alpha-alpha'))
+    self.assertEqual('00:00000005.00000010.00000000',
+                     self.ecosystem.coarse_version('5.10.foo-6'))
+    self.assertEqual('00:00000001.00000000.00000009',
+                     self.ecosystem.coarse_version('1..9foo'))
 
 
 class MavenEcosystemTest(vcr.unittest.VCRTestCase):

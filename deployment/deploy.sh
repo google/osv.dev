@@ -38,4 +38,4 @@ if [[ -z "$commit_sha" || -z "$short_sha" ]]; then
   exit 1
 fi
 
-gcloud beta builds submit --config=deploy-prod.yaml --project=oss-vdb --no-source --substitutions="COMMIT_SHA=${commit_sha},SHORT_SHA=${short_sha},TAG_NAME=${tag_name}"
+gcloud beta builds submit ./clouddeploy --config=deploy-prod.yaml --project=oss-vdb --substitutions="COMMIT_SHA=${commit_sha},SHORT_SHA=${short_sha},TAG_NAME=${tag_name}"

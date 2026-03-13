@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -60,7 +61,10 @@ type vulnData struct {
 // zip, csv, and (for GIT) vanir files.
 func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
-	logger.Info("new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
+	ctx, span := otel.Tracer("exporter").Start(ctx, w.ecosystem)
+	defer span.End()
+
+	logger.InfoContext(ctx, "new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
 	var allVulns []vulnData
 	var csvData [][]string
 	var vanirVulns []vulnData
@@ -72,7 +76,7 @@ WorkLoop:
 		// Wait to receive a vulnerability, or be cancelled.
 		select {
 		case <-ctx.Done():
-			logger.Warn("ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
 			return
 		case v, ok = <-w.inCh:
 			if !ok {
@@ -82,7 +86,7 @@ WorkLoop:
 		// Process vulnerability.
 		b, err := marshalToJSON(v)
 		if err != nil {
-			logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 			continue
 		}
 
@@ -90,7 +94,7 @@ WorkLoop:
 		select {
 		case outCh <- writeMsg{path: filepath.Join(w.ecosystem, v.GetId()) + ".json", mimeType: "application/json", data: b}:
 		case <-ctx.Done():
-			logger.Warn("ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
 			return
 		}
 
@@ -110,13 +114,13 @@ WorkLoop:
 		}
 	}
 
-	logger.Info("All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
+	logger.InfoContext(ctx, "All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
 	writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
 	writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh)
 	if w.ecosystem == gitEcosystem {
 		writeVanir(ctx, vanirVulns, outCh)
 	}
-	logger.Info("ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
+	logger.InfoContext(ctx, "ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
 }
 
 // Finish signals the worker to stop processing by closing its input channel.
@@ -153,7 +157,10 @@ func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.
 // and generates the global all.zip, modified_id.csv, and ecosystems.txt files.
 func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
-	logger.Info("all-ecosystem worker started")
+	ctx, span := otel.Tracer("exporter").Start(ctx, "all-ecosystems")
+	defer span.End()
+
+	logger.InfoContext(ctx, "all-ecosystem worker started")
 	var allVulns []vulnData
 	var csvData [][]string
 	ecosystems := make(map[string]struct{})
@@ -161,7 +168,7 @@ WorkLoop:
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Warn("all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
+			logger.WarnContext(ctx, "all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
 			return
 		case v, ok := <-w.inCh:
 			if !ok {
@@ -169,7 +176,7 @@ WorkLoop:
 			}
 			b, err := marshalToJSON(v.Vulnerability)
 			if err != nil {
-				logger.Error("failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
+				logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
 				continue
 			}
 			modified := v.GetModified().AsTime()
@@ -186,7 +193,7 @@ WorkLoop:
 	slices.Sort(ecos)
 	ecoString := strings.Join(ecos, "\n") + "\n"
 	write(ctx, ecosystemsFilename, []byte(ecoString), "text/plain", outCh)
-	logger.Info("all-ecosystem worker finished processing")
+	logger.InfoContext(ctx, "all-ecosystem worker finished processing")
 }
 
 // Finish signals the worker to stop processing by closing its input channel.
@@ -219,7 +226,7 @@ func write(ctx context.Context, path string, data []byte, mimeType string, outCh
 
 // writeModifiedIDCSV constructs and writes a modified_id.csv file.
 func writeModifiedIDCSV(ctx context.Context, path string, csvData [][]string, outCh chan<- writeMsg) {
-	logger.Info("constructing csv file", slog.String("path", path))
+	logger.InfoContext(ctx, "constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b []string) int {
 		return cmp.Or(
 			-cmp.Compare(a[0], b[0]), // Modified date, descending
@@ -230,17 +237,17 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData [][]string, ou
 	var buf bytes.Buffer
 	wr := csv.NewWriter(&buf)
 	if err := wr.WriteAll(csvData); err != nil {
-		logger.Error("failed writing csv", slog.String("path", path), slog.Any("err", err))
+		logger.ErrorContext(ctx, "failed writing csv", slog.String("path", path), slog.Any("err", err))
 		return
 	}
 	wr.Flush()
-	logger.Info("writing csv file", slog.String("path", path))
+	logger.InfoContext(ctx, "writing csv file", slog.String("path", path))
 	write(ctx, path, buf.Bytes(), "text/csv", outCh)
 }
 
 // writeZIP constructs and writes an all.zip file.
 func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<- writeMsg) {
-	logger.Info("constructing zip file", slog.String("path", path))
+	logger.InfoContext(ctx, "constructing zip file", slog.String("path", path))
 	slices.SortFunc(allVulns, func(a, b vulnData) int {
 		return cmp.Compare(a.id, b.id)
 	})
@@ -253,18 +260,18 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnData, outCh chan<
 			Method:   zip.Deflate,
 		})
 		if err != nil {
-			logger.Error("failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 			continue
 		}
 		r := bytes.NewReader(vuln.data)
 		if _, err := io.Copy(w, r); err != nil {
-			logger.Error("failed to write vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to write vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 		}
 	}
 	if err := wr.Close(); err != nil {
-		logger.Error("failed to close zip writer", slog.String("path", path), slog.Any("err", err))
+		logger.ErrorContext(ctx, "failed to close zip writer", slog.String("path", path), slog.Any("err", err))
 	}
-	logger.Info("writing zip file", slog.String("path", path))
+	logger.InfoContext(ctx, "writing zip file", slog.String("path", path))
 	write(ctx, path, buf.Bytes(), "application/zip", outCh)
 }
 
@@ -277,7 +284,7 @@ func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMs
 	}
 	finalJSON, err := json.Marshal(vulns)
 	if err != nil {
-		logger.Error("failed to marshal vanir JSON file", slog.Any("err", err))
+		logger.ErrorContext(ctx, "failed to marshal vanir JSON file", slog.Any("err", err))
 		return
 	}
 	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", outCh)

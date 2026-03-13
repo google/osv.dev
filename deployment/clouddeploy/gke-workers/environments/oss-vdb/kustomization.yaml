@@ -1,7 +1,5 @@
 resources:
 - ../../base
-- make-bugs-public.yaml
-- process-results.yaml
 patches:
 - path: workers.yaml
 - path: importer.yaml
@@ -23,4 +21,5 @@ patches:
 - path: record-checker.yaml
 - path: cve5-to-osv.yaml
 - path: custommetrics.yaml
+- path: gitter.yaml
 

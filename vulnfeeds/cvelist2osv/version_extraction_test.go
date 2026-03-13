@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -39,15 +40,15 @@ func TestToVersionRangeType(t *testing.T) {
 func TestFindNormalAffectedRanges(t *testing.T) {
 	tests := []struct {
 		name          string
-		affected      cves.Affected
+		affected      models.Affected
 		cnaAssigner   string
 		wantRanges    []*osvschema.Range
 		wantRangeType VersionRangeType
 	}{
 		{
 			name: "simple range",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:      "affected",
 						Version:     "1.0",
@@ -57,14 +58,14 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("1.0", "", "1.5"),
+				conversion.BuildVersionRange("1.0", "", "1.5"),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "single version fallback",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:      "affected",
 						Version:     "2.0",
@@ -73,14 +74,14 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("0", "2.0", ""),
+				conversion.BuildVersionRange("0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "github range",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:  "affected",
 						Version: ">= 2.0, < 2.5",
@@ -88,14 +89,14 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("2.0", "", "2.5"),
+				conversion.BuildVersionRange("2.0", "", "2.5"),
 			},
 			wantRangeType: VersionRangeTypeEcosystem,
 		},
 		{
 			name: "git commit",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:      "affected",
 						Version:     "deadbeef",
@@ -104,7 +105,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				cves.BuildVersionRange("", "deadbeef", ""),
+				conversion.BuildVersionRange("", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -113,7 +114,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			versionExtractor := &DefaultVersionExtractor{}
-			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &ConversionMetrics{})
+			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{})
 			if diff := cmp.Diff(tt.wantRanges, gotRanges, protocmp.Transform()); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -149,15 +150,15 @@ func TestCompareSemverLike(t *testing.T) {
 func TestFindInverseAffectedRanges(t *testing.T) {
 	tests := []struct {
 		name        string
-		affected    cves.Affected
+		affected    models.Affected
 		versionType VersionRangeType
 		cnaAssigner string
 		want        []*osvschema.Range
 	}{
 		{
 			name: "linux with wildcard",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:      "affected",
 						Version:     "5.0",
@@ -174,13 +175,13 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
-				cves.BuildVersionRange("5.0.0", "", "5.10.1"),
+				conversion.BuildVersionRange("5.0.0", "", "5.10.1"),
 			},
 		},
 		{
 			name: "not linux",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:          "unaffected",
 						Version:         "1.0",
@@ -195,8 +196,8 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 		},
 		{
 			name: "linux no wildcard",
-			affected: cves.Affected{
-				Versions: []cves.Versions{
+			affected: models.Affected{
+				Versions: []models.Versions{
 					{
 						Status:      "affected",
 						Version:     "4.0",
@@ -213,14 +214,14 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 			versionType: VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
-				cves.BuildVersionRange("4.0.0", "", "4.5.2"),
+				conversion.BuildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			gotRanges, gotVersionType := findInverseAffectedRanges(tt.affected, metrics)
 			if diff := cmp.Diff(tt.want, gotRanges, protocmp.Transform()); diff != "" {
 				t.Errorf("findInverseAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
@@ -235,7 +236,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 	testCases := []struct {
 		name           string
-		cve            cves.CVE5
+		cve            models.CVE5
 		expectedRanges []*osvschema.Range
 	}{
 		{
@@ -265,7 +266,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var affectedBlock cves.Affected
+			var affectedBlock models.Affected
 			// Find the specific affected block with defaultStatus: "affected".
 			for _, affected := range tc.cve.Containers.CNA.Affected {
 				if affected.DefaultStatus == "affected" {
@@ -279,7 +280,7 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 			}
 
 			// Run the function under test.
-			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &ConversionMetrics{})
+			gotRanges, _ := findInverseAffectedRanges(affectedBlock, &models.ConversionMetrics{})
 
 			// Sort slices for deterministic comparison.
 			sort.Slice(gotRanges, func(i, j int) bool {
@@ -324,13 +325,13 @@ func TestRealWorldFindInverseAffectedRanges(t *testing.T) {
 func TestGetVersionExtractor(t *testing.T) {
 	testCases := []struct {
 		name         string
-		cve          cves.CVE5
+		cve          models.CVE5
 		expectedType reflect.Type
 	}{
 		{
 			name: "Linux CVE",
-			cve: cves.CVE5{
-				Metadata: cves.CVE5Metadata{
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
 					AssignerShortName: "Linux",
 				},
 			},
@@ -338,8 +339,8 @@ func TestGetVersionExtractor(t *testing.T) {
 		},
 		{
 			name: "Default CVE",
-			cve: cves.CVE5{
-				Metadata: cves.CVE5Metadata{
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
 					AssignerShortName: "Anything",
 				},
 			},
@@ -347,7 +348,7 @@ func TestGetVersionExtractor(t *testing.T) {
 		},
 		{
 			name:         "Empty provider",
-			cve:          cves.CVE5{},
+			cve:          models.CVE5{},
 			expectedType: reflect.TypeOf(&DefaultVersionExtractor{}),
 		},
 	}
@@ -365,7 +366,7 @@ func TestGetVersionExtractor(t *testing.T) {
 func TestExtractVersions(t *testing.T) {
 	testCases := []struct {
 		name             string
-		cve              cves.CVE5
+		cve              models.CVE5
 		cnaAssigner      string
 		repos            []string
 		expectedAffected []*osvschema.Affected
@@ -550,7 +551,7 @@ func TestExtractVersions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metrics := &ConversionMetrics{}
+			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{},
 			}

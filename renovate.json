@@ -31,7 +31,12 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "enabled": false
+      "enabled": true
+    },
+    {
+      "matchPackageNames": ["redis"],
+      "matchCategories": ["python"],
+      "allowedVersions": "< 7.0.0"
     },
     {
       "matchDepNames": [
@@ -43,19 +48,7 @@
       "matchFileNames": [
         "gcp/website/**"
       ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "website-backend"
-    },
-    {
-      "matchFileNames": [
-        "gcp/website/**"
-      ],
-      "matchCategories": [
-        "js"
-      ],
-      "groupName": "website-frontend"
+      "groupName": "website"
     },
     {
       "matchFileNames": [
@@ -68,39 +61,42 @@
     },
     {
       "matchFileNames": [
-        "gcp/api/**"
-      ],
-      "groupName": "api"
-    },
-    {
-      "matchFileNames": [
-        "gcp/functions/**"
-      ],
-      "groupName": "functions"
-    },
-    {
-      "matchFileNames": [
+        "gcp/api/**",
+        "gcp/functions/**",
         "gcp/workers/**"
       ],
-      "matchCategories": [
-        "python"
-      ],
-      "groupName": "workers"
+      "matchCategories": ["python"],
+      "groupName": "gcp-services-python"
     },
     {
       "matchFileNames": [
         "gcp/indexer/**"
       ],
-      "matchCategories": [
-        "golang"
-      ],
-      "groupName": "indexer"
+      "matchCategories": ["golang"],
+      "groupName": "gcp-indexer-go"
     },
     {
       "matchFileNames": [
         "vulnfeeds/**"
       ],
-      "groupName": "vulnfeeds"
+      "matchCategories": ["python"],
+      "groupName": "vulnfeeds-python"
+    },
+    {
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
+      "matchCategories": ["golang"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "vulnfeeds-go"
+    },
+    {
+      "matchFileNames": [
+        "vulnfeeds/**"
+      ],
+      "matchCategories": ["golang"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "vulnfeeds-go major"
     },
     {
       "matchFileNames": [
@@ -142,6 +138,53 @@
       "enabled": false
     },
     {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ruby"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "groupName": "docker"
+    },
+    {
+      "matchManagers": [
+        "git-submodules"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchDatasources": [
+        "git-refs",
+        "github-tags"
+      ],
+      "groupName": "submodules"
+    },
+    {
+      "matchFileNames": [
+        "bindings/**",
+        "go/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
+      "groupName": "go-libraries"
+    },
+    {
       "matchDepTypes": ["uses-with"],
       "enabled": false
     },
@@ -176,6 +219,18 @@
       "packageNameTemplate": "https://github.com/ossf/osv-schema",
       "datasourceTemplate": "git-refs",
       "versioningTemplate": "git"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "osv/models.py"
+      ],
+      "matchStrings": [
+        "SCHEMA_VERSION\\s*=\\s*'(?<currentValue>.*)'"
+      ],
+      "packageNameTemplate": "ossf/osv-schema",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver"
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

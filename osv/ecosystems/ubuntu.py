@@ -11,17 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Ubuntu ecosystem helper."""
+"""Ubuntu ecosystem helper. (DEPRECATED)"""
 
-from ..third_party.univers.debian import Version as UbuntuVersion
+from .debian import DPKG
 
-from .ecosystems_base import OrderedEcosystem
-
-
-class Ubuntu(OrderedEcosystem):
-  """Ubuntu ecosystem"""
-
-  def _sort_key(self, version):
-    if not UbuntuVersion.is_valid(version):
-      return UbuntuVersion(9999999999, '9999999999')
-    return UbuntuVersion.from_string(version)
+# DEPRECATED
+Ubuntu = DPKG

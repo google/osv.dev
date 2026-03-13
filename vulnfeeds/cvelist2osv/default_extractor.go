@@ -1,11 +1,11 @@
 package cvelist2osv
 
 import (
-	"fmt"
-	"log/slog"
-
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -14,7 +14,7 @@ import (
 // DefaultVersionExtractor provides the default version extraction logic.
 type DefaultVersionExtractor struct{}
 
-func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metrics *ConversionMetrics) []*osvschema.Range {
+func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []*osvschema.Range {
 	var ranges []*osvschema.Range
 	for _, cveAff := range affected {
 		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
@@ -23,28 +23,28 @@ func (d *DefaultVersionExtractor) handleAffected(affected []cves.Affected, metri
 			continue
 		}
 		ranges = append(ranges, versionRanges...)
-		metrics.AddSource(VersionSourceAffected)
+		metrics.AddSource(models.VersionSourceAffected)
 	}
 
 	return ranges
 }
 
 // ExtractVersions for DefaultVersionExtractor.
-func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, repos []string) {
+func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	gotVersions := false
 
-	repoTagsCache := git.RepoTagsCache{}
+	repoTagsCache := &git.RepoTagsCache{}
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
 	if len(ranges) != 0 {
-		aff, err := gitVersionsToCommits(cve.Metadata.CVEID, ranges, repos, metrics, repoTagsCache)
-		if err != nil {
-			logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+		resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
+		if len(resolvedRanges) == 0 {
+			metrics.AddNote("Failed to convert git versions to commits")
 		} else {
 			gotVersions = true
 		}
-		addAffected(v, aff, metrics)
+		addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 	}
 
 	if !gotVersions {
@@ -52,14 +52,13 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			} else {
 				gotVersions = true
 			}
-
-			addAffected(v, aff, metrics)
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 
@@ -67,16 +66,17 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulner
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
 		versionRanges := textVersionExtraction(cve, metrics)
 		if len(versionRanges) != 0 {
-			aff, err := gitVersionsToCommits(cve.Metadata.CVEID, versionRanges, repos, metrics, repoTagsCache)
-			if err != nil {
-				logger.Error("Failed to convert git versions to commits", slog.Any("err", err))
+			resolvedRanges, unresolvedRanges, _ := conversion.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
+			if len(resolvedRanges) == 0 {
+				metrics.AddNote("Failed to convert git versions to commits")
 			}
-			addAffected(v, aff, metrics)
+
+			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
 		}
 	}
 }
 
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
+func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {
@@ -99,20 +99,16 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affecte
 				continue
 			}
 			if av.Fixed != "" {
-				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, "", av.Fixed))
+				versionRanges = append(versionRanges, conversion.BuildVersionRange(av.Introduced, "", av.Fixed))
 				continue
 			} else if av.LastAffected != "" {
-				versionRanges = append(versionRanges, cves.BuildVersionRange(av.Introduced, av.LastAffected, ""))
+				versionRanges = append(versionRanges, conversion.BuildVersionRange(av.Introduced, av.LastAffected, ""))
 				continue
 			}
 		}
 
 		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions, notes := cves.ExtractVersionsFromText(nil, vers.Version)
-
-		for _, note := range notes {
-			metrics.AddNote("%s", note)
-		}
+		possibleVersions := cves.ExtractVersionsFromText(nil, vers.Version, metrics)
 
 		if possibleVersions != nil {
 			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
@@ -121,8 +117,8 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affecte
 
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange("0", vers.Version, ""))
+			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}
 
@@ -137,4 +133,21 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected cves.Affecte
 	}
 
 	return versionRanges, mostFrequentVersionType
+}
+
+func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
+	if len(resolvedRanges) > 0 {
+		aff := &osvschema.Affected{
+			Ranges: resolvedRanges,
+		}
+		if len(unresolvedRanges) > 0 {
+			databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
+			if err != nil {
+				logger.Warn("failed to make database specific: %v", err)
+			} else {
+				aff.DatabaseSpecific = databaseSpecific
+			}
+		}
+		conversion.AddAffected(v, aff, metrics)
+	}
 }

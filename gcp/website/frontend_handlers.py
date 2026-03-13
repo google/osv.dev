@@ -220,6 +220,8 @@ def docs():
 
 @blueprint.route('/linter', strict_slashes=False)
 def linter():
+  if request.host_url == 'osv.dev':
+    return redirect(request.url.replace('osv.dev', 'test.osv.dev'), code=302)
   return render_template('linter.html')
 
 
@@ -462,7 +464,7 @@ def add_links(record: dict):
   for entry in record.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
-      if affected_range['type'] != 'GIT':
+      if affected_range.get('type') != 'GIT':
         continue
 
       repo_url = affected_range.get('repo')
@@ -942,9 +944,9 @@ def git_repo(affected):
 
 @blueprint.app_template_filter('package_in_ecosystem')
 def package_in_ecosystem(package):
-  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  ecosystem = osv.ecosystems.normalize(package.get('ecosystem', ''))
   if ecosystem in osv.ecosystems.package_urls:
-    return osv.ecosystems.package_urls[ecosystem] + package['name']
+    return osv.ecosystems.package_urls[ecosystem] + package.get('name', '')
   return ''
 
 
@@ -956,13 +958,13 @@ def list_packages(vuln_affected: list[dict]):
 
   for affected in vuln_affected:
     if 'package' in affected:
-      package_entry = affected['package']['ecosystem'] + '/' + affected[
-          'package']['name']
+      package_entry = affected['package'].get(
+          'ecosystem', '') + '/' + affected['package'].get('name', '')
       if package_entry not in packages:
         packages.append(package_entry)
     for affected_range in affected.get('ranges', []):
-      if affected_range['type'] == 'GIT':
-        parsed_scheme = strip_scheme(affected_range['repo'])
+      if affected_range.get('type') == 'GIT':
+        parsed_scheme = strip_scheme(affected_range.get('repo', ''))
         if parsed_scheme not in packages:
           packages.append(parsed_scheme)
 

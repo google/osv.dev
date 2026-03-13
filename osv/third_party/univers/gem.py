@@ -292,7 +292,7 @@ class GemVersion:
         Return True if this is considered as a prerelease version.
         A version is considered a prerelease if it contains a letter.
         """
-        return any(not str(s).isdigit() for s in self.segments)
+        return any(not str(s).isdecimal() for s in self.segments)
 
     @property
     def segments(self):
@@ -312,7 +312,7 @@ class GemVersion:
         find_segments = re.compile(r"[0-9]+|[a-z]+", re.IGNORECASE).findall
         segments = []
         for seg in find_segments(self.version):
-            if seg.isdigit():
+            if seg.isdecimal():
                 seg = int(seg)
             segments.append(seg)
         return tuple(segments)

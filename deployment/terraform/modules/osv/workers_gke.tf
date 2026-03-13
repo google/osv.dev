@@ -140,7 +140,7 @@ resource "google_container_node_pool" "importer_pool" {
   }
 
   node_config {
-    machine_type    = "n2-highmem-2"
+    machine_type    = "n2-highmem-4"
     disk_type       = "pd-ssd"
     disk_size_gb    = 64
     local_ssd_count = 1
@@ -181,5 +181,5 @@ resource "google_compute_disk" "gitter_disk" {
   name    = "gitter-disk"
   type    = "pd-ssd"
   zone    = google_container_cluster.workers.location
-  size    = 2048
+  size    = 4096
 }

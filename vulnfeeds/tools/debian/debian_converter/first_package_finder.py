@@ -70,8 +70,9 @@ def retrieve_codename_to_version() -> pd.DataFrame:
   with request.urlopen(DEBIAN_RELEASE_VERSIONS_URL) as csv:
     df = pd.read_csv(csv, dtype=str)
     # `series` appears to be `codename` but with no caps
-    df['sources'] = ''
-    df['version'].fillna(df['series'], inplace=True)
+    df['sources'] = None
+    df['sources'] = df['sources'].astype(object)
+    df['version'] = df['version'].fillna(df['series'])
     # Set `release` to `created` if not yet released
     df['release'] = df['release'].fillna(df['created'])
     codename_to_version = df.set_index('series')
@@ -148,6 +149,8 @@ def get_first_package_version(first_pkg_data: pd.DataFrame, package_name: str,
                               release_name: str) -> str:
   """Get first package version"""
   try:
+    # TODO: this needs to be unwrapped (e.g. .sources[0][package_name])
+    # as it's wrapped in a list when inserted into the dataframe.
     return first_pkg_data.loc[release_name].sources[package_name]
   except KeyError:
     # The package is not added when the image is first seen.

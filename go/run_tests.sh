@@ -3,4 +3,4 @@
 go test ./...
 
 # Run the validation for the go/python datastore models
-cd ./osv/models/internal/validate/ && ./run_validate.sh
+cd ./internal/database/datastore/internal/validate/ && ./run_validate.sh

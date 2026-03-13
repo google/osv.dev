@@ -26,6 +26,8 @@ To contribute, we will need to know the following information:
 ```
 The endpoint may contain more information, but at a minimum it must contain the ID and modified date of each vulnerability.
 
+This endpoints must be configured to allow both HEAD and GET requests, with Last-Modified metadata provided to reduce unnecessary requests and traffic. 
+
 ### 2. The base url of the endpoints: 
 This is the base url for which the full, individual vulnerability endpoints will be appended to.
 

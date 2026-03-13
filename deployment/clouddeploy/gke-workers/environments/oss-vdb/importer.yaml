@@ -14,20 +14,3 @@ spec:
               value: oss-vdb
             - name: OSV_VULNERABILITIES_BUCKET
               value: osv-vulnerabilities
-            args:
-              - "--ssh_key_public=/secrets/ssh.pub"
-              - "--ssh_key_private=/secrets/ssh"
-              - "--public_log_bucket=osv-public-import-logs"
-            volumeMounts:
-              - mountPath: "/secrets"
-                name: "secrets"
-          volumes:
-          - name: secrets
-            secret:
-              items:
-              - key: ssh
-                mode: 384
-                path: ssh
-              - key: ssh.pub
-                path: ssh.pub
-              secretName: secrets

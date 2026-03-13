@@ -24,6 +24,24 @@ class PackagistEcosystemTest(vcr.unittest.VCRTestCase):
   _TEST_DATA_DIR = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'testdata')
 
+  def test_coarse_version(self):
+    """Test coarse_version."""
+    ecosystem = ecosystems.get('Packagist')
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00000001.00000000.00000000',
+                     ecosystem.coarse_version('1.0.0-alpha'))
+    self.assertEqual('00:00000001.00000000.00000000',
+                     ecosystem.coarse_version('1.0.0-p1'))
+    self.assertEqual('00:00000004.00000003.00000002',
+                     ecosystem.coarse_version('4.3-2RC1'))
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1+.+2-_-3'))
+    self.assertEqual('00:00000008.99999999.99999999',
+                     ecosystem.coarse_version('8.p2'))
+    self.assertEqual('00:99999999.99999999.99999999',
+                     ecosystem.coarse_version('pl'))
+
   def test_packagist(self):
     """Test Packagist."""
     ecosystem = ecosystems.get('Packagist')

@@ -48,3 +48,17 @@ class PyPIEcosystemTest(vcr.unittest.VCRTestCase):
         ecosystem.sort_key('1.10.0'), ecosystem.sort_key('1.2.0'))
     self.assertLessEqual(
         ecosystem.sort_key('1.2.0'), ecosystem.sort_key('1.10.0'))
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = ecosystems.get('PyPI')
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00002020.00000000.00000000',
+                     ecosystem.coarse_version('0!2020.post1'))
+    self.assertEqual('02:00000001.00000002.00000003',
+                     ecosystem.coarse_version('2!1.2.3'))
+    self.assertEqual('99:99999999.99999999.99999999',
+                     ecosystem.coarse_version('100!1.0.0'))
+    self.assertEqual('00:00000000.00000000.00000000',
+                     ecosystem.coarse_version('1.foobar'))

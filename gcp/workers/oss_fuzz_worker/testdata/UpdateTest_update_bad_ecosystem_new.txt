@@ -1,0 +1,6 @@
+{   'details': 'Blah blah blah\nBlah\n',
+    'id': 'OSV-129',
+    'modified': '3000-01-01T00:00:00Z',
+    'published': '3000-01-01T00:00:00Z',
+    'references': [{'type': 'WEB', 'url': 'https://ref.com/ref'}],
+    'summary': 'A vulnerability'}

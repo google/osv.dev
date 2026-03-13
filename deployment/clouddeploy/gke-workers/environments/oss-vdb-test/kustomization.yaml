@@ -24,3 +24,4 @@ patches:
 - path: recoverer.yaml
 - path: record-checker.yaml
 - path: custommetrics.yaml
+- path: gitter.yaml

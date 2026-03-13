@@ -25,15 +25,17 @@ spec:
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
-            securityContext:
-              privileged: true
+              - name: IMPORT_TRACE_SAMPLE_RATE # for the overall importer trace
+                value: "1.0"
+              - name: TRACE_SAMPLE_RATE # for the individual vulnerability entries
+                value: "0.05"
             resources:
               requests:
                 cpu: "1"
-                memory: "8G"
+                memory: "24G"
               limits:
-                cpu: "1"
-                memory: "16G"
+                cpu: "2"
+                memory: "32G"
           nodeSelector:
             cloud.google.com/gke-nodepool: importer-pool
           restartPolicy: Never

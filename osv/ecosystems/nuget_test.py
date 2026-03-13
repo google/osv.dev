@@ -18,6 +18,7 @@
 """NuGet ecosystem helper tests."""
 
 import unittest
+
 import vcr.unittest
 import warnings
 
@@ -91,6 +92,22 @@ class NuGetVersionTest(unittest.TestCase):
     """Test version >=/<=."""
     self.check_order(self.assertGreaterEqual, '1.10.0', '1.2.0')
     self.check_order(self.assertLessEqual, '1.2.0', '1.10.0')
+
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = nuget.NuGet()
+    self.assertEqual('00:00000000.00000000.00000000',
+                     ecosystem.coarse_version('0'))
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3.5'))
+    self.assertEqual('00:00000010.00000020.00000030',
+                     ecosystem.coarse_version('10.20.30-alpha.1'))
+    self.assertEqual('00:00000000.00000002.00000000',
+                     ecosystem.coarse_version('0.2.0.1+a'))
+    self.assertEqual('00:00000000.00000000.00000099',
+                     ecosystem.coarse_version('0.0.99.10-pre+b'))
+    self.assertEqual('00:00000002.99999999.99999999',
+                     ecosystem.coarse_version('2.100000000.1.1'))
 
 
 class NuGetEcosystemTest(vcr.unittest.VCRTestCase):

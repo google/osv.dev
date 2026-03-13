@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/cves"
+	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -19,8 +20,8 @@ type LinuxVersionExtractor struct {
 
 var _ VersionExtractor = &LinuxVersionExtractor{}
 
-// handleAffected takes an array of cves.Affected and handles how to extract them
-func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []cves.Affected, metrics *ConversionMetrics) bool {
+// handleAffected takes an array of models.Affected and handles how to extract them
+func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []models.Affected, metrics *models.ConversionMetrics) bool {
 	hasGit := false
 	gotVersions := false
 	for _, cveAff := range affected {
@@ -41,15 +42,15 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 			hasGit = true
 		}
 		aff := createLinuxAffected(versionRanges, versionType, cveAff.Repo)
-		metrics.AddSource(VersionSourceAffected)
-		addAffected(v, aff, metrics)
+		metrics.AddSource(models.VersionSourceAffected)
+		conversion.AddAffected(v, aff, metrics)
 	}
 
 	return gotVersions
 }
 
 // ExtractVersions for LinuxVersionExtractor.
-func (l *LinuxVersionExtractor) ExtractVersions(cve cves.CVE5, v *vulns.Vulnerability, metrics *ConversionMetrics, _ []string) {
+func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, _ []string) {
 	gotVersions := l.handleAffected(v, cve.Containers.CNA.Affected, metrics)
 
 	if !gotVersions {
@@ -88,7 +89,7 @@ func createLinuxAffected(versionRanges []*osvschema.Range, versionType VersionRa
 // of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
 // considered affected by default, and only unaffected versions are listed.
 // It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics) (ranges []*osvschema.Range, versType VersionRangeType) {
+func findInverseAffectedRanges(cveAff models.Affected, metrics *models.ConversionMetrics) (ranges []*osvschema.Range, versType VersionRangeType) {
 	var introduced []string
 	fixed := make([]string, 0, len(cveAff.Versions))
 	for _, vers := range cveAff.Versions {
@@ -135,7 +136,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics)
 	// Create ranges by pairing sorted introduced and fixed versions.
 	for index, f := range fixed {
 		if index < len(introduced) {
-			ranges = append(ranges, cves.BuildVersionRange(introduced[index], "", f))
+			ranges = append(ranges, conversion.BuildVersionRange(introduced[index], "", f))
 			metrics.AddNote("Introduced from version value - %s", introduced[index])
 			metrics.AddNote("Fixed from version value - %s", f)
 		}
@@ -149,7 +150,7 @@ func findInverseAffectedRanges(cveAff cves.Affected, metrics *ConversionMetrics)
 	return nil, VersionRangeTypeUnknown
 }
 
-func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected cves.Affected, metrics *ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
+func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 	var versionRanges []*osvschema.Range
 	for _, vers := range affected.Versions {
@@ -164,14 +165,14 @@ func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected cves.Affected,
 		metrics.AddNote("Only version exists")
 
 		if currentVersionType == VersionRangeTypeGit {
-			versionRanges = append(versionRanges, cves.BuildVersionRange(vers.Version, "", ""))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange(vers.Version, "", ""))
 			continue
 		}
 
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, cves.BuildVersionRange("0", vers.Version, ""))
-			metrics.Notes = append(metrics.Notes, fmt.Sprintf("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version))
+			versionRanges = append(versionRanges, conversion.BuildVersionRange("0", vers.Version, ""))
+			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}
 

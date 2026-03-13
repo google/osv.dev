@@ -113,6 +113,22 @@ class PubVersionTest(unittest.TestCase):
     # The implementation incorrectly assumes "1.0.0-a..b" == "1.0.0-a.-.b"
     # I have decided that this extreme edge case is not worth fixing.
 
+  def test_coarse_version(self):
+    """Test coarse_version"""
+    ecosystem = pub.Pub()
+    self.assertEqual('00:00000000.00000000.00000000',
+                     ecosystem.coarse_version('0'))
+    self.assertEqual('00:00000001.00000002.00000003',
+                     ecosystem.coarse_version('1.2.3'))
+    self.assertEqual('00:00000010.00000020.00000030',
+                     ecosystem.coarse_version('10.20.30-alpha.1'))
+    self.assertEqual('00:00000000.00000002.00000000',
+                     ecosystem.coarse_version('0.2.0+a'))
+    self.assertEqual('00:00000000.00000000.00000099',
+                     ecosystem.coarse_version('0.0.99-pre+b'))
+    self.assertEqual('00:00000002.99999999.99999999',
+                     ecosystem.coarse_version('2.100000000.1'))
+
 
 class PubEcosystemTest(vcr.unittest.VCRTestCase):
   """Pub ecosystem helper tests."""

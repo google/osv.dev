@@ -74,8 +74,8 @@ func TestBuildCommitGraph(t *testing.T) {
 		t.Errorf("expected 3 new commits, got %d", len(newCommits))
 	}
 
-	if len(r.commitDetails) != 3 {
-		t.Errorf("expected 3 commits with details, got %d", len(r.commitDetails))
+	if len(r.commits) != 3 {
+		t.Errorf("expected 3 commits, got %d", len(r.commits))
 	}
 
 	// 2 tags + main branch
@@ -100,10 +100,10 @@ func TestCalculatePatchIDs(t *testing.T) {
 	}
 
 	// Verify all commits have patch IDs
-	for _, hash := range newCommits {
-		details := r.commitDetails[hash]
-		if details.PatchID == [20]byte{} {
-			t.Errorf("missing patch ID for commit %s", printSHA1(hash))
+	for _, idx := range newCommits {
+		commit := r.commits[idx]
+		if commit.PatchID == [20]byte{} {
+			t.Errorf("missing patch ID for commit %s", printSHA1(commit.Hash))
 		}
 	}
 }
@@ -131,9 +131,9 @@ func TestLoadRepository(t *testing.T) {
 	}
 
 	// Check that the two sets of Patch IDs are the same
-	for hash, details := range r1.commitDetails {
-		if details.PatchID != r2.commitDetails[hash].PatchID {
-			t.Errorf("patch ID mismatch for commit %s", printSHA1(hash))
+	for idx, commit := range r1.commits {
+		if commit.PatchID != r2.commits[idx].PatchID {
+			t.Errorf("patch ID mismatch for commit %s", printSHA1(commit.Hash))
 		}
 	}
 }
@@ -194,33 +194,40 @@ func TestExpandByCherrypick(t *testing.T) {
 	p1 := decodeSHA1("1111")
 
 	// Setup commit details
-	repo.commitDetails[h1] = &Commit{Hash: h1, PatchID: p1}
-	repo.commitDetails[h2] = &Commit{Hash: h2}
-	repo.commitDetails[h3] = &Commit{Hash: h3, PatchID: p1} // h3 has the same patch ID as h1 should be cherry picked
+	idx1 := repo.getOrCreateIndex(h1)
+	idx2 := repo.getOrCreateIndex(h2)
+	idx3 := repo.getOrCreateIndex(h3)
+
+	repo.commits[idx1].PatchID = p1
+	repo.commits[idx3].PatchID = p1 // h3 has the same patch ID as h1 should be cherry picked
 
 	// Setup patch ID map
-	repo.patchIDToCommits[p1] = []SHA1{h1, h3}
+	repo.patchIDToCommits[p1] = []int{idx1, idx3}
 
 	tests := []struct {
 		name     string
-		input    []SHA1
+		input    []int
 		expected []SHA1
 	}{
 		{
 			name:     "Expand single commit with cherry-pick",
-			input:    []SHA1{h1},
+			input:    []int{idx1},
 			expected: []SHA1{h1, h3},
 		},
 		{
 			name:     "No expansion for commit without cherry-pick",
-			input:    []SHA1{h2},
+			input:    []int{idx2},
 			expected: []SHA1{h2},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := repo.expandByCherrypick(tt.input)
+			gotIdxs := repo.expandByCherrypick(tt.input)
+			var got []SHA1
+			for _, idx := range gotIdxs {
+				got = append(got, repo.commits[idx].Hash)
+			}
 
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
 				t.Errorf("expandByCherrypick() mismatch (-want +got):\n%s", diff)
@@ -250,22 +257,14 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 	hH := decodeSHA1("acac")
 
 	// Setup graph (Parent -> Children)
-	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC, hH}
-	repo.commitGraph[hC] = []SHA1{hD, hF}
-	repo.commitGraph[hD] = []SHA1{hE}
-	repo.commitGraph[hF] = []SHA1{hG}
-	repo.commitGraph[hH] = []SHA1{hD}
-
-	// Setup details
-	repo.commitDetails[hA] = &Commit{Hash: hA}
-	repo.commitDetails[hB] = &Commit{Hash: hB}
-	repo.commitDetails[hC] = &Commit{Hash: hC}
-	repo.commitDetails[hD] = &Commit{Hash: hD}
-	repo.commitDetails[hE] = &Commit{Hash: hE}
-	repo.commitDetails[hF] = &Commit{Hash: hF}
-	repo.commitDetails[hG] = &Commit{Hash: hG}
-	repo.commitDetails[hH] = &Commit{Hash: hH}
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hB, hH)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hC, hF)
+	repo.addEdgeForTest(hD, hE)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hH, hD)
 
 	tests := []struct {
 		name         string
@@ -371,22 +370,14 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 	hH := decodeSHA1("acac")
 
 	// Setup graph (Parent -> Children)
-	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC, hH}
-	repo.commitGraph[hC] = []SHA1{hD, hF}
-	repo.commitGraph[hD] = []SHA1{hE}
-	repo.commitGraph[hF] = []SHA1{hG}
-	repo.commitGraph[hH] = []SHA1{hD}
-
-	// Setup details
-	repo.commitDetails[hA] = &Commit{Hash: hA}
-	repo.commitDetails[hB] = &Commit{Hash: hB}
-	repo.commitDetails[hC] = &Commit{Hash: hC}
-	repo.commitDetails[hD] = &Commit{Hash: hD}
-	repo.commitDetails[hE] = &Commit{Hash: hE}
-	repo.commitDetails[hF] = &Commit{Hash: hF}
-	repo.commitDetails[hG] = &Commit{Hash: hG}
-	repo.commitDetails[hH] = &Commit{Hash: hH}
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hB, hH)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hC, hF)
+	repo.addEdgeForTest(hD, hE)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hH, hD)
 
 	tests := []struct {
 		name         string
@@ -493,22 +484,14 @@ func TestAffected_Combined(t *testing.T) {
 	hH := decodeSHA1("acac")
 
 	// Setup graph (Parent -> Children)
-	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC, hH}
-	repo.commitGraph[hC] = []SHA1{hD, hF}
-	repo.commitGraph[hD] = []SHA1{hE}
-	repo.commitGraph[hF] = []SHA1{hG}
-	repo.commitGraph[hH] = []SHA1{hD}
-
-	// Setup details
-	repo.commitDetails[hA] = &Commit{Hash: hA}
-	repo.commitDetails[hB] = &Commit{Hash: hB}
-	repo.commitDetails[hC] = &Commit{Hash: hC}
-	repo.commitDetails[hD] = &Commit{Hash: hD}
-	repo.commitDetails[hE] = &Commit{Hash: hE}
-	repo.commitDetails[hF] = &Commit{Hash: hF}
-	repo.commitDetails[hG] = &Commit{Hash: hG}
-	repo.commitDetails[hH] = &Commit{Hash: hH}
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hB, hH)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hC, hF)
+	repo.addEdgeForTest(hD, hE)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hH, hD)
 
 	tests := []struct {
 		name         string
@@ -590,26 +573,25 @@ func TestAffected_Cherrypick(t *testing.T) {
 	c2 := decodeSHA1("c2")
 
 	// Setup graph (Parent -> Children)
-	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC}
-	repo.commitGraph[hC] = []SHA1{hD}
-	repo.commitGraph[hE] = []SHA1{hF}
-	repo.commitGraph[hF] = []SHA1{hG}
-	repo.commitGraph[hG] = []SHA1{hH}
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hE, hF)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hG, hH)
 
 	// Setup PatchID map for cherrypicking
-	repo.patchIDToCommits[c1] = []SHA1{hA, hE}
-	repo.patchIDToCommits[c2] = []SHA1{hC, hG}
+	idxA := repo.getOrCreateIndex(hA)
+	idxE := repo.getOrCreateIndex(hE)
+	repo.patchIDToCommits[c1] = []int{idxA, idxE}
+	idxC := repo.getOrCreateIndex(hC)
+	idxG := repo.getOrCreateIndex(hG)
+	repo.patchIDToCommits[c2] = []int{idxC, idxG}
 
-	// Setup details
-	repo.commitDetails[hA] = &Commit{Hash: hA, PatchID: c1}
-	repo.commitDetails[hB] = &Commit{Hash: hB, Parents: []SHA1{hA}}
-	repo.commitDetails[hC] = &Commit{Hash: hC, Parents: []SHA1{hB}, PatchID: c2}
-	repo.commitDetails[hD] = &Commit{Hash: hD, Parents: []SHA1{hC}}
-	repo.commitDetails[hE] = &Commit{Hash: hE, PatchID: c1}
-	repo.commitDetails[hF] = &Commit{Hash: hF, Parents: []SHA1{hE}}
-	repo.commitDetails[hG] = &Commit{Hash: hG, Parents: []SHA1{hF}, PatchID: c2}
-	repo.commitDetails[hH] = &Commit{Hash: hH, Parents: []SHA1{hG}}
+	repo.commits[idxA].PatchID = c1
+	repo.commits[idxE].PatchID = c1
+	repo.commits[idxC].PatchID = c2
+	repo.commits[idxG].PatchID = c2
 
 	tests := []struct {
 		name            string
@@ -693,22 +675,13 @@ func TestLimit(t *testing.T) {
 	hH := decodeSHA1("acac")
 
 	// Setup graph (Parent -> Children)
-	repo.commitGraph[hA] = []SHA1{hB}
-	repo.commitGraph[hB] = []SHA1{hC, hF}
-	repo.commitGraph[hC] = []SHA1{hD}
-	repo.commitGraph[hD] = []SHA1{hE}
-	repo.commitGraph[hF] = []SHA1{hG}
-	repo.commitGraph[hG] = []SHA1{hH}
-
-	// Setup details
-	repo.commitDetails[hA] = &Commit{Hash: hA}
-	repo.commitDetails[hB] = &Commit{Hash: hB, Parents: []SHA1{hA}}
-	repo.commitDetails[hC] = &Commit{Hash: hC, Parents: []SHA1{hB}}
-	repo.commitDetails[hD] = &Commit{Hash: hD, Parents: []SHA1{hC}}
-	repo.commitDetails[hE] = &Commit{Hash: hE, Parents: []SHA1{hD}}
-	repo.commitDetails[hF] = &Commit{Hash: hF, Parents: []SHA1{hB}}
-	repo.commitDetails[hG] = &Commit{Hash: hG, Parents: []SHA1{hF}}
-	repo.commitDetails[hH] = &Commit{Hash: hH, Parents: []SHA1{hG}}
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hB, hF)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hD, hE)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hG, hH)
 
 	tests := []struct {
 		name       string

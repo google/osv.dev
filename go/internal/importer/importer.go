@@ -160,12 +160,10 @@ func RunDeletions(ctx context.Context, config Config) error {
 var reconcileSkipSources = []string{
 	// Upstream records are completely deprecated and archived now.
 	"uvi",
-	// Currently an upstream issue that we can't fix.
+	// Currently an upstream issue that we can't fix. (https://github.com/AlmaLinux/osv-database/issues/363)
 	"almalinux-alsa",
-
-	// "oss-fuzz",
-	// "debian-cve",
-	// "cve-osv",
+	// Has a bunch of 404s
+	"openeuler",
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
@@ -526,7 +524,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			// If the record is older than the last update time, skip it
 			// However, since we are reconciling, we want to add some leniency
 			// to account for the fact that the record might have been updated
-			// between the time we last imported it normally and now 
+			// between the time we last imported it normally and now
 			// (e.g. the worker might still be working on it).
 			if item.LastUpdated.Add(ReconcileLeniencyDuration).After(modified) {
 				return

@@ -3100,7 +3100,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},
@@ -3633,7 +3640,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names#01 - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},

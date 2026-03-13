@@ -155,8 +155,7 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
     osv_2023_890 = self._get('OSV-2023-890')
 
-    self.assert_results_equal({'vulns': [osv_2023_890]},
-                              response.json())
+    self.assert_results_equal({'vulns': [osv_2023_890]}, response.json())
 
   def test_query_version(self):
     """Test querying by version."""

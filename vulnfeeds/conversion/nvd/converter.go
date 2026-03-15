@@ -19,6 +19,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var ErrNoRanges = errors.New("no ranges")
@@ -29,6 +30,7 @@ var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
 	CPEs := cves.CPEs(cve)
 	metrics.CPEs = CPEs
+	refs := conversion.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
@@ -59,14 +61,19 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	successfulRepos := make(map[string]bool)
-	var resolvedRanges, unresolvedRanges []*osvschema.Range
+	var resolvedRanges []*osvschema.Range
+	var unresolvedRanges []models.RangeWithMetadata
 
 	// Exit early if there are no repositories
 	if len(repos) == 0 {
 		metrics.SetOutcome(models.NoRepos)
 		metrics.UnresolvedRangesCount += len(cpeRanges)
-		affected := MergeRangesAndCreateAffected(resolvedRanges, cpeRanges, nil, nil, metrics)
-		v.Affected = append(v.Affected, affected)
+
+		unresolvedDatabaseSpecificField := createUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
+		if unresolvedDatabaseSpecificField != nil {
+			v.DatabaseSpecific = unresolvedDatabaseSpecificField
+		}
+
 		// Exit early
 		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 
@@ -85,7 +92,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// Extract Commits
-	commits, err := cves.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	commits, err := cves.ExtractCommitsFromRefs(refs, http.DefaultClient)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
 	}
@@ -122,12 +129,20 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Use the successful repos for more efficient merging.
 	keys := slices.Collect(maps.Keys(successfulRepos))
-	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
+	groupedRanges := conversion.GroupRanges(resolvedRanges)
+	affected := MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected)
-
+	
 	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
 		return metrics.Outcome
 	}
+	unresolvedDatabaseSpecificField := createUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
+	// TODO: this should be if v.DatabaseSpecific != nil, initalise, otherwise add it.
+	if unresolvedDatabaseSpecificField != nil {
+		v.DatabaseSpecific = unresolvedDatabaseSpecificField
+	}
+
+	
 
 	outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
 
@@ -325,11 +340,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 //
 // Arguments:
 //   - resolvedRanges: A slice of resolved OSV ranges to be merged.
-//   - unresolvedRanges: A slice of unresolved OSV ranges to be included in the database specific field.
 //   - commits: A slice of affected commits to be converted into events and added to ranges.
 //   - successfulRepos: A slice of repository URLs that were successfully processed.
 //   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
-func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
+func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
 	if len(resolvedRanges) > 0 {
@@ -385,14 +399,6 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 
 	newAffected := &osvschema.Affected{
 		Ranges: newResolvedRanges,
-	}
-
-	if len(unresolvedRanges) > 0 {
-		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-		if err != nil {
-			metrics.AddNote("failed to make database specific: %v", err)
-		}
-		newAffected.DatabaseSpecific = databaseSpecific
 	}
 
 	return newAffected
@@ -496,7 +502,7 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 }
 
 // processRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []*osvschema.Range, []string) {
+func processRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
@@ -517,4 +523,28 @@ func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.Co
 	metrics.VersionSources = append(metrics.VersionSources, source)
 
 	return r, un, sR
+}
+
+func createUnresolvedDatabaseSpecificField(unresolvedRanges []models.RangeWithMetadata, metrics *models.ConversionMetrics) *structpb.Struct {
+	if len(unresolvedRanges) > 0 {
+		var unresolvedRangesMap []map[string]any
+		for _, ur := range unresolvedRanges {
+			urMap := map[string]any{
+				"range": ur.Range,
+				"metadata": map[string]any{
+					"cpe": ur.Metadata.CPE,
+				},
+			}
+			unresolvedRangesMap = append(unresolvedRangesMap, urMap)
+		}
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{
+			"unresolved_ranges": unresolvedRangesMap,
+		})
+		if err != nil {
+			metrics.AddNote("failed to make database specific: %v", err)
+		}
+		return databaseSpecific
+	}
+
+	return nil
 }

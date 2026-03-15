@@ -228,10 +228,16 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 			want: []any{"a", "b", "c", "d"},
 		},
 		{
-			name:    "List and string mismatch",
-			val1:    []any{"a", "b"},
-			val2:    "c",
-			wantErr: true,
+			name: "List and string",
+			val1: []any{"a", "b"},
+			val2: "c",
+			want: []any{"a", "b", "c"},
+		},
+		{
+			name: "String and list",
+			val1: "a",
+			val2: []any{"b", "c"},
+			want: []any{"a", "b", "c"},
 		},
 		{
 			name: "Merge maps",
@@ -268,7 +274,7 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 			name: "Merge same strings",
 			val1: "value1",
 			val2: "value1",
-			want: "value1",
+			want: []any{"value1"},
 		},
 		{
 			name: "Merge different strings",
@@ -304,13 +310,13 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := mergeDatabaseSpecificValues(tt.val1, tt.val2)
+			got, err := MergeDatabaseSpecificValues(tt.val1, tt.val2)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("mergeDatabaseSpecificValues() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MergeDatabaseSpecificValues() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && !cmp.Equal(got, tt.want) {
-				t.Errorf("mergeDatabaseSpecificValues() mismatch (-want +got):\n%s", cmp.Diff(tt.want, got))
+				t.Errorf("MergeDatabaseSpecificValues() mismatch (-want +got):\n%s", cmp.Diff(tt.want, got))
 			}
 		})
 	}

@@ -237,7 +237,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 			},
 		},
 		{
-			name: "Different DatabaseSpecific (non-versions) - merge, second gets overwritten",
+			name: "Different DatabaseSpecific (non-versions) - merge properly",
 			affected: []*osvschema.Affected{
 				{
 					Ranges: []*osvschema.Range{
@@ -280,7 +280,12 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"foo": structpb.NewStringValue("bar"),
+									"foo": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("bar"),
+											structpb.NewStringValue("baz"),
+										},
+									}),
 								},
 							},
 						},

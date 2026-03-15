@@ -16,9 +16,15 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
+	"google.golang.org/api/option"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -26,6 +32,8 @@ type SyncTask struct {
 	FilePath string
 	VulnID   string
 }
+
+var osvBucketName = ""
 
 func main() {
 	logger.InitGlobalLogger()
@@ -45,11 +53,24 @@ func main() {
 		project = "oss-vdb-test"
 	}
 
+	if project == "oss-vdb" {
+		osvBucketName = "osv-vulnerabilities"
+	} else {
+		osvBucketName = "osv-test-vulnerabilities"
+	}
+
 	datastoreClient, err := datastore.NewClient(ctx, project)
 	if err != nil {
 		logger.FatalContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 	}
 	defer datastoreClient.Close()
+
+	// We are posssibly reading a lot of vulnerabilities from GCS, so disable telemetry (disables trace spans).
+	storageClient, err := storage.NewClient(ctx, option.WithTelemetryDisabled())
+	if err != nil {
+		logger.FatalContext(ctx, "Failed to create GCS client", slog.Any("error", err))
+	}
+	gcsProvider := clients.NewGCSStorageProvider(storageClient)
 
 	taskCh := make(chan SyncTask, *numWorkers)
 	var wg sync.WaitGroup
@@ -65,7 +86,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			worker(ctx, taskCh, datastoreClient, *dryRun)
+			worker(ctx, taskCh, datastoreClient, gcsProvider, *dryRun)
 		}()
 	}
 
@@ -106,13 +127,13 @@ func main() {
 	logger.InfoContext(ctx, "Sync completed", slog.Int("processed_files", processed))
 }
 
-func worker(ctx context.Context, taskCh <-chan SyncTask, client *datastore.Client, dryRun bool) {
+func worker(ctx context.Context, taskCh <-chan SyncTask, client *datastore.Client, gcsClient *clients.GCSStorageProvider, dryRun bool) {
 	for task := range taskCh {
-		checkAndUpdate(ctx, client, task, dryRun)
+		checkAndUpdate(ctx, client, task, gcsClient, dryRun)
 	}
 }
 
-func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask, dryRun bool) {
+func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask, gcsClient *clients.GCSStorageProvider, dryRun bool) {
 	file, err := os.Open(task.FilePath)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to open file", slog.Any("error", err), slog.String("file", task.FilePath))
@@ -172,7 +193,28 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 		if !dryRun {
 			// Update Datastore
 			vuln.Modified = fileModifiedTime
-
+			bkt := gcsClient.Bucket(osvBucketName)
+			obj, err := bkt.ReadObject(ctx, "all/pb/"+task.VulnID+".pb")
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to read object", slog.Any("error", err), slog.String("id", task.VulnID))
+				return
+			}
+			// Parse proto obj
+			var vulnProto osvschema.Vulnerability
+			if err := proto.Unmarshal(obj, &vulnProto); err != nil {
+				logger.ErrorContext(ctx, "Failed to unmarshal proto", slog.Any("error", err), slog.String("id", task.VulnID))
+				return
+			}
+			vulnProto.Modified = timestamppb.New(fileModifiedTime)
+			data, err := proto.Marshal(&vulnProto)
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to marshal proto", slog.Any("error", err), slog.String("id", task.VulnID))
+				return
+			}
+			if err := bkt.WriteObject(ctx, "all/pb/"+task.VulnID+".pb", data, &clients.WriteOptions{CustomTime: &fileModifiedTime}); err != nil {
+				logger.ErrorContext(ctx, "Failed to write object", slog.Any("error", err), slog.String("id", task.VulnID))
+				return
+			}
 			if _, err := client.Put(ctx, key, &vuln); err != nil {
 				logger.ErrorContext(ctx, "Failed to update Vulnerability", slog.Any("error", err), slog.String("id", task.VulnID))
 			} else {

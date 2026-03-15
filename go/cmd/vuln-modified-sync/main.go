@@ -172,7 +172,6 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 		if !dryRun {
 			// Update Datastore
 			vuln.Modified = fileModifiedTime
-			vuln.ModifiedRaw = fileModifiedTime
 
 			if _, err := client.Put(ctx, key, &vuln); err != nil {
 				logger.ErrorContext(ctx, "Failed to update Vulnerability", slog.Any("error", err), slog.String("id", task.VulnID))

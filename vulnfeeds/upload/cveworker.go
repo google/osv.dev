@@ -41,6 +41,7 @@ func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix
 		logger.Error("Failed to write OSV file", slog.Any("err", err), slog.String("path", filePath))
 		return false
 	}
+
 	return true
 }
 

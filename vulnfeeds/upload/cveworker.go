@@ -33,6 +33,7 @@ const (
 )
 
 // writeToDisk writes the vulnerability to a local file.
+// It returns true if the file was written successfully, and false otherwise.
 func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) bool {
 	filename := v.GetId() + ".json"
 	filePath := path.Join(outputPrefix, filename)
@@ -46,6 +47,8 @@ func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix
 }
 
 // uploadToGCS uploads the vulnerability to a GCS bucket.
+// It returns true if the object was uploaded successfully (either it did not exist or the hash differed),
+// and false if the upload was skipped (e.g., hash matches) or an error occurred.
 func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) bool {
 	vulnID := v.GetId()
 	filename := vulnID + ".json"

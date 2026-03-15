@@ -184,7 +184,8 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 		return
 	}
 
-	if fileModifiedTime.After(vuln.Modified) {
+	// Add 1 minute to file modified time to avoid any precision issues
+	if fileModifiedTime.Add(time.Minute * 1).After(vuln.Modified) {
 		logger.InfoContext(ctx, "File modified time is newer",
 			slog.String("id", task.VulnID),
 			slog.Time("datastore_modified", vuln.Modified),

@@ -216,6 +216,7 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 				logger.ErrorContext(ctx, "Failed to write object", slog.Any("error", err), slog.String("id", task.VulnID))
 				return
 			}
+			logger.InfoContext(ctx, "Successfully updated gcs object", slog.String("id", task.VulnID))
 			if _, err := client.Put(ctx, key, &vuln); err != nil {
 				logger.ErrorContext(ctx, "Failed to update Vulnerability", slog.Any("error", err), slog.String("id", task.VulnID))
 			} else {

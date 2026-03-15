@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path"
@@ -81,7 +82,7 @@ func TestUploadToGCS(t *testing.T) {
 		// Modify the vulnerability to simulate a change in modified time but not content
 		v.Modified = timestamppb.New(time.Now().Add(1 * time.Hour))
 		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
-		if err != ErrUploadSkipped {
+		if !errors.Is(err, ErrUploadSkipped) {
 			t.Errorf("Expected uploadToGCS to return ErrUploadSkipped when hash matches, got %v", err)
 		}
 

@@ -93,6 +93,7 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 		if closeErr := wc.Close(); closeErr != nil {
 			logger.Error("failed to close GCS writer after write error", slog.String("id", vulnID), slog.Any("err", closeErr))
 		}
+
 		return fmt.Errorf("failed to write to GCS object for %s: %w", vulnID, err)
 	}
 

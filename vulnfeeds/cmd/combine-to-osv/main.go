@@ -191,7 +191,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 			baseOSV = cve5
 		}
 
-		if len(baseOSV.GetAffected()) == 0 {
+		if len(baseOSV.GetAffected()) == 0 || !hasRanges(baseOSV.GetAffected()) {
 			// check if part exists.
 			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
 				continue
@@ -202,7 +202,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 
 	// Add any remaining CVEs from NVD that were not in the advisory data.
 	for cveID, nvd := range nvdosv {
-		if len(nvd.GetAffected()) == 0 {
+		if len(nvd.GetAffected()) == 0 || !hasRanges(nvd.GetAffected()) {
 			continue
 		}
 		osvRecords[cveID] = nvd
@@ -362,6 +362,16 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	})
 
 	return combinedAffected
+}
+
+func hasRanges(affected []*osvschema.Affected) bool {
+	for _, a := range affected {
+		if len(a.GetRanges()) > 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // getRangeBoundaryVersions extracts the introduced and fixed versions from a slice of OSV events.

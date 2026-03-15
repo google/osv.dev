@@ -9,6 +9,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
+//nolint:recvcheck
 type ConversionOutcome int
 
 const (
@@ -53,7 +54,6 @@ func (c ConversionOutcome) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }
 
-//nolint:recvcheck // UnmarshalJSON requires a pointer receiver
 func (c *ConversionOutcome) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {

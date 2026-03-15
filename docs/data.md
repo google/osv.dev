@@ -36,6 +36,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY 4.0](https://github.com/golang/vulndb#license))
 -   [Rust Advisory Database](https://github.com/RustSec/advisory-db)
     ([CC0 1.0](https://github.com/rustsec/advisory-db/blob/main/LICENSE.txt))
+-   [Drupal Advisory Database](https://github.com/DrupalSecurityTeam/drupal-advisory-database)
+    ([MIT](https://github.com/DrupalSecurityTeam/drupal-advisory-database/blob/main/LICENSE))
 -   [Global Security Database](https://github.com/cloudsecurityalliance/gsd-database)
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)

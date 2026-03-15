@@ -32,24 +32,27 @@ const (
 	overrideFolder  = "osv-output-overrides" // location of overrides within bucket
 )
 
+// ErrUploadSkipped indicates that an upload was intentionally skipped because
+// the vulnerability payload is unchanged.
+var ErrUploadSkipped = errors.New("upload skipped")
+
 // writeToDisk writes the vulnerability to a local file.
-// It returns true if the file was written successfully, and false otherwise.
-func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) bool {
+// It returns an error if the file could not be written.
+func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) error {
 	filename := v.GetId() + ".json"
 	filePath := path.Join(outputPrefix, filename)
 	err := os.WriteFile(filePath, preModifiedBuf, 0600)
 	if err != nil {
-		logger.Error("Failed to write OSV file", slog.Any("err", err), slog.String("path", filePath))
-		return false
+		return fmt.Errorf("failed to write OSV file at %s: %w", filePath, err)
 	}
 
-	return true
+	return nil
 }
 
 // uploadToGCS uploads the vulnerability to a GCS bucket.
-// It returns true if the object was uploaded successfully (either it did not exist or the hash differed),
-// and false if the upload was skipped (e.g., hash matches) or an error occurred.
-func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) bool {
+// It returns an error if the upload failed, or ErrUploadSkipped if the upload
+// was intentionally avoided (e.g. because the GCS object has a matching hash).
+func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) error {
 	vulnID := v.GetId()
 	filename := vulnID + ".json"
 
@@ -64,12 +67,10 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 	if err == nil {
 		// Object exists, check hash.
 		if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
-			logger.Info("Skipping upload, hash matches", slog.String("id", vulnID))
-			return false
+			return ErrUploadSkipped
 		}
 	} else if !errors.Is(err, storage.ErrObjectNotExist) {
-		logger.Error("failed to get object attributes", slog.String("id", vulnID), slog.Any("err", err))
-		return false
+		return fmt.Errorf("failed to get object attributes for %s: %w", vulnID, err)
 	}
 
 	// Object does not exist or hash differs, upload.
@@ -77,12 +78,10 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 	vuln := vulns.Vulnerability{Vulnerability: v}
 	var buf bytes.Buffer
 	if err := vuln.ToJSON(&buf); err != nil {
-		logger.Error("failed to marshal vulnerability with modified time", slog.String("id", vulnID), slog.Any("err", err))
-		return false
+		return fmt.Errorf("failed to marshal vulnerability with modified time for %s: %w", vulnID, err)
 	}
 	postModifiedBuf := buf.Bytes()
 
-	logger.Info("Uploading", slog.String("id", vulnID))
 	wc := obj.NewWriter(ctx)
 	wc.Metadata = map[string]string{
 		hashMetadataKey: hexHash,
@@ -90,21 +89,18 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 	wc.ContentType = "application/json"
 
 	if _, err := wc.Write(postModifiedBuf); err != nil {
-		logger.Error("failed to write to GCS object", slog.String("id", vulnID), slog.Any("err", err))
 		// Try to close writer even if write failed.
 		if closeErr := wc.Close(); closeErr != nil {
 			logger.Error("failed to close GCS writer after write error", slog.String("id", vulnID), slog.Any("err", closeErr))
 		}
-
-		return false
+		return fmt.Errorf("failed to write to GCS object for %s: %w", vulnID, err)
 	}
 
 	if err := wc.Close(); err != nil {
-		logger.Error("failed to close GCS writer", slog.String("id", vulnID), slog.Any("err", err))
-		return false
+		return fmt.Errorf("failed to close GCS writer for %s: %w", vulnID, err)
 	}
 
-	return true
+	return nil
 }
 
 // handleOverride checks for and applies a vulnerability override if it exists.
@@ -184,17 +180,24 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			preModifiedBuf = buf.Bytes()
 		}
 
-		var success bool
+		var writeErr error
 		if outBkt == nil {
 			// Write to local disk
-			success = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
+			writeErr = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
 		} else {
 			// Upload to GCS
-			success = uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+			writeErr = uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
 		}
 
-		if success && counter != nil {
-			counter.Add(1)
+		if writeErr == nil {
+			logger.Info("Uploaded successfully", slog.String("id", vulnID))
+			if counter != nil {
+				counter.Add(1)
+			}
+		} else if errors.Is(writeErr, ErrUploadSkipped) {
+			logger.Info("Skipping upload, hash matches", slog.String("id", vulnID))
+		} else {
+			logger.Error("Failed to upload/write", slog.String("id", vulnID), slog.Any("err", writeErr))
 		}
 	}
 }

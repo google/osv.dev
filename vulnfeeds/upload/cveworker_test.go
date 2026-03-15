@@ -26,9 +26,9 @@ func TestWriteToDisk(t *testing.T) {
 	}
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
-	success := writeToDisk(v, preModifiedBuf, tempDir)
-	if !success {
-		t.Errorf("Expected writeToDisk to return true, got false")
+	err := writeToDisk(v, preModifiedBuf, tempDir)
+	if err != nil {
+		t.Errorf("Expected writeToDisk to return nil, got %v", err)
 	}
 
 	filePath := path.Join(tempDir, "CVE-2023-1234.json")
@@ -58,9 +58,9 @@ func TestUploadToGCS(t *testing.T) {
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
 	t.Run("Upload new object", func(t *testing.T) {
-		success := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
-		if !success {
-			t.Errorf("Expected uploadToGCS to return true for new object")
+		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		if err != nil {
+			t.Errorf("Expected uploadToGCS to return nil for new object, got %v", err)
 		}
 
 		obj := bkt.Object("CVE-2023-1234.json")
@@ -80,9 +80,9 @@ func TestUploadToGCS(t *testing.T) {
 	t.Run("Skip upload if hash matches", func(t *testing.T) {
 		// Modify the vulnerability to simulate a change in modified time but not content
 		v.Modified = timestamppb.New(time.Now().Add(1 * time.Hour))
-		success := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
-		if success {
-			t.Errorf("Expected uploadToGCS to return false when hash matches")
+		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		if err != ErrUploadSkipped {
+			t.Errorf("Expected uploadToGCS to return ErrUploadSkipped when hash matches, got %v", err)
 		}
 
 		obj := bkt.Object("CVE-2023-1234.json")
@@ -100,9 +100,9 @@ func TestUploadToGCS(t *testing.T) {
 
 	t.Run("Upload if hash differs", func(t *testing.T) {
 		preModifiedBuf2 := []byte(`{"id":"CVE-2023-1234", "summary": "updated"}`)
-		success := uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
-		if !success {
-			t.Errorf("Expected uploadToGCS to return true when hash differs")
+		err := uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
+		if err != nil {
+			t.Errorf("Expected uploadToGCS to return nil when hash differs, got %v", err)
 		}
 
 		obj := bkt.Object("CVE-2023-1234.json")

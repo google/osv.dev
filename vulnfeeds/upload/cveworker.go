@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -32,17 +33,19 @@ const (
 )
 
 // writeToDisk writes the vulnerability to a local file.
-func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) {
+func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) bool {
 	filename := v.GetId() + ".json"
 	filePath := path.Join(outputPrefix, filename)
 	err := os.WriteFile(filePath, preModifiedBuf, 0600)
 	if err != nil {
 		logger.Error("Failed to write OSV file", slog.Any("err", err), slog.String("path", filePath))
+		return false
 	}
+	return true
 }
 
 // uploadToGCS uploads the vulnerability to a GCS bucket.
-func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) {
+func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) bool {
 	vulnID := v.GetId()
 	filename := vulnID + ".json"
 
@@ -58,11 +61,11 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 		// Object exists, check hash.
 		if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
 			logger.Info("Skipping upload, hash matches", slog.String("id", vulnID))
-			return
+			return false
 		}
 	} else if !errors.Is(err, storage.ErrObjectNotExist) {
 		logger.Error("failed to get object attributes", slog.String("id", vulnID), slog.Any("err", err))
-		return
+		return false
 	}
 
 	// Object does not exist or hash differs, upload.
@@ -71,7 +74,7 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 	var buf bytes.Buffer
 	if err := vuln.ToJSON(&buf); err != nil {
 		logger.Error("failed to marshal vulnerability with modified time", slog.String("id", vulnID), slog.Any("err", err))
-		return
+		return false
 	}
 	postModifiedBuf := buf.Bytes()
 
@@ -89,12 +92,15 @@ func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf
 			logger.Error("failed to close GCS writer after write error", slog.String("id", vulnID), slog.Any("err", closeErr))
 		}
 
-		return
+		return false
 	}
 
 	if err := wc.Close(); err != nil {
 		logger.Error("failed to close GCS writer", slog.String("id", vulnID), slog.Any("err", err))
+		return false
 	}
+
+	return true
 }
 
 // handleOverride checks for and applies a vulnerability override if it exists.
@@ -144,7 +150,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 // For GCS uploads, it calculates a hash of the vulnerability (excluding the modified time) and compares it
 // with the existing object's hash. The vulnerability is uploaded only if the hashes differ, with the
 // modified time updated. This prevents updating the modified time for vulnerabilities with no content changes.
-func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string) {
+func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
 		if len(v.GetAffected()) == 0 {
@@ -174,12 +180,17 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			preModifiedBuf = buf.Bytes()
 		}
 
+		var success bool
 		if outBkt == nil {
 			// Write to local disk
-			writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
+			success = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
 		} else {
 			// Upload to GCS
-			uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+			success = uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+		}
+
+		if success && counter != nil {
+			counter.Add(1)
 		}
 	}
 }
@@ -212,13 +223,14 @@ func Upload(
 		}
 	}
 	var wg sync.WaitGroup
+	var successCount atomic.Uint64
 	vulnChan := make(chan *osvschema.Vulnerability, numWorkers)
 
 	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			Worker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath)
+			Worker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath, &successCount)
 		}()
 	}
 
@@ -229,6 +241,7 @@ func Upload(
 	close(vulnChan)
 	wg.Wait()
 	logger.Info("Successfully processed "+jobName, slog.Int("count", len(vulnerabilities)))
+	logger.Info("Successfully uploaded records", slog.Uint64("count", successCount.Load()))
 }
 
 func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {

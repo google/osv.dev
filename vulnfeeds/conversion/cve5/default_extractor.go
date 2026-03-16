@@ -109,8 +109,8 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 
 	if len(unresolvedRanges) > 0 {
-		unresolvedDatabaseSpecificField := conversion.CreateUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
-		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedDatabaseSpecificField); err != nil {
+		unresolvedRangesList := conversion.CreateUnresolvedRanges(unresolvedRanges)
+		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
 			logger.Warn("failed to make database specific: %v", err)
 		}
 	}

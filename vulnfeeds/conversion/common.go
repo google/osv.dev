@@ -464,7 +464,7 @@ func deduplicateList(list []any) []any {
 	return unique
 }
 
-func CreateUnresolvedDatabaseSpecificField(unresolvedRanges []models.RangeWithMetadata, metrics *models.ConversionMetrics) *structpb.Struct {
+func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *structpb.ListValue {
 	if len(unresolvedRanges) > 0 {
 		var unresolvedRangesMap []map[string]any
 		for _, ur := range unresolvedRanges {
@@ -478,14 +478,15 @@ func CreateUnresolvedDatabaseSpecificField(unresolvedRanges []models.RangeWithMe
 			}
 			unresolvedRangesMap = append(unresolvedRangesMap, urMap)
 		}
-		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{
-			"unresolved_ranges": unresolvedRangesMap,
+		
+		ds, err := utility.NewStructpbFromMap(map[string]any{
+			"list": unresolvedRangesMap,
 		})
 		if err != nil {
-			metrics.AddNote("failed to make database specific: %v", err)
+			logger.Warn("failed to convert unresolved ranges to structpb", "err", err)
+			return nil
 		}
-
-		return databaseSpecific
+		return ds.Fields["list"].GetListValue()
 	}
 
 	return nil

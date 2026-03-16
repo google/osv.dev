@@ -74,9 +74,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		metrics.SetOutcome(models.NoRepos)
 		metrics.UnresolvedRangesCount += len(cpeRanges)
 
-		unresolvedDatabaseSpecificField := conversion.CreateUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
-		if unresolvedDatabaseSpecificField != nil {
-			v.DatabaseSpecific = unresolvedDatabaseSpecificField
+		unresolvedRangesList := conversion.CreateUnresolvedRanges(unresolvedRanges)
+		if unresolvedRangesList != nil {
+			if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
+				logger.Warn("failed to add unresolved ranges to database specific: %v", err)
+			}
 		}
 
 		// Exit early
@@ -141,10 +143,9 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
 		return metrics.Outcome
 	}
-	unresolvedDatabaseSpecificField := conversion.CreateUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
-	// TODO: this should be if v.DatabaseSpecific != nil, initialise, otherwise add it.
-	if unresolvedDatabaseSpecificField != nil {
-		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedDatabaseSpecificField); err != nil {
+	unresolvedRangesList := conversion.CreateUnresolvedRanges(unresolvedRanges)
+	if unresolvedRangesList != nil {
+		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
 			logger.Warn("failed to add unresolved ranges to database specific: %v", err)
 		}
 	}

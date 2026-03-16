@@ -1,6 +1,9 @@
 
 [TestConvertAndExportCVEToOSV/disputed_record - 1]
 {
+  "affected": [
+    {}
+  ],
   "database_specific": {
     "cna_assigner": "unknown",
     "isDisputed": true,

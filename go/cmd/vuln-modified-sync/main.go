@@ -2,7 +2,9 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,9 +13,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
@@ -44,6 +50,8 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "Do not write to Datastore")
 	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for checking")
 	dir := flag.String("dir", "go/testdir/", "Directory to look for the local files")
+	logFile := flag.String("log-file", "", "Path to log file for optimization (to filter IDs)")
+	compareDir := flag.String("compare-dir", "", "Directory to compare records against for semantic changes")
 
 	flag.Parse()
 
@@ -86,11 +94,38 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			worker(ctx, taskCh, datastoreClient, gcsProvider, *dryRun)
+			worker(ctx, taskCh, datastoreClient, gcsProvider, *dryRun, *compareDir)
 		}()
 	}
 
 	processed := 0
+
+	var idFilter map[string]bool
+	if *logFile != "" {
+		idFilter = make(map[string]bool)
+		f, err := os.Open(*logFile)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to open log file", slog.Any("error", err))
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := scanner.Text()
+			idx := strings.Index(line, "id=")
+			if idx != -1 {
+				idStr := line[idx+3:]
+				spaceIdx := strings.Index(idStr, " ")
+				if spaceIdx != -1 {
+					idStr = idStr[:spaceIdx]
+				}
+				idFilter[idStr] = true
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			logger.FatalContext(ctx, "Failed to read log file", slog.Any("error", err))
+		}
+		logger.InfoContext(ctx, "Loaded IDs from log file", slog.Int("count", len(idFilter)))
+	}
 
 	err = filepath.WalkDir(*dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -107,6 +142,10 @@ func main() {
 
 		filename := filepath.Base(path)
 		vulnID := strings.TrimSuffix(filename, ext)
+
+		if idFilter != nil && !idFilter[vulnID] {
+			return nil
+		}
 
 		processed++
 		taskCh <- SyncTask{
@@ -127,13 +166,13 @@ func main() {
 	logger.InfoContext(ctx, "Sync completed", slog.Int("processed_files", processed))
 }
 
-func worker(ctx context.Context, taskCh <-chan SyncTask, client *datastore.Client, gcsClient *clients.GCSStorageProvider, dryRun bool) {
+func worker(ctx context.Context, taskCh <-chan SyncTask, client *datastore.Client, gcsClient *clients.GCSStorageProvider, dryRun bool, compareDir string) {
 	for task := range taskCh {
-		checkAndUpdate(ctx, client, task, gcsClient, dryRun)
+		checkAndUpdate(ctx, client, task, gcsClient, dryRun, compareDir)
 	}
 }
 
-func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask, gcsClient *clients.GCSStorageProvider, dryRun bool) {
+func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask, gcsClient *clients.GCSStorageProvider, dryRun bool, compareDir string) {
 	file, err := os.Open(task.FilePath)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to open file", slog.Any("error", err), slog.String("file", task.FilePath))
@@ -171,6 +210,39 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 		return
 	}
 
+	if compareDir != "" {
+		compareFile := filepath.Join(compareDir, task.VulnID+".json")
+		compareData, err := os.ReadFile(compareFile)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to read compare file", slog.Any("error", err), slog.String("file", compareFile))
+			return
+		}
+
+		var m1, m2 map[string]any
+		if err := json.Unmarshal(data, &m1); err != nil {
+			logger.ErrorContext(ctx, "Failed to unmarshal source data for comparison", slog.Any("error", err))
+			return
+		}
+		if err := json.Unmarshal(compareData, &m2); err != nil {
+			logger.ErrorContext(ctx, "Failed to unmarshal compare data", slog.Any("error", err))
+			return
+		}
+
+		delete(m1, "modified")
+		delete(m2, "modified")
+
+		m1Strip := removeEmptySlicesAndMaps(m1)
+		m2Strip := removeEmptySlicesAndMaps(m2)
+
+		if cmp.Equal(m1Strip, m2Strip, cmpopts.EquateEmpty()) {
+			logger.InfoContext(ctx, "Records match semantically", slog.String("id", task.VulnID))
+		} else {
+			// diff := cmp.Diff(m1, m2, cmpopts.EquateEmpty())
+			logger.InfoContext(ctx, "Records differ semantically, setting modified to now", slog.String("id", task.VulnID))
+			fileModifiedTime = time.Now()
+		}
+	}
+
 	// Fetch vulnerability from Datastore
 	key := datastore.NameKey("Vulnerability", task.VulnID, nil)
 	var vuln db.Vulnerability
@@ -184,8 +256,8 @@ func checkAndUpdate(ctx context.Context, client *datastore.Client, task SyncTask
 		return
 	}
 
-	// Add 1 minute to file modified time to avoid any precision issues
-	if fileModifiedTime.Add(time.Minute * 1).After(vuln.Modified) {
+	// Minus 1 minute to file modified time to avoid any precision issues
+	if fileModifiedTime.Add(time.Minute * -1).After(vuln.Modified) {
 		logger.InfoContext(ctx, "File modified time is newer",
 			slog.String("id", task.VulnID),
 			slog.Time("datastore_modified", vuln.Modified),
@@ -243,4 +315,63 @@ func parseTime(timeStr string) (time.Time, error) {
 	}
 
 	return time.Time{}, fmt.Errorf("unable to parse time string %q", timeStr)
+}
+
+func removeEmptySlicesAndMaps(v interface{}) interface{} {
+	val := reflect.ValueOf(v)
+	if !val.IsValid() {
+		return v
+	}
+
+	switch val.Kind() {
+	case reflect.Map:
+		if val.Len() == 0 {
+			return nil
+		}
+		newMap := reflect.MakeMap(val.Type())
+		iter := val.MapRange()
+		hasValues := false
+		for iter.Next() {
+			k := iter.Key()
+			v := removeEmptySlicesAndMaps(iter.Value().Interface())
+			if v != nil {
+				rt := reflect.ValueOf(v)
+				if rt.Kind() == reflect.Slice || rt.Kind() == reflect.Map {
+					if rt.Len() > 0 {
+						newMap.SetMapIndex(k, reflect.ValueOf(v))
+						hasValues = true
+					}
+				} else {
+					newMap.SetMapIndex(k, reflect.ValueOf(v))
+					hasValues = true
+				}
+			}
+		}
+		if !hasValues {
+			return nil
+		}
+		return newMap.Interface()
+
+	case reflect.Slice:
+		if val.Len() == 0 {
+			return nil
+		}
+		sliceType := reflect.SliceOf(val.Type().Elem())
+		newSlice := reflect.MakeSlice(sliceType, 0, val.Len())
+		hasValues := false
+		for i := 0; i < val.Len(); i++ {
+			elem := removeEmptySlicesAndMaps(val.Index(i).Interface())
+			if elem != nil {
+				newSlice = reflect.Append(newSlice, reflect.ValueOf(elem))
+				hasValues = true
+			}
+		}
+		if !hasValues {
+			return nil
+		}
+		return newSlice.Interface()
+
+	default:
+		return v
+	}
 }

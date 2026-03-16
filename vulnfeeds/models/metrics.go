@@ -47,7 +47,7 @@ func (c ConversionOutcome) String() string {
 		return conversionOutcomeStrings[c]
 	}
 
-	return fmt.Sprintf("ConversionOutcome(%d)", c)
+	return conversionOutcomeStrings[ConversionUnknown]
 }
 
 func (c ConversionOutcome) MarshalJSON() ([]byte, error) {

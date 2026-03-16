@@ -69,11 +69,11 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
 
 -   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
     using the conversion tools
-    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/tools/debian).
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/debian).
 -   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
     using the conversion tools
-    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine),
--   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/nvd-cve-osv)
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/alpine),
+-   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/cve/nvd-cve-osv)
 
 ## Covered Ecosystems
 

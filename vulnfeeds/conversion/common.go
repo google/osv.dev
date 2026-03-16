@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // AddAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
@@ -189,10 +190,15 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		if cache.IsInvalid(repo) {
 			continue
 		}
-		
+
 		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s", repo)
+			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
+
 			continue
 		}
 
@@ -252,10 +258,13 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				newVR.Repo = repo
 				newVR.Type = osvschema.Range_GIT
 				if len(vr.Range.GetEvents()) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{
+					dbSpecificMap := map[string]any{
 						"versions": vr.Range.GetEvents(),
-						"cpe":      vr.Metadata.CPE,
-					})
+					}
+					if vr.Metadata.CPE != "" {
+						dbSpecificMap["cpe"] = vr.Metadata.CPE
+					}
+					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
 						metrics.AddNote("failed to make database specific: %v", err)
 					} else {
@@ -410,6 +419,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 					return nil, fmt.Errorf("mismatching types: string and list of %T", v2[0])
 				}
 			}
+
 			return deduplicateList(append([]any{v1}, v2...)), nil
 		}
 
@@ -421,6 +431,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 					return nil, fmt.Errorf("mismatching types: %T and list of %T", val1, v2[0])
 				}
 			}
+
 			return deduplicateList(append([]any{val1}, v2...)), nil
 		}
 		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
@@ -449,5 +460,86 @@ func deduplicateList(list []any) []any {
 			unique = append(unique, item)
 		}
 	}
+
 	return unique
+}
+
+func CreateUnresolvedDatabaseSpecificField(unresolvedRanges []models.RangeWithMetadata, metrics *models.ConversionMetrics) *structpb.Struct {
+	if len(unresolvedRanges) > 0 {
+		var unresolvedRangesMap []map[string]any
+		for _, ur := range unresolvedRanges {
+			urMap := map[string]any{
+				"range": ur.Range,
+			}
+			if ur.Metadata.CPE != "" {
+				urMap["metadata"] = map[string]any{
+					"cpe": ur.Metadata.CPE,
+				}
+			}
+			unresolvedRangesMap = append(unresolvedRangesMap, urMap)
+		}
+		databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{
+			"unresolved_ranges": unresolvedRangesMap,
+		})
+		if err != nil {
+			metrics.AddNote("failed to make database specific: %v", err)
+		}
+
+		return databaseSpecific
+	}
+
+	return nil
+}
+
+func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) error {
+	if ds == nil {
+		return errors.New("database specific is nil")
+	}
+	if ds.Fields == nil {
+		return errors.New("database specific fields is nil")
+	}
+	if ds.GetFields()[field] != nil {
+		return fmt.Errorf("field %s already exists", field)
+	}
+
+	switch v := value.(type) {
+	case *structpb.Value:
+		ds.Fields[field] = v
+	case *structpb.Struct:
+		ds.Fields[field] = structpb.NewStructValue(v)
+	case *structpb.ListValue:
+		ds.Fields[field] = structpb.NewListValue(v)
+	default:
+		val, err := structpb.NewValue(v)
+		if err != nil {
+			return fmt.Errorf("failed to create structpb value: %w", err)
+		}
+		ds.Fields[field] = val
+	}
+
+	return nil
+}
+
+// ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []models.RangeWithMetadata, []string) {
+	if len(ranges) == 0 {
+		return nil, nil, nil
+	}
+
+	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache)
+	if len(r) > 0 {
+		metrics.ResolvedRangesCount += len(r)
+		metrics.SetOutcome(models.Successful)
+	}
+
+	if len(un) > 0 {
+		metrics.UnresolvedRangesCount += len(un)
+		if len(r) == 0 {
+			metrics.SetOutcome(models.NoCommitRanges)
+		}
+	}
+
+	metrics.VersionSources = append(metrics.VersionSources, source)
+
+	return r, un, sR
 }

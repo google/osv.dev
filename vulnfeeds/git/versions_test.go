@@ -378,3 +378,18 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAndCanonicalizeLink_429(t *testing.T) {
+	requests := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer ts.Close()
+
+	client := ts.Client()
+	_, err := ValidateAndCanonicalizeLink(ts.URL, client)
+	if err == nil {
+		t.Errorf("ValidateAndCanonicalizeLink() expected error, got nil")
+	}
+}

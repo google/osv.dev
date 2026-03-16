@@ -4,7 +4,6 @@ import (
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -36,14 +35,22 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 
+	var unresolvedRanges []models.RangeWithMetadata
 	if len(ranges) != 0 {
-		resolvedRanges, unresolvedRanges, _ := c.GitVersionsToCommits(ranges, repos, metrics, repoTagsCache)
-		if len(resolvedRanges) == 0 {
+		var nr []models.RangeWithMetadata
+		for _, r := range ranges {
+			nr = append(nr, models.RangeWithMetadata{
+				Range: r,
+			})
+		}
+		r, uR, _ := c.GitVersionsToCommits(nr, repos, metrics, repoTagsCache)
+		if len(r) == 0 {
 			metrics.AddNote("Failed to convert git versions to commits")
 		} else {
 			gotVersions = true
 		}
-		addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
+		addRangesToAffected(r, v, metrics)
+		unresolvedRanges = append(unresolvedRanges, uR...)
 	}
 
 	if !gotVersions {
@@ -51,26 +58,43 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, _ := c.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if len(resolvedRanges) == 0 {
+			var nr []models.RangeWithMetadata
+			for _, r := range versionRanges {
+				nr = append(nr, models.RangeWithMetadata{
+					Range: r,
+				})
+			}
+			r, uR, _ := c.GitVersionsToCommits(nr, repos, metrics, repoTagsCache)
+			if len(r) == 0 {
 				metrics.AddNote("Failed to convert git versions to commits")
 			} else {
 				gotVersions = true
 			}
-			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
+			addRangesToAffected(r, v, metrics)
+			unresolvedRanges = append(unresolvedRanges, uR...)
 		}
 	}
 
 	if !gotVersions {
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
-		versionRanges := textVersionExtraction(cve, metrics)
-		if len(versionRanges) != 0 {
-			resolvedRanges, unresolvedRanges, _ := c.GitVersionsToCommits(versionRanges, repos, metrics, repoTagsCache)
-			if len(resolvedRanges) == 0 {
+		textRanges := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
+		if len(textRanges) > 0 {
+			metrics.AddNote("Extracted versions from description: %v", textRanges)
+		}
+		if len(textRanges) != 0 {
+			r, uR, _ := c.GitVersionsToCommits(textRanges, repos, metrics, repoTagsCache)
+			if len(r) == 0 {
 				metrics.AddNote("Failed to convert git versions to commits")
 			}
 
-			addRangesToAffected(resolvedRanges, unresolvedRanges, v, metrics)
+			unresolvedRanges = append(unresolvedRanges, uR...)
+		}
+	}
+
+	if len(unresolvedRanges) > 0 {
+		unresolvedDatabaseSpecificField := conversion.CreateUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)
+		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedDatabaseSpecificField); err != nil {
+			logger.Warn("failed to make database specific: %v", err)
 		}
 	}
 }
@@ -134,18 +158,10 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 	return versionRanges, mostFrequentVersionType
 }
 
-func addRangesToAffected(resolvedRanges []*osvschema.Range, unresolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
+func addRangesToAffected(resolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
 	if len(resolvedRanges) > 0 {
 		aff := &osvschema.Affected{
 			Ranges: resolvedRanges,
-		}
-		if len(unresolvedRanges) > 0 {
-			databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"unresolved_ranges": unresolvedRanges})
-			if err != nil {
-				logger.Warn("failed to make database specific: %v", err)
-			} else {
-				aff.DatabaseSpecific = databaseSpecific
-			}
 		}
 		c.AddAffected(v, aff, metrics)
 	}

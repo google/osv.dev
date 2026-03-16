@@ -240,5 +240,6 @@ func FindCanonicalLink(link string, httpClient *http.Client, cache *RepoTagsCach
 		return "", err
 	}
 	cache.SetCanonicalLink(link, canonicalLink)
+
 	return canonicalLink, nil
 }

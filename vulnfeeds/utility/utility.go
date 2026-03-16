@@ -79,6 +79,7 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert proto message: %w", err)
 		}
+
 		return structpb.NewValue(val)
 	}
 
@@ -101,8 +102,10 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			return structpb.NewStructValue(structpbMap), nil
 		}
+
 		return structpb.NewValue(v)
 	default:
 		return structpb.NewValue(v)
@@ -114,7 +117,7 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 // It iterates through the list, converting any proto.Message elements into
 // any type via JSON marshalling, while other elements are included as-is.
 func structpbValueFromList(list []any) (*structpb.Value, error) {
-	var values []*structpb.Value
+	values := make([]*structpb.Value, 0, len(list))
 	for i, v := range list {
 		val, err := newStructpbValue(v)
 		if err != nil {

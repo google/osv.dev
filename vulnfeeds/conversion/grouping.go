@@ -79,12 +79,13 @@ func GroupRanges(ranges []*osvschema.Range) []*osvschema.Range {
 	}
 
 	// Reconstruct ranges from groups
-	var newRanges []*osvschema.Range
+	newRanges := make([]*osvschema.Range, 0, len(order))
 	for _, key := range order {
 		r := groups[key]
 		r.Events = cleanEvents(r.GetEvents())
 		newRanges = append(newRanges, r)
 	}
+
 	return newRanges
 }
 

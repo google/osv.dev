@@ -1,0 +1,51 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: git.kernel.org
+        form:
+            id:
+                - ee1fee900537b5d9560e9f937402de5ddc8412f3
+        headers:
+            Accept:
+                - text/html
+        url: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        body: ""
+        headers:
+            Content-Security-Policy:
+                - 'default-src ''self''; worker-src ''self'' blob:; style-src ''self'' ''unsafe-inline''; script-src-attr ''unsafe-hashes'' ''sha256-rQQdnklrOmulrf5mQ2YjUK7CGbu4ywAi21E8nGlJcDc''; img-src https:'
+            Content-Type:
+                - text/html; charset=UTF-8
+            Date:
+                - Sun, 15 Mar 2026 23:51:42 GMT
+            Expires:
+                - Mon, 16 Mar 2026 00:51:42 GMT
+            Last-Modified:
+                - Sun, 15 Mar 2026 23:51:42 GMT
+            Referrer-Policy:
+                - same-origin
+            Server:
+                - nginx
+            Strict-Transport-Security:
+                - max-age=15768001
+            Vary:
+                - Accept-Encoding
+                - Accept-Encoding
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - DENY
+        status: 200 OK
+        code: 200
+        duration: 440.799062ms

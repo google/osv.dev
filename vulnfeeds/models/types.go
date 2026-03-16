@@ -32,14 +32,13 @@ func SetCommitByType(ac *AffectedCommit, commitType CommitType, commitHash strin
 }
 
 type RangeWithMetadata struct {
-	Range *osvschema.Range
+	Range    *osvschema.Range
 	Metadata Metadata
 }
 
 type Metadata struct {
 	CPE string
 }
-
 
 func (ac *AffectedCommit) SetRepo(repo string) {
 	// GitHub.com repos are demonstrably case-insensitive, and frequently

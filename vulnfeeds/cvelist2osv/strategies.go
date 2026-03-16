@@ -2,7 +2,6 @@ package cvelist2osv
 
 import (
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -20,19 +19,6 @@ func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([
 	}
 
 	return nil, err
-}
-
-// textVersionExtraction is a helper function for CPE and description extraction.
-func textVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) []*osvschema.Range {
-	// As a last resort, try extracting versions from the description text.
-	versions := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
-	if len(versions) > 0 {
-		// NOTE: These versions are not currently saved due to the need for better validation.
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
-		metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
-	}
-
-	return []*osvschema.Range{}
 }
 
 // initialNormalExtraction handles an expected case of version ranges in the affected field of CVE5

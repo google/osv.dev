@@ -73,9 +73,10 @@ type RepoTagsMap struct {
 type RepoTagsCache struct {
 	sync.RWMutex
 
-	m       map[string]RepoTagsMap
-	invalid map[string]bool
-	canonicalLink map[string]string}
+	m             map[string]RepoTagsMap
+	invalid       map[string]bool
+	canonicalLink map[string]string
+}
 
 func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	c.RLock()
@@ -132,6 +133,7 @@ func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 		return "", false
 	}
 	canonicalLink, ok := c.canonicalLink[repo]
+
 	return canonicalLink, ok
 }
 

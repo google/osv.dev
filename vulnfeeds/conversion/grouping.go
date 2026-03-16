@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"slices"
 
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -248,4 +249,120 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 	}
 
 	return finalEvents
+}
+
+// MergeRangesAndCreateAffected combines resolved and unresolved ranges with commits to create an OSV Affected object.
+// It merges ranges for the same repository and adds commit events to the appropriate ranges at the end.
+//
+// Arguments:
+//   - resolvedRanges: A slice of resolved OSV ranges to be merged.
+//   - commits: A slice of affected commits to be converted into events and added to ranges.
+//   - successfulRepos: A slice of repository URLs that were successfully processed.
+//   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
+func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
+	var newResolvedRanges []*osvschema.Range
+	// Combine the ranges appropriately
+	if len(resolvedRanges) > 0 {
+		slices.Sort(successfulRepos)
+		successfulRepos = slices.Compact(successfulRepos)
+		for _, repo := range successfulRepos {
+			var mergedRange *osvschema.Range
+			for _, vr := range resolvedRanges {
+				if vr.GetRepo() == repo {
+					if mergedRange == nil {
+						mergedRange = vr
+					} else {
+						var err error
+						mergedRange, err = MergeTwoRanges(mergedRange, vr)
+						if err != nil {
+							metrics.AddNote("Failed to merge ranges: %v", err)
+						}
+					}
+				}
+			}
+			if len(commits) > 0 {
+				for _, commit := range commits {
+					if commit.Repo == repo {
+						if mergedRange == nil {
+							mergedRange = BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+							mergedRange.Repo = repo
+						} else {
+							event := convertCommitToEvent(commit)
+							if event != nil {
+								addEventToRange(mergedRange, event)
+							}
+						}
+					}
+				}
+			}
+			if mergedRange != nil {
+				newResolvedRanges = append(newResolvedRanges, mergedRange)
+			}
+		}
+	}
+
+	// if there are no resolved version but there are commits, we should create a range for each commit
+	if len(resolvedRanges) == 0 && len(commits) > 0 {
+		for _, commit := range commits {
+			newResolvedRanges = append(newResolvedRanges, BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			metrics.ResolvedRangesCount++
+		}
+	}
+
+	newAffected := &osvschema.Affected{
+		Ranges: newResolvedRanges,
+	}
+
+	return newAffected
+}
+
+// addEventToRange adds an event to a version range, avoiding duplicates.
+// Introduced events are prepended to the events list, while others are appended.
+//
+// Arguments:
+//   - versionRange: The OSV range to which the event will be added.
+//   - event: The OSV event (Introduced, Fixed, or LastAffected) to add.
+func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
+	// Handle duplicate events being added
+	for _, e := range versionRange.GetEvents() {
+		if e.GetIntroduced() != "" && e.GetIntroduced() == event.GetIntroduced() {
+			return
+		}
+		if e.GetFixed() != "" && e.GetFixed() == event.GetFixed() {
+			return
+		}
+		if e.GetLastAffected() != "" && e.GetLastAffected() == event.GetLastAffected() {
+			return
+		}
+	}
+	//TODO: maybe handle if the fixed event appears as an introduced event or similar.
+
+	if event.GetIntroduced() != "" {
+		versionRange.Events = append([]*osvschema.Event{{
+			Introduced: event.GetIntroduced()}}, versionRange.GetEvents()...)
+	} else {
+		versionRange.Events = append(versionRange.Events, event)
+	}
+}
+
+// convertCommitToEvent creates an OSV Event from an AffectedCommit.
+// It returns an event with the Introduced, Fixed, or LastAffected value from the commit.
+func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
+	if commit.Introduced != "" {
+		return &osvschema.Event{
+			Introduced: commit.Introduced,
+		}
+	}
+	if commit.Fixed != "" {
+		return &osvschema.Event{
+			Fixed: commit.Fixed,
+		}
+	}
+	if commit.LastAffected != "" {
+		return &osvschema.Event{
+			LastAffected: commit.LastAffected,
+		}
+	}
+
+	return nil
 }

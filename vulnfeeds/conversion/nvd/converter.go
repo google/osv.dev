@@ -15,6 +15,7 @@ import (
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -45,6 +46,12 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
+	databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
+	if err != nil {
+		metrics.AddNote("Failed to convert database specific: %v", err)
+	} else {
+		v.DatabaseSpecific = databaseSpecific
+	}
 
 	// At the bare minimum, we want to attempt to extract the raw version information
 	// from CPEs, whether or not they can resolve to commits.

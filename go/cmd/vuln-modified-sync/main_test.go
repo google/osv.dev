@@ -8,8 +8,8 @@ import (
 func TestRemoveEmptySlicesAndMaps(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    interface{}
-		expected interface{}
+		input    any
+		expected any
 	}{
 		{
 			name:     "empty map",

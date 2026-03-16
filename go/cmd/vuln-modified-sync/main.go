@@ -317,7 +317,7 @@ func parseTime(timeStr string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time string %q", timeStr)
 }
 
-func removeEmptySlicesAndMaps(v interface{}) interface{} {
+func removeEmptySlicesAndMaps(v any) any {
 	val := reflect.ValueOf(v)
 	if !val.IsValid() {
 		return v
@@ -350,6 +350,7 @@ func removeEmptySlicesAndMaps(v interface{}) interface{} {
 		if !hasValues {
 			return nil
 		}
+
 		return newMap.Interface()
 
 	case reflect.Slice:
@@ -359,7 +360,7 @@ func removeEmptySlicesAndMaps(v interface{}) interface{} {
 		sliceType := reflect.SliceOf(val.Type().Elem())
 		newSlice := reflect.MakeSlice(sliceType, 0, val.Len())
 		hasValues := false
-		for i := 0; i < val.Len(); i++ {
+		for i := range val.Len() {
 			elem := removeEmptySlicesAndMaps(val.Index(i).Interface())
 			if elem != nil {
 				newSlice = reflect.Append(newSlice, reflect.ValueOf(elem))
@@ -369,6 +370,7 @@ func removeEmptySlicesAndMaps(v interface{}) interface{} {
 		if !hasValues {
 			return nil
 		}
+
 		return newSlice.Interface()
 
 	default:

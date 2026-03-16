@@ -1,6 +1,9 @@
 package cvelist2osv
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/git"
@@ -35,7 +38,8 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	repoTagsCache := &git.RepoTagsCache{}
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
-
+	successfulRepos := make(map[string]bool)
+	var resolvedRanges []*osvschema.Range
 	var unresolvedRanges []models.RangeWithMetadata
 	if len(ranges) != 0 {
 		var nr []models.RangeWithMetadata
@@ -44,14 +48,21 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 				Range: r,
 			})
 		}
-		r, uR, _ := conversion.GitVersionsToCommits(nr, repos, metrics, repoTagsCache)
+		// r, uR, successfulRepos := conversion.GitVersionsToCommits(nr, repos, metrics, repoTagsCache)
+		r, un, sR := conversion.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
+		resolvedRanges = append(resolvedRanges, r...)
+		unresolvedRanges = append(unresolvedRanges, un...)
+		for _, s := range sR {
+			successfulRepos[s] = true
+		}
 		if len(r) == 0 {
 			metrics.AddNote("Failed to convert git versions to commits")
 		} else {
 			gotVersions = true
+			metrics.SetOutcome(models.Successful)
 		}
-		addRangesToAffected(r, v, metrics)
-		unresolvedRanges = append(unresolvedRanges, uR...)
+		
+		unresolvedRanges = append(unresolvedRanges, un...)
 	}
 
 	if !gotVersions {
@@ -65,14 +76,17 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 					Range: r,
 				})
 			}
-			r, uR, _ := conversion.GitVersionsToCommits(nr, repos, metrics, repoTagsCache)
+			r, un, sR := conversion.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
+			resolvedRanges = append(resolvedRanges, r...)
+			unresolvedRanges = append(unresolvedRanges, un...)
+			for _, s := range sR {
+				successfulRepos[s] = true
+			}
 			if len(r) == 0 {
 				metrics.AddNote("Failed to convert git versions to commits")
 			} else {
 				gotVersions = true
 			}
-			addRangesToAffected(r, v, metrics)
-			unresolvedRanges = append(unresolvedRanges, uR...)
 		}
 	}
 
@@ -83,14 +97,23 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
 		if len(textRanges) != 0 {
-			r, uR, _ := conversion.GitVersionsToCommits(textRanges, repos, metrics, repoTagsCache)
+			r, un, sR := conversion.ProcessRanges(textRanges, repos, metrics, repoTagsCache, models.VersionSourceAffected)
+			resolvedRanges = append(resolvedRanges, r...)
+			unresolvedRanges = append(unresolvedRanges, un...)
+			for _, s := range sR {
+				successfulRepos[s] = true
+			}
 			if len(r) == 0 {
 				metrics.AddNote("Failed to convert git versions to commits")
 			}
-
-			unresolvedRanges = append(unresolvedRanges, uR...)
 		}
 	}
+
+	keys := slices.Collect(maps.Keys(successfulRepos))
+	groupedRanges := conversion.GroupRanges(resolvedRanges)
+	affected := conversion.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
+	v.Affected = append(v.Affected, affected)
+
 
 	if len(unresolvedRanges) > 0 {
 		unresolvedDatabaseSpecificField := conversion.CreateUnresolvedDatabaseSpecificField(unresolvedRanges, metrics)

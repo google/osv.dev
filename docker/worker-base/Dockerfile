@@ -51,8 +51,6 @@ RUN python3 -m venv $POETRY_HOME && \
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Install Docker.
-# Pin the version to an older one due to gVisor incompatibilities.
-# See https://github.com/google/osv.dev/issues/1019#issuecomment-1427418758
 ARG DOCKER_VERSION=5:29.3.0-1~ubuntu.24.04~noble
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg && \
     add-apt-repository \

@@ -6,7 +6,7 @@ dependencies = [
     "Flask-Caching==2.3.1",
     "Flask-Compress==1.23",
     "werkzeug==3.1.6",
-    "google-auth==2.49.0",
+    "google-auth==2.49.1",
     "google-cloud-ndb==2.4.0",
     "google-cloud-logging==3.14.0",
     "google-cloud-storage==3.9.0",

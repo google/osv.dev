@@ -2,6 +2,7 @@ package gcs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -23,8 +24,9 @@ func ToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, da
 
 	if _, err := io.Copy(wc, data); err != nil {
 		if closeErr := wc.Close(); closeErr != nil {
-			return fmt.Errorf("failed to write to GCS object %q: %w (also failed to close writer: %v)", objectName, err, closeErr)
+			return fmt.Errorf("failed to write to GCS object %q: %w (also failed to close writer: %w)", objectName, err, closeErr)
 		}
+
 		return fmt.Errorf("failed to write to GCS object %q: %w", objectName, err)
 	}
 
@@ -60,7 +62,7 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 		}
 
 		attrs, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {

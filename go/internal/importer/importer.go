@@ -2,9 +2,11 @@
 package importer
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,6 +19,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
@@ -28,7 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-const TasksTopic = "tasks"
+const (
+	TasksTopic           = "tasks"
+	maxPubSubMessageSize = 10_000_000
+)
 
 type Config struct {
 	NumWorkers int
@@ -171,15 +177,14 @@ type WorkItem struct {
 	Context      context.Context //nolint:containedctx
 	SourceRecord SourceRecord
 
-	SourceRepository string
-	SourcePath       string
-	Format           RecordFormat
-	KeyPath          string
-	Strict           bool
-	IsDeleted        bool
-	LastUpdated      time.Time
-	HasLastUpdated   bool
-	IsReimport       bool
+	SourceRepository       string
+	SourcePath             string
+	Format                 RecordFormat
+	KeyPath                string
+	Strict                 bool
+	IsDeleted              bool
+	CompareAgainstDatabase bool
+	IsReimport             bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
@@ -209,7 +214,12 @@ func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
 							slog.Any("error", err),
 							slog.String("source", item.SourceRepository),
 							slog.String("path", item.SourcePath))
+
+						return
 					}
+					logger.InfoContext(ctx, "Sent deletion to worker",
+						slog.String("source", item.SourceRepository),
+						slog.String("path", item.SourcePath))
 
 					return
 				}
@@ -248,6 +258,9 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		return
 	}
 	hash := computeHash(data)
+	// protojson does not like invalid UTF-8,
+	// so replace invalid UTF-8 with U+FFFD (replacement character)
+	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
 	var vulnProto osvschema.Vulnerability
 	switch item.Format {
 	case RecordFormatYAML:
@@ -307,8 +320,19 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	}
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
-	if item.HasLastUpdated {
-		if item.LastUpdated.After(modified) {
+	if !item.IsReimport && item.CompareAgainstDatabase {
+		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, vulnProto.GetId())
+		// only update if modified is strictly after dbModified (or if the vuln is new)
+		if err == nil && !modified.After(dbModified) {
+			return
+		}
+		if err != nil && !errors.Is(err, models.ErrNotFound) {
+			logger.ErrorContext(ctx, "Failed to get source modified",
+				slog.Any("error", err),
+				slog.String("source", sourceRepoName),
+				slog.String("path", sourcePath),
+				slog.String("id", vulnProto.GetId()))
+
 			return
 		}
 	}
@@ -349,22 +373,39 @@ func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) err
 func publishUpdate(ctx context.Context, publisher clients.Publisher, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
 	// Send the vulnerability proto in the message data
 	var data []byte
+	contentEncoding := ""
 	if vuln != nil {
 		var err error
 		data, err = proto.Marshal(vuln)
 		if err != nil {
 			return err
 		}
+		// make sure we have enough capacity for the compressed data
+		// to avoid reallocations
+		buf := make([]byte, 0, len(data))
+		data = zstd.EncodeTo(buf, data)
+		contentEncoding = "zstd"
+		if len(data) > maxPubSubMessageSize {
+			logger.WarnContext(ctx, "Vulnerability proto is too large",
+				slog.String("source", source),
+				slog.String("path", path),
+				slog.Int("size", len(data)))
+
+			// Set data to nil so that the worker will re-download the vulnerability
+			data = nil
+			contentEncoding = ""
+		}
 	}
 	msg := &pubsub.Message{
 		Data: data,
 		Attributes: map[string]string{
-			"type":            "update",
-			"source":          source,
-			"path":            path,
-			"original_sha256": hash,
-			"deleted":         strconv.FormatBool(deleted),
-			"req_timestamp":   strconv.FormatInt(time.Now().Unix(), 10),
+			"type":             "update",
+			"source":           source,
+			"path":             path,
+			"original_sha256":  hash,
+			"deleted":          strconv.FormatBool(deleted),
+			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
+			"content_encoding": contentEncoding,
 		},
 	}
 	if srcTimestamp != nil {

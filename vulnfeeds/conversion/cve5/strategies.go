@@ -1,8 +1,7 @@
-package cvelist2osv
+package cve5
 
 import (
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -25,7 +24,7 @@ func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([
 // textVersionExtraction is a helper function for CPE and description extraction.
 func textVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) []*osvschema.Range {
 	// As a last resort, try extracting versions from the description text.
-	versions := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
+	versions := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
 	if len(versions) > 0 {
 		// NOTE: These versions are not currently saved due to the need for better validation.
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
@@ -76,9 +75,9 @@ func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMet
 		}
 		var versionRanges []*osvschema.Range
 		if fixed != "" {
-			versionRanges = append(versionRanges, conversion.BuildVersionRange(introduced, "", fixed))
+			versionRanges = append(versionRanges, c.BuildVersionRange(introduced, "", fixed))
 		} else if lastaffected != "" {
-			versionRanges = append(versionRanges, conversion.BuildVersionRange(introduced, lastaffected, ""))
+			versionRanges = append(versionRanges, c.BuildVersionRange(introduced, lastaffected, ""))
 		}
 
 		return versionRanges, currentVersionType, true

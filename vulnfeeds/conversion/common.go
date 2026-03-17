@@ -65,6 +65,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 
 func DeduplicateRefs(refs []models.Reference) []models.Reference {
 	// Deduplicate references by URL.
+	refs = slices.Clone(refs)
 	slices.SortStableFunc(refs, func(a, b models.Reference) int {
 		return strings.Compare(a.URL, b.URL)
 	})
@@ -188,7 +189,12 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		}
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
 			metrics.AddNote("Failed to normalize tags - %s", repo)
+
 			continue
 		}
 
@@ -225,7 +231,7 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
 			}
 
-			if introducedCommit != "" && (fixedCommit != "" || lastAffectedCommit != "") {
+			if fixedCommit != "" || lastAffectedCommit != "" {
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {

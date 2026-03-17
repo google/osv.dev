@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cves provides utilities for working with CVEs and version information.
-package cves
+// Package conversion provides utilities for working with CVEs and version information.
+package conversion
 
 import (
 	"context"
@@ -32,7 +32,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 )
@@ -708,7 +707,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+		vr := BuildVersionRange(introduced, lastaffected, fixed)
 		versions = append(versions, vr)
 	}
 
@@ -814,14 +813,15 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := conversion.BuildVersionRange(introduced, lastaffected, fixed)
+				vr := BuildVersionRange(introduced, lastaffected, fixed)
 				versions = append(versions, vr)
 			}
 		}
 	}
-	if len(versions) > 0 {
-		metrics.AddNote("Extracted versions from CPEs: %v", versions)
+	if len(versions) == 0 {
+		return nil
 	}
+	metrics.AddNote("Extracted versions from CPEs: %v", versions)
 
 	return versions
 }
@@ -1095,7 +1095,12 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return
+			}
 			metrics.AddNote("Failed to normalize tags %s %s", repo, err)
+
 			continue
 		}
 		for _, av := range v.AffectedVersions {

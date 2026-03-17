@@ -15,14 +15,14 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cvelist2osv"
+	"github.com/google/osv/vulnfeeds/conversion/cve5"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
 var (
 	repoDir        = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
-	localOutputDir = flag.String("out-dir", "cvelist2osv", "Path to output results.")
+	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
 	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
 	workers        = flag.Int("workers", 30, "The number of concurrent workers to use for processing CVEs.")
 	cnaAllowList   = flag.String("cnas-allowlist", "", "A comma-separated list of CNAs to process. If not provided, defaults to cna_allowlist.txt.")
@@ -134,7 +134,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		}
 
 		// Perform the conversion and export the results.
-		metrics, err := cvelist2osv.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, sourceLink)
+		metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, sourceLink)
 		if err != nil {
 			logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 		} else {

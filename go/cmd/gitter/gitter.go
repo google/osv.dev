@@ -61,8 +61,9 @@ var (
 	fetchTimeout    time.Duration
 	semaphore       chan struct{} // Request concurrency control
 	// LRU cache for recently loaded repositories (key: repo URL)
-	repoCache *ristretto.Cache[string, *Repository]
-	repoTTL   time.Duration = 5 * time.Minute
+	repoCache        *ristretto.Cache[string, *Repository]
+	repoTTL          time.Duration
+	repoCacheMaxCost int64
 )
 
 var validURLRegex = regexp.MustCompile(`^(https?|git|ssh)://`)
@@ -136,11 +137,12 @@ func repoCost(repo *Repository) int64 {
 
 // InitRepoCache initializes the LRU cache for repositories.
 func InitRepoCache() {
+	numCounters := repoCacheMaxCost / (300 * 10000)
 	var err error
 	repoCache, err = ristretto.NewCache(&ristretto.Config[string, *Repository]{
 		// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
-		NumCounters: 1e5,
-		MaxCost:     100 << 30, // 100 GB
+		NumCounters: numCounters,
+		MaxCost:     repoCacheMaxCost,
 		BufferItems: 64,
 		Cost:        repoCost,
 		// Check for TTL expiry every 60 seconds
@@ -449,6 +451,8 @@ func main() {
 	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
+	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
+	flag.Int64Var(&repoCacheMaxCost, "repo-cache-max-cost", 1<<30, "Repository LRU cache max cost (in bytes)")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)
 

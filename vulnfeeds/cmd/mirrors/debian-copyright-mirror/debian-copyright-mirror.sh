@@ -33,4 +33,4 @@ python debian-copyright-mirror.py "${WORK_DIR}/metadata.ftp-master.debian.org/ch
 
 tar -C "${WORK_DIR}" -cf "${WORK_DIR}/$(basename ${GCS_PATH})" .
 
-gsutil ${BE_VERBOSE="--quiet"} cp "${WORK_DIR}/$(basename ${GCS_PATH})" "${GCS_PATH}"
+gcloud storage cp "${WORK_DIR}/$(basename ${GCS_PATH})" "${GCS_PATH}" ${BE_VERBOSE="-q"}

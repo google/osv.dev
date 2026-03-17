@@ -464,7 +464,7 @@ def add_links(record: dict):
   for entry in record.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
-      if affected_range['type'] != 'GIT':
+      if affected_range.get('type') != 'GIT':
         continue
 
       repo_url = affected_range.get('repo')
@@ -888,23 +888,32 @@ _ANCHOR_TAG_REPLACER = re.compile(
 def markdown(text):
   """Render markdown."""
   if text:
-    md = markdown2.markdown(
-        text, safe_mode='escape', extras=['fenced-code-blocks'])
-    # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
-    # unclosed HTML comments <!--, which ends up commenting out the whole page
-    # See: https://github.com/trentm/python-markdown2/issues/563
-    # For now, manually replace any leftover comments with the escaped form
-    md = md.replace('<!--', '&lt;!--')
+    try:
+      md = markdown2.markdown(
+          text, safe_mode='escape', extras=['fenced-code-blocks'])
+      # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+      # unclosed HTML comments <!--, which ends up commenting out the whole page
+      # See: https://github.com/trentm/python-markdown2/issues/563
+      # For now, manually replace any leftover comments with the escaped form
+      md = md.replace('<!--', '&lt;!--')
 
-    # TODO(rexpan): There is a bug with the markdown2 escaping + as
-    # space rather than %2B
-    # See: https://github.com/trentm/python-markdown2/issues/621
-    md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
-    # Removes empty anchor tags that cause visual artifacts in rendered markdown
-    # See: https://github.com/google/osv.dev/issues/4237
-    md = _ANCHOR_TAG_REPLACER.sub('', md)
+      # TODO(rexpan): There is a bug with the markdown2 escaping + as
+      # space rather than %2B
+      # See: https://github.com/trentm/python-markdown2/issues/621
+      md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+      # Removes empty anchor tags that cause visual artifacts
+      # in rendered markdown
+      # See: https://github.com/google/osv.dev/issues/4237
+      md = _ANCHOR_TAG_REPLACER.sub('', md)
 
-    return md
+      return md
+    except Exception as e:
+      logging.error('Failed to render markdown: %s', e)
+      escaped_text = escape(text)
+      return Markup(f'''
+        <h4>Failed to render markdown, so here\'s the raw details field:</h4>
+        <pre><code>{escaped_text}</code></pre>
+      ''')
 
   return ''
 
@@ -944,9 +953,9 @@ def git_repo(affected):
 
 @blueprint.app_template_filter('package_in_ecosystem')
 def package_in_ecosystem(package):
-  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  ecosystem = osv.ecosystems.normalize(package.get('ecosystem', ''))
   if ecosystem in osv.ecosystems.package_urls:
-    return osv.ecosystems.package_urls[ecosystem] + package['name']
+    return osv.ecosystems.package_urls[ecosystem] + package.get('name', '')
   return ''
 
 
@@ -958,13 +967,13 @@ def list_packages(vuln_affected: list[dict]):
 
   for affected in vuln_affected:
     if 'package' in affected:
-      package_entry = affected['package']['ecosystem'] + '/' + affected[
-          'package']['name']
+      package_entry = affected['package'].get(
+          'ecosystem', '') + '/' + affected['package'].get('name', '')
       if package_entry not in packages:
         packages.append(package_entry)
     for affected_range in affected.get('ranges', []):
-      if affected_range['type'] == 'GIT':
-        parsed_scheme = strip_scheme(affected_range['repo'])
+      if affected_range.get('type') == 'GIT':
+        parsed_scheme = strip_scheme(affected_range.get('repo', ''))
         if parsed_scheme not in packages:
           packages.append(parsed_scheme)
 

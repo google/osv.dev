@@ -16,8 +16,6 @@ spec:
           - name: debian-copyright-mirror
             image: debian-copyright-mirror
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

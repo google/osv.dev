@@ -36,6 +36,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY 4.0](https://github.com/golang/vulndb#license))
 -   [Rust Advisory Database](https://github.com/RustSec/advisory-db)
     ([CC0 1.0](https://github.com/rustsec/advisory-db/blob/main/LICENSE.txt))
+-   [Drupal Advisory Database](https://github.com/DrupalSecurityTeam/drupal-advisory-database)
+    ([MIT](https://github.com/DrupalSecurityTeam/drupal-advisory-database/blob/main/LICENSE))
 -   [Global Security Database](https://github.com/cloudsecurityalliance/gsd-database)
     ([CC0 1.0](https://github.com/cloudsecurityalliance/gsd-database/blob/main/LICENSE))
 -   [OSS-Fuzz](https://github.com/google/oss-fuzz-vulns)
@@ -67,11 +69,11 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
 
 -   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
     using the conversion tools
-    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/tools/debian).
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/debian).
 -   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
     using the conversion tools
-    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/alpine),
--   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/nvd-cve-osv)
+    [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/alpine),
+-   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/cve/nvd-cve-osv)
 
 ## Covered Ecosystems
 

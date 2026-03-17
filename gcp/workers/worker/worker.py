@@ -107,6 +107,18 @@ def _setup_logging_extra_info():
   logging.getLogger().addFilter(_ContextFilter())
 
 
+def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
+  if affected.package.name == 'Kernel' and \
+     affected.package.ecosystem == 'Linux':
+    return True
+
+  if any('git.kernel.org/pub/scm/linux/kernel/git' in ar.repo
+         for ar in affected.ranges):
+    return True
+
+  return False
+
+
 class _PubSubLeaserThread(threading.Thread):
   """Thread that continuously renews the lease for a message."""
 
@@ -550,9 +562,7 @@ class TaskRunner:
           'Skipping Vanir signature generation for %s as it has no '
           'GIT affected ranges.', vulnerability.id)
       return vulnerability
-    if any(affected.package.name == "Kernel" and
-           affected.package.ecosystem == "Linux"
-           for affected in vulnerability.affected):
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
       logging.info(
           'Skipping Vanir signature generation for %s as it is a '
           'Kernel vulnerability.', vulnerability.id)
@@ -597,12 +607,18 @@ class TaskRunner:
 
     # Fully enrich the vulnerability object in memory.
     vulnerability = self._generate_vanir_signatures(vulnerability)
-    try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
-    except UpdateConflictError:
-      # Discard changes due to conflict.
-      return
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
+      result = None
+      logging.info(
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+    else:
+      try:
+        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                             relative_path, original_sha256)
+      except UpdateConflictError:
+        # Discard changes due to conflict.
+        return
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None
@@ -679,9 +695,12 @@ class TaskRunner:
       # Update the bug entity based on the comparison.
       if has_changed:
         ds_vuln.modified = osv.utcnow()
-      else:
+      elif ds_vuln.modified:
         # If no meaningful change, ensure last_modified reflects the source
-        # file's modified date, as only metadata might have changed.
+        # file's modified date or the date in the database, whichever is later.
+        ds_vuln.modified = max(ds_vuln.modified, orig_modified_date)
+      else:
+        # New record, so set it to the upstream records modified date.
         ds_vuln.modified = orig_modified_date
 
       # Overwrite aliases / upstream from computation
@@ -714,6 +733,7 @@ class TaskRunner:
         else:
           vulnerability.published.CopyFrom(vulnerability.modified)
 
+      ds_vuln.source_id = f'{source_repo.name}:{relative_path}'
       osv.models.put_entities(ds_vuln, vulnerability)
 
     try:
@@ -733,7 +753,8 @@ class TaskRunner:
       osv.pubsub.publish_failure(data, type='gcs_retry')
 
     try:
-      osv.update_affected_commits(vulnerability.id, result.commits, True)
+      if result:
+        osv.update_affected_commits(vulnerability.id, result.commits, True)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
       e.add_note(f'Happened processing {vulnerability.id}')
       logging.exception(

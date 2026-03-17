@@ -18,6 +18,7 @@ package git
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"maps"
 	"net/url"
 	"path"
@@ -33,12 +34,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
 
 const (
 	peeledSuffix = "^{}"
 )
+
+var ErrRateLimit = errors.New("rate limit exceeded")
 
 // A GitTag holds a Git tag and corresponding commit hash.
 type Tag struct {
@@ -133,12 +137,16 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 			if errors.Is(err, context.DeadlineExceeded) {
 				return retry.RetryableError(err)
 			}
+			if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+				return ErrRateLimit
+			}
 
 			return err
 		}
 
 		return nil
 	}); err != nil {
+		logger.Warn("Error: "+err.Error(), slog.Any("repo", repo))
 		return refs, err
 	}
 
@@ -159,6 +167,7 @@ func RepoName(repoURL string) (name string, e error) {
 
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
+// *** Does external calls to verify repos ***
 func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error) {
 	if repoTagsCache != nil {
 		tagsRepoMap, ok := repoTagsCache.Get(repoURL)
@@ -300,6 +309,7 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 }
 
 // Validate the repo by attempting to query it's references.
+// *** Does external calls to verify repos ***
 func ValidRepo(repoURL string) (valid bool) {
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
@@ -314,6 +324,7 @@ func ValidRepo(repoURL string) (valid bool) {
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
+// *** Does external calls to verify repos ***
 func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {

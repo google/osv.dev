@@ -51,14 +51,15 @@ RUN python3 -m venv $POETRY_HOME && \
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # Install Docker.
-# Pin the version to an older one due to gVisor incompatibilities.
-# See https://github.com/google/osv.dev/issues/1019#issuecomment-1427418758
-ARG DOCKER_VERSION=5:20.10.22~3-0~ubuntu-bionic
+ARG DOCKER_VERSION=5:29.3.0-1~ubuntu.24.04~noble
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/docker.gpg && \
     add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" && \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu noble stable" && \
     apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION && \
     apt-mark hold docker-ce docker-ce-cli  # Prevent subsequent upgrades from bumping the version.
+
+# Replace ulimit calls with 'true' to avoid empty if/else blocks and "Invalid argument" errors
+RUN sed -i 's/^.*ulimit.*$/true/g' /etc/init.d/docker
 
 # Install gcloud
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
@@ -68,7 +69,7 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.c
 # Install gVisor.
 RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/gvisor.gpg && \
     # Pinning the version as the latest has a hash sum mismatch.
-    add-apt-repository "deb https://storage.googleapis.com/gvisor/releases 20220621 main" && \
+    add-apt-repository "deb https://storage.googleapis.com/gvisor/releases 20260309 main" && \
     apt-get update && apt-get install -y runsc
 
 # Make gVisor the default Docker runtime.

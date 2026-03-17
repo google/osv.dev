@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -176,15 +177,14 @@ type WorkItem struct {
 	Context      context.Context //nolint:containedctx
 	SourceRecord SourceRecord
 
-	SourceRepository string
-	SourcePath       string
-	Format           RecordFormat
-	KeyPath          string
-	Strict           bool
-	IsDeleted        bool
-	LastUpdated      time.Time
-	HasLastUpdated   bool
-	IsReimport       bool
+	SourceRepository       string
+	SourcePath             string
+	Format                 RecordFormat
+	KeyPath                string
+	Strict                 bool
+	IsDeleted              bool
+	CompareAgainstDatabase bool
+	IsReimport             bool
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
@@ -320,8 +320,19 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	}
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
-	if item.HasLastUpdated {
-		if item.LastUpdated.After(modified) {
+	if item.CompareAgainstDatabase {
+		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, vulnProto.GetId())
+		// only update if modified is strictly after dbModified (or if the vuln is new)
+		if err == nil && !modified.After(dbModified) {
+			return
+		}
+		if err != nil && !errors.Is(err, models.ErrNotFound) {
+			logger.ErrorContext(ctx, "Failed to get source modified",
+				slog.Any("error", err),
+				slog.String("source", sourceRepoName),
+				slog.String("path", sourcePath),
+				slog.String("id", vulnProto.GetId()))
+
 			return
 		}
 	}

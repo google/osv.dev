@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"iter"
+	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 )
@@ -30,6 +31,7 @@ func (m *mockSourceRepositoryStore) Update(_ context.Context, name string, repo 
 
 type mockVulnerabilityStore struct {
 	Entries map[string][]*models.VulnSourceRef
+	RawMods map[string]time.Time
 }
 
 func (m *mockVulnerabilityStore) ListBySource(_ context.Context, source string, _ bool) iter.Seq2[*models.VulnSourceRef, error] {
@@ -41,6 +43,14 @@ func (m *mockVulnerabilityStore) ListBySource(_ context.Context, source string, 
 			}
 		}
 	}
+}
+
+func (m *mockVulnerabilityStore) GetSourceModified(_ context.Context, vuln string) (time.Time, error) {
+	if mod, ok := m.RawMods[vuln]; ok {
+		return mod, nil
+	}
+
+	return time.Time{}, models.ErrNotFound
 }
 
 type mockSourceRecord struct {

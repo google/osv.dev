@@ -170,6 +170,8 @@ var reconcileSkipSources = []string{
 	"almalinux-alsa",
 	// Has a bunch of 404s
 	"openeuler",
+	// Root currently has 500 errors
+	"root",
 	// cve-osv is in a state of flux at the moment, let's wait a bit
 	"cve-osv",
 }

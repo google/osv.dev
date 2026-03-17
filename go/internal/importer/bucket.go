@@ -40,11 +40,11 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	bucket := config.GCSProvider.Bucket(sourceRepo.Bucket.Name)
-	hasUpdateTime := false
+	reimport := true
 	var lastUpdated time.Time
 	if !sourceRepo.Bucket.IgnoreLastImportTime && sourceRepo.Bucket.LastUpdated != nil {
 		lastUpdated = *sourceRepo.Bucket.LastUpdated
-		hasUpdateTime = true
+		reimport = false
 	}
 	format := extensionToFormat(sourceRepo.Extension)
 	timeOfRun := time.Now()
@@ -52,8 +52,8 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 		if err != nil {
 			return err
 		}
-		if hasUpdateTime {
-			if obj.Attrs.Updated.Before(lastUpdated) || obj.Attrs.Updated.Equal(lastUpdated) {
+		if !reimport {
+			if !obj.Attrs.Updated.After(lastUpdated) {
 				continue
 			}
 		}
@@ -70,14 +70,13 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 				bucket:     bucket,
 				objectPath: obj.Name,
 			},
-			SourceRepository: sourceRepo.Name,
-			SourcePath:       obj.Name,
-			LastUpdated:      lastUpdated,
-			HasLastUpdated:   hasUpdateTime,
-			Format:           format,
-			KeyPath:          sourceRepo.KeyPath,
-			Strict:           sourceRepo.Strictness,
-			IsReimport:       !hasUpdateTime,
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             obj.Name,
+			CompareAgainstDatabase: !reimport,
+			Format:                 format,
+			KeyPath:                sourceRepo.KeyPath,
+			Strict:                 sourceRepo.Strictness,
+			IsReimport:             reimport,
 		}
 	}
 

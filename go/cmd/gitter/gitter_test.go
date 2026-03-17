@@ -187,6 +187,7 @@ func TestCacheHandler(t *testing.T) {
 			reqProto := &pb.CacheRequest{Url: tt.url}
 			body, _ := protojson.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/cache", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -275,6 +276,7 @@ func TestAffectedCommitsHandler(t *testing.T) {
 
 			body, _ := protojson.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/affected-commits", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}

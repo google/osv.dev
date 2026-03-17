@@ -170,6 +170,8 @@ var reconcileSkipSources = []string{
 	"almalinux-alsa",
 	// Has a bunch of 404s
 	"openeuler",
+	// cve-osv is in a state of flux at the moment, let's wait a bit
+	"cve-osv",
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record

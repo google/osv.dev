@@ -320,7 +320,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	}
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
-	if item.CompareAgainstDatabase {
+	if !item.IsReimport && item.CompareAgainstDatabase {
 		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, vulnProto.GetId())
 		// only update if modified is strictly after dbModified (or if the vuln is new)
 		if err == nil && !modified.After(dbModified) {

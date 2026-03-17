@@ -6,9 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -25,7 +27,10 @@ func TestWriteToDisk(t *testing.T) {
 	}
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
-	writeToDisk(v, preModifiedBuf, tempDir)
+	err := writeToDisk(v, preModifiedBuf, tempDir)
+	if err != nil {
+		t.Errorf("Expected writeToDisk to return nil, got %v", err)
+	}
 
 	filePath := path.Join(tempDir, "CVE-2023-1234.json")
 	content, err := os.ReadFile(filePath)
@@ -54,7 +59,10 @@ func TestUploadToGCS(t *testing.T) {
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
 	t.Run("Upload new object", func(t *testing.T) {
-		uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		if err != nil {
+			t.Errorf("Expected uploadToGCS to return nil for new object, got %v", err)
+		}
 
 		obj := bkt.Object("CVE-2023-1234.json")
 		attrs, err := obj.Attrs(ctx)
@@ -73,7 +81,10 @@ func TestUploadToGCS(t *testing.T) {
 	t.Run("Skip upload if hash matches", func(t *testing.T) {
 		// Modify the vulnerability to simulate a change in modified time but not content
 		v.Modified = timestamppb.New(time.Now().Add(1 * time.Hour))
-		uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		if !errors.Is(err, ErrUploadSkipped) {
+			t.Errorf("Expected uploadToGCS to return ErrUploadSkipped when hash matches, got %v", err)
+		}
 
 		obj := bkt.Object("CVE-2023-1234.json")
 		attrs2, err := obj.Attrs(ctx)
@@ -90,7 +101,10 @@ func TestUploadToGCS(t *testing.T) {
 
 	t.Run("Upload if hash differs", func(t *testing.T) {
 		preModifiedBuf2 := []byte(`{"id":"CVE-2023-1234", "summary": "updated"}`)
-		uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
+		err := uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
+		if err != nil {
+			t.Errorf("Expected uploadToGCS to return nil when hash differs, got %v", err)
+		}
 
 		obj := bkt.Object("CVE-2023-1234.json")
 		attrs3, err := obj.Attrs(ctx)
@@ -229,7 +243,12 @@ func TestWorker(t *testing.T) {
 	}
 	w.Close()
 
-	Worker(ctx, vulnChan, outBkt, overridesBkt, "")
+	var counter atomic.Uint64
+	Worker(ctx, vulnChan, outBkt, overridesBkt, "", &counter)
+
+	if counter.Load() != 2 {
+		t.Errorf("Expected counter to be 2, got %d", counter.Load())
+	}
 
 	// Check v1
 	obj1 := outBkt.Object("CVE-2023-1234.json")

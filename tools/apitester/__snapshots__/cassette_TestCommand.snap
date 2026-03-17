@@ -879,11 +879,11 @@
       "vulns": [
         {
           "id": "CVE-2023-39137",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "CVE-2023-39139",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2099,6 +2099,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-2673",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DLA-3008-1",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -3100,7 +3104,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},
@@ -3633,7 +3644,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names#01 - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},

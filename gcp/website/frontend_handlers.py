@@ -888,23 +888,32 @@ _ANCHOR_TAG_REPLACER = re.compile(
 def markdown(text):
   """Render markdown."""
   if text:
-    md = markdown2.markdown(
-        text, safe_mode='escape', extras=['fenced-code-blocks'])
-    # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
-    # unclosed HTML comments <!--, which ends up commenting out the whole page
-    # See: https://github.com/trentm/python-markdown2/issues/563
-    # For now, manually replace any leftover comments with the escaped form
-    md = md.replace('<!--', '&lt;!--')
+    try:
+      md = markdown2.markdown(
+          text, safe_mode='escape', extras=['fenced-code-blocks'])
+      # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+      # unclosed HTML comments <!--, which ends up commenting out the whole page
+      # See: https://github.com/trentm/python-markdown2/issues/563
+      # For now, manually replace any leftover comments with the escaped form
+      md = md.replace('<!--', '&lt;!--')
 
-    # TODO(rexpan): There is a bug with the markdown2 escaping + as
-    # space rather than %2B
-    # See: https://github.com/trentm/python-markdown2/issues/621
-    md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
-    # Removes empty anchor tags that cause visual artifacts in rendered markdown
-    # See: https://github.com/google/osv.dev/issues/4237
-    md = _ANCHOR_TAG_REPLACER.sub('', md)
+      # TODO(rexpan): There is a bug with the markdown2 escaping + as
+      # space rather than %2B
+      # See: https://github.com/trentm/python-markdown2/issues/621
+      md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+      # Removes empty anchor tags that cause visual artifacts
+      # in rendered markdown
+      # See: https://github.com/google/osv.dev/issues/4237
+      md = _ANCHOR_TAG_REPLACER.sub('', md)
 
-    return md
+      return md
+    except Exception as e:
+      logging.error('Failed to render markdown: %s', e)
+      escaped_text = escape(text)
+      return Markup(f'''
+        <h4>Failed to render markdown, so here\'s the raw details field:</h4>
+        <pre><code>{escaped_text}</code></pre>
+      ''')
 
   return ''
 

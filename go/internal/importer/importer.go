@@ -429,6 +429,9 @@ func importerWorker(_ context.Context, ch <-chan WorkItem, config Config) {
 						slog.String("source", item.SourceRepository),
 						slog.String("path", item.SourcePath))
 				}
+				logger.InfoContext(ctx, "Sent deletion to worker",
+					slog.String("source", item.SourceRepository),
+					slog.String("path", item.SourcePath))
 			}
 		}()
 	}

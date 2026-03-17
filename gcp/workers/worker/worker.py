@@ -695,9 +695,12 @@ class TaskRunner:
       # Update the bug entity based on the comparison.
       if has_changed:
         ds_vuln.modified = osv.utcnow()
-      else:
+      elif ds_vuln.modified:
         # If no meaningful change, ensure last_modified reflects the source
-        # file's modified date, as only metadata might have changed.
+        # file's modified date or the date in the database, whichever is later.
+        ds_vuln.modified = max(ds_vuln.modified, orig_modified_date)
+      else:
+        # New record, so set it to the upstream records modified date.
         ds_vuln.modified = orig_modified_date
 
       # Overwrite aliases / upstream from computation

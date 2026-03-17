@@ -444,9 +444,11 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 	addedRoot := false // Only add root commits once if multiple intro=0 are provided
 
 	for _, hash := range hashesStr {
-		if hash == "0" && !addedRoot {
-			indices = append(indices, r.rootCommits...)
-			addedRoot = true
+		if hash == "0" {
+			if !addedRoot {
+				indices = append(indices, r.rootCommits...)
+				addedRoot = true
+			}
 			continue
 		}
 

@@ -10,15 +10,15 @@
       "references": [
         {
           "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/4EAIZKL4O67FN2CWJYHYKZEMNYWNWO3D/"
+        },
+        {
+          "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/5A7TCR2MY46YK3NHQZB3SLESUH354IEA/"
         },
         {
           "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/DI6247WOAKB46CZZ6SCDSJVWWCW3GMZH/"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/4EAIZKL4O67FN2CWJYHYKZEMNYWNWO3D/"
         },
         {
           "type": "ADVISORY",
@@ -1420,14 +1420,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-0853.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-0853.json"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240307-0004/"
         },
         {
@@ -1437,6 +1429,14 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-0853.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-0853.json"
         },
         {
           "type": "REPORT",
@@ -1495,10 +1495,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250124-0012/"
         },
         {
@@ -1516,6 +1512,10 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-11053.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
           "type": "REPORT",
@@ -1571,27 +1571,11 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
           "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214118"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
@@ -1615,7 +1599,23 @@
         },
         {
           "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "REPORT",
@@ -1666,7 +1666,7 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
+          "url": "https://support.apple.com/kb/HT214119"
         },
         {
           "type": "ADVISORY",
@@ -1674,15 +1674,15 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
@@ -1702,7 +1702,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214118"
+          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
         },
         {
           "type": "REPORT",
@@ -1760,11 +1760,19 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+          "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
           "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
         },
         {
           "type": "ADVISORY",
@@ -1780,19 +1788,11 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214118"
         },
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
@@ -1800,11 +1800,11 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
+          "url": "https://support.apple.com/kb/HT214119"
         },
         {
           "type": "REPORT",
@@ -1855,27 +1855,15 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.json"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.json"
         },
         {
           "type": "ADVISORY",
@@ -1892,6 +1880,18 @@
         {
           "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.html"
         },
         {
           "type": "REPORT",
@@ -1941,10 +1941,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240822-0004/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/24/2"
         },
         {
@@ -1954,6 +1950,10 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-6874.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240822-0004/"
         },
         {
           "type": "REPORT",
@@ -2092,6 +2092,10 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-8096.html"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-8096.json"
         },
         {
@@ -2105,10 +2109,6 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241011-0005/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-8096.html"
         },
         {
           "type": "REPORT",
@@ -2164,27 +2164,11 @@
       "references": [
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
-        },
-        {
-          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
         },
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
         },
         {
           "type": "WEB",
@@ -2195,16 +2179,32 @@
           "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-9681.json"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
+        },
+        {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
+          "url": "https://hackerone.com/reports/2764830"
         },
         {
           "type": "FIX",
@@ -2212,7 +2212,7 @@
         },
         {
           "type": "FIX",
-          "url": "https://hackerone.com/reports/2764830"
+          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
         }
       ],
       "affected": [
@@ -2322,10 +2322,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0007/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0665.html"
         },
         {
@@ -2339,6 +2335,10 @@
         {
           "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0007/"
         },
         {
           "type": "REPORT",
@@ -2392,15 +2392,15 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-0725.json"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0725.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-0725.json"
         },
         {
           "type": "REPORT",
@@ -2609,11 +2609,11 @@
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-14524.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
         }
       ],
       "affected": [
@@ -2739,11 +2739,11 @@
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-15079.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
         }
       ],
       "affected": [

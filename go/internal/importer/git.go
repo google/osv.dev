@@ -298,6 +298,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 		if !errors.Is(err, context.Canceled) {
 			logger.ErrorContext(ctx, "Failed to clone git source repository for reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		}
+
 		return err
 	}
 

@@ -90,7 +90,7 @@ func Run(ctx context.Context, config Config) error {
 		if err != nil {
 			return err
 		}
-		//nolint:dupl // Some duplication here is fine
+
 		sourceWg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
@@ -174,6 +174,8 @@ var reconcileSkipSources = []string{
 	"root",
 	// cve-osv is in a state of flux at the moment, let's wait a bit
 	"cve-osv",
+	// ignore chainguard for now as well because their record is too big
+	"chainguard",
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
@@ -224,7 +226,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 			logger.InfoContext(ctx, "Skipping reconciliation for source", slog.String("source", sourceRepo.Name))
 			continue
 		}
-		//nolint:dupl // Some duplication here is fine
+
 		wg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
@@ -575,8 +577,8 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		if err == nil {
 			switch item.Action {
 			case ActionImport:
-				// If the record is older than the last update time, skip it
-				if dbModified.After(modified) {
+				// If the record is older or equal to the last update time, skip it
+				if modified.Before(dbModified) || modified.Equal(dbModified) {
 					return
 				}
 			case ActionReconcile:

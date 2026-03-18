@@ -138,7 +138,11 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			return true
 		}
 		path := id.String() + sourceRepo.Extension
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			iterErr = ctx.Err()
+			return false
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: restSourceRecord{
 				cl:      config.HTTPClient,
@@ -152,6 +156,7 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			KeyPath:                sourceRepo.KeyPath,
 			Strict:                 sourceRepo.Strictness,
 			IsReimport:             !hasUpdateTime,
+		}:
 		}
 
 		return true
@@ -286,10 +291,10 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: restSourceRecord{
 				cl:      config.HTTPClient,
@@ -299,6 +304,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
 			Action:           ActionWithdraw,
+		}:
 		}
 	}
 

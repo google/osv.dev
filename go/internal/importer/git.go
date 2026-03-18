@@ -139,7 +139,10 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 		}
 		if to == "" {
 			// Object was deleted / moved to ignored
-			ch <- WorkItem{
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case ch <- WorkItem{
 				Context: ctx,
 				SourceRecord: gitSourceRecord{
 					path: from,
@@ -152,12 +155,16 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 				Format:           format,
 				KeyPath:          sourceRepo.KeyPath,
 				IsReimport:       isReimport,
+			}:
 			}
 
 			continue
 		}
 		// object created/modified - send to channel
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: gitSourceRecord{
 				repo:   repo,
@@ -170,6 +177,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 			KeyPath:          sourceRepo.KeyPath,
 			IsReimport:       isReimport,
 			Strict:           sourceRepo.Strictness,
+		}:
 		}
 	}
 
@@ -287,7 +295,9 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 		}, nil
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to clone git source repository for reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		if !errors.Is(err, context.Canceled) {
+			logger.ErrorContext(ctx, "Failed to clone git source repository for reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		}
 		return err
 	}
 

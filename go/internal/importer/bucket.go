@@ -64,7 +64,10 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 		if shouldIgnore(base, sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			continue
 		}
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: bucketSourceRecord{
 				bucket:     bucket,
@@ -77,6 +80,7 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			KeyPath:                sourceRepo.KeyPath,
 			Strict:                 sourceRepo.Strictness,
 			IsReimport:             reimport,
+		}:
 		}
 	}
 
@@ -160,10 +164,10 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: bucketSourceRecord{
 				bucket:     bucket,
@@ -172,6 +176,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
 			Action:           ActionWithdraw,
+		}:
 		}
 	}
 

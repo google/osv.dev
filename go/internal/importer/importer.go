@@ -231,15 +231,27 @@ func RunReconcile(ctx context.Context, config Config) error {
 			switch sourceRepo.Type {
 			case models.SourceRepositoryTypeGit:
 				if err := handleReconcileGit(ctx, workCh, config, sourceRepo); err != nil {
-					logger.ErrorContext(ctx, "Failed to reconcile git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					if errors.Is(err, context.Canceled) {
+						logger.WarnContext(ctx, "Cancelled reconciling git source repository", slog.String("source", sourceRepo.Name))
+					} else {
+						logger.ErrorContext(ctx, "Failed to reconcile git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					}
 				}
 			case models.SourceRepositoryTypeBucket:
 				if err := handleReconcileBucket(ctx, workCh, config, sourceRepo); err != nil {
-					logger.ErrorContext(ctx, "Failed to reconcile bucket source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					if errors.Is(err, context.Canceled) {
+						logger.WarnContext(ctx, "Cancelled reconciling bucket source repository", slog.String("source", sourceRepo.Name))
+					} else {
+						logger.ErrorContext(ctx, "Failed to reconcile bucket source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					}
 				}
 			case models.SourceRepositoryTypeREST:
 				if err := handleReconcileREST(ctx, workCh, config, sourceRepo); err != nil {
-					logger.ErrorContext(ctx, "Failed to reconcile REST source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					if errors.Is(err, context.Canceled) {
+						logger.WarnContext(ctx, "Cancelled reconciling REST source repository", slog.String("source", sourceRepo.Name))
+					} else {
+						logger.ErrorContext(ctx, "Failed to reconcile REST source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+					}
 				}
 			default:
 				logger.ErrorContext(ctx, "Unsupported source repository type for reconciliation", slog.String("source", sourceRepo.Name), slog.Any("type", sourceRepo.Type))
@@ -294,14 +306,15 @@ func checkReconcile(
 	format RecordFormat,
 ) {
 	recordTemplate := WorkItem{
-		Context:          ctx,
-		SourceRecord:     sourceRecord,
-		SourceRepository: sourceRepo.Name,
-		SourcePath:       path,
-		Format:           format,
-		KeyPath:          sourceRepo.KeyPath,
-		Strict:           sourceRepo.Strictness,
-		IsReimport:       true,
+		Context:                ctx,
+		SourceRecord:           sourceRecord,
+		SourceRepository:       sourceRepo.Name,
+		SourcePath:             path,
+		Format:                 format,
+		KeyPath:                sourceRepo.KeyPath,
+		Strict:                 sourceRepo.Strictness,
+		CompareAgainstDatabase: true,
+		IsReimport:             true,
 	}
 
 	dbMod, exists := dbRecords[path]
@@ -311,7 +324,10 @@ func checkReconcile(
 			slog.String("path", path))
 		// Trigger a standard import
 		recordTemplate.Action = ActionImport
-		ch <- recordTemplate
+		select {
+		case <-ctx.Done():
+		case ch <- recordTemplate:
+		}
 
 		return
 	}
@@ -337,7 +353,12 @@ func checkReconcile(
 
 			// We found that it is outdated, trigger a standard import
 			recordTemplate.Action = ActionImport
-			ch <- recordTemplate
+			recordTemplate.CompareAgainstDatabase = false
+
+			select {
+			case <-ctx.Done():
+			case ch <- recordTemplate:
+			}
 		}
 
 		return
@@ -345,8 +366,11 @@ func checkReconcile(
 
 	// Otherwise trigger a reconcile action to get the modified date from upstream
 	recordTemplate.Action = ActionReconcile
-
-	ch <- recordTemplate
+	recordTemplate.CompareAgainstDatabase = true
+	select {
+	case <-ctx.Done():
+	case ch <- recordTemplate:
+	}
 }
 
 func getModifiedTime(parsed *gjson.Result) (time.Time, error) {

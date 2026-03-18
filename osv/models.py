@@ -1047,6 +1047,11 @@ class ListedVulnerability(ndb.Model):
   # Strings this matches when searching.
   search_indices: list[str] = ndb.StringProperty(repeated=True)
 
+  # The maximum number of search indices and autocomplete tags to store (each).
+  # Datastore has a limit of 20000 indexed properties + composite indexes.
+  # We use 2000 to be conservative.
+  _MAX_INDICES = 2000
+
   @classmethod
   def from_vulnerability(
       cls: Self, vulnerability: vulnerability_pb2.Vulnerability) -> Self:
@@ -1066,17 +1071,13 @@ class ListedVulnerability(ndb.Model):
 
     search_indices = set()
     search_indices.update(_tokenize(vulnerability.id))
+    pkg_search_indices = set()
+    repo_search_indices = set()
     autocomplete_tags = {vulnerability.id.lower()}
-
-    for alias in vulnerability.aliases:
-      search_indices.update(_tokenize(alias))
-    for upstream in vulnerability.upstream:
-      search_indices.update(_tokenize(upstream))
-    # related intentionally omitted
 
     for affected in vulnerability.affected:
       if affected.package.name:
-        search_indices.update(_tokenize(affected.package.name))
+        pkg_search_indices.add(affected.package.name.lower())
         autocomplete_tags.add(affected.package.name.lower())
         all_packages.add(affected.package.ecosystem + '/' +
                          affected.package.name)
@@ -1088,32 +1089,81 @@ class ListedVulnerability(ndb.Model):
       for r in affected.ranges:
         if r.type == vulnerability_pb2.Range.Type.GIT:
           all_ecosystems.add('GIT')
-          search_indices.add(r.repo)
+          repo_search_indices.add(r.repo.lower())
           autocomplete_tags.add(r.repo.lower())
-          split = r.repo.split('//')
+
+          split = r.repo.lower().split('//')
           if len(split) >= 2:
             no_http = split[1]
             all_packages.add(no_http)
-            search_indices.add(no_http)
-            # Add the path components exluding the domain name
-            search_indices.update(no_http.split('/')[1:])
           else:
-            all_packages.add(r.repo)
+            all_packages.add(r.repo.lower())
 
         if any(e.fixed or e.limit for e in r.events):
           is_fixed = True
 
+    # prioritize exact matches for repo and package names
+    # before adding tokenized versions
+    search_indices.update(repo_search_indices)
+    search_indices.update(pkg_search_indices)
+    for repo in repo_search_indices:
+      if len(search_indices) >= cls._MAX_INDICES:
+        break
+      split = repo.split('//')
+      if len(split) >= 2:
+        no_http = split[1]
+        search_indices.add(no_http)
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        # Add the path components exluding the domain name
+        to_add = no_http.split('/')[1:]
+        for t in to_add:
+          if len(search_indices) >= cls._MAX_INDICES:
+            break
+          search_indices.add(t)
+
+    for pkg in pkg_search_indices:
+      if len(search_indices) >= cls._MAX_INDICES:
+        break
+      to_add = _tokenize(pkg)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
+
     for eco in all_ecosystems:
       # TODO(michaelkedar): Seems like a noisy/useless search index?
-      search_indices.update(_tokenize(eco))
+      to_add = _tokenize(eco)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
       if (e := ecosystems.remove_variants(eco)) is not None:
-        search_indices.update(_tokenize(e))
+        to_add = _tokenize(e)
+        for t in to_add:
+          if len(search_indices) >= cls._MAX_INDICES:
+            break
+          search_indices.add(t)
+
+    for alias in vulnerability.aliases:
+      to_add = _tokenize(alias)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
+    for upstream in vulnerability.upstream:
+      to_add = _tokenize(upstream)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
+    # related intentionally omitted
 
     ecos = sorted({ecosystems.normalize(e) for e in all_ecosystems})
     pkgs = sorted(all_packages)
     sevs = [Severity(type=t, score=s) for t, s in sorted(severities)]
-    search_indices = sorted(search_indices)
-    autocomplete_tags = sorted(autocomplete_tags)
+    search_indices = sorted(search_indices)[:cls._MAX_INDICES]
+    autocomplete_tags = sorted(autocomplete_tags)[:cls._MAX_INDICES]
 
     return cls(
         id=vulnerability.id,

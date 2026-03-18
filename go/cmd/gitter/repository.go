@@ -123,14 +123,6 @@ func (r *Repository) getOrCreateIndex(hash SHA1) int {
 	return idx
 }
 
-// For test setup
-func (r *Repository) addEdgeForTest(parent, child SHA1) {
-	pIdx := r.getOrCreateIndex(parent)
-	cIdx := r.getOrCreateIndex(child)
-	r.commitGraph[pIdx] = append(r.commitGraph[pIdx], cIdx)
-	r.commits[cIdx].Parents = append(r.commits[cIdx].Parents, pIdx)
-}
-
 // buildCommitGraph builds the commit graph and associate commit details from scratch
 // Returns a list of new commit indexes that don't have cached Patch IDs.
 // The new commit list is in reverse chronological order based on commit date (the default for git log).

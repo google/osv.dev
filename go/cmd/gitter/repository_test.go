@@ -138,6 +138,14 @@ func TestLoadRepository(t *testing.T) {
 	}
 }
 
+// For test setup
+func (r *Repository) addEdgeForTest(parent, child SHA1) {
+	pIdx := r.getOrCreateIndex(parent)
+	cIdx := r.getOrCreateIndex(child)
+	r.commitGraph[pIdx] = append(r.commitGraph[pIdx], cIdx)
+	r.commits[cIdx].Parents = append(r.commits[cIdx].Parents, pIdx)
+}
+
 // Helper to decode string into SHA1
 func decodeSHA1(s string) SHA1 {
 	var hash SHA1
@@ -265,78 +273,81 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 	repo.addEdgeForTest(hD, hE)
 	repo.addEdgeForTest(hF, hG)
 	repo.addEdgeForTest(hH, hD)
+	repo.rootCommits = []int{0} // Root commit is A
 
 	tests := []struct {
 		name         string
-		introduced   []SHA1
-		fixed        []SHA1
-		lastAffected []SHA1
+		se           *SeparatedEvents
 		expected     []SHA1
 	}{
 		{
-			name:       "Linear: A introduced, B fixed",
-			introduced: []SHA1{hA},
-			fixed:      []SHA1{hB},
-			expected:   []SHA1{hA},
+			name: "Linear: A introduced, B fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{hA},
 		},
 		{
-			name:       "Branch propagation: A introduced, C fixed",
-			introduced: []SHA1{hA},
-			fixed:      []SHA1{hC},
-			expected:   []SHA1{hA, hB, hH},
+			name: "Branch propagation: A introduced, C fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hC)},
+			},
+			expected: []SHA1{hA, hB, hH},
 		},
 		{
-			name:       "Re-introduced: (A,C) introduced, (B,D,G) fixed",
-			introduced: []SHA1{hA, hC},
-			fixed:      []SHA1{hB, hD, hG},
-			expected:   []SHA1{hA, hC, hF},
+			name: "Re-introduced: (A,C) introduced, (B,D,G) fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA), encodeSHA1(hC)},
+				Fixed:      []string{encodeSHA1(hB), encodeSHA1(hD), encodeSHA1(hG)},
+			},
+			expected: []SHA1{hA, hC, hF},
 		},
 		{
-			name:       "Merge intro: H introduced, E fixed",
-			introduced: []SHA1{hH},
-			fixed:      []SHA1{hE},
-			expected:   []SHA1{hH, hD},
+			name: "Merge intro: H introduced, E fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hH)},
+				Fixed:      []string{encodeSHA1(hE)},
+			},
+			expected: []SHA1{hH, hD},
 		},
 		{
-			name:       "Merge fix: A introduced, H fixed",
-			introduced: []SHA1{hA},
-			fixed:      []SHA1{hH},
-			expected:   []SHA1{hA, hB, hC, hF, hG},
+			name: "Merge fix: A introduced, H fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hH)},
+			},
+			expected: []SHA1{hA, hB, hC, hF, hG},
 		},
 		{
-			name:       "Merge intro and fix (different branches): C introduced, H fixed",
-			introduced: []SHA1{hC},
-			fixed:      []SHA1{hH},
-			expected:   []SHA1{hC, hD, hE, hF, hG},
+			name: "Merge intro and fix (different branches): C introduced, H fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hC)},
+				Fixed:      []string{encodeSHA1(hH)},
+			},
+			expected: []SHA1{hC, hD, hE, hF, hG},
 		},
 		{
-			name:       "Everything affected if no fix",
-			introduced: []SHA1{hA},
-			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
+			name: "Introduced = 0: C fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+				Fixed: []string{encodeSHA1(hC)},
+			},
+			expected: []SHA1{hA, hB, hH},
+		},
+		{
+			name: "Introduced = 0: no fix",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+			},
+			expected: []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert SHA1 to string for the new API
-			introStrs := make([]string, len(tt.introduced))
-			for i, h := range tt.introduced {
-				introStrs[i] = encodeSHA1(h)
-			}
-			fixedStrs := make([]string, len(tt.fixed))
-			for i, h := range tt.fixed {
-				fixedStrs[i] = encodeSHA1(h)
-			}
-			laStrs := make([]string, len(tt.lastAffected))
-			for i, h := range tt.lastAffected {
-				laStrs[i] = encodeSHA1(h)
-			}
-			se := &SeparatedEvents{
-				Introduced:   introStrs,
-				Fixed:        fixedStrs,
-				LastAffected: laStrs,
-			}
-			gotCommits := repo.Affected(t.Context(), se, false, false)
+			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -378,78 +389,81 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 	repo.addEdgeForTest(hD, hE)
 	repo.addEdgeForTest(hF, hG)
 	repo.addEdgeForTest(hH, hD)
+	repo.rootCommits = []int{0} // Root commit is A
 
 	tests := []struct {
-		name         string
-		introduced   []SHA1
-		fixed        []SHA1
-		lastAffected []SHA1
-		expected     []SHA1
+		name     string
+		se       *SeparatedEvents
+		expected []SHA1
 	}{
 		{
-			name:         "Linear: D introduced, E lastAffected",
-			introduced:   []SHA1{hD},
-			lastAffected: []SHA1{hE},
-			expected:     []SHA1{hD, hE},
+			name: "Linear: D introduced, E lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hD)},
+				LastAffected: []string{encodeSHA1(hE)},
+			},
+			expected: []SHA1{hD, hE},
 		},
 		{
-			name:         "Branch propagation: A introduced, C lastAffected",
-			introduced:   []SHA1{hA},
-			lastAffected: []SHA1{hC},
-			expected:     []SHA1{hA, hB, hC, hH},
+			name: "Branch propagation: A introduced, C lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				LastAffected: []string{encodeSHA1(hC)},
+			},
+			expected: []SHA1{hA, hB, hC, hH},
 		},
 		{
-			name:         "Re-introduced: (A,D) introduced, (B,E) lastAffected",
-			introduced:   []SHA1{hA, hD},
-			lastAffected: []SHA1{hB, hE},
-			expected:     []SHA1{hA, hB, hD, hE},
+			name: "Re-introduced: (A,D) introduced, (B,E) lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA), encodeSHA1(hD)},
+				LastAffected: []string{encodeSHA1(hB), encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB, hD, hE},
 		},
 		{
-			name:         "Merge intro: H introduced, D lastAffected",
-			introduced:   []SHA1{hH},
-			lastAffected: []SHA1{hD},
-			expected:     []SHA1{hH, hD},
+			name: "Merge intro: H introduced, D lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hH)},
+				LastAffected: []string{encodeSHA1(hD)},
+			},
+			expected: []SHA1{hH, hD},
 		},
 		{
-			name:         "Merge lastAffected: A introduced, H lastAffected",
-			introduced:   []SHA1{hA},
-			lastAffected: []SHA1{hH},
-			expected:     []SHA1{hA, hB, hC, hF, hG, hH},
+			name: "Merge lastAffected: A introduced, H lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				LastAffected: []string{encodeSHA1(hH)},
+			},
+			expected: []SHA1{hA, hB, hC, hF, hG, hH},
 		},
 		{
-			name:         "Merge intro and lastAffected (different branches): C introduced, H lastAffected",
-			introduced:   []SHA1{hC},
-			lastAffected: []SHA1{hH},
-			expected:     []SHA1{hC, hF, hG},
+			name: "Merge intro and lastAffected (different branches): C introduced, H lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hC)},
+				LastAffected: []string{encodeSHA1(hH)},
+			},
+			expected: []SHA1{hC, hF, hG},
 		},
 		{
-			name:       "Everything affected if no lastAffected",
-			introduced: []SHA1{hA},
-			expected:   []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
+			name: "Introduced = 0: C lastAffected",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+				LastAffected: []string{encodeSHA1(hC)},
+			},
+			expected: []SHA1{hA, hB, hC, hH},
+		},
+		{
+			name: "Introduced = 0: no fix",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+			},
+			expected: []SHA1{hA, hB, hC, hD, hE, hF, hG, hH},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert SHA1 to string for the new API
-			introStrs := make([]string, len(tt.introduced))
-			for i, h := range tt.introduced {
-				introStrs[i] = encodeSHA1(h)
-			}
-			fixedStrs := make([]string, len(tt.fixed))
-			for i, h := range tt.fixed {
-				fixedStrs[i] = encodeSHA1(h)
-			}
-			laStrs := make([]string, len(tt.lastAffected))
-			for i, h := range tt.lastAffected {
-				laStrs[i] = encodeSHA1(h)
-			}
-			se := &SeparatedEvents{
-				Introduced:   introStrs,
-				Fixed:        fixedStrs,
-				LastAffected: laStrs,
-			}
-			gotCommits := repo.Affected(t.Context(), se, false, false)
+			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -494,49 +508,58 @@ func TestAffected_Combined(t *testing.T) {
 	repo.addEdgeForTest(hH, hD)
 
 	tests := []struct {
-		name         string
-		introduced   []SHA1
-		fixed        []SHA1
-		lastAffected []SHA1
-		expected     []SHA1
+		name     string
+		se       *SeparatedEvents
+		expected []SHA1
 	}{
 		{
-			name:         "Branching out: C introduced, G fixed, D lastAffected",
-			introduced:   []SHA1{hC},
-			fixed:        []SHA1{hG},
-			lastAffected: []SHA1{hD},
-			expected:     []SHA1{hC, hD, hF},
+			name: "Branching out: C introduced, G fixed, D lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hC)},
+				Fixed:        []string{encodeSHA1(hG)},
+				LastAffected: []string{encodeSHA1(hD)},
+			},
+			expected: []SHA1{hC, hD, hF},
 		},
 		{
-			name:         "Redundant Blocking: A introduced, B fixed, E lastAffected",
-			introduced:   []SHA1{hA},
-			fixed:        []SHA1{hB},
-			lastAffected: []SHA1{hE},
-			expected:     []SHA1{hA},
+			name: "Redundant Blocking: A introduced, B fixed, E lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				Fixed:        []string{encodeSHA1(hB)},
+				LastAffected: []string{encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA},
+		},
+		{
+			name: "Introduced=Fixed: No affected commit",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hB)},
+				Fixed:        []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{},
+		},
+		{
+			name: "Introduced=lastAffected: Only 1 commit affected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hB)},
+				LastAffected: []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{hB},
+		},
+		{
+			name: "Fixed=lastAffected: Stop at fix, lastAffected no effect",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				Fixed:        []string{encodeSHA1(hB)},
+				LastAffected: []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{hA},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert SHA1 to string for the new API
-			introStrs := make([]string, len(tt.introduced))
-			for i, h := range tt.introduced {
-				introStrs[i] = encodeSHA1(h)
-			}
-			fixedStrs := make([]string, len(tt.fixed))
-			for i, h := range tt.fixed {
-				fixedStrs[i] = encodeSHA1(h)
-			}
-			laStrs := make([]string, len(tt.lastAffected))
-			for i, h := range tt.lastAffected {
-				laStrs[i] = encodeSHA1(h)
-			}
-			se := &SeparatedEvents{
-				Introduced:   introStrs,
-				Fixed:        fixedStrs,
-				LastAffected: laStrs,
-			}
-			gotCommits := repo.Affected(t.Context(), se, false, false)
+			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -579,6 +602,7 @@ func TestAffected_Cherrypick(t *testing.T) {
 	repo.addEdgeForTest(hE, hF)
 	repo.addEdgeForTest(hF, hG)
 	repo.addEdgeForTest(hG, hH)
+	repo.rootCommits = []int{0}
 
 	// Setup PatchID map for cherrypicking
 	idxA := repo.getOrCreateIndex(hA)
@@ -595,32 +619,47 @@ func TestAffected_Cherrypick(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		introduced      []SHA1
-		fixed           []SHA1
+		se              *SeparatedEvents
 		cherrypickIntro bool
 		cherrypickFixed bool
 		expected        []SHA1
 	}{
 		{
-			name:            "Cherrypick Introduced Only: A introduced, G fixed",
-			introduced:      []SHA1{hA},
-			fixed:           []SHA1{hG},
+			name: "Cherrypick Introduced Only: A introduced, G fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hG)},
+			},
 			cherrypickIntro: true,
 			cherrypickFixed: false,
 			expected:        []SHA1{hA, hB, hC, hD, hE, hF},
 		},
 		{
-			name:            "Cherrypick Fixed Only: A introduced, G fixed",
-			introduced:      []SHA1{hA},
-			fixed:           []SHA1{hG},
+			name: "Cherrypick Fixed Only: A introduced, G fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hG)},
+			},
 			cherrypickIntro: false,
 			cherrypickFixed: true,
 			expected:        []SHA1{hA, hB},
 		},
 		{
-			name:            "Cherrypick Introduced and Fixed: A introduced, G fixed",
-			introduced:      []SHA1{hA},
-			fixed:           []SHA1{hG},
+			name: "Cherrypick Introduced and Fixed: A introduced, G fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hG)},
+			},
+			cherrypickIntro: true,
+			cherrypickFixed: true,
+			expected:        []SHA1{hA, hB, hE, hF},
+		},
+		{
+			name: "Cherrypick Introduced=0: G fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+				Fixed:      []string{encodeSHA1(hG)},
+			},
 			cherrypickIntro: true,
 			cherrypickFixed: true,
 			expected:        []SHA1{hA, hB, hE, hF},
@@ -629,21 +668,7 @@ func TestAffected_Cherrypick(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert SHA1 to string for the new API
-			introStrs := make([]string, len(tt.introduced))
-			for i, h := range tt.introduced {
-				introStrs[i] = encodeSHA1(h)
-			}
-			fixedStrs := make([]string, len(tt.fixed))
-			for i, h := range tt.fixed {
-				fixedStrs[i] = encodeSHA1(h)
-			}
-
-			se := &SeparatedEvents{
-				Introduced: introStrs,
-				Fixed:      fixedStrs,
-			}
-			gotCommits := repo.Affected(t.Context(), se, tt.cherrypickIntro, tt.cherrypickFixed)
+			gotCommits := repo.Affected(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickFixed)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -682,50 +707,50 @@ func TestLimit(t *testing.T) {
 	repo.addEdgeForTest(hD, hE)
 	repo.addEdgeForTest(hF, hG)
 	repo.addEdgeForTest(hG, hH)
+	repo.rootCommits = []int{0} // A is root commit
 
 	tests := []struct {
-		name       string
-		introduced []SHA1
-		limit      []SHA1
-		expected   []SHA1
+		name     string
+		se       *SeparatedEvents
+		expected []SHA1
 	}{
 		{
-			name:       "One branch: A introduced, D limit",
-			introduced: []SHA1{hA},
-			limit:      []SHA1{hD},
-			expected:   []SHA1{hA, hB, hC},
+			name: "One branch: A introduced, D limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Limit:      []string{encodeSHA1(hD)},
+			},
+			expected: []SHA1{hA, hB, hC},
 		},
 		{
-			name:       "Side branch: A introduced, G limit",
-			introduced: []SHA1{hA},
-			limit:      []SHA1{hG},
-			expected:   []SHA1{hA, hB, hF},
+			name: "Side branch: A introduced, G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			expected: []SHA1{hA, hB, hF},
 		},
 		{
-			name:       "Two branches: A introduced, (D,G) limit",
-			introduced: []SHA1{hA},
-			limit:      []SHA1{hD, hG},
-			expected:   []SHA1{hA, hB, hC, hF},
+			name: "Two branches: A introduced, (D,G) limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Limit:      []string{encodeSHA1(hD), encodeSHA1(hG)},
+			},
+			expected: []SHA1{hA, hB, hC, hF},
+		},
+		{
+			name: "Introduced=0, G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			expected: []SHA1{hA, hB, hF},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Convert SHA1 to string for the new API
-			introStrs := make([]string, len(tt.introduced))
-			for i, h := range tt.introduced {
-				introStrs[i] = encodeSHA1(h)
-			}
-			limitStrs := make([]string, len(tt.limit))
-			for i, h := range tt.limit {
-				limitStrs[i] = encodeSHA1(h)
-			}
-
-			se := &SeparatedEvents{
-				Introduced: introStrs,
-				Limit:      limitStrs,
-			}
-			gotCommits := repo.Limit(t.Context(), se)
+			gotCommits := repo.Limit(t.Context(), tt.se)
 
 			var got []SHA1
 			for _, c := range gotCommits {

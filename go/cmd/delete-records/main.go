@@ -1,3 +1,4 @@
+// main deletes records from the OSV database.
 package main
 
 import (
@@ -77,7 +78,6 @@ func run(ctx context.Context) error {
 	g.SetLimit(*workerCount)
 
 	for _, id := range recordIDs {
-
 		g.Go(func() error {
 			logger.Info("Processing", slog.String("id", id))
 
@@ -136,6 +136,7 @@ func run(ctx context.Context) error {
 			}
 
 			atomic.AddInt32(&successCount, 1)
+
 			return nil
 		})
 	}
@@ -171,5 +172,6 @@ func readRecordIDs(path string) ([]string, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
+
 	return recordIDs, nil
 }

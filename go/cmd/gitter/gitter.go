@@ -80,17 +80,17 @@ type SeparatedEvents struct {
 func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 	se := &SeparatedEvents{}
 	for _, event := range events {
-		switch event.EventType {
+		switch event.GetEventType() {
 		case pb.EventType_INTRODUCED:
-			se.Introduced = append(se.Introduced, event.Hash)
+			se.Introduced = append(se.Introduced, event.GetHash())
 		case pb.EventType_FIXED:
-			se.Fixed = append(se.Fixed, event.Hash)
+			se.Fixed = append(se.Fixed, event.GetHash())
 		case pb.EventType_LAST_AFFECTED:
-			se.LastAffected = append(se.LastAffected, event.Hash)
+			se.LastAffected = append(se.LastAffected, event.GetHash())
 		case pb.EventType_LIMIT:
-			se.Limit = append(se.Limit, event.Hash)
+			se.Limit = append(se.Limit, event.GetHash())
 		default:
-			return nil, fmt.Errorf("invalid event type: %s", event.EventType)
+			return nil, fmt.Errorf("invalid event type: %s", event.GetEventType())
 		}
 	}
 
@@ -114,7 +114,7 @@ func GetRepoLock(url string) *sync.RWMutex {
 	return lock.(*sync.RWMutex)
 }
 
-// repoCost is the cost funtion for a repository in the LRU cache.
+// repoCost is the cost function for a repository in the LRU cache.
 // The memory cost of a repository is approximated from the num of commits and a base overhead.
 func repoCost(repo *Repository) int64 {
 	// Mutex (8 bytes), string for repo path (say 128 bytes), root commit (assume 1 root only, 32 bytes)
@@ -132,6 +132,7 @@ func repoCost(repo *Repository) int64 {
 	//   = 20 + 24 + 8 ~= 64 bytes
 	// TOTAL: 264 bytes -> We round up to 300 for some buffer
 	costPerCommit := 300
+
 	return int64(repoOverhead + len(repo.commits)*costPerCommit)
 }
 
@@ -228,6 +229,7 @@ func validateURL(r *http.Request, url string) error {
 			return fmt.Errorf("invalid url parameter")
 		}
 	}
+
 	return nil
 }
 
@@ -293,8 +295,10 @@ func doFetch(ctx context.Context, w http.ResponseWriter, url string, forceUpdate
 		} else {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
 		}
+
 		return err
 	}
+
 	return nil
 }
 
@@ -327,10 +331,12 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceU
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
 		return nil, err
 	}
 	repo := repoAny.(*Repository)
 	repoCache.SetWithTTL(url, repo, 0, repoTTL)
+
 	return repo, nil
 }
 
@@ -582,7 +588,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.Url
+	url := body.GetUrl()
 	if err := validateURL(r, url); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -602,7 +608,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
-	if _, err := getFreshRepo(ctx, w, url, body.ForceUpdate); err != nil {
+	if _, err := getFreshRepo(ctx, w, url, body.GetForceUpdate()); err != nil {
 		return
 	}
 
@@ -618,20 +624,20 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.Url
+	url := body.GetUrl()
 	if err := validateURL(r, url); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	se, err := separateEvents(body.Events)
+	se, err := separateEvents(body.GetEvents())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cherrypickIntro := body.DetectCherrypicksIntroduced
-	cherrypickFixed := body.DetectCherrypicksFixed
+	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
+	cherrypickFixed := body.GetDetectCherrypicksFixed()
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
@@ -647,7 +653,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
-	repo, err := getFreshRepo(ctx, w, url, body.ForceUpdate)
+	repo, err := getFreshRepo(ctx, w, url, body.GetForceUpdate())
 	if err != nil {
 		return
 	}
@@ -671,6 +677,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 

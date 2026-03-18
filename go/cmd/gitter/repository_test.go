@@ -276,9 +276,9 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 	repo.rootCommits = []int{0} // Root commit is A
 
 	tests := []struct {
-		name         string
-		se           *SeparatedEvents
-		expected     []SHA1
+		name     string
+		se       *SeparatedEvents
+		expected []SHA1
 	}{
 		{
 			name: "Linear: A introduced, B fixed",
@@ -332,7 +332,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 			name: "Introduced = 0: C fixed",
 			se: &SeparatedEvents{
 				Introduced: []string{"0"},
-				Fixed: []string{encodeSHA1(hC)},
+				Fixed:      []string{encodeSHA1(hC)},
 			},
 			expected: []SHA1{hA, hB, hH},
 		},
@@ -447,7 +447,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 		{
 			name: "Introduced = 0: C lastAffected",
 			se: &SeparatedEvents{
-				Introduced: []string{"0"},
+				Introduced:   []string{"0"},
 				LastAffected: []string{encodeSHA1(hC)},
 			},
 			expected: []SHA1{hA, hB, hC, hH},
@@ -533,8 +533,8 @@ func TestAffected_Combined(t *testing.T) {
 		{
 			name: "Introduced=Fixed: No affected commit",
 			se: &SeparatedEvents{
-				Introduced:   []string{encodeSHA1(hB)},
-				Fixed:        []string{encodeSHA1(hB)},
+				Introduced: []string{encodeSHA1(hB)},
+				Fixed:      []string{encodeSHA1(hB)},
 			},
 			expected: []SHA1{},
 		},

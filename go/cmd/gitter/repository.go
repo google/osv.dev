@@ -441,6 +441,7 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 				indices = append(indices, r.rootCommits...)
 				addedRoot = true
 			}
+
 			continue
 		}
 
@@ -492,6 +493,8 @@ func (r *Repository) expandByCherrypick(commits []int) []int {
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
+// A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
+// A fix can either be a fixed commit, or the children of a lastAffected commit.
 func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) []*Commit {
 	logger.InfoContext(ctx, "Starting affected commit walking")
 	start := time.Now()
@@ -532,7 +535,7 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 	// Preallocating the big slices, they will be cleared inside the per-intro graph walking
 	queue := make([]int, 0, len(r.commits))
 	affectedFromIntro := make([]bool, len(r.commits))
-	updatedIdx := make([]int, len(r.commits))
+	updatedIdx := make([]int, 0, len(r.commits))
 	unaffectable := make([]bool, len(r.commits))
 	visited := make([]bool, len(r.commits))
 
@@ -597,7 +600,7 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 		}
 
 		// Add the final affected list of this introduced commit to the global set
-		// We only look at the index are are updated in this loop
+		// We only look at the index that are updated in this loop
 		for _, commitIdx := range updatedIdx {
 			if affectedFromIntro[commitIdx] {
 				affectedMap[commitIdx] = true

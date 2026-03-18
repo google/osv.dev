@@ -68,7 +68,7 @@ func TestHandleDeleteBucket(t *testing.T) {
 		t.Fatalf("Expected 1 deletion record, got %d", len(items))
 	}
 
-	if items[0].Action != Withdraw {
+	if items[0].Action != ActionWithdraw {
 		t.Errorf("Expected Action=Withdraw, got %v", items[0].Action)
 	}
 	if items[0].SourcePath != "a/b/deleted-file.json" {

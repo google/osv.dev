@@ -147,7 +147,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 				},
 				SourceRepository: sourceRepo.Name,
 				SourcePath:       from,
-				Action:           Withdraw,
+				Action:           ActionWithdraw,
 				Strict:           sourceRepo.Strictness,
 				Format:           format,
 				KeyPath:          sourceRepo.KeyPath,

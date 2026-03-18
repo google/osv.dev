@@ -306,11 +306,11 @@ func checkReconcile(
 
 	dbMod, exists := dbRecords[path]
 	if !exists {
-		logger.ErrorContext(ctx, "Found missing vulnerability in database during reconcile",
+		logger.WarnContext(ctx, "Found missing vulnerability in database during reconcile",
 			slog.String("source", recordTemplate.SourceRepository),
 			slog.String("path", path))
 		// Trigger a standard import
-		recordTemplate.Action = Import
+		recordTemplate.Action = ActionImport
 		ch <- recordTemplate
 
 		return
@@ -329,14 +329,14 @@ func checkReconcile(
 		}
 
 		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
-			logger.ErrorContext(ctx, "Found outdated vulnerability in database during reconcile",
+			logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
 				slog.String("source", recordTemplate.SourceRepository),
 				slog.String("path", path),
 				slog.Time("database_modified", dbMod),
 				slog.Time("upstream_modified", modified))
 
 			// We found that it is outdated, trigger a standard import
-			recordTemplate.Action = Import
+			recordTemplate.Action = ActionImport
 			ch <- recordTemplate
 		}
 
@@ -344,7 +344,7 @@ func checkReconcile(
 	}
 
 	// Otherwise trigger a reconcile action to get the modified date from upstream
-	recordTemplate.Action = Reconcile
+	recordTemplate.Action = ActionReconcile
 
 	ch <- recordTemplate
 }
@@ -378,9 +378,9 @@ const (
 type Action int
 
 const (
-	Import Action = iota
-	Reconcile
-	Withdraw
+	ActionImport Action = iota
+	ActionReconcile
+	ActionWithdraw
 )
 
 type SourceRecord interface {
@@ -404,10 +404,16 @@ type WorkItem struct {
 	IsReimport             bool
 }
 
-func importerWorker(_ context.Context, ch <-chan WorkItem, config Config) {
-	// We keep reading from the channel (even if context is closed)
+func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
+	// We keep reading from the channel (even if context is cancelled)
 	// as the channel will be closed by the producer side.
 	for item := range ch {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		// wrap in function so defer is called for each item
 		func() { //nolint:contextcheck
 			// create a new span for the vulnerability,
@@ -421,9 +427,9 @@ func importerWorker(_ context.Context, ch <-chan WorkItem, config Config) {
 			defer span.End()
 
 			switch item.Action {
-			case Import, Reconcile:
+			case ActionImport, ActionReconcile:
 				processUpdate(ctx, config, item)
-			case Withdraw:
+			case ActionWithdraw:
 				if err := sendDeletionToWorker(ctx, config, item); err != nil {
 					logger.ErrorContext(ctx, "Failed to send deletion to worker",
 						slog.Any("error", err),
@@ -544,12 +550,12 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		// Otherwise it must be missing, so just import it.
 		if err == nil {
 			switch item.Action {
-			case Import:
+			case ActionImport:
 				// If the record is older than the last update time, skip it
 				if dbModified.After(modified) {
 					return
 				}
-			case Reconcile:
+			case ActionReconcile:
 				// If the record is older than the last update time, skip it
 				// However, since we are reconciling, we want to add some leniency
 				// to account for the fact that the record might have been updated
@@ -559,7 +565,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 					return
 				}
 
-				logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
+				logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
 					slog.String("source", sourceRepoName),
 					slog.String("path", sourcePath),
 					slog.Time("database_modified", dbModified),

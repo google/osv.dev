@@ -171,7 +171,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			},
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
-			Action:           Withdraw,
+			Action:           ActionWithdraw,
 		}
 	}
 

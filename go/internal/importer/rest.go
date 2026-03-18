@@ -298,7 +298,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			},
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
-			Action:           Withdraw,
+			Action:           ActionWithdraw,
 		}
 	}
 

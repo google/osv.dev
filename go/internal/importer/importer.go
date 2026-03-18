@@ -174,8 +174,6 @@ var reconcileSkipSources = []string{
 	"root",
 	// cve-osv is in a state of flux at the moment, let's wait a bit
 	"cve-osv",
-	// ignore chainguard for now as well because their record is too big
-	"chainguard",
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
@@ -498,6 +496,10 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 
 		return
 	}
+
+	// Hash BEFORE editing the raw data from what is read from disk
+	hash := computeHash(data)
+
 	// protojson does not like invalid UTF-8,
 	// so replace invalid UTF-8 with U+FFFD (replacement character)
 	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
@@ -600,7 +602,6 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			}
 		}
 	}
-	hash := computeHash(data)
 	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
 		logger.ErrorContext(ctx, "Failed to send to worker",
 			slog.Any("error", err),

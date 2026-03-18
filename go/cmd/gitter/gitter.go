@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -95,7 +96,7 @@ func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 	}
 
 	if len(se.Limit) > 0 && (len(se.Fixed) > 0 || len(se.LastAffected) > 0) {
-		return nil, fmt.Errorf("limit and fixed/last_affected shouldn't exist in the same request")
+		return nil, errors.New("limit and fixed/last_affected shouldn't exist in the same request")
 	}
 
 	return se, nil
@@ -220,13 +221,13 @@ func isLocalRequest(r *http.Request) bool {
 
 func validateURL(r *http.Request, url string) error {
 	if url == "" {
-		return fmt.Errorf("missing url parameter")
+		return errors.New("missing url parameter")
 	}
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://, ssh://
 		if !validURLRegex.MatchString(url) {
-			return fmt.Errorf("invalid url parameter")
+			return errors.New("invalid url parameter")
 		}
 	}
 

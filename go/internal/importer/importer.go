@@ -344,8 +344,6 @@ func checkReconcile(
 	}
 
 	// Otherwise trigger a reconcile action to get the modified date from upstream
-	recordTemplate.LastUpdated = dbMod
-	recordTemplate.HasLastUpdated = true
 	recordTemplate.Action = Reconcile
 
 	ch <- recordTemplate
@@ -396,15 +394,14 @@ type WorkItem struct {
 	Context      context.Context //nolint:containedctx
 	SourceRecord SourceRecord
 
-	SourceRepository string
-	SourcePath       string
-	Format           RecordFormat
-	KeyPath          string
-	Strict           bool
-	Action           Action
-	LastUpdated      time.Time
-	HasLastUpdated   bool
-	IsReimport       bool
+	SourceRepository       string
+	SourcePath             string
+	Format                 RecordFormat
+	KeyPath                string
+	Strict                 bool
+	Action                 Action
+	CompareAgainstDatabase bool
+	IsReimport             bool
 }
 
 func importerWorker(_ context.Context, ch <-chan WorkItem, config Config) {
@@ -531,29 +528,44 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	}
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
-	if item.HasLastUpdated {
-		switch item.Action {
-		case Import:
-			// If the record is older than the last update time, skip it
-			if item.LastUpdated.After(modified) {
-				return
-			}
-		case Reconcile:
-			// If the record is older than the last update time, skip it
-			// However, since we are reconciling, we want to add some leniency
-			// to account for the fact that the record might have been updated
-			// between the time we last imported it normally and now
-			// (e.g. the worker might still be working on it).
-			if item.LastUpdated.Add(ReconcileLeniencyDuration).After(modified) {
-				return
-			}
-
-			logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
+	if item.CompareAgainstDatabase {
+		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, vulnProto.GetId())
+		if err != nil && !errors.Is(err, models.ErrNotFound) {
+			logger.ErrorContext(ctx, "Failed to get source modified",
+				slog.Any("error", err),
 				slog.String("source", sourceRepoName),
 				slog.String("path", sourcePath),
-				slog.Time("database_modified", item.LastUpdated),
-				slog.Time("upstream_modified", modified))
-		default:
+				slog.String("id", vulnProto.GetId()))
+
+			return
+		}
+
+		// If we successfully got the modified time, then check it against previous modified time
+		// Otherwise it must be missing, so just import it.
+		if err == nil {
+			switch item.Action {
+			case Import:
+				// If the record is older than the last update time, skip it
+				if dbModified.After(modified) {
+					return
+				}
+			case Reconcile:
+				// If the record is older than the last update time, skip it
+				// However, since we are reconciling, we want to add some leniency
+				// to account for the fact that the record might have been updated
+				// between the time we last imported it normally and now
+				// (e.g. the worker might still be working on it).
+				if dbModified.Add(ReconcileLeniencyDuration).After(modified) {
+					return
+				}
+
+				logger.ErrorContext(ctx, "Found outdated vulnerability in datastore during reconcile",
+					slog.String("source", sourceRepoName),
+					slog.String("path", sourcePath),
+					slog.Time("database_modified", dbModified),
+					slog.Time("upstream_modified", modified))
+			default:
+			}
 		}
 	}
 	hash := computeHash(data)

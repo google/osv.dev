@@ -686,6 +686,10 @@ func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 	bestTypes := make(map[string]osvschema.Reference_Type)
 
 	for _, ref := range refs {
+		if ref.URL == "" {
+			continue
+		}
+
 		if len(ref.Tags) > 0 {
 			for _, tag := range ref.Tags {
 				refType := ClassifyReferenceLink(ref.URL, tag)

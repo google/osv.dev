@@ -145,14 +145,13 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 				urlBase: sourceRepo.Link,
 				urlPath: path,
 			},
-			SourceRepository: sourceRepo.Name,
-			SourcePath:       path,
-			LastUpdated:      lastUpdated,
-			HasLastUpdated:   hasUpdateTime,
-			Format:           RecordFormatJSON,
-			KeyPath:          sourceRepo.KeyPath,
-			Strict:           sourceRepo.Strictness,
-			IsReimport:       !hasUpdateTime,
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             path,
+			CompareAgainstDatabase: hasUpdateTime,
+			Format:                 RecordFormatJSON,
+			KeyPath:                sourceRepo.KeyPath,
+			Strict:                 sourceRepo.Strictness,
+			IsReimport:             !hasUpdateTime,
 		}
 
 		return true

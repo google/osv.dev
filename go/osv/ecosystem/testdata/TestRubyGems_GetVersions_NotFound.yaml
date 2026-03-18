@@ -1,0 +1,69 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: rubygems.org
+        url: https://rubygems.org/api/v1/versions/doesnotexist123456.json
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        uncompressed: true
+        body: This rubygem could not be found.
+        headers:
+            Accept-Ranges:
+                - bytes
+            Cache-Control:
+                - no-cache
+            Content-Security-Policy:
+                - 'default-src ''self''; font-src ''self'' https://fonts.gstatic.com; img-src ''self'' data: https://secure.gaug.es https://gravatar.com https://www.gravatar.com https://secure.gravatar.com https://*.fastly-insights.com https://avatars.githubusercontent.com; object-src ''none''; script-src ''self'' ''sha256-9EBfxVMN/BoeWg+kw0DmYbS6+sgN+bxpIyhYlKuhxTg='' https://secure.gaug.es https://www.fastly-insights.com ''nonce-ebf3a831368aaebf99ad7acf60eb0950''; style-src ''self'' ''unsafe-inline'' https://fonts.googleapis.com; connect-src ''self'' https://s3-us-west-2.amazonaws.com/rubygems-dumps/ https://*.fastly-insights.com https://fastly-insights.com https://api.github.com http://localhost:*; form-action ''self'' https://github.com/login/oauth/authorize; frame-ancestors ''self''; base-uri ''self''; report-uri https://csp-report.browser-intake-datadoghq.com/api/v2/logs?dd-api-key=pub852fa3e2312391fafa5640b60784e660&dd-evp-origin=content-security-policy&ddsource=csp-report&ddtags=service%3Arubygems.org%2Cversion%3Abaf4f2952e4bad3422c41c92271f585af520ba6c%2Cenv%3Aproduction%2Ctrace_id%3A69b8c574000000002901c6326c4cbc15'
+            Content-Type:
+                - text/plain; charset=utf-8
+            Cross-Origin-Opener-Policy:
+                - same-origin
+            Date:
+                - Tue, 17 Mar 2026 03:07:32 GMT
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Server:
+                - RubyGems.org
+            Set-Cookie:
+                - _rubygems_session=msaJ5lXUJGyfEHSfjjWObpu0HL7LhILm%2BCpwwRE2HIMZFkjDUAUgcGy8QJKpNepdPIClYcWtRmakWilr8N7n5weHyOnpyc9dR33kVQtRYnpFpSs%2FFUkeMX7VIZIUmG%2FZsOsY%2BkD07Ky9ubkVvB%2FaXw1j2WEAFhQH6vGvrO%2FpbAvgREvDb3fyfr4%3D--CqirYqcxjcN4QIP5--dvODeraHF%2B91qq%2FesI28HQ%3D%3D; path=/; secure; httponly; samesite=strict
+            Strict-Transport-Security:
+                - max-age=31536000; includeSubDomains
+            Vary:
+                - Accept-Encoding
+            Via:
+                - 1.1 varnish
+            X-Backend:
+                - F_Rails 44.227.228.243:443
+            X-Cache:
+                - MISS
+            X-Cache-Hits:
+                - "0"
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - 37d6173d-73cc-493c-9fcd-e3134c13e385
+            X-Runtime:
+                - "0.004854"
+            X-Served-By:
+                - cache-wsi-ysbk1060089-WSI
+            X-Timer:
+                - S1773716852.183247,VS0,VE162
+            X-Xss-Protection:
+                - "0"
+        status: 404 Not Found
+        code: 404
+        duration: 165.207726ms

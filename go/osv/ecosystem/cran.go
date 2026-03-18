@@ -15,11 +15,8 @@
 package ecosystem
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
-	"slices"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -55,55 +52,24 @@ func (e cranEcosystem) GetVersions(pkg string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := HTTPClient.Get(path)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, ErrPackageNotFound
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get CRAN versions for %s: %s", pkg, resp.Status)
-	}
 	var data struct {
 		Version  string `json:"version"`
 		Archived []struct {
 			Version string `json:"version"`
 		} `json:"archived"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
+	if err := fetchJSON(path, &data); err != nil {
+		return nil, fmt.Errorf("failed to get CRAN versions for %s: %w", pkg, err)
 	}
 	var versions []string
 	if data.Version != "" {
-		// try parse the version
-		_, err := e.Parse(data.Version)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse version %s: %w", data.Version, err)
-		}
 		versions = append(versions, data.Version)
 	}
 	for _, v := range data.Archived {
 		if v.Version != "" {
-			// try parse the version
-			_, err := e.Parse(v.Version)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse version %s: %w", v.Version, err)
-			}
 			versions = append(versions, v.Version)
 		}
 	}
 
-	// sort the versions
-	slices.SortFunc(versions, func(a, b string) int {
-		// These should all already parse
-		pa, _ := e.Parse(a)
-		pb, _ := e.Parse(b)
-		c, _ := pa.Compare(pb)
-
-		return c
-	})
-
-	return versions, nil
+	return sortVersions(e, versions)
 }

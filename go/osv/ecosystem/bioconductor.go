@@ -15,11 +15,9 @@
 package ecosystem
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
-	"slices"
 )
 
 type bioconductorEcosystem struct {
@@ -52,22 +50,14 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 	}
 	var versions []string
 	for _, biocVersion := range biocVersions {
-		resp, err := HTTPClient.Get(apiPackageURLPositBioconductor(pkg, biocVersion))
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusNotFound {
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("failed to get Bioconductor versions for %s: %s", pkg, resp.Status)
-		}
 		var data struct {
 			Version string `json:"version"`
 		}
-		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-			return nil, err
+		if err := fetchJSON(apiPackageURLPositBioconductor(pkg, biocVersion), &data); err != nil {
+			if errors.Is(err, ErrPackageNotFound) {
+				continue
+			}
+			return nil, fmt.Errorf("failed to get Bioconductor versions for %s: %w", pkg, err)
 		}
 		if data.Version != "" {
 			versions = append(versions, data.Version)
@@ -78,41 +68,17 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 		return nil, ErrPackageNotFound
 	}
 
-	// Just make sure all versions can be parsed
-	for _, v := range versions {
-		if _, err := e.Parse(v); err != nil {
-			return nil, fmt.Errorf("failed to parse version %s: %w", v, err)
-		}
-	}
-
-	slices.SortFunc(versions, func(a, b string) int {
-		// These should all parse
-		pa, _ := e.Parse(a)
-		pb, _ := e.Parse(b)
-		c, _ := pa.Compare(pb)
-
-		return c
-	})
-
-	return versions, nil
+	return sortVersions(e, versions)
 }
 
 func (e bioconductorEcosystem) getBiocVersions() ([]string, error) {
-	resp, err := HTTPClient.Get(apiBiocVersionsURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get Bioconductor versions: %s", resp.Status)
-	}
 	var data struct {
 		BiocVersions []struct {
 			BiocVersion string `json:"bioc_version"`
 		} `json:"bioc_versions"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
+	if err := fetchJSON(apiBiocVersionsURL, &data); err != nil {
+		return nil, fmt.Errorf("failed to get Bioconductor versions: %w", err)
 	}
 	versions := make([]string, 0, len(data.BiocVersions))
 	for _, biocVersion := range data.BiocVersions {

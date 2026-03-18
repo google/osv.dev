@@ -1075,12 +1075,6 @@ class ListedVulnerability(ndb.Model):
     repo_search_indices = set()
     autocomplete_tags = {vulnerability.id.lower()}
 
-    for alias in vulnerability.aliases:
-      search_indices.update(_tokenize(alias))
-    for upstream in vulnerability.upstream:
-      search_indices.update(_tokenize(upstream))
-    # related intentionally omitted
-
     for affected in vulnerability.affected:
       if affected.package.name:
         pkg_search_indices.add(affected.package.name.lower())
@@ -1150,6 +1144,20 @@ class ListedVulnerability(ndb.Model):
           if len(search_indices) >= cls._MAX_INDICES:
             break
           search_indices.add(t)
+
+    for alias in vulnerability.aliases:
+      to_add = _tokenize(alias)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
+    for upstream in vulnerability.upstream:
+      to_add = _tokenize(upstream)
+      for t in to_add:
+        if len(search_indices) >= cls._MAX_INDICES:
+          break
+        search_indices.add(t)
+    # related intentionally omitted
 
     ecos = sorted({ecosystems.normalize(e) for e in all_ecosystems})
     pkgs = sorted(all_packages)

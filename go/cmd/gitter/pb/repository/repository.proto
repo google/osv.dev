@@ -17,11 +17,16 @@ message RepositoryCache {
 
 message AffectedCommit {
     bytes hash = 1;
-    repeated string refs = 2;
+}
+
+message AffectedRefs {
+    string ref = 1;
+    bytes hash = 2;
 }
 
 message AffectedCommitsResponse {
     repeated AffectedCommit commits = 1;
+    repeated AffectedRefs refs = 2;
 }
 
 enum EventType {

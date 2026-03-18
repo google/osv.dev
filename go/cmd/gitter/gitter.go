@@ -666,12 +666,20 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		affectedCommits = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}
 
-	resp := &pb.AffectedCommitsResponse{Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits))}
+	resp := &pb.AffectedCommitsResponse{
+		Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits)),
+		Refs:    make([]*pb.AffectedRefs, 0),
+	}
 	for _, c := range affectedCommits {
 		resp.Commits = append(resp.Commits, &pb.AffectedCommit{
 			Hash: c.Hash[:],
-			Refs: c.Refs,
 		})
+		for _, ref := range c.Refs {
+			resp.Refs = append(resp.Refs, &pb.AffectedRefs{
+				Ref:  ref,
+				Hash: c.Hash[:],
+			})
+		}
 	}
 
 	out, err := marshalResponse(r, resp)

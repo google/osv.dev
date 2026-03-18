@@ -22,18 +22,6 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.gentoo.org/glsa/202209-11"
         },
         {
@@ -46,16 +34,25 @@
         },
         {
           "type": "EVIDENCE",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
         }
       ],
       "affected": [
         {
           "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "9aa6f8a93f035dd0a1e3978da495d830049480c8"
+                }
+              ],
+              "database_specific": "<Any value>"
+            },
             {
               "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
@@ -73,7 +70,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -84,7 +81,6 @@
     {
       "id": "CVE-2022-33068",
       "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-      "aliases": ["ROOT-OS-DEBIAN-11-CVE-2022-33068"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2022-06-23T17:15:14.350Z",
       "related": [
@@ -109,36 +105,33 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.gentoo.org/glsa/202209-11"
         },
         {
-          "type": "REPORT",
-          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-        },
-        {
           "type": "FIX",
           "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
         },
         {
           "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
         }
       ],
       "affected": [
         {
           "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
+                }
+              ],
+              "database_specific": "<Any value>"
+            },
             {
               "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
@@ -156,58 +149,11 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-1055",
-      "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-02-27T22:15:09.990Z",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "last_affected": "bf8929fbfb623703cf1522b372cab80002c17c95"
-                }
-              ]
-            }
-          ],
-          "versions": 202,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
         }
       ]
     },
@@ -244,27 +190,19 @@
       "references": [
         {
           "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/KWCHWSICWVZSAXP2YAXM65JC2GR53547/"
-        },
-        {
-          "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://chromium.googlesource.com/chromium/src/+/e1f324aa681af54101c1f2d173d92adb80e37088/DEPS#361"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/blob/2822b589bc837fae6f66233e2cf2eef0f6ce8470/src/hb-ot-layout-gsubgpos.hh"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/85be877925ddbf34f74a1229f3ca1716bb6170dc"
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/KWCHWSICWVZSAXP2YAXM65JC2GR53547/"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20230725-0006/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/harfbuzz/harfbuzz/blob/2822b589bc837fae6f66233e2cf2eef0f6ce8470/src/hb-ot-layout-gsubgpos.hh"
         },
         {
           "type": "FIX",
@@ -288,6 +226,19 @@
                 {
                   "last_affected": "afcae83a064843d71d47624bc162e121cc56c08b"
                 }
+              ],
+              "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "85be877925ddbf34f74a1229f3ca1716bb6170dc"
+                }
               ]
             }
           ],
@@ -295,7 +246,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -304,265 +255,17 @@
       ]
     },
     {
-      "id": "CVE-2023-35074",
-      "details": "The issue was addressed with improved memory handling. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-09-27T15:18:52.800Z",
-      "related": [
-        "SUSE-SU-2023:4209-1",
-        "SUSE-SU-2023:4211-1",
-        "SUSE-SU-2023:4294-1",
-        "SUSE-SU-2023:4339-1"
-      ],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202401-33"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213936"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213937"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213938"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213940"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213941"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 180,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-41074",
-      "details": "The issue was addressed with improved checks. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-09-27T15:19:26.570Z",
-      "related": [
-        "CGA-gq9c-f99g-p3pc",
-        "MGASA-2024-0148",
-        "SUSE-SU-2023:4209-1",
-        "SUSE-SU-2023:4211-1",
-        "SUSE-SU-2023:4294-1",
-        "SUSE-SU-2023:4339-1",
-        "SUSE-SU-2023:4978-1",
-        "SUSE-SU-2024:0002-1",
-        "SUSE-SU-2024:0003-1",
-        "SUSE-SU-2024:0004-1"
-      ],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202401-33"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213936"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213937"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213938"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213940"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213941"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://www.debian.org/security/2023/dsa-5527"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 180,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
       "id": "CVE-2026-22693",
       "summary": "Null Pointer Dereference in SubtableUnicodesCache::create leading to DoS",
       "details": "HarfBuzz is a text shaping engine. Prior to version 12.3.0, a null pointer dereference vulnerability exists in the SubtableUnicodesCache::create function located in src/hb-ot-cmap-table.hh. The function fails to check if hb_malloc returns NULL before using placement new to construct an object at the returned pointer address. When hb_malloc fails to allocate memory (which can occur in low-memory conditions or when using custom allocators that simulate allocation failures), it returns NULL. The code then attempts to call the constructor on this null pointer using placement new syntax, resulting in undefined behavior and a Segmentation Fault. This issue has been patched in version 12.3.0.",
-      "aliases": ["GHSA-xvjr-f2r9-c7ww", "ROOT-OS-DEBIAN-13-CVE-2026-22693"],
+      "aliases": ["GHSA-xvjr-f2r9-c7ww"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-10T05:53:21.019Z",
-      "related": ["MGASA-2026-0015"],
+      "related": [
+        "MGASA-2026-0015",
+        "SUSE-SU-2026:0287-1",
+        "openSUSE-SU-2026:10065-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -595,6 +298,25 @@
           "ranges": [
             {
               "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 206,
+          "database_specific": "<Any value>"
+        },
+        {
+          "ranges": [
+            {
+              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -610,7 +332,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -658,7 +380,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.7.5"
     }
   ]
 }
@@ -1029,7 +751,7 @@
       "id": "CURL-CVE-2024-9681",
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
+      "aliases": ["CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1536,6 +1258,159 @@
       ]
     },
     {
+      "id": "CURL-CVE-2026-1965",
+      "summary": "bad reuse of HTTP Negotiate connection",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "aliases": ["CVE-2026-1965"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.19.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e56ae1426cb7a0a4a427cf8d6099a821fdaae428"
+                },
+                {
+                  "fixed": "f1a39f221d57354990e3eeeddc3404aede2aff70"
+                }
+              ]
+            }
+          ],
+          "versions": 170,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Zhicheng Chen",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-3783",
+      "summary": "token leak with redirect and netrc",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a redirect to a second URL, curl could leak that token to the second\nhostname under some circumstances.\n\nIf the hostname that the first request is redirected to has information in the\nused .netrc file, with either of the `machine` or `default` keywords, curl\nwould pass on the bearer token set for the first host also to the second one.",
+      "aliases": ["CVE-2026-3783"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.19.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "06c1bea72faabb6fad4b7ef818aafaa336c9a7aa"
+                },
+                {
+                  "fixed": "e3d7401a32a46516c9e5ee877e613e62ed35bddc"
+                }
+              ]
+            }
+          ],
+          "versions": 108,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "spectreglobalsec on hackerone",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-3784",
+      "summary": "wrong proxy connection reuse with credentials",
+      "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
+      "aliases": ["CVE-2026-3784"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.19.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1d6ad26100bc493c7b04f1301b1634b7f5aa8b4"
+                },
+                {
+                  "fixed": "5f13a7645e565c5c1a06f3ef86e97afb856fb364"
+                }
+              ]
+            }
+          ],
+          "versions": 191,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Muhamad Arga Reksapati (HackerOne: nobcoder)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CVE-2024-0853",
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even when the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh, which then skipped the verify status check.",
       "aliases": ["CURL-CVE-2024-0853"],
@@ -1543,14 +1418,6 @@
       "published": "2024-02-03T14:15:50.850Z",
       "related": ["CGA-jhf8-hfv6-c8cj", "openSUSE-SU-2024:13637-1"],
       "references": [
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-0853.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-0853.json"
-        },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240307-0004/"
@@ -1564,11 +1431,15 @@
           "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
         },
         {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2298922"
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-0853.html"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-0853.json"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2298922"
         }
       ],
@@ -1585,14 +1456,15 @@
                 {
                   "last_affected": "7161cb17c01dcff1dc5bf89a18437d9d729f1ecd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 204,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -1616,25 +1488,11 @@
         "SUSE-SU-2024:4287-1",
         "SUSE-SU-2024:4288-1",
         "SUSE-SU-2024:4359-1",
+        "SUSE-SU-2025:20106-1",
+        "SUSE-SU-2025:20239-1",
         "openSUSE-SU-2024:14575-1"
       ],
       "references": [
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-11053.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-11053.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2829063"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
-        },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250124-0012/"
@@ -1648,15 +1506,19 @@
           "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
         },
         {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2829063"
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-11053.html"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-11053.json"
+        },
+        {
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
-          "type": "EVIDENCE",
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2829063"
         }
       ],
@@ -1673,14 +1535,15 @@
                 {
                   "fixed": "75a2079d5c28debb2eaa848ca9430f1fe0d7844c"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 36,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -1702,17 +1565,10 @@
         "SUSE-SU-2024:1151-1",
         "SUSE-SU-2024:1151-2",
         "SUSE-SU-2024:1151-3",
+        "SUSE-SU-2025:20029-1",
         "openSUSE-SU-2024:13805-1"
       ],
       "references": [
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
         {
           "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
@@ -1728,10 +1584,6 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-2004.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2384833"
         },
         {
           "type": "ADVISORY",
@@ -1751,6 +1603,14 @@
         },
         {
           "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214119"
         },
         {
@@ -1759,26 +1619,6 @@
         },
         {
           "type": "REPORT",
-          "url": "https://hackerone.com/reports/2384833"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2384833"
         }
       ],
@@ -1795,18 +1635,106 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 16,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2024-2379",
+      "details": "libcurl skips the certificate verification for a QUIC connection under certain conditions, when built to use wolfSSL. If told to use an unknown/bad cipher or curve, the error path accidentally skips the verification and returns OK, thus ignoring any certificate problems.",
+      "aliases": ["CURL-CVE-2024-2379"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2024-03-27T08:15:41.230Z",
+      "related": [
+        "CGA-6rjf-f6x6-r857",
+        "MGASA-2024-0099",
+        "SUSE-SU-2025:20029-1",
+        "openSUSE-SU-2024:13805-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2379.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2379.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2410774"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "5ce164e0e9290c96eb7d502173426c0a135ec008"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 205,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L"
         }
       ]
     },
@@ -1826,12 +1754,13 @@
         "SUSE-SU-2024:1151-1",
         "SUSE-SU-2024:1151-2",
         "SUSE-SU-2024:1151-3",
+        "SUSE-SU-2025:20029-1",
         "openSUSE-SU-2024:13805-1"
       ],
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
@@ -1855,19 +1784,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2402845"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/GMD6UYKCCRCYETWQZUJ65ZRFULT6SHLI/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
         },
         {
           "type": "ADVISORY",
@@ -1875,34 +1792,22 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2402845"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+          "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
         },
         {
-          "type": "EVIDENCE",
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2402845"
         }
       ],
@@ -1919,14 +1824,15 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 77,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -1943,13 +1849,10 @@
       "related": [
         "CGA-9ch7-64c5-2ffr",
         "MGASA-2024-0099",
+        "SUSE-SU-2025:20029-1",
         "openSUSE-SU-2024:13805-1"
       ],
       "references": [
-        {
-          "type": "WEB",
-          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
-        },
         {
           "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
@@ -1960,23 +1863,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.html"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-2466.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2416725"
         },
         {
           "type": "ADVISORY",
@@ -1996,30 +1883,18 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2416725"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.html"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2416725"
         },
         {
@@ -2040,14 +1915,15 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 2,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2061,7 +1937,7 @@
       "aliases": ["CURL-CVE-2024-6874"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-24T08:15:03.413Z",
-      "related": ["openSUSE-SU-2024:14225-1"],
+      "related": ["SUSE-SU-2025:03198-1", "openSUSE-SU-2024:14225-1"],
       "references": [
         {
           "type": "ADVISORY",
@@ -2082,18 +1958,6 @@
         {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2604391"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/07/24/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://hackerone.com/reports/2604391"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2604391"
         }
       ],
       "affected": [
@@ -2109,14 +1973,15 @@
                 {
                   "last_affected": "fd567d4f06857f4fc8e2f64ea727b1318f76ad33"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 208,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2140,21 +2005,10 @@
         "SUSE-SU-2024:3080-1",
         "SUSE-SU-2024:3080-2",
         "SUSE-SU-2024:3202-1",
+        "SUSE-SU-2025:20029-1",
         "openSUSE-SU-2024:14261-1"
       ],
       "references": [
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-7264.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-7264.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2629968"
-        },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240828-0008/"
@@ -2168,6 +2022,14 @@
           "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-7264.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-7264.json"
+        },
+        {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2629968"
         },
@@ -2178,10 +2040,6 @@
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2629968"
         }
       ],
       "affected": [
@@ -2196,15 +2054,19 @@
                 },
                 {
                   "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
+                },
+                {
+                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2224,6 +2086,7 @@
         "SUSE-SU-2024:3203-1",
         "SUSE-SU-2024:3204-1",
         "SUSE-SU-2024:3211-1",
+        "SUSE-SU-2025:20239-1",
         "openSUSE-SU-2024:14333-1"
       ],
       "references": [
@@ -2234,10 +2097,6 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-8096.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2669852"
         },
         {
           "type": "ADVISORY",
@@ -2254,18 +2113,6 @@
         {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2669852"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://lists.debian.org/debian-lts-announce/2024/11/msg00008.html"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2669852"
         }
       ],
       "affected": [
@@ -2281,14 +2128,15 @@
                 {
                   "fixed": "a3bd1dda12ec79cd63e0d81df4ec4b1fbbbcfa1b"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 85,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2299,7 +2147,7 @@
     {
       "id": "CVE-2024-9681",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
-      "aliases": ["CURL-CVE-2024-9681", "ROOT-OS-DEBIAN-11-CVE-2024-9681"],
+      "aliases": ["CURL-CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-06T08:15:03.740Z",
       "related": [
@@ -2309,28 +2157,14 @@
         "SUSE-SU-2024:3926-1",
         "SUSE-SU-2024:3927-1",
         "SUSE-SU-2024:3927-2",
+        "SUSE-SU-2025:20083-1",
+        "SUSE-SU-2025:20239-1",
         "openSUSE-SU-2024:14476-1"
       ],
       "references": [
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
-        },
-        {
-          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
         },
         {
           "type": "WEB",
@@ -2345,8 +2179,20 @@
           "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-9681.html"
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/13"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
         },
         {
           "type": "ADVISORY",
@@ -2354,18 +2200,10 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2764830"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
         },
         {
-          "type": "REPORT",
+          "type": "FIX",
           "url": "https://hackerone.com/reports/2764830"
         },
         {
@@ -2374,19 +2212,7 @@
         },
         {
           "type": "FIX",
-          "url": "https://hackerone.com/reports/2764830"
-        },
-        {
-          "type": "FIX",
           "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/11/06/2"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2764830"
         }
       ],
       "affected": [
@@ -2402,14 +2228,15 @@
                 {
                   "fixed": "b1ef0e1a01c0bb6ee5367bd9c186a603bde3615a"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 37,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2429,7 +2256,8 @@
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",
         "SUSE-SU-2025:0371-1",
-        "SUSE-SU-2025:0372-1"
+        "SUSE-SU-2025:0372-1",
+        "SUSE-SU-2025:20144-1"
       ],
       "references": [
         {
@@ -2442,18 +2270,10 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2917232"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
         },
         {
           "type": "REPORT",
-          "url": "https://hackerone.com/reports/2917232"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2917232"
         }
       ],
@@ -2470,14 +2290,15 @@
                 {
                   "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 37,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2494,6 +2315,8 @@
       "related": [
         "CGA-pp5p-89c7-m76c",
         "MGASA-2025-0123",
+        "SUSE-SU-2025:03198-1",
+        "SUSE-SU-2025:20239-1",
         "openSUSE-SU-2025:14809-1"
       ],
       "references": [
@@ -2504,10 +2327,6 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0665.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2954286"
         },
         {
           "type": "ADVISORY",
@@ -2524,18 +2343,6 @@
         {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2954286"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2954286"
         }
       ],
       "affected": [
@@ -2551,14 +2358,15 @@
                 {
                   "last_affected": "75a2079d5c28debb2eaa848ca9430f1fe0d7844c"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2578,9 +2386,14 @@
         "SUSE-SU-2025:0369-1",
         "SUSE-SU-2025:0370-1",
         "SUSE-SU-2025:0371-1",
-        "SUSE-SU-2025:0372-1"
+        "SUSE-SU-2025:0372-1",
+        "SUSE-SU-2025:20144-1"
       ],
       "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
+        },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0725.html"
@@ -2588,10 +2401,6 @@
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0725.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
         },
         {
           "type": "REPORT",
@@ -2612,10 +2421,6 @@
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/4"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2956023"
         }
       ],
       "affected": [
@@ -2630,15 +2435,25 @@
                 },
                 {
                   "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
+                },
+                {
+                  "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
+                },
+                {
+                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
+                },
+                {
+                  "fixed": "76f83f0db23846e254d940ec7"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 164,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2652,22 +2467,11 @@
       "aliases": ["CURL-CVE-2025-10966"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-11-07T08:15:39.617Z",
+      "related": ["openSUSE-SU-2025:15757-1"],
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-10966.html"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-10966.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/3355218"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
         },
         {
           "type": "REPORT",
@@ -2680,14 +2484,6 @@
         {
           "type": "FIX",
           "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/3355218"
         }
       ],
       "affected": [
@@ -2703,14 +2499,15 @@
                 {
                   "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 53,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2724,7 +2521,20 @@
       "aliases": ["CURL-CVE-2025-14017"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:45.667Z",
-      "related": ["MGASA-2026-0003", "SUSE-SU-2026:0077-1"],
+      "related": [
+        "MGASA-2026-0003",
+        "SUSE-SU-2026:0077-1",
+        "SUSE-SU-2026:0078-1",
+        "SUSE-SU-2026:0119-1",
+        "SUSE-SU-2026:0221-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "SUSE-SU-2026:20347-1",
+        "SUSE-SU-2026:20358-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
@@ -2736,10 +2546,6 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
         }
       ],
@@ -2756,14 +2562,15 @@
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 146,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2777,23 +2584,24 @@
       "aliases": ["CURL-CVE-2025-14524"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:46.607Z",
-      "related": ["MGASA-2026-0003"],
+      "related": [
+        "MGASA-2026-0003",
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-14524.html"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-14524.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/3459417"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
         },
         {
           "type": "REPORT",
@@ -2801,19 +2609,11 @@
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-14524.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/3459417"
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
         }
       ],
       "affected": [
@@ -2829,14 +2629,15 @@
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 109,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2850,38 +2651,31 @@
       "aliases": ["CURL-CVE-2025-14819"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:46.730Z",
-      "related": ["MGASA-2026-0003"],
+      "related": [
+        "MGASA-2026-0003",
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
       "references": [
-        {
-          "type": "WEB",
-          "url": "https://curl.se/docs/CVE-2025-14819.html"
-        },
-        {
-          "type": "WEB",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-14819.html"
-        },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-14819.json"
         },
         {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
-        },
-        {
           "type": "FIX",
           "url": "https://curl.se/docs/CVE-2025-14819.html"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
         }
       ],
@@ -2898,14 +2692,15 @@
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 34,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2919,23 +2714,24 @@
       "aliases": ["CURL-CVE-2025-15079"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:47.100Z",
-      "related": ["MGASA-2026-0003"],
+      "related": [
+        "MGASA-2026-0003",
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-15079.html"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-15079.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/3477116"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
         },
         {
           "type": "REPORT",
@@ -2948,14 +2744,6 @@
         {
           "type": "FIX",
           "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/3477116"
         }
       ],
       "affected": [
@@ -2971,14 +2759,15 @@
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 73,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2992,23 +2781,23 @@
       "aliases": ["CURL-CVE-2025-15224"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:47.207Z",
-      "related": ["MGASA-2026-0003"],
+      "related": [
+        "MGASA-2026-0003",
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-15224.html"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-15224.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/3480925"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
         },
         {
           "type": "REPORT",
@@ -3021,14 +2810,6 @@
         {
           "type": "FIX",
           "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/3480925"
         }
       ],
       "affected": [
@@ -3044,14 +2825,15 @@
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 73,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3065,6 +2847,11 @@
       "aliases": ["CURL-CVE-2025-5025"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-05-28T07:15:24.910Z",
+      "related": [
+        "SUSE-SU-2025:03198-1",
+        "SUSE-SU-2025:20675-1",
+        "openSUSE-SU-2025:15176-1"
+      ],
       "references": [
         {
           "type": "ADVISORY",
@@ -3076,22 +2863,10 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/3153497"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
         },
         {
           "type": "REPORT",
-          "url": "https://hackerone.com/reports/3153497"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/3153497"
         }
       ],
@@ -3108,18 +2883,185 @@
                 {
                   "fixed": "4dacb79fcdd9364c1083e06f6a011d797a344f47"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 14,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-1965",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with  `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "aliases": ["CURL-CVE-2026-1965"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:15:59.177Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "openSUSE-SU-2026:10371-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-1965.json"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-1965.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
+                },
+                {
+                  "fixed": "8c908d2d0a6d32abdedda2c52e90bd56ec76c24d"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 178,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-3783",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a redirect to a second URL, curl could leak that token to the second\nhostname under some circumstances.\n\nIf the hostname that the first request is redirected to has information in the\nused .netrc file, with either of the `machine` or `default` keywords, curl\nwould pass on the bearer token set for the first host also to the second one.",
+      "aliases": ["CURL-CVE-2026-3783"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:16:00.080Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "openSUSE-SU-2026:10371-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-3783.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/2"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3583983"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-3783.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "fixed": "8c908d2d0a6d32abdedda2c52e90bd56ec76c24d"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 113,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-3784",
+      "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
+      "aliases": ["CURL-CVE-2026-3784"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:16:00.437Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "openSUSE-SU-2026:10371-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-3784.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3584903"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-3784.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 204,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"
         }
       ]
     }
@@ -3439,7 +3381,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],
@@ -3494,7 +3436,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -3506,7 +3448,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -3561,7 +3503,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3577,7 +3519,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],
@@ -3632,7 +3574,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3656,7 +3598,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],
@@ -3711,7 +3653,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -3723,7 +3665,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -3778,7 +3720,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3794,7 +3736,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],
@@ -3849,7 +3791,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3873,7 +3815,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ROOT-APP-PYPI-CVE-2025-27516"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],
@@ -3928,7 +3870,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -3940,7 +3882,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ROOT-APP-PYPI-CVE-2024-56201"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -3995,7 +3937,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4011,7 +3953,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ROOT-APP-PYPI-CVE-2024-56326"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],
@@ -4066,7 +4008,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",

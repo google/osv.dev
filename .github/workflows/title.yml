@@ -16,7 +16,7 @@ name: Title
 
 on:
   # `pull_request_target` is only required when editing PRs from forks.
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - edited

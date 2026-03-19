@@ -49,4 +49,4 @@ fi
   --output-dir="${WORK_DIR}"
 
 
-gcloud ${BE_VERBOSE="-q"} storage cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}"
+gcloud  storage cp "${WORK_DIR}/cpe_product_to_repo.json" "${CPEREPO_GCS_PATH}" ${BE_VERBOSE="--quiet"}

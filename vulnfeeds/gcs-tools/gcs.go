@@ -3,6 +3,7 @@ package gcs
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
@@ -129,6 +131,23 @@ func UploadVulnerability(ctx context.Context, bkt *storage.BucketHandle, prefix 
 	}
 
 	objectName := filepath.Join(prefix, vuln.Id+".json")
+	reader := bytes.NewReader(data)
+
+	return ToGCS(ctx, bkt, objectName, reader, "application/json")
+}
+
+// UploadMetrics marshals ConversionMetrics to JSON and uploads it to GCS.
+func UploadMetrics(ctx context.Context, bkt *storage.BucketHandle, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
+	if metrics == nil || cveID == "" {
+		return fmt.Errorf("invalid metrics or CVE ID provided")
+	}
+
+	data, err := json.MarshalIndent(metrics, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics for %s: %w", cveID, err)
+	}
+
+	objectName := filepath.Join(prefix, string(cveID)+".metrics.json")
 	reader := bytes.NewReader(data)
 
 	return ToGCS(ctx, bkt, objectName, reader, "application/json")

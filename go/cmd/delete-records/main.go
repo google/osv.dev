@@ -83,15 +83,28 @@ func run(ctx context.Context) error {
 
 			// 1. Delete Datastore entities
 			keys := []*datastore.Key{
-				datastore.NameKey("Bug", id, nil),
 				datastore.NameKey("Vulnerability", id, nil),
 				datastore.NameKey("ListedVulnerability", id, nil),
 			}
-
+			var vuln osvschema.Vulnerability
+			var newKeys []*datastore.Key
+			for _, key := range keys {
+				if err := dsClient.Get(ctx, key, &vuln); err != nil {
+					logger.Error("Failed to get vulnerability",
+						slog.String("id", id),
+						slog.Any("error", err))
+					continue
+				}
+				if !vuln.IsWithdrawn {
+					logger.Info("Vulnerability is not withdrawn, skipping", slog.String("id", id))
+					continue
+				}
+				newKeys = append(newKeys, key)
+			}
 			if *dryRun {
 				logger.Info("[DRY-RUN] Would delete Datastore entities", slog.String("id", id))
 			} else {
-				if err := dsClient.DeleteMulti(ctx, keys); err != nil {
+				if err := dsClient.DeleteMulti(ctx, newKeys); err != nil {
 					var multiErr datastore.MultiError
 					hasRealError := false
 

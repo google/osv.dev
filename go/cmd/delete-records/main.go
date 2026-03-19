@@ -14,15 +14,16 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
+	data "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	projectID   = flag.String("project-id", "", "The GCP project ID")
-	bucket      = flag.String("bucket", "", "The GCS bucket for OSV export (e.g. osv-vulnerabilities)")
+	projectID   = flag.String("project-id", "oss-vdb-test", "The GCP project ID")
+	bucket      = flag.String("bucket", "osv-test-vulnerabilities", "The GCS bucket for OSV export (e.g. osv-vulnerabilities)")
 	file        = flag.String("file", "", "Text file containing record IDs, one per line")
-	dryRun      = flag.Bool("dry-run", false, "Do a dry run without deleting anything")
+	dryRun      = flag.Bool("dry-run", true, "Do a dry run without deleting anything")
 	workerCount = flag.Int("workers", 50, "Number of concurrent workers")
 )
 
@@ -79,32 +80,30 @@ func run(ctx context.Context) error {
 
 	for _, id := range recordIDs {
 		g.Go(func() error {
-			logger.Info("Processing", slog.String("id", id))
-
 			// 1. Delete Datastore entities
 			keys := []*datastore.Key{
 				datastore.NameKey("Vulnerability", id, nil),
 				datastore.NameKey("ListedVulnerability", id, nil),
 			}
-			var vuln osvschema.Vulnerability
-			var newKeys []*datastore.Key
-			for _, key := range keys {
-				if err := dsClient.Get(ctx, key, &vuln); err != nil {
+			var vuln data.Vulnerability
+		
+			if err := dsClient.Get(ctx, keys[0], &vuln); err != nil {
 					logger.Error("Failed to get vulnerability",
 						slog.String("id", id),
 						slog.Any("error", err))
-					continue
+						
+						return nil
 				}
-				if !vuln.IsWithdrawn {
+			if !vuln.IsWithdrawn {
 					logger.Info("Vulnerability is not withdrawn, skipping", slog.String("id", id))
-					continue
-				}
-				newKeys = append(newKeys, key)
+					
+					return nil
 			}
+			
 			if *dryRun {
 				logger.Info("[DRY-RUN] Would delete Datastore entities", slog.String("id", id))
 			} else {
-				if err := dsClient.DeleteMulti(ctx, newKeys); err != nil {
+				if err := dsClient.DeleteMulti(ctx, keys); err != nil {
 					var multiErr datastore.MultiError
 					hasRealError := false
 

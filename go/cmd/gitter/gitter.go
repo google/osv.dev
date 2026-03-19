@@ -64,9 +64,9 @@ var (
 	fetchTimeout    time.Duration
 	semaphore       chan struct{} // Request concurrency control
 	// LRU cache for recently loaded repositories (key: repo URL)
-	repoCache        *ristretto.Cache[string, *Repository]
-	repoTTL          time.Duration
-	repoCacheMaxCost int64 // max cost in bytes
+	repoCache             *ristretto.Cache[string, *Repository]
+	repoTTL               time.Duration
+	repoCacheMaxCostBytes int64
 )
 
 var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
@@ -148,7 +148,7 @@ func InitRepoCache() {
 	var err error
 	repoCache, err = ristretto.NewCache(&ristretto.Config[string, *Repository]{
 		NumCounters: numCounters,
-		MaxCost:     repoCacheMaxCost,
+		MaxCost:     repoCacheMaxCostBytes,
 		BufferItems: 64,
 		Cost:        repoCostBytes,
 		// Check for TTL expiry every 60 seconds
@@ -317,7 +317,7 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceU
 	if !forceUpdate {
 		if repo, ok := repoCache.Get(url); ok {
 			// repoCache.Get() will not return expired items, so we can safely return the repo
-			logger.InfoContext(ctx, "Repository already in cache, skipping fetch and load")
+			logger.DebugContext(ctx, "Repository already in cache, skipping fetch and load")
 			return repo, nil
 		}
 	}
@@ -365,6 +365,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		logger.InfoContext(ctx, "Fetching git blob", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
+			logger.InfoContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
@@ -373,6 +374,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
 			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
+			logger.InfoContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
 				return fmt.Errorf("git fetch failed: %w", err)
@@ -480,7 +482,7 @@ func main() {
 	if repoMaxCostUint > math.MaxInt64 {
 		logger.Fatal("Repo cache max cost too large", slog.Uint64("maxCost", repoMaxCostUint))
 	}
-	repoCacheMaxCost = int64(repoMaxCostUint)
+	repoCacheMaxCostBytes = int64(repoMaxCostUint)
 
 	loadLastFetchMap()
 	InitRepoCache()
@@ -654,7 +656,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	cherrypickLimit := body.GetDetectCherrypicksLimit()
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
-	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed), slog.Bool("cherrypickLimit", cherrypickLimit))
 
 	select {
 	case semaphore <- struct{}{}:

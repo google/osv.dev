@@ -26,7 +26,6 @@ import (
 	"os"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 
@@ -714,8 +713,11 @@ func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 		})
 	}
 
-	sort.SliceStable(references, func(i, j int) bool {
-		return references[i].GetType() < references[j].GetType()
+	slices.SortFunc(references, func(a, b *osvschema.Reference) int {
+		return cmp.Or(
+			cmp.Compare(a.GetType(), b.GetType()),
+			cmp.Compare(a.GetUrl(), b.GetUrl()),
+		)
 	})
 
 	return references

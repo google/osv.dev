@@ -18,6 +18,20 @@ spec:
           value: '10.189.34.180'
         - name: REDISPORT
           value: '6379'
+        
+        # --- Authentication Variables ---
+        - name: GOOGLE_OAUTH_CLIENT_ID
+          value: '175272184261-plkdbn2vea10d769llle6e965u8hupat.apps.googleusercontent.com'
+        - name: GOOGLE_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-client-secret
+              key: 'latest'
+        - name: FLASK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-secret-key
+              key: 'latest'
         startupProbe:
           httpGet:
             path: /healthz

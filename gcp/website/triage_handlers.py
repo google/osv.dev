@@ -7,14 +7,15 @@ import utils
 from flask import Blueprint, request, jsonify, render_template
 from google.cloud import storage
 
+import auth
+
 blueprint = Blueprint('triage_handlers', __name__)
 
 
 @blueprint.before_request
-def restrict_to_local():
-  """Restrict triage handlers to local environment."""
-  if utils.is_cloud_run():
-    return jsonify({'error': 'This tool is only available locally.'}), 403
+@auth.require_google_account
+def require_oauth():
+  """Require OAuth for all triage handlers."""
   return None
 
 

@@ -31,6 +31,12 @@ heading_anchors: true
 remote_theme: just-the-docs/just-the-docs
 plugins:
   - jekyll-feed
+  - jekyll-github-metadata
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-default-layout
+  - jekyll-titles-from-headings
 
 color_scheme: custom_dark
 markdown: kramdown

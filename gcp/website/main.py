@@ -46,7 +46,8 @@ def create_app():
 
   flask_app = Flask(
       __name__, template_folder='dist', static_folder='dist/static')
-  flask_app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+  flask_app.config['SECRET_KEY'] = os.environ.get(
+      'FLASK_SECRET_KEY', os.urandom(24))
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
   flask_app.register_blueprint(linter_api.blueprint)

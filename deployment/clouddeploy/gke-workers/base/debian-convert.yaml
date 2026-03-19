@@ -5,6 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "180"
 spec:
+  timeZone: "Australia/Sydney"
   schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:

@@ -1,6 +1,7 @@
 package gcs
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,8 +11,10 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // ToGCS uploads data from an io.Reader to a GCS bucket.
@@ -112,4 +115,21 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 	}
 
 	return nil
+}
+
+// UploadVulnerability marshals an OSV Vulnerability to JSON and uploads it to GCS.
+func UploadVulnerability(ctx context.Context, bkt *storage.BucketHandle, prefix string, vuln *osvschema.Vulnerability) error {
+	if vuln == nil || vuln.Id == "" {
+		return fmt.Errorf("invalid vulnerability provided")
+	}
+
+	data, err := protojson.MarshalOptions{Indent: "  "}.Marshal(vuln)
+	if err != nil {
+		return fmt.Errorf("failed to marshal vulnerability %s: %w", vuln.Id, err)
+	}
+
+	objectName := filepath.Join(prefix, vuln.Id+".json")
+	reader := bytes.NewReader(data)
+
+	return ToGCS(ctx, bkt, objectName, reader, "application/json")
 }

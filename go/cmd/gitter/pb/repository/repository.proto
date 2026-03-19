@@ -51,5 +51,6 @@ message AffectedCommitsRequest {
     repeated Event events = 2;
     bool detect_cherrypicks_introduced = 3;
     bool detect_cherrypicks_fixed = 4;
-    bool force_update = 5;
+    bool detect_cherrypicks_limit = 5;
+    bool force_update = 6;
 }

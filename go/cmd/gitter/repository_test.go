@@ -539,7 +539,7 @@ func TestAffected_Combined(t *testing.T) {
 			expected: []SHA1{},
 		},
 		{
-			name: "Introduced=lastAffected: Only 1 commit affected",
+			name: "Introduced=lastAffected: Only current commit affected",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(hB)},
 				LastAffected: []string{encodeSHA1(hB)},
@@ -554,6 +554,15 @@ func TestAffected_Combined(t *testing.T) {
 				LastAffected: []string{encodeSHA1(hB)},
 			},
 			expected: []SHA1{hA},
+		},
+		{
+			// This is the current behaviour as we treat child of lastAffected commit as a fixed commit
+			name: "Intro=lastAffected+1: commit not affected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA), encodeSHA1(hC)}, // C is the child of B
+				LastAffected: []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{hA, hB},
 		},
 	}
 
@@ -750,7 +759,7 @@ func TestLimit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Limit(t.Context(), tt.se)
+			gotCommits := repo.Limit(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -759,6 +768,116 @@ func TestLimit(t *testing.T) {
 
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
 				t.Errorf("TestLimit() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLimit_Cherrypick(t *testing.T) {
+	repo := NewRepository("/repo")
+
+	// Graph: (Parent -> Child)
+	// A -> B -> C -> D
+	// 			|	   |
+	//   (cherrypick)
+	//  		|		 |
+	// E -> F -> G -> H
+
+
+	hA := decodeSHA1("aaaa")
+	hB := decodeSHA1("bbbb")
+	hC := decodeSHA1("cccc")
+	hD := decodeSHA1("dddd")
+	hE := decodeSHA1("eeee")
+	hF := decodeSHA1("ffff")
+	hG := decodeSHA1("abab")
+	hH := decodeSHA1("acac")
+
+	c1 := decodeSHA1("c1")
+	c2 := decodeSHA1("c2")
+
+	// Setup graph (Parent -> Children)
+	repo.addEdgeForTest(hA, hB)
+	repo.addEdgeForTest(hB, hC)
+	repo.addEdgeForTest(hC, hD)
+	repo.addEdgeForTest(hE, hF)
+	repo.addEdgeForTest(hF, hG)
+	repo.addEdgeForTest(hG, hH)
+	repo.rootCommits = []int{0}
+
+	// Setup PatchID map for cherrypicking
+	idxB := repo.getOrCreateIndex(hB)
+	idxF := repo.getOrCreateIndex(hF)
+	repo.patchIDToCommits[c1] = []int{idxB, idxF}
+	idxC := repo.getOrCreateIndex(hC)
+	idxG := repo.getOrCreateIndex(hG)
+	repo.patchIDToCommits[c2] = []int{idxC, idxG}
+
+	repo.commits[idxB].PatchID = c1
+	repo.commits[idxF].PatchID = c1
+	repo.commits[idxC].PatchID = c2
+	repo.commits[idxG].PatchID = c2
+
+	tests := []struct {
+		name            string
+		se              *SeparatedEvents
+		cherrypickIntro bool
+		cherrypickLimit bool
+		expected        []SHA1
+	}{
+		{
+			name: "Cherrypick Introduced Only: B introduced, G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hB)},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			cherrypickIntro: true,
+			cherrypickLimit: false,
+			expected:        []SHA1{hF},
+		},
+		{
+			name: "Cherrypick Limit Only: B introduced, G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hB)},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			cherrypickIntro: false,
+			cherrypickLimit: true,
+			expected:        []SHA1{hB, hE, hF},
+		},
+		{
+			name: "Cherrypick Introduced and Limit: A introduced, G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			cherrypickIntro: true,
+			cherrypickLimit: true,
+			expected:        []SHA1{hA, hB, hE, hF},
+		},
+		{
+			name: "Cherrypick Introduced=0: G limit",
+			se: &SeparatedEvents{
+				Introduced: []string{"0"},
+				Limit:      []string{encodeSHA1(hG)},
+			},
+			cherrypickIntro: true,
+			cherrypickLimit: true,
+			expected:        []SHA1{hA, hB, hE, hF},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCommits := repo.Limit(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickLimit)
+
+			var got []SHA1
+			for _, c := range gotCommits {
+				got = append(got, c.Hash)
+			}
+
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestLimit_Cherrypick() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

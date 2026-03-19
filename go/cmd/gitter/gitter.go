@@ -138,10 +138,12 @@ func repoCostBytes(repo *Repository) int64 {
 	return int64(repoOverhead + len(repo.commits)*costPerCommit)
 }
 
+// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
+// We're assuming the cache will hold 5000 repositories
+const numCounters = int64(10 * 5000)
+
 // InitRepoCache initializes the LRU cache for repositories.
 func InitRepoCache() {
-	// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
-	numCounters := repoCacheMaxCost / (300 * 10000)
 	var err error
 	repoCache, err = ristretto.NewCache(&ristretto.Config[string, *Repository]{
 		NumCounters: numCounters,
@@ -644,6 +646,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
 	cherrypickFixed := body.GetDetectCherrypicksFixed()
+	cherrypickLimit := body.GetDetectCherrypicksLimit()
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed))
@@ -666,7 +669,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var affectedCommits []*Commit
 	if len(se.Limit) > 0 {
-		affectedCommits = repo.Limit(ctx, se)
+		affectedCommits = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
 	} else {
 		affectedCommits = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}

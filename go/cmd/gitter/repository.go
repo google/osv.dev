@@ -624,9 +624,16 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 }
 
 // Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
-func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents) []*Commit {
+func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) []*Commit {
 	introduced := r.parseHashes(ctx, se.Introduced)
 	limit := r.parseHashes(ctx, se.Limit)
+
+	if cherrypickIntro {
+		introduced = r.expandByCherrypick(introduced)
+	}
+	if cherrypickLimit {
+		limit = r.expandByCherrypick(limit)
+	}
 
 	var affectedCommits []*Commit
 

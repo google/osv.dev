@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: pb/repository/repository.proto
+// source: repository.proto
 
 package repository
 
@@ -57,11 +57,11 @@ func (x EventType) String() string {
 }
 
 func (EventType) Descriptor() protoreflect.EnumDescriptor {
-	return file_pb_repository_repository_proto_enumTypes[0].Descriptor()
+	return file_repository_proto_enumTypes[0].Descriptor()
 }
 
 func (EventType) Type() protoreflect.EnumType {
-	return &file_pb_repository_repository_proto_enumTypes[0]
+	return &file_repository_proto_enumTypes[0]
 }
 
 func (x EventType) Number() protoreflect.EnumNumber {
@@ -70,7 +70,7 @@ func (x EventType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EventType.Descriptor instead.
 func (EventType) EnumDescriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{0}
+	return file_repository_proto_rawDescGZIP(), []int{0}
 }
 
 type CommitDetail struct {
@@ -83,7 +83,7 @@ type CommitDetail struct {
 
 func (x *CommitDetail) Reset() {
 	*x = CommitDetail{}
-	mi := &file_pb_repository_repository_proto_msgTypes[0]
+	mi := &file_repository_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +95,7 @@ func (x *CommitDetail) String() string {
 func (*CommitDetail) ProtoMessage() {}
 
 func (x *CommitDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[0]
+	mi := &file_repository_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +108,7 @@ func (x *CommitDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitDetail.ProtoReflect.Descriptor instead.
 func (*CommitDetail) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{0}
+	return file_repository_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CommitDetail) GetHash() []byte {
@@ -136,7 +136,7 @@ type RepositoryCache struct {
 
 func (x *RepositoryCache) Reset() {
 	*x = RepositoryCache{}
-	mi := &file_pb_repository_repository_proto_msgTypes[1]
+	mi := &file_repository_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -148,7 +148,7 @@ func (x *RepositoryCache) String() string {
 func (*RepositoryCache) ProtoMessage() {}
 
 func (x *RepositoryCache) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[1]
+	mi := &file_repository_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -161,7 +161,7 @@ func (x *RepositoryCache) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryCache.ProtoReflect.Descriptor instead.
 func (*RepositoryCache) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{1}
+	return file_repository_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RepositoryCache) GetCommits() []*CommitDetail {
@@ -180,7 +180,7 @@ type AffectedCommit struct {
 
 func (x *AffectedCommit) Reset() {
 	*x = AffectedCommit{}
-	mi := &file_pb_repository_repository_proto_msgTypes[2]
+	mi := &file_repository_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -192,7 +192,7 @@ func (x *AffectedCommit) String() string {
 func (*AffectedCommit) ProtoMessage() {}
 
 func (x *AffectedCommit) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[2]
+	mi := &file_repository_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -205,7 +205,7 @@ func (x *AffectedCommit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommit.ProtoReflect.Descriptor instead.
 func (*AffectedCommit) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{2}
+	return file_repository_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AffectedCommit) GetHash() []byte {
@@ -225,7 +225,7 @@ type AffectedRefs struct {
 
 func (x *AffectedRefs) Reset() {
 	*x = AffectedRefs{}
-	mi := &file_pb_repository_repository_proto_msgTypes[3]
+	mi := &file_repository_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -237,7 +237,7 @@ func (x *AffectedRefs) String() string {
 func (*AffectedRefs) ProtoMessage() {}
 
 func (x *AffectedRefs) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[3]
+	mi := &file_repository_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -250,7 +250,7 @@ func (x *AffectedRefs) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedRefs.ProtoReflect.Descriptor instead.
 func (*AffectedRefs) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{3}
+	return file_repository_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AffectedRefs) GetRef() string {
@@ -277,7 +277,7 @@ type AffectedCommitsResponse struct {
 
 func (x *AffectedCommitsResponse) Reset() {
 	*x = AffectedCommitsResponse{}
-	mi := &file_pb_repository_repository_proto_msgTypes[4]
+	mi := &file_repository_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -289,7 +289,7 @@ func (x *AffectedCommitsResponse) String() string {
 func (*AffectedCommitsResponse) ProtoMessage() {}
 
 func (x *AffectedCommitsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[4]
+	mi := &file_repository_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -302,7 +302,7 @@ func (x *AffectedCommitsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommitsResponse.ProtoReflect.Descriptor instead.
 func (*AffectedCommitsResponse) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{4}
+	return file_repository_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AffectedCommitsResponse) GetCommits() []*AffectedCommit {
@@ -329,7 +329,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_pb_repository_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -341,7 +341,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +354,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{5}
+	return file_repository_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Event) GetEventType() EventType {
@@ -381,7 +381,7 @@ type CacheRequest struct {
 
 func (x *CacheRequest) Reset() {
 	*x = CacheRequest{}
-	mi := &file_pb_repository_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +393,7 @@ func (x *CacheRequest) String() string {
 func (*CacheRequest) ProtoMessage() {}
 
 func (x *CacheRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -406,7 +406,7 @@ func (x *CacheRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CacheRequest.ProtoReflect.Descriptor instead.
 func (*CacheRequest) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{6}
+	return file_repository_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CacheRequest) GetUrl() string {
@@ -429,14 +429,15 @@ type AffectedCommitsRequest struct {
 	Events                      []*Event               `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"`
 	DetectCherrypicksIntroduced bool                   `protobuf:"varint,3,opt,name=detect_cherrypicks_introduced,json=detectCherrypicksIntroduced,proto3" json:"detect_cherrypicks_introduced,omitempty"`
 	DetectCherrypicksFixed      bool                   `protobuf:"varint,4,opt,name=detect_cherrypicks_fixed,json=detectCherrypicksFixed,proto3" json:"detect_cherrypicks_fixed,omitempty"`
-	ForceUpdate                 bool                   `protobuf:"varint,5,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
+	DetectCherrypicksLimit      bool                   `protobuf:"varint,5,opt,name=detect_cherrypicks_limit,json=detectCherrypicksLimit,proto3" json:"detect_cherrypicks_limit,omitempty"`
+	ForceUpdate                 bool                   `protobuf:"varint,6,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *AffectedCommitsRequest) Reset() {
 	*x = AffectedCommitsRequest{}
-	mi := &file_pb_repository_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -448,7 +449,7 @@ func (x *AffectedCommitsRequest) String() string {
 func (*AffectedCommitsRequest) ProtoMessage() {}
 
 func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_repository_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -461,7 +462,7 @@ func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommitsRequest.ProtoReflect.Descriptor instead.
 func (*AffectedCommitsRequest) Descriptor() ([]byte, []int) {
-	return file_pb_repository_repository_proto_rawDescGZIP(), []int{7}
+	return file_repository_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AffectedCommitsRequest) GetUrl() string {
@@ -492,6 +493,13 @@ func (x *AffectedCommitsRequest) GetDetectCherrypicksFixed() bool {
 	return false
 }
 
+func (x *AffectedCommitsRequest) GetDetectCherrypicksLimit() bool {
+	if x != nil {
+		return x.DetectCherrypicksLimit
+	}
+	return false
+}
+
 func (x *AffectedCommitsRequest) GetForceUpdate() bool {
 	if x != nil {
 		return x.ForceUpdate
@@ -499,11 +507,11 @@ func (x *AffectedCommitsRequest) GetForceUpdate() bool {
 	return false
 }
 
-var File_pb_repository_repository_proto protoreflect.FileDescriptor
+var File_repository_proto protoreflect.FileDescriptor
 
-const file_pb_repository_repository_proto_rawDesc = "" +
+const file_repository_proto_rawDesc = "" +
 	"\n" +
-	"\x1epb/repository/repository.proto\x12\x06gitter\"=\n" +
+	"\x10repository.proto\x12\x06gitter\"=\n" +
 	"\fCommitDetail\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x19\n" +
 	"\bpatch_id\x18\x02 \x01(\fR\apatchId\"A\n" +
@@ -523,13 +531,14 @@ const file_pb_repository_repository_proto_rawDesc = "" +
 	"\x04hash\x18\x02 \x01(\tR\x04hash\"C\n" +
 	"\fCacheRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12!\n" +
-	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\"\xf2\x01\n" +
+	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\"\xac\x02\n" +
 	"\x16AffectedCommitsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x06events\x18\x02 \x03(\v2\r.gitter.EventR\x06events\x12B\n" +
 	"\x1ddetect_cherrypicks_introduced\x18\x03 \x01(\bR\x1bdetectCherrypicksIntroduced\x128\n" +
-	"\x18detect_cherrypicks_fixed\x18\x04 \x01(\bR\x16detectCherrypicksFixed\x12!\n" +
-	"\fforce_update\x18\x05 \x01(\bR\vforceUpdate*D\n" +
+	"\x18detect_cherrypicks_fixed\x18\x04 \x01(\bR\x16detectCherrypicksFixed\x128\n" +
+	"\x18detect_cherrypicks_limit\x18\x05 \x01(\bR\x16detectCherrypicksLimit\x12!\n" +
+	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate*D\n" +
 	"\tEventType\x12\x0e\n" +
 	"\n" +
 	"INTRODUCED\x10\x00\x12\t\n" +
@@ -538,20 +547,20 @@ const file_pb_repository_repository_proto_rawDesc = "" +
 	"\x05LIMIT\x10\x03B\x0eZ\f./repositoryb\x06proto3"
 
 var (
-	file_pb_repository_repository_proto_rawDescOnce sync.Once
-	file_pb_repository_repository_proto_rawDescData []byte
+	file_repository_proto_rawDescOnce sync.Once
+	file_repository_proto_rawDescData []byte
 )
 
-func file_pb_repository_repository_proto_rawDescGZIP() []byte {
-	file_pb_repository_repository_proto_rawDescOnce.Do(func() {
-		file_pb_repository_repository_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pb_repository_repository_proto_rawDesc), len(file_pb_repository_repository_proto_rawDesc)))
+func file_repository_proto_rawDescGZIP() []byte {
+	file_repository_proto_rawDescOnce.Do(func() {
+		file_repository_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)))
 	})
-	return file_pb_repository_repository_proto_rawDescData
+	return file_repository_proto_rawDescData
 }
 
-var file_pb_repository_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pb_repository_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_pb_repository_repository_proto_goTypes = []any{
+var file_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_repository_proto_goTypes = []any{
 	(EventType)(0),                  // 0: gitter.EventType
 	(*CommitDetail)(nil),            // 1: gitter.CommitDetail
 	(*RepositoryCache)(nil),         // 2: gitter.RepositoryCache
@@ -562,7 +571,7 @@ var file_pb_repository_repository_proto_goTypes = []any{
 	(*CacheRequest)(nil),            // 7: gitter.CacheRequest
 	(*AffectedCommitsRequest)(nil),  // 8: gitter.AffectedCommitsRequest
 }
-var file_pb_repository_repository_proto_depIdxs = []int32{
+var file_repository_proto_depIdxs = []int32{
 	1, // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
 	3, // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.AffectedCommit
 	4, // 2: gitter.AffectedCommitsResponse.refs:type_name -> gitter.AffectedRefs
@@ -575,27 +584,27 @@ var file_pb_repository_repository_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_pb_repository_repository_proto_init() }
-func file_pb_repository_repository_proto_init() {
-	if File_pb_repository_repository_proto != nil {
+func init() { file_repository_proto_init() }
+func file_repository_proto_init() {
+	if File_repository_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pb_repository_repository_proto_rawDesc), len(file_pb_repository_repository_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pb_repository_repository_proto_goTypes,
-		DependencyIndexes: file_pb_repository_repository_proto_depIdxs,
-		EnumInfos:         file_pb_repository_repository_proto_enumTypes,
-		MessageInfos:      file_pb_repository_repository_proto_msgTypes,
+		GoTypes:           file_repository_proto_goTypes,
+		DependencyIndexes: file_repository_proto_depIdxs,
+		EnumInfos:         file_repository_proto_enumTypes,
+		MessageInfos:      file_repository_proto_msgTypes,
 	}.Build()
-	File_pb_repository_repository_proto = out.File
-	file_pb_repository_repository_proto_goTypes = nil
-	file_pb_repository_repository_proto_depIdxs = nil
+	File_repository_proto = out.File
+	file_repository_proto_goTypes = nil
+	file_repository_proto_depIdxs = nil
 }

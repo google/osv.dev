@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -471,10 +472,15 @@ func main() {
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
+
 	repoMaxCostUint, err := humanize.ParseBytes(*repoMaxCostStr)
 	if err != nil {
 		logger.Fatal("Failed to parse repo cache max cost", slog.String("maxCost", *repoMaxCostStr), slog.Any("error", err))
 	}
+	if repoMaxCostUint > math.MaxInt64 {
+		logger.Fatal("Repo cache max cost too large", slog.Uint64("maxCost", repoMaxCostUint))
+	}
+	//nolint:gosec // humanize parses the string into uint64 but ristretto needs int64. Integer overflow is handled above.
 	repoCacheMaxCost = int64(repoMaxCostUint)
 
 	loadLastFetchMap()

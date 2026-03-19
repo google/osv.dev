@@ -783,7 +783,6 @@ func TestLimit_Cherrypick(t *testing.T) {
 	//  		|		 |
 	// E -> F -> G -> H
 
-
 	hA := decodeSHA1("aaaa")
 	hB := decodeSHA1("bbbb")
 	hC := decodeSHA1("cccc")

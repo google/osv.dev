@@ -3,7 +3,6 @@ import logging
 import re
 import requests
 
-
 from flask import Blueprint, request, jsonify, render_template
 from google.cloud import storage
 

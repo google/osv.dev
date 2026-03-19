@@ -27,6 +27,7 @@ import (
 	_ "net/http/pprof" //nolint:gosec // This is a internal only service not public to the internet
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/dustin/go-humanize"
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
@@ -64,7 +65,7 @@ var (
 	// LRU cache for recently loaded repositories (key: repo URL)
 	repoCache        *ristretto.Cache[string, *Repository]
 	repoTTL          time.Duration
-	repoCacheMaxCost int64
+	repoCacheMaxCost int64 // max cost in bytes
 )
 
 var validURLRegex = regexp.MustCompile(`^(https?|git|ssh)://`)
@@ -115,9 +116,9 @@ func GetRepoLock(url string) *sync.RWMutex {
 	return lock.(*sync.RWMutex)
 }
 
-// repoCost is the cost function for a repository in the LRU cache.
+// repoCostBytes is the cost function for a repository in the LRU cache.
 // The memory cost of a repository is approximated from the num of commits and a base overhead.
-func repoCost(repo *Repository) int64 {
+func repoCostBytes(repo *Repository) int64 {
 	// Mutex (8 bytes), string for repo path (say 128 bytes), root commit (assume 1 root only, 32 bytes)
 	repoOverhead := 168
 	// Assuming per commit adds:
@@ -139,14 +140,14 @@ func repoCost(repo *Repository) int64 {
 
 // InitRepoCache initializes the LRU cache for repositories.
 func InitRepoCache() {
+	// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
 	numCounters := repoCacheMaxCost / (300 * 10000)
 	var err error
 	repoCache, err = ristretto.NewCache(&ristretto.Config[string, *Repository]{
-		// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
 		NumCounters: numCounters,
 		MaxCost:     repoCacheMaxCost,
 		BufferItems: 64,
-		Cost:        repoCost,
+		Cost:        repoCostBytes,
 		// Check for TTL expiry every 60 seconds
 		TtlTickerDurationInSec: 60,
 	})
@@ -459,16 +460,20 @@ func main() {
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
 	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
-	flag.Int64Var(&repoCacheMaxCost, "repo-cache-max-cost", 1<<30, "Repository LRU cache max cost (in bytes)")
+	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
 	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
-
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
+	repoMaxCostUint, err := humanize.ParseBytes(*repoMaxCostStr)
+	if err != nil {
+		logger.Fatal("Failed to parse repo cache max cost", slog.String("maxCost", *repoMaxCostStr), slog.Any("error", err))
+	}
+	repoCacheMaxCost = int64(repoMaxCostUint)
 
 	loadLastFetchMap()
 	InitRepoCache()

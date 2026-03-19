@@ -416,12 +416,14 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []int) e
 	return nil
 }
 
+// updatePatchID updates the PatchID for a given commit and adds it to the patchIDToCommits map.
 func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDMu.Lock()
 	defer r.patchIDMu.Unlock()
 
 	idx, ok := r.hashToIndex[commitHash]
 	if !ok {
+		// This should never happen because we only call git patch-id on commits we see when building commit graph.
 		return
 	}
 	commit := r.commits[idx]

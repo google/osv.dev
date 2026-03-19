@@ -12,7 +12,7 @@ spec:
           - "--work-dir=/work/gitter"
           - "--fetch-timeout=1h"
           - "--repo-cache-ttl=1h"
-          - "--repo-cache-max-cost=107374182400" # 100GB
+          - "--repo-cache-max-cost=100GiB"
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb

@@ -69,7 +69,7 @@ var (
 	repoCacheMaxCost int64 // max cost in bytes
 )
 
-var validURLRegex = regexp.MustCompile(`^(https?|git|ssh)://`)
+var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
 
 const shutdownTimeout = 10 * time.Second
 
@@ -229,7 +229,7 @@ func validateURL(r *http.Request, url string) error {
 	}
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
-		// Check if url starts with protocols: http(s)://, git://, ssh://
+		// Check if url starts with protocols: http(s)://, git://
 		if !validURLRegex.MatchString(url) {
 			return errors.New("invalid url parameter")
 		}
@@ -480,7 +480,6 @@ func main() {
 	if repoMaxCostUint > math.MaxInt64 {
 		logger.Fatal("Repo cache max cost too large", slog.Uint64("maxCost", repoMaxCostUint))
 	}
-	//nolint:gosec // humanize parses the string into uint64 but ristretto needs int64. Integer overflow is handled above.
 	repoCacheMaxCost = int64(repoMaxCostUint)
 
 	loadLastFetchMap()

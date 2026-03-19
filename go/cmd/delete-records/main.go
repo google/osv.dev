@@ -86,20 +86,20 @@ func run(ctx context.Context) error {
 				datastore.NameKey("ListedVulnerability", id, nil),
 			}
 			var vuln data.Vulnerability
-		
+
 			if err := dsClient.Get(ctx, keys[0], &vuln); err != nil {
-					logger.Error("Failed to get vulnerability",
-						slog.String("id", id),
-						slog.Any("error", err))
-						
-						return nil
-				}
-			if !vuln.IsWithdrawn {
-					logger.Info("Vulnerability is not withdrawn, skipping", slog.String("id", id))
-					
-					return nil
+				logger.Error("Failed to get vulnerability",
+					slog.String("id", id),
+					slog.Any("error", err))
+
+				return nil
 			}
-			
+			if !vuln.IsWithdrawn {
+				logger.Info("Vulnerability is not withdrawn, skipping", slog.String("id", id))
+
+				return nil
+			}
+
 			if *dryRun {
 				logger.Info("[DRY-RUN] Would delete Datastore entities", slog.String("id", id))
 			} else {

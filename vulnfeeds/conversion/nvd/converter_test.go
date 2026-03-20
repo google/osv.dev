@@ -115,16 +115,23 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 		CVEToOSV(cve, nil, cache, outDir, metrics, false, false)
 
 		var b []byte
-		var err error
-		filepath.Walk(outDir, func(path string, info os.FileInfo, err2 error) error {
+		err := filepath.Walk(outDir, func(path string, info os.FileInfo, _ error) error {
 			if !info.IsDir() && filepath.Ext(path) == ".json" {
-				b, err = os.ReadFile(path)
+				var fileErr error
+				b, fileErr = os.ReadFile(path)
+				if fileErr != nil {
+					return fileErr
+				}
 			}
+
 			return nil
 		})
+		if err != nil {
+			t.Fatalf("Failed to walk or read OSV file: %v", err)
+		}
 
 		if len(b) == 0 {
-			t.Fatalf("Failed to read OSV file")
+			t.Fatalf("Failed to find OSV file")
 		}
 
 		var vuln osvschema.Vulnerability
@@ -134,11 +141,11 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 		}
 
 		if i == 0 {
-			firstResult = vuln.References
+			firstResult = vuln.GetReferences()
 			continue
 		}
 
-		if diff := cmp.Diff(firstResult, vuln.References, protocmp.Transform()); diff != "" {
+		if diff := cmp.Diff(firstResult, vuln.GetReferences(), protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
 	}

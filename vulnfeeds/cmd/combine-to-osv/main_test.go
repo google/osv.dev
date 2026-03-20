@@ -449,7 +449,7 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 	}
 
 	var firstResult *osvschema.Vulnerability
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		got := combineTwoOSVRecords(cve5, nvd)
 
 		if i == 0 {

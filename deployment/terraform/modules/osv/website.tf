@@ -22,6 +22,12 @@ resource "google_cloud_run_v2_service" "website" {
   }
 }
 
+resource "google_project_iam_member" "website_secret_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
 # Allow unauthenticated access
 resource "google_cloud_run_service_iam_binding" "website" {
   project  = var.project_id

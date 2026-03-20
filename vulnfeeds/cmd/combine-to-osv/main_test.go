@@ -429,3 +429,36 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
+	cve5 := &osvschema.Vulnerability{
+		Id: "CVE-2023-1234",
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5/A"},
+			{Type: osvschema.Reference_REPORT, Url: "https://example.com/cve5/B"},
+		},
+	}
+
+	nvd := &osvschema.Vulnerability{
+		Id: "CVE-2023-1234",
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5/A"},
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/nvd/C"},
+			{Type: osvschema.Reference_ADVISORY, Url: "https://example.com/nvd/D"},
+		},
+	}
+
+	var firstResult *osvschema.Vulnerability
+	for i := range 10 {
+		got := combineTwoOSVRecords(cve5, nvd)
+
+		if i == 0 {
+			firstResult = got
+			continue
+		}
+
+		if diff := cmp.Diff(firstResult.GetReferences(), got.GetReferences(), protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
+		}
+	}
+}

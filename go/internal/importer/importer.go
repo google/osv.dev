@@ -314,7 +314,8 @@ func checkReconcile(
 		KeyPath:                sourceRepo.KeyPath,
 		Strict:                 sourceRepo.Strictness,
 		CompareAgainstDatabase: true,
-		IsReimport:             true,
+		// If this is true it will always import rather than checking to see if it's outdated
+		IsReimport: false,
 	}
 
 	dbMod, exists := dbRecords[path]

@@ -11,8 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -27,14 +26,14 @@ var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
 func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
-	CPEs := cves.CPEs(cve)
+	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
@@ -48,7 +47,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// At the bare minimum, we want to attempt to extract the raw version information
 	// from CPEs, whether or not they can resolve to commits.
-	cpeRanges := cves.ExtractVersionsFromCPEs(cve, nil, metrics)
+	cpeRanges := c.ExtractVersionsFromCPEs(cve, nil, metrics)
 
 	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
@@ -75,6 +74,9 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// If we have ranges, try to resolve them
 	r, un, sR := processRanges(cpeRanges, repos, metrics, cache, models.VersionSourceCPE)
+	if metrics.Outcome == models.Error {
+		return models.Error
+	}
 	resolvedRanges = append(resolvedRanges, r...)
 	unresolvedRanges = append(unresolvedRanges, un...)
 	for _, s := range sR {
@@ -82,7 +84,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	// Extract Commits
-	commits, err := cves.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
+	commits, err := c.ExtractCommitsFromRefs(cve.References, http.DefaultClient)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
 	}
@@ -97,11 +99,14 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Extract Versions From Text if no CPE versions found
 	if len(resolvedRanges) == 0 {
-		textRanges := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
+		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
 		r, un, sR := processRanges(textRanges, repos, metrics, cache, models.VersionSourceDescription)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {
@@ -119,7 +124,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected)
 
-	if !outputMetrics && rejectFailed && metrics.Outcome != models.Successful {
+	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
 		return metrics.Outcome
 	}
 
@@ -130,13 +135,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
 func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
-	CPEs := cves.CPEs(cve)
+	CPEs := c.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
 	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, err := cves.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
+		CPE, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		maybeVendorName = CPE.Vendor
 		maybeProductName = CPE.Product
 		if err != nil {
@@ -145,7 +150,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 	}
 
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-	versions := cves.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
+	versions := c.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
 
 	if len(versions.AffectedVersions) != 0 {
 		// There are some AffectedVersions to try and resolve to AffectedCommits.
@@ -154,7 +159,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 			return models.NoRepos
 		}
 		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		cves.VersionInfoToCommits(&versions, repos, cache, metrics)
+		c.VersionInfoToCommits(&versions, repos, cache, metrics)
+		if metrics.Outcome == models.Error {
+			return models.Error
+		}
 	}
 
 	hasAnyFixedCommits := false
@@ -190,6 +198,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
 
+	if metrics.Outcome == models.Error {
+		return metrics.Outcome
+	}
+
 	var pkgInfos []vulns.PackageInfo
 	pi := vulns.PackageInfo{VersionInfo: versions}
 	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
@@ -217,11 +229,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	metricsFile, err := conversion.CreateMetricsFile(cve.ID, vulnDir)
+	metricsFile, err := c.CreateMetricsFile(cve.ID, vulnDir)
 	if err != nil {
 		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}
-	err = conversion.WriteMetricsFile(metrics, metricsFile)
+	err = c.WriteMetricsFile(metrics, metricsFile)
 	if err != nil {
 		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}
@@ -230,11 +242,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 }
 
 // FindRepos attempts to find the source code repositories for a given CVE.
-func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
+func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
-	refs := cve.References
-	conversion.DeduplicateRefs(refs)
-	CPEs := cves.CPEs(cve)
+	refs := c.DeduplicateRefs(cve.References)
+	CPEs := c.CPEs(cve)
 	CVEID := cve.ID
 	var reposForCVE []string
 
@@ -247,7 +258,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 	}
 
 	if len(refs) > 0 && len(CPEs) == 0 {
-		repos := cves.ReposFromReferences(nil, nil, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
+		repos := c.ReposFromReferences(nil, nil, refs, c.RefTagDenyList, repoTagsCache, metrics, httpClient)
 		if len(repos) == 0 {
 			metrics.AddNote("Failed to derive any repos and there were no CPEs")
 			return nil
@@ -255,9 +266,9 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
-	vendorProductCombinations := make(map[cves.VendorProduct]bool)
+	vendorProductCombinations := make(map[c.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
-		CPE, err := cves.ParseCPE(CPEstr)
+		CPE, err := c.ParseCPE(CPEstr)
 		if err != nil {
 			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
 			continue
@@ -265,7 +276,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 		if CPE.Part != "a" { // only care about application CPEs
 			continue
 		}
-		vendorProductCombinations[cves.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
+		vendorProductCombinations[c.VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}] = true
 	}
 
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
@@ -283,10 +294,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *cves.VPRepoCache, repoTagsCache *
 			}
 		}
 		if len(reposForCVE) == 0 && len(refs) > 0 {
-			if slices.Contains(cves.VendorProductDenyList, vendorProductKey) {
+			if slices.Contains(c.VendorProductDenyList, vendorProductKey) {
 				continue
 			}
-			repos := cves.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, cves.RefTagDenyList, repoTagsCache, metrics, httpClient)
+			repos := c.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, c.RefTagDenyList, repoTagsCache, metrics, httpClient)
 			if len(repos) == 0 {
 				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
 				continue
@@ -331,7 +342,7 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 						mergedRange = vr
 					} else {
 						var err error
-						mergedRange, err = conversion.MergeTwoRanges(mergedRange, vr)
+						mergedRange, err = c.MergeTwoRanges(mergedRange, vr)
 						if err != nil {
 							metrics.AddNote("Failed to merge ranges: %v", err)
 						}
@@ -342,8 +353,9 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 				for _, commit := range commits {
 					if commit.Repo == repo {
 						if mergedRange == nil {
-							mergedRange = conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+							mergedRange = c.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
 							mergedRange.Repo = repo
+							mergedRange.Type = osvschema.Range_GIT
 						} else {
 							event := convertCommitToEvent(commit)
 							if event != nil {
@@ -362,7 +374,10 @@ func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, unresolvedR
 	// if there are no resolved version but there are commits, we should create a range for each commit
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
 		for _, commit := range commits {
-			newResolvedRanges = append(newResolvedRanges, conversion.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			newRange := c.BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
+			newRange.Repo = commit.Repo
+			newRange.Type = osvschema.Range_GIT
+			newResolvedRanges = append(newResolvedRanges, newRange)
 			metrics.ResolvedRangesCount++
 		}
 	}
@@ -453,8 +468,12 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", cveID), slog.String("path", vulnDir), slog.Any("err", err))
 	}
 
+	if metrics.Outcome == models.Error {
+		return
+	}
+
 	if !rejectFailed || metrics.Outcome == models.Successful {
-		osvFile, errCVE := conversion.CreateOSVFile(models.CVEID(cveID), vulnDir)
+		osvFile, errCVE := c.CreateOSVFile(models.CVEID(cveID), vulnDir)
 		if errCVE != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
 		}
@@ -464,11 +483,11 @@ func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product stri
 		osvFile.Close()
 	}
 	if outputMetrics {
-		metricsFile, errMetrics := conversion.CreateMetricsFile(models.CVEID(cveID), vulnDir)
+		metricsFile, errMetrics := c.CreateMetricsFile(models.CVEID(cveID), vulnDir)
 		if errMetrics != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
 		}
-		if err := conversion.WriteMetricsFile(metrics, metricsFile); err != nil {
+		if err := c.WriteMetricsFile(metrics, metricsFile); err != nil {
 			logger.Error("Failed to write metrics", slog.Any("err", err))
 		}
 		metricsFile.Close()
@@ -481,7 +500,7 @@ func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.Co
 		return nil, nil, nil
 	}
 
-	r, un, sR := conversion.GitVersionsToCommits(ranges, repos, metrics, cache)
+	r, un, sR := c.GitVersionsToCommits(ranges, repos, metrics, cache)
 	if len(r) > 0 {
 		metrics.ResolvedRangesCount += len(r)
 		metrics.SetOutcome(models.Successful)

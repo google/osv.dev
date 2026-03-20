@@ -49,8 +49,8 @@ func TestCombineIntoOSV(t *testing.T) {
 	// CVE-2023-0002: from nvd only
 	// CVE-2023-0003: from cve5, no affected, but in noPkgCVEs
 	// CVE-2023-0004: from cve5, no affected, not in noPkgCVEs, so skipped
-	if len(combined) != 4 {
-		t.Errorf("Expected 4 combined vulnerabilities, got %d", len(combined))
+	if len(combined) != 2 {
+		t.Errorf("Expected 2 combined vulnerabilities, got %d", len(combined))
 	}
 
 	// Test case 1: Merged CVE
@@ -109,22 +109,22 @@ func TestCombineIntoOSV(t *testing.T) {
 		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
 	}
 
-	// Test case 2: CVE only in cve5
-	if _, ok = combined["CVE-2023-0001"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0001")
+	// Test case 2: CVE only in cve5 (has no ranges, so it should be skipped)
+	if _, ok = combined["CVE-2023-0001"]; ok {
+		t.Error("Expected combined map to NOT contain CVE-2023-0001 because it has no ranges")
 	}
 
-	// Test case 3: CVE only in nvd
-	if _, ok = combined["CVE-2023-0002"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0002")
+	// Test case 3: CVE only in nvd (has no ranges, so it should be skipped)
+	if _, ok = combined["CVE-2023-0002"]; ok {
+		t.Error("Expected combined map to NOT contain CVE-2023-0002 because it has no ranges")
 	}
 
-	// Test case 4: No affected, in noPkgCVEs
+	// Test case 4: No ranges, in noPkgCVEs (should be kept)
 	if _, ok = combined["CVE-2023-0003"]; !ok {
 		t.Error("Expected combined map to contain CVE-2023-0003")
 	}
 
-	// Test case 5: No affected, not in noPkgCVEs
+	// Test case 5: No ranges, not in noPkgCVEs (should be skipped)
 	if _, ok = combined["CVE-2023-0004"]; ok {
 		t.Error("Expected combined map to NOT contain CVE-2023-0004")
 	}
@@ -427,5 +427,38 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 
 	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {
 		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
+	cve5 := &osvschema.Vulnerability{
+		Id: "CVE-2023-1234",
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5/A"},
+			{Type: osvschema.Reference_REPORT, Url: "https://example.com/cve5/B"},
+		},
+	}
+
+	nvd := &osvschema.Vulnerability{
+		Id: "CVE-2023-1234",
+		References: []*osvschema.Reference{
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/cve5/A"},
+			{Type: osvschema.Reference_WEB, Url: "https://example.com/nvd/C"},
+			{Type: osvschema.Reference_ADVISORY, Url: "https://example.com/nvd/D"},
+		},
+	}
+
+	var firstResult *osvschema.Vulnerability
+	for i := range 10 {
+		got := combineTwoOSVRecords(cve5, nvd)
+
+		if i == 0 {
+			firstResult = got
+			continue
+		}
+
+		if diff := cmp.Diff(firstResult.GetReferences(), got.GetReferences(), protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
+		}
 	}
 }

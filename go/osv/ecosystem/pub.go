@@ -14,7 +14,12 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/google/osv-scalibr/semantic"
+)
 
 type pubEcosystem struct{}
 
@@ -32,6 +37,27 @@ func (e pubEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e pubEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func pubAPIURL(pkg string) string {
+	return fmt.Sprintf("https://pub.dev/api/packages/%s", url.PathEscape(pkg))
 }
+
+func (e pubEcosystem) GetVersions(pkg string) ([]string, error) {
+	var data struct {
+		Versions []struct {
+			Version string `json:"version"`
+		} `json:"versions"`
+	}
+	if err := fetchJSON(pubAPIURL(pkg), &data); err != nil {
+		return nil, fmt.Errorf("failed to get Pub versions for %s: %w", pkg, err)
+	}
+
+	var versions []string
+	for _, v := range data.Versions {
+		if v.Version != "" {
+			versions = append(versions, v.Version)
+		}
+	}
+
+	return sortVersions(e, versions)
+}
+

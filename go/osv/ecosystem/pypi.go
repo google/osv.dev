@@ -14,7 +14,12 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/google/osv-scalibr/semantic"
+)
 
 type pyPIEcosystem struct{}
 
@@ -37,6 +42,23 @@ func (e pyPIEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e pyPIEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func pypiAPIURL(pkg string) string {
+	return fmt.Sprintf("https://pypi.org/pypi/%s/json", url.PathEscape(pkg))
 }
+
+func (e pyPIEcosystem) GetVersions(pkg string) ([]string, error) {
+	var data struct {
+		Releases map[string]any `json:"releases"`
+	}
+	if err := fetchJSON(pypiAPIURL(pkg), &data); err != nil {
+		return nil, fmt.Errorf("failed to get PyPI versions for %s: %w", pkg, err)
+	}
+
+	var versions []string
+	for v := range data.Releases {
+		versions = append(versions, v)
+	}
+
+	return sortVersions(e, versions)
+}
+

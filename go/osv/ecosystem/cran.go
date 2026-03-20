@@ -25,10 +25,14 @@ type cranEcosystem struct{}
 
 var _ Enumerable = cranEcosystem{}
 
-// Use the Posit Public Package Manager API to pull both the current
-// and archived versions for a specific package since CRAN doesn't
-// natively support this functionality.
-const apiPackagesURLCRAN = "https://packagemanager.posit.co/__api__/repos/2/packages/"
+func cranAPIURL(pkg string) string {
+	// Use the Posit Public Package Manager API to pull both the current
+	// and archived versions for a specific package since CRAN doesn't
+	// natively support this functionality.
+	path, _ := url.JoinPath("https://packagemanager.posit.co/__api__/repos/2/packages/", url.PathEscape(pkg))
+	return path
+}
+
 
 func (e cranEcosystem) Parse(version string) (Version, error) {
 	ver, err := semantic.ParseCRANVersion(version)
@@ -48,17 +52,13 @@ func (e cranEcosystem) IsSemver() bool {
 }
 
 func (e cranEcosystem) GetVersions(pkg string) ([]string, error) {
-	path, err := url.JoinPath(apiPackagesURLCRAN, url.PathEscape(pkg))
-	if err != nil {
-		return nil, err
-	}
 	var data struct {
 		Version  string `json:"version"`
 		Archived []struct {
 			Version string `json:"version"`
 		} `json:"archived"`
 	}
-	if err := fetchJSON(path, &data); err != nil {
+	if err := fetchJSON(cranAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get CRAN versions for %s: %w", pkg, err)
 	}
 	var versions []string

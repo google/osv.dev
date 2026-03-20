@@ -26,7 +26,7 @@ type bioconductorEcosystem struct {
 
 var _ Ecosystem = bioconductorEcosystem{}
 
-// TODO(michaelkedar): Newer releases (3.22+) of bioconductor seem to be returning 500s for package queries.
+// FIXME(michaelkedar): Newer releases (3.22+) of bioconductor seem to be returning 500s for package queries.
 // 500 seems to be the response when the bioc_version is invalid (i.e. it's also 500 if bioc_version is e.g. 12.3).
 // I am guessing the API has changed or is broken for newer bioc versions.
 //
@@ -35,6 +35,9 @@ var _ Ecosystem = bioconductorEcosystem{}
 // var _ Enumerable = bioconductorEcosystem{}
 
 func apiPackageURLPositBioconductor(pkg, biocVersion string) string {
+	// Use the Posit Public Package Manager API to pull both the current and
+	// older versions for a specific package since Bioconductor doesn't natively
+	// support this functionality.
 	return fmt.Sprintf("https://packagemanager.posit.co/__api__/repos/4/packages/%s?bioc_version=%s",
 		url.PathEscape(pkg),
 		url.QueryEscape(biocVersion),

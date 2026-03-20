@@ -1,0 +1,125 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.github.com
+        url: https://api.github.com/repos/ocaml/opam-repository/contents/packages/doesnotexist123456
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 127
+        body: '{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}'
+        headers:
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset
+            Content-Length:
+                - "127"
+            Content-Security-Policy:
+                - default-src 'none'
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 19 Mar 2026 05:09:57 GMT
+            Referrer-Policy:
+                - origin-when-cross-origin, strict-origin-when-cross-origin
+            Server:
+                - github.com
+            Vary:
+                - Accept-Encoding, Accept, X-Requested-With
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - deny
+            X-Github-Api-Version-Selected:
+                - "2022-11-28"
+            X-Github-Media-Type:
+                - github.v3; format=json
+            X-Github-Request-Id:
+                - 16BD:3C469D:89A8B6:A1995C:69BB8524
+            X-Internal-Experiment-Version-Metadata:
+                - ZW1wdHlfcmVwb3NpdG9yeTpmYWxzZSxoZWFkX29pZDo4MzlmMzYwZGU5YTliNTA3OTFjYzZmMjFhY2QyZDZmYWYxOTVlY2FjLHJlZl9uYW1lOm1hc3RlcixyZWZfY29tbWl0X29pZDo4MzlmMzYwZGU5YTliNTA3OTFjYzZmMjFhY2QyZDZmYWYxOTVlY2FjLHJvb3RfdHJlZV9lbnRyeV9vaWQ6YTQzMzNlYTNkYzg3N2Y4NmEwNDU2MDg1ZWQ1MDY4MTVhOThhZmE0MyxwYXRoX29iamVjdF90eXBlOixwYXRoX29iamVjdF9vaWQ6LHBhdGhfb2JqZWN0X21vZGU6LHBhdGhfb2JqZWN0X3NpemU6
+            X-Ratelimit-Limit:
+                - "60"
+            X-Ratelimit-Remaining:
+                - "53"
+            X-Ratelimit-Reset:
+                - "1773898494"
+            X-Ratelimit-Resource:
+                - core
+            X-Ratelimit-Used:
+                - "7"
+            X-Xss-Protection:
+                - "0"
+        status: 404 Not Found
+        code: 404
+        duration: 360.883493ms
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.github.com
+        url: https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/doesnotexist123456
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 127
+        body: '{"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/contents#get-repository-content","status":"404"}'
+        headers:
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset
+            Content-Length:
+                - "127"
+            Content-Security-Policy:
+                - default-src 'none'
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 19 Mar 2026 05:09:57 GMT
+            Referrer-Policy:
+                - origin-when-cross-origin, strict-origin-when-cross-origin
+            Server:
+                - github.com
+            Vary:
+                - Accept-Encoding, Accept, X-Requested-With
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - deny
+            X-Github-Api-Version-Selected:
+                - "2022-11-28"
+            X-Github-Media-Type:
+                - github.v3; format=json
+            X-Github-Request-Id:
+                - 16BD:3C469D:89A94A:A199F9:69BB8525
+            X-Internal-Experiment-Version-Metadata:
+                - ZW1wdHlfcmVwb3NpdG9yeTpmYWxzZSxoZWFkX29pZDo2ODAzZTVjOGQwMTk5ZTJmODlhMzMwY2Y3ZjE1ZmJlNmM1ZmMyOGU2LHJlZl9uYW1lOm1haW4scmVmX2NvbW1pdF9vaWQ6NjgwM2U1YzhkMDE5OWUyZjg5YTMzMGNmN2YxNWZiZTZjNWZjMjhlNixyb290X3RyZWVfZW50cnlfb2lkOjYxZWNiZDQxMjMzNGExNzFjZDEwYjIyMjAxY2RhMjViNDFkYmQ2ZTAscGF0aF9vYmplY3RfdHlwZToscGF0aF9vYmplY3Rfb2lkOixwYXRoX29iamVjdF9tb2RlOixwYXRoX29iamVjdF9zaXplOg==
+            X-Ratelimit-Limit:
+                - "60"
+            X-Ratelimit-Remaining:
+                - "52"
+            X-Ratelimit-Reset:
+                - "1773898494"
+            X-Ratelimit-Resource:
+                - core
+            X-Ratelimit-Used:
+                - "8"
+            X-Xss-Protection:
+                - "0"
+        status: 404 Not Found
+        code: 404
+        duration: 359.475284ms

@@ -1,0 +1,44 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: pub.dev
+        url: https://pub.dev/api/packages/doesnotexist123456
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 127
+        body: <?xml version='1.0' encoding='UTF-8'?><Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message></Error>
+        headers:
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - ETag,x-goog-hash,Accept,User-Agent
+            Alt-Svc:
+                - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+            Cache-Control:
+                - private, max-age=0
+            Content-Length:
+                - "127"
+            Content-Type:
+                - application/xml; charset=UTF-8
+            Date:
+                - Thu, 19 Mar 2026 04:26:58 GMT
+            Expires:
+                - Thu, 19 Mar 2026 04:26:58 GMT
+            Server:
+                - UploadServer
+            Via:
+                - 1.1 google
+            X-Guploader-Uploadid:
+                - AGQBYWybGKshsUwDp8KSf3KKs-N4D_GfjbuNa8hMv49TGS6gWVVr8ojcrqgh4e9L_YDsdoBjlo168T4
+        status: 404 Not Found
+        code: 404
+        duration: 180.873504ms

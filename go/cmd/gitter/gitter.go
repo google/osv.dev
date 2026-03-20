@@ -6,11 +6,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -26,9 +27,15 @@ import (
 
 	_ "net/http/pprof" //nolint:gosec // This is a internal only service not public to the internet
 
+	"github.com/dgraph-io/ristretto/v2"
+	"github.com/dustin/go-humanize"
 	"github.com/google/osv.dev/go/logger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+
+	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
 )
 
 type contextKey string
@@ -43,8 +50,9 @@ const gitStoreFileName = "git-store"
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
-	"GET /git":    gitHandler,
-	"POST /cache": cacheHandler,
+	"GET /git":               gitHandler,
+	"POST /cache":            cacheHandler,
+	"POST /affected-commits": affectedCommitsHandler,
 }
 
 var (
@@ -55,9 +63,46 @@ var (
 	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
 	semaphore       chan struct{} // Request concurrency control
+	// LRU cache for recently loaded repositories (key: repo URL)
+	repoCache             *ristretto.Cache[string, *Repository]
+	repoTTL               time.Duration
+	repoCacheMaxCostBytes int64
 )
 
+var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
+
 const shutdownTimeout = 10 * time.Second
+
+type SeparatedEvents struct {
+	Introduced   []string
+	Fixed        []string
+	LastAffected []string
+	Limit        []string
+}
+
+func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
+	se := &SeparatedEvents{}
+	for _, event := range events {
+		switch event.GetEventType() {
+		case pb.EventType_INTRODUCED:
+			se.Introduced = append(se.Introduced, event.GetHash())
+		case pb.EventType_FIXED:
+			se.Fixed = append(se.Fixed, event.GetHash())
+		case pb.EventType_LAST_AFFECTED:
+			se.LastAffected = append(se.LastAffected, event.GetHash())
+		case pb.EventType_LIMIT:
+			se.Limit = append(se.Limit, event.GetHash())
+		default:
+			return nil, fmt.Errorf("invalid event type: %s", event.GetEventType())
+		}
+	}
+
+	if len(se.Limit) > 0 && (len(se.Fixed) > 0 || len(se.LastAffected) > 0) {
+		return nil, errors.New("limit and fixed/last_affected shouldn't exist in the same request")
+	}
+
+	return se, nil
+}
 
 // repoLocks is a map of per-repository RWMutexes, with url as the key.
 // It coordinates access between write operations (FetchRepo) that modify the git directory on disk
@@ -72,38 +117,53 @@ func GetRepoLock(url string) *sync.RWMutex {
 	return lock.(*sync.RWMutex)
 }
 
-// runCmd executes a command with context cancellation handled by sending SIGINT.
-// It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.Any("args", args))
-	cmd := exec.CommandContext(ctx, name, args...)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
-	}
-	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
-	cmd.Cancel = func() error {
-		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.Any("args", args))
-		return cmd.Process.Signal(syscall.SIGINT)
-	}
-	// Ensure it eventually dies if it ignores SIGINT
-	cmd.WaitDelay = shutdownTimeout / 2
+// repoCostBytes is the cost function for a repository in the LRU cache.
+// The memory cost of a repository is approximated from the num of commits and a base overhead.
+func repoCostBytes(repo *Repository) int64 {
+	// Mutex (8 bytes), string for repo path (say 128 bytes), root commit (assume 1 root only, 32 bytes)
+	repoOverhead := 168
+	// Assuming per commit adds:
+	// - Commit struct (Hash, PatchID, Parent []int of size 1, Refs []string)
+	//   = 20 + 20 + 24 + 8 + 24 + <string len> ~= 128 bytes
+	// - 1 pointer into []*Commit
+	//   = 8 bytes
+	// - 1 entry in commitGraph ([][]int, assuming linear history)
+	//   = 24 + 8 = 32 bytes
+	// - 1 entry to hashToIndex (map[SHA1]int)
+	//   = 20 + 8 ~= 32 bytes
+	// - 1 entry to patchIDToCommits (map[SHA1][]int, assuming all commits are unique)
+	//   = 20 + 24 + 8 ~= 64 bytes
+	// TOTAL: 264 bytes -> We round up to 300 for some buffer
+	costPerCommit := 300
 
-	out, err := cmd.CombinedOutput()
+	return int64(repoOverhead + len(repo.commits)*costPerCommit)
+}
+
+// General guidance is to make NumCounters 10x the cache capacity (in terms of items)
+// We're assuming the cache will hold 5000 repositories
+const numCounters = int64(10 * 5000)
+
+// InitRepoCache initializes the LRU cache for repositories.
+func InitRepoCache() {
+	var err error
+	repoCache, err = ristretto.NewCache(&ristretto.Config[string, *Repository]{
+		NumCounters: numCounters,
+		MaxCost:     repoCacheMaxCostBytes,
+		BufferItems: 64,
+		Cost:        repoCostBytes,
+		// Check for TTL expiry every 60 seconds
+		TtlTickerDurationInSec: 60,
+	})
 	if err != nil {
-		if ctx.Err() != nil {
-			// Log separately if cancelled
-			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
-		}
-
-		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+		logger.FatalContext(context.Background(), "Failed to initialize repository cache", slog.Any("err", err))
 	}
-	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("out", string(out)))
+}
 
-	return nil
+// CloseRepoCache closes the LRU cache.
+func CloseRepoCache() {
+	if repoCache != nil {
+		repoCache.Close()
+	}
 }
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
@@ -126,6 +186,26 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 	return cmd
 }
 
+// runCmd executes a command with context cancellation handled by sending SIGINT.
+// It logs cancellation errors separately as requested.
+func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
+	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.Any("args", args))
+	cmd := prepareCmd(ctx, dir, env, name, args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctx.Err() != nil {
+			// Log separately if cancelled
+			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
+			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
+		}
+
+		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+	}
+	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("out", string(out)))
+
+	return nil
+}
+
 func isLocalRequest(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -141,6 +221,21 @@ func isLocalRequest(r *http.Request) bool {
 
 	// Check if it's a loopback address (covers 127.0.0.0/8 and ::1)
 	return ip.IsLoopback()
+}
+
+func validateURL(r *http.Request, url string) error {
+	if url == "" {
+		return errors.New("missing url parameter")
+	}
+	// If request came from a local ip, don't do the check
+	if !isLocalRequest(r) {
+		// Check if url starts with protocols: http(s)://, git://
+		if !validURLRegex.MatchString(url) {
+			return errors.New("invalid url parameter")
+		}
+	}
+
+	return nil
 }
 
 func getRepoDirName(url string) string {
@@ -168,6 +263,88 @@ func isIndexLockError(err error) bool {
 	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
 }
 
+// Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
+func unmarshalRequest(r *http.Request, body proto.Message) error {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "application/json" {
+		return protojson.Unmarshal(data, body)
+	}
+	// Default to protobuf
+	return proto.Unmarshal(data, body)
+}
+
+// Helper function to marshal response body based on Content-Type (protobuf or JSON)
+func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "application/json" {
+		return protojson.Marshal(m)
+	}
+	// Default to protobuf
+	return proto.Marshal(m)
+}
+
+func doFetch(ctx context.Context, w http.ResponseWriter, url string, forceUpdate bool) error {
+	_, err, _ := gFetch.Do(url, func() (any, error) {
+		return nil, FetchRepo(ctx, url, forceUpdate)
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
+		if isAuthError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+		} else {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+// getFreshRepo handles fetching and loading of a repository
+// If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
+// Otherwise, it will use a cache if available
+func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceUpdate bool) (*Repository, error) {
+	repoDirName := getRepoDirName(url)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
+
+	if !forceUpdate {
+		if repo, ok := repoCache.Get(url); ok {
+			// repoCache.Get() will not return expired items, so we can safely return the repo
+			logger.DebugContext(ctx, "Repository already in cache, skipping fetch and load")
+			return repo, nil
+		}
+	}
+
+	if err := doFetch(ctx, w, url, forceUpdate); err != nil {
+		return nil, err
+	}
+
+	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+		repoLock := GetRepoLock(url)
+		repoLock.RLock()
+		defer repoLock.RUnlock()
+
+		return LoadRepository(ctx, repoPath)
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
+
+		return nil, err
+	}
+	repo := repoAny.(*Repository)
+	repoCache.SetWithTTL(url, repo, 0, repoTTL)
+
+	return repo, nil
+}
+
 func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	logger.InfoContext(ctx, "Starting fetch repo")
 	start := time.Now()
@@ -188,6 +365,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		logger.InfoContext(ctx, "Fetching git blob", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
+			logger.InfoContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
 			if err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
@@ -196,6 +374,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
 			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
 			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
+			logger.InfoContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 			if err != nil {
 				return fmt.Errorf("git fetch failed: %w", err)
@@ -285,17 +464,29 @@ func main() {
 	workDir := flag.String("work-dir", defaultGitterWorkDir, "Work directory")
 	flag.DurationVar(&fetchTimeout, "fetch-timeout", time.Hour, "Fetch timeout duration")
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
+	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
+	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
 	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
-
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
 
+	repoMaxCostUint, err := humanize.ParseBytes(*repoMaxCostStr)
+	if err != nil {
+		logger.Fatal("Failed to parse repo cache max cost", slog.String("maxCost", *repoMaxCostStr), slog.Any("error", err))
+	}
+	if repoMaxCostUint > math.MaxInt64 {
+		logger.Fatal("Repo cache max cost too large", slog.Uint64("maxCost", repoMaxCostUint))
+	}
+	repoCacheMaxCostBytes = int64(repoMaxCostUint)
+
 	loadLastFetchMap()
+	InitRepoCache()
+	defer CloseRepoCache()
 
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -354,23 +545,14 @@ func main() {
 
 func gitHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
-	if url == "" {
-		http.Error(w, "Missing url parameter", http.StatusBadRequest)
+	if err := validateURL(r, url); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	forceUpdate := r.URL.Query().Get("force-update") == "true"
 
 	ctx := context.WithValue(r.Context(), urlKey, url)
-
 	logger.InfoContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
-	// If request came from a local ip, don't do the check
-	if !isLocalRequest(r) {
-		// Check if url starts with protocols: http(s)://, git://, ssh://, (s)ftp://
-		if match, _ := regexp.MatchString("^(https?|git|ssh)://", url); !match {
-			http.Error(w, "Invalid url parameter", http.StatusBadRequest)
-			return
-		}
-	}
 
 	select {
 	case semaphore <- struct{}{}:
@@ -384,30 +566,11 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	// Fetch repo first
-	// Keep the key as the url regardless of forceUpdate.
-	// Occasionally this could be problematic if an existing unforce updated
-	// query is already inplace, no force update will happen.
-	// That is highly unlikely in our use case, as importer only queries
-	// the repo once, and always with force update.
-	// This is a tradeoff for simplicity to avoid having to setup locks per repo.
-	// I can't change singleflight's interface
-	_, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, FetchRepo(ctx, url, forceUpdate)
-	})
-	if err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
-		if isAuthError(err) {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
-
-			return
-		}
-		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-
+	if err := doFetch(ctx, w, url, forceUpdate); err != nil {
 		return
 	}
 
 	// Archive repo
-	// I can't change singleflight's interface
 	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
 		return ArchiveRepo(ctx, url)
 	})
@@ -434,20 +597,18 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	// POST requets body processing
-	var body struct {
-		URL         string `json:"url"`
-		ForceUpdate bool   `json:"force_update"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
-
+	body := &pb.CacheRequest{}
+	if err := unmarshalRequest(r, body); err != nil {
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
 
-	url := body.URL
+	url := body.GetUrl()
+	if err := validateURL(r, url); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	ctx := context.WithValue(r.Context(), urlKey, url)
 	logger.InfoContext(ctx, "Received request: /cache")
 
@@ -462,40 +623,92 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
-	// Fetch repo if it's not fresh
-	// I can't change singleflight's interface
-	if _, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, FetchRepo(ctx, url, body.ForceUpdate)
-	}); err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
-		if isAuthError(err) {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
-
-			return
-		}
-		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-
-		return
-	}
-
-	repoDirName := getRepoDirName(url)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-
-	// I can't change singleflight's interface
-	_, err, _ = gLoad.Do(repoPath, func() (any, error) {
-		repoLock := GetRepoLock(url)
-		repoLock.RLock()
-		defer repoLock.RUnlock()
-
-		return LoadRepository(ctx, repoPath)
-	})
-	if err != nil {
-		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
-
+	if _, err := getFreshRepo(ctx, w, url, body.GetForceUpdate()); err != nil {
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.Duration("duration", time.Since(start)))
+}
+
+func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	body := &pb.AffectedCommitsRequest{}
+	if err := unmarshalRequest(r, body); err != nil {
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	url := body.GetUrl()
+	if err := validateURL(r, url); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	se, err := separateEvents(body.GetEvents())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
+	cherrypickFixed := body.GetDetectCherrypicksFixed()
+	cherrypickLimit := body.GetDetectCherrypicksLimit()
+
+	ctx := context.WithValue(r.Context(), urlKey, url)
+	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed), slog.Bool("cherrypickLimit", cherrypickLimit))
+
+	select {
+	case semaphore <- struct{}{}:
+		defer func() { <-semaphore }()
+	case <-ctx.Done():
+		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
+
+		return
+	}
+	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
+	repo, err := getFreshRepo(ctx, w, url, body.GetForceUpdate())
+	if err != nil {
+		return
+	}
+
+	var affectedCommits []*Commit
+	if len(se.Limit) > 0 {
+		affectedCommits = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+	} else {
+		affectedCommits = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+	}
+
+	resp := &pb.AffectedCommitsResponse{
+		Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits)),
+		Refs:    make([]*pb.AffectedRefs, 0),
+	}
+	for _, c := range affectedCommits {
+		resp.Commits = append(resp.Commits, &pb.AffectedCommit{
+			Hash: c.Hash[:],
+		})
+		for _, ref := range c.Refs {
+			resp.Refs = append(resp.Refs, &pb.AffectedRefs{
+				Ref:  ref,
+				Hash: c.Hash[:],
+			})
+		}
+	}
+
+	out, err := marshalResponse(r, resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
+	}
+	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.Duration("duration", time.Since(start)))
 }

@@ -489,3 +489,27 @@ func TestAttachExtractedVersionInfo_Determinism(t *testing.T) {
 		}
 	}
 }
+
+func TestClassifyReferences_Determinism(t *testing.T) {
+	refData := []models.Reference{
+		{URL: "https://example.com/D"},
+		{URL: "https://example.com/A"},
+		{URL: "https://example.com/C", Tags: []string{"patch"}},
+		{URL: "https://example.com/C"},
+		{URL: "https://example.com/B", Tags: []string{"issue-tracking"}},
+		{URL: "https://example.com/E"},
+	}
+
+	var firstResult []*osvschema.Reference
+	for i := range 30 {
+		got := ClassifyReferences(refData)
+		if i == 0 {
+			firstResult = got
+			continue
+		}
+
+		if diff := gocmp.Diff(firstResult, got, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
+		}
+	}
+}

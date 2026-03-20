@@ -8,8 +8,12 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -85,6 +89,57 @@ func TestCVEToOSV_429(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
+	cve := models.NVDCVE{
+		ID: "CVE-2025-12345",
+		References: []models.Reference{
+			{URL: "https://example.com/D"},
+			{URL: "https://example.com/A"},
+			{URL: "https://example.com/C", Tags: []string{"Patch"}},
+			{URL: "https://example.com/C"},
+			{URL: "https://example.com/B", Tags: []string{"Issue Tracking"}},
+			{URL: "https://example.com/E"},
+		},
+		Metrics: &models.CVEItemMetrics{},
+	}
+	metrics := &models.ConversionMetrics{}
+	outDir := t.TempDir()
+
+	var firstResult []*osvschema.Reference
+	for i := range 10 {
+		cache := &git.RepoTagsCache{}
+		CVEToOSV(cve, nil, cache, outDir, metrics, false, false)
+
+		var b []byte
+		var err error
+		filepath.Walk(outDir, func(path string, info os.FileInfo, err2 error) error {
+			if !info.IsDir() && filepath.Ext(path) == ".json" {
+				b, err = os.ReadFile(path)
+			}
+			return nil
+		})
+
+		if len(b) == 0 {
+			t.Fatalf("Failed to read OSV file")
+		}
+
+		var vuln osvschema.Vulnerability
+		err = protojson.Unmarshal(b, &vuln)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal OSV: %v", err)
+		}
+
+		if i == 0 {
+			firstResult = vuln.References
+			continue
+		}
+
+		if diff := cmp.Diff(firstResult, vuln.References, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
 	}
 }

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -20,10 +22,10 @@ import (
 type SHA1 [20]byte
 
 type Commit struct {
-	Hash    SHA1     `json:"hash"`
-	PatchID SHA1     `json:"patch_id"`
-	Parents []SHA1   `json:"parents"`
-	Tags    []string `json:"tags"`
+	Hash    SHA1
+	PatchID SHA1
+	Parents []int
+	Refs    []string
 }
 
 // Repository holds the commit graph and other details for a git repository.
@@ -32,14 +34,19 @@ type Repository struct {
 	patchIDMu sync.Mutex
 	// Path to the .git directory within gitter's working dir
 	repoPath string
-	// Adjacency list: Parent -> []Children
-	commitGraph map[SHA1][]SHA1
-	// Actual commit details
-	commitDetails map[SHA1]*Commit
-	// Store tags to commit because it's useful for CVE conversion
-	tagToCommit map[string]SHA1
-	// For cherry-pick detection: PatchID -> []commit hash
-	patchIDToCommits map[SHA1][]SHA1
+	// All commits in the repository (the array index is used as the commit index below)
+	commits []*Commit
+	// Adjacency list: Parent index -> []Children indexes
+	commitGraph [][]int
+	// Map of commit hash to its index in the commits slice
+	hashToIndex map[SHA1]int
+	// Store refs to commit because it's useful for CVE conversion
+	refToCommit map[string]int
+	// For cherry-pick detection: PatchID -> []commit indexes
+	patchIDToCommits map[SHA1][]int
+	// Root commits (commits with no parents)
+	// In a typical repository this is the initial commit
+	rootCommits []int
 }
 
 // %H commit hash; %P parent hashes; %D:refs (tab delimited)
@@ -53,10 +60,9 @@ var workers = 16
 func NewRepository(repoPath string) *Repository {
 	return &Repository{
 		repoPath:         repoPath,
-		commitGraph:      make(map[SHA1][]SHA1),
-		commitDetails:    make(map[SHA1]*Commit),
-		tagToCommit:      make(map[string]SHA1),
-		patchIDToCommits: make(map[SHA1][]SHA1),
+		hashToIndex:      make(map[SHA1]int),
+		refToCommit:      make(map[string]int),
+		patchIDToCommits: make(map[SHA1][]int),
 	}
 }
 
@@ -100,10 +106,27 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	return repo, nil
 }
 
+// getOrCreateIndex returns the index for a given commit hash.
+// If the hash is new, it creates a new barebone commit and expands the graph structure to accommodate it.
+func (r *Repository) getOrCreateIndex(hash SHA1) int {
+	// Check if we've already assigned an index to this hash
+	if idx, ok := r.hashToIndex[hash]; ok {
+		return idx
+	}
+
+	idx := len(r.commits)
+	r.commits = append(r.commits, &Commit{Hash: hash})
+	r.hashToIndex[hash] = idx
+	// Expand the commitGraph (adjacency list) to match the commits slice.
+	r.commitGraph = append(r.commitGraph, nil)
+
+	return idx
+}
+
 // buildCommitGraph builds the commit graph and associate commit details from scratch
-// Returns a list of new commit hashes that don't have cached Patch IDs.
+// Returns a list of new commit indexes that don't have cached Patch IDs.
 // The new commit list is in reverse chronological order based on commit date (the default for git log).
-func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]SHA1, error) {
+func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]int, error) {
 	logger.InfoContext(ctx, "Starting graph construction")
 	start := time.Now()
 
@@ -119,7 +142,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			}
 		}
 	}
-	var newCommits []SHA1
+	var newCommits []int
 
 	// Temp outFile for git log output
 	tmpFile, err := os.CreateTemp(r.repoPath, "git-log.out")
@@ -158,17 +181,20 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 		var childHash SHA1
 		parentHashes := []SHA1{}
-		tags := []string{}
+		refs := []string{}
 
 		switch len(commitInfo) {
 		case 3:
 			// refs are separated by commas
-			refs := strings.Split(commitInfo[2], ", ")
-			for _, ref := range refs {
-				// Remove prefixes from tags, other refs such as HEAD will be left as is
-				if strings.Contains(ref, "tag: ") {
-					tags = append(tags, strings.TrimPrefix(ref, "tag: "))
+			rawRefs := strings.Split(commitInfo[2], ", ")
+			for _, ref := range rawRefs {
+				if ref == "" {
+					continue
 				}
+				// Remove prefixes from tags, other refs such as branches will be left as is
+				ref = strings.TrimPrefix(ref, "tag: ")
+				ref = strings.TrimPrefix(ref, "HEAD -> ") // clean up HEAD -> branch-name to just keep the branch name
+				refs = append(refs, ref)
 			}
 
 			fallthrough
@@ -198,32 +224,36 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			continue
 		}
 
-		// Add commit to graph (parent -> []child)
-		for _, parentHash := range parentHashes {
-			r.commitGraph[parentHash] = append(r.commitGraph[parentHash], childHash)
+		childIdx := r.getOrCreateIndex(childHash)
+		commit := r.commits[childIdx]
+		commit.Refs = refs
+
+		// We want to keep the root commit (no parent) easily accessible for introduced=0
+		if len(parentHashes) == 0 {
+			r.rootCommits = append(r.rootCommits, childIdx)
 		}
 
-		commit := Commit{
-			Hash:    childHash,
-			Tags:    tags,
-			Parents: parentHashes,
+		// Add commit to graph (parent -> []child)
+		for _, parentHash := range parentHashes {
+			parentIdx := r.getOrCreateIndex(parentHash)
+			commit.Parents = append(commit.Parents, parentIdx)
+
+			r.commitGraph[parentIdx] = append(r.commitGraph[parentIdx], childIdx)
 		}
 
 		if patchID, ok := cachedPatchIDs[childHash]; ok {
 			// Assign saved patch ID to commit details and map if found
 			commit.PatchID = patchID
 			// Also populate patchIDToCommits map
-			r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], childHash)
+			r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], childIdx)
 		} else {
 			// Add to slice for patch ID to be generated later
-			newCommits = append(newCommits, childHash)
+			newCommits = append(newCommits, childIdx)
 		}
 
-		r.commitDetails[childHash] = &commit
-
-		// Also populate the tag-to-commit map
-		for _, tag := range tags {
-			r.tagToCommit[tag] = childHash
+		// Also populate the ref-to-commit map
+		for _, ref := range refs {
+			r.refToCommit[ref] = childIdx
 		}
 	}
 
@@ -234,7 +264,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
-func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) error {
+func (r *Repository) calculatePatchIDs(ctx context.Context, commits []int) error {
 	logger.InfoContext(ctx, "Starting patch ID calculation")
 	start := time.Now()
 
@@ -272,7 +302,7 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []SHA1) erro
 
 // calculatePatchIDsWorker calculates patch IDs and update CommitDetail and patchIDToCommits map.
 // Essentially running `git show <flags> <commit hash> | git patch-id --stable`
-func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) error {
+func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []int) error {
 	// Prepare git commands
 	// `git show --stdin --patch --first-parent --no-color`:
 	// --patch to show diffs in a format that can be directly piped into `git patch-id`
@@ -319,11 +349,12 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	// Write hashes to git show stdin
 	go func() {
 		defer in.Close()
-		for _, hash := range chunk {
+		for _, idx := range chunk {
 			// Handle context cancel
 			if ctx.Err() != nil {
 				return
 			}
+			hash := r.commits[idx].Hash
 			fmt.Fprintf(in, "%s\n", hex.EncodeToString(hash[:]))
 		}
 	}()
@@ -385,13 +416,267 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []SHA1) 
 	return nil
 }
 
+// updatePatchID updates the PatchID for a given commit and adds it to the patchIDToCommits map.
 func (r *Repository) updatePatchID(commitHash, patchID SHA1) {
 	r.patchIDMu.Lock()
 	defer r.patchIDMu.Unlock()
 
-	commit := r.commitDetails[commitHash]
+	idx, ok := r.hashToIndex[commitHash]
+	if !ok {
+		// This should never happen because we only call git patch-id on commits we see when building commit graph.
+		return
+	}
+	commit := r.commits[idx]
 	commit.PatchID = patchID
-	r.commitDetails[commitHash] = commit
 
-	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], commitHash)
+	r.patchIDToCommits[patchID] = append(r.patchIDToCommits[patchID], idx)
+}
+
+// parseHashes converts a slice of string hashes into a slice of commit indexes.
+func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int {
+	indices := make([]int, 0, len(hashesStr))
+	addedRoot := false // Only add root commits once if multiple intro=0 are provided
+
+	for _, hash := range hashesStr {
+		if hash == "0" {
+			if !addedRoot {
+				indices = append(indices, r.rootCommits...)
+				addedRoot = true
+			}
+
+			continue
+		}
+
+		hashBytes, err := hex.DecodeString(hash)
+		// Log error but continue with the rest of the hashes if a commit hash is invalid
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
+			continue
+		}
+		if len(hashBytes) != 20 {
+			logger.ErrorContext(ctx, "invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
+			continue
+		}
+
+		h := SHA1(hashBytes)
+		if idx, ok := r.hashToIndex[h]; ok {
+			indices = append(indices, idx)
+		} else {
+			logger.ErrorContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
+		}
+	}
+
+	return indices
+}
+
+// expandByCherrypick expands a slice of commits by adding commits that have the same Patch ID (cherrypicked commits) returns a new list containing the original commits + any other commits that share the same Patch ID
+func (r *Repository) expandByCherrypick(commits []int) []int {
+	unique := make(map[int]struct{}, len(commits)) // avoid duplication
+	var zeroPatchID SHA1
+
+	for _, idx := range commits {
+		// Find patch ID from commit details
+		commit := r.commits[idx]
+		if commit.PatchID == zeroPatchID {
+			unique[idx] = struct{}{}
+			continue
+		}
+
+		// Add equivalent commits with the same Patch ID (including the current commit)
+		equivalents := r.patchIDToCommits[commit.PatchID]
+		for _, eq := range equivalents {
+			unique[eq] = struct{}{}
+		}
+	}
+
+	keys := slices.Collect(maps.Keys(unique))
+
+	return keys
+}
+
+// Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events
+// A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
+// A fix can either be a fixed commit, or the children of a lastAffected commit.
+func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) []*Commit {
+	logger.InfoContext(ctx, "Starting affected commit walking")
+	start := time.Now()
+
+	introduced := r.parseHashes(ctx, se.Introduced)
+	fixed := r.parseHashes(ctx, se.Fixed)
+	lastAffected := r.parseHashes(ctx, se.LastAffected)
+
+	// Expands the introduced and fixed commits to include cherrypick equivalents
+	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
+	if cherrypickIntro {
+		introduced = r.expandByCherrypick(introduced)
+	}
+	if cherrypickFixed {
+		fixed = r.expandByCherrypick(fixed)
+	}
+
+	// Fixed commits and children of last affected are both in this set
+	// For graph traversal sake they are both considered the fix
+	fixedMap := make([]bool, len(r.commits))
+
+	for _, idx := range fixed {
+		fixedMap[idx] = true
+	}
+
+	for _, idx := range lastAffected {
+		if idx < len(r.commitGraph) {
+			for _, childIdx := range r.commitGraph[idx] {
+				fixedMap[childIdx] = true
+			}
+		}
+	}
+
+	// The graph traversal
+	// affectedMap deduplicates the affected commits from the graph walk from each introduced commit
+	affectedMap := make([]bool, len(r.commits))
+
+	// Preallocating the big slices, they will be cleared inside the per-intro graph walking
+	queue := make([]int, 0, len(r.commits))
+	affectedFromIntro := make([]bool, len(r.commits))
+	updatedIdx := make([]int, 0, len(r.commits))
+	unaffectable := make([]bool, len(r.commits))
+	visited := make([]bool, len(r.commits))
+
+	// Walk each introduced commit and find its affected commit
+	for _, introIdx := range introduced {
+		// BFS from intro
+		queue = append(queue, introIdx)
+		clear(affectedFromIntro)
+		clear(updatedIdx)
+		clear(unaffectable)
+		clear(visited)
+
+		for len(queue) > 0 {
+			curr := queue[0]
+			queue = queue[1:]
+
+			if visited[curr] {
+				continue
+			}
+			visited[curr] = true
+
+			// Descendant of a fixed commit
+			if unaffectable[curr] {
+				continue
+			}
+
+			// If we hit a fixed commit, its entire tree is treated as unaffectable
+			// as any downstream commit can go through this fixed commit to become unaffected
+			if fixedMap[curr] {
+				unaffectable[curr] = true
+				// Inline DFS from current (fixed) node to make all descendants as unaffected / unaffectable
+				// 1. If a previous path added the descendant to affected list, remove it
+				// 2. Add to the unaffectable set to block future paths
+				stack := []int{curr}
+				for len(stack) > 0 {
+					unaffected := stack[len(stack)-1]
+					stack = stack[:len(stack)-1]
+
+					// Remove from affected list if it was reached via a previous non-fixed path.
+					affectedFromIntro[unaffected] = false
+
+					if unaffected < len(r.commitGraph) {
+						for _, childIdx := range r.commitGraph[unaffected] {
+							// Continue down the path if the child isn't already blocked.
+							if !unaffectable[childIdx] {
+								unaffectable[childIdx] = true
+								stack = append(stack, childIdx)
+							}
+						}
+					}
+				}
+
+				continue
+			}
+
+			// Otherwise, add to the intro-specific affected list and continue
+			affectedFromIntro[curr] = true
+			updatedIdx = append(updatedIdx, curr)
+			if curr < len(r.commitGraph) {
+				queue = append(queue, r.commitGraph[curr]...)
+			}
+		}
+
+		// Add the final affected list of this introduced commit to the global set
+		// We only look at the index that are updated in this loop
+		for _, commitIdx := range updatedIdx {
+			if affectedFromIntro[commitIdx] {
+				affectedMap[commitIdx] = true
+			}
+		}
+	}
+
+	// Return the affected commit details
+	affectedCommits := make([]*Commit, 0)
+	for idx, affected := range affectedMap {
+		if affected {
+			affectedCommits = append(affectedCommits, r.commits[idx])
+		}
+	}
+
+	logger.InfoContext(ctx, "Affected commit walking completed", slog.Duration("duration", time.Since(start)))
+
+	return affectedCommits
+}
+
+// Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive)
+func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) []*Commit {
+	introduced := r.parseHashes(ctx, se.Introduced)
+	limit := r.parseHashes(ctx, se.Limit)
+
+	if cherrypickIntro {
+		introduced = r.expandByCherrypick(introduced)
+	}
+	if cherrypickLimit {
+		limit = r.expandByCherrypick(limit)
+	}
+
+	var affectedCommits []*Commit
+
+	introMap := make([]bool, len(r.commits))
+	for _, idx := range introduced {
+		introMap[idx] = true
+	}
+
+	// DFS to walk from limit(s) to introduced (follow first parent)
+	stack := make([]int, 0, len(limit))
+	// Start from limits' parents
+	for _, idx := range limit {
+		commit := r.commits[idx]
+		if len(commit.Parents) > 0 {
+			stack = append(stack, commit.Parents[0])
+		}
+	}
+
+	visited := make([]bool, len(r.commits))
+
+	for len(stack) > 0 {
+		curr := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if visited[curr] {
+			continue
+		}
+		visited[curr] = true
+
+		// Add current node to affected commits
+		commit := r.commits[curr]
+		affectedCommits = append(affectedCommits, commit)
+
+		// If commit is in introduced, we can stop the traversal after adding it to affected
+		if introMap[curr] {
+			continue
+		}
+
+		// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
+		if len(commit.Parents) > 0 {
+			stack = append(stack, commit.Parents[0])
+		}
+	}
+
+	return affectedCommits
 }

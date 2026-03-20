@@ -220,12 +220,12 @@ func TestExpandByCherrypick(t *testing.T) {
 		{
 			name:     "Expand single commit with cherry-pick",
 			input:    []int{idx1},
-			expected: []SHA1{h1, h3},
+			expected: []SHA1{h3},
 		},
 		{
 			name:     "No expansion for commit without cherry-pick",
 			input:    []int{idx2},
-			expected: []SHA1{h2},
+			expected: []SHA1{},
 		},
 	}
 
@@ -347,7 +347,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -463,7 +463,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -568,7 +568,7 @@ func TestAffected_Combined(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -677,15 +677,33 @@ func TestAffected_Cherrypick(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Affected(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickFixed)
+			gotCommits, gotIntro, gotFixed := repo.Affected(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickFixed)
 
 			var got []SHA1
 			for _, c := range gotCommits {
 				got = append(got, c.Hash)
 			}
 
+			// Check affected commits
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
-				t.Errorf("TestAffected_Cherrypick() mismatch (-want +got):\n%s", diff)
+				t.Errorf("TestAffected_Cherrypick() commits mismatch (-want +got):\n%s", diff)
+			}
+
+			// Check cherrypicked events
+			var expectedIntro []string
+			var expectedFixed []string
+			if tt.cherrypickIntro && (tt.se.Introduced[0] == encodeSHA1(hA) || tt.se.Introduced[0] == "0") {
+				expectedIntro = append(expectedIntro, encodeSHA1(hE))
+			}
+			if tt.cherrypickFixed && len(tt.se.Fixed) > 0 && tt.se.Fixed[0] == encodeSHA1(hG) {
+				expectedFixed = append(expectedFixed, encodeSHA1(hC))
+			}
+
+			if diff := cmp.Diff(expectedIntro, gotIntro); diff != "" {
+				t.Errorf("TestAffected_Cherrypick() intro mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(expectedFixed, gotFixed); diff != "" {
+				t.Errorf("TestAffected_Cherrypick() fixed mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -759,7 +777,7 @@ func TestLimit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Limit(t.Context(), tt.se, false, false)
+			gotCommits, _, _ := repo.Limit(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -868,15 +886,33 @@ func TestLimit_Cherrypick(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits := repo.Limit(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickLimit)
+			gotCommits, gotIntro, gotLimit := repo.Limit(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickLimit)
 
 			var got []SHA1
 			for _, c := range gotCommits {
 				got = append(got, c.Hash)
 			}
 
+			// Check affected commits
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
-				t.Errorf("TestLimit_Cherrypick() mismatch (-want +got):\n%s", diff)
+				t.Errorf("TestLimit_Cherrypick() commits mismatch (-want +got):\n%s", diff)
+			}
+
+			// Check cherrypicked events
+			var expectedIntro []string
+			var expectedLimit []string
+			if tt.cherrypickIntro && tt.se.Introduced[0] == encodeSHA1(hB) {
+				expectedIntro = append(expectedIntro, encodeSHA1(hF))
+			}
+			if tt.cherrypickLimit && tt.se.Limit[0] == encodeSHA1(hG) {
+				expectedLimit = append(expectedLimit, encodeSHA1(hC))
+			}
+
+			if diff := cmp.Diff(expectedIntro, gotIntro); diff != "" {
+				t.Errorf("TestLimit_Cherrypick() intro mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(expectedLimit, gotLimit); diff != "" {
+				t.Errorf("TestLimit_Cherrypick() limit mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

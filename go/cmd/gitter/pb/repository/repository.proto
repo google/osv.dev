@@ -27,6 +27,7 @@ message AffectedRefs {
 message AffectedCommitsResponse {
     repeated AffectedCommit commits = 1;
     repeated AffectedRefs refs = 2;
+    repeated Event cherry_picked_events = 3;
 }
 
 enum EventType {

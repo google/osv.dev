@@ -268,11 +268,12 @@ func (x *AffectedRefs) GetHash() []byte {
 }
 
 type AffectedCommitsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commits       []*AffectedCommit      `protobuf:"bytes,1,rep,name=commits,proto3" json:"commits,omitempty"`
-	Refs          []*AffectedRefs        `protobuf:"bytes,2,rep,name=refs,proto3" json:"refs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Commits            []*AffectedCommit      `protobuf:"bytes,1,rep,name=commits,proto3" json:"commits,omitempty"`
+	Refs               []*AffectedRefs        `protobuf:"bytes,2,rep,name=refs,proto3" json:"refs,omitempty"`
+	CherryPickedEvents []*Event               `protobuf:"bytes,3,rep,name=cherry_picked_events,json=cherryPickedEvents,proto3" json:"cherry_picked_events,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *AffectedCommitsResponse) Reset() {
@@ -315,6 +316,13 @@ func (x *AffectedCommitsResponse) GetCommits() []*AffectedCommit {
 func (x *AffectedCommitsResponse) GetRefs() []*AffectedRefs {
 	if x != nil {
 		return x.Refs
+	}
+	return nil
+}
+
+func (x *AffectedCommitsResponse) GetCherryPickedEvents() []*Event {
+	if x != nil {
+		return x.CherryPickedEvents
 	}
 	return nil
 }
@@ -521,10 +529,11 @@ const file_repository_proto_rawDesc = "" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\"4\n" +
 	"\fAffectedRefs\x12\x10\n" +
 	"\x03ref\x18\x01 \x01(\tR\x03ref\x12\x12\n" +
-	"\x04hash\x18\x02 \x01(\fR\x04hash\"u\n" +
+	"\x04hash\x18\x02 \x01(\fR\x04hash\"\xb6\x01\n" +
 	"\x17AffectedCommitsResponse\x120\n" +
 	"\acommits\x18\x01 \x03(\v2\x16.gitter.AffectedCommitR\acommits\x12(\n" +
-	"\x04refs\x18\x02 \x03(\v2\x14.gitter.AffectedRefsR\x04refs\"M\n" +
+	"\x04refs\x18\x02 \x03(\v2\x14.gitter.AffectedRefsR\x04refs\x12?\n" +
+	"\x14cherry_picked_events\x18\x03 \x03(\v2\r.gitter.EventR\x12cherryPickedEvents\"M\n" +
 	"\x05Event\x120\n" +
 	"\n" +
 	"event_type\x18\x01 \x01(\x0e2\x11.gitter.EventTypeR\teventType\x12\x12\n" +
@@ -575,13 +584,14 @@ var file_repository_proto_depIdxs = []int32{
 	1, // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
 	3, // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.AffectedCommit
 	4, // 2: gitter.AffectedCommitsResponse.refs:type_name -> gitter.AffectedRefs
-	0, // 3: gitter.Event.event_type:type_name -> gitter.EventType
-	6, // 4: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	6, // 3: gitter.AffectedCommitsResponse.cherry_picked_events:type_name -> gitter.Event
+	0, // 4: gitter.Event.event_type:type_name -> gitter.EventType
+	6, // 5: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_repository_proto_init() }

@@ -675,15 +675,40 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var affectedCommits []*Commit
+	var newIntroHashes []string
+	var newFixedHashes []string
+	var newLimitHashes []string
+
 	if len(se.Limit) > 0 {
-		affectedCommits = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+		affectedCommits, newIntroHashes, newLimitHashes = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
 	} else {
-		affectedCommits = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		affectedCommits, newIntroHashes, newFixedHashes = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+	}
+
+	var cherryPickedEvents []*pb.Event
+	for _, h := range newIntroHashes {
+		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
+			EventType: pb.EventType_INTRODUCED,
+			Hash:      h,
+		})
+	}
+	for _, h := range newFixedHashes {
+		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
+			EventType: pb.EventType_FIXED,
+			Hash:      h,
+		})
+	}
+	for _, h := range newLimitHashes {
+		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
+			EventType: pb.EventType_LIMIT,
+			Hash:      h,
+		})
 	}
 
 	resp := &pb.AffectedCommitsResponse{
-		Commits: make([]*pb.AffectedCommit, 0, len(affectedCommits)),
-		Refs:    make([]*pb.AffectedRefs, 0),
+		Commits:            make([]*pb.AffectedCommit, 0, len(affectedCommits)),
+		Refs:               make([]*pb.AffectedRefs, 0),
+		CherryPickedEvents: cherryPickedEvents,
 	}
 	for _, c := range affectedCommits {
 		resp.Commits = append(resp.Commits, &pb.AffectedCommit{

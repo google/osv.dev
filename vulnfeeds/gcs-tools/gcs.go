@@ -1,3 +1,4 @@
+// Package gcs provides utilities for working with Google Cloud Storage.
 package gcs
 
 import (

@@ -10,7 +10,7 @@ import (
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 )
 
-func TesUploadToGCS(t *testing.T) {
+func TestUploadToGCS(t *testing.T) {
 	server := fakestorage.NewServer([]fakestorage.Object{})
 	t.Cleanup(server.Stop)
 

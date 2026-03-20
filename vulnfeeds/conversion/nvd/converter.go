@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -219,11 +220,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	metricsFile, err := c.CreateMetricsFile(cve.ID, vulnDir)
+	metricsFile, err := writer.CreateMetricsFile(cve.ID, vulnDir)
 	if err != nil {
 		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}
-	err = c.WriteMetricsFile(metrics, metricsFile)
+	err = writer.WriteMetricsFile(metrics, metricsFile)
 	if err != nil {
 		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}

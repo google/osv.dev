@@ -1,9 +1,7 @@
 package gcs
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,15 +10,12 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// ToGCS uploads data from an io.Reader to a GCS bucket.
-func ToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, data io.Reader, contentType string) error {
+// UploadToGCS uploads data from an io.Reader to a GCS bucket.
+func UploadToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, data io.Reader, contentType string) error {
 	obj := bkt.Object(objectName)
 	wc := obj.NewWriter(ctx)
 	if contentType != "" {
@@ -50,7 +45,7 @@ func UploadFile(ctx context.Context, bkt *storage.BucketHandle, objectName strin
 	}
 	defer f.Close()
 
-	return ToGCS(ctx, bkt, objectName, f, "")
+	return UploadToGCS(ctx, bkt, objectName, f, "")
 }
 
 // DownloadBucket downloads all objects from a GCS bucket to a local directory.
@@ -119,36 +114,21 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 	return nil
 }
 
-// UploadVulnerability marshals an OSV Vulnerability to JSON and uploads it to GCS.
-func UploadVulnerability(ctx context.Context, bkt *storage.BucketHandle, prefix string, vuln *osvschema.Vulnerability) error {
-	if vuln == nil || vuln.GetId() == "" {
-		return errors.New("invalid vulnerability provided")
+// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
+// It does not download the file contents.
+func ListBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
+	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+	var filenames []string
+	for {
+		attrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break // All objects have been listed.
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bucket.Objects: %w", err)
+		}
+		filenames = append(filenames, attrs.Name)
 	}
 
-	data, err := protojson.MarshalOptions{Indent: "  "}.Marshal(vuln)
-	if err != nil {
-		return fmt.Errorf("failed to marshal vulnerability %s: %w", vuln.GetId(), err)
-	}
-
-	objectName := filepath.Join(prefix, vuln.GetId()+".json")
-	reader := bytes.NewReader(data)
-
-	return ToGCS(ctx, bkt, objectName, reader, "application/json")
-}
-
-// UploadMetrics marshals ConversionMetrics to JSON and uploads it to GCS.
-func UploadMetrics(ctx context.Context, bkt *storage.BucketHandle, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
-	if metrics == nil || cveID == "" {
-		return errors.New("invalid metrics or CVE ID provided")
-	}
-
-	data, err := json.MarshalIndent(metrics, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal metrics for %s: %w", cveID, err)
-	}
-
-	objectName := filepath.Join(prefix, string(cveID)+".metrics.json")
-	reader := bytes.NewReader(data)
-
-	return ToGCS(ctx, bkt, objectName, reader, "application/json")
+	return filenames, nil
 }

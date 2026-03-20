@@ -10,7 +10,7 @@ import (
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 )
 
-func TestToGCS(t *testing.T) {
+func TesUploadToGCS(t *testing.T) {
 	server := fakestorage.NewServer([]fakestorage.Object{})
 	t.Cleanup(server.Stop)
 
@@ -21,9 +21,9 @@ func TestToGCS(t *testing.T) {
 	}
 
 	content := []byte("test content")
-	err := ToGCS(context.Background(), bkt, "test-object.txt", bytes.NewReader(content), "text/plain")
+	err := UploadToGCS(context.Background(), bkt, "test-object.txt", bytes.NewReader(content), "text/plain")
 	if err != nil {
-		t.Fatalf("ToGCS failed: %v", err)
+		t.Fatalf("UploadToGCS failed: %v", err)
 	}
 
 	obj, err := server.GetObject("test-bucket", "test-object.txt")

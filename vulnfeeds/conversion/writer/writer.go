@@ -1,26 +1,29 @@
-// Package gcs handles allocating workers to intelligently uploading OSV records to a bucket
-package gcs
+// Package writer handles allocating workers to intelligently uploading OSV records to a bucket
+package writer
 
 import (
 	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/google/osv/vulnfeeds/gcs-tools"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -49,10 +52,10 @@ func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix
 	return nil
 }
 
-// uploadToGCS uploads the vulnerability to a GCS bucket.
+// uploadIfChanged uploads the vulnerability to a GCS bucket.
 // It returns an error if the upload failed, or ErrUploadSkipped if the upload
 // was intentionally avoided (e.g. because the GCS object has a matching hash).
-func uploadToGCS(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) error {
+func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) error {
 	vulnID := v.GetId()
 	filename := vulnID + ".json"
 
@@ -151,7 +154,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 // For GCS uploads, it calculates a hash of the vulnerability (excluding the modified time) and compares it
 // with the existing object's hash. The vulnerability is uploaded only if the hashes differ, with the
 // modified time updated. This prevents updating the modified time for vulnerabilities with no content changes.
-func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string, counter *atomic.Uint64) {
+func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
 		if len(v.GetAffected()) == 0 {
@@ -187,7 +190,7 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 			writeErr = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
 		} else {
 			// Upload to GCS
-			writeErr = uploadToGCS(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+			writeErr = uploadIfChanged(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
 		}
 
 		if writeErr == nil {
@@ -203,8 +206,8 @@ func Worker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBk
 	}
 }
 
-// Upload delegates workers to upload vulnerabilities to the buckets.
-func Upload(
+// UploadVulnsToGCS delegates workers to upload vulnerabilities to the buckets.
+func UploadVulnsToGCS(
 	ctx context.Context,
 	jobName string,
 	uploadToGCS bool,
@@ -238,7 +241,7 @@ func Upload(
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			Worker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath, &successCount)
+			VulnWorker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath, &successCount)
 		}()
 	}
 
@@ -254,7 +257,7 @@ func Upload(
 
 func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {
 	// Check if any need to be deleted
-	bucketObjects, err := listBucketObjects(ctx, outBkt, osvOutputPath)
+	bucketObjects, err := gcs.ListBucketObjects(ctx, outBkt, osvOutputPath)
 	if err != nil {
 		logger.Error("Failed to list bucket objects for deletion check, skipping deletion.", slog.Any("err", err))
 		return
@@ -276,21 +279,79 @@ func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutput
 	}
 }
 
-// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
-// It does not download the file contents.
-func listBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
-	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-	var filenames []string
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break // All objects have been listed.
-		}
-		if err != nil {
-			return nil, fmt.Errorf("bucket.Objects: %w", err)
-		}
-		filenames = append(filenames, attrs.Name)
+// UploadVulnToGCS marshals a single OSV Vulnerability to JSON and uploads it to GCS.
+func UploadVulnToGCS(ctx context.Context, bkt *storage.BucketHandle, prefix string, vuln *osvschema.Vulnerability) error {
+	if vuln == nil || vuln.GetId() == "" {
+		return errors.New("invalid vulnerability provided")
 	}
 
-	return filenames, nil
+	data, err := protojson.MarshalOptions{Indent: "  "}.Marshal(vuln)
+	if err != nil {
+		return fmt.Errorf("failed to marshal vulnerability %s: %w", vuln.GetId(), err)
+	}
+
+	objectName := filepath.Join(prefix, vuln.GetId()+".json")
+	reader := bytes.NewReader(data)
+
+	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json")
+}
+
+// UploadMetricsToGCS marshals ConversionMetrics to JSON and uploads it to GCS.
+func UploadMetricsToGCS(ctx context.Context, bkt *storage.BucketHandle, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
+	if metrics == nil || cveID == "" {
+		return errors.New("invalid metrics or CVE ID provided")
+	}
+
+	data, err := json.MarshalIndent(metrics, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics for %s: %w", cveID, err)
+	}
+
+	objectName := filepath.Join(prefix, string(cveID)+".metrics.json")
+	reader := bytes.NewReader(data)
+
+	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json")
+}
+
+// CreateMetricsFile creates the initial file for the metrics record.
+func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
+	metricsFile := filepath.Join(vulnDir, string(id)+".metrics"+models.Extension)
+	f, err := os.Create(metricsFile)
+	if err != nil {
+		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
+		return nil, err
+	}
+
+	return f, nil
+}
+
+// CreateOSVFile creates the initial file for the OSV record.
+func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
+	outputFile := filepath.Join(vulnDir, string(id)+models.Extension)
+
+	f, err := os.Create(outputFile)
+	if err != nil {
+		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
+		return nil, err
+	}
+
+	return f, err
+}
+
+func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) error {
+	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
+	if err != nil {
+		logger.Info("Failed to marshal", slog.Any("err", err))
+		return err
+	}
+
+	_, err = metricsFile.Write(marshalledMetrics)
+	if err != nil {
+		logger.Warn("Failed to write", slog.String("path", metricsFile.Name()), slog.Any("err", err))
+		return fmt.Errorf("failed to write %s: %w", metricsFile.Name(), err)
+	}
+
+	metricsFile.Close()
+
+	return nil
 }

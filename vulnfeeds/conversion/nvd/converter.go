@@ -25,7 +25,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) (*osvschema.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
@@ -48,7 +48,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
 		metrics.SetOutcome(models.NoRepos)
-		return v.Vulnerability, metrics, models.NoRepos
+		return v, metrics, models.NoRepos
 	}
 
 	successfulRepos := make(map[string]bool)
@@ -61,7 +61,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		affected := MergeRangesAndCreateAffected(resolvedRanges, cpeRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
 		// Exit early
-		return v.Vulnerability, metrics, models.NoRepos
+		return v, metrics, models.NoRepos
 	}
 
 	// If we have ranges, try to resolve them
@@ -120,7 +120,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		return nil, metrics, metrics.Outcome
 	}
 
-	return v.Vulnerability, metrics, metrics.Outcome
+	return v, metrics, metrics.Outcome
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
@@ -437,6 +437,7 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 
 	return nil
 }
+
 // processRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
 func processRanges(ranges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []*osvschema.Range, []string) {
 	if len(ranges) == 0 {

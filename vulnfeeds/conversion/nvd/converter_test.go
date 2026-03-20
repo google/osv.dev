@@ -65,7 +65,7 @@ func TestCVEToOSV_429(t *testing.T) {
 	cache := &git.RepoTagsCache{}
 	outDir := t.TempDir()
 
-	outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, outDir, metrics, false, false)
+	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, metrics)
 
 	// It should fail because of the 429 error causing unresolved fixes
 	if outcome != models.Error {

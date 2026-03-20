@@ -1,13 +1,75 @@
 @use 'sass:string';
+@use '@material/theme';
+@use '@material/layout-grid/mdc-layout-grid';
+@use '@material/data-table/data-table';
+@use '@material/data-table/data-table-theme';
 
-$osv-background: #292929;
-$osv-text-color: #fff;
+:root {
+  --osv-bg: #292929;
+  --osv-text: #fff;
+  --osv-grey-100: #f8f9fa;
+  --osv-grey-200: #e8eaed;
+  --osv-grey-300: #e2e2e2;
+  --osv-grey-400: #bdc1c6;
+  --osv-grey-500: #9aa0a6;
+  --osv-grey-600: #80868b;
+  --osv-grey-700: #5f6368;
+  --osv-grey-800: #3C4043;
+  --osv-grey-900: #202124;
+  --osv-border: #555;
+  --osv-red-300: #ec928e;
+  --osv-cyan-300: #C9F5F7;
+  --osv-code-bg: #202020;
+  --osv-hover-bg: rgba(255, 255, 255, 0.1);
+  --osv-search-bg: #696969;
+  --osv-search-border: rgba(255, 255, 255, 0.3);
+  --osv-ecosystems-bg: #333333;
+  --osv-tooltip-bg: #11111199;
+  --osv-tab-inactive: #aaaaaa;
+  --osv-tab-active: #ffffff;
+}
+
+:root[data-theme="light"] {
+  --osv-bg: #f5f3f4;
+  --osv-text: #161A1D;
+  --osv-grey-100: #202124;
+  --osv-grey-200: #3c4043;
+  --osv-grey-300: #5f6368;
+  --osv-grey-400: #80868b;
+  --osv-grey-500: #9aa0a6;
+  --osv-grey-600: #b3b3b3;
+  --osv-grey-700: #dadce0;
+  --osv-grey-800: #f1f3f4;
+  --osv-grey-900: #f8f9fa;
+  --osv-border: #dadce0;
+  --osv-red-300: #f23835;
+  --osv-cyan-300: #007b83;
+  --osv-code-bg: #dddddd;
+  --osv-hover-bg: rgba(0, 0, 0, 0.05);
+  --osv-search-bg: rgba(255, 255, 255, 0.95);
+  --osv-search-border: rgba(0, 0, 0, 0.2);
+  --osv-ecosystems-bg: #e8e8e8;
+  --osv-tooltip-bg: #4f4f4fc8;
+  --osv-tab-inactive: #e8e8e8;
+  --osv-tab-active: #aaaaaa;
+}
+
+$osv-background: var(--osv-bg);
+$osv-text-color: var(--osv-text);
 $osv-accent-color: #c5221f;
 $osv-accent-color-hover: #c5221fb2;
-$osv-red-300: #ec928e;
-$osv-grey-600: #80868b;
-$osv-grey-800: #3C4043;
-$osv-cyan-300: #C9F5F7;
+$osv-red-300: var(--osv-red-300);
+$osv-grey-100: var(--osv-grey-100);
+$osv-grey-200: var(--osv-grey-200);
+$osv-grey-300: var(--osv-grey-300);
+$osv-grey-400: var(--osv-grey-400);
+$osv-grey-500: var(--osv-grey-500);
+$osv-grey-600: var(--osv-grey-600);
+$osv-grey-700: var(--osv-grey-700);
+$osv-grey-800: var(--osv-grey-800);
+$osv-grey-900: var(--osv-grey-900);
+$osv-cyan-300: var(--osv-cyan-300);
+$osv-white: #ffffff;
 $osv-green: #53aa33;
 $osv-yellow: #ffd700;
 $osv-orange: #ffa500;
@@ -20,13 +82,16 @@ $osv-heading-line-height: 70px;
 $osv-heading-line-height-mobile: 50px;
 $osv-mobile-breakpoint: 500px;
 $osv-border-radius-small: 4px;
-$osv-border-color: #555;
+$osv-border-color: var(--osv-border);
+$osv-code-bg: var(--osv-code-bg);
+$osv-hover-bg: var(--osv-hover-bg);
+$osv-ecosystems-bg: var(--osv-ecosystems-bg);
+$osv-search-bg: var(--osv-search-bg);
+$osv-search-border: var(--osv-search-border);
+$osv-tooltip-bg: var(--osv-tooltip-bg);
+$osv-tab-inactive: var(--osv-tab-inactive);
+$osv-tab-active: var(--osv-tab-active);
 
-@use '@material/theme' with ($surface: $osv-background,
-);
-@use '@material/layout-grid/mdc-layout-grid';
-@use '@material/data-table/data-table';
-@use '@material/data-table/data-table-theme';
 @include data-table.core-styles;
 @include data-table.theme-baseline;
 
@@ -76,6 +141,8 @@ $osv-border-color: #555;
 *::before,
 *::after {
   box-sizing: border-box;
+  // Fade-in transition for dark/light mode toggling.
+  transition: background-color 0.3s ease, color 0.3s ease, filter 0.3s ease;
 }
 
 * {
@@ -133,14 +200,22 @@ a {
 
 .home-page,
 .vulnerability-page {
-  a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"])::after {
-    display: inline-block;
-    content: ' ';
-    background-image: url('/static/img/external-link.svg');
-    width: 16px;
-    height: 16px;
-    margin-left: 3px;
-    vertical-align: middle;
+  a:not([href^="https://osv.dev"]):not([href^="/"]):not([href^="#"]):not([href^="https://google.github.io/osv.dev"]):not([href^="https://github.com/google/osv.dev"]) {
+    &::after {
+      display: inline-block;
+      content: ' ';
+      background-image: url('/static/img/external-link.svg');
+      width: 16px;
+      height: 16px;
+      margin-left: 3px;
+      vertical-align: middle;
+    }
+
+    &:not(.link-button)::after {
+      html[data-theme="light"] & {
+        filter: invert(1);
+      }
+    }
   }
 }
 
@@ -158,27 +233,28 @@ pre {
   padding: 0 16px;
   height: 36px;
   background: $osv-accent-color;
-  color: $osv-text-color;
+  color: $osv-white;
   border-radius: $osv-border-radius-small;
   align-items: center;
   text-decoration: none;
+
+  &:hover {
+    background: $osv-accent-color-hover;
+  }
 }
 
-.link-button:hover {
-  background: $osv-accent-color-hover;
-}
 
 .tooltip {
   position: relative;
   display: inline-block;
   width: 650px;
+  color: $osv-white;
 }
 
 .tooltip .tooltiptext {
+  background: $osv-tooltip-bg;
   visibility: hidden;
   width: 120px;
-  background: #11111199;
-  color: #fff;
   text-align: center;
   padding: 5px;
   border-radius: $osv-border-radius-small;
@@ -257,6 +333,12 @@ pre {
 
     // Keep logo visible.
     z-index: 3;
+
+    .logo-img-dark { display: none; }
+    html[data-theme="light"] & {
+      .logo-img-light { display: none; }
+      .logo-img-dark { display: block; }
+    }
   }
 
   #hamburger-checkbox {
@@ -264,8 +346,12 @@ pre {
   }
 
   .logo-link {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+
+    html[data-theme="light"] & {
+      filter: invert(1);
+    }
   }
 
   .tabs {
@@ -278,6 +364,15 @@ pre {
       height: 16px;
       margin-left: 3px;
       vertical-align: middle;
+
+      html[data-theme="light"] & {
+        filter: invert(1);
+      }
+    }
+
+    a.logo-img {
+        display: flex;
+        align-items: center;
     }
 
     // Remove external link indicator.
@@ -290,6 +385,7 @@ pre {
     .social-icons {
       padding: 0;
       display: flex;
+      align-items: center;
       gap: 20px;
     }
   }
@@ -463,7 +559,7 @@ pre {
       gap: 16px;
       font-family: $osv-heading-font-family;
       padding: 10px 20px;
-      background: #696969;
+      background: $osv-search-bg;
       border-radius: 999px;
       height: 38px;
       cursor: pointer;
@@ -475,8 +571,11 @@ pre {
     }
 
     input[type=radio]:checked+.ecosystem-label {
-      background: $osv-text-color;
+      background: $osv-grey-300;
       color: $osv-accent-color;
+      html[data-theme="light"] & {
+        background: $osv-grey-700;
+      }
     }
 
     input[type=radio] {
@@ -494,7 +593,7 @@ pre {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
-  --md-filled-text-field-container-color: #696969;
+  --md-filled-text-field-container-color: $osv-search-bg;
   --md-filled-text-field-label-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-weight: 100;
@@ -518,7 +617,7 @@ pre {
   /* The underline would otherwise show underneath the border radius. */
   &::after {
     margin-bottom: -4px;
-    background: #fff;
+    background: $osv-text-color;
     height: 2px;
     position: relative;
     top: -2px;
@@ -538,6 +637,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
 .vuln-table-container {
   width: 100%;
+  color: $osv-text-color;
 
   @media (max-width: $osv-mobile-breakpoint) {
     .vuln-table-container {
@@ -581,6 +681,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
   .vuln-table-cell {
     display: table-cell;
+    color: $osv-text-color;
   }
 
   // Table styling.
@@ -935,7 +1036,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
 .vulnerability-packages {
   h2 {
-    background: #aaa;
+    background: $osv-tab-inactive;
     color: #000;
     display: inline-block;
     font-family: $osv-heading-font-family;
@@ -963,7 +1064,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     }
 
     summary.version-header::before {
-      @include chevron-indicator($margin-right: 16px, $color: #fff);
+      @include chevron-indicator($margin-right: 16px, $color: $osv-text-color);
     }
 
     &[open] > summary.version-header::before {
@@ -973,7 +1074,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     summary.version-header {
       background: none;
       font-family: $osv-heading-font-family;
-      color: #fff;
+      color: $osv-text-color;
       padding: 16px 0;
       font-size: 16px;
       cursor: pointer;
@@ -990,7 +1091,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
   }
 
   .versions-separator {
-    border-bottom: 1px dashed #fff;
+    border-bottom: 1px dashed $osv-text-color;
   }
 
   .version {
@@ -1020,7 +1121,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     summary.database-specific-header {
       background: none;
       font-family: $osv-heading-font-family;
-      color: #fff;
+      color: $osv-text-color;
       padding: 16px 0;
       font-size: 16px;
       display: flex;
@@ -1028,7 +1129,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       cursor: pointer;
 
       &::before {
-        @include chevron-indicator($color: #fff);
+        @include chevron-indicator($color: $osv-text-color);
       }
     }
 
@@ -1049,8 +1150,8 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
     summary.package-header {
       width: 100%;
-      background: #393939;
-      color: #fff;
+      background: $osv-grey-800;
+      color: $osv-text-color;
       padding: 16px;
       margin-bottom: 2px;
       border-radius: 0;
@@ -1060,19 +1161,30 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       cursor: pointer;
       display: block;
 
+      html[data-theme="light"] & {
+        background: $osv-grey-700;
+      }
+
       &::before {
-        @include chevron-indicator($color: #fff);
+        @include chevron-indicator($color: $osv-text-color);
       }
 
       &:hover {
-        background: #4F4F4F;
+        background: $osv-grey-700;
+        html[data-theme="light"] & {
+          background: $osv-grey-600;
+        }
       }
     }
 
     .ecosystem-accordion[open] > summary.package-header {
-      background: #fff;
+      background: $osv-grey-100;
       color: $osv-accent-color;
       font-weight: bold;
+
+      html[data-theme="light"] & {
+        background: $osv-grey-600;
+      }
 
       &::before {
         transform: rotate(90deg);
@@ -1080,7 +1192,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       }
 
       &:hover {
-        background: #f0f0f0;
+        background: $osv-grey-200;
+        html[data-theme="light"] & {
+          background: $osv-grey-500;
+        }
       }
     }
 
@@ -1096,7 +1211,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
         top: 0;
         bottom: 0;
         width: 1px;
-        background: #555;
+        background: $osv-grey-600;
       }
     }
 
@@ -1137,7 +1252,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
         width: 8px;
         top: 20px;
         height: 1px;
-        background: #555;
+        background: $osv-grey-600;
       }
     }
 
@@ -1150,22 +1265,22 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       font-family: $osv-heading-font-family;
       font-size: 1.1rem;
       font-weight: bold;
-      color: #f1f1f1;
+      color: $osv-text-color;
       padding: 12px 16px;
       cursor: pointer;
-      background: #333333;
+      background: $osv-ecosystems-bg;
       border: 1px solid #444;
       border-radius: 0;
       display: block;
 
       &::before {
-        @include chevron-indicator($color: #fff);
+        @include chevron-indicator($color: $osv-text-color);
         vertical-align: middle;
       }
     }
 
     .package-accordion[open] > summary.package-name-title {
-      border-bottom: 1px dashed #fff;
+      border-bottom: 1px dashed $osv-grey-600;
 
       &::before {
         transform: rotate(90deg);
@@ -1173,7 +1288,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     }
 
     .package-accordion .package-details-card {
-      background: #333333;
+      background: $osv-ecosystems-bg;
       border: 1px solid #444;
       border-top: none;
       border-radius: 0;
@@ -1217,15 +1332,18 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     }
 
     &[expanded] {
-      background: #fff;
+      background: $osv-text-color;
       color: $osv-accent-color;
+      html[data-theme="light"] & {
+        background: $osv-grey-300;
+      }
     }
 
     width: 100%;
   }
 
   &[affordance="tab-bar"] h2.package-header {
-    cursor: default;
+    cursor: pointer;
 
     // Default tab spacing of 20px. First tab should match grid margin.
     margin-left: 20px;
@@ -1236,7 +1354,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
     // Selected tab styling.
     &[tabindex="0"] {
-      background: #fff;
+      background: $osv-tab-active;
       color: $osv-accent-color;
       border-bottom: 1px solid $osv-accent-color;
     }
@@ -1259,12 +1377,12 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
   // Tab panel styling.
   [role="tabpanel"] {
-    border-top: 1px dashed #fff;
+    border-top: 1px dashed $osv-text-color;
   }
 
   .vulnerability-package-subsection {
     padding: 14px 0;
-    border-bottom: 1px dashed #fff;
+    border-bottom: 1px dashed $osv-text-color;
   }
 
   .severity {
@@ -1284,6 +1402,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
   background: url('/static/img/background-1.webp');
   background-repeat: no-repeat;
   background-position: calc(50% - 70px) top;
+
+  html[data-theme="light"] & {
+    background-image: url('/static/img/background-1-light.webp');
+  }
 }
 
 .mdc-layout-grid.home-page {
@@ -1342,7 +1464,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
     .ecosystem-counts-wrapper {
       position: relative;
-      background: #333;
+      background: $osv-ecosystems-bg;
       margin-top: 20px;
       height: $ecosystem-count-wrapper-height;
 
@@ -1394,7 +1516,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       padding-bottom: 12px; 
 
       /* Custom scrollbar styling */
-      scrollbar-color: #555 #2c2c2c; 
+      scrollbar-color: $osv-grey-600 $osv-background;
       scrollbar-width: thin;
 
       /* For WebKit browsers (Chrome, Safari) */
@@ -1403,16 +1525,16 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       }
 
       &::-webkit-scrollbar-track {
-          background: #2c2c2c; /* Track color */
+          background: $osv-background; /* Track color */
       }
 
       &::-webkit-scrollbar-thumb {
-          background-color: #555; /* Thumb color */
+          background-color: $osv-grey-600; /* Thumb color */
           border-radius: 4px;
       }
 
       &::-webkit-scrollbar-thumb:hover {
-          background-color: #777;
+          background-color: $osv-grey-800;
       }
 
       .ecosystem-name {
@@ -1424,6 +1546,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
         justify-content: center;
         text-align: center;
         font-family: $osv-heading-font-family;
+        
       }
 
       .ecosystem-count-wrapper {
@@ -1451,9 +1574,9 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
         .tooltip {
           display: none;
-          color: $osv-text-color;
+          color: $osv-white;
           position: absolute;
-          background: #11111199;
+          background: $osv-tooltip-bg;
           max-width: 250px;
           line-height: 16px;
           padding: 5px;
@@ -1523,6 +1646,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     background-repeat: no-repeat;
     margin-top: 0;
     padding-top: 205px;
+
+    html[data-theme="light"] & {
+      background-image: url('/static/img/background-2-light.webp');
+    }
   }
 
   .github-action {
@@ -1615,7 +1742,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
   .code-card {
     position: relative;
-    background: #202020;
+    background: $osv-code-bg;
     border-radius: 10px;
     padding: 32px;
     margin-bottom: 32px;
@@ -1623,6 +1750,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     .code-card-title {
       color: #C5221F;
       font-size: 28px;
+      
+      html[data-theme="light"] & {
+        color: $osv-text-color;
+      }
     }
 
     .code-card-content {
@@ -1679,6 +1810,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     background-repeat: no-repeat;
     background-position: center;
     min-height: 500px;
+
+    html[data-theme="light"] & {
+      background-image: url('/static/img/footer-decoration-light.webp');
+    }
   }
 }
 
@@ -1711,7 +1846,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
 
 pre.big-code-block {
   padding: 10px;
-  background-color: #202020;
+  background-color: $osv-code-bg;
   overflow-x: scroll;
   width: 100%;
 }
@@ -1923,6 +2058,10 @@ div.highlight {
     width: 100%;
     position: absolute;
     left: 0;
+
+    html[data-theme="light"] & {
+      background-image: url('/static/img/footer-decoration-light.webp');
+    }
   }
 }
 
@@ -1931,7 +2070,7 @@ div.highlight {
   position: relative;
   display: flex;
   align-items: center;
-  height: 24px; /* Match the GitHub icon height */
+  height: 24px; /* Match the GitHub icon height */ 
   
   @media (max-width: 990px) { // Max width to prevent navbar from overlapping on other navbar elements
     display: none;
@@ -1948,7 +2087,7 @@ div.highlight {
 .search-toggle {
   background: transparent;
   border: none;
-  color: white;
+  color: $osv-text-color;
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -1958,12 +2097,12 @@ div.highlight {
   border-radius: 50%;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: $osv-hover-bg;
   }
 
   &:focus {
     outline: none;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: $osv-hover-bg;
   }
 
   &.active {
@@ -1987,13 +2126,16 @@ div.highlight {
   width: 0;
   overflow: hidden;
   transition: width 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
-  background: rgba(41, 41, 41, 0.95);
   border-radius: 24px;
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid $osv-search-border;
   box-sizing: border-box;
+
+  html[data-theme="light"] & {
+    background: $osv-search-bg;
+  }
 
   &.active {
     width: 280px;
@@ -2015,14 +2157,6 @@ div.highlight {
     height: 36px;
     line-height: 36px;
     box-sizing: border-box;
-
-    &::placeholder {
-      color: rgba(255, 255, 255, 0.7);
-    }
-    
-    &:focus::placeholder {
-      color: rgba(255, 255, 255, 0.5);
-    }
   }
 
   .search-submit {
@@ -2074,6 +2208,7 @@ div.highlight {
   cursor: pointer;
   color: $osv-text-color;
   transition: background-color 0.15s ease;
+  background: $osv-background;
   
   &:last-child {
     border-bottom: none;
@@ -2124,6 +2259,9 @@ div.highlight {
     &:hover,
     &--selected {
       background: rgba($osv-accent-color, 0.2);
+      html[data-theme="light"] & {
+        background: $osv-grey-700;
+      }
     }
   }
 }
@@ -2144,4 +2282,206 @@ div.highlight {
 
 .search-suggestions::-webkit-scrollbar-thumb:hover {
   background-color: $osv-grey-800;
+}
+
+/* Theme toggle button visibility */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+}
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  color: $osv-text-color;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  border-radius: 50%;
+
+  &:hover {
+    background-color: $osv-hover-bg;
+  }
+
+  .icon-dark-mode { display: none; }
+  .icon-light-mode { display: inline-block; }
+}
+html[data-theme="light"] .theme-toggle-btn {
+  color: $osv-text-color;
+  .icon-dark-mode { display: inline-block; }
+  .icon-light-mode { display: none; }
+}
+
+.github-container {
+    width: 36px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Syntax Highlighting */
+.chroma {
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+/* Dark theme (Native) */
+[data-theme="dark"] .chroma {
+  color: #d0d0d0;
+  background-color: #202020;
+  .err { color:#a61717;background-color:#e3d2d2 }
+  .lnlinks { outline:none;text-decoration:none;color:inherit }
+  .lntd { vertical-align:top;padding:0;margin:0;border:0; }
+  .lntable { border-spacing:0;padding:0;margin:0;border:0; }
+  .hl { background-color:#363636 }
+  .lnt { white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868 }
+  .ln { white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#686868 }
+  .line { display:flex; }
+  .k { color:#6ab825;font-weight:bold }
+  .kc { color:#6ab825;font-weight:bold }
+  .kd { color:#6ab825;font-weight:bold }
+  .kn { color:#6ab825;font-weight:bold }
+  .kp { color:#6ab825 }
+  .kr { color:#6ab825;font-weight:bold }
+  .kt { color:#6ab825;font-weight:bold }
+  .na { color:#bbb }
+  .nc { color:#447fcf;text-decoration:underline }
+  .no { color:#40ffff }
+  .nd { color:#ffa500 }
+  .ne { color:#bbb }
+  .nn { color:#447fcf;text-decoration:underline }
+  .nt { color:#6ab825;font-weight:bold }
+  .nb { color:#24909d }
+  .bp { color:#24909d }
+  .nv { color:#40ffff }
+  .vc { color:#40ffff }
+  .vg { color:#40ffff }
+  .vi { color:#40ffff }
+  .vm { color:#40ffff }
+  .nf { color:#447fcf }
+  .fm { color:#447fcf }
+  .s { color:#ed9d13 }
+  .sa { color:#ed9d13 }
+  .sb { color:#ed9d13 }
+  .sc { color:#ed9d13 }
+  .dl { color:#ed9d13 }
+  .sd { color:#ed9d13 }
+  .s2 { color:#ed9d13 }
+  .se { color:#ed9d13 }
+  .sh { color:#ed9d13 }
+  .si { color:#ed9d13 }
+  .sx { color:#ffa500 }
+  .sr { color:#ed9d13 }
+  .s1 { color:#ed9d13 }
+  .ss { color:#ed9d13 }
+  .m { color:#3677a9 }
+  .mb { color:#3677a9 }
+  .mf { color:#3677a9 }
+  .mh { color:#3677a9 }
+  .mi { color:#3677a9 }
+  .il { color:#3677a9 }
+  .mo { color:#3677a9 }
+  .ow { color:#6ab825;font-weight:bold }
+  .c { color:#999;font-style:italic }
+  .ch { color:#999;font-style:italic }
+  .cm { color:#999;font-style:italic }
+  .c1 { color:#999;font-style:italic }
+  .cs { color:#e50808;background-color:#520000;font-weight:bold }
+  .cp { color:#cd2828;font-weight:bold }
+  .cpf { color:#cd2828;font-weight:bold }
+  .gd { color:#d22323 }
+  .ge { font-style:italic }
+  .gr { color:#d22323 }
+  .gh { color:#fff;font-weight:bold }
+  .gi { color:#589819 }
+  .go { color:#ccc }
+  .gp { color:#aaa }
+  .gs { font-weight:bold }
+  .gu { color:#fff;text-decoration:underline }
+  .gt { color:#d22323 }
+  .gl { text-decoration:underline }
+  .w { color:#666 }
+}
+
+/* Light theme (Catppuccin-latte) */
+[data-theme="light"] .chroma {
+  color: #4c4f69;
+  background-color: #e9ecf1;
+
+  .err { color: #d20f39; }
+  .lnlinks { outline: none; text-decoration: none; color: inherit; }
+  .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+  .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; }
+  .hl { background-color: #bcc0cc; }
+  .lnt { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #8c8fa1; }
+  .ln { white-space: pre; -webkit-user-select: none; user-select: none; margin-right: 0.4em; padding: 0 0.4em 0 0.4em; color: #8c8fa1; }
+  .line { display: flex; }
+  .k { color: #8839ef; }
+  .kc { color: #fe640b; }
+  .kd { color: #d20f39; }
+  .kn { color: #179299; }
+  .kp { color: #8839ef; }
+  .kr { color: #8839ef; }
+  .kt { color: #d20f39; }
+  .na { color: #1e66f5; }
+  .nc { color: #df8e1d; }
+  .no { color: #df8e1d; }
+  .nd { color: #1e66f5; font-weight: bold; }
+  .ni { color: #179299; }
+  .ne { color: #fe640b; }
+  .nl { color: #04a5e5; }
+  .nn { color: #fe640b; }
+  .py { color: #fe640b; }
+  .nt { color: #8839ef; }
+  .nb { color: #04a5e5; }
+  .bp { color: #04a5e5; }
+  .nv { color: #dc8a78; }
+  .vc { color: #dc8a78; }
+  .vg { color: #dc8a78; }
+  .vi { color: #dc8a78; }
+  .vm { color: #dc8a78; }
+  .nf { color: #1e66f5; }
+  .fm { color: #1e66f5; }
+  .s { color: #40a02b; }
+  .sa { color: #d20f39; }
+  .sb { color: #40a02b; }
+  .sc { color: #40a02b; }
+  .dl { color: #1e66f5; }
+  .sd { color: #9ca0b0; }
+  .s2 { color: #40a02b; }
+  .se { color: #1e66f5; }
+  .sh { color: #9ca0b0; }
+  .si { color: #40a02b; }
+  .sx { color: #40a02b; }
+  .sr { color: #179299; }
+  .s1 { color: #40a02b; }
+  .ss { color: #40a02b; }
+  .m { color: #fe640b; }
+  .mb { color: #fe640b; }
+  .mf { color: #fe640b; }
+  .mh { color: #fe640b; }
+  .mi { color: #fe640b; }
+  .il { color: #fe640b; }
+  .mo { color: #fe640b; }
+  .o { color: #04a5e5; font-weight: bold; }
+  .ow { color: #04a5e5; font-weight: bold; }
+  .c { color: #9ca0b0; font-style: italic; }
+  .ch { color: #acb0be; font-style: italic; }
+  .cm { color: #9ca0b0; font-style: italic; }
+  .c1 { color: #9ca0b0; font-style: italic; }
+  .cs { color: #9ca0b0; font-style: italic; }
+  .cp { color: #9ca0b0; font-style: italic; }
+  .cpf { color: #9ca0b0; font-weight: bold; font-style: italic; }
+  .gd { color: #d20f39; background-color: #ccd0da; }
+  .ge { font-style: italic; }
+  .gr { color: #d20f39; }
+  .gh { color: #fe640b; font-weight: bold; }
+  .gi { color: #40a02b; background-color: #ccd0da; }
+  .gs { font-weight: bold; }
+  .gu { color: #fe640b; font-weight: bold; }
+  .gt { color: #d20f39; }
+  .gl { text-decoration: underline; }
 }

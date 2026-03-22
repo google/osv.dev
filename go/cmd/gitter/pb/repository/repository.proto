@@ -15,18 +15,18 @@ message RepositoryCache {
     repeated CommitDetail commits = 1;
 }
 
-message AffectedCommit {
+message Commit {
     bytes hash = 1;
 }
 
-message AffectedRefs {
+message Ref {
     string ref = 1;
     bytes hash = 2;
 }
 
 message AffectedCommitsResponse {
-    repeated AffectedCommit commits = 1;
-    repeated AffectedRefs refs = 2;
+    repeated Commit commits = 1;
+    repeated Ref refs = 2;
     repeated Event cherry_picked_events = 3;
 }
 

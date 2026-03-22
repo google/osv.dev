@@ -706,16 +706,16 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &pb.AffectedCommitsResponse{
-		Commits:            make([]*pb.AffectedCommit, 0, len(affectedCommits)),
-		Refs:               make([]*pb.AffectedRefs, 0),
+		Commits:            make([]*pb.Commit, 0, len(affectedCommits)),
+		Refs:               make([]*pb.Ref, 0),
 		CherryPickedEvents: cherryPickedEvents,
 	}
 	for _, c := range affectedCommits {
-		resp.Commits = append(resp.Commits, &pb.AffectedCommit{
+		resp.Commits = append(resp.Commits, &pb.Commit{
 			Hash: c.Hash[:],
 		})
 		for _, ref := range c.Refs {
-			resp.Refs = append(resp.Refs, &pb.AffectedRefs{
+			resp.Refs = append(resp.Refs, &pb.Ref{
 				Ref:  ref,
 				Hash: c.Hash[:],
 			})

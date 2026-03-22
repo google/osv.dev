@@ -659,7 +659,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			lastaffected = ""
 		}
 
-		vr := c.BuildVersionRange(introduced, lastaffected, fixed)
+		vr := BuildVersionRange(introduced, lastaffected, fixed)
 		versions = append(versions, models.RangeWithMetadata{Range: vr})
 	}
 
@@ -765,7 +765,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := c.BuildVersionRange(introduced, lastaffected, fixed)
+				vr := BuildVersionRange(introduced, lastaffected, fixed)
 				versions = append(versions, models.RangeWithMetadata{Range: vr, Metadata: models.Metadata{CPE: match.Criteria}})
 			}
 		}

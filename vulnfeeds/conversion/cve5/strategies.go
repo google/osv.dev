@@ -41,7 +41,7 @@ func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMet
 	vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
 	hasRange := vLessThanQual.AtLeast(acceptableQuality) || vLTOEQual.AtLeast(acceptableQuality)
-	
+
 	// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 	if vers.LessThan != "" && vers.LessThan == vers.Version {
 		metrics.AddNote("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version)

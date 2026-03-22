@@ -333,8 +333,6 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache *git
 	return reposForCVE
 }
 
-
-
 // outputFiles writes the OSV vulnerability record and conversion metrics to files in the specified directory.
 // It creates the necessary subdirectories based on the vendor and product names and handles whether or not
 // the files should be written based on the rejectFailed and outputMetrics flags.

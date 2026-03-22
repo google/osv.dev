@@ -478,7 +478,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 			}
 			unresolvedRangesMap = append(unresolvedRangesMap, urMap)
 		}
-		
+
 		ds, err := utility.NewStructpbFromMap(map[string]any{
 			"list": unresolvedRangesMap,
 		})
@@ -486,7 +486,8 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 			logger.Warn("failed to convert unresolved ranges to structpb", "err", err)
 			return nil
 		}
-		return ds.Fields["list"].GetListValue()
+
+		return ds.GetFields()["list"].GetListValue()
 	}
 
 	return nil

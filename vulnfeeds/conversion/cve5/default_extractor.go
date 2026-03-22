@@ -1,6 +1,10 @@
 package cve5
 
 import (
+	"maps"
+	"slices"
+
+	"github.com/google/osv/vulnfeeds/conversion"
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -37,13 +41,8 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	successfulRepos := make(map[string]bool)
 	var resolvedRanges []*osvschema.Range
 	var unresolvedRanges []models.RangeWithMetadata
-	if len(ranges) != 0 {
-		var nr []models.RangeWithMetadata
-		for _, r := range ranges {
-			nr = append(nr, models.RangeWithMetadata{
-				Range: r,
-			})
-		}
+
+	processRanges := func(nr []models.RangeWithMetadata) bool {
 		r, un, sR := conversion.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
@@ -52,7 +51,25 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		}
 		if len(r) == 0 {
 			metrics.AddNote("Failed to convert git versions to commits")
-		} else {
+			return false
+		}
+
+		return true
+	}
+
+	toRangeWithMetadata := func(r []*osvschema.Range) []models.RangeWithMetadata {
+		var nr []models.RangeWithMetadata
+		for _, rng := range r {
+			nr = append(nr, models.RangeWithMetadata{
+				Range: rng,
+			})
+		}
+
+		return nr
+	}
+
+	if len(ranges) != 0 {
+		if processRanges(toRangeWithMetadata(ranges)) {
 			gotVersions = true
 			metrics.SetOutcome(models.Successful)
 		}
@@ -63,21 +80,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			var nr []models.RangeWithMetadata
-			for _, r := range versionRanges {
-				nr = append(nr, models.RangeWithMetadata{
-					Range: r,
-				})
-			}
-			r, un, sR := conversion.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
-			resolvedRanges = append(resolvedRanges, r...)
-			unresolvedRanges = append(unresolvedRanges, un...)
-			for _, s := range sR {
-				successfulRepos[s] = true
-			}
-			if len(r) == 0 {
-				metrics.AddNote("Failed to convert git versions to commits")
-			} else {
+			if processRanges(toRangeWithMetadata(versionRanges)) {
 				gotVersions = true
 			}
 		}
@@ -85,20 +88,12 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 	if !gotVersions {
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
-		textRanges := cves.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
+		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
 		if len(textRanges) != 0 {
-			r, un, sR := c.ProcessRanges(textRanges, repos, metrics, repoTagsCache, models.VersionSourceAffected)
-			resolvedRanges = append(resolvedRanges, r...)
-			unresolvedRanges = append(unresolvedRanges, un...)
-			for _, s := range sR {
-				successfulRepos[s] = true
-			}
-			if len(r) == 0 {
-				metrics.AddNote("Failed to convert git versions to commits")
-			}
+			processRanges(textRanges)
 		}
 	}
 
@@ -106,7 +101,6 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	groupedRanges := c.GroupRanges(resolvedRanges)
 	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
 	v.Affected = append(v.Affected, affected)
-
 
 	if len(unresolvedRanges) > 0 {
 		unresolvedRangesList := conversion.CreateUnresolvedRanges(unresolvedRanges)
@@ -173,13 +167,4 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 	}
 
 	return versionRanges, mostFrequentVersionType
-}
-
-func addRangesToAffected(resolvedRanges []*osvschema.Range, v *vulns.Vulnerability, metrics *models.ConversionMetrics) {
-	if len(resolvedRanges) > 0 {
-		aff := &osvschema.Affected{
-			Ranges: resolvedRanges,
-		}
-		c.AddAffected(v, aff, metrics)
-	}
 }

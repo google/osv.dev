@@ -106,7 +106,10 @@ func run() error {
 		return fmt.Errorf("failed to prepare data: %w", err)
 	}
 
-	linterOutput := runLinter(*linterBinary, dataDir)
+	linterOutput, err := runLinter(*linterBinary, dataDir)
+	if err != nil {
+		return fmt.Errorf("linter execution failed: %w", err)
+	}
 
 	if err := processLinterResult(ctx, dsClient, linterOutput, prefixToSource, *dryRun); err != nil {
 		return fmt.Errorf("failed to process linter result: %w", err)
@@ -253,7 +256,7 @@ func unzip(src, dest string) error {
 	return nil
 }
 
-func runLinter(binaryPath, dataDir string) []byte {
+func runLinter(binaryPath, dataDir string) ([]byte, error) {
 	// If binaryPath has no path separators, check if it exists in CWD.
 	// exec.Command only looks in PATH for names without separators.
 	if !strings.Contains(binaryPath, string(os.PathSeparator)) {
@@ -264,9 +267,16 @@ func runLinter(binaryPath, dataDir string) []byte {
 
 	cmd := exec.Command(binaryPath, "record", "check", "--json", "--parallel", "10", "--collection", "offline", dataDir)
 	logger.Info("Executing linter", slog.String("cmd", cmd.String()))
-	output, _ := cmd.Output() // err just indicates that there were findings
+	output, err := cmd.Output() // err usually just indicates that there were findings
+	if err != nil {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			logger.Error("Linter execution failed unexpectedly", slog.Any("err", err))
+			return nil, err
+		}
+	}
 
-	return output
+	return output, nil
 }
 
 func processLinterResult(ctx context.Context, dsClient *datastore.Client, output []byte, prefixToSource map[string]string, dryRun bool) error {
@@ -352,8 +362,6 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	}
 
 	// Launch workers to process findingsToPut
-	// We can pipeline this: as soon as we have a batch, send it.
-	// But `findingsToPut` is built fast.
 
 	// Create a channel for batches
 	batchChan := make(chan []*models.ImportFinding, len(findingsToPut)/batchSize+1)
@@ -557,17 +565,6 @@ func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]a
 		gUpload.Go(func() error {
 			for task := range uploadChan {
 				targetPath := filepath.Join(linterResultDir, task.source, "result.json")
-				// Mark as visited/updated so we don't delete it
-				// Note: This map access is not thread-safe if we were writing to it,
-				// but we are only reading from existingObjects here? No, we need to remove from it to know what to delete.
-				// Actually, let's just upload everything for now and handle deletion separately.
-				// To avoid race conditions on existingObjects, we can't modify it here easily without a mutex.
-				// Instead, let's just upload.
-
-				// Check if content is different before uploading to save bandwidth/ops?
-				// The prompt says "update the difference".
-				// Reading the object to compare might be as expensive as just writing it.
-				// Let's just write it.
 
 				if dryRun {
 					logger.Info("Dry run: skipping upload", slog.String("targetPath", targetPath), slog.String("source", task.source))
@@ -596,9 +593,6 @@ func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]a
 	// Calculate what to delete
 	var toDelete []string
 	for objName := range existingObjects {
-		// Check if this object corresponds to a source we just uploaded
-		// The object name is like "linter_results/<source>/result.json"
-		// We need to check if <source> is in sourceResults
 		relPath, err := filepath.Rel(linterResultDir, objName)
 		if err != nil {
 			continue

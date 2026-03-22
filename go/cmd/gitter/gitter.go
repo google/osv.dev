@@ -685,7 +685,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		affectedCommits, newIntroHashes, newFixedHashes = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}
 
-	var cherryPickedEvents []*pb.Event
+	cherryPickedEvents := make([]*pb.Event, 0, len(newIntroHashes)+len(newFixedHashes)+len(newLimitHashes))
 	for _, h := range newIntroHashes {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_INTRODUCED,

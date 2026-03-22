@@ -4,7 +4,6 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/google/osv/vulnfeeds/conversion"
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -43,7 +42,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	var unresolvedRanges []models.RangeWithMetadata
 
 	processRanges := func(nr []models.RangeWithMetadata) bool {
-		r, un, sR := conversion.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
+		r, un, sR := c.ProcessRanges(nr, repos, metrics, repoTagsCache, models.VersionSourceAffected)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {
@@ -103,8 +102,8 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	v.Affected = append(v.Affected, affected)
 
 	if len(unresolvedRanges) > 0 {
-		unresolvedRangesList := conversion.CreateUnresolvedRanges(unresolvedRanges)
-		if err := conversion.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
+		unresolvedRangesList := c.CreateUnresolvedRanges(unresolvedRanges)
+		if err := c.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
 			logger.Warn("failed to make database specific: %v", err)
 		}
 	}

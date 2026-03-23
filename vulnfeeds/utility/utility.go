@@ -1,10 +1,12 @@
 package utility
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -57,9 +59,15 @@ func IsRepoURL(url string) bool {
 // which is suitable for OSV's database_specific field.
 func NewStructpbFromMap(v map[string]any) (*structpb.Struct, error) {
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
-	for k, v := range v {
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	for _, k := range keys {
 		var err error
-		x.Fields[k], err = newStructpbValue(v)
+		x.Fields[k], err = newStructpbValue(v[k])
 		if err != nil {
 			return nil, err
 		}
@@ -94,16 +102,21 @@ func newStructpbValue(v any) (*structpb.Value, error) {
 		return structpbValueFromList(anyList)
 	case reflect.Map:
 		if val.Type().Key().Kind() == reflect.String {
-			m := make(map[string]any)
-			for _, k := range val.MapKeys() {
-				m[k.String()] = val.MapIndex(k).Interface()
-			}
-			structpbMap, err := NewStructpbFromMap(m)
-			if err != nil {
-				return nil, err
+			keys := val.MapKeys()
+			slices.SortFunc(keys, func(a, b reflect.Value) int {
+				return cmp.Compare(a.String(), b.String())
+			})
+
+			x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(keys))}
+			for _, k := range keys {
+				var err error
+				x.Fields[k.String()], err = newStructpbValue(val.MapIndex(k).Interface())
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			return structpb.NewStructValue(structpbMap), nil
+			return structpb.NewStructValue(x), nil
 		}
 
 		return structpb.NewValue(v)

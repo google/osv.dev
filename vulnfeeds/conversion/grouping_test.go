@@ -463,8 +463,8 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 					Introduced: "1.1",
 				},
 				{
-					Repo:       "repo1",
-					Fixed:      "1.2",
+					Repo:  "repo1",
+					Fixed: "1.2",
 				},
 			},
 			successfulRepos: []string{"repo1"},

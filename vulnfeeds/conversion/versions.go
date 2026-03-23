@@ -1165,6 +1165,9 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
+		} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			metrics.Outcome = models.Error
+			return nil
 		}
 
 		if slices.Contains(repos, repo) {

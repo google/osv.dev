@@ -111,6 +111,7 @@ const (
 	VersionSourceGit         VersionSource = "GITVERS"
 	VersionSourceCPE         VersionSource = "CPEVERS"
 	VersionSourceDescription VersionSource = "DESCRVERS"
+	VersionSourceText        VersionSource = "TEXT"
 	VersionSourceRefs        VersionSource = "REFS"
 )
 

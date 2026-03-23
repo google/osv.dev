@@ -7,7 +7,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([]*osvschema.Range, error) {
+func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 	if err == nil && len(cpeRanges) > 0 {
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)

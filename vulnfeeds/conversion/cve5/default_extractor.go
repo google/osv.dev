@@ -15,8 +15,8 @@ import (
 // DefaultVersionExtractor provides the default version extraction logic.
 type DefaultVersionExtractor struct{}
 
-func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []*osvschema.Range {
-	var ranges []*osvschema.Range
+func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+	var ranges []models.RangeWithMetadata
 	for _, cveAff := range affected {
 		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
 
@@ -56,9 +56,8 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		return true
 	}
 
-	
 	if len(ranges) != 0 {
-		if processRanges(c.ToRangeWithMetadata(ranges)) {
+		if processRanges(ranges) {
 			gotVersions = true
 			metrics.SetOutcome(models.Successful)
 		}
@@ -69,7 +68,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			if processRanges(c.ToRangeWithMetadata(versionRanges)) {
+			if processRanges(versionRanges) {
 				gotVersions = true
 			}
 		}
@@ -99,13 +98,13 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 }
 
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]*osvschema.Range, VersionRangeType) {
+func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []*osvschema.Range
+	var versionRanges []models.RangeWithMetadata
 	for _, vers := range affected.Versions {
 		ranges, _, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
 		if len(ranges) > 0 {
-			versionRanges = append(versionRanges, ranges...)
+			versionRanges = append(versionRanges, c.ToRangeWithMetadata(ranges, models.VersionSourceAffected)...)
 		}
 
 		if shouldContinue {
@@ -121,11 +120,16 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 			if av.Introduced == "" {
 				continue
 			}
+
 			if av.Fixed != "" {
-				versionRanges = append(versionRanges, c.BuildVersionRange(av.Introduced, "", av.Fixed))
+				vr := []*osvschema.Range{c.BuildVersionRange(av.Introduced, "", av.Fixed)}
+				versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
+
 				continue
 			} else if av.LastAffected != "" {
-				versionRanges = append(versionRanges, c.BuildVersionRange(av.Introduced, av.LastAffected, ""))
+				vr := []*osvschema.Range{c.BuildVersionRange(av.Introduced, av.LastAffected, "")}
+				versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
+
 				continue
 			}
 		}
@@ -140,7 +144,8 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 
 		// As a fallback, assume a single version means it's the last affected version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			versionRanges = append(versionRanges, c.BuildVersionRange("0", vers.Version, ""))
+			vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
+			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
 			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}

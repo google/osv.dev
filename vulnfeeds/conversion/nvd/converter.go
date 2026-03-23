@@ -17,7 +17,6 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 var ErrNoRanges = errors.New("no ranges")
@@ -65,7 +64,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	successfulRepos := make(map[string]bool)
-	var resolvedRanges []*osvschema.Range
+	var resolvedRanges []models.RangeWithMetadata
 	var unresolvedRanges []models.RangeWithMetadata
 
 	// Exit early if there are no repositories
@@ -113,7 +112,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 
 	// Extract Versions From Text if no CPE versions found
 	if len(resolvedRanges) == 0 {
-		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)
+		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics, models.VersionSourceDescription)
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}

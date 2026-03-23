@@ -30,6 +30,7 @@
       "ranges": [
         {
           "database_specific": {
+            "source": "AFFECTED_FIELD",
             "versions": [
               {
                 "introduced": "18.0"
@@ -100,6 +101,7 @@
       "ranges": [
         {
           "database_specific": {
+            "source": "AFFECTED_FIELD",
             "versions": [
               {
                 "introduced": "0"

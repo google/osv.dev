@@ -178,8 +178,8 @@ func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) e
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []models.RangeWithMetadata, []string) {
-	var newVersionRanges []*osvschema.Range
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
@@ -250,19 +250,20 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
-					newVR = BuildVersionRange(introducedCommit, "", fixedCommit)
+					newVR = BuildGitVersionRange(introducedCommit, "", fixedCommit, repo)
 				} else {
-					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
+					newVR = BuildGitVersionRange(introducedCommit, lastAffectedCommit, "", repo)
 				}
 				successfulRepos = append(successfulRepos, repo)
-				newVR.Repo = repo
-				newVR.Type = osvschema.Range_GIT
 				if len(vr.Range.GetEvents()) > 0 {
 					dbSpecificMap := map[string]any{
 						"versions": vr.Range.GetEvents(),
 					}
 					if vr.Metadata.CPE != "" {
 						dbSpecificMap["cpe"] = vr.Metadata.CPE
+					}
+					if string(vr.Metadata.Source) != "" {
+						dbSpecificMap["source"] = string(vr.Metadata.Source)
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
@@ -272,7 +273,10 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 					}
 				}
 
-				newVersionRanges = append(newVersionRanges, newVR)
+				newVersionRanges = append(newVersionRanges, models.RangeWithMetadata{
+					Range:    newVR,
+					Metadata: vr.Metadata,
+				})
 			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 			}
@@ -306,6 +310,14 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	}
 
 	return &versionRange
+}
+
+func BuildGitVersionRange(intro string, lastAff string, fixed string, repo string) *osvschema.Range {
+	versionRange := BuildVersionRange(intro, lastAff, fixed)
+	versionRange.Repo = repo
+	versionRange.Type = osvschema.Range_GIT
+
+	return versionRange
 }
 
 // MergeTwoRanges combines two osvschema.Range objects into a single range.
@@ -411,6 +423,10 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	case string:
 		if v2, ok := val2.(string); ok {
+			if v1 == v2 {
+				return v1, nil
+			}
+
 			return deduplicateList([]any{v1, v2}), nil
 		}
 		if v2, ok := val2.([]any); ok {
@@ -587,7 +603,7 @@ func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) er
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]*osvschema.Range, []models.RangeWithMetadata, []string) {
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache, source models.VersionSource) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}

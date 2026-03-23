@@ -479,6 +479,11 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Fixed: "1.0"},
 							{Fixed: "1.2"},
 						},
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
+						},
 					},
 				},
 			},
@@ -500,6 +505,13 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 						Events: []*osvschema.Event{
 							{Introduced: "0"},
 							{Fixed: "1.0"},
+						},
+						Repo: "repo2",
+						Type: osvschema.Range_GIT,
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
 						},
 					},
 				},
@@ -544,6 +556,11 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Introduced: "0"},
 							{Fixed: "1.0"},
 							{LastAffected: "0.5"},
+						},
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
 						},
 					},
 				},
@@ -618,6 +635,11 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Fixed: "3.0"},
 							{Fixed: "4.0"},
 						},
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
+						},
 					},
 				},
 			},
@@ -626,7 +648,11 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MergeRangesAndCreateAffected(tt.resolvedRanges, tt.commits, tt.successfulRepos, &models.ConversionMetrics{})
+			var rwms []models.RangeWithMetadata
+			for _, r := range tt.resolvedRanges {
+				rwms = append(rwms, models.RangeWithMetadata{Range: r})
+			}
+			got := MergeRangesAndCreateAffected(rwms, tt.commits, tt.successfulRepos, &models.ConversionMetrics{})
 			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
 				t.Errorf("MergeRangesAndCreateAffected() mismatch (-want +got):\n%s", diff)
 			}

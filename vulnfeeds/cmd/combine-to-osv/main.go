@@ -313,9 +313,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				}
 
 				if c5Intro != "" || c5Fixed != "" {
-					newRange := conversion.BuildVersionRange(c5Intro, "", c5Fixed)
-					newRange.Repo = repo
-					newRange.Type = osvschema.Range_GIT // Preserve the repo
+					newRange := conversion.BuildGitVersionRange(c5Intro, "", c5Fixed, repo)
 					newAffectedRanges = append(newAffectedRanges, newRange)
 				} else {
 					newAffectedRanges = cveRanges

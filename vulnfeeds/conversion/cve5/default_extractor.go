@@ -38,7 +38,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 	ranges := d.handleAffected(cve.Containers.CNA.Affected, metrics)
 	successfulRepos := make(map[string]bool)
-	var resolvedRanges []*osvschema.Range
+	var resolvedRanges []models.RangeWithMetadata
 	var unresolvedRanges []models.RangeWithMetadata
 
 	processRanges := func(nr []models.RangeWithMetadata) bool {
@@ -76,7 +76,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 	if !gotVersions {
 		metrics.AddNote("No versions in CPEs so attempting extraction from description")
-		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
+		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics, models.VersionSourceDescription)
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
@@ -135,7 +135,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		}
 
 		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics)
+		possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics, models.VersionSourceAffected)
 
 		if possibleVersions != nil {
 			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")

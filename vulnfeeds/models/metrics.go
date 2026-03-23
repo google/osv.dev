@@ -106,13 +106,13 @@ func (m *ConversionMetrics) AddSource(source VersionSource) {
 type VersionSource string
 
 const (
-	VersionSourceNone        VersionSource = "NOVERS"
-	VersionSourceAffected    VersionSource = "CVEAFFVERS"
-	VersionSourceGit         VersionSource = "GITVERS"
-	VersionSourceCPE         VersionSource = "CPEVERS"
-	VersionSourceDescription VersionSource = "DESCRVERS"
-	VersionSourceText        VersionSource = "TEXT"
-	VersionSourceRefs        VersionSource = "REFS"
+	VersionSourceNone        VersionSource = "NO_SOURCE"
+	VersionSourceAffected    VersionSource = "AFFECTED_FIELD"
+	VersionSourceGit         VersionSource = "AFFECTED_FIELD_GIT"
+	VersionSourceCPE         VersionSource = "CPE_FIELD"
+	VersionSourceDescription VersionSource = "DESCRIPTION"
+	VersionSourceText        VersionSource = "TEXT_EXTRACTION"
+	VersionSourceRefs        VersionSource = "REFERENCES"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {

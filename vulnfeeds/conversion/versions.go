@@ -607,7 +607,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -662,7 +662,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		versions = append(versions, models.RangeWithMetadata{
 			Range: vr,
 			Metadata: models.Metadata{
-				Source: models.VersionSourceText,
+				Source: source,
 			},
 		},
 		)

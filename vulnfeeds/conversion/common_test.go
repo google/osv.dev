@@ -274,7 +274,7 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 			name: "Merge same strings",
 			val1: "value1",
 			val2: "value1",
-			want: []any{"value1"},
+			want: "value1",
 		},
 		{
 			name: "Merge different strings",

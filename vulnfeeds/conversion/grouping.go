@@ -22,11 +22,20 @@ func GroupAffectedRanges(affected []*osvschema.Affected) {
 			continue
 		}
 
-		aff.Ranges = GroupRanges(aff.GetRanges())
+		var rwms []models.RangeWithMetadata
+		for _, r := range aff.GetRanges() {
+			rwms = append(rwms, models.RangeWithMetadata{Range: r})
+		}
+		grouped := GroupRanges(rwms)
+		var out []*osvschema.Range
+		for _, rwm := range grouped {
+			out = append(out, rwm.Range)
+		}
+		aff.Ranges = out
 	}
 }
 
-func GroupRanges(ranges []*osvschema.Range) []*osvschema.Range {
+func GroupRanges(ranges []models.RangeWithMetadata) []models.RangeWithMetadata {
 	// Key for grouping: Type + Repo + Introduced Value
 	type groupKey struct {
 		RangeType  osvschema.Range_Type
@@ -34,10 +43,11 @@ func GroupRanges(ranges []*osvschema.Range) []*osvschema.Range {
 		Introduced string
 	}
 
-	groups := make(map[groupKey]*osvschema.Range)
+	groups := make(map[groupKey]models.RangeWithMetadata)
 	var order []groupKey // To maintain deterministic order of first appearance
 
-	for _, r := range ranges {
+	for _, rwm := range ranges {
+		r := rwm.Range
 		// Find the introduced event
 		var introduced string
 		var introducedCount int
@@ -63,28 +73,31 @@ func GroupRanges(ranges []*osvschema.Range) []*osvschema.Range {
 			// Initialize with a deep copy of the first range found for this group
 			// We need to be careful about DatabaseSpecific.
 			// We want to keep the "versions" from this first range.
-			groups[key] = &osvschema.Range{
-				Type:             r.GetType(),
-				Repo:             r.GetRepo(),
-				Events:           []*osvschema.Event{},
-				DatabaseSpecific: r.GetDatabaseSpecific(), // Start with this one's DS
+			groups[key] = models.RangeWithMetadata{
+				Range: &osvschema.Range{
+					Type:             r.GetType(),
+					Repo:             r.GetRepo(),
+					Events:           []*osvschema.Event{},
+					DatabaseSpecific: r.GetDatabaseSpecific(), // Start with this one's DS
+				},
+				Metadata: rwm.Metadata,
 			}
 			order = append(order, key)
 		} else {
 			// Merge DatabaseSpecific
-			mergeDatabaseSpecific(groups[key], r.GetDatabaseSpecific())
+			mergeDatabaseSpecific(groups[key].Range, r.GetDatabaseSpecific())
 		}
 
 		// Add all events to the group. Deduplication happens later in cleanEvents.
-		groups[key].Events = append(groups[key].Events, r.GetEvents()...)
+		groups[key].Range.Events = append(groups[key].Range.Events, r.GetEvents()...)
 	}
 
 	// Reconstruct ranges from groups
-	newRanges := make([]*osvschema.Range, 0, len(order))
+	newRanges := make([]models.RangeWithMetadata, 0, len(order))
 	for _, key := range order {
-		r := groups[key]
-		r.Events = cleanEvents(r.GetEvents())
-		newRanges = append(newRanges, r)
+		rwm := groups[key]
+		rwm.Range.Events = cleanEvents(rwm.Range.GetEvents())
+		newRanges = append(newRanges, rwm)
 	}
 
 	return newRanges
@@ -260,7 +273,7 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 //   - successfulRepos: A slice of repository URLs that were successfully processed.
 //   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
 func MergeRangesAndCreateAffected(
-	resolvedRanges []*osvschema.Range,
+	resolvedRanges []models.RangeWithMetadata,
 	commits []models.AffectedCommit,
 	successfulRepos []string,
 	metrics *models.ConversionMetrics,
@@ -272,7 +285,8 @@ func MergeRangesAndCreateAffected(
 		successfulRepos = slices.Compact(successfulRepos)
 		for _, repo := range successfulRepos {
 			var mergedRange *osvschema.Range
-			for _, vr := range resolvedRanges {
+			for _, vrwm := range resolvedRanges {
+				vr := vrwm.Range
 				if vr.GetRepo() == repo {
 					if mergedRange == nil {
 						mergedRange = vr
@@ -289,14 +303,24 @@ func MergeRangesAndCreateAffected(
 				for _, commit := range commits {
 					if commit.Repo == repo {
 						if mergedRange == nil {
-							mergedRange = BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed)
-							mergedRange.Repo = repo
+							mergedRange = BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, repo)
 						} else {
 							event := convertCommitToEvent(commit)
 							if event != nil {
 								addEventToRange(mergedRange, event)
 							}
 						}
+
+						if mergedRange.GetDatabaseSpecific() == nil {
+							mergedRange.DatabaseSpecific = &structpb.Struct{
+								Fields: make(map[string]*structpb.Value),
+							}
+						}
+						mergeDatabaseSpecific(mergedRange, &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
+							},
+						})
 					}
 				}
 			}
@@ -309,7 +333,13 @@ func MergeRangesAndCreateAffected(
 	// if there are no resolved version but there are commits, we should create a range for each commit
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
 		for _, commit := range commits {
-			newResolvedRanges = append(newResolvedRanges, BuildVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed))
+			vr := BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, commit.Repo)
+			vr.DatabaseSpecific = &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
+				},
+			}
+			newResolvedRanges = append(newResolvedRanges, vr)
 			metrics.ResolvedRangesCount++
 		}
 	}

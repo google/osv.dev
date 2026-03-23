@@ -464,6 +464,17 @@ func deduplicateList(list []any) []any {
 	return unique
 }
 
+func ToRangeWithMetadata(r []*osvschema.Range) []models.RangeWithMetadata {
+	var nr []models.RangeWithMetadata
+	for _, rng := range r {
+		nr = append(nr, models.RangeWithMetadata{
+			Range: rng,
+		})
+	}
+
+	return nr
+}
+
 func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *structpb.ListValue {
 	if len(unresolvedRanges) > 0 {
 		cpes := []string{}
@@ -475,7 +486,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 				cpes = append(cpes, ur.Metadata.CPE)
 			}
 			urEvents := ur.Range.GetEvents()
-		
+
 			for _, e := range urEvents {
 				if e.Introduced != "0" && e.Introduced != "" {
 					events = append(events, e)

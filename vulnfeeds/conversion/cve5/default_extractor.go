@@ -56,19 +56,9 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		return true
 	}
 
-	toRangeWithMetadata := func(r []*osvschema.Range) []models.RangeWithMetadata {
-		var nr []models.RangeWithMetadata
-		for _, rng := range r {
-			nr = append(nr, models.RangeWithMetadata{
-				Range: rng,
-			})
-		}
-
-		return nr
-	}
-
+	
 	if len(ranges) != 0 {
-		if processRanges(toRangeWithMetadata(ranges)) {
+		if processRanges(c.ToRangeWithMetadata(ranges)) {
 			gotVersions = true
 			metrics.SetOutcome(models.Successful)
 		}
@@ -79,7 +69,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
-			if processRanges(toRangeWithMetadata(versionRanges)) {
+			if processRanges(c.ToRangeWithMetadata(versionRanges)) {
 				gotVersions = true
 			}
 		}

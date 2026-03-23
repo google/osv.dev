@@ -466,21 +466,47 @@ func deduplicateList(list []any) []any {
 
 func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *structpb.ListValue {
 	if len(unresolvedRanges) > 0 {
-		var unresolvedRangesMap []map[string]any
+		cpes := []string{}
+		unresolvedRangesMap := make(map[string]any)
+		var events []*osvschema.Event
+		// Create a range from all those with CPEs
 		for _, ur := range unresolvedRanges {
-			urMap := map[string]any{
-				"range": ur.Range,
-			}
 			if ur.Metadata.CPE != "" {
-				urMap["metadata"] = map[string]any{
-					"cpe": ur.Metadata.CPE,
+				cpes = append(cpes, ur.Metadata.CPE)
+			}
+			urEvents := ur.Range.GetEvents()
+		
+			for _, e := range urEvents {
+				if e.Introduced != "0" && e.Introduced != "" {
+					events = append(events, e)
+					continue
+				}
+				if e.LastAffected != "" {
+					events = append(events, e)
+					continue
+				}
+				if e.Fixed != "" {
+					events = append(events, e)
 				}
 			}
-			unresolvedRangesMap = append(unresolvedRangesMap, urMap)
 		}
 
+		if len(cpes) > 1 {
+			slices.Sort(cpes)
+			cpes = slices.Compact(cpes)
+			unresolvedRangesMap["metadata"] = map[string]any{
+				"cpes": cpes,
+			}
+		} else if len(cpes) == 1 {
+			unresolvedRangesMap["metadata"] = map[string]any{
+				"cpe": cpes[0],
+			}
+		}
+
+		unresolvedRangesMap["versions"] = events
+
 		ds, err := utility.NewStructpbFromMap(map[string]any{
-			"list": unresolvedRangesMap,
+			"list": []any{unresolvedRangesMap},
 		})
 		if err != nil {
 			logger.Warn("failed to convert unresolved ranges to structpb", "err", err)

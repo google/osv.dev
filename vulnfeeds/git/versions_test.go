@@ -354,8 +354,6 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 			},
 			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr:           false,
-			skipOnCloudBuild:  true, // observing indications of IP denylisting as at 2025-02-13
-
 		},
 	}
 	for _, tt := range tests {

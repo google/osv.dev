@@ -259,7 +259,12 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 //   - commits: A slice of affected commits to be converted into events and added to ranges.
 //   - successfulRepos: A slice of repository URLs that were successfully processed.
 //   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
-func MergeRangesAndCreateAffected(resolvedRanges []*osvschema.Range, commits []models.AffectedCommit, successfulRepos []string, metrics *models.ConversionMetrics) *osvschema.Affected {
+func MergeRangesAndCreateAffected(
+	resolvedRanges []*osvschema.Range,
+	commits []models.AffectedCommit,
+	successfulRepos []string,
+	metrics *models.ConversionMetrics,
+) *osvschema.Affected {
 	var newResolvedRanges []*osvschema.Range
 	// Combine the ranges appropriately
 	if len(resolvedRanges) > 0 {

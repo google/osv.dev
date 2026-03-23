@@ -194,7 +194,6 @@ func Repo(u string) (string, error) {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
-			// Call out to m function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
 		if parsedURL.Hostname() == "git.postgresql.org" {

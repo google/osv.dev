@@ -20,13 +20,13 @@ message Commit {
 }
 
 message Ref {
-    string ref = 1;
+    string label = 1;
     bytes hash = 2;
 }
 
 message AffectedCommitsResponse {
     repeated Commit commits = 1;
-    repeated Ref refs = 2;
+    repeated Ref tags = 2;
     repeated Event cherry_picked_events = 3;
 }
 

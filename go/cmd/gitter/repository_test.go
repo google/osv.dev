@@ -78,9 +78,9 @@ func TestBuildCommitGraph(t *testing.T) {
 		t.Errorf("expected 3 commits, got %d", len(r.commits))
 	}
 
-	// 2 tags + main branch
-	if len(r.refToCommit) != 3 {
-		t.Errorf("expected 3 refs, got %d", len(r.refToCommit))
+	// 2 tags
+	if len(r.tagToCommit) != 2 {
+		t.Errorf("expected 2 tags, got %d", len(r.tagToCommit))
 	}
 }
 

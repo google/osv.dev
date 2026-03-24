@@ -15,7 +15,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260310231102-87e523ea4513
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260324022310-df534973d091
 	github.com/sethvargo/go-retry v0.3.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.42.0
 	go.opentelemetry.io/otel v1.42.0

@@ -123,7 +123,7 @@ func repoCostBytes(repo *Repository) int64 {
 	// Mutex (8 bytes), string for repo path (say 128 bytes), root commit (assume 1 root only, 32 bytes)
 	repoOverhead := 168
 	// Assuming per commit adds:
-	// - Commit struct (Hash, PatchID, Parent []int of size 1, Refs []string)
+	// - Commit struct (Hash, PatchID, Parent []int of size 1, Tags []string)
 	//   = 20 + 20 + 24 + 8 + 24 + <string len> ~= 128 bytes
 	// - 1 pointer into []*Commit
 	//   = 8 bytes
@@ -707,17 +707,17 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := &pb.AffectedCommitsResponse{
 		Commits:            make([]*pb.Commit, 0, len(affectedCommits)),
-		Refs:               make([]*pb.Ref, 0),
+		Tags:               make([]*pb.Ref, 0),
 		CherryPickedEvents: cherryPickedEvents,
 	}
 	for _, c := range affectedCommits {
 		resp.Commits = append(resp.Commits, &pb.Commit{
 			Hash: c.Hash[:],
 		})
-		for _, ref := range c.Refs {
-			resp.Refs = append(resp.Refs, &pb.Ref{
-				Ref:  ref,
-				Hash: c.Hash[:],
+		for _, tag := range c.Tags {
+			resp.Tags = append(resp.Tags, &pb.Ref{
+				Label: tag,
+				Hash:  c.Hash[:],
 			})
 		}
 	}

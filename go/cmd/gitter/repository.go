@@ -23,7 +23,7 @@ type Commit struct {
 	Hash    SHA1
 	PatchID SHA1
 	Parents []int
-	Refs    []string
+	Tags    []string
 }
 
 // Repository holds the commit graph and other details for a git repository.
@@ -38,8 +38,8 @@ type Repository struct {
 	commitGraph [][]int
 	// Map of commit hash to its index in the commits slice
 	hashToIndex map[SHA1]int
-	// Store refs to commit because it's useful for CVE conversion
-	refToCommit map[string]int
+	// Store tags to commit index
+	tagToCommit map[string]int
 	// For cherry-pick detection: PatchID -> []commit indexes
 	patchIDToCommits map[SHA1][]int
 	// Root commits (commits with no parents)
@@ -59,7 +59,7 @@ func NewRepository(repoPath string) *Repository {
 	return &Repository{
 		repoPath:         repoPath,
 		hashToIndex:      make(map[SHA1]int),
-		refToCommit:      make(map[string]int),
+		tagToCommit:      make(map[string]int),
 		patchIDToCommits: make(map[SHA1][]int),
 	}
 }
@@ -179,20 +179,20 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 		var childHash SHA1
 		parentHashes := []SHA1{}
-		refs := []string{}
+		tags := []string{}
 
 		switch len(commitInfo) {
 		case 3:
-			// refs are separated by commas
+			// tags are separated by commas
 			rawRefs := strings.Split(commitInfo[2], ", ")
 			for _, ref := range rawRefs {
 				if ref == "" {
 					continue
 				}
-				// Remove prefixes from tags, other refs such as branches will be left as is
-				ref = strings.TrimPrefix(ref, "tag: ")
-				ref = strings.TrimPrefix(ref, "HEAD -> ") // clean up HEAD -> branch-name to just keep the branch name
-				refs = append(refs, ref)
+				// Only keep tags
+				if strings.HasPrefix(ref, "tag: ") {
+					tags = append(tags, strings.TrimPrefix(ref, "tag: "))
+				}
 			}
 
 			fallthrough
@@ -224,7 +224,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 
 		childIdx := r.getOrCreateIndex(childHash)
 		commit := r.commits[childIdx]
-		commit.Refs = refs
+		commit.Tags = tags
 
 		// We want to keep the root commit (no parent) easily accessible for introduced=0
 		if len(parentHashes) == 0 {
@@ -249,9 +249,9 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			newCommits = append(newCommits, childIdx)
 		}
 
-		// Also populate the ref-to-commit map
-		for _, ref := range refs {
-			r.refToCommit[ref] = childIdx
+		// Also populate the tag-to-commit map
+		for _, tag := range tags {
+			r.tagToCommit[tag] = childIdx
 		}
 	}
 

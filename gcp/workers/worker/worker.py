@@ -566,12 +566,19 @@ class TaskRunner:
     # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
 
-    try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
-    except UpdateConflictError:
-      # Discard changes due to conflict.
-      return
+    # Fully enrich the vulnerability object in memory.
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
+      result = None
+      logging.info(
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+    else:
+      try:
+        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                             relative_path, original_sha256)
+      except UpdateConflictError:
+        # Discard changes due to conflict.
+        return
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None

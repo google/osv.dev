@@ -38,7 +38,7 @@ class VanirSignaturesTest(unittest.TestCase):
   @mock.patch('osv.gcs.get_by_id_with_generation')
   def test_process_vulnerability_skip_existing_signatures(self, mock_get_gcs):
     """Test skipping when signatures already exist."""
-    vuln_id = 'OSV-2026-1'
+    vuln_id = 'OSV-2026-123'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     affected = vuln.affected.add()
     affected.database_specific['vanir_signatures'] = []
@@ -56,7 +56,7 @@ class VanirSignaturesTest(unittest.TestCase):
   @mock.patch('osv.gcs.get_by_id_with_generation')
   def test_process_vulnerability_skip_no_git_ranges(self, mock_get_gcs):
     """Test skipping when no GIT ranges are present."""
-    vuln_id = 'OSV-2026-1'
+    vuln_id = 'OSV-2026-123'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     vuln.affected.add()
 
@@ -94,7 +94,7 @@ class VanirSignaturesTest(unittest.TestCase):
   def test_process_vulnerability_success(self, mock_gen_signatures, mock_upload,
                                          mock_get_gcs):
     """Test successful signature generation."""
-    vuln_id = 'OSV-2026-1'
+    vuln_id = 'OSV-2026-123'
 
     # Input vulnerability
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)

@@ -511,6 +511,7 @@ class TaskRunner:
     # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
 
+    # Fully enrich the vulnerability object in memory.
     try:
       result = self._analyze_vulnerability(source_repo, repo, vulnerability,
                                            relative_path, original_sha256)

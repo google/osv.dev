@@ -4,6 +4,7 @@ patches:
 - path: workers.yaml
 - path: importer.yaml
 - path: importer-deleter.yaml
+- path: importer-reconciler.yaml
 - path: exporter.yaml
 - path: alpine-cve-convert.yaml
 - path: debian-cve-convert.yaml

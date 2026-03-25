@@ -68,6 +68,7 @@ steps:
   args: ['bash', '-ex', 'run_tests.sh']
   env:
     - DATASTORE_EMULATOR_PORT=8006
+    - GITTER_PORT=8892
   waitFor: ['init', 'sync']
 
 timeout: 7200s

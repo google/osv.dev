@@ -588,3 +588,29 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 		})
 	}
 }
+
+func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
+	cve := models.CVE5{}
+	metrics := &models.ConversionMetrics{}
+	refData := []models.Reference{
+		{URL: "https://example.com/D"},
+		{URL: "https://example.com/A"},
+		{URL: "https://example.com/C", Tags: []string{"patch"}},
+		{URL: "https://example.com/C"},
+		{URL: "https://example.com/B", Tags: []string{"issue-tracking"}},
+		{URL: "https://example.com/E"},
+	}
+
+	var firstResult []*osvschema.Reference
+	for i := range 10 {
+		vuln := FromCVE5(cve, refData, metrics, "")
+		if i == 0 {
+			firstResult = vuln.References
+			continue
+		}
+
+		if diff := cmp.Diff(firstResult, vuln.References, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
+		}
+	}
+}

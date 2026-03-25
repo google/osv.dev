@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go/secretmanager v1.16.0
 	cloud.google.com/go/storage v1.61.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.31.0
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.22.0
 	github.com/fsouza/fake-gcs-server v1.54.0
@@ -41,6 +42,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.55.0 // indirect
+	github.com/JohannesKaufmann/dom v0.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/aquasecurity/go-version v0.0.1 // indirect

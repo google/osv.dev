@@ -17,8 +17,6 @@ spec:
           - name: debian-convert
             image: debian-convert
             imagePullPolicy: Always
-            command:
-              - "/src/run_convert_debian.sh"
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"

@@ -19,6 +19,7 @@ import datetime
 import json
 import logging
 import os
+import time
 
 from google.cloud import ndb
 from google.protobuf import json_format
@@ -59,6 +60,7 @@ def _generate_vanir_signatures(
                       vulnerability.id)
     return vulnerability
 
+
 def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
   """Returns True if the affected package is a Linux kernel."""
   if affected.package.name == 'Kernel' and \
@@ -70,6 +72,7 @@ def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
     return True
 
   return False
+
 
 def process_vulnerability(vuln_id, dry_run=False, output_dir=None):
   """Process a single vulnerability to generate Vanir signatures."""
@@ -103,7 +106,8 @@ def process_vulnerability(vuln_id, dry_run=False, output_dir=None):
     logging.debug('Skipping %s as it is a Kernel vulnerability', vuln_id)
     return False
 
-  enriched_vulnerability = _generate_vanir_signatures(vulnerability)
+  # enriched_vulnerability = _generate_vanir_signatures(vulnerability)
+  enriched_vulnerability = vulnerability
 
   if original_vulnerability == enriched_vulnerability:
     logging.debug('No changes in Vanir signatures for %s', vuln_id)
@@ -164,30 +168,32 @@ def main():
   if last_run_data:
     last_run = last_run_data.value
     logging.info('Running Vanir signature generation since %s', last_run)
+    query = osv.models.Vulnerability.query(
+        osv.models.Vulnerability.modified > last_run)
   else:
-    # If there is no record of the last run, query vulnerabilities modified
-    # since one day ago to avoid processing all vulnerabilities.
-    last_run = current_run - datetime.timedelta(days=1)
-    logging.info('No last run found, querying vulnerabilities since %s.',
-                 last_run)
-
-  query = osv.models.Vulnerability.query(
-      osv.models.Vulnerability.modified > last_run)
+    logging.info('No last run found, querying all vulnerabilities.')
+    query = osv.models.Vulnerability.query()
 
   vuln_ids = [key.id() for key in query.fetch(keys_only=True)]
 
   logging.info('Found %d vulnerabilities to process', len(vuln_ids))
 
   generated_count = 0
+  start_time = time.time()
   for vuln_id in vuln_ids:
     try:
       if process_vulnerability(vuln_id, args.dry_run, args.output_dir):
         generated_count += 1
     except Exception:
       logging.exception('Error processing vulnerability %s', vuln_id)
+  end_time = time.time()
 
+  total_time = end_time - start_time
+  avg_time = total_time / len(vuln_ids) if vuln_ids else 0
   logging.info('Processed %d vulnerabilities, generated %d new signatures.',
                len(vuln_ids), generated_count)
+  logging.info('Total processing time: %.2f seconds (Avg %.4f seconds/vuln)',
+               total_time, avg_time)
 
   if args.dry_run:
     logging.info('Dry run: would have updated last_run to %s', current_run)

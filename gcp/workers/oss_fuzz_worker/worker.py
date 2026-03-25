@@ -32,7 +32,6 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
-from google.protobuf import json_format
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv

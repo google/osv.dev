@@ -15,7 +15,6 @@
 """Cron job to generate Vanir signatures for modified vulnerabilities."""
 
 import argparse
-import datetime
 import json
 import logging
 import os
@@ -106,8 +105,7 @@ def process_vulnerability(vuln_id, dry_run=False, output_dir=None):
     logging.debug('Skipping %s as it is a Kernel vulnerability', vuln_id)
     return False
 
-  # enriched_vulnerability = _generate_vanir_signatures(vulnerability)
-  enriched_vulnerability = vulnerability
+  enriched_vulnerability = _generate_vanir_signatures(vulnerability)
 
   if original_vulnerability == enriched_vulnerability:
     logging.debug('No changes in Vanir signatures for %s', vuln_id)

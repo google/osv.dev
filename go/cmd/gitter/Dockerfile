@@ -27,7 +27,7 @@ RUN CGO_ENABLED=0 go build -o gitter ./cmd/gitter/
 FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
-RUN apk add --no-cache git zstd tar
+RUN apk add --no-cache bash git zstd tar
 
 # Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
 RUN git config --system maintenance.autoDetach false

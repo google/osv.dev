@@ -4,9 +4,9 @@ go 1.26.1
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260310231102-87e523ea4513
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260324022310-df534973d091
 	golang.org/x/sync v0.20.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5
+	google.golang.org/genproto/googleapis/api v0.0.0-20260319201613-d00831a3d3e7
 	google.golang.org/grpc v1.79.3
 )
 

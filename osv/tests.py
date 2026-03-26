@@ -298,7 +298,7 @@ def setup_gitter():
     # Wait a bit for it to start (optional, but good for stability)
     # Basic check to see if it crashed immediately
     try:
-      proc.wait(timeout=1.0)
+      proc.wait(timeout=10.0)
       # If it returns, it exited
       raise RuntimeError(
           f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'

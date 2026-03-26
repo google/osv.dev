@@ -551,6 +551,7 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
+  # TODO: dummy comment
   def _generate_vanir_signatures(
       self, vulnerability: vulnerability_pb2.Vulnerability
   ) -> vulnerability_pb2.Vulnerability:

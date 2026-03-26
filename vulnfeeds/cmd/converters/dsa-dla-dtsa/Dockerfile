@@ -30,5 +30,5 @@ FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f21
 WORKDIR /src
 COPY --from=build /src/dsa-dla-dtsa ./dsa-dla-dtsa
 
-ENTRYPOINT ["/dsa-dla-dtsa"]
+ENTRYPOINT ["./dsa-dla-dtsa"]
 

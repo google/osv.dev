@@ -19,6 +19,7 @@ import os
 import shutil
 import pprint
 import signal
+import socket
 import time
 
 from proto import datetime_helpers
@@ -295,17 +296,23 @@ def setup_gitter():
   )
 
   try:
-    # Wait a bit for it to start (optional, but good for stability)
-    # Basic check to see if it crashed immediately
-    try:
-      proc.wait(timeout=15.0)
-      # If it returns, it exited
-      raise RuntimeError(
-          f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
-          f'{proc.stderr.read().decode()}')
-    except subprocess.TimeoutExpired:
-      # Process is still running
-      pass
+    # Wait for it to start
+    start = time.time()
+    while time.time() - start < 60:
+      if proc.poll() is not None:
+        # If it returns, it exited
+        raise RuntimeError(
+            f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
+            f'{proc.stderr.read().decode()}')
+
+      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(('localhost', int(gitter_port))) == 0:
+          print(f'Gitter ready in {time.time() - start:.2f}s.')
+          break
+      time.sleep(0.5)
+    else:
+      os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+      raise RuntimeError('Gitter did not get ready in time.')
 
     yield
 

@@ -52,11 +52,10 @@ func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
 	}
 
-	var versions []string
+	versions := make([]string, 0, len(data))
 	for v := range data {
 		versions = append(versions, v)
 	}
 
 	return sortVersions(e, versions)
 }
-

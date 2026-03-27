@@ -24,8 +24,8 @@ import (
 
 // fetchJSON fetches a JSON payload from the given URL and decodes it into the provided target.
 // It translates HTTP 404 into ErrPackageNotFound.
-func fetchJSON(url string, target any) error {
-	resp, err := HTTPClient.Get(url)
+func fetchJSON(urlStr string, target any) error {
+	resp, err := HTTPClient.Get(urlStr)
 	if err != nil {
 		return err
 	}
@@ -36,6 +36,7 @@ func fetchJSON(url string, target any) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %s", resp.Status)
 	}
+
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
@@ -62,10 +63,11 @@ func sortVersions(e Ecosystem, versions []string) ([]string, error) {
 		if err != nil {
 			sortErr = err
 		}
+
 		return c
 	})
 
-	var result []string
+	result := make([]string, 0, len(parsed))
 	var last string
 	for i, p := range parsed {
 		if i > 0 && p.str == last {
@@ -97,7 +99,7 @@ func getVersionsDepsDev(e Ecosystem, depsDevSystem string, pkg string) ([]string
 		return nil, fmt.Errorf("failed to get %s versions from deps.dev for %s: %w", depsDevSystem, pkg, err)
 	}
 
-	var versions []string
+	versions := make([]string, 0, len(data.Versions))
 	for _, v := range data.Versions {
 		versions = append(versions, v.VersionKey.Version)
 	}

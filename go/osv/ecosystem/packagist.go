@@ -59,7 +59,7 @@ func (e packagistEcosystem) GetVersions(pkg string) ([]string, error) {
 		return nil, ErrPackageNotFound
 	}
 
-	var versions []string
+	versions := make([]string, 0, len(packageVersions))
 	// Packagist returns raw VCS branch references (like dev-master) alongside real semantic releases.
 	// These are preserved and handled/sorted accordingly by sortVersions.
 	for _, v := range packageVersions {

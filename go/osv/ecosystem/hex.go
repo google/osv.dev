@@ -26,7 +26,7 @@ type hexEcosystem struct {
 var _ Enumerable = hexEcosystem{}
 
 func hexAPIURL(pkg string) string {
-	return fmt.Sprintf("https://hex.pm/api/packages/%s", url.PathEscape(pkg))
+	return "https://hex.pm/api/packages/" + url.PathEscape(pkg)
 }
 
 func (e hexEcosystem) GetVersions(pkg string) ([]string, error) {
@@ -48,4 +48,3 @@ func (e hexEcosystem) GetVersions(pkg string) ([]string, error) {
 
 	return sortVersions(e, versions)
 }
-

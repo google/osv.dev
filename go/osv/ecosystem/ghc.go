@@ -111,6 +111,7 @@ func tagToGHCVersion(tag string) string {
 			return parts[1]
 		}
 	}
+
 	return ""
 }
 
@@ -129,5 +130,6 @@ func isGHCMajorMinorPatch(s string) bool {
 			}
 		}
 	}
+
 	return true
 }

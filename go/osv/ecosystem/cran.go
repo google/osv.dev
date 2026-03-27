@@ -33,7 +33,6 @@ func cranAPIURL(pkg string) string {
 	return path
 }
 
-
 func (e cranEcosystem) Parse(version string) (Version, error) {
 	ver, err := semantic.ParseCRANVersion(version)
 	if err != nil {

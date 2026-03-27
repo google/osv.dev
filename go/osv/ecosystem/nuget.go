@@ -91,4 +91,3 @@ func (e nugetEcosystem) GetVersions(pkg string) ([]string, error) {
 
 	return sortVersions(e, versions)
 }
-

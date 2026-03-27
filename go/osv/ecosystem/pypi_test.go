@@ -16,7 +16,6 @@ func TestPyPI_GetVersions(t *testing.T) {
 		}
 		checkNextVersion(t, versions, "1.35.0", "1.36.0rc1")
 		checkNextVersion(t, versions, "1.36.0", "1.36.1")
-
 	})
 }
 

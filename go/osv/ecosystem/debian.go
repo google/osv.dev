@@ -25,6 +25,7 @@ import (
 
 type debianEcosystem struct {
 	dpkgEcosystem
+
 	release string
 }
 
@@ -45,6 +46,7 @@ func getDebianFirstPackageVersion(release, pkg string) (string, error) {
 	if v, ok := data[pkg]; ok {
 		return v, nil
 	}
+
 	return "0", nil
 }
 
@@ -61,7 +63,7 @@ func (e debianEcosystem) GetVersions(pkg string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get Debian versions for %s: %w", pkg, err)
 	}
 
-	var rawVersions []string
+	rawVersions := make([]string, 0, len(data.Result))
 	for _, r := range data.Result {
 		rawVersions = append(rawVersions, r.Version)
 	}
@@ -104,8 +106,8 @@ func (e debianEcosystem) GetVersions(pkg string) ([]string, error) {
 
 			return res
 		})
-		
-		// `slices.BinarySearchFunc` returns the exact match index, or the insertion 
+
+		// `slices.BinarySearchFunc` returns the exact match index, or the insertion
 		// index if not found. Slicing from this index onward cleanly drops all older versions.
 		if idx >= 0 && idx < len(sorted) {
 			sorted = sorted[idx:]

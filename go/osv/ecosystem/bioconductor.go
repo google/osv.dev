@@ -60,6 +60,7 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 			if errors.Is(err, ErrPackageNotFound) {
 				continue
 			}
+
 			return nil, fmt.Errorf("failed to get Bioconductor versions for %s: %w", pkg, err)
 		}
 		if data.Version != "" {

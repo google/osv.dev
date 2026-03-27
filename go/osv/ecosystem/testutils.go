@@ -30,6 +30,7 @@ func checkNextVersion(t *testing.T, versions []string, current, expectedNext str
 		if versions[0] != expectedNext {
 			t.Errorf("expected %s to be the first version, got %s", expectedNext, versions[0])
 		}
+
 		return
 	}
 

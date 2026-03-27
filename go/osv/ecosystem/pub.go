@@ -38,7 +38,7 @@ func (e pubEcosystem) IsSemver() bool {
 }
 
 func pubAPIURL(pkg string) string {
-	return fmt.Sprintf("https://pub.dev/api/packages/%s", url.PathEscape(pkg))
+	return "https://pub.dev/api/packages/" + url.PathEscape(pkg)
 }
 
 func (e pubEcosystem) GetVersions(pkg string) ([]string, error) {
@@ -60,4 +60,3 @@ func (e pubEcosystem) GetVersions(pkg string) ([]string, error) {
 
 	return sortVersions(e, versions)
 }
-

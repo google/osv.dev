@@ -54,11 +54,10 @@ func (e pyPIEcosystem) GetVersions(pkg string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get PyPI versions for %s: %w", pkg, err)
 	}
 
-	var versions []string
+	versions := make([]string, 0, len(data.Releases))
 	for v := range data.Releases {
 		versions = append(versions, v)
 	}
 
 	return sortVersions(e, versions)
 }
-

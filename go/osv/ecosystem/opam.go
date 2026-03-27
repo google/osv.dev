@@ -16,7 +16,6 @@ package ecosystem
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -34,8 +33,8 @@ type githubContent struct {
 func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 	// TODO(michaelkedar): these unauthenticated GitHub API requests have a rate limit of 60/hr.
 	// If we enable this, we'd probably want to add some auth key to our workers.
-	url1 := fmt.Sprintf("https://api.github.com/repos/ocaml/opam-repository/contents/packages/%s", pkg)
-	url2 := fmt.Sprintf("https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/%s", pkg)
+	url1 := "https://api.github.com/repos/ocaml/opam-repository/contents/packages/" + pkg
+	url2 := "https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/" + pkg
 
 	var list1, list2 []githubContent
 	err1 := fetchJSON(url1, &list1)
@@ -77,4 +76,3 @@ func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 
 	return sortVersions(e, versions)
 }
-

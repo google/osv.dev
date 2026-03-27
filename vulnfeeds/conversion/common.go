@@ -499,31 +499,37 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		return nil
 	}
 
-	rangesBySource := make(map[string][]models.RangeWithMetadata)
-	var sources []string
-	for _, ur := range unresolvedRanges {
-		sourceStr := string(ur.Metadata.Source)
-		if _, ok := rangesBySource[sourceStr]; !ok {
-			sources = append(sources, sourceStr)
-		}
-		rangesBySource[sourceStr] = append(rangesBySource[sourceStr], ur)
+	type key struct {
+		Source string
+		CPE    string
 	}
 
-	slices.Sort(sources)
+	rangesByKey := make(map[key][]models.RangeWithMetadata)
+	var keys []key
 
-	listElements := make([]any, 0, len(sources))
+	for _, ur := range unresolvedRanges {
+		k := key{Source: string(ur.Metadata.Source), CPE: ur.Metadata.CPE}
+		if _, ok := rangesByKey[k]; !ok {
+			keys = append(keys, k)
+		}
+		rangesByKey[k] = append(rangesByKey[k], ur)
+	}
 
-	for _, source := range sources {
-		ranges := rangesBySource[source]
-		cpes := []string{}
+	slices.SortFunc(keys, func(a, b key) int {
+		if a.Source != b.Source {
+			return strings.Compare(a.Source, b.Source)
+		}
+		return strings.Compare(a.CPE, b.CPE)
+	})
+
+	listElements := make([]any, 0, len(keys))
+
+	for _, k := range keys {
+		ranges := rangesByKey[k]
 		unresolvedRangesMap := make(map[string]any)
 		var events []*osvschema.Event
 
-		// Create a range from all those with CPEs
 		for _, ur := range ranges {
-			if ur.Metadata.CPE != "" {
-				cpes = append(cpes, ur.Metadata.CPE)
-			}
 			urEvents := ur.Range.GetEvents()
 
 			for _, e := range urEvents {
@@ -542,16 +548,11 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		}
 
 		metadata := make(map[string]any)
-		if len(cpes) > 1 {
-			slices.Sort(cpes)
-			cpes = slices.Compact(cpes)
-			metadata["cpes"] = cpes
-		} else if len(cpes) == 1 {
-			metadata["cpe"] = cpes[0]
+		if k.CPE != "" {
+			metadata["cpe"] = k.CPE
 		}
-
-		if source != "" {
-			metadata["source"] = source
+		if k.Source != "" {
+			metadata["source"] = k.Source
 		}
 
 		if len(metadata) > 0 {

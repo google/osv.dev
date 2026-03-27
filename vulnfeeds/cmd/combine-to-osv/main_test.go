@@ -3,13 +3,16 @@ package main
 import (
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -428,4 +431,39 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {
 		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestCombineDirsSnapshot(t *testing.T) {
+	cve5Path := "cve5"
+	nvdPath := "nvd"
+
+	cve5osv := loadOSV(cve5Path)
+	nvdosv := loadOSV(nvdPath)
+
+	// Since combineIntoOSV modifies nvdosv, make a copy to avoid side effects
+	nvdosvCopy := make(map[models.CVEID]*osvschema.Vulnerability)
+	for k, v := range nvdosv {
+		nvdosvCopy[k] = v
+	}
+
+	combined := combineIntoOSV(cve5osv, nvdosvCopy, nil)
+
+	// Sort by ID to ensure deterministic snapshot
+	var keys []string
+	for k := range combined {
+		keys = append(keys, string(k))
+	}
+	sort.Strings(keys)
+
+	var output []string
+	for _, k := range keys {
+		v := combined[models.CVEID(k)]
+		file, err := protojson.Marshal(v)
+		if err != nil {
+			t.Fatalf("Failed to marshal %s: %v", k, err)
+		}
+		output = append(output, string(file))
+	}
+
+	snaps.MatchSnapshot(t, strings.Join(output, "\n"))
 }

@@ -625,3 +625,19 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 
 	return r, un, sR
 }
+
+
+func LoadCPEDictionary(productToRepo *VPRepoCache, f string) error {
+	data, err := os.ReadFile(f)
+	if err != nil {
+		return err
+	}
+
+	var tempMap VendorProductToRepoMap
+	if err := json.Unmarshal(data, &tempMap); err != nil {
+		return err
+	}
+	productToRepo.Initialize(tempMap)
+
+	return nil
+}

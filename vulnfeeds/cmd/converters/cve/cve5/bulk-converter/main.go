@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/conversion/cve5"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
@@ -119,8 +119,8 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, outDir string, cnas []string
 		cveID := cve.Metadata.CVEID
 		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
 
-		osvFile, errCVE := conversion.CreateOSVFile(cveID, outDir)
-		metricsFile, errMetrics := conversion.CreateMetricsFile(cveID, outDir)
+		osvFile, errCVE := writer.CreateOSVFile(cveID, outDir)
+		metricsFile, errMetrics := writer.CreateMetricsFile(cveID, outDir)
 		if errCVE != nil || errMetrics != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 		}

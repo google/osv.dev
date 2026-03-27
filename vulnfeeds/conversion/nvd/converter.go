@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -24,21 +25,17 @@ var ErrNoRanges = errors.New("no ranges")
 
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
-// CVEToOSV Takes an NVD CVE record and outputs an OSV file in the specified directory.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) models.ConversionOutcome {
+// CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
+func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
-	maybeVendorName := "ENOCPE"
-	maybeProductName := "ENOCPE"
 
 	if len(CPEs) > 0 {
-		CPE, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
-		maybeVendorName = CPE.Vendor
-		maybeProductName = CPE.Product
+		_, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		if err != nil {
 			metrics.AddNote("Can't generate an OSV record without valid CPE data")
-			return models.ConversionUnknown
+			return nil, metrics, models.ConversionUnknown
 		}
 	}
 
@@ -52,9 +49,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
 		metrics.SetOutcome(models.NoRepos)
-		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
-
-		return models.NoRepos
+		return v, metrics, models.NoRepos
 	}
 
 	successfulRepos := make(map[string]bool)
@@ -67,15 +62,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		affected := MergeRangesAndCreateAffected(resolvedRanges, cpeRanges, nil, nil, metrics)
 		v.Affected = append(v.Affected, affected)
 		// Exit early
-		outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
-
-		return models.NoRepos
+		return v, metrics, models.NoRepos
 	}
 
 	// If we have ranges, try to resolve them
 	r, un, sR := processRanges(cpeRanges, repos, metrics, cache, models.VersionSourceCPE)
 	if metrics.Outcome == models.Error {
-		return models.Error
+		return nil, metrics, models.Error
 	}
 	resolvedRanges = append(resolvedRanges, r...)
 	unresolvedRanges = append(unresolvedRanges, un...)
@@ -105,7 +98,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		}
 		r, un, sR := processRanges(textRanges, repos, metrics, cache, models.VersionSourceDescription)
 		if metrics.Outcome == models.Error {
-			return models.Error
+			return nil, metrics, models.Error
 		}
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
@@ -115,7 +108,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	}
 
 	if len(resolvedRanges) == 0 && len(commits) == 0 {
-		metrics.AddNote("No ranges detected for %q", maybeProductName)
+		metrics.AddNote("No ranges detected")
 		metrics.SetOutcome(models.NoRanges)
 	}
 
@@ -124,13 +117,11 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	affected := MergeRangesAndCreateAffected(resolvedRanges, unresolvedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected)
 
-	if metrics.Outcome == models.Error || (!outputMetrics && rejectFailed && metrics.Outcome != models.Successful) {
-		return metrics.Outcome
+	if metrics.Outcome == models.Error {
+		return nil, metrics, metrics.Outcome
 	}
 
-	outputFiles(v, directory, maybeVendorName, maybeProductName, metrics, rejectFailed, outputMetrics)
-
-	return metrics.Outcome
+	return v, metrics, metrics.Outcome
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
@@ -229,11 +220,11 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 
 	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
 
-	metricsFile, err := c.CreateMetricsFile(cve.ID, vulnDir)
+	metricsFile, err := writer.CreateMetricsFile(cve.ID, vulnDir)
 	if err != nil {
 		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}
-	err = c.WriteMetricsFile(metrics, metricsFile)
+	err = writer.WriteMetricsFile(metrics, metricsFile)
 	if err != nil {
 		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
 	}
@@ -446,52 +437,6 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	}
 
 	return nil
-}
-
-// outputFiles writes the OSV vulnerability record and conversion metrics to files in the specified directory.
-// It creates the necessary subdirectories based on the vendor and product names and handles whether or not
-// the files should be written based on the rejectFailed and outputMetrics flags.
-//
-// Arguments:
-//   - v: The OSV Vulnerability object to be written to a file.
-//   - dir: The base directory where the output files should be created.
-//   - vendor: The vendor name used to create the subdirectory.
-//   - product: The product name used to create the subdirectory.
-//   - metrics: A pointer to ConversionMetrics to be written to a metrics file.
-//   - rejectFailed: A boolean indicating whether to skip writing the OSV file if the conversion was not successful.
-//   - outputMetrics: A boolean indicating whether to write the metrics file.
-func outputFiles(v *vulns.Vulnerability, dir string, vendor string, product string, metrics *models.ConversionMetrics, rejectFailed bool, outputMetrics bool) {
-	cveID := v.Id
-	vulnDir := filepath.Join(dir, vendor, product)
-
-	if err := os.MkdirAll(vulnDir, 0755); err != nil {
-		logger.Info("Failed to create directory "+vulnDir, slog.String("cve", cveID), slog.String("path", vulnDir), slog.Any("err", err))
-	}
-
-	if metrics.Outcome == models.Error {
-		return
-	}
-
-	if !rejectFailed || metrics.Outcome == models.Successful {
-		osvFile, errCVE := c.CreateOSVFile(models.CVEID(cveID), vulnDir)
-		if errCVE != nil {
-			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
-		}
-		if err := v.ToJSON(osvFile); err != nil {
-			logger.Error("Failed to write", slog.Any("err", err))
-		}
-		osvFile.Close()
-	}
-	if outputMetrics {
-		metricsFile, errMetrics := c.CreateMetricsFile(models.CVEID(cveID), vulnDir)
-		if errMetrics != nil {
-			logger.Fatal("File failed to be created for CVE", slog.String("cve", cveID))
-		}
-		if err := c.WriteMetricsFile(metrics, metricsFile); err != nil {
-			logger.Error("Failed to write metrics", slog.Any("err", err))
-		}
-		metricsFile.Close()
-	}
 }
 
 // processRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.

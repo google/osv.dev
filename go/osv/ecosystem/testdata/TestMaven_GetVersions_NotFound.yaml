@@ -1,0 +1,39 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.deps.dev
+        url: https://api.deps.dev/v3alpha/systems/maven/packages/doesnotexist:doesnotexist
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: -1
+        uncompressed: true
+        body: package not found
+        headers:
+            Access-Control-Allow-Origin:
+                - '*'
+            Alt-Svc:
+                - h3=":443"; ma=2592000
+            Cache-Control:
+                - public, max-age=3600
+            Content-Type:
+                - text/plain; charset=utf-8
+            Date:
+                - Fri, 27 Mar 2026 03:18:57 GMT
+            Strict-Transport-Security:
+                - max-age=2592000; includeSubDomains
+            Vary:
+                - Accept-Encoding
+            Via:
+                - 1.1 google
+        status: 404 Not Found
+        code: 404
+        duration: 114.64665ms

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 )
 
@@ -75,4 +76,31 @@ func sortVersions(e Ecosystem, versions []string) ([]string, error) {
 	}
 
 	return result, sortErr
+}
+
+// getVersionsDepsDev enumerates versions for a package using the deps.dev API.
+func getVersionsDepsDev(e Ecosystem, depsDevSystem string, pkg string) ([]string, error) {
+	urlStr := fmt.Sprintf("https://api.deps.dev/v3alpha/systems/%s/packages/%s",
+		url.PathEscape(depsDevSystem),
+		url.PathEscape(pkg),
+	)
+
+	var data struct {
+		Versions []struct {
+			VersionKey struct {
+				Version string `json:"version"`
+			} `json:"versionKey"`
+		} `json:"versions"`
+	}
+
+	if err := fetchJSON(urlStr, &data); err != nil {
+		return nil, fmt.Errorf("failed to get %s versions from deps.dev for %s: %w", depsDevSystem, pkg, err)
+	}
+
+	var versions []string
+	for _, v := range data.Versions {
+		versions = append(versions, v.VersionKey.Version)
+	}
+
+	return sortVersions(e, versions)
 }

@@ -23,19 +23,19 @@ interactions:
             Cache-Control:
                 - no-cache
             Content-Security-Policy:
-                - 'default-src ''self''; font-src ''self'' https://fonts.gstatic.com; img-src ''self'' data: https://secure.gaug.es https://gravatar.com https://www.gravatar.com https://secure.gravatar.com https://*.fastly-insights.com https://avatars.githubusercontent.com; object-src ''none''; script-src ''self'' ''sha256-9EBfxVMN/BoeWg+kw0DmYbS6+sgN+bxpIyhYlKuhxTg='' https://secure.gaug.es https://www.fastly-insights.com ''nonce-ebf3a831368aaebf99ad7acf60eb0950''; style-src ''self'' ''unsafe-inline'' https://fonts.googleapis.com; connect-src ''self'' https://s3-us-west-2.amazonaws.com/rubygems-dumps/ https://*.fastly-insights.com https://fastly-insights.com https://api.github.com http://localhost:*; form-action ''self'' https://github.com/login/oauth/authorize; frame-ancestors ''self''; base-uri ''self''; report-uri https://csp-report.browser-intake-datadoghq.com/api/v2/logs?dd-api-key=pub852fa3e2312391fafa5640b60784e660&dd-evp-origin=content-security-policy&ddsource=csp-report&ddtags=service%3Arubygems.org%2Cversion%3Abaf4f2952e4bad3422c41c92271f585af520ba6c%2Cenv%3Aproduction%2Ctrace_id%3A69b8c574000000002901c6326c4cbc15'
+                - 'default-src ''self''; font-src ''self'' https://fonts.gstatic.com; img-src ''self'' data: https://secure.gaug.es https://gravatar.com https://www.gravatar.com https://secure.gravatar.com https://*.fastly-insights.com https://avatars.githubusercontent.com; object-src ''none''; script-src ''self'' ''sha256-9EBfxVMN/BoeWg+kw0DmYbS6+sgN+bxpIyhYlKuhxTg='' https://secure.gaug.es https://www.fastly-insights.com ''nonce-6b4b5e676fa40a31182f74fa8c55d8ac''; style-src ''self'' ''unsafe-inline'' https://fonts.googleapis.com; connect-src ''self'' https://s3-us-west-2.amazonaws.com/rubygems-dumps/ https://*.fastly-insights.com https://fastly-insights.com https://api.github.com http://localhost:*; form-action ''self'' https://github.com/login/oauth/authorize; frame-ancestors ''self''; base-uri ''self''; report-uri https://csp-report.browser-intake-datadoghq.com/api/v2/logs?dd-api-key=pub852fa3e2312391fafa5640b60784e660&dd-evp-origin=content-security-policy&ddsource=csp-report&ddtags=service%3Arubygems.org%2Cversion%3A37b5138a988ac43cba1888d817c41fd682d33db7%2Cenv%3Aproduction%2Ctrace_id%3A69c5f73f0000000023fa40c9da865aed'
             Content-Type:
                 - text/plain; charset=utf-8
             Cross-Origin-Opener-Policy:
                 - same-origin
             Date:
-                - Tue, 17 Mar 2026 03:07:32 GMT
+                - Fri, 27 Mar 2026 03:19:28 GMT
             Referrer-Policy:
                 - strict-origin-when-cross-origin
             Server:
                 - RubyGems.org
             Set-Cookie:
-                - _rubygems_session=msaJ5lXUJGyfEHSfjjWObpu0HL7LhILm%2BCpwwRE2HIMZFkjDUAUgcGy8QJKpNepdPIClYcWtRmakWilr8N7n5weHyOnpyc9dR33kVQtRYnpFpSs%2FFUkeMX7VIZIUmG%2FZsOsY%2BkD07Ky9ubkVvB%2FaXw1j2WEAFhQH6vGvrO%2FpbAvgREvDb3fyfr4%3D--CqirYqcxjcN4QIP5--dvODeraHF%2B91qq%2FesI28HQ%3D%3D; path=/; secure; httponly; samesite=strict
+                - _rubygems_session=LtRKzt%2Bw0ySdVQRtnlFBi0qzuoAKcq6%2FC2xNmwr5TWCNkwCq9vwOMhdNxaFqMnKKsRKhS%2FnJZGGIOHW53PSj3ZSoqRYZfosFPUlhxTUZO4%2FLEK%2BLoIHBsMxvNo2CvnVn4YAKrI2yxOSGplxlJEZ1QyhP2vS0QtAkUbEiOQtUe1YLjMgPCNYWITE%3D--Y7ojdShTVJpJijFl--uAUysOwhBLF8x6Qx6Ps%2FUg%3D%3D; path=/; secure; httponly; samesite=strict
             Strict-Transport-Security:
                 - max-age=31536000; includeSubDomains
             Vary:
@@ -43,7 +43,7 @@ interactions:
             Via:
                 - 1.1 varnish
             X-Backend:
-                - F_Rails 44.227.228.243:443
+                - F_Rails 34.210.218.166:443
             X-Cache:
                 - MISS
             X-Cache-Hits:
@@ -55,15 +55,15 @@ interactions:
             X-Permitted-Cross-Domain-Policies:
                 - none
             X-Request-Id:
-                - 37d6173d-73cc-493c-9fcd-e3134c13e385
+                - 06d31c6e-196a-4f11-b5b0-2186df63710d
             X-Runtime:
-                - "0.004854"
+                - "0.004342"
             X-Served-By:
-                - cache-wsi-ysbk1060089-WSI
+                - cache-wsi-ysbk1060051-WSI
             X-Timer:
-                - S1773716852.183247,VS0,VE162
+                - S1774581568.847497,VS0,VE163
             X-Xss-Protection:
                 - "0"
         status: 404 Not Found
         code: 404
-        duration: 165.207726ms
+        duration: 165.275479ms

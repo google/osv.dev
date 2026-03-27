@@ -23,17 +23,17 @@ interactions:
             Cdn-Cache:
                 - MISS
             Cdn-Cachedat:
-                - 03/19/2026 05:09:59
+                - 03/27/2026 03:19:24
             Cdn-Edgestorageid:
                 - "980"
             Cdn-Proxyver:
-                - "1.47"
+                - "1.49"
             Cdn-Pullzone:
                 - "3363232"
             Cdn-Requestcountrycode:
                 - AU
             Cdn-Requestid:
-                - a98b86fffd3ac4a7cab2725c58b57e4e
+                - 35ddd6d4321169b4ac4bb3f84f49d590
             Cdn-Requestpullcode:
                 - "404"
             Cdn-Requestpullsuccess:
@@ -47,11 +47,11 @@ interactions:
             Content-Type:
                 - application/json
             Date:
-                - Thu, 19 Mar 2026 05:09:59 GMT
+                - Fri, 27 Mar 2026 03:19:24 GMT
             Etag:
-                - '"69bac605-22"'
+                - '"69c40afd-22"'
             Server:
-                - BunnyCDN-SG1-782
+                - BunnyCDN-SG1-1173
         status: 404 Not Found
         code: 404
-        duration: 754.493814ms
+        duration: 763.68777ms

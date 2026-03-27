@@ -2,6 +2,7 @@ package ecosystem
 
 import (
 	"errors"
+	"slices"
 	"testing"
 )
 
@@ -18,6 +19,19 @@ func TestPackagist_GetVersions(t *testing.T) {
 			t.Errorf("GetVersions() returned 0 versions")
 		}
 		checkNextVersion(t, versions, "1.0.0", "1.0.1")
+	})
+
+	t.Run("neos/neos", func(t *testing.T) {
+		versions, err := e.GetVersions("neos/neos")
+		if err != nil {
+			t.Fatalf("GetVersions() err = %v", err)
+		}
+		expected := []string{"4.3.19", "4.2.18", "3.3.1", "3.3.0"}
+		for _, ex := range expected {
+			if !slices.Contains(versions, ex) {
+				t.Errorf("expected versions to contain %s", ex)
+			}
+		}
 	})
 }
 

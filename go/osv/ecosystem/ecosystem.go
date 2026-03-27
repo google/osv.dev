@@ -60,6 +60,11 @@ func statelessFactory[E Ecosystem](_ string) Ecosystem {
 	return e
 }
 
+// debianFactory returns a factory that injects the release suffix.
+func debianFactory(suffix string) Ecosystem {
+	return debianEcosystem{release: suffix}
+}
+
 var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemAlmaLinux:                  statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemAlpaquita:                  statelessFactory[apkEcosystem],
@@ -71,7 +76,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemCleanStart:                 statelessFactory[apkEcosystem],
 	osvconstants.EcosystemCRAN:                       statelessFactory[cranEcosystem],
 	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
-	osvconstants.EcosystemDebian:                     statelessFactory[debianEcosystem],
+	osvconstants.EcosystemDebian:                     debianFactory,
 	osvconstants.EcosystemDockerHardenedImages:       statelessFactory[semverEcosystem],
 	osvconstants.EcosystemEcho:                       statelessFactory[dpkgEcosystem],
 	osvconstants.EcosystemGHC:                        statelessFactory[ghcEcosystem],

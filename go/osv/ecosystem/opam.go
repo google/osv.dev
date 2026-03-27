@@ -32,6 +32,8 @@ type githubContent struct {
 }
 
 func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
+	// TODO(michaelkedar): these unauthenticated GitHub API requests have a rate limit of 60/hr.
+	// If we enable this, we'd probably want to add some auth key to our workers.
 	url1 := fmt.Sprintf("https://api.github.com/repos/ocaml/opam-repository/contents/packages/%s", pkg)
 	url2 := fmt.Sprintf("https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/%s", pkg)
 

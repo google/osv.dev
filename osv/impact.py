@@ -29,9 +29,11 @@ import pygit2
 import pygit2.enums
 
 from . import ecosystems
+from . import gitter_client
 from . import repos
 from . import models
 from . import vulnerability_pb2
+from . import repository_pb2
 
 TAG_PREFIX = 'refs/tags/'
 BRANCH_PREFIX = 'refs/remotes/'
@@ -539,7 +541,8 @@ def update_affected_commits(bug_id, commits, public):
         public=public,
         page=num_pages)
     affected_commits.commits = [
-        codecs.decode(commit, 'hex') for commit in batch
+        commit if isinstance(commit, bytes) else codecs.decode(commit, 'hex')
+        for commit in batch
     ]
     to_put.append(affected_commits)
     num_pages += 1
@@ -651,13 +654,39 @@ def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
   Returns:
     A tuple of the set of new_versions and commits
   """
-  package_repo = None
+  if repos.gitter_host():
+    try:
+      versions, new_commits, cherries = gitter_client.get_affected_commits(
+          affected_range, detect_cherrypicks=repo_analyzer.detect_cherrypicks)
+      new_versions.update(versions)
+      commits.update(new_commits)
+      for cherry in cherries:
+        if cherry.event_type == repository_pb2.EventType.INTRODUCED:
+          new_introduced.add(cherry.hash)
+        elif cherry.event_type == repository_pb2.EventType.FIXED:
+          new_fixed.add(cherry.hash)
+      return new_versions, commits
+    except repos.RepoInaccessibleError:
+      # expected error, handled by the caller
+      raise
+    except Exception as e:
+      # logging an error and raising may be noisy.
+      logging.error(
+          'Failed to get affected commits from gitter: %s',
+          e,
+          extra={'json_fields': {
+              'repo_url': affected_range.repo
+          }},
+      )
+      raise
 
+  logging.warning('GITTER_HOST not set, falling back to legacy enumeration.')
   with tempfile.TemporaryDirectory() as package_repo_dir:
     # We'd prefer to only download the commit history, but detect_cherrypicks
     # requires having the blobs available to function correctly.
     blobless = not repo_analyzer.detect_cherrypicks
     repo_name = os.path.basename(affected_range.repo.rstrip('/')).rstrip('.git')
+    package_repo = None
     if checkout_path:
       # Repo name is <base-name>-<sha256(affected_range.repo)>.
       repo_hash = hashlib.sha256(affected_range.repo.encode()).hexdigest()

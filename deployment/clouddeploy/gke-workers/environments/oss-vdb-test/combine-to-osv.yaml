@@ -3,7 +3,6 @@ kind: CronJob
 metadata:
   name: combine-to-osv
 spec:
-  suspend: true
   jobTemplate:
     spec:
       template:

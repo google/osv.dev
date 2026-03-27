@@ -3,6 +3,7 @@ resources:
 - scaler.yaml
 - importer.yaml
 - importer-deleter.yaml
+- importer-reconciler.yaml
 - exporter.yaml
 - alpine-cve-convert.yaml
 - debian-cve-convert.yaml

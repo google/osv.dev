@@ -183,3 +183,13 @@ resource "google_compute_disk" "gitter_disk" {
   zone    = google_container_cluster.workers.location
   size    = 4096
 }
+
+# SSD for Importer Reconciler
+resource "google_compute_disk" "importer_reconciler_git_cache" {
+  project = var.project_id
+  name    = "importer-reconciler-git-cache"
+  type    = "pd-ssd"
+  zone    = google_container_cluster.workers.location
+  size    = 200
+}
+

@@ -14,6 +14,7 @@
 """Tests for vanir_signatures."""
 
 import unittest
+import datetime
 from unittest import mock
 
 from google.cloud import ndb
@@ -36,42 +37,23 @@ class VanirSignaturesTest(unittest.TestCase):
     self.emulator.reset()
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
-  def test_process_vulnerability_skip_existing_signatures(self, mock_get_gcs):
-    """Test skipping when signatures already exist."""
-    vuln_id = 'OSV-2026-123'
-    vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
-    affected = vuln.affected.add()
-    affected.database_specific['vanir_signatures'] = []
-    affected.ranges.add(
-        type=vulnerability_pb2.Range.GIT, repo='https://example.com/repo')
-
-    mock_get_gcs.return_value = (vuln, '123')
-
-    with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_vulnerability(vuln_id)
-      self.assertFalse(result)
-      self.assertTrue(
-          any('already has Vanir signatures' in log for log in cm.output))
-
-  @mock.patch('osv.gcs.get_by_id_with_generation')
-  def test_process_vulnerability_skip_no_git_ranges(self, mock_get_gcs):
+  def test_process_batch_skip_no_git_ranges(self, mock_get_gcs):
     """Test skipping when no GIT ranges are present."""
-    vuln_id = 'OSV-2026-123'
+    vuln_id = 'VULN-1'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     vuln.affected.add()
 
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_vulnerability(vuln_id)
-      self.assertFalse(result)
-      self.assertTrue(
-          any('has no GIT affected ranges' in log for log in cm.output))
+      result = vanir_signatures.process_batch([vuln_id])
+      self.assertEqual(result, 0)
+      self.assertTrue(any('no GIT affected ranges' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
-  def test_process_vulnerability_skip_kernel(self, mock_get_gcs):
+  def test_process_batch_skip_kernel(self, mock_get_gcs):
     """Test skipping kernel vulnerabilities."""
-    vuln_id = 'CVE-2023-1234'
+    vuln_id = 'VULN-1'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     affected = vuln.affected.add()
     affected.package.name = 'Kernel'
@@ -83,18 +65,18 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_vulnerability(vuln_id)
-      self.assertFalse(result)
+      result = vanir_signatures.process_batch([vuln_id])
+      self.assertEqual(result, 0)
       self.assertTrue(
           any('is a Kernel vulnerability' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
   @mock.patch('osv.gcs.upload_vulnerability')
-  @mock.patch('vanir_signatures._generate_vanir_signatures')
-  def test_process_vulnerability_success(self, mock_gen_signatures, mock_upload,
-                                         mock_get_gcs):
+  @mock.patch('vanir_signatures._generate_vanir_signatures_batch')
+  def test_process_batch_success(self, mock_gen_signatures, mock_upload,
+                                 mock_get_gcs):
     """Test successful signature generation."""
-    vuln_id = 'OSV-2026-123'
+    vuln_id = 'VULN-1'
 
     # Input vulnerability
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
@@ -110,21 +92,57 @@ class VanirSignaturesTest(unittest.TestCase):
     enriched_vuln.affected[0].database_specific['vanir_signatures'] = [{
         'id': 'sig1'
     }]
-    mock_gen_signatures.return_value = enriched_vuln
+    mock_gen_signatures.return_value = {vuln_id: [enriched_vuln]}
 
     # Setup Datastore Bug
     bug = osv.Bug(id=vuln_id, db_id=vuln_id, source='test')
     bug.put()
 
-    result = vanir_signatures.process_vulnerability(vuln_id)
+    result = vanir_signatures.process_batch([vuln_id])
 
-    self.assertTrue(result)
+    self.assertEqual(result, 1)
     mock_upload.assert_called_once()
+    mock_gen_signatures.assert_called_once_with([vuln])
 
     # Verify Datastore update
     updated_bug = osv.Bug.get_by_id(vuln_id)
     self.assertIn('vanir_signatures',
                   updated_bug.affected_packages[0].database_specific)
+
+  @mock.patch('osv.models.Vulnerability.query')
+  @mock.patch('vanir_signatures.process_batch')
+  def test_global_batching(self, mock_process_batch, mock_vuln_query):
+    """Test performing global batching of all found vulnerabilities."""
+    # Mock Vulnerability query with 150 items
+    vuln_keys = [mock.Mock() for _ in range(150)]
+    for i, k in enumerate(vuln_keys):
+      k.id.return_value = f'VULN-{i}'
+
+    mock_query = mock.Mock()
+    mock_vuln_query.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.iter.return_value = vuln_keys
+
+    mock_process_batch.return_value = 10
+
+    # Run main with dry-run and batch_size=100
+    with mock.patch(
+        'argparse.ArgumentParser.parse_args',
+        return_value=mock.Mock(
+            dry_run=True, batch_size=100, max_workers=20, hours=None)):
+      vanir_signatures.main()
+
+    # Verify process_batch was called for each chunk (BATCH_SIZE=100)
+    # 150 items -> 2 batches
+    self.assertEqual(mock_process_batch.call_count, 2)
+
+    # First batch of 100
+    expected_batch1 = [f'VULN-{i}' for i in range(100)]
+    mock_process_batch.assert_any_call(expected_batch1, True, 20)
+
+    # Second batch of 50
+    expected_batch2 = [f'VULN-{i}' for i in range(100, 150)]
+    mock_process_batch.assert_any_call(expected_batch2, True, 20)
 
 
 if __name__ == '__main__':

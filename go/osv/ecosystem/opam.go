@@ -26,6 +26,7 @@ type opamEcosystem struct {
 var _ Ecosystem = opamEcosystem{}
 
 // Opam disables the Enumerable ecosystem interface as the record is pre-enumerated on import.
+// var _ Enumerable = opamEcosystem{}
 type githubContent struct {
 	Name string `json:"name"`
 }

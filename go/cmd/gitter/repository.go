@@ -511,12 +511,12 @@ func (r *Repository) expandByCherrypick(commits []int) []int {
 
 // findAncestorRoots returns the subset of r.rootCommits that are ancestors of any of the input commits.
 // It performs a BFS from the input fix commits to find reachable roots.
-func (r *Repository) findAncestorRoots(commits []int) []int {
+func (r *Repository) findAncestorRoots(from []int) []int {
 	visited := make([]bool, len(r.commits))
-	queue := make([]int, 0, len(commits))
+	queue := make([]int, 0, len(from))
 	foundRoots := make([]int, 0, len(r.rootCommits))
 
-	for _, idx := range commits {
+	for _, idx := range from {
 		if !visited[idx] {
 			visited[idx] = true
 			queue = append(queue, idx)
@@ -529,7 +529,6 @@ func (r *Repository) findAncestorRoots(commits []int) []int {
 			break
 		}
 
-		// Pop the next commit (FIFO queue behavior)
 		curr := queue[0]
 		queue = queue[1:]
 
@@ -540,7 +539,7 @@ func (r *Repository) findAncestorRoots(commits []int) []int {
 		for _, pIdx := range r.commits[curr].Parents {
 			if !visited[pIdx] {
 				visited[pIdx] = true
-				queue = append(queue, pIdx) // Push unvisited parents to queue
+				queue = append(queue, pIdx)
 			}
 		}
 	}
@@ -567,9 +566,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 	allFixes = append(allFixes, fixed...)
 	for _, idx := range lastAffected {
 		if idx < len(r.commitGraph) {
-			for _, childIdx := range r.commitGraph[idx] {
-				allFixes = append(allFixes, childIdx)
-			}
+			allFixes = append(allFixes, r.commitGraph[idx]...)
 		}
 	}
 

@@ -265,7 +265,8 @@
         "MGASA-2026-0015",
         "SUSE-SU-2026:0287-1",
         "SUSE-SU-2026:20762-1",
-        "openSUSE-SU-2026:10065-1"
+        "openSUSE-SU-2026:10065-1",
+        "openSUSE-SU-2026:20409-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -2915,7 +2916,8 @@
         "SUSE-SU-2026:20668-1",
         "SUSE-SU-2026:20722-1",
         "SUSE-SU-2026:20760-1",
-        "openSUSE-SU-2026:10371-1"
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
       ],
       "references": [
         {
@@ -2971,7 +2973,8 @@
         "SUSE-SU-2026:20668-1",
         "SUSE-SU-2026:20722-1",
         "SUSE-SU-2026:20760-1",
-        "openSUSE-SU-2026:10371-1"
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
       ],
       "references": [
         {
@@ -3035,7 +3038,8 @@
         "SUSE-SU-2026:20668-1",
         "SUSE-SU-2026:20722-1",
         "SUSE-SU-2026:20760-1",
-        "openSUSE-SU-2026:10371-1"
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
       ],
       "references": [
         {

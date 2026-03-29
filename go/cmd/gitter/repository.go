@@ -7,9 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -516,7 +514,7 @@ func (r *Repository) expandByCherrypick(commits []int) []int {
 func (r *Repository) findAncestorRoots(commits []int) []int {
 	visited := make([]bool, len(r.commits))
 	queue := make([]int, 0, len(commits))
-	foundRoots := make(map[int]bool)
+	foundRoots := make([]int, 0, len(r.rootCommits))
 
 	for _, idx := range commits {
 		if !visited[idx] {
@@ -536,7 +534,7 @@ func (r *Repository) findAncestorRoots(commits []int) []int {
 		queue = queue[1:]
 
 		if len(r.commits[curr].Parents) == 0 {
-			foundRoots[curr] = true
+			foundRoots = append(foundRoots, curr)
 		}
 
 		for _, pIdx := range r.commits[curr].Parents {
@@ -546,8 +544,8 @@ func (r *Repository) findAncestorRoots(commits []int) []int {
 			}
 		}
 	}
-	
-	return slices.Collect(maps.Keys(foundRoots))
+
+	return foundRoots
 }
 
 // resolveEvents parses and expands SeparatedEvents into lists of introduced and fixed commits

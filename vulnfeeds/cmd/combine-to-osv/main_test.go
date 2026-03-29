@@ -449,13 +449,13 @@ func TestCombineDirsSnapshot(t *testing.T) {
 	combined := combineIntoOSV(cve5osv, nvdosvCopy, nil)
 
 	// Sort by ID to ensure deterministic snapshot
-	var keys []string
+	keys := make([]string, 0, len(combined))
 	for k := range combined {
 		keys = append(keys, string(k))
 	}
 	sort.Strings(keys)
 
-	var output []string
+	output := make([]string, 0, len(keys))
 	for _, k := range keys {
 		v := combined[models.CVEID(k)]
 		file, err := protojson.Marshal(v)

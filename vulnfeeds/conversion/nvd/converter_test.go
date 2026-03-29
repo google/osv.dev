@@ -139,6 +139,7 @@ func TestNVDSnapshot(t *testing.T) {
 			}
 			fileContents = append(fileContents, string(content))
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -148,7 +149,7 @@ func TestNVDSnapshot(t *testing.T) {
 	// To make snapshot deterministic
 	sort.Strings(fileContents)
 
-	var keys []any
+	keys := make([]any, 0, len(fileContents))
 	for _, c := range fileContents {
 		keys = append(keys, c)
 	}

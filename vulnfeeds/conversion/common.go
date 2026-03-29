@@ -519,6 +519,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		if a.Source != b.Source {
 			return strings.Compare(a.Source, b.Source)
 		}
+
 		return strings.Compare(a.CPE, b.CPE)
 	})
 
@@ -626,7 +627,6 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 
 	return r, un, sR
 }
-
 
 func LoadCPEDictionary(productToRepo *VPRepoCache, f string) error {
 	data, err := os.ReadFile(f)

@@ -1073,6 +1073,246 @@
     "unresolved_ranges": [
       {
         "metadata": {
+          "cpe": "cpe:2.3:a:filezilla-project:filezilla_client:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "3.67.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:putty:putty:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "introduced": "0.68"
+          },
+          {
+            "fixed": "0.81"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:tigris:tortoisesvn:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "1.14.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:tortoisegit:tortoisegit:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "2.15.0.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:winscp:winscp:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "6.3.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "38"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:39:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "39"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "40"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "In PuTTY 0.68 through 0.80 before 0.81, biased ECDSA nonce generation allows an attacker to recover a user's NIST P-521 secret key via a quick attack in approximately 60 signatures. This is especially important in a scenario where an adversary is able to read messages signed by PuTTY or Pageant. The required set of signed messages may be publicly readable because they are stored in a public Git service that supports use of SSH for commit signing, and the signatures were made by Pageant through an agent-forwarding mechanism. In other words, an adversary may already have enough signature information to compromise a victim's private key, even if there is no further use of vulnerable PuTTY versions. After a key compromise, an adversary may be able to conduct supply-chain attacks on software maintained in Git. A second, independent scenario is that the adversary is an operator of an SSH server to which the victim authenticates (for remote login or file copy), even though this server is not fully trusted by the victim, and the victim uses the same private key for SSH connections to other services operated by other entities. Here, the rogue server operator (who would otherwise have no way to determine the victim's private key) can derive the victim's private key, and then use it for unauthorized access to those other services. If the other services include Git services, then again it may be possible to conduct supply-chain attacks on software maintained in Git. This also affects, for example, FileZilla before 3.67.0, WinSCP before 6.3.3, TortoiseGit before 2.15.0.1, and TortoiseSVN through 1.14.6.",
+  "id": "CVE-2024-31497",
+  "modified": "2025-11-04T22:16:00.673Z",
+  "published": "2024-04-15T20:15:11.077Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://docs.ccv.brown.edu/oscar/connecting-to-oscar/ssh/ssh-agent-forwarding/key-generation-and-agent-forwarding-with-putty"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.debian.org/debian-lts-announce/2024/06/msg00014.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://securityonline.info/cve-2024-31497-critical-putty-vulnerability-exposes-private-keys-immediate-action-required/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter9.html#pageant-forward"
+    },
+    {
+      "type": "WEB",
+      "url": "https://twitter.com/CCBalert/status/1780229237569470549"
+    },
+    {
+      "type": "WEB",
+      "url": "https://twitter.com/lambdafu/status/1779969509522133272"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.bleepingcomputer.com/news/security/putty-ssh-client-flaw-allows-recovery-of-cryptographic-private-keys/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.reddit.com/r/sysadmin/comments/1c4wmoj/putty_vulnerability_affecting_v068_to_v08/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.vicarius.io/vsociety/posts/understanding-a-critical-vulnerability-in-putty-biased-ecdsa-nonce-generation-revealing-nist-p-521-private-keys-cve-2024-31497"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/15/6"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://filezilla-project.org/versions.php"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/advisories/GHSA-6p4c-r453-8743"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/daedalus/BreakingECDSAwithLLL"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WFDZBV7ZCAZ6AH3VCQ34SSY7L3J7VZXZ/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security-tracker.debian.org/tracker/CVE-2024-31497"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://tortoisegit.org"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://winscp.net/eng/news.php"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-p521-bias.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.openwall.com/lists/oss-security/2024/04/15/6"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2275183"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.suse.com/show_bug.cgi?id=1222864"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://news.ycombinator.com/item?id=40044665"
+    },
+    {
+      "type": "FIX",
+      "url": "https://git.tartarus.org/?h=c193fe9848f50a88a4089aac647fecc31ae96d27\u0026p=simon/putty.git"
+    }
+  ],
+  "related": [
+    "GHSA-6p4c-r453-8743"
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
           "cpe": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
           "source": "CPE_FIELD"
         },

@@ -590,13 +590,13 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 }
 
 func TestCVE5Snapshot(t *testing.T) {
-	testDir := "../../cmd/converters/cve/cve5/test"
+	testDir := "../../test_data/cve5"
 	files, err := os.ReadDir(testDir)
 	if err != nil {
 		t.Fatalf("Failed to read test directory %s: %v", testDir, err)
 	}
 
-	var results []string
+	results := make([]string, 0, len(files))
 	for _, file := range files {
 		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
 			continue
@@ -627,7 +627,7 @@ func TestCVE5Snapshot(t *testing.T) {
 	// Sort results for deterministic snapshot
 	sort.Strings(results)
 
-	var keys []any
+	keys := make([]any, 0, len(results))
 	for _, r := range results {
 		keys = append(keys, r)
 	}

@@ -52,15 +52,15 @@
   "references": [
     {
       "type": "ADVISORY",
-      "url": "https://github.com/go-gitea/gitea/security/advisories/GHSA-vfmv-f93v-37mw"
-    },
-    {
-      "type": "ADVISORY",
       "url": "https://blog.gitea.com/release-of-1.25.4/"
     },
     {
       "type": "ADVISORY",
       "url": "https://github.com/go-gitea/gitea/releases/tag/v1.25.4"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/go-gitea/gitea/security/advisories/GHSA-vfmv-f93v-37mw"
     },
     {
       "type": "FIX",
@@ -74,6 +74,1299 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.8:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1.8"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.10:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.10"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.11:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.11"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.12:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.12"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.13:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.13"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.14:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.14"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.15:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.15"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.16:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.16"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.8:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.8"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.9:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2.9"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.10:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.10"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.11:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.11"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.12:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.12"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.8:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.8"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.9:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4.9"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.8:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.8"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.9:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5.9"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.7.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.7.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.7.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.7.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.7:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.7"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.2:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.3:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8.3"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:ffmpeg:ffmpeg:2.8:dev:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "2.8-dev"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:lts:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "12.04"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:opensuse:leap:42.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "42.1"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "FFmpeg 2.x allows remote attackers to conduct cross-origin attacks and read arbitrary files by using the concat protocol in an HTTP Live Streaming (HLS) M3U8 file, leading to an external HTTP request in which the URL string contains the first line of a local file.",
+  "id": "CVE-2016-1897",
+  "modified": "2025-04-12T10:46:40.837Z",
+  "published": "2016-01-15T03:59:23.063Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "http://lists.opensuse.org/opensuse-security-announce/2016-01/msg00034.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.openwall.com/lists/oss-security/2016/01/14/1"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securityfocus.com/bid/80501"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securitytracker.com/id/1034932"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.slackware.com/security/viewer.php?l=slackware-security\u0026y=2016\u0026m=slackware-security.529036"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.kb.cert.org/vuls/id/772447"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.debian.org/security/2016/dsa-3506"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.ubuntu.com/usn/USN-2944-1"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201606-09"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201705-08"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "http://habrahabr.ru/company/mailru/blog/274855"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "http://security.stackexchange.com/questions/110644"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "4.25.8"
+          },
+          {
+            "introduced": "5.26.0"
+          },
+          {
+            "fixed": "5.29.5"
+          },
+          {
+            "introduced": "6.30.0"
+          },
+          {
+            "fixed": "6.31.1"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "Any project that uses Protobuf Pure-Python backend to parse untrusted Protocol Buffers data containing an arbitrary number of recursive groups, recursive messages or a series of SGROUP tags can be corrupted by exceeding the Python recursion limit. This can result in a Denial of service by crashing the application with a RecursionError. We recommend upgrading to version =\u003e6.31.1 or beyond commit 17838beda2943d08b8a9d4df5b68f5f04f26d901",
+  "id": "CVE-2025-4565",
+  "modified": "2025-08-14T17:05:37.770Z",
+  "published": "2025-06-16T15:15:24.990Z",
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://github.com/protocolbuffers/protobuf/commit/17838beda2943d08b8a9d4df5b68f5f04f26d901"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "4.3.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "35"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "36"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
+  "id": "CVE-2022-33068",
+  "modified": "2024-11-21T07:07:30.140Z",
+  "published": "2022-06-23T17:15:14.350Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/202209-11"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "fixed": "7.61.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:esm:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "12.04"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:canonical:ubuntu_linux:14.04:*:*:*:lts:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "14.04"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:canonical:ubuntu_linux:16.04:*:*:*:lts:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "16.04"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:canonical:ubuntu_linux:18.04:*:*:*:lts:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "18.04"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:debian:debian_linux:9.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "9.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:6.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "6.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "7.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:7.4:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "7.4"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:7.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "7.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:7.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "7.6"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "curl before version 7.61.1 is vulnerable to a buffer overrun in the NTLM authentication code. The internal function Curl_ntlm_core_mk_nt_hash multiplies the length of the password by two (SUM) to figure out how large temporary storage area to allocate from the heap. The length value is then subsequently used to iterate over the password and generate output into the allocated storage buffer. On systems with a 32 bit size_t, the math to calculate SUM triggers an integer overflow when the password length exceeds 2GB (2^31 bytes). This integer overflow usually causes a very small buffer to actually get allocated instead of the intended very huge one, making the use of that buffer end up in a heap buffer overflow. (This bug is almost identical to CVE-2017-8816.)",
+  "id": "CVE-2018-14618",
+  "modified": "2024-11-21T03:49:26.003Z",
+  "published": "2018-09-05T19:29:00.420Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.securitytracker.com/id/1041605"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/errata/RHSA-2018:3558"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/errata/RHSA-2019:1880"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://curl.haxx.se/docs/CVE-2018-14618.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201903-03"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://usn.ubuntu.com/3765-1/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://usn.ubuntu.com/3765-2/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.debian.org/security/2018/dsa-4286"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
       "type": "CVSS_V3"
     }
   ]
@@ -104,10 +1397,6 @@
   "references": [
     {
       "type": "ADVISORY",
-      "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
-    },
-    {
-      "type": "ADVISORY",
       "url": "https://curl.se/docs/CVE-2024-7264.html"
     },
     {
@@ -121,6 +1410,10 @@
     {
       "type": "ADVISORY",
       "url": "https://security.netapp.com/advisory/ntap-20241025-0006/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
     },
     {
       "type": "REPORT",
@@ -138,6 +1431,190 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:libdwarf_project:libdwarf:*:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "introduced": "0.1.0"
+          },
+          {
+            "fixed": "0.9.2"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "40"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "7.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:redhat:enterprise_linux:8.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "8.0"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results.",
+  "id": "CVE-2024-2002",
+  "modified": "2025-04-09T15:36:37.840Z",
+  "published": "2024-03-18T13:15:07.657Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/security/cve/CVE-2024-2002"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2267700"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:redhat:directory_server:11.5:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "11.5"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:redhat:directory_server:11.6:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "11.6"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:redhat:directory_server:12.0:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "12.0"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:a:redhat:directory_server:12.1:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "12.1"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "36"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:37:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "37"
+          }
+        ]
+      },
+      {
+        "metadata": {
+          "cpe": "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+          "source": "CPE_FIELD"
+        },
+        "versions": [
+          {
+            "last_affected": "38"
+          }
+        ]
+      }
+    ]
+  },
+  "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
+  "id": "CVE-2023-1055",
+  "modified": "2024-11-21T07:38:22.297Z",
+  "published": "2023-02-27T22:15:09.990Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
       "type": "CVSS_V3"
     }
   ]
@@ -192,770 +1669,7 @@
     "unresolved_ranges": [
       {
         "metadata": {
-          "cpes": [
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.0:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1.8:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.10:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.11:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.12:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.13:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.14:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.15:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.16:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.8:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2.9:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.10:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.11:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.12:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.8:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4.9:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.8:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5.9:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.7.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.7.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.7.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.7.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.7:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8.1:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8.2:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8.3:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8.4:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8:*:*:*:*:*:*:*",
-            "cpe:2.3:a:ffmpeg:ffmpeg:2.8:dev:*:*:*:*:*:*",
-            "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:lts:*:*:*",
-            "cpe:2.3:o:opensuse:leap:42.1:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "last_affected": "2.0"
-          },
-          {
-            "last_affected": "2.0.1"
-          },
-          {
-            "last_affected": "2.0.2"
-          },
-          {
-            "last_affected": "2.0.3"
-          },
-          {
-            "last_affected": "2.0.4"
-          },
-          {
-            "last_affected": "2.0.5"
-          },
-          {
-            "last_affected": "2.0.6"
-          },
-          {
-            "last_affected": "2.0.7"
-          },
-          {
-            "last_affected": "2.1"
-          },
-          {
-            "last_affected": "2.1.1"
-          },
-          {
-            "last_affected": "2.1.2"
-          },
-          {
-            "last_affected": "2.1.3"
-          },
-          {
-            "last_affected": "2.1.4"
-          },
-          {
-            "last_affected": "2.1.5"
-          },
-          {
-            "last_affected": "2.1.6"
-          },
-          {
-            "last_affected": "2.1.7"
-          },
-          {
-            "last_affected": "2.1.8"
-          },
-          {
-            "last_affected": "2.2"
-          },
-          {
-            "last_affected": "2.2.1"
-          },
-          {
-            "last_affected": "2.2.2"
-          },
-          {
-            "last_affected": "2.2.3"
-          },
-          {
-            "last_affected": "2.2.4"
-          },
-          {
-            "last_affected": "2.2.5"
-          },
-          {
-            "last_affected": "2.2.6"
-          },
-          {
-            "last_affected": "2.2.7"
-          },
-          {
-            "last_affected": "2.2.8"
-          },
-          {
-            "last_affected": "2.2.9"
-          },
-          {
-            "last_affected": "2.2.10"
-          },
-          {
-            "last_affected": "2.2.11"
-          },
-          {
-            "last_affected": "2.2.12"
-          },
-          {
-            "last_affected": "2.2.13"
-          },
-          {
-            "last_affected": "2.2.14"
-          },
-          {
-            "last_affected": "2.2.15"
-          },
-          {
-            "last_affected": "2.2.16"
-          },
-          {
-            "last_affected": "2.3"
-          },
-          {
-            "last_affected": "2.3.1"
-          },
-          {
-            "last_affected": "2.3.2"
-          },
-          {
-            "last_affected": "2.3.3"
-          },
-          {
-            "last_affected": "2.3.4"
-          },
-          {
-            "last_affected": "2.3.5"
-          },
-          {
-            "last_affected": "2.3.6"
-          },
-          {
-            "last_affected": "2.4"
-          },
-          {
-            "last_affected": "2.4.1"
-          },
-          {
-            "last_affected": "2.4.2"
-          },
-          {
-            "last_affected": "2.4.3"
-          },
-          {
-            "last_affected": "2.4.4"
-          },
-          {
-            "last_affected": "2.4.5"
-          },
-          {
-            "last_affected": "2.4.6"
-          },
-          {
-            "last_affected": "2.4.7"
-          },
-          {
-            "last_affected": "2.4.8"
-          },
-          {
-            "last_affected": "2.4.9"
-          },
-          {
-            "last_affected": "2.4.10"
-          },
-          {
-            "last_affected": "2.4.11"
-          },
-          {
-            "last_affected": "2.4.12"
-          },
-          {
-            "last_affected": "2.5"
-          },
-          {
-            "last_affected": "2.5.1"
-          },
-          {
-            "last_affected": "2.5.2"
-          },
-          {
-            "last_affected": "2.5.3"
-          },
-          {
-            "last_affected": "2.5.4"
-          },
-          {
-            "last_affected": "2.5.5"
-          },
-          {
-            "last_affected": "2.5.6"
-          },
-          {
-            "last_affected": "2.5.7"
-          },
-          {
-            "last_affected": "2.5.8"
-          },
-          {
-            "last_affected": "2.5.9"
-          },
-          {
-            "last_affected": "2.6"
-          },
-          {
-            "last_affected": "2.6.1"
-          },
-          {
-            "last_affected": "2.6.2"
-          },
-          {
-            "last_affected": "2.6.3"
-          },
-          {
-            "last_affected": "2.6.4"
-          },
-          {
-            "last_affected": "2.6.5"
-          },
-          {
-            "last_affected": "2.6.6"
-          },
-          {
-            "last_affected": "2.7"
-          },
-          {
-            "last_affected": "2.7.1"
-          },
-          {
-            "last_affected": "2.7.2"
-          },
-          {
-            "last_affected": "2.7.3"
-          },
-          {
-            "last_affected": "2.7.4"
-          },
-          {
-            "last_affected": "2.8"
-          },
-          {
-            "last_affected": "2.8-dev"
-          },
-          {
-            "last_affected": "2.8.1"
-          },
-          {
-            "last_affected": "2.8.2"
-          },
-          {
-            "last_affected": "2.8.3"
-          },
-          {
-            "last_affected": "2.8.4"
-          },
-          {
-            "last_affected": "12.04"
-          },
-          {
-            "last_affected": "42.1"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "FFmpeg 2.x allows remote attackers to conduct cross-origin attacks and read arbitrary files by using the concat protocol in an HTTP Live Streaming (HLS) M3U8 file, leading to an external HTTP request in which the URL string contains the first line of a local file.",
-  "id": "CVE-2016-1897",
-  "modified": "2025-04-12T10:46:40.837Z",
-  "published": "2016-01-15T03:59:23.063Z",
-  "references": [
-    {
-      "type": "WEB",
-      "url": "http://www.openwall.com/lists/oss-security/2016/01/14/1"
-    },
-    {
-      "type": "WEB",
-      "url": "http://www.securityfocus.com/bid/80501"
-    },
-    {
-      "type": "WEB",
-      "url": "http://www.securitytracker.com/id/1034932"
-    },
-    {
-      "type": "WEB",
-      "url": "http://www.slackware.com/security/viewer.php?l=slackware-security\u0026y=2016\u0026m=slackware-security.529036"
-    },
-    {
-      "type": "WEB",
-      "url": "http://lists.opensuse.org/opensuse-security-announce/2016-01/msg00034.html"
-    },
-    {
-      "type": "WEB",
-      "url": "https://www.kb.cert.org/vuls/id/772447"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "http://www.debian.org/security/2016/dsa-3506"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://security.gentoo.org/glsa/201606-09"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://security.gentoo.org/glsa/201705-08"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "http://www.ubuntu.com/usn/USN-2944-1"
-    },
-    {
-      "type": "EVIDENCE",
-      "url": "http://security.stackexchange.com/questions/110644"
-    },
-    {
-      "type": "EVIDENCE",
-      "url": "http://habrahabr.ru/company/mailru/blog/274855"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "fixed": "4.25.8"
-          },
-          {
-            "introduced": "5.26.0"
-          },
-          {
-            "fixed": "5.29.5"
-          },
-          {
-            "introduced": "6.30.0"
-          },
-          {
-            "fixed": "6.31.1"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "Any project that uses Protobuf Pure-Python backend to parse untrusted Protocol Buffers data containing an arbitrary number of recursive groups, recursive messages or a series of SGROUP tags can be corrupted by exceeding the Python recursion limit. This can result in a Denial of service by crashing the application with a RecursionError. We recommend upgrading to version =\u003e6.31.1 or beyond commit 17838beda2943d08b8a9d4df5b68f5f04f26d901",
-  "id": "CVE-2025-4565",
-  "modified": "2025-08-14T17:05:37.770Z",
-  "published": "2025-06-16T15:15:24.990Z",
-  "references": [
-    {
-      "type": "FIX",
-      "url": "https://github.com/protocolbuffers/protobuf/commit/17838beda2943d08b8a9d4df5b68f5f04f26d901"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "last_affected": "4.3.0"
-          },
-          {
-            "last_affected": "35"
-          },
-          {
-            "last_affected": "36"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-  "id": "CVE-2022-33068",
-  "modified": "2024-11-21T07:07:30.140Z",
-  "published": "2022-06-23T17:15:14.350Z",
-  "references": [
-    {
-      "type": "WEB",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
-    },
-    {
-      "type": "WEB",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
-    },
-    {
-      "type": "WEB",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://security.gentoo.org/glsa/202209-11"
-    },
-    {
-      "type": "FIX",
-      "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
-    },
-    {
-      "type": "FIX",
-      "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
-            "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:esm:*:*:*",
-            "cpe:2.3:o:canonical:ubuntu_linux:14.04:*:*:*:lts:*:*:*",
-            "cpe:2.3:o:canonical:ubuntu_linux:16.04:*:*:*:lts:*:*:*",
-            "cpe:2.3:o:canonical:ubuntu_linux:18.04:*:*:*:lts:*:*:*",
-            "cpe:2.3:o:debian:debian_linux:9.0:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:6.0:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:7.4:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:7.5:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:7.6:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "fixed": "7.61.1"
-          },
-          {
-            "last_affected": "12.04"
-          },
-          {
-            "last_affected": "14.04"
-          },
-          {
-            "last_affected": "16.04"
-          },
-          {
-            "last_affected": "18.04"
-          },
-          {
-            "last_affected": "9.0"
-          },
-          {
-            "last_affected": "6.0"
-          },
-          {
-            "last_affected": "7.0"
-          },
-          {
-            "last_affected": "7.4"
-          },
-          {
-            "last_affected": "7.5"
-          },
-          {
-            "last_affected": "7.6"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "curl before version 7.61.1 is vulnerable to a buffer overrun in the NTLM authentication code. The internal function Curl_ntlm_core_mk_nt_hash multiplies the length of the password by two (SUM) to figure out how large temporary storage area to allocate from the heap. The length value is then subsequently used to iterate over the password and generate output into the allocated storage buffer. On systems with a 32 bit size_t, the math to calculate SUM triggers an integer overflow when the password length exceeds 2GB (2^31 bytes). This integer overflow usually causes a very small buffer to actually get allocated instead of the intended very huge one, making the use of that buffer end up in a heap buffer overflow. (This bug is almost identical to CVE-2017-8816.)",
-  "id": "CVE-2018-14618",
-  "modified": "2024-11-21T03:49:26.003Z",
-  "published": "2018-09-05T19:29:00.420Z",
-  "references": [
-    {
-      "type": "WEB",
-      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "http://www.securitytracker.com/id/1041605"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://access.redhat.com/errata/RHSA-2019:1880"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://security.gentoo.org/glsa/201903-03"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://usn.ubuntu.com/3765-1/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://usn.ubuntu.com/3765-2/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://www.debian.org/security/2018/dsa-4286"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://access.redhat.com/errata/RHSA-2018:3558"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://curl.haxx.se/docs/CVE-2018-14618.html"
-    },
-    {
-      "type": "REPORT",
-      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:libdwarf_project:libdwarf:*:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
-            "cpe:2.3:o:redhat:enterprise_linux:8.0:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "introduced": "0.1.0"
-          },
-          {
-            "fixed": "0.9.2"
-          },
-          {
-            "last_affected": "7.0"
-          },
-          {
-            "last_affected": "8.0"
-          },
-          {
-            "last_affected": "40"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results.",
-  "id": "CVE-2024-2002",
-  "modified": "2025-04-09T15:36:37.840Z",
-  "published": "2024-03-18T13:15:07.657Z",
-  "references": [
-    {
-      "type": "ADVISORY",
-      "url": "https://access.redhat.com/security/cve/CVE-2024-2002"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt"
-    },
-    {
-      "type": "REPORT",
-      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2267700"
-    },
-    {
-      "type": "ARTICLE",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:redhat:directory_server:11.5:*:*:*:*:*:*:*",
-            "cpe:2.3:a:redhat:directory_server:11.6:*:*:*:*:*:*:*",
-            "cpe:2.3:a:redhat:directory_server:12.0:*:*:*:*:*:*:*",
-            "cpe:2.3:a:redhat:directory_server:12.1:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:37:*:*:*:*:*:*:*",
-            "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*"
-          ],
-          "source": "CPE_FIELD"
-        },
-        "versions": [
-          {
-            "last_affected": "11.5"
-          },
-          {
-            "last_affected": "11.6"
-          },
-          {
-            "last_affected": "12.0"
-          },
-          {
-            "last_affected": "12.1"
-          },
-          {
-            "last_affected": "36"
-          },
-          {
-            "last_affected": "37"
-          },
-          {
-            "last_affected": "38"
-          }
-        ]
-      }
-    ]
-  },
-  "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
-  "id": "CVE-2023-1055",
-  "modified": "2024-11-21T07:38:22.297Z",
-  "published": "2023-02-27T22:15:09.990Z",
-  "references": [
-    {
-      "type": "WEB",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
-    },
-    {
-      "type": "REPORT",
-      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
-    }
-  ],
-  "severity": [
-    {
-      "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
-      "type": "CVSS_V3"
-    }
-  ]
-}
-{
-  "database_specific": {
-    "unresolved_ranges": [
-      {
-        "metadata": {
-          "cpes": [
-            "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*"
-          ],
+          "cpe": "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*",
           "source": "CPE_FIELD"
         },
         "versions": [

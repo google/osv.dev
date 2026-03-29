@@ -14,7 +14,11 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+
+	"github.com/google/osv-scalibr/semantic"
+)
 
 type packagistEcosystem struct{}
 
@@ -32,6 +36,35 @@ func (e packagistEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e packagistEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func packagistAPIURL(pkg string) string {
+	// Packagist API uses literal slashes for scoped packages (e.g. monolog/monolog).
+	// Standard url.PathEscape will break routing because the forward slash is expected intact.
+	return fmt.Sprintf("https://repo.packagist.org/p2/%s.json", pkg)
+}
+
+type packagistResponse struct {
+	Packages map[string][]struct {
+		Version string `json:"version"`
+	} `json:"packages"`
+}
+
+func (e packagistEcosystem) GetVersions(pkg string) ([]string, error) {
+	var resp packagistResponse
+	if err := fetchJSON(packagistAPIURL(pkg), &resp); err != nil {
+		return nil, err
+	}
+
+	packageVersions, ok := resp.Packages[pkg]
+	if !ok {
+		return nil, ErrPackageNotFound
+	}
+
+	versions := make([]string, 0, len(packageVersions))
+	// Packagist returns raw VCS branch references (like dev-master) alongside real semantic releases.
+	// These are preserved and handled/sorted accordingly by sortVersions.
+	for _, v := range packageVersions {
+		versions = append(versions, v.Version)
+	}
+
+	return sortVersions(e, versions)
 }

@@ -1,0 +1,141 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.github.com
+        url: https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 4717
+        body: '[{"name":"zarith.1.10","path":"packages/zarith/zarith.1.10","sha":"9c9d18f6bc86ed3a2a07b45d587f8e626ec5a1ad","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.10?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.10","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/9c9d18f6bc86ed3a2a07b45d587f8e626ec5a1ad","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.10?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/9c9d18f6bc86ed3a2a07b45d587f8e626ec5a1ad","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.10"}},{"name":"zarith.1.11","path":"packages/zarith/zarith.1.11","sha":"5b44fd1b48e528e03454f4d668d3ee5bec9e0ac2","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.11?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.11","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/5b44fd1b48e528e03454f4d668d3ee5bec9e0ac2","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.11?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/5b44fd1b48e528e03454f4d668d3ee5bec9e0ac2","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.11"}},{"name":"zarith.1.12","path":"packages/zarith/zarith.1.12","sha":"34d4b6192e56e8333bd51c0fb0799e9f599fb27b","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.12?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.12","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/34d4b6192e56e8333bd51c0fb0799e9f599fb27b","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.12?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/34d4b6192e56e8333bd51c0fb0799e9f599fb27b","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.12"}},{"name":"zarith.1.13","path":"packages/zarith/zarith.1.13","sha":"7d5aa0e1e064f0f8b96104726345156e068f3013","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.13?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.13","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/7d5aa0e1e064f0f8b96104726345156e068f3013","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.13?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/7d5aa0e1e064f0f8b96104726345156e068f3013","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.13"}},{"name":"zarith.1.14","path":"packages/zarith/zarith.1.14","sha":"0fc76a0ce54ca6ce21680c466502aa50421a0f75","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.14?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.14","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/0fc76a0ce54ca6ce21680c466502aa50421a0f75","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.14?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/0fc76a0ce54ca6ce21680c466502aa50421a0f75","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.14"}},{"name":"zarith.1.7-1","path":"packages/zarith/zarith.1.7-1","sha":"d6e60025a4f45304bbf1e080d116201cf2ff37df","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.7-1?ref=master","html_url":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.7-1","git_url":"https://api.github.com/repos/ocaml/opam-repository/git/trees/d6e60025a4f45304bbf1e080d116201cf2ff37df","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository/contents/packages/zarith/zarith.1.7-1?ref=master","git":"https://api.github.com/repos/ocaml/opam-repository/git/trees/d6e60025a4f45304bbf1e080d116201cf2ff37df","html":"https://github.com/ocaml/opam-repository/tree/master/packages/zarith/zarith.1.7-1"}}]'
+        headers:
+            Accept-Ranges:
+                - bytes
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset
+            Cache-Control:
+                - public, max-age=60, s-maxage=60
+            Content-Length:
+                - "4717"
+            Content-Security-Policy:
+                - default-src 'none'
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 19 Mar 2026 05:09:55 GMT
+            Etag:
+                - '"a4333ea3dc877f86a0456085ed506815a98afa43"'
+            Last-Modified:
+                - Thu, 19 Mar 2026 02:01:53 GMT
+            Referrer-Policy:
+                - origin-when-cross-origin, strict-origin-when-cross-origin
+            Server:
+                - github.com
+            Vary:
+                - Accept, Accept-Encoding, Accept, X-Requested-With
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - deny
+            X-Github-Api-Version-Selected:
+                - "2022-11-28"
+            X-Github-Media-Type:
+                - github.v3; format=json
+            X-Github-Request-Id:
+                - 16BD:3C469D:89A735:A197BA:69BB8523
+            X-Internal-Experiment-Version-Metadata:
+                - ZW1wdHlfcmVwb3NpdG9yeTpmYWxzZSxoZWFkX29pZDo4MzlmMzYwZGU5YTliNTA3OTFjYzZmMjFhY2QyZDZmYWYxOTVlY2FjLHJlZl9uYW1lOm1hc3RlcixyZWZfY29tbWl0X29pZDo4MzlmMzYwZGU5YTliNTA3OTFjYzZmMjFhY2QyZDZmYWYxOTVlY2FjLHJvb3RfdHJlZV9lbnRyeV9vaWQ6YTQzMzNlYTNkYzg3N2Y4NmEwNDU2MDg1ZWQ1MDY4MTVhOThhZmE0MyxwYXRoX29iamVjdF90eXBlOnRyZWUscGF0aF9vYmplY3Rfb2lkOjg2NzFlYzk0ZTcyZjNkNTE2NzZkMWQyYWZjYWQxYTVlYmY2YjVhZTEscGF0aF9vYmplY3RfbW9kZToxNjM4NCxwYXRoX29iamVjdF9zaXplOjIyOQ==
+            X-Ratelimit-Limit:
+                - "60"
+            X-Ratelimit-Remaining:
+                - "55"
+            X-Ratelimit-Reset:
+                - "1773898494"
+            X-Ratelimit-Resource:
+                - core
+            X-Ratelimit-Used:
+                - "5"
+            X-Xss-Protection:
+                - "0"
+        status: 200 OK
+        code: 200
+        duration: 663.315164ms
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: api.github.com
+        url: https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 7396
+        body: '[{"name":"zarith.1.1","path":"packages/zarith/zarith.1.1","sha":"ffea279cbbdbc092159e2a844bf6ce52a9ca8447","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.1?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.1","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/ffea279cbbdbc092159e2a844bf6ce52a9ca8447","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.1?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/ffea279cbbdbc092159e2a844bf6ce52a9ca8447","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.1"}},{"name":"zarith.1.2","path":"packages/zarith/zarith.1.2","sha":"50cd71ca0905639057f8e7e97e7ef08cc9e2dbd5","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.2?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.2","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/50cd71ca0905639057f8e7e97e7ef08cc9e2dbd5","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.2?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/50cd71ca0905639057f8e7e97e7ef08cc9e2dbd5","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.2"}},{"name":"zarith.1.3","path":"packages/zarith/zarith.1.3","sha":"85867c812c4a48060cdf5a0d77107eff6130987d","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.3?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.3","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/85867c812c4a48060cdf5a0d77107eff6130987d","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.3?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/85867c812c4a48060cdf5a0d77107eff6130987d","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.3"}},{"name":"zarith.1.4.1","path":"packages/zarith/zarith.1.4.1","sha":"391c099e5a90dd5db2c3bfe1d2179274f4f338f5","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.4.1?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.4.1","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/391c099e5a90dd5db2c3bfe1d2179274f4f338f5","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.4.1?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/391c099e5a90dd5db2c3bfe1d2179274f4f338f5","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.4.1"}},{"name":"zarith.1.4","path":"packages/zarith/zarith.1.4","sha":"7f1658026efe8230d2d99777677515d4c68e7332","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.4?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.4","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/7f1658026efe8230d2d99777677515d4c68e7332","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.4?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/7f1658026efe8230d2d99777677515d4c68e7332","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.4"}},{"name":"zarith.1.5","path":"packages/zarith/zarith.1.5","sha":"1228347cabb8c7355bd724b7d5368e46067c490f","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.5?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.5","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/1228347cabb8c7355bd724b7d5368e46067c490f","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.5?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/1228347cabb8c7355bd724b7d5368e46067c490f","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.5"}},{"name":"zarith.1.6","path":"packages/zarith/zarith.1.6","sha":"3cf6d244476ae48739a76fd1c65d54f3b58a8fc3","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.6?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.6","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/3cf6d244476ae48739a76fd1c65d54f3b58a8fc3","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.6?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/3cf6d244476ae48739a76fd1c65d54f3b58a8fc3","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.6"}},{"name":"zarith.1.7","path":"packages/zarith/zarith.1.7","sha":"961c8b3bdad2c3d3bac39923125f9643c5d310c6","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.7?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.7","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/961c8b3bdad2c3d3bac39923125f9643c5d310c6","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.7?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/961c8b3bdad2c3d3bac39923125f9643c5d310c6","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.7"}},{"name":"zarith.1.9.1","path":"packages/zarith/zarith.1.9.1","sha":"e52472912558e12e13603f3cb52b2f0ca87761e6","size":0,"url":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.9.1?ref=main","html_url":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.9.1","git_url":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/e52472912558e12e13603f3cb52b2f0ca87761e6","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/zarith/zarith.1.9.1?ref=main","git":"https://api.github.com/repos/ocaml/opam-repository-archive/git/trees/e52472912558e12e13603f3cb52b2f0ca87761e6","html":"https://github.com/ocaml/opam-repository-archive/tree/main/packages/zarith/zarith.1.9.1"}}]'
+        headers:
+            Accept-Ranges:
+                - bytes
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Expose-Headers:
+                - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset
+            Cache-Control:
+                - public, max-age=60, s-maxage=60
+            Content-Length:
+                - "7396"
+            Content-Security-Policy:
+                - default-src 'none'
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 19 Mar 2026 05:09:56 GMT
+            Etag:
+                - '"61ecbd412334a171cd10b22201cda25b41dbd6e0"'
+            Last-Modified:
+                - Sun, 22 Feb 2026 17:02:10 GMT
+            Referrer-Policy:
+                - origin-when-cross-origin, strict-origin-when-cross-origin
+            Server:
+                - github.com
+            Vary:
+                - Accept, Accept-Encoding, Accept, X-Requested-With
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - deny
+            X-Github-Api-Version-Selected:
+                - "2022-11-28"
+            X-Github-Media-Type:
+                - github.v3; format=json
+            X-Github-Request-Id:
+                - 16BD:3C469D:89A816:A198AA:69BB8523
+            X-Internal-Experiment-Version-Metadata:
+                - ZW1wdHlfcmVwb3NpdG9yeTpmYWxzZSxoZWFkX29pZDo2ODAzZTVjOGQwMTk5ZTJmODlhMzMwY2Y3ZjE1ZmJlNmM1ZmMyOGU2LHJlZl9uYW1lOm1haW4scmVmX2NvbW1pdF9vaWQ6NjgwM2U1YzhkMDE5OWUyZjg5YTMzMGNmN2YxNWZiZTZjNWZjMjhlNixyb290X3RyZWVfZW50cnlfb2lkOjYxZWNiZDQxMjMzNGExNzFjZDEwYjIyMjAxY2RhMjViNDFkYmQ2ZTAscGF0aF9vYmplY3RfdHlwZTp0cmVlLHBhdGhfb2JqZWN0X29pZDo1YjdjZDQzNTUwZWY3YmI0N2Q0YTc4NmI2ODJiNjE2NDAyNmRkZTRiLHBhdGhfb2JqZWN0X21vZGU6MTYzODQscGF0aF9vYmplY3Rfc2l6ZTozMzc=
+            X-Ratelimit-Limit:
+                - "60"
+            X-Ratelimit-Remaining:
+                - "54"
+            X-Ratelimit-Reset:
+                - "1773898494"
+            X-Ratelimit-Resource:
+                - core
+            X-Ratelimit-Used:
+                - "6"
+            X-Xss-Protection:
+                - "0"
+        status: 200 OK
+        code: 200
+        duration: 370.631523ms

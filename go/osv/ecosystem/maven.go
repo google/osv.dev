@@ -32,6 +32,6 @@ func (e mavenEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e mavenEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func (e mavenEcosystem) GetVersions(pkg string) ([]string, error) {
+	return getVersionsDepsDev(e, "maven", pkg)
 }

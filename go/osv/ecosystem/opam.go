@@ -14,12 +14,66 @@
 
 package ecosystem
 
+import (
+	"errors"
+	"strings"
+)
+
 type opamEcosystem struct {
 	dpkgEcosystem
 }
 
-var _ Enumerable = opamEcosystem{}
+var _ Ecosystem = opamEcosystem{}
 
-func (e opamEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+// Opam disables the Enumerable ecosystem interface as the record is pre-enumerated on import.
+// var _ Enumerable = opamEcosystem{}
+type githubContent struct {
+	Name string `json:"name"`
+}
+
+func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
+	// TODO(michaelkedar): these unauthenticated GitHub API requests have a rate limit of 60/hr.
+	// If we enable this, we'd probably want to add some auth key to our workers.
+	url1 := "https://api.github.com/repos/ocaml/opam-repository/contents/packages/" + pkg
+	url2 := "https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/" + pkg
+
+	var list1, list2 []githubContent
+	err1 := fetchJSON(url1, &list1)
+	err2 := fetchJSON(url2, &list2)
+
+	if errors.Is(err1, ErrPackageNotFound) && errors.Is(err2, ErrPackageNotFound) {
+		return nil, ErrPackageNotFound
+	}
+
+	if err1 != nil && !errors.Is(err1, ErrPackageNotFound) {
+		return nil, err1
+	}
+	if err2 != nil && !errors.Is(err2, ErrPackageNotFound) {
+		return nil, err2
+	}
+
+	var versions []string
+	prefix := pkg + "."
+	seen := make(map[string]bool)
+
+	for _, item := range list1 {
+		if strings.HasPrefix(item.Name, prefix) {
+			v := strings.TrimPrefix(item.Name, prefix)
+			if !seen[v] {
+				versions = append(versions, v)
+				seen[v] = true
+			}
+		}
+	}
+	for _, item := range list2 {
+		if strings.HasPrefix(item.Name, prefix) {
+			v := strings.TrimPrefix(item.Name, prefix)
+			if !seen[v] {
+				versions = append(versions, v)
+				seen[v] = true
+			}
+		}
+	}
+
+	return sortVersions(e, versions)
 }

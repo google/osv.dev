@@ -550,9 +550,6 @@ func (r *Repository) findAncestorRoots(from []int) []int {
 // resolveEvents parses and expands SeparatedEvents into lists of introduced and fixed commits
 // In case of intro=0, it will not include root commits that are not ancestors of any fixed commits
 func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]int, []int, []string, []string) {
-	allFixes := make([]int, 0, len(se.Fixed)+len(se.LastAffected))
-	introduced := make([]int, 0, len(se.Introduced))
-
 	// Parsing and expanding fixed events first because we need them to find relevant roots for intro=0
 	fixed := r.parseHashes(ctx, se.Fixed)
 	lastAffected := r.parseHashes(ctx, se.LastAffected)
@@ -568,6 +565,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 
 	// Fixed commits and children of last affected are both in this list
 	// For graph traversal sake they are both considered the fix
+	allFixes := make([]int, 0, len(se.Fixed)+len(se.LastAffected))
 	allFixes = append(allFixes, fixed...)
 	for _, idx := range lastAffected {
 		if idx < len(r.commitGraph) {
@@ -585,7 +583,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 		}
 	}
 
-	introduced = r.parseHashes(ctx, filteredIntro)
+	introduced := r.parseHashes(ctx, filteredIntro)
 
 	if hasIntroZero {
 		if len(allFixes) > 0 {

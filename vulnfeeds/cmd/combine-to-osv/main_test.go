@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -458,11 +460,40 @@ func TestCombineDirsSnapshot(t *testing.T) {
 	output := make([]string, 0, len(keys))
 	for _, k := range keys {
 		v := combined[models.CVEID(k)]
+
+		// Ensure deterministic order for slices inside Vulnerability
+		sort.Strings(v.Aliases)
+
+		sort.Slice(v.References, func(i, j int) bool {
+			if v.References[i].Type != v.References[j].Type {
+				return v.References[i].Type < v.References[j].Type
+			}
+			return v.References[i].Url < v.References[j].Url
+		})
+
+		sort.Slice(v.Affected, func(i, j int) bool {
+			var repoA, repoB string
+			if len(v.Affected[i].GetRanges()) > 0 {
+				repoA = v.Affected[i].GetRanges()[0].GetRepo()
+			}
+			if len(v.Affected[j].GetRanges()) > 0 {
+				repoB = v.Affected[j].GetRanges()[0].GetRepo()
+			}
+			return repoA < repoB
+		})
+
 		file, err := protojson.Marshal(v)
 		if err != nil {
 			t.Fatalf("Failed to marshal %s: %v", k, err)
 		}
-		output = append(output, string(file))
+
+		var indented bytes.Buffer
+		err = json.Indent(&indented, file, "", " ")
+		if err != nil {
+			t.Fatalf("Failed to indent %s: %v", k, err)
+		}
+
+		output = append(output, indented.String())
 	}
 
 	snaps.MatchSnapshot(t, strings.Join(output, "\n"))

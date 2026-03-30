@@ -2,18 +2,70 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/cabal.project.freeze - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "AC-Angle",
+          "ecosystem": "Hackage"
+        },
+        "version": "1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ALUT",
+          "ecosystem": "Hackage"
+        },
+        "version": "2.4.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ANum",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.2.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "Agda",
+          "ecosystem": "Hackage"
+        },
+        "version": "2.6.4.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "Allure",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.11.0.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "HSEC-2024-0009",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "biscuit-haskell",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.3.0.0"
+      }
     }
   ]
 }
@@ -23,17 +75,51 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/depsjson - 1]
 {
   "results": [
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "AWSSDK.Core",
+          "ecosystem": "NuGet"
+        },
+        "version": "3.7.10.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "Microsoft.Extensions.DependencyInjection",
+          "ecosystem": "NuGet"
+        },
+        "version": "6.0.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-4cv2-4hjh-77rx",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "System.Linq.Dynamic.Core",
+          "ecosystem": "NuGet"
+        },
+        "version": "1.3.7"
+      }
     },
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "TestLibrary",
+          "ecosystem": "NuGet"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -42,27 +128,151 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/gems.locked - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "async",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.23.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "async-dns",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.4.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "async-http",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.87.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "async-pool",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.10.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "console",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.29.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "fiber-annotation",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "fiber-local",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "fiber-storage",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "geoip",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.6.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "io-endpoint",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.15.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "io-event",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.9.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "io-stream",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.6.1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-9m3q-rhmv-5q44",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "json",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.10.1"
+      }
     },
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "metrics",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -85,18 +295,115 @@
           "id": "GHSA-wx95-c6cv-8532",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "nokogiri",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.18.2"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "process-daemon",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.0.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "protocol-hpack",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.5.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "protocol-http",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.49.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "protocol-http1",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.30.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "protocol-http2",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.22.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "racc",
+          "ecosystem": "RubyGems"
+        },
+        "version": "1.8.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "rainbow",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.2.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "rake",
+          "ecosystem": "RubyGems"
+        },
+        "version": "13.2.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "rubydns",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "traces",
+          "ecosystem": "RubyGems"
+        },
+        "version": "0.15.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -105,8 +412,26 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/packages.config - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+          "ecosystem": "NuGet"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "Microsoft.Net.Compilers",
+          "ecosystem": "NuGet"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -115,7 +440,16 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/packages.lock.json - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "Newtonsoft.Json",
+          "ecosystem": "NuGet"
+        },
+        "version": "13.0.3"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -124,10 +458,46 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/stack.yaml.lock - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "fuzzyset",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.2.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "hasql-pool",
+          "ecosystem": "Hackage"
+        },
+        "version": "1.0.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jose-jwt",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.10.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-libpq",
+          "ecosystem": "Hackage"
+        },
+        "version": "0.10.1.0"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -136,7 +506,16 @@
 [Test/cassette_TestCommand_MoreLockfiles/TestCommand_MoreLockfiles/uv.lock - 1]
 {
   "results": [
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "emoji",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.14.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -147,7 +526,14 @@
           "id": "GHSA-8qvm-5x2c-j2w7",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "protobuf",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.25.5"
+      }
     }
   ]
 }

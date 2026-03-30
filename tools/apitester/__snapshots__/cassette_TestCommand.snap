@@ -2,8 +2,26 @@
 [Test/cassette_TestCommand/TestCommand/.gitignored_files - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -12,7 +30,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_cyclonedx_1.4_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -21,7 +48,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_cyclonedx_1.5_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -30,7 +66,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_gh-annotations_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -39,7 +84,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_sarif_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -48,7 +102,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_spdx_2.3_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -219,7 +282,14 @@
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      }
     }
   ]
 }
@@ -391,7 +461,14 @@
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      }
     },
     {
       "vulns": [
@@ -555,7 +632,14 @@
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      }
     }
   ]
 }
@@ -727,7 +811,14 @@
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      }
     }
   ]
 }
@@ -737,35 +828,150 @@
 [Test/cassette_TestCommand/TestCommand/PURL_SBOM_case_sensitivity_(api) - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -775,7 +981,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     }
   ]
 }
@@ -791,7 +1004,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -801,37 +1021,186 @@
 [Test/cassette_TestCommand/TestCommand/Scan_locks-many - 1]
 {
   "results": [
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -842,7 +1211,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      }
     }
   ]
 }
@@ -852,10 +1228,46 @@
 [Test/cassette_TestCommand/TestCommand/Scan_locks-many#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -864,8 +1276,26 @@
 [Test/cassette_TestCommand/TestCommand/all_supported_lockfiles_in_the_directory_should_be_checked - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -874,7 +1304,13 @@
 [Test/cassette_TestCommand/TestCommand/config_file_can_be_broad - 1]
 {
   "results": [
-    {},
+    {
+      "query": {
+        "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
+        "package": {}
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -885,41 +1321,209 @@
           "id": "CVE-2023-39139",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+        "package": {}
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
+        "package": {}
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -930,7 +1534,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      }
     }
   ]
 }
@@ -940,7 +1551,16 @@
 [Test/cassette_TestCommand/TestCommand/config_file_is_invalid - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -949,37 +1569,186 @@
 [Test/cassette_TestCommand/TestCommand/config_files_should_not_have_multiple_ignores_with_the_same_id - 1]
 {
   "results": [
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -990,7 +1759,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      }
     }
   ]
 }
@@ -1000,10 +1776,46 @@
 [Test/cassette_TestCommand/TestCommand/config_files_should_not_have_multiple_ignores_with_the_same_id#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1012,18 +1824,61 @@
 [Test/cassette_TestCommand/TestCommand/cyclonedx_1.4_output - 1]
 {
   "results": [
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      }
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1032,18 +1887,61 @@
 [Test/cassette_TestCommand/TestCommand/cyclonedx_1.5_output - 1]
 {
   "results": [
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      }
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1058,7 +1956,14 @@
           "id": "UBUNTU-CVE-2017-11164",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      }
     }
   ]
 }
@@ -1074,7 +1979,14 @@
           "id": "UBUNTU-CVE-2017-11164",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      }
     }
   ]
 }
@@ -1084,18 +1996,126 @@
 [Test/cassette_TestCommand/TestCommand/folder_of_supported_sbom_with_vulns - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "adduser",
+          "ecosystem": "Debian"
+        },
+        "version": "3.115"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -1104,19 +2124,19 @@
         },
         {
           "id": "DEBIAN-CVE-2018-0501",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-3462",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-27350",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-3810",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DSA-4685-1",
@@ -1126,28 +2146,114 @@
           "id": "DSA-4808-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "apt",
+          "ecosystem": "Debian"
+        },
+        "version": "1.4.11"
+      }
     },
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "base-files",
+          "ecosystem": "Debian"
+        },
+        "version": "9.9+deb9u13"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "base-passwd",
+          "ecosystem": "Debian"
+        },
+        "version": "3.5.43"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2019-18276",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-3715",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "bash",
+          "ecosystem": "Debian"
+        },
+        "version": "4.4-5"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "bsdutils",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -1160,32 +2266,91 @@
         },
         {
           "id": "DEBIAN-CVE-2024-0684",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-5278",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "coreutils",
+          "ecosystem": "Debian"
+        },
+        "version": "8.26-3"
+      }
     },
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "dash",
+          "ecosystem": "Debian"
+        },
+        "version": "0.5.8-2.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "debconf",
+          "ecosystem": "Debian"
+        },
+        "version": "1.5.61"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DLA-3482-1",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "debian-archive-keyring",
+          "ecosystem": "Debian"
+        },
+        "version": "2017.5+deb9u2"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "debianutils",
+          "ecosystem": "Debian"
+        },
+        "version": "4.8.1.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "diffutils",
+          "ecosystem": "Debian"
+        },
+        "version": "1:3.5-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "dirmngr",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1664",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-6297",
@@ -1203,22 +2368,38 @@
           "id": "DSA-5147-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "dpkg",
+          "ecosystem": "Debian"
+        },
+        "version": "1.18.25"
+      }
     },
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "e2fslibs",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2019-5094",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-5188",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-1304",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3910-1",
@@ -1228,10 +2409,35 @@
           "id": "DSA-4535-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "e2fsprogs",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      }
     },
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "findutils",
+          "ecosystem": "Debian"
+        },
+        "version": "4.6.0+git+20161106-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gcc-6-base",
+          "ecosystem": "Debian"
+        },
+        "version": "6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -1314,11 +2520,45 @@
           "id": "GO-2025-4098",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "github.com/opencontainers/runc",
+          "ecosystem": "Go"
+        },
+        "version": "v1.0.1"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "github.com/tianon/gosu",
+          "ecosystem": "Go"
+        },
+        "version": "(devel)"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gnupg",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gnupg-agent",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -1329,63 +2569,347 @@
           "id": "GO-2022-0493",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "golang.org/x/sys",
+          "ecosystem": "Go"
+        },
+        "version": "v0.0.0-20210817142637-7d9622a276b7"
+      }
     },
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "gpgv",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "grep",
+          "ecosystem": "Debian"
+        },
+        "version": "2.27-2"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1271",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DSA-5122-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "gzip",
+          "ecosystem": "Debian"
+        },
+        "version": "1.6-5+deb9u1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "hostname",
+          "ecosystem": "Debian"
+        },
+        "version": "3.18+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "init-system-helpers",
+          "ecosystem": "Debian"
+        },
+        "version": "1.48"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libacl1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.2.52-3+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libapt-pkg5.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.4.11"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libassuan0",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.3-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libattr1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.4.47-2+b2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libaudit-common",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.6.7-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libaudit1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.6.7-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libblkid1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libbsd0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.8.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libbz2-1.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.6-8.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-l10n",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc6",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcap-ng0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.7.7-3+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcomerr2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libdb5.3",
+          "ecosystem": "Debian"
+        },
+        "version": "5.3.28-12+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libdebconfclient0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.227"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libedit2",
+          "ecosystem": "Debian"
+        },
+        "version": "3.1-20160903-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libfdisk1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libffi6",
+          "ecosystem": "Debian"
+        },
+        "version": "3.2.1-6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgcc1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-0379",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-7526",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-0495",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-6829",
@@ -1393,7 +2917,7 @@
         },
         {
           "id": "DEBIAN-CVE-2019-13627",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-33560",
@@ -1401,84 +2925,532 @@
         },
         {
           "id": "DEBIAN-CVE-2021-40528",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-2236",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "libgcrypt20",
+          "ecosystem": "Debian"
+        },
+        "version": "1.7.6-2+deb9u4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "libgdbm3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.8.3-14"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgmp10",
+          "ecosystem": "Debian"
+        },
+        "version": "2:6.1.2+dfsg-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgnutls30",
+          "ecosystem": "Debian"
+        },
+        "version": "3.5.8-5+deb9u6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgpg-error0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.26-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgssapi-krb5-2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libhogweed4",
+          "ecosystem": "Debian"
+        },
+        "version": "3.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libicu57",
+          "ecosystem": "Debian"
+        },
+        "version": "57.1-6+deb9u5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libidn11",
+          "ecosystem": "Debian"
+        },
+        "version": "1.33-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libjson-perl",
+          "ecosystem": "Debian"
+        },
+        "version": "2.90-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libk5crypto3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkeyutils1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.5.9-9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkrb5-3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkrb5support0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libksba8",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3.5-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libldap-2.4-2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.44+dfsg-5+deb9u8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libldap-common",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.44+dfsg-5+deb9u8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libllvm6.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1:6.0-1~bpo9+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "liblz4-1",
+          "ecosystem": "Debian"
+        },
+        "version": "0.0~r131-2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "liblzma5",
+          "ecosystem": "Debian"
+        },
+        "version": "5.2.2-1.2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libmount1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libncurses5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libncursesw5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnettle6",
+          "ecosystem": "Debian"
+        },
+        "version": "3.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnpth0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnss-wrapper",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.3-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libp11-kit0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.23.3-2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-modules",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-modules-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-runtime",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam0g",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpcre3",
+          "ecosystem": "Debian"
+        },
+        "version": "2:8.39-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libperl5.24",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpq5",
+          "ecosystem": "Debian"
+        },
+        "version": "14.2-1.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libreadline7",
+          "ecosystem": "Debian"
+        },
+        "version": "7.0-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsasl2-2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsasl2-modules-db",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libselinux1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-3+b3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsemanage-common",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsemanage1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsepol1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsmartcols1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsqlite3-0",
+          "ecosystem": "Debian"
+        },
+        "version": "3.16.2-5+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libss2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl1.1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.0l-1~deb9u5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libstdc++6",
+          "ecosystem": "Debian"
+        },
+        "version": "6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsystemd0",
+          "ecosystem": "Debian"
+        },
+        "version": "232-25+deb9u13"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-10790",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-1000654",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-6003",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-46848",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-12133",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-13151",
@@ -1496,209 +3468,252 @@
           "id": "DSA-5863-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "libtasn1-6",
+          "ecosystem": "Debian"
+        },
+        "version": "4.10-1.1+deb9u1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "libtinfo5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libudev1",
+          "ecosystem": "Debian"
+        },
+        "version": "232-25+deb9u13"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libustr-1.0-1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.4-6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libuuid1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2016-3709",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2016-9318",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-0663",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-15412",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-16931",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-16932",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-18258",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-5130",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-5969",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-7375",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-7376",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-8872",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-9047",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-9048",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-9049",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-9050",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-14404",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-14567",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-19956",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-20388",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-24977",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-7595",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3516",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3517",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3518",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3537",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3541",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-2309",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-23308",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-29824",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-40303",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-40304",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-49043",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-28484",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-29469",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-39615",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-45322",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-25062",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-34459",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-56171",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-24928",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-27113",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-32414",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-32415",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-49794",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-49796",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-6021",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-6170",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-8732",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-9714",
@@ -1772,235 +3787,387 @@
           "id": "DSA-5990-1",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "libxml2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.9.4+dfsg1-2.2+deb9u6"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "libxslt1.1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.29-2.1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libzstd1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "locales",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "login",
+          "ecosystem": "Debian"
+        },
+        "version": "1:4.4-4.1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "lsb-base",
+          "ecosystem": "Debian"
+        },
+        "version": "9.20161125"
+      },
+      "vulns": []
+    },
+    {
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2017-20229",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ],
+      "query": {
+        "package": {
+          "name": "mawk",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3.3-17+b3"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mount",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "multiarch-support",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ncurses-base",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ncurses-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "netbase",
+          "ecosystem": "Debian"
+        },
+        "version": "5.4"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2018-0732",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-0734",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-0735",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-5407",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-1543",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-1547",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-1549",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-1551",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-1563",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-1967",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-1971",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-23840",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-23841",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3449",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3450",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3711",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3712",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-4160",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-0778",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-1292",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-2068",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-2097",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-2274",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-3358",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-3602",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-3786",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-3996",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-4203",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-4304",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-4450",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0215",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0216",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0217",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0286",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0401",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0464",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0465",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-0466",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-1255",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-2650",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-2975",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-3446",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-3817",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-5363",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-5678",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-6129",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-6237",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-0727",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-12797",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-13176",
@@ -2008,27 +4175,27 @@
         },
         {
           "id": "DEBIAN-CVE-2024-2511",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-4603",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-4741",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-5535",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-6119",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-9143",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-11187",
@@ -2052,7 +4219,7 @@
         },
         {
           "id": "DEBIAN-CVE-2025-4575",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-66199",
@@ -2144,7 +4311,7 @@
         },
         {
           "id": "DSA-4539-3",
-          "modified": "<RFC3339 date with the year 2019>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DSA-4661-1",
@@ -2202,90 +4369,113 @@
           "id": "DSA-6113-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "openssl",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.0l-1~deb9u5"
+      }
     },
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "passwd",
+          "ecosystem": "Debian"
+        },
+        "version": "1:4.4-4.1+deb9u1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "UBUNTU-CVE-2017-11164",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      }
     },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2011-4116",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-12837",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2017-12883",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-12015",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-18311",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-18312",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-18313",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-18314",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-6797",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-6798",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-6913",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-10543",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-10878",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-12723",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2020-16156",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-36770",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-48522",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-31484",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-31486",
@@ -2293,15 +4483,15 @@
         },
         {
           "id": "DEBIAN-CVE-2023-47038",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-56406",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-40909",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3926-1",
@@ -2311,13 +4501,65 @@
           "id": "DSA-5902-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "perl",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "perl-base",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "perl-modules-5.24",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pgdg-keyring",
+          "ecosystem": "Debian"
+        },
+        "version": "2018.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pinentry-curses",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.0-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql",
+          "ecosystem": "OSS-Fuzz"
+        },
+        "version": "11.15"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -2326,11 +4568,11 @@
         },
         {
           "id": "DLA-3189-1",
-          "modified": "<RFC3339 date with the year 2022>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3316-1",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3422-1",
@@ -2352,28 +4594,150 @@
           "id": "DSA-5135-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "postgresql-11",
+          "ecosystem": "Debian"
+        },
+        "version": "11.15-1.pgdg90+1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-client-11",
+          "ecosystem": "Debian"
+        },
+        "version": "11.15-1.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-client-common",
+          "ecosystem": "Debian"
+        },
+        "version": "238.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-common",
+          "ecosystem": "Debian"
+        },
+        "version": "238.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "readline-common",
+          "ecosystem": "Debian"
+        },
+        "version": "7.0-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sed",
+          "ecosystem": "Debian"
+        },
+        "version": "4.4-1"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-17512",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "sensible-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "0.0.9+deb9u1"
+      }
     },
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "ssl-cert",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.39"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sysvinit-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "2.88dsf-59.9"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -2382,63 +4746,70 @@
         },
         {
           "id": "DEBIAN-CVE-2018-20482",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2019-9923",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-20193",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-48303",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2023-39804",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3755-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "tar",
+          "ecosystem": "Debian"
+        },
+        "version": "1.29b-1.1+deb9u1"
+      }
     },
     {
       "vulns": [
         {
           "id": "DLA-3051-1",
-          "modified": "<RFC3339 date with the year 2022>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3134-1",
-          "modified": "<RFC3339 date with the year 2022>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3161-1",
-          "modified": "<RFC3339 date with the year 2022>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3366-1",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3412-1",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3684-1",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3788-1",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-3972-1",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DLA-4085-1",
@@ -2452,7 +4823,14 @@
           "id": "DLA-4403-1",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "tzdata",
+          "ecosystem": "Debian"
+        },
+        "version": "2021a-0+deb9u3"
+      }
     },
     {
       "vulns": [
@@ -2460,29 +4838,36 @@
           "id": "DLA-4016-1",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ucf",
+          "ecosystem": "Debian"
+        },
+        "version": "3.0036"
+      }
     },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2016-2779",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2018-7738",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-37600",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3995",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2021-3996",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2022-0563",
@@ -2490,7 +4875,7 @@
         },
         {
           "id": "DEBIAN-CVE-2024-28085",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-14104",
@@ -2512,21 +4897,28 @@
           "id": "DSA-5650-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "util-linux",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      }
     },
     {
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1271",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2024-3094",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DEBIAN-CVE-2025-31115",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "DSA-5123-1",
@@ -2536,17 +4928,24 @@
           "id": "DSA-5895-1",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "xz-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "5.2.2-1.2+deb9u1"
+      }
     },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2556,17 +4955,24 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2576,17 +4982,24 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2596,13 +5009,20 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2612,10 +5032,35 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.12-r1"
+      }
     },
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "zlib1g",
+          "ecosystem": "Debian"
+        },
+        "version": "1:1.2.8.dfsg-5+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zstd",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.2-1+deb9u1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2630,7 +5075,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -2726,7 +5178,14 @@
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.24.4"
+      }
     },
     {
       "vulns": [
@@ -2742,7 +5201,14 @@
           "id": "GO-2026-4433",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.24.4"
+      }
     }
   ]
 }
@@ -2758,7 +5224,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -2768,14 +5241,86 @@
 [Test/cassette_TestCommand/TestCommand/ignoring_.gitignore - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2784,7 +5329,16 @@
 [Test/cassette_TestCommand/TestCommand/json_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2793,8 +5347,26 @@
 [Test/cassette_TestCommand/TestCommand/nested_directories_are_checked_when_`--recursive`_is_passed - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2803,7 +5375,16 @@
 [Test/cassette_TestCommand/TestCommand/no_lockfiles_with_recursion_and_with_allow_flag_are_fine - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2812,7 +5393,16 @@
 [Test/cassette_TestCommand/TestCommand/no_lockfiles_with_recursion_but_without_allow_flag_are_fine - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2821,7 +5411,16 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_lockfile - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2836,7 +5435,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -2846,7 +5452,16 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_lockfile_with_offline_explicitly_false - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2855,35 +5470,150 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_duplicate_PURLs - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2893,7 +5623,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     }
   ]
 }
@@ -2903,35 +5640,150 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_duplicate_PURLs_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -2941,7 +5793,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     }
   ]
 }
@@ -2951,14 +5810,86 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_invalid_PURLs - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2967,14 +5898,86 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_invalid_PURLs_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2983,35 +5986,150 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_vulns - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -3021,7 +6139,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     }
   ]
 }
@@ -3031,35 +6156,150 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_vulns_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2022-37434",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -3069,7 +6309,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      }
     }
   ]
 }
@@ -3079,7 +6326,16 @@
 [Test/cassette_TestCommand/TestCommand/only_the_files_in_the_given_directories_are_checked_by_default_(no_recursion) - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -3094,7 +6350,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -3110,16 +6373,95 @@
           "id": "GHSA-3936-cmfr-pm3m",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "black",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.1.0"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -3154,7 +6496,14 @@
           "id": "PYSEC-2021-98",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      }
     },
     {
       "vulns": [
@@ -3190,7 +6539,14 @@
           "id": "PYSEC-2021-98",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      }
     },
     {
       "vulns": [
@@ -3282,7 +6638,14 @@
           "id": "PYSEC-2022-3",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.24"
+      }
     },
     {
       "vulns": [
@@ -3292,13 +6655,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3308,13 +6678,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3324,13 +6701,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3340,13 +6724,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      }
     },
     {
       "vulns": [
@@ -3382,7 +6773,14 @@
           "id": "PYSEC-2024-71",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask-cors",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      }
     },
     {
       "vulns": [
@@ -3392,9 +6790,16 @@
         },
         {
           "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2024>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      }
     },
     {
       "vulns": [
@@ -3404,36 +6809,212 @@
         },
         {
           "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2024>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mypy-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "packaging",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "PYSEC-2020-73",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "pandas",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.23.4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "pathspec",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "platformdirs",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.4.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -3454,9 +7035,16 @@
         },
         {
           "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      }
     },
     {
       "vulns": [
@@ -3478,9 +7066,16 @@
         },
         {
           "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      }
     },
     {
       "vulns": [
@@ -3488,61 +7083,34 @@
           "id": "GHSA-27jp-wm6q-gp25",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "sqlparse",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.5.3"
+      }
     },
-    {},
-    {},
     {
-      "vulns": [
-        {
-          "id": "GHSA-2xpw-w6gg-jr37",
-          "modified": "<RFC3339 date with the year 2026>"
+      "query": {
+        "package": {
+          "name": "tomli",
+          "ecosystem": "PyPI"
         },
-        {
-          "id": "GHSA-34jh-p97f-mpxf",
-          "modified": "<RFC3339 date with the year 2026>"
+        "version": "2.2.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "typing-extensions",
+          "ecosystem": "PyPI"
         },
-        {
-          "id": "GHSA-38jv-5279-wg99",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-g4mx-q9vg-27p4",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gm62-xv2j-4w53",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-pq67-6m6q-mj2v",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-v845-jxx5-vc9f",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-wqvq-5m8c-6g24",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2020-148",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2021-108",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+        "version": "4.15.0"
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -3588,13 +7156,79 @@
         },
         {
           "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         },
         {
           "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      }
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-2xpw-w6gg-jr37",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-34jh-p97f-mpxf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g4mx-q9vg-27p4",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gm62-xv2j-4w53",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-pq67-6m6q-mj2v",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wqvq-5m8c-6g24",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-148",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2021-108",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-192",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ],
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      }
     },
     {
       "vulns": [
@@ -3610,7 +7244,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     },
     {
       "vulns": [
@@ -3626,7 +7267,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     },
     {
       "vulns": [
@@ -3642,7 +7290,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     }
   ]
 }
@@ -3658,16 +7313,95 @@
           "id": "GHSA-3936-cmfr-pm3m",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "black",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.1.0"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -3702,7 +7436,14 @@
           "id": "PYSEC-2021-98",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      }
     },
     {
       "vulns": [
@@ -3738,7 +7479,14 @@
           "id": "PYSEC-2021-98",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      }
     },
     {
       "vulns": [
@@ -3830,7 +7578,14 @@
           "id": "PYSEC-2022-3",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.24"
+      }
     },
     {
       "vulns": [
@@ -3840,13 +7595,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3856,13 +7618,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3872,13 +7641,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      }
     },
     {
       "vulns": [
@@ -3888,13 +7664,20 @@
         },
         {
           "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         },
         {
           "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      }
     },
     {
       "vulns": [
@@ -3930,7 +7713,14 @@
           "id": "PYSEC-2024-71",
           "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "flask-cors",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      }
     },
     {
       "vulns": [
@@ -3940,9 +7730,16 @@
         },
         {
           "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2024>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      }
     },
     {
       "vulns": [
@@ -3952,36 +7749,212 @@
         },
         {
           "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2024>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mypy-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "packaging",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "PYSEC-2020-73",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "pandas",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.23.4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "pathspec",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "platformdirs",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.5.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
@@ -4002,9 +7975,16 @@
         },
         {
           "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      }
     },
     {
       "vulns": [
@@ -4026,9 +8006,16 @@
         },
         {
           "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      }
     },
     {
       "vulns": [
@@ -4036,61 +8023,34 @@
           "id": "GHSA-27jp-wm6q-gp25",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "sqlparse",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.5.3"
+      }
     },
-    {},
-    {},
     {
-      "vulns": [
-        {
-          "id": "GHSA-2xpw-w6gg-jr37",
-          "modified": "<RFC3339 date with the year 2026>"
+      "query": {
+        "package": {
+          "name": "tomli",
+          "ecosystem": "PyPI"
         },
-        {
-          "id": "GHSA-34jh-p97f-mpxf",
-          "modified": "<RFC3339 date with the year 2026>"
+        "version": "2.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "typing-extensions",
+          "ecosystem": "PyPI"
         },
-        {
-          "id": "GHSA-38jv-5279-wg99",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-g4mx-q9vg-27p4",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gm62-xv2j-4w53",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-pq67-6m6q-mj2v",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-v845-jxx5-vc9f",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-wqvq-5m8c-6g24",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2020-148",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2021-108",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+        "version": "4.15.0"
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4136,13 +8096,79 @@
         },
         {
           "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         },
         {
           "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      }
+    },
+    {
+      "vulns": [
+        {
+          "id": "GHSA-2xpw-w6gg-jr37",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-34jh-p97f-mpxf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g4mx-q9vg-27p4",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gm62-xv2j-4w53",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-pq67-6m6q-mj2v",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wqvq-5m8c-6g24",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-148",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2021-108",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-192",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ],
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      }
     },
     {
       "vulns": [
@@ -4158,7 +8184,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     },
     {
       "vulns": [
@@ -4174,7 +8207,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     },
     {
       "vulns": [
@@ -4190,7 +8230,14 @@
           "id": "GHSA-hgf8-39gv-g3f2",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      }
     }
   ]
 }
@@ -4200,18 +8247,61 @@
 [Test/cassette_TestCommand/TestCommand/spdx_2.3_output - 1]
 {
   "results": [
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
     {
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      }
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -4220,7 +8310,16 @@
 [Test/cassette_TestCommand/TestCommand/verbosity_level_=_error - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -4229,7 +8328,16 @@
 [Test/cassette_TestCommand/TestCommand/verbosity_level_=_info - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 

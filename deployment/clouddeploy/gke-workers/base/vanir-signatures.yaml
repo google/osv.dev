@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: vanir-signatures
   labels:
-    cronLastSuccessfulTimeMins: "60"
+    cronLastSuccessfulTimeMins: "1500"
 spec:
   schedule: "0 9 * * *"
   timeZone: "Australia/Sydney"

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cves"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -98,7 +97,7 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	v.Modified = timestamppb.New(modified)
 
 	// Try to extract repository URLs from references.
-	repos := cves.ReposFromReferencesCVEList(refs, models.RefTagDenyList, metrics)
+	repos := conversion.ReposFromReferencesCVEList(refs, models.RefTagDenyList, metrics)
 	metrics.Repos = repos
 
 	// Create a map to hold DatabaseSpecific fields

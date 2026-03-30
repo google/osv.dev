@@ -14,3 +14,7 @@ spec:
               value: oss-vdb-test
             - name: OUTPUT_GCS_BUCKET
               value: osv-test-debian-osv
+            args:
+            - "--upload-to-gcs"
+            - "--output-bucket=$(OUTPUT_GCS_BUCKET)"
+            - "--o=debian-output"

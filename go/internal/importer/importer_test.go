@@ -162,6 +162,11 @@ func TestImporterWorker(t *testing.T) {
 	mockPublisher := &testutils.MockPublisher{}
 	config := Config{
 		Publisher: mockPublisher,
+		VulnerabilityStore: &mockVulnerabilityStore{
+			RawMods: map[string]time.Time{
+				"CVE-2023-1237": time.Date(2023, time.January, 5, 0, 0, 0, 0, time.UTC),
+			},
+		},
 	}
 	ctx := t.Context()
 	ch := make(chan WorkItem, 10)
@@ -172,9 +177,10 @@ func TestImporterWorker(t *testing.T) {
 		SourceRecord: mockSourceRecord{
 			DataToRead: []byte(`{"id": "CVE-2023-1234", "modified": "2023-01-01T00:00:00Z"}`),
 		},
-		Format:           RecordFormatJSON,
-		SourceRepository: "repo1",
-		SourcePath:       "1.json",
+		Format:                 RecordFormatJSON,
+		CompareAgainstDatabase: true,
+		SourceRepository:       "repo1",
+		SourcePath:             "1.json",
 	}
 
 	// Test 2: YAML format
@@ -206,19 +212,40 @@ func TestImporterWorker(t *testing.T) {
 		SourceRecord: mockSourceRecord{
 			DataToRead: []byte(`{"id": "CVE-2023-1237", "modified": "2023-01-04T00:00:00Z"}`),
 		},
-		Format:           RecordFormatJSON,
-		LastUpdated:      time.Date(2023, 1, 5, 0, 0, 0, 0, time.UTC),
-		HasLastUpdated:   true,
-		SourceRepository: "repo4",
-		SourcePath:       "4.json",
+		Format:                 RecordFormatJSON,
+		CompareAgainstDatabase: true,
+		SourceRepository:       "repo4",
+		SourcePath:             "4.json",
+	}
+	// Test 5: Skip record equal time
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte(`{"id": "CVE-2023-1237", "modified": "2023-01-05T00:00:00Z"}`),
+		},
+		Format:                 RecordFormatJSON,
+		CompareAgainstDatabase: true,
+		SourceRepository:       "repo4",
+		SourcePath:             "4.json",
+	}
+	// Test 6: Don't skip newer record
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte(`{"id": "CVE-2023-1237", "modified": "2023-01-06T00:00:00Z"}`),
+		},
+		Format:                 RecordFormatJSON,
+		CompareAgainstDatabase: true,
+		SourceRepository:       "repo4",
+		SourcePath:             "4.json",
 	}
 	close(ch)
 
 	importerWorker(ctx, ch, config)
 
-	// Since Test 4 is skipped (modified before last update), we expect only 3 messages
-	if len(mockPublisher.Messages) != 3 {
-		t.Fatalf("Expected 3 messages published, got %d", len(mockPublisher.Messages))
+	// Since Test 4&5 are skipped (modified before last update), we expect only 4 messages
+	if len(mockPublisher.Messages) != 4 {
+		t.Fatalf("Expected 4 messages published, got %d", len(mockPublisher.Messages))
 	}
 
 	// Message 1 verification
@@ -234,5 +261,10 @@ func TestImporterWorker(t *testing.T) {
 	// Message 3 verification
 	if mockPublisher.Messages[2].Attributes["path"] != "3.json" {
 		t.Errorf("Expected path 3.json, got %s", mockPublisher.Messages[2].Attributes["path"])
+	}
+
+	// Message 4 verification
+	if mockPublisher.Messages[3].Attributes["path"] != "4.json" {
+		t.Errorf("Expected path 4.json, got %s", mockPublisher.Messages[3].Attributes["path"])
 	}
 }

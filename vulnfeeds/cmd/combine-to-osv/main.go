@@ -229,6 +229,13 @@ func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerab
 		}
 	}
 
+	slices.SortFunc(baseOSV.GetReferences(), func(a, b *osvschema.Reference) int {
+		return cmp.Or(
+			cmp.Compare(a.GetType(), b.GetType()),
+			cmp.Compare(a.GetUrl(), b.GetUrl()),
+		)
+	})
+
 	// Merge timestamps: latest modified, earliest published.
 	cve5Modified := baseOSV.GetModified()
 	if nvd.GetModified().AsTime().After(cve5Modified.AsTime()) {

@@ -139,6 +139,19 @@ func TestClassifyReferences(t *testing.T) {
 				{Url: "http://www.openwall.com/lists/oss-security/2023/07/20/1", Type: osvschema.Reference_ARTICLE},
 			},
 		},
+		{
+			refData: []models.Reference{
+				{
+					Source: "https://example.com/some/valid/link", URL: "https://example.com/some/valid/link", Tags: []string{"mailing-list"},
+				},
+				{
+					Source: "https://example.com/some/invalid/link", URL: "", Tags: []string{"mailing-list"},
+				},
+			},
+			references: []*osvschema.Reference{
+				{Url: "https://example.com/some/valid/link", Type: osvschema.Reference_ARTICLE},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
@@ -473,6 +486,30 @@ func TestAttachExtractedVersionInfo_Determinism(t *testing.T) {
 
 		if diff := gocmp.Diff(firstResult, v, protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different result:\n%s", i, diff)
+		}
+	}
+}
+
+func TestClassifyReferences_Determinism(t *testing.T) {
+	refData := []models.Reference{
+		{URL: "https://example.com/D"},
+		{URL: "https://example.com/A"},
+		{URL: "https://example.com/C", Tags: []string{"patch"}},
+		{URL: "https://example.com/C"},
+		{URL: "https://example.com/B", Tags: []string{"issue-tracking"}},
+		{URL: "https://example.com/E"},
+	}
+
+	var firstResult []*osvschema.Reference
+	for i := range 30 {
+		got := ClassifyReferences(refData)
+		if i == 0 {
+			firstResult = got
+			continue
+		}
+
+		if diff := gocmp.Diff(firstResult, got, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
 	}
 }

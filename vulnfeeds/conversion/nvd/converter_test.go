@@ -1,14 +1,18 @@
 package nvd
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -91,6 +95,66 @@ func TestCVEToOSV_429(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
+
+func TestNVDSnapshot(t *testing.T) {
+	testPath := "test.json"
+	file, err := os.Open(testPath)
+
+	if err != nil {
+		t.Fatalf("Failed to open test data from %s: %v", testPath, err)
+	}
+	defer file.Close()
+
+	var nvd models.CVEAPIJSON20Schema
+	err = json.NewDecoder(file).Decode(&nvd)
+	if err != nil {
+		t.Fatalf("Failed to decode %s: %v", testPath, err)
+	}
+
+	cpeData := "cpe_testdata.json"
+	vpcache := conversion.NewVPRepoCache()
+	err = conversion.LoadCPEDictionary(vpcache, cpeData)
+	if err != nil {
+		t.Fatalf("Failed to decode %s: %v", cpeData, err)
+	}
+
+	outDir := t.TempDir()
+	metrics := &models.ConversionMetrics{}
+	cache := &git.RepoTagsCache{}
+
+	for _, vuln := range nvd.Vulnerabilities {
+		CVEToOSV(vuln.CVE, []string{}, cache, outDir, metrics, false, false)
+	}
+
+	var fileContents []string
+	err = filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && filepath.Ext(path) == ".json" {
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			fileContents = append(fileContents, string(content))
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Failed to walk outDir: %v", err)
+	}
+
+	// To make snapshot deterministic
+	sort.Strings(fileContents)
+
+	keys := make([]any, 0, len(fileContents))
+	for _, c := range fileContents {
+		keys = append(keys, c)
+	}
+
+	snaps.MatchSnapshot(t, keys...)
 }
 
 func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {

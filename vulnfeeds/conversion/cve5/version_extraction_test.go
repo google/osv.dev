@@ -114,7 +114,11 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			versionExtractor := &DefaultVersionExtractor{}
-			gotRanges, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{})
+			gotRangesWithMeta, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{})
+			var gotRanges []*osvschema.Range
+			for _, r := range gotRangesWithMeta {
+				gotRanges = append(gotRanges, r.Range)
+			}
 			if diff := cmp.Diff(tt.wantRanges, gotRanges, protocmp.Transform()); diff != "" {
 				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
@@ -385,6 +389,7 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
+							"source": structpb.NewStringValue("AFFECTED_FIELD"),
 							"versions": {
 								Kind: &structpb.Value_ListValue{
 									ListValue: &structpb.ListValue{
@@ -430,6 +435,7 @@ func TestExtractVersions(t *testing.T) {
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
+							"source": structpb.NewStringValue("AFFECTED_FIELD"),
 							"versions": {
 								Kind: &structpb.Value_ListValue{
 									ListValue: &structpb.ListValue{

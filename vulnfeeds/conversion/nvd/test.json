@@ -1,0 +1,2964 @@
+{
+  "resultsPerPage": 1,
+  "startIndex": 0,
+  "totalResults": 1,
+  "format": "NVD_CVE",
+  "version": "2.0",
+  "timestamp": "2026-01-29T23:19:29.408",
+  "vulnerabilities": [
+    {
+      "cve": {
+        "id": "CVE-2026-20912",
+        "sourceIdentifier": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+        "published": "2026-01-22T22:16:19.297",
+        "lastModified": "2026-01-29T22:03:58.330",
+        "vulnStatus": "Analyzed",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "Gitea does not properly validate repository ownership when linking attachments to releases. An attachment uploaded to a private repository could potentially be linked to a release in a different public repository, making it accessible to unauthorized users."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+                "baseScore": 9.1,
+                "baseSeverity": "CRITICAL",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "HIGH",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 3.9,
+              "impactScore": 5.2
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-284"
+              },
+              {
+                "lang": "en",
+                "value": "CWE-639"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:gitea:gitea:*:*:*:*:*:-:*:*",
+                    "versionEndExcluding": "1.25.4",
+                    "matchCriteriaId": "DFCB7D74-331D-4582-AB41-113A25BE8FAA"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://blog.gitea.com/release-of-1.25.4/",
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "tags": [
+              "Release Notes"
+            ]
+          },
+          {
+            "url": "https://github.com/go-gitea/gitea/pull/36320",
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "tags": [
+              "Issue Tracking",
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/go-gitea/gitea/pull/36355",
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "tags": [
+              "Issue Tracking",
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/go-gitea/gitea/releases/tag/v1.25.4",
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "tags": [
+              "Release Notes"
+            ]
+          },
+          {
+            "url": "https://github.com/go-gitea/gitea/security/advisories/GHSA-vfmv-f93v-37mw",
+            "source": "88ee5874-cf24-4952-aea0-31affedb7ff2",
+            "tags": [
+              "Broken Link"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2023-22466",
+        "sourceIdentifier": "security-advisories@github.com",
+        "published": "2023-01-04T22:15:09.267",
+        "lastModified": "2024-11-21T07:44:51.683",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "Tokio is a runtime for writing applications with Rust. Starting with version 1.7.0 and prior to versions 1.18.4, 1.20.3, and 1.23.1, when configuring a Windows named pipe server, setting `pipe_mode` will reset `reject_remote_clients` to `false`. If the application has previously configured `reject_remote_clients` to `true`, this effectively undoes the configuration. Remote clients may only access the named pipe if the named pipe's associated path is accessible via a publicly shared folder (SMB). Versions 1.23.1, 1.20.3, and 1.18.4 have been patched. The fix will also be present in all releases starting from version 1.24.0. Named pipes were introduced to Tokio in version 1.7.0, so releases older than 1.7.0 are not affected. As a workaround, ensure that `pipe_mode` is set first after initializing a `ServerOptions`."
+          },
+          {
+            "lang": "es",
+            "value": "Tokio es un runtime para escribir aplicaciones con Rust. A partir de la versi\u00f3n 1.7.0 y anteriores a las versiones 1.18.4, 1.20.3 y 1.23.1, al configurar un servidor de canalizaci\u00f3n con nombre de Windows, configurar `pipe_mode` restablecer\u00e1 `reject_remote_clients` a `false`. Si la aplicaci\u00f3n ha configurado previamente `reject_remote_clients` en `true`, esto efectivamente deshace la configuraci\u00f3n. Los clientes remotos solo pueden acceder a la canalizaci\u00f3n con nombre si se puede acceder a la ruta asociada a la canalizaci\u00f3n con nombre a trav\u00e9s de una carpeta compartida p\u00fablicamente (SMB). Se han parcheado las versiones 1.23.1, 1.20.3 y 1.18.4. La soluci\u00f3n tambi\u00e9n estar\u00e1 presente en todas las versiones a partir de la versi\u00f3n 1.24.0. Las canalizaciones con nombre se introdujeron en Tokio en la versi\u00f3n 1.7.0, por lo que las versiones anteriores a 1.7.0 no se ven afectadas. Como workaround, aseg\u00farese de que `pipe_mode` est\u00e9 configurado primero despu\u00e9s de inicializar `ServerOptions`."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "security-advisories@github.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:L",
+                "baseScore": 5.4,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "LOW",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "LOW",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "LOW"
+              },
+              "exploitabilityScore": 2.8,
+              "impactScore": 2.5
+            },
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+                "baseScore": 5.4,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "LOW",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "LOW",
+                "integrityImpact": "LOW",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 2.8,
+              "impactScore": 2.5
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "security-advisories@github.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-665"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*",
+                    "versionStartIncluding": "1.7.0",
+                    "versionEndExcluding": "1.18.4",
+                    "matchCriteriaId": "443488FE-C04F-4785-A677-914F87E2C6FD"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*",
+                    "versionStartIncluding": "1.19.0",
+                    "versionEndExcluding": "1.20.3",
+                    "matchCriteriaId": "ECF2500F-3709-4738-BA16-38406FB5BB4F"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*",
+                    "versionStartIncluding": "1.21.0",
+                    "versionEndExcluding": "1.23.1",
+                    "matchCriteriaId": "A4BA373F-B995-4308-9583-2E9B4546B16C"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/tokio-rs/tokio/pull/5336",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/tokio-rs/tokio/releases/tag/tokio-1.23.1",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Release Notes",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/tokio-rs/tokio/security/advisories/GHSA-7rrj-xr53-82p7",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Mitigation",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea#pipe_reject_remote_clients",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Technical Description",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/tokio-rs/tokio/pull/5336",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/tokio-rs/tokio/releases/tag/tokio-1.23.1",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Release Notes",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/tokio-rs/tokio/security/advisories/GHSA-7rrj-xr53-82p7",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mitigation",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea#pipe_reject_remote_clients",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Technical Description",
+              "Third Party Advisory"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2026-23522",
+        "sourceIdentifier": "security-advisories@github.com",
+        "published": "2026-01-19T17:15:50.590",
+        "lastModified": "2026-01-26T15:05:39.840",
+        "vulnStatus": "Awaiting Analysis",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "LobeChat is an open source chat application platform. Prior to version 2.0.0-next.193, `knowledgeBase.removeFilesFromKnowledgeBase` tRPC ep allows authenticated users to delete files from any knowledge base without verifying ownership. `userId` filter in the database query is commented out, so it's enabling attackers to delete other users' KB files if they know the knowledge base ID and file ID. While the vulnerability is confirmed, practical exploitation requires knowing target's KB ID and target's file ID. These IDs are random and not easily enumerable. However, IDs may leak through shared links, logs, referrer headers and so on. Missing authorization check is a critical security flaw regardless. Users should upgrade to version 2.0.0-next.193 to receive a patch."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "security-advisories@github.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+                "baseScore": 3.7,
+                "baseSeverity": "LOW",
+                "attackVector": "NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "LOW",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 2.2,
+              "impactScore": 1.4
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "security-advisories@github.com",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-284"
+              },
+              {
+                "lang": "en",
+                "value": "CWE-639"
+              },
+              {
+                "lang": "en",
+                "value": "CWE-862"
+              },
+              {
+                "lang": "en",
+                "value": "CWE-915"
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/lobehub/lobe-chat/commit/2c1762b85acb84467ed5e799afe1499cd2f912e6",
+            "source": "security-advisories@github.com"
+          },
+          {
+            "url": "https://github.com/lobehub/lobe-chat/security/advisories/GHSA-j7xp-4mg9-x28r",
+            "source": "security-advisories@github.com"
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2025-4565",
+        "sourceIdentifier": "cve-coordination@google.com",
+        "published": "2025-06-16T15:15:24.990",
+        "lastModified": "2025-08-14T17:05:37.770",
+        "vulnStatus": "Analyzed",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "Any project that uses Protobuf Pure-Python backend to parse untrusted Protocol Buffers data containing an arbitrary number of recursive groups, recursive messages or a series of SGROUP tags can be corrupted by exceeding the Python recursion limit. This can result in a Denial of service by crashing the application with a RecursionError. We recommend upgrading to version =>6.31.1 or beyond commit 17838beda2943d08b8a9d4df5b68f5f04f26d901"
+          },
+          {
+            "lang": "es",
+            "value": "Cualquier proyecto que utilice el backend Protobuf Pure-Python para analizar datos de Protocol Buffers no confiables que contengan un n\u00famero arbitrario de grupos recursivos, mensajes recursivos o una serie de etiquetas SGROUP puede corromperse al exceder el l\u00edmite de recursi\u00f3n de Python. Esto puede provocar una denegaci\u00f3n de servicio (DSP) que bloquea la aplicaci\u00f3n con un RecursionError. Recomendamos actualizar a la versi\u00f3n 6.31.1 o posterior (commit 17838beda2943d08b8a9d4df5b68f5f04f26d901)."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV40": [
+            {
+              "source": "cve-coordination@google.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "4.0",
+                "vectorString": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/E:X/CR:X/IR:X/AR:X/MAV:X/MAC:X/MAT:X/MPR:X/MUI:X/MVC:X/MVI:X/MVA:X/MSC:X/MSI:X/MSA:X/S:X/AU:X/R:X/V:X/RE:X/U:X",
+                "baseScore": 8.2,
+                "baseSeverity": "HIGH",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "attackRequirements": "PRESENT",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "vulnConfidentialityImpact": "NONE",
+                "vulnIntegrityImpact": "NONE",
+                "vulnAvailabilityImpact": "HIGH",
+                "subConfidentialityImpact": "NONE",
+                "subIntegrityImpact": "NONE",
+                "subAvailabilityImpact": "NONE",
+                "exploitMaturity": "NOT_DEFINED",
+                "confidentialityRequirement": "NOT_DEFINED",
+                "integrityRequirement": "NOT_DEFINED",
+                "availabilityRequirement": "NOT_DEFINED",
+                "modifiedAttackVector": "NOT_DEFINED",
+                "modifiedAttackComplexity": "NOT_DEFINED",
+                "modifiedAttackRequirements": "NOT_DEFINED",
+                "modifiedPrivilegesRequired": "NOT_DEFINED",
+                "modifiedUserInteraction": "NOT_DEFINED",
+                "modifiedVulnConfidentialityImpact": "NOT_DEFINED",
+                "modifiedVulnIntegrityImpact": "NOT_DEFINED",
+                "modifiedVulnAvailabilityImpact": "NOT_DEFINED",
+                "modifiedSubConfidentialityImpact": "NOT_DEFINED",
+                "modifiedSubIntegrityImpact": "NOT_DEFINED",
+                "modifiedSubAvailabilityImpact": "NOT_DEFINED",
+                "Safety": "NOT_DEFINED",
+                "Automatable": "NOT_DEFINED",
+                "Recovery": "NOT_DEFINED",
+                "valueDensity": "NOT_DEFINED",
+                "vulnerabilityResponseEffort": "NOT_DEFINED",
+                "providerUrgency": "NOT_DEFINED"
+              }
+            }
+          ],
+          "cvssMetricV31": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+                "baseScore": 5.3,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "LOW"
+              },
+              "exploitabilityScore": 3.9,
+              "impactScore": 1.4
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "cve-coordination@google.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-674"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "4.25.8",
+                    "matchCriteriaId": "9CE770F3-A719-45B8-83F5-3AAC15F92BAB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "5.26.0",
+                    "versionEndExcluding": "5.29.5",
+                    "matchCriteriaId": "4665132F-1171-4C9B-929C-A17B18C48346"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "6.30.0",
+                    "versionEndExcluding": "6.31.1",
+                    "matchCriteriaId": "4DE9676C-D5FF-4775-95B6-254BBE420757"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/protocolbuffers/protobuf/commit/17838beda2943d08b8a9d4df5b68f5f04f26d901",
+            "source": "cve-coordination@google.com",
+            "tags": [
+              "Patch"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2018-14618",
+        "sourceIdentifier": "secalert@redhat.com",
+        "published": "2018-09-05T19:29:00.420",
+        "lastModified": "2024-11-21T03:49:26.003",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "curl before version 7.61.1 is vulnerable to a buffer overrun in the NTLM authentication code. The internal function Curl_ntlm_core_mk_nt_hash multiplies the length of the password by two (SUM) to figure out how large temporary storage area to allocate from the heap. The length value is then subsequently used to iterate over the password and generate output into the allocated storage buffer. On systems with a 32 bit size_t, the math to calculate SUM triggers an integer overflow when the password length exceeds 2GB (2^31 bytes). This integer overflow usually causes a very small buffer to actually get allocated instead of the intended very huge one, making the use of that buffer end up in a heap buffer overflow. (This bug is almost identical to CVE-2017-8816.)"
+          },
+          {
+            "lang": "es",
+            "value": "curl en versiones anteriores a la 7.61.1 es vulnerable a un desbordamiento de b\u00fafer en el c\u00f3digo de autenticaci\u00f3n NTLM. La funci\u00f3n interna Curl_ntlm_core_mk_nt_hash multiplica la longitud de la contrase\u00f1a por dos (SUM) para adivinar qu\u00e9 tama\u00f1o debe tener la zona de almacenamiento temporal que se va a asignar desde la memoria din\u00e1mica (heap). El valor de longitud se emplea a continuaci\u00f3n para iterar sobre la contrase\u00f1a y generar una salida en el b\u00fafer de almacenamiento asignado. En sistemas con un size_t de 32 bits, la matem\u00e1tica para calcular SUM desencadena un desbordamiento de enteros cuando la contrase\u00f1a excede los 2 GB (2^31 bytes). Este desbordamiento de enteros suele provocar que un b\u00fafer muy peque\u00f1o se asigne en lugar del planeado (uno muy grande), por lo que su uso termina con un desbordamiento de b\u00fafer basado en memoria din\u00e1mica (heap). (Este error es casi id\u00e9ntico a CVE-2017-8816)."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV30": [
+            {
+              "source": "secalert@redhat.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.0",
+                "vectorString": "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                "baseScore": 7.5,
+                "baseSeverity": "HIGH",
+                "attackVector": "NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "NONE",
+                "userInteraction": "REQUIRED",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "HIGH",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 1.6,
+              "impactScore": 5.9
+            },
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.0",
+                "vectorString": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "baseScore": 9.8,
+                "baseSeverity": "CRITICAL",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "HIGH",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 3.9,
+              "impactScore": 5.9
+            }
+          ],
+          "cvssMetricV2": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "2.0",
+                "vectorString": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+                "baseScore": 10,
+                "accessVector": "NETWORK",
+                "accessComplexity": "LOW",
+                "authentication": "NONE",
+                "confidentialityImpact": "COMPLETE",
+                "integrityImpact": "COMPLETE",
+                "availabilityImpact": "COMPLETE"
+              },
+              "baseSeverity": "HIGH",
+              "exploitabilityScore": 10,
+              "impactScore": 10,
+              "acInsufInfo": false,
+              "obtainAllPrivilege": false,
+              "obtainUserPrivilege": false,
+              "obtainOtherPrivilege": false,
+              "userInteractionRequired": false
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "secalert@redhat.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-122"
+              },
+              {
+                "lang": "en",
+                "value": "CWE-131"
+              }
+            ]
+          },
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-190"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "7.61.1",
+                    "matchCriteriaId": "52ABFC88-7FDA-4850-BAAB-EAEBAA132B1A"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:esm:*:*:*",
+                    "matchCriteriaId": "8D305F7A-D159-4716-AB26-5E38BB5CD991"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:canonical:ubuntu_linux:14.04:*:*:*:lts:*:*:*",
+                    "matchCriteriaId": "B5A6F2F3-4894-4392-8296-3B8DD2679084"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:canonical:ubuntu_linux:16.04:*:*:*:lts:*:*:*",
+                    "matchCriteriaId": "F7016A2A-8365-4F1A-89A2-7A19F2BCAE5B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:canonical:ubuntu_linux:18.04:*:*:*:lts:*:*:*",
+                    "matchCriteriaId": "23A7C53F-B80F-4E6A-AFA9-58EEA84BE11D"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:debian:debian_linux:9.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "DEECE5FC-CACF-4496-A3E7-164736409252"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:6.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "2F6AB192-9D7D-4A9A-8995-E53A9DE9EAFC"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "142AD0DD-4CF3-4D74-9442-459CE3347E3A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:7.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "041F9200-4C01-4187-AE34-240E8277B54D"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:7.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "4EB48767-F095-444F-9E05-D9AC345AB803"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:7.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5F6FA12B-504C-4DBF-A32E-0548557AA2ED"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "http://www.securitytracker.com/id/1041605",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory",
+              "VDB Entry"
+            ]
+          },
+          {
+            "url": "https://access.redhat.com/errata/RHSA-2018:3558",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://access.redhat.com/errata/RHSA-2019:1880",
+            "source": "secalert@redhat.com"
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf",
+            "source": "secalert@redhat.com"
+          },
+          {
+            "url": "https://curl.haxx.se/docs/CVE-2018-14618.html",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201903-03",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://usn.ubuntu.com/3765-1/",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://usn.ubuntu.com/3765-2/",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.debian.org/security/2018/dsa-4286",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "http://www.securitytracker.com/id/1041605",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory",
+              "VDB Entry"
+            ]
+          },
+          {
+            "url": "https://access.redhat.com/errata/RHSA-2018:3558",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://access.redhat.com/errata/RHSA-2019:1880",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://curl.haxx.se/docs/CVE-2018-14618.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201903-03",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://usn.ubuntu.com/3765-1/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://usn.ubuntu.com/3765-2/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.debian.org/security/2018/dsa-4286",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2023-1055",
+        "sourceIdentifier": "secalert@redhat.com",
+        "published": "2023-02-27T22:15:09.990",
+        "lastModified": "2024-11-21T07:38:22.297",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+                "baseScore": 5.5,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "LOCAL",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "LOW",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 1.8,
+              "impactScore": 3.6
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "secalert@redhat.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-200"
+              }
+            ]
+          },
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-295"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:redhat:directory_server:11.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5532B7A4-A873-4639-B8D4-B6A65CFCFB3A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:redhat:directory_server:11.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "151CA15F-B090-4767-A1B0-03CBE45A7B75"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:redhat:directory_server:12.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A3DAF61A-58A9-41A6-A4DC-64148055B0C1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:redhat:directory_server:12.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "F8C6D6E7-66A9-4F10-B38D-5D6832CD4D77"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5C675112-476C-4D7C-BCB9-A2FB2D0BC9FD"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:37:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "E30D0E6F-4AE8-4284-8716-991DFA48CC5D"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CC559B26-5DFC-4B7A-A27C-B77DE755DFF9"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Issue Tracking",
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/",
+            "source": "secalert@redhat.com"
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking",
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2024-7264",
+        "sourceIdentifier": "2499f714-1537-4658-8207-48ae4bb9eae9",
+        "published": "2024-07-31T08:15:02.657",
+        "lastModified": "2025-11-03T23:17:31.647",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used."
+          },
+          {
+            "lang": "es",
+            "value": "El c\u00f3digo del analizador ASN1 de libcurl tiene la funci\u00f3n `GTime2str()`, que se utiliza para analizar un campo de tiempo generalizado ASN.1. Si se proporciona un campo sint\u00e1cticamente incorrecto, el analizador puede terminar usando -1 para la longitud de la *time fraction*, lo que lleva a que se ejecute una `strlen()` en un puntero a un \u00e1rea de b\u00fafer de almacenamiento din\u00e1mico que no est\u00e1 (intencionadamente) terminada en nulo. Este fallo probablemente lleve a un bloqueo, pero tambi\u00e9n puede llevar a que se devuelvan contenidos del mont\u00f3n a la aplicaci\u00f3n cuando se utiliza [CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html)."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+                "baseScore": 6.5,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "REQUIRED",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 2.8,
+              "impactScore": 3.6
+            },
+            {
+              "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L",
+                "baseScore": 6.3,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "LOW",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "LOW",
+                "integrityImpact": "LOW",
+                "availabilityImpact": "LOW"
+              },
+              "exploitabilityScore": 2.8,
+              "impactScore": 3.4
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-125"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "7.32.0",
+                    "versionEndExcluding": "8.9.1",
+                    "matchCriteriaId": "A578587B-41C6-48AE-B389-54B89C7116A4"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1",
+            "source": "2499f714-1537-4658-8207-48ae4bb9eae9",
+            "tags": [
+              "Mailing List"
+            ]
+          },
+          {
+            "url": "https://curl.se/docs/CVE-2024-7264.html",
+            "source": "2499f714-1537-4658-8207-48ae4bb9eae9",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://curl.se/docs/CVE-2024-7264.json",
+            "source": "2499f714-1537-4658-8207-48ae4bb9eae9",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://hackerone.com/reports/2629968",
+            "source": "2499f714-1537-4658-8207-48ae4bb9eae9",
+            "tags": [
+              "Exploit",
+              "Issue Tracking",
+              "Permissions Required",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List"
+            ]
+          },
+          {
+            "url": "https://github.com/curl/curl/commit/27959ecce75cdb2809c0bdb3286e60e08fadb519",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.netapp.com/advisory/ntap-20240828-0008/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.netapp.com/advisory/ntap-20241025-0006/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.netapp.com/advisory/ntap-20241025-0010/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2022-33068",
+        "sourceIdentifier": "cve@mitre.org",
+        "published": "2022-06-23T17:15:14.350",
+        "lastModified": "2024-11-21T07:07:30.140",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors."
+          },
+          {
+            "lang": "es",
+            "value": "Un desbordamiento de enteros en el componente hb-ot-shape-fallback.cc de Harfbuzz versi\u00f3n v4.3.0, permite a atacantes causar una Denegaci\u00f3n de Servicio (DoS) por medio de vectores no especificados"
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+                "baseScore": 5.5,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "LOCAL",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "REQUIRED",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 1.8,
+              "impactScore": 3.6
+            }
+          ],
+          "cvssMetricV2": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "2.0",
+                "vectorString": "AV:N/AC:M/Au:N/C:N/I:N/A:P",
+                "baseScore": 4.3,
+                "accessVector": "NETWORK",
+                "accessComplexity": "MEDIUM",
+                "authentication": "NONE",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "PARTIAL"
+              },
+              "baseSeverity": "MEDIUM",
+              "exploitabilityScore": 8.6,
+              "impactScore": 2.9,
+              "acInsufInfo": false,
+              "obtainAllPrivilege": false,
+              "obtainUserPrivilege": false,
+              "obtainOtherPrivilege": false,
+              "userInteractionRequired": true
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-190"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "4A67E5B9-F189-4A12-9BA2-D9135C21AD24"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "80E516C0-98A4-4ADE-B69F-66A772E2BAAA"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5C675112-476C-4D7C-BCB9-A2FB2D0BC9FD"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/harfbuzz/harfbuzz/issues/3557",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Exploit",
+              "Issue Tracking",
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/202209-11",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/harfbuzz/harfbuzz/issues/3557",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Exploit",
+              "Issue Tracking",
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/202209-11",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2016-1897",
+        "sourceIdentifier": "cve@mitre.org",
+        "published": "2016-01-15T03:59:23.063",
+        "lastModified": "2025-04-12T10:46:40.837",
+        "vulnStatus": "Deferred",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "FFmpeg 2.x allows remote attackers to conduct cross-origin attacks and read arbitrary files by using the concat protocol in an HTTP Live Streaming (HLS) M3U8 file, leading to an external HTTP request in which the URL string contains the first line of a local file."
+          },
+          {
+            "lang": "es",
+            "value": "FFmpeg 2.x permite a atacantes remotos llevar a cabo ataques de origen cruzado y leer archivos arbitrarios usando el protocolo concat en un archivo HTTP Live Streaming (HLS) M3U8, dando lugar a una petici\u00f3n HTTP externa en la que la cadena URL contiene la primera l\u00ednea de un archivo local."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV30": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.0",
+                "vectorString": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+                "baseScore": 5.5,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "LOCAL",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "REQUIRED",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 1.8,
+              "impactScore": 3.6
+            }
+          ],
+          "cvssMetricV2": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "2.0",
+                "vectorString": "AV:N/AC:M/Au:N/C:P/I:N/A:N",
+                "baseScore": 4.3,
+                "accessVector": "NETWORK",
+                "accessComplexity": "MEDIUM",
+                "authentication": "NONE",
+                "confidentialityImpact": "PARTIAL",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "baseSeverity": "MEDIUM",
+              "exploitabilityScore": 8.6,
+              "impactScore": 2.9,
+              "acInsufInfo": false,
+              "obtainAllPrivilege": false,
+              "obtainUserPrivilege": false,
+              "obtainOtherPrivilege": false,
+              "userInteractionRequired": true
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-200"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A1337F5B-E9D9-4335-9E05-50018E59E530"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "0B27C609-E4B4-41CD-B228-38267AA3A8AB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C97DBEE2-AF4E-4C2D-A185-F2A1B965D9DA"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "FDEDAA24-D9E0-4384-B193-0C8814E4FDD6"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "40B0C71E-341A-434A-90AE-326097AC85E4"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "E83D73FF-E6F6-4399-B721-6C6275C52B55"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "B07481C8-7CEB-4B81-B8E0-FF45DAA28870"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.0.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "F9E69881-F5C7-4BB3-8BEB-C3C85CCD4B93"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "B70C00A9-3562-45AB-B494-3BA91B6AFC3E"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A30389D2-2873-4F15-B249-066B6D37AC23"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "0487928D-6630-4E23-BBA5-BED0A0F156B1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C3088131-C48D-463B-8709-78A90EDE1FA4"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "DADF01E6-CB58-4593-B444-A59232EE83CB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "06442F70-22B4-49E5-B25B-92E03973B57E"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "6E8FDCEA-336D-4BC9-AE93-9A0CCE443AC8"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "B5505E58-DF70-4408-A347-FBB74D119566"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.1.8:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5D406D9D-A51A-4EE6-88BF-279422A4DBA4"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "9B08A7BE-7C98-4659-808F-86A8EB4676D2"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "4BF38DD1-2604-41AD-975A-56CC24767799"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C76392F6-6992-4B67-97BA-607A091DDA6B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "BB396E84-FE69-4E19-9937-B82A63D347AF"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CE9CF7C7-3730-43EC-B63E-B004D979E57A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "889B2130-CB88-487B-92FB-959DB44B8E34"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "F9BE4879-972C-45EA-8253-46E5BE98FFA9"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "653411BA-9F0B-4BFC-8A42-6576E956F96D"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.8:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "268DAF2F-4484-4212-AEB0-F9A10596F874"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.9:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "BCD7A424-DA4D-4508-B4EB-14A1BA65E596"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.10:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C190A7C8-2DAE-4F72-A620-9D184CBF10B1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.11:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "6E8764DC-1C01-4C3E-A7AC-C8AF69F944E1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.12:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C7A45FBF-A89E-4F1C-B397-AB2A53DB805C"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.13:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "78B3B781-7DEC-475C-A429-11D1B2F69CD2"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.14:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "1FDCCDDC-6CDA-4D3B-BB4C-C370C69EB1C9"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.15:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "63209CD1-2710-462C-9AEC-A9DE2B41A7B1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.2.16:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "336CB8D4-EBE0-4E34-9F71-DD0FEA8A99C3"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "207DF654-326E-43A9-A5EC-BC239BF30422"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "8794F8C5-A639-4C89-8C51-87787B29833F"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "5B50AB2A-FA23-4BB0-AA21-724E770ADEFB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "94BC4C82-371C-4B80-A615-AE0F15F1D6CA"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "D0E114D7-1323-4965-9680-8638ACDFF20B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A7BBF39F-668E-4771-99A0-F008B18B03F5"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.3.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "8CC929DD-566D-4906-8960-7BCFA7EE0384"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C3E41754-D2AB-4DE1-9ED9-A88F5E28ABFF"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "14D1738D-D85A-4650-9DAB-C626E7F52812"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A91B8DD5-FB80-47E7-8AF3-57D72CD4D034"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "A1ADB969-FA62-4238-83DF-D5703603A9FE"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "2D51D915-0FAF-449F-825B-1F2B1F9BAF00"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "19772D67-FAE5-4178-815D-4F511AE0411E"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "2A6097F4-A8D1-4070-A4B2-8479421C15DB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "8BBBBB2E-F454-44F7-8131-BFF852BC6DE0"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.8:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "BE75C995-BCB6-4F46-AE8C-B86FBF2702E3"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.9:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "291E07BD-70C0-403B-ACB3-B49D2DED59C8"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.10:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "3FA5BAC2-C23B-4D4E-8CA1-57780761AC35"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.11:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "B0AE997C-54E3-4619-A269-E96E79164C0A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.4.12:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "7D13C0AC-8AB4-49E1-8A5C-98DCA6F01D08"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "F19A0139-AF47-434F-AFE9-ECC003675537"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "DF38E5B7-AB89-418E-B507-3D660FE753C4"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "C5249D4A-D8D9-4B89-96B6-E957A2210750"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "29619AAD-6792-4B38-8DFB-706BEACA46F1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "88FEC8E4-6B53-459E-B257-BEE424463592"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "8A0A20D5-EAFD-4B79-818A-B834E9A11C2B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "045AD46C-4D1E-42C9-9CFB-7924B58AE55F"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "1A56E5B7-2C52-49F0-8EB1-8A090ACBF1FA"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.8:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "3B412DEE-9257-4588-83F2-F8DAC3F7E1DE"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.5.9:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "35121E51-84B8-4725-B027-AE381CA1C9F1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "DDCDF3E1-280C-4539-80F8-3B131461FDF1"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CBE52F27-7AEC-40AB-9349-4C3E0E4743BF"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "01917E14-8DB6-43FE-A7B9-02C87308F09B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "6D3C37FF-6B21-409F-AC19-6C2F2F429109"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "3EE84614-E84C-496D-933C-5BEFD385451B"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.5:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "59F6842E-041C-4076-8A2F-170DB783CC6A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.6.6:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "E3B53136-92CB-45D4-8CA8-589D332AEBDE"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.7:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "4876E244-8F7F-4EF2-B7D9-5146BCF02F59"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "8D3F7BF7-D609-44B1-9536-4A07DC149824"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CBD5E478-1654-4A75-904D-8453DDC680A0"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "AF3C0E7A-533F-4AD7-BD0C-B91C0139790A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.7.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "150B1880-BFC3-42C4-B6A3-B96C67CD671D"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "DAA8F265-CE4D-46FE-9871-FDD4D6738DAB"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8:dev:*:*:*:*:*:*",
+                    "matchCriteriaId": "756A3888-E151-4FEA-8D14-F45F3192BCBA"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "AA3F5FAA-AD9E-4FC1-B91C-E9A561E95173"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.2:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "18A269C0-FE0F-4178-8195-955D373D9055"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.3:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CCA6A474-DA24-4510-8AAA-5DF2E85B4D88"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:ffmpeg:ffmpeg:2.8.4:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "0D124F06-CF7E-4549-82EC-D0EC0B73D146"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:lts:*:*:*",
+                    "matchCriteriaId": "B6B7CAD7-9D4E-4FDB-88E3-1E583210A01F"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:opensuse:leap:42.1:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "4863BE36-D16A-4D75-90D9-FD76DB5B48B7"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "http://habrahabr.ru/company/mailru/blog/274855",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Exploit"
+            ]
+          },
+          {
+            "url": "http://lists.opensuse.org/opensuse-security-announce/2016-01/msg00034.html",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://security.stackexchange.com/questions/110644",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Exploit"
+            ]
+          },
+          {
+            "url": "http://www.debian.org/security/2016/dsa-3506",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2016/01/14/1",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://www.securityfocus.com/bid/80501",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://www.securitytracker.com/id/1034932",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://www.slackware.com/security/viewer.php?l=slackware-security&y=2016&m=slackware-security.529036",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://www.ubuntu.com/usn/USN-2944-1",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201606-09",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201705-08",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://www.kb.cert.org/vuls/id/772447",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "http://habrahabr.ru/company/mailru/blog/274855",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Exploit"
+            ]
+          },
+          {
+            "url": "http://lists.opensuse.org/opensuse-security-announce/2016-01/msg00034.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://security.stackexchange.com/questions/110644",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Exploit"
+            ]
+          },
+          {
+            "url": "http://www.debian.org/security/2016/dsa-3506",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2016/01/14/1",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://www.securityfocus.com/bid/80501",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://www.securitytracker.com/id/1034932",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://www.slackware.com/security/viewer.php?l=slackware-security&y=2016&m=slackware-security.529036",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "http://www.ubuntu.com/usn/USN-2944-1",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201606-09",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://security.gentoo.org/glsa/201705-08",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://www.kb.cert.org/vuls/id/772447",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2016-15012",
+        "sourceIdentifier": "cna@vuldb.com",
+        "published": "2023-01-07T13:15:09.530",
+        "lastModified": "2024-11-21T02:45:29.557",
+        "vulnStatus": "Modified",
+        "cveTags": [
+          {
+            "sourceIdentifier": "cna@vuldb.com",
+            "tags": [
+              "unsupported-when-assigned"
+            ]
+          }
+        ],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "** UNSUPPORTED WHEN ASSIGNED ** A vulnerability was found in forcedotcom SalesforceMobileSDK-Windows up to 4.x. It has been rated as critical. This issue affects the function ComputeCountSql of the file SalesforceSDK/SmartStore/Store/QuerySpec.cs. The manipulation leads to sql injection. Upgrading to version 5.0.0 is able to address this issue. The patch is named 83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8. It is recommended to upgrade the affected component. The associated identifier of this vulnerability is VDB-217619. NOTE: This vulnerability only affects products that are no longer supported by the maintainer."
+          },
+          {
+            "lang": "es",
+            "value": "** NO SOPORTADO CUANDO SE ASIGN\u00d3 ** Se encontr\u00f3 una vulnerabilidad en forceotcom SalesforceMobileSDK-Windows hasta 4.x. Ha sido declarada como cr\u00edtica. Este problema afecta la funci\u00f3n ComputeCountSql del archivo SalesforceSDK/SmartStore/Store/QuerySpec.cs. La manipulaci\u00f3n conduce a la inyecci\u00f3n de SQL. La actualizaci\u00f3n a la versi\u00f3n 5.0.0 puede solucionar este problema. El parche se llama 83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8. Se recomienda actualizar el componente afectado. El identificador asociado de esta vulnerabilidad es VDB-217619. NOTA: Esta vulnerabilidad solo afecta a productos que ya no son compatibles con el fabricante."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "cna@vuldb.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L",
+                "baseScore": 5.5,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "ADJACENT_NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "LOW",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "LOW",
+                "integrityImpact": "LOW",
+                "availabilityImpact": "LOW"
+              },
+              "exploitabilityScore": 2.1,
+              "impactScore": 3.4
+            },
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "baseScore": 9.8,
+                "baseSeverity": "CRITICAL",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "HIGH",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 3.9,
+              "impactScore": 5.9
+            }
+          ],
+          "cvssMetricV2": [
+            {
+              "source": "cna@vuldb.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "2.0",
+                "vectorString": "AV:A/AC:L/Au:S/C:P/I:P/A:P",
+                "baseScore": 5.2,
+                "accessVector": "ADJACENT_NETWORK",
+                "accessComplexity": "LOW",
+                "authentication": "SINGLE",
+                "confidentialityImpact": "PARTIAL",
+                "integrityImpact": "PARTIAL",
+                "availabilityImpact": "PARTIAL"
+              },
+              "baseSeverity": "MEDIUM",
+              "exploitabilityScore": 5.1,
+              "impactScore": 6.4,
+              "acInsufInfo": false,
+              "obtainAllPrivilege": false,
+              "obtainUserPrivilege": false,
+              "obtainOtherPrivilege": false,
+              "userInteractionRequired": false
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "cna@vuldb.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-89"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:salesforce:mobile_software_development_kit:*:*:*:*:*:windows:*:*",
+                    "versionEndExcluding": "5.0.0",
+                    "matchCriteriaId": "8E100174-3CB8-4DC3-8592-458066A3927C"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/commit/83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8",
+            "source": "cna@vuldb.com",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/releases/tag/v5.0.0",
+            "source": "cna@vuldb.com",
+            "tags": [
+              "Release Notes",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://vuldb.com/?ctiid.217619",
+            "source": "cna@vuldb.com",
+            "tags": [
+              "Permissions Required",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://vuldb.com/?id.217619",
+            "source": "cna@vuldb.com",
+            "tags": [
+              "Permissions Required",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/commit/83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Patch",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/releases/tag/v5.0.0",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Release Notes",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://vuldb.com/?ctiid.217619",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Permissions Required",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://vuldb.com/?id.217619",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Permissions Required",
+              "Third Party Advisory"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2024-2002",
+        "sourceIdentifier": "secalert@redhat.com",
+        "published": "2024-03-18T13:15:07.657",
+        "lastModified": "2025-04-09T15:36:37.840",
+        "vulnStatus": "Analyzed",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results."
+          },
+          {
+            "lang": "es",
+            "value": "Se encontr\u00f3 una vulnerabilidad de doble liberaci\u00f3n en libdwarf. En un objeto DWARF multicorrupto, libdwarf puede intentar desasignar (liberar) una asignaci\u00f3n dos veces, lo que podr\u00eda provocar resultados diversos e impredecibles."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "secalert@redhat.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "baseScore": 7.5,
+                "baseSeverity": "HIGH",
+                "attackVector": "NETWORK",
+                "attackComplexity": "LOW",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "NONE",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "HIGH"
+              },
+              "exploitabilityScore": 3.9,
+              "impactScore": 3.6
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "secalert@redhat.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-415"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:libdwarf_project:libdwarf:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "0.1.0",
+                    "versionEndExcluding": "0.9.2",
+                    "matchCriteriaId": "6E3517E3-6D61-4C81-A11A-D7A4C48CE19E"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "142AD0DD-4CF3-4D74-9442-459CE3347E3A"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:redhat:enterprise_linux:8.0:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "F4CFF558-3C47-480D-A2F0-BABF26042943"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CA277A6C-83EC-4536-9125-97B84C4FAF59"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://access.redhat.com/security/cve/CVE-2024-2002",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2267700",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt",
+            "source": "secalert@redhat.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://access.redhat.com/security/cve/CVE-2024-2002",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2267700",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "cve": {
+        "id": "CVE-2024-31497",
+        "sourceIdentifier": "cve@mitre.org",
+        "published": "2024-04-15T20:15:11.077",
+        "lastModified": "2025-11-04T22:16:00.673",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "In PuTTY 0.68 through 0.80 before 0.81, biased ECDSA nonce generation allows an attacker to recover a user's NIST P-521 secret key via a quick attack in approximately 60 signatures. This is especially important in a scenario where an adversary is able to read messages signed by PuTTY or Pageant. The required set of signed messages may be publicly readable because they are stored in a public Git service that supports use of SSH for commit signing, and the signatures were made by Pageant through an agent-forwarding mechanism. In other words, an adversary may already have enough signature information to compromise a victim's private key, even if there is no further use of vulnerable PuTTY versions. After a key compromise, an adversary may be able to conduct supply-chain attacks on software maintained in Git. A second, independent scenario is that the adversary is an operator of an SSH server to which the victim authenticates (for remote login or file copy), even though this server is not fully trusted by the victim, and the victim uses the same private key for SSH connections to other services operated by other entities. Here, the rogue server operator (who would otherwise have no way to determine the victim's private key) can derive the victim's private key, and then use it for unauthorized access to those other services. If the other services include Git services, then again it may be possible to conduct supply-chain attacks on software maintained in Git. This also affects, for example, FileZilla before 3.67.0, WinSCP before 6.3.3, TortoiseGit before 2.15.0.1, and TortoiseSVN through 1.14.6."
+          },
+          {
+            "lang": "es",
+            "value": "En PuTTY 0.68 a 0.80 antes de 0.81, la generaci\u00f3n nonce ECDSA sesgada permite a un atacante recuperar la clave secreta NIST P-521 de un usuario mediante un ataque r\u00e1pido en aproximadamente 60 firmas. Esto es especialmente importante en un escenario en el que un adversario puede leer mensajes firmados por PuTTY o Pageant. El conjunto requerido de mensajes firmados puede ser legible p\u00fablicamente porque est\u00e1n almacenados en un servicio p\u00fablico Git que admite el uso de SSH para la firma de confirmaci\u00f3n, y Pageant realiz\u00f3 las firmas a trav\u00e9s de un mecanismo de reenv\u00edo de agentes. En otras palabras, es posible que un adversario ya tenga suficiente informaci\u00f3n de firma para comprometer la clave privada de una v\u00edctima, incluso si no se utilizan m\u00e1s versiones vulnerables de PuTTY. Despu\u00e9s de un compromiso clave, un adversario puede realizar ataques a la cadena de suministro del software mantenido en Git. Un segundo escenario independiente es que el adversario sea un operador de un servidor SSH en el que la v\u00edctima se autentica (para inicio de sesi\u00f3n remoto o copia de archivos), aunque la v\u00edctima no conf\u00ede plenamente en este servidor y la v\u00edctima utilice la misma clave privada. para conexiones SSH a otros servicios operados por otras entidades. Aqu\u00ed, el operador del servidor fraudulento (que de otro modo no tendr\u00eda forma de determinar la clave privada de la v\u00edctima) puede obtener la clave privada de la v\u00edctima y luego usarla para acceder no autorizado a esos otros servicios. Si los otros servicios incluyen servicios Git, nuevamente es posible realizar ataques a la cadena de suministro del software mantenido en Git. Esto tambi\u00e9n afecta, por ejemplo, a FileZilla anterior a 3.67.0, WinSCP anterior a 6.3.3, TortoiseGit anterior a 2.15.0.1 y TortoiseSVN hasta 1.14.6."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                "baseScore": 5.9,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 2.2,
+              "impactScore": 3.6
+            },
+            {
+              "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+                "baseScore": 5.9,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "NONE",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 2.2,
+              "impactScore": 3.6
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-338"
+              }
+            ]
+          },
+          {
+            "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-338"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:putty:putty:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "0.68",
+                    "versionEndExcluding": "0.81",
+                    "matchCriteriaId": "E0D6294C-4365-4187-8053-35F3AAC5229F"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:filezilla-project:filezilla_client:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "3.67.0",
+                    "matchCriteriaId": "A0E9886A-527F-444B-AFB3-33CF777182CC"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:winscp:winscp:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "6.3.3",
+                    "matchCriteriaId": "5DA80FE9-039E-4BF4-AC16-6E65FFAB22A2"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:tortoisegit:tortoisegit:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "2.15.0.1",
+                    "matchCriteriaId": "A1C171EB-2081-44AC-9017-B3BA3A88B10A"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:tigris:tortoisesvn:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "1.14.6",
+                    "matchCriteriaId": "26F28A31-E86D-43C1-8043-2B8ECD723AF7"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CC559B26-5DFC-4B7A-A27C-B77DE755DFF9"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:39:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "B8EDB836-4E6A-4B71-B9B2-AA3E03E0F646"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CA277A6C-83EC-4536-9125-97B84C4FAF59"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2024/04/15/6",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2275183",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://bugzilla.suse.com/show_bug.cgi?id=1222864",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://docs.ccv.brown.edu/oscar/connecting-to-oscar/ssh/ssh-agent-forwarding/key-generation-and-agent-forwarding-with-putty",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Product"
+            ]
+          },
+          {
+            "url": "https://filezilla-project.org/versions.php",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Release Notes"
+            ]
+          },
+          {
+            "url": "https://git.tartarus.org/?h=c193fe9848f50a88a4089aac647fecc31ae96d27&p=simon/putty.git",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/advisories/GHSA-6p4c-r453-8743",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/daedalus/BreakingECDSAwithLLL",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2024/06/msg00014.html",
+            "source": "cve@mitre.org"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WFDZBV7ZCAZ6AH3VCQ34SSY7L3J7VZXZ/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://news.ycombinator.com/item?id=40044665",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://security-tracker.debian.org/tracker/CVE-2024-31497",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://securityonline.info/cve-2024-31497-critical-putty-vulnerability-exposes-private-keys-immediate-action-required/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter9.html#pageant-forward",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Product"
+            ]
+          },
+          {
+            "url": "https://tortoisegit.org",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://twitter.com/CCBalert/status/1780229237569470549",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://twitter.com/lambdafu/status/1779969509522133272",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://winscp.net/eng/news.php",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/putty-ssh-client-flaw-allows-recovery-of-cryptographic-private-keys/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Release Notes",
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-p521-bias.html",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://www.openwall.com/lists/oss-security/2024/04/15/6",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.reddit.com/r/sysadmin/comments/1c4wmoj/putty_vulnerability_affecting_v068_to_v08/",
+            "source": "cve@mitre.org",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "http://www.openwall.com/lists/oss-security/2024/04/15/6",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2275183",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://bugzilla.suse.com/show_bug.cgi?id=1222864",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://docs.ccv.brown.edu/oscar/connecting-to-oscar/ssh/ssh-agent-forwarding/key-generation-and-agent-forwarding-with-putty",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Product"
+            ]
+          },
+          {
+            "url": "https://filezilla-project.org/versions.php",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Release Notes"
+            ]
+          },
+          {
+            "url": "https://git.tartarus.org/?h=c193fe9848f50a88a4089aac647fecc31ae96d27&p=simon/putty.git",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/advisories/GHSA-6p4c-r453-8743",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/daedalus/BreakingECDSAwithLLL",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2024/06/msg00014.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WFDZBV7ZCAZ6AH3VCQ34SSY7L3J7VZXZ/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://news.ycombinator.com/item?id=40044665",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Issue Tracking"
+            ]
+          },
+          {
+            "url": "https://security-tracker.debian.org/tracker/CVE-2024-31497",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://securityonline.info/cve-2024-31497-critical-putty-vulnerability-exposes-private-keys-immediate-action-required/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter9.html#pageant-forward",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Product"
+            ]
+          },
+          {
+            "url": "https://tortoisegit.org",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://twitter.com/CCBalert/status/1780229237569470549",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://twitter.com/lambdafu/status/1779969509522133272",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://winscp.net/eng/news.php",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/putty-ssh-client-flaw-allows-recovery-of-cryptographic-private-keys/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Release Notes",
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-p521-bias.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Vendor Advisory"
+            ]
+          },
+          {
+            "url": "https://www.openwall.com/lists/oss-security/2024/04/15/6",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List",
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://www.reddit.com/r/sysadmin/comments/1c4wmoj/putty_vulnerability_affecting_v068_to_v08/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Press/Media Coverage"
+            ]
+          },
+          {
+            "url": "https://www.vicarius.io/vsociety/posts/understanding-a-critical-vulnerability-in-putty-biased-ecdsa-nonce-generation-revealing-nist-p-521-private-keys-cve-2024-31497",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          }
+        ]
+      }
+    }
+  ]
+}

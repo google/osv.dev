@@ -14,7 +14,6 @@
 """Tests for vanir_signatures."""
 
 import unittest
-import datetime
 from unittest import mock
 
 from google.cloud import ndb

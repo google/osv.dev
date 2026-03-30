@@ -18,7 +18,6 @@ import argparse
 import datetime
 import json
 import logging
-import os
 from concurrent import futures
 
 from google.cloud import ndb

@@ -20,7 +20,6 @@ import shutil
 import socket
 import pprint
 import signal
-import socket
 import time
 
 from proto import datetime_helpers

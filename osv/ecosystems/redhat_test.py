@@ -126,6 +126,7 @@ class RPMEcosystemTest(unittest.TestCase):
     ecos = [
         'Red Hat',
         'AlmaLinux',
+        'Azure Linux',
         'Mageia',
         'openEuler',
         'openSUSE',

@@ -26,7 +26,14 @@ COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o dsa-dla-dtsa ./cmd/converters/dsa-dla-dtsa/main.go
 
 FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
-RUN apk add --no-cache git
+RUN apk add --no-cache git ca-certificates
+# Increase the Git buffer to 500MB and disable compression to prevent timeouts
+# downgrading http to 1.1 seems to be the only thing that works
+# TODO: revise this
+RUN git config --global http.postBuffer 524288000 \
+    && git config --global http.maxRequestBuffer 100M \
+    && git config --global core.compression 0 \
+    && git config --global http.version HTTP/1.1
 WORKDIR /src
 COPY --from=build /src/dsa-dla-dtsa ./dsa-dla-dtsa
 

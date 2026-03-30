@@ -26,3 +26,4 @@ patches:
 - path: record-checker.yaml
 - path: custommetrics.yaml
 - path: gitter.yaml
+- path: vanir-signatures.yaml

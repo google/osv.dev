@@ -28,6 +28,9 @@ importer-tests:
 recoverer-tests:
 	cd gcp/workers/recoverer && ./run_tests.sh
 
+vanir-signatures-tests:
+	cd gcp/workers/vanir_signatures && ./run_tests.sh
+
 website-tests:
 	cd gcp/website && ./run_tests.sh
 

@@ -6,7 +6,8 @@
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
         "package": {}
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -28,7 +29,8 @@
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
         "package": {}
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -42,7 +44,8 @@
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
         "package": {}
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -64,7 +67,8 @@
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
         "package": {}
-      }
+      },
+      "vulns": []
     }
   ]
 }

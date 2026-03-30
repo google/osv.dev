@@ -99,6 +99,12 @@ func normalizeJSONBody(t *testing.T, reqBody []byte, resp *http.Response) string
 				body = res
 			}
 		}
+		if !gjson.GetBytes(body, "vulns").Exists() {
+			res, err := sjson.SetRawBytes(body, "vulns", []byte("[]"))
+			if err == nil {
+				body = res
+			}
+		}
 	case "/v1/querybatch":
 		queries := gjson.GetBytes(reqBody, "queries")
 		if queries.IsArray() {
@@ -106,6 +112,12 @@ func normalizeJSONBody(t *testing.T, reqBody []byte, resp *http.Response) string
 				res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.query", i), []byte(query.Raw))
 				if err == nil {
 					body = res
+				}
+				if !gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)).Exists() {
+					res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte("[]"))
+					if err == nil {
+						body = res
+					}
 				}
 			}
 		}

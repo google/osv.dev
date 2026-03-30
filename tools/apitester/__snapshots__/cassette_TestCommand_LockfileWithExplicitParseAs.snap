@@ -9,7 +9,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -26,7 +27,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -43,7 +45,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -90,7 +93,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -114,7 +118,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -123,7 +128,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -132,7 +138,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -179,7 +186,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -203,7 +211,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -212,7 +221,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -221,7 +231,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -258,7 +269,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -282,7 +294,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -291,7 +304,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -300,7 +314,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }

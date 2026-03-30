@@ -9,7 +9,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -18,7 +19,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -35,7 +37,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -52,7 +55,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -69,7 +73,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -86,7 +91,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -103,7 +109,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -828,7 +835,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -837,7 +845,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -846,7 +855,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -855,7 +865,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -864,7 +875,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -873,7 +885,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -882,7 +895,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -891,7 +905,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -900,7 +915,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -924,7 +940,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -933,7 +950,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -942,7 +960,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1009,7 +1028,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1018,7 +1038,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1027,7 +1048,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1051,7 +1073,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1060,7 +1083,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1069,7 +1093,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1078,7 +1103,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1087,7 +1113,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1096,7 +1123,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1105,7 +1133,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1114,7 +1143,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1138,7 +1168,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1147,7 +1178,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1156,7 +1188,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1165,7 +1198,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1201,7 +1235,8 @@
           "ecosystem": "npm"
         },
         "version": "0.0.8"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1210,7 +1245,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1219,7 +1255,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1228,7 +1265,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1245,7 +1283,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1254,7 +1293,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1268,7 +1308,8 @@
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
         "package": {}
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1290,7 +1331,8 @@
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
         "package": {}
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1299,7 +1341,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1308,7 +1351,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1317,7 +1361,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1326,7 +1371,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1335,7 +1381,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1344,7 +1391,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1353,7 +1401,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1377,7 +1426,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1386,7 +1436,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1395,7 +1446,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1419,7 +1471,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1428,7 +1481,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1437,7 +1491,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1446,7 +1501,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1455,7 +1511,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1464,7 +1521,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1500,7 +1558,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1517,7 +1576,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1526,7 +1586,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1535,7 +1596,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1559,7 +1621,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1568,7 +1631,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1577,7 +1641,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1586,7 +1651,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1595,7 +1661,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1604,7 +1671,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1613,7 +1681,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1622,7 +1691,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1646,7 +1716,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1655,7 +1726,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1664,7 +1736,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1673,7 +1746,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1709,7 +1783,8 @@
           "ecosystem": "npm"
         },
         "version": "0.0.8"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1718,7 +1793,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1727,7 +1803,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1736,7 +1813,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1753,7 +1831,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1777,7 +1856,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1786,7 +1866,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1795,7 +1876,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1812,7 +1894,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -1836,7 +1919,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1845,7 +1929,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1854,7 +1939,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -1917,7 +2003,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.115"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1926,7 +2013,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1935,7 +2023,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1944,7 +2033,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1953,7 +2043,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1962,7 +2053,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1971,7 +2063,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1980,7 +2073,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1989,7 +2083,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -1998,7 +2093,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2007,7 +2103,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2016,7 +2113,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2064,7 +2162,8 @@
           "ecosystem": "Debian"
         },
         "version": "9.9+deb9u13"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2073,7 +2172,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.5.43"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2101,7 +2201,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2110,7 +2211,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2119,7 +2221,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2128,7 +2231,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2137,7 +2241,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2146,7 +2251,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2182,7 +2288,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.5.8-2.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2191,7 +2298,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.5.61"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2215,7 +2323,8 @@
           "ecosystem": "Debian"
         },
         "version": "4.8.1.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2224,7 +2333,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:3.5-3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2233,7 +2343,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.18-8~deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2273,7 +2384,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.43.4-2+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2313,7 +2425,8 @@
           "ecosystem": "Debian"
         },
         "version": "4.6.0+git+20161106-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2322,7 +2435,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.3.0-18+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2422,7 +2536,8 @@
           "ecosystem": "Go"
         },
         "version": "(devel)"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2431,7 +2546,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.18-8~deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2440,7 +2556,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.18-8~deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2468,7 +2585,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.18-8~deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2477,7 +2595,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.27-2"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2505,7 +2624,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.18+b1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2514,7 +2634,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.48"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2523,7 +2644,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.2.52-3+b1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2532,7 +2654,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.4.11"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2541,7 +2664,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.4.3-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2550,7 +2674,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:2.4.47-2+b2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2559,7 +2684,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:2.6.7-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2568,7 +2694,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:2.6.7-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2577,7 +2704,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2586,7 +2714,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.8.3-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2595,7 +2724,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.0.6-8.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2604,7 +2734,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.24-11+deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2613,7 +2744,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.24-11+deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2622,7 +2754,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2631,7 +2764,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2640,7 +2774,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.24-11+deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2649,7 +2784,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.7.7-3+b1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2658,7 +2794,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.43.4-2+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2667,7 +2804,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2676,7 +2814,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2685,7 +2824,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2694,7 +2834,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2703,7 +2844,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.3.28-12+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2712,7 +2854,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.227"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2721,7 +2864,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.1-20160903-3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2730,7 +2874,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2739,7 +2884,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.2.1-6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2748,7 +2894,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:6.3.0-18+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -2800,7 +2947,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.8.3-14"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2809,7 +2957,8 @@
           "ecosystem": "Debian"
         },
         "version": "2:6.1.2+dfsg-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2818,7 +2967,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.5.8-5+deb9u6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2827,7 +2977,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.26-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2836,7 +2987,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.15-1+deb9u3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2845,7 +2997,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.3-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2854,7 +3007,8 @@
           "ecosystem": "Debian"
         },
         "version": "57.1-6+deb9u5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2863,7 +3017,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.33-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2872,7 +3027,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.90-1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2881,7 +3037,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.15-1+deb9u3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2890,7 +3047,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.5.9-9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2899,7 +3057,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.15-1+deb9u3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2908,7 +3067,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.15-1+deb9u3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2917,7 +3077,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.3.5-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2926,7 +3087,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.4.44+dfsg-5+deb9u8"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2935,7 +3097,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.4.44+dfsg-5+deb9u8"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2944,7 +3107,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:6.0-1~bpo9+1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2953,7 +3117,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.0~r131-2+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2962,7 +3127,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.2.2-1.2+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2971,7 +3137,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2980,7 +3147,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.0+20161126-1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2989,7 +3157,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.0+20161126-1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -2998,7 +3167,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.3-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3007,7 +3177,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.3-1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3016,7 +3187,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.3-1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3025,7 +3197,8 @@
           "ecosystem": "Debian"
         },
         "version": "0.23.3-2+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3034,7 +3207,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.8-3.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3043,7 +3217,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.8-3.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3052,7 +3227,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.8-3.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3061,7 +3237,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.8-3.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3070,7 +3247,8 @@
           "ecosystem": "Debian"
         },
         "version": "2:8.39-3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3079,7 +3257,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.24.1-3+deb9u7"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3088,7 +3267,8 @@
           "ecosystem": "Debian"
         },
         "version": "14.2-1.pgdg90+1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3097,7 +3277,8 @@
           "ecosystem": "Debian"
         },
         "version": "7.0-3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3106,7 +3287,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3115,7 +3297,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3124,7 +3307,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.6-3+b3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3133,7 +3317,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.6-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3142,7 +3327,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.6-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3151,7 +3337,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.6-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3160,7 +3347,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3169,7 +3357,8 @@
           "ecosystem": "Debian"
         },
         "version": "3.16.2-5+deb9u3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3178,7 +3367,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.43.4-2+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3187,7 +3377,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.0l-1~deb9u5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3196,7 +3387,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3205,7 +3397,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3214,7 +3407,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3223,7 +3417,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.3.0-18+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3232,7 +3427,8 @@
           "ecosystem": "Debian"
         },
         "version": "232-25+deb9u13"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -3288,7 +3484,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.0+20161126-1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3297,7 +3494,8 @@
           "ecosystem": "Debian"
         },
         "version": "232-25+deb9u13"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3306,7 +3504,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.0.4-6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3315,7 +3514,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -3603,7 +3803,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.29-2.1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3612,7 +3813,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3621,7 +3823,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.24-11+deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3630,7 +3833,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:4.4-4.1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3639,7 +3843,8 @@
           "ecosystem": "Debian"
         },
         "version": "9.20161125"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -3663,7 +3868,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.29.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3672,7 +3878,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.24-11+deb9u4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -3711,7 +3918,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3720,7 +3928,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3729,7 +3938,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3738,7 +3948,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.0+20161126-1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3747,7 +3958,8 @@
           "ecosystem": "Debian"
         },
         "version": "6.0+20161126-1+deb9u2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -3756,7 +3968,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.4"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4172,7 +4385,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:4.4-4.1+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4303,7 +4517,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.24.1-3+deb9u7"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4312,7 +4527,8 @@
           "ecosystem": "Debian"
         },
         "version": "5.24.1-3+deb9u7"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4321,7 +4537,8 @@
           "ecosystem": "Debian"
         },
         "version": "2018.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4330,7 +4547,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.0.0-2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4339,7 +4557,8 @@
           "ecosystem": "OSS-Fuzz"
         },
         "version": "11.15"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4391,7 +4610,8 @@
           "ecosystem": "Debian"
         },
         "version": "11.15-1.pgdg90+1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4400,7 +4620,8 @@
           "ecosystem": "Debian"
         },
         "version": "238.pgdg90+1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4409,7 +4630,8 @@
           "ecosystem": "Debian"
         },
         "version": "238.pgdg90+1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4418,7 +4640,8 @@
           "ecosystem": "Debian"
         },
         "version": "7.0-3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4427,7 +4650,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4436,7 +4660,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4445,7 +4670,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4454,7 +4680,8 @@
           "ecosystem": "Debian"
         },
         "version": "4.4-1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4478,7 +4705,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.0.39"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4487,7 +4715,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4496,7 +4725,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4505,7 +4735,8 @@
           "ecosystem": "Debian"
         },
         "version": "2.88dsf-59.9"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -4817,7 +5048,8 @@
           "ecosystem": "Debian"
         },
         "version": "1:1.2.8.dfsg-5+deb9u1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -4826,7 +5058,8 @@
           "ecosystem": "Debian"
         },
         "version": "1.1.2-1+deb9u1"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5015,7 +5248,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5024,7 +5258,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5033,7 +5268,8 @@
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5042,7 +5278,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5051,7 +5288,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5060,7 +5298,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5069,7 +5308,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5078,7 +5318,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5095,7 +5336,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5112,7 +5354,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5121,7 +5364,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5138,7 +5382,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5155,7 +5400,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5172,7 +5418,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5212,7 +5459,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5229,7 +5477,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5238,7 +5487,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5247,7 +5497,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5256,7 +5507,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5265,7 +5517,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5274,7 +5527,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5283,7 +5537,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5292,7 +5547,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5301,7 +5557,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5325,7 +5582,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5334,7 +5592,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5343,7 +5602,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5387,7 +5647,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5396,7 +5657,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5405,7 +5667,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5414,7 +5677,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5423,7 +5687,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5432,7 +5697,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5441,7 +5707,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5450,7 +5717,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5459,7 +5727,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5483,7 +5752,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5492,7 +5762,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5501,7 +5772,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5545,7 +5817,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5554,7 +5827,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5563,7 +5837,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5572,7 +5847,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5581,7 +5857,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5590,7 +5867,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5599,7 +5877,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5608,7 +5887,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5625,7 +5905,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5634,7 +5915,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5643,7 +5925,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5652,7 +5935,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5661,7 +5945,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5670,7 +5955,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5679,7 +5965,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5688,7 +5975,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -5705,7 +5993,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5714,7 +6003,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5723,7 +6013,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5732,7 +6023,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5741,7 +6033,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5750,7 +6043,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5759,7 +6053,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5768,7 +6063,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5777,7 +6073,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5801,7 +6098,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5810,7 +6108,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5819,7 +6118,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5863,7 +6163,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5872,7 +6173,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.4.0-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5881,7 +6183,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.4-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5890,7 +6193,8 @@
           "ecosystem": "Alpine"
         },
         "version": "2.12.10-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5899,7 +6203,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5908,7 +6213,8 @@
           "ecosystem": "Alpine"
         },
         "version": "20220614-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5917,7 +6223,8 @@
           "ecosystem": "Alpine"
         },
         "version": "0.7.2-r3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5926,7 +6233,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5935,7 +6243,8 @@
           "ecosystem": "Alpine"
         },
         "version": "3.0.8-r0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -5959,7 +6268,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5968,7 +6278,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.3.5-r1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -5977,7 +6288,8 @@
           "ecosystem": "Alpine"
         },
         "version": "1.36.1-r27"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -6021,7 +6333,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -6076,7 +6389,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.10.5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6085,7 +6399,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.10.5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6094,7 +6409,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6103,7 +6419,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6112,7 +6429,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6121,7 +6439,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6130,7 +6449,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6139,7 +6459,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -6506,7 +6827,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6515,7 +6837,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6524,7 +6847,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6533,7 +6857,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6542,7 +6867,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6551,7 +6877,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6560,7 +6887,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6569,7 +6897,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6578,7 +6907,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6587,7 +6917,8 @@
           "ecosystem": "PyPI"
         },
         "version": "1.1.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6596,7 +6927,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.3.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6605,7 +6937,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.3.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6614,7 +6947,8 @@
           "ecosystem": "PyPI"
         },
         "version": "25.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -6638,7 +6972,8 @@
           "ecosystem": "PyPI"
         },
         "version": "0.12.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6647,7 +6982,8 @@
           "ecosystem": "PyPI"
         },
         "version": "4.4.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6656,7 +6992,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6665,7 +7002,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6674,7 +7012,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -6760,7 +7099,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6769,7 +7109,8 @@
           "ecosystem": "PyPI"
         },
         "version": "4.15.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -6988,7 +7329,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.10.5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -6997,7 +7339,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.10.5"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7006,7 +7349,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7015,7 +7359,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.4"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7024,7 +7369,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7033,7 +7379,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7042,7 +7389,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7051,7 +7399,8 @@
           "ecosystem": "PyPI"
         },
         "version": "8.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -7418,7 +7767,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7427,7 +7777,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7436,7 +7787,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.2.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7445,7 +7797,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7454,7 +7807,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7463,7 +7817,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.1.6"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7472,7 +7827,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7481,7 +7837,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7490,7 +7847,8 @@
           "ecosystem": "PyPI"
         },
         "version": "3.0.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7499,7 +7857,8 @@
           "ecosystem": "PyPI"
         },
         "version": "1.1.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7508,7 +7867,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.3.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7517,7 +7877,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.3.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7526,7 +7887,8 @@
           "ecosystem": "PyPI"
         },
         "version": "25.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -7550,7 +7912,8 @@
           "ecosystem": "PyPI"
         },
         "version": "0.12.1"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7559,7 +7922,8 @@
           "ecosystem": "PyPI"
         },
         "version": "4.5.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7568,7 +7932,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7577,7 +7942,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7586,7 +7952,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2025.2"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -7672,7 +8039,8 @@
           "ecosystem": "PyPI"
         },
         "version": "2.3.0"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7681,7 +8049,8 @@
           "ecosystem": "PyPI"
         },
         "version": "4.15.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -7885,7 +8254,8 @@
           "ecosystem": "npm"
         },
         "version": "4.0.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -7909,7 +8279,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7918,7 +8289,8 @@
           "ecosystem": "Go"
         },
         "version": "1.99.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -7927,7 +8299,8 @@
           "ecosystem": "npm"
         },
         "version": "1.0.2"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -7944,7 +8317,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }
@@ -7961,7 +8335,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }

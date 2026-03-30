@@ -9,7 +9,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -18,7 +19,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -42,7 +44,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -51,7 +54,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.0-SNAPSHOT"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -60,7 +64,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.6.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -291,7 +296,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.6.7"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -300,7 +306,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.10"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -309,7 +316,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.1.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -318,7 +326,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.8.1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -357,7 +366,8 @@
           "ecosystem": "Maven"
         },
         "version": "4.4.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -366,7 +376,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -402,7 +413,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -434,7 +446,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -466,7 +479,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -475,7 +489,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -499,7 +514,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.11.327"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -508,7 +524,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.0-SNAPSHOT"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -517,7 +534,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.6.0"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -748,7 +766,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.6.7"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -757,7 +776,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.10"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -766,7 +786,8 @@
           "ecosystem": "Maven"
         },
         "version": "1.1.3"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -775,7 +796,8 @@
           "ecosystem": "Maven"
         },
         "version": "2.8.1"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -814,7 +836,8 @@
           "ecosystem": "Maven"
         },
         "version": "4.4.9"
-      }
+      },
+      "vulns": []
     },
     {
       "query": {
@@ -823,7 +846,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -859,7 +883,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [
@@ -891,7 +916,8 @@
           "ecosystem": "Maven"
         },
         "version": "9.4.40.v20210413"
-      }
+      },
+      "vulns": []
     },
     {
       "vulns": [

@@ -9,7 +9,8 @@
           "ecosystem": "Packagist"
         },
         "version": "2.0.4"
-      }
+      },
+      "vulns": []
     }
   ]
 }

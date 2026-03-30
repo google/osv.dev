@@ -2,7 +2,15 @@
 [Test/cassette_TestCommandNonGit/TestCommandNonGit/one_specific_supported_lockfile - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 

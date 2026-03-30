@@ -2,7 +2,15 @@
 [Test/cassette_TestCommand_WithDetector_OffLinux/TestCommand_WithDetector_OffLinux/ssh_version_errors - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -11,7 +19,15 @@
 [Test/cassette_TestCommand_WithDetector_OffLinux/TestCommand_WithDetector_OffLinux/ssh_version_is_after_last_vuln_version - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -20,7 +36,15 @@
 [Test/cassette_TestCommand_WithDetector_OffLinux/TestCommand_WithDetector_OffLinux/ssh_version_is_before_first_vuln_version - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 

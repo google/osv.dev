@@ -31,12 +31,11 @@
         {
           "id": "CVE-2024-7254",
           "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2025-4565",
-          "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "commit": "17b30e96476be70b8773b2b807bab857fd3ceb39"
+      }
     }
   ]
 }

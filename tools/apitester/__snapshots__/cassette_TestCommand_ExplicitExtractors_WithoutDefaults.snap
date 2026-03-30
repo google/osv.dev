@@ -8,9 +8,24 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     },
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -19,8 +34,24 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_individually#01 - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -35,9 +66,24 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     },
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -46,8 +92,24 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_specified_together#01 - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -62,7 +124,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -72,7 +141,15 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_an_extractor_that_does_not_exist#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      }
+    }
   ]
 }
 
@@ -81,29 +158,156 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_disabled - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      }
+    },
     {
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
+          "modified": "<RFC3339 date with the year 2025>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
     },
-    {},
-    {},
-    {},
-    {},
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      }
+    },
     {
       "vulns": [
         {
@@ -114,7 +318,14 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      }
     }
   ]
 }
@@ -124,9 +335,33 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_disabled#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      }
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      }
+    }
   ]
 }
 
@@ -141,7 +376,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -151,7 +393,15 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_enabled_and_no_defaults#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      }
+    }
   ]
 }
 
@@ -166,7 +416,14 @@
           "id": "GHSA-whgm-jr23-g3j9",
           "modified": "<RFC3339 date with the year 2023>"
         }
-      ]
+      ],
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      }
     }
   ]
 }
@@ -176,7 +433,15 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_file_with_one_specific_extractor_enabled#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      }
+    }
   ]
 }
 

@@ -123,7 +123,7 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 					},
 				}
 
-				if !currentNVDCVE.CVE.Published.Time.IsZero() {
+				if !currentNVDCVE.CVE.Published.IsZero() {
 					v.Published = timestamppb.New(currentNVDCVE.CVE.Published.Time)
 				}
 

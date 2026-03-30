@@ -129,6 +129,10 @@ def process_batch(vuln_ids: list[str],
         logging.debug('Skipping %s: it is a Kernel vulnerability', vuln_id)
         continue
 
+      if vulnerability.HasField('withdrawn'):
+        logging.debug('Skipping %s: it is withdrawn', vuln_id)
+        continue
+
       vulnerabilities_to_process.append(vulnerability)
       gcs_generations[vulnerability.id] = gcs_gen
 
@@ -154,32 +158,27 @@ def process_batch(vuln_ids: list[str],
       logging.info('Dry run: would have updated %s', enriched_vuln.id)
     return len(all_enriched)
 
-  # Production: update Datastore and GCS
-  bugs_to_put = []
-  uploads_to_perform = []
+  # Update Datastore and GCS
+  updated_count = 0
 
-  # Batch fetch Bugs from Datastore
-  bug_keys = [ndb.Key(osv.models.Bug, v.id) for v in all_enriched]
-  bugs = ndb.get_multi(bug_keys)
+  # Batch fetch Vulnerabilities from Datastore
+  vuln_keys = [ndb.Key(osv.models.Vulnerability, v.id) for v in all_enriched]
+  vulns = ndb.get_multi(vuln_keys)
 
-  for v, bug in zip(all_enriched, bugs):
-    if not bug:
-      logging.error('Bug %s not found in Datastore', v.id)
+  for v, vuln in zip(all_enriched, vulns):
+    if not vuln:
+      logging.error('Vulnerability %s not found in Datastore', v.id)
       continue
 
-    bug.update_from_vulnerability(v)
-    bug.last_modified = osv.utcnow()
-    bugs_to_put.append(bug)
+    now = osv.utcnow()
+    v.modified.FromDatetime(now)
+    vuln.modified = now
+
+    # Update Vulnerability entity in Datastore
+    vuln.put()
 
     # Use gcs_generations[original_id] ONLY if it matches enriched ID.
     gen = gcs_generations.get(v.id)
-    uploads_to_perform.append((v, gen))
-
-  if bugs_to_put:
-    ndb.put_multi(bugs_to_put)
-
-  updated_count = 0
-  for v, gen in uploads_to_perform:
     try:
       osv.gcs.upload_vulnerability(v, gen)
       updated_count += 1

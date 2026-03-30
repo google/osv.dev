@@ -70,6 +70,23 @@ class VanirSignaturesTest(unittest.TestCase):
           any('is a Kernel vulnerability' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
+  def test_process_batch_skip_withdrawn(self, mock_get_gcs):
+    """Test skipping withdrawn vulnerabilities."""
+    vuln_id = 'VULN-1'
+    vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
+    vuln.withdrawn.FromSeconds(1234567890)
+    affected = vuln.affected.add()
+    affected.ranges.add(
+        type=vulnerability_pb2.Range.GIT, repo='https://example.com/repo')
+
+    mock_get_gcs.return_value = (vuln, '123')
+
+    with self.assertLogs(level='DEBUG') as cm:
+      result = vanir_signatures.process_batch([vuln_id])
+      self.assertEqual(result, 0)
+      self.assertTrue(any('it is withdrawn' in log for log in cm.output))
+
+  @mock.patch('osv.gcs.get_by_id_with_generation')
   @mock.patch('osv.gcs.upload_vulnerability')
   @mock.patch('vanir_signatures._generate_vanir_signatures_batch')
   def test_process_batch_success(self, mock_gen_signatures, mock_upload,
@@ -93,9 +110,9 @@ class VanirSignaturesTest(unittest.TestCase):
     }]
     mock_gen_signatures.return_value = {vuln_id: [enriched_vuln]}
 
-    # Setup Datastore Bug
-    bug = osv.Bug(id=vuln_id, db_id=vuln_id, source='test')
-    bug.put()
+    # Setup Datastore Vulnerability
+    vuln_entity = osv.Vulnerability(id=vuln_id)
+    vuln_entity.put()
 
     result = vanir_signatures.process_batch([vuln_id])
 
@@ -104,9 +121,8 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_gen_signatures.assert_called_once_with([vuln])
 
     # Verify Datastore update
-    updated_bug = osv.Bug.get_by_id(vuln_id)
-    self.assertIn('vanir_signatures',
-                  updated_bug.affected_packages[0].database_specific)
+    updated_vuln = osv.Vulnerability.get_by_id(vuln_id)
+    self.assertIsNotNone(updated_vuln.modified)
 
   @mock.patch('osv.models.Vulnerability.query')
   @mock.patch('vanir_signatures.process_batch')

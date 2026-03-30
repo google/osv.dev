@@ -111,10 +111,9 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			if !ok {
 				v = &vulns.Vulnerability{
 					Vulnerability: &osvschema.Vulnerability{
-						Id:        "DEBIAN-" + cveID,
-						Upstream:  []string{cveID},
-						Published: timestamppb.New(currentNVDCVE.CVE.Published.Time),
-						Details:   cveData.Description,
+						Id:       "DEBIAN-" + cveID,
+						Upstream: []string{cveID},
+						Details:  cveData.Description,
 						References: []*osvschema.Reference{
 							{
 								Type: osvschema.Reference_ADVISORY,
@@ -123,6 +122,11 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 						},
 					},
 				}
+
+				if !currentNVDCVE.CVE.Published.Time.IsZero() {
+					v.Published = timestamppb.New(currentNVDCVE.CVE.Published.Time)
+				}
+
 				if currentNVDCVE.CVE.Metrics != nil {
 					v.AddSeverity(currentNVDCVE.CVE.Metrics)
 				}

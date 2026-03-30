@@ -12,8 +12,8 @@ import (
 	"github.com/google/apitester/internal/jsonreplace"
 	"github.com/google/apitester/internal/vcr"
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"github.com/tidwall/pretty"
+	"github.com/tidwall/sjson"
 )
 
 var (
@@ -91,14 +91,15 @@ func normalizeJSONBody(t *testing.T, reqBody []byte, resp *http.Response) string
 
 	body = jsonreplace.DoBytes(t, body, jsonReplaceRules(t, resp))
 
-	if resp.Request.URL.Path == "/v1/query" {
+	switch resp.Request.URL.Path {
+	case "/v1/query":
 		if len(reqBody) > 0 {
 			res, err := sjson.SetRawBytes(body, "query", reqBody)
 			if err == nil {
 				body = res
 			}
 		}
-	} else if resp.Request.URL.Path == "/v1/querybatch" {
+	case "/v1/querybatch":
 		queries := gjson.GetBytes(reqBody, "queries")
 		if queries.IsArray() {
 			for i, query := range queries.Array() {

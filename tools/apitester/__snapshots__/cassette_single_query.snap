@@ -1,6 +1,9 @@
 
 [Test/cassette_single_query/TestQueryEndpoint/CommitQuery - 1]
 {
+  "query": {
+    "commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"
+  },
   "vulns": [
     {
       "id": "CVE-2021-45931",
@@ -93,15 +96,15 @@
       "references": [
         {
           "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
-        },
-        {
-          "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
         },
         {
           "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
         },
         {
           "type": "ADVISORY",
@@ -190,19 +193,19 @@
       "references": [
         {
           "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
-        },
-        {
-          "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/KWCHWSICWVZSAXP2YAXM65JC2GR53547/"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20230725-0006/"
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/YZ5M2GSAIHFPLHYJXUPQ2QDJCLWXUGO3/"
         },
         {
           "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/blob/2822b589bc837fae6f66233e2cf2eef0f6ce8470/src/hb-ot-layout-gsubgpos.hh"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20230725-0006/"
         },
         {
           "type": "FIX",
@@ -283,16 +286,16 @@
           "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/22xxx/CVE-2026-22693.json"
         },
         {
-          "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
-        },
-        {
           "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/security/advisories/GHSA-xvjr-f2r9-c7ww"
         },
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-22693"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
         }
       ],
       "affected": [
@@ -346,7 +349,7 @@
       "id": "OSV-2020-484",
       "summary": "Heap-buffer-overflow in AAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition",
       "details": "OSS-Fuzz report: https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=12532\n\n```\nCrash type: Heap-buffer-overflow READ 4\nCrash state:\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::driver_context_t::transition\nvoid AAT::StateTableDriver\u003cAAT::ExtendedTypes, AAT::KerxSubTableFormat4\u003cAAT::Ker\nAAT::KerxSubTableFormat4\u003cAAT::KerxSubTableHeader\u003e::apply\n```\n",
-      "modified": "<RFC3339 date with the year 2022>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2020-07-01T00:00:12.297418Z",
       "references": [
         {
@@ -382,18 +385,22 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.7.5"
     }
-  ],
-  "query": {
-    "commit": "6879efc2c1596d11a6a6ad296f80063b558d5e0f"
-  }
+  ]
 }
 
 ---
 
 [Test/cassette_single_query/TestQueryEndpoint/GitQueryByTag - 1]
 {
+  "query": {
+    "package": {
+      "name": "https://github.com/curl/curl.git",
+      "ecosystem": "GIT"
+    },
+    "version": "8.5.0"
+  },
   "vulns": [
     {
       "id": "CURL-CVE-2024-0853",
@@ -757,7 +764,7 @@
       "summary": "HSTS subdomain overwrites parent cache entry",
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
       "aliases": ["CVE-2024-9681"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-11-05T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -1425,10 +1432,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-0853.html"
         },
         {
@@ -1442,6 +1445,10 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240426-0009/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0012/"
         },
         {
           "type": "REPORT",
@@ -1576,27 +1583,7 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2004.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
+          "url": "https://security.netapp.com/advisory/ntap-20240524-0006/"
         },
         {
           "type": "ADVISORY",
@@ -1608,7 +1595,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
           "type": "ADVISORY",
@@ -1616,11 +1603,31 @@
         },
         {
           "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/GMD6UYKCCRCYETWQZUJ65ZRFULT6SHLI/"
         },
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240524-0006/"
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2004.html"
         },
         {
           "type": "REPORT",
@@ -1671,11 +1678,19 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2379.json"
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2379.json"
         },
         {
           "type": "ADVISORY",
@@ -1687,27 +1702,19 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/2"
+          "url": "https://curl.se/docs/CVE-2024-2379.html"
         },
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2379.html"
+          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "REPORT",
@@ -1765,7 +1772,31 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-2398.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2398.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
         },
         {
           "type": "ADVISORY",
@@ -1781,35 +1812,11 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2398.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
         },
         {
           "type": "REPORT",
@@ -1860,7 +1867,27 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.html"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
@@ -1869,26 +1896,6 @@
         {
           "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
           "type": "ADVISORY",
@@ -2097,14 +2104,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-8096.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-8096.json"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
         },
         {
@@ -2114,6 +2113,14 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241011-0005/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-8096.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-8096.json"
         },
         {
           "type": "REPORT",
@@ -2173,6 +2180,22 @@
         },
         {
           "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
+        },
+        {
+          "type": "WEB",
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
+        },
+        {
+          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
         },
         {
@@ -2181,31 +2204,19 @@
         },
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/4"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/8"
-        },
-        {
-          "type": "WEB",
           "url": "http://seclists.org/fulldisclosure/2025/Apr/9"
         },
         {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/10"
-        },
-        {
-          "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/5"
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-9681.json"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241213-0006/"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-9681.json"
+          "type": "FIX",
+          "url": "https://hackerone.com/reports/2764830"
         },
         {
           "type": "FIX",
@@ -2214,10 +2225,6 @@
         {
           "type": "FIX",
           "url": "https://curl.se/docs/CVE-2024-9681.html"
-        },
-        {
-          "type": "FIX",
-          "url": "https://hackerone.com/reports/2764830"
         }
       ],
       "affected": [
@@ -2267,15 +2274,15 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0167.html"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0167.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
         },
         {
           "type": "REPORT",
@@ -2327,14 +2334,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-0665.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-0665.json"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/05/2"
         },
         {
@@ -2344,6 +2343,14 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250306-0007/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-0665.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2025-0665.json"
         },
         {
           "type": "REPORT",
@@ -2375,7 +2382,7 @@
       "severity": [
         {
           "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H"
         }
       ]
     },
@@ -2417,15 +2424,15 @@
         },
         {
           "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/3"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/2"
         },
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/4"
+        },
+        {
+          "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/3"
         }
       ],
       "affected": [
@@ -2677,11 +2684,11 @@
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-14819.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
         }
       ],
       "affected": [
@@ -2744,11 +2751,11 @@
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-15079.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
         }
       ],
       "affected": [
@@ -2810,11 +2817,11 @@
         },
         {
           "type": "FIX",
-          "url": "https://curl.se/docs/CVE-2025-15224.html"
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
         },
         {
           "type": "FIX",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+          "url": "https://curl.se/docs/CVE-2025-15224.html"
         }
       ],
       "affected": [
@@ -2860,15 +2867,15 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-5025.html"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-5025.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2025/05/28/5"
         },
         {
           "type": "REPORT",
@@ -2949,7 +2956,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 178,
+          "versions": 181,
           "database_specific": "<Any value>"
         }
       ],
@@ -2982,11 +2989,11 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2026-3783.json"
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/2"
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/2"
+          "url": "https://curl.se/docs/CVE-2026-3783.json"
         },
         {
           "type": "REPORT",
@@ -3014,7 +3021,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 113,
+          "versions": 116,
           "database_specific": "<Any value>"
         }
       ],
@@ -3047,11 +3054,11 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2026-3784.json"
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
+          "url": "https://curl.se/docs/CVE-2026-3784.json"
         },
         {
           "type": "REPORT",
@@ -3079,7 +3086,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 204,
+          "versions": 207,
           "database_specific": "<Any value>"
         }
       ],
@@ -3091,14 +3098,7 @@
         }
       ]
     }
-  ],
-  "query": {
-    "package": {
-      "name": "https://github.com/curl/curl.git",
-      "ecosystem": "GIT"
-    },
-    "version": "8.5.0"
-  }
+  ]
 }
 
 ---
@@ -3112,14 +3112,20 @@
       "purl": "pkg:pypi/jinja2@3.1.4"
     },
     "version": "3.1.4"
-  },
-  "vulns": []
+  }
 }
 
 ---
 
 [Test/cassette_single_query/TestQueryEndpoint/PackageAndVersionQuery - 1]
 {
+  "query": {
+    "package": {
+      "name": "nokogiri",
+      "ecosystem": "RubyGems"
+    },
+    "version": "1.18.2"
+  },
   "vulns": [
     {
       "id": "GHSA-353f-x4gh-cqq8",
@@ -3409,244 +3415,242 @@
         }
       ]
     }
-  ],
-  "query": {
-    "package": {
-      "name": "nokogiri",
-      "ecosystem": "RubyGems"
-    },
-    "version": "1.18.2"
-  }
+  ]
 }
 
 ---
 
 [Test/cassette_single_query/TestQueryEndpoint/Valid1 - 1]
 {
-  "vulns": [
-    {
-      "id": "GHSA-cpwx-vrp4-4pq7",
-      "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
-      "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516"],
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2025-03-05T20:40:14Z",
-      "related": ["CGA-xx5r-cxh4-797p"],
-      "database_specific": "<Any value>",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-cpwx-vrp4-4pq7"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-27516"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/commit/90457bbf33b8662926ae65cdde4c4c32e756e403"
-        },
-        {
-          "type": "PACKAGE",
-          "url": "https://github.com/pallets/jinja"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00045.html"
-        }
-      ],
-      "affected": [
-        {
-          "package": {
-            "name": "jinja2",
-            "ecosystem": "PyPI",
-            "purl": "pkg:pypi/jinja2"
-          },
-          "ranges": [
-            {
-              "type": "ECOSYSTEM",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "3.1.6"
-                }
-              ]
-            }
-          ],
-          "versions": 51,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V4",
-          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
-        }
-      ]
-    },
-    {
-      "id": "GHSA-gmj6-6f8f-6699",
-      "summary": "Jinja has a sandbox breakout through malicious filenames",
-      "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201"],
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2024-12-23T17:54:12Z",
-      "related": ["CGA-cxrh-g24g-3973"],
-      "database_specific": "<Any value>",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-gmj6-6f8f-6699"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-56201"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/issues/1792"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/commit/767b23617628419ae3709ccfb02f9602ae9fe51f"
-        },
-        {
-          "type": "PACKAGE",
-          "url": "https://github.com/pallets/jinja"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/releases/tag/3.1.5"
-        }
-      ],
-      "affected": [
-        {
-          "package": {
-            "name": "jinja2",
-            "ecosystem": "PyPI",
-            "purl": "pkg:pypi/jinja2"
-          },
-          "ranges": [
-            {
-              "type": "ECOSYSTEM",
-              "events": [
-                {
-                  "introduced": "3.0.0"
-                },
-                {
-                  "fixed": "3.1.5"
-                }
-              ]
-            }
-          ],
-          "versions": 9,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
-        },
-        {
-          "type": "CVSS_V4",
-          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
-        }
-      ]
-    },
-    {
-      "id": "GHSA-q2x7-8rv6-6q7h",
-      "summary": "Jinja has a sandbox breakout through indirect reference to format method",
-      "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326"],
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2024-12-23T17:56:08Z",
-      "related": ["CGA-vf88-6cvh-mxch"],
-      "database_specific": "<Any value>",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-q2x7-8rv6-6q7h"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-56326"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/commit/48b0687e05a5466a91cd5812d604fa37ad0943b4"
-        },
-        {
-          "type": "PACKAGE",
-          "url": "https://github.com/pallets/jinja"
-        },
-        {
-          "type": "WEB",
-          "url": "https://github.com/pallets/jinja/releases/tag/3.1.5"
-        },
-        {
-          "type": "WEB",
-          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
-        }
-      ],
-      "affected": [
-        {
-          "package": {
-            "name": "jinja2",
-            "ecosystem": "PyPI",
-            "purl": "pkg:pypi/jinja2"
-          },
-          "ranges": [
-            {
-              "type": "ECOSYSTEM",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "3.1.5"
-                }
-              ]
-            }
-          ],
-          "versions": 50,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
-        },
-        {
-          "type": "CVSS_V4",
-          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
-        }
-      ]
-    }
-  ],
   "query": {
     "package": {
       "name": "jinja2",
       "ecosystem": "PyPI"
     },
     "version": "3.1.4"
-  }
+  },
+  "vulns": [
+    {
+      "id": "GHSA-cpwx-vrp4-4pq7",
+      "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
+      "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
+      "aliases": ["CVE-2025-27516"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2025-03-05T20:40:14Z",
+      "related": ["CGA-xx5r-cxh4-797p"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-cpwx-vrp4-4pq7"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-27516"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/commit/90457bbf33b8662926ae65cdde4c4c32e756e403"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pallets/jinja"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00045.html"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "jinja2",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/jinja2"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "3.1.6"
+                }
+              ]
+            }
+          ],
+          "versions": 51,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-gmj6-6f8f-6699",
+      "summary": "Jinja has a sandbox breakout through malicious filenames",
+      "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
+      "aliases": ["CVE-2024-56201"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2024-12-23T17:54:12Z",
+      "related": ["CGA-cxrh-g24g-3973"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-gmj6-6f8f-6699"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-56201"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/issues/1792"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/commit/767b23617628419ae3709ccfb02f9602ae9fe51f"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pallets/jinja"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/releases/tag/3.1.5"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "jinja2",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/jinja2"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "3.0.0"
+                },
+                {
+                  "fixed": "3.1.5"
+                }
+              ]
+            }
+          ],
+          "versions": 9,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-q2x7-8rv6-6q7h",
+      "summary": "Jinja has a sandbox breakout through indirect reference to format method",
+      "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
+      "aliases": ["CVE-2024-56326"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2024-12-23T17:56:08Z",
+      "related": ["CGA-vf88-6cvh-mxch"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/security/advisories/GHSA-q2x7-8rv6-6q7h"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-56326"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/commit/48b0687e05a5466a91cd5812d604fa37ad0943b4"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/pallets/jinja"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pallets/jinja/releases/tag/3.1.5"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "jinja2",
+            "ecosystem": "PyPI",
+            "purl": "pkg:pypi/jinja2"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "3.1.5"
+                }
+              ]
+            }
+          ],
+          "versions": 50,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:L/AC:L/AT:P/PR:L/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+        }
+      ]
+    }
+  ]
 }
 
 ---
 
 [Test/cassette_single_query/TestQueryEndpoint/Valid2 - 1]
 {
+  "query": {
+    "package": {
+      "purl": "pkg:pypi/jinja2@3.1.4"
+    }
+  },
   "vulns": [
     {
       "id": "GHSA-cpwx-vrp4-4pq7",
@@ -3707,7 +3711,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -3774,7 +3778,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3845,7 +3849,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3857,18 +3861,19 @@
         }
       ]
     }
-  ],
-  "query": {
-    "package": {
-      "purl": "pkg:pypi/jinja2@3.1.4"
-    }
-  }
+  ]
 }
 
 ---
 
 [Test/cassette_single_query/TestQueryEndpoint/Valid3 - 1]
 {
+  "query": {
+    "package": {
+      "purl": "pkg:pypi/jinja2"
+    },
+    "version": "3.1.4"
+  },
   "vulns": [
     {
       "id": "GHSA-cpwx-vrp4-4pq7",
@@ -3929,7 +3934,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -3996,7 +4001,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4067,7 +4072,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4079,13 +4084,7 @@
         }
       ]
     }
-  ],
-  "query": {
-    "package": {
-      "purl": "pkg:pypi/jinja2"
-    },
-    "version": "3.1.4"
-  }
+  ]
 }
 
 ---

@@ -10,6 +10,10 @@
       "vulns": []
     },
     {
+      "query": {
+        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+        "package": {}
+      },
       "vulns": [
         {
           "id": "CVE-2023-39137",
@@ -19,11 +23,7 @@
           "id": "CVE-2023-39139",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
-        "package": {}
-      }
+      ]
     },
     {
       "query": {
@@ -48,6 +48,10 @@
       "vulns": []
     },
     {
+      "query": {
+        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+        "package": {}
+      },
       "vulns": [
         {
           "id": "CVE-2023-39137",
@@ -57,11 +61,7 @@
           "id": "CVE-2023-39139",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
-        "package": {}
-      }
+      ]
     },
     {
       "query": {

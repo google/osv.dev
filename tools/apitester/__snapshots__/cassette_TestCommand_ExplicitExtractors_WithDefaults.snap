@@ -81,19 +81,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ],
       "query": {
         "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
         "version": "0.0.1"
-      }
+      },
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     },
     {
       "query": {
@@ -176,19 +176,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ],
       "query": {
         "package": {
           "name": "musl",
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -231,6 +231,13 @@
       "vulns": []
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -240,14 +247,7 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
-        "version": "1.2.13-r0"
-      }
+      ]
     }
   ]
 }
@@ -288,19 +288,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ],
       "query": {
         "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
         "version": "0.0.1"
-      }
+      },
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     },
     {
       "query": {
@@ -383,19 +383,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ],
       "query": {
         "package": {
           "name": "musl",
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -438,6 +438,13 @@
       "vulns": []
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -447,14 +454,7 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
-        "version": "1.2.13-r0"
-      }
+      ]
     }
   ]
 }
@@ -543,19 +543,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ],
       "query": {
         "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
         "version": "0.0.1"
-      }
+      },
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     },
     {
       "query": {
@@ -638,19 +638,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ],
       "query": {
         "package": {
           "name": "musl",
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -693,6 +693,13 @@
       "vulns": []
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -702,14 +709,7 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
-        "version": "1.2.13-r0"
-      }
+      ]
     }
   ]
 }
@@ -916,19 +916,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ],
       "query": {
         "package": {
           "name": "musl",
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -971,6 +971,13 @@
       "vulns": []
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -980,14 +987,7 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
-        "version": "1.2.13-r0"
-      }
+      ]
     }
   ]
 }
@@ -1028,19 +1028,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ],
       "query": {
         "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
         "version": "0.0.1"
-      }
+      },
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     },
     {
       "query": {
@@ -1123,19 +1123,19 @@
       "vulns": []
     },
     {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ],
       "query": {
         "package": {
           "name": "musl",
           "ecosystem": "Alpine"
         },
         "version": "1.2.3-r4"
-      }
+      },
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -1178,6 +1178,13 @@
       "vulns": []
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -1187,14 +1194,7 @@
           "id": "ALPINE-CVE-2026-27171",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
-        "version": "1.2.13-r0"
-      }
+      ]
     }
   ]
 }
@@ -1271,19 +1271,19 @@
 {
   "results": [
     {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ],
       "query": {
         "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
         "version": "0.0.1"
-      }
+      },
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     }
   ]
 }

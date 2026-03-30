@@ -3,6 +3,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "github.com/gogo/protobuf",
+          "ecosystem": "Go"
+        },
+        "version": "1.3.1"
+      },
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
@@ -12,16 +19,16 @@
           "id": "GO-2021-0053",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      }
+      ]
     },
     {
+      "query": {
+        "package": {
+          "name": "github.com/ipfs/go-bitfield",
+          "ecosystem": "Go"
+        },
+        "version": "1.0.0"
+      },
       "vulns": [
         {
           "id": "GHSA-2h6c-j3gf-xp9r",
@@ -29,18 +36,18 @@
         },
         {
           "id": "GO-2023-1558",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "github.com/ipfs/go-bitfield",
-          "ecosystem": "Go"
-        },
-        "version": "1.0.0"
-      }
+      ]
     },
     {
+      "query": {
+        "package": {
+          "name": "golang.org/x/image",
+          "ecosystem": "Go"
+        },
+        "version": "0.4.0"
+      },
       "vulns": [
         {
           "id": "GHSA-9phm-fm57-rhg8",
@@ -60,15 +67,15 @@
         },
         {
           "id": "GO-2023-1572",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2023-1989",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2023-1990",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GO-2024-2937",
@@ -78,14 +85,7 @@
           "id": "GO-2026-4815",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "golang.org/x/image",
-          "ecosystem": "Go"
-        },
-        "version": "0.4.0"
-      }
+      ]
     }
   ]
 }
@@ -96,6 +96,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "github.com/gogo/protobuf",
+          "ecosystem": "Go"
+        },
+        "version": "1.3.1"
+      },
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
@@ -105,14 +112,7 @@
           "id": "GO-2021-0053",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      }
+      ]
     }
   ]
 }
@@ -123,6 +123,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "github.com/gogo/protobuf",
+          "ecosystem": "Go"
+        },
+        "version": "1.3.1"
+      },
       "vulns": [
         {
           "id": "GHSA-c3h9-896r-86jm",
@@ -132,14 +139,7 @@
           "id": "GO-2021-0053",
           "modified": "<RFC3339 date with the year 2026>"
         }
-      ],
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      }
+      ]
     }
   ]
 }

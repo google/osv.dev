@@ -27,44 +27,10 @@ VULN_PB_PATH = 'all/pb/'
 _storage_client = None
 
 
-def modify_storage_client_adapters(storage_client: storage.Client,
-                                   pool_connections: int = 128,
-                                   max_retries: int = 3,
-                                   pool_block: bool = True) -> storage.Client:
-  """Returns a modified google.cloud.storage.Client object.
-
-  Due to many concurrent GCS connections, the default connection pool can become
-  overwhelmed, introducing delays.
-
-  Solution described in https://github.com/googleapis/python-storage/issues/253
-
-  These affect the urllib3.HTTPConnectionPool underpinning the storage.Client's
-  HTTP requests.
-
-  Args:
-    storage_client: an existing google.cloud.storage.Client object
-    pool_connections: number of pool_connections desired
-    max_retries: maximum retries
-    pool_block: blocking behaviour when pool is exhausted
-
-  Returns:
-    the google.cloud.storage.Client appropriately modified.
-
-  """
-  adapter = HTTPAdapter(
-      pool_connections=pool_connections,
-      max_retries=max_retries,
-      pool_block=pool_block)
-  # pylint: disable=protected-access
-  storage_client._http.mount('https://', adapter)
-  storage_client._http._auth_request.session.mount('https://', adapter)
-  return storage_client
-
-
 def _get_storage_client() -> storage.Client:
   global _storage_client
   if _storage_client is None:
-    _storage_client = modify_storage_client_adapters(storage.Client())
+    _storage_client = storage.Client()
   return _storage_client
 
 

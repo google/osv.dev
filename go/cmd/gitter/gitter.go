@@ -223,19 +223,32 @@ func isLocalRequest(r *http.Request) bool {
 	return ip.IsLoopback()
 }
 
-func validateURL(r *http.Request, url string) error {
+func prepareURL(r *http.Request, url string) (string, error) {
 	if url == "" {
-		return errors.New("missing url parameter")
+		return "", errors.New("missing url parameter")
 	}
+
+	url = normalizeURL(url)
+
 	// If request came from a local ip, don't do the check
 	if !isLocalRequest(r) {
 		// Check if url starts with protocols: http(s)://, git://
 		if !validURLRegex.MatchString(url) {
-			return errors.New("invalid url parameter")
+			return "", errors.New("invalid url parameter")
 		}
 	}
 
-	return nil
+	return url, nil
+}
+
+func normalizeURL(url string) string {
+	// Convert git://github.com/ to https://github.com/ because it times out for some reason
+	// git protocol on non-github urls works fine
+	if s, ok := strings.CutPrefix(url, "git://github.com/"); ok {
+		return "https://github.com/" + s
+	}
+
+	return url
 }
 
 func getRepoDirName(url string) string {
@@ -544,8 +557,8 @@ func main() {
 }
 
 func gitHandler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Query().Get("url")
-	if err := validateURL(r, url); err != nil {
+	url, err := prepareURL(r, r.URL.Query().Get("url"))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -603,8 +616,8 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.GetUrl()
-	if err := validateURL(r, url); err != nil {
+	url, err := prepareURL(r, body.GetUrl())
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -639,8 +652,8 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.GetUrl()
-	if err := validateURL(r, url); err != nil {
+	url, err := prepareURL(r, body.GetUrl())
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -675,30 +688,28 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var affectedCommits []*Commit
-	var newIntroHashes []string
-	var newFixedHashes []string
-	var newLimitHashes []string
+	var cherrypicks cherrypickedHashes
 
 	if len(se.Limit) > 0 {
-		affectedCommits, newIntroHashes, newLimitHashes = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
 	} else {
-		affectedCommits, newIntroHashes, newFixedHashes = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}
 
-	cherryPickedEvents := make([]*pb.Event, 0, len(newIntroHashes)+len(newFixedHashes)+len(newLimitHashes))
-	for _, h := range newIntroHashes {
+	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))
+	for _, h := range cherrypicks.Introduced {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_INTRODUCED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newFixedHashes {
+	for _, h := range cherrypicks.Fixed {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_FIXED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newLimitHashes {
+	for _, h := range cherrypicks.Limit {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_LIMIT,
 			Hash:      h,

@@ -38,6 +38,25 @@ func TestGetRepoDirName(t *testing.T) {
 	}
 }
 
+func TestNormalizeURL(t *testing.T) {
+	tests := []struct {
+		url      string
+		expected string
+	}{
+		{"git://github.com/google/osv.dev.git", "https://github.com/google/osv.dev.git"},
+		{"https://github.com/google/osv.dev.git", "https://github.com/google/osv.dev.git"},
+		{"git://github.com/google/osv.dev", "https://github.com/google/osv.dev"},
+		{"http://github.com/google/osv.dev", "http://github.com/google/osv.dev"},
+		{"git://gitlab.com/google/osv.dev", "git://gitlab.com/google/osv.dev"},
+	}
+
+	for _, tt := range tests {
+		if result := normalizeURL(tt.url); result != tt.expected {
+			t.Errorf("normalizeURL(%s) = %s, expected %s", tt.url, result, tt.expected)
+		}
+	}
+}
+
 //nolint:revive // These error strings are testing for output from git
 func TestIsAuthError(t *testing.T) {
 	tests := []struct {

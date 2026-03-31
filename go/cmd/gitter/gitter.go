@@ -244,8 +244,8 @@ func prepareURL(r *http.Request, url string) (string, error) {
 func normalizeURL(url string) string {
 	// Convert git://github.com/ to https://github.com/ because it times out for some reason
 	// git protocol on non-github urls works fine
-	if strings.HasPrefix(url, "git://github.com/") {
-		return "https://github.com/" + strings.TrimPrefix(url, "git://github.com/")
+	if s, ok := strings.CutPrefix(url, "git://github.com/"); ok {
+		return "https://github.com/" + s
 	}
 
 	return url

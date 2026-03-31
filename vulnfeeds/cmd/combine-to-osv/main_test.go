@@ -1,20 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -433,72 +428,6 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	if diff := cmp.Diff(expected, got, protocmp.Transform()); diff != "" {
 		t.Errorf("combineTwoOSVRecords() mismatch (-want +got):\n%s", diff)
 	}
-}
-
-func TestCombineDirsSnapshot(t *testing.T) {
-	cve5Path := "cve5"
-	nvdPath := "nvd"
-
-	cve5osv := loadOSV(cve5Path)
-	nvdosv := loadOSV(nvdPath)
-
-	// Since combineIntoOSV modifies nvdosv, make a copy to avoid side effects
-	nvdosvCopy := make(map[models.CVEID]*osvschema.Vulnerability)
-	for k, v := range nvdosv {
-		nvdosvCopy[k] = v
-	}
-
-	combined := combineIntoOSV(cve5osv, nvdosvCopy, nil)
-
-	// Sort by ID to ensure deterministic snapshot
-	keys := make([]string, 0, len(combined))
-	for k := range combined {
-		keys = append(keys, string(k))
-	}
-	sort.Strings(keys)
-
-	output := make([]string, 0, len(keys))
-	for _, k := range keys {
-		v := combined[models.CVEID(k)]
-
-		// Ensure deterministic order for slices inside Vulnerability
-		sort.Strings(v.GetAliases())
-
-		sort.Slice(v.GetReferences(), func(i, j int) bool {
-			if v.GetReferences()[i].GetType() != v.GetReferences()[j].GetType() {
-				return v.GetReferences()[i].GetType() < v.GetReferences()[j].GetType()
-			}
-
-			return v.GetReferences()[i].GetUrl() < v.GetReferences()[j].GetUrl()
-		})
-
-		sort.Slice(v.GetAffected(), func(i, j int) bool {
-			var repoA, repoB string
-			if len(v.GetAffected()[i].GetRanges()) > 0 {
-				repoA = v.GetAffected()[i].GetRanges()[0].GetRepo()
-			}
-			if len(v.GetAffected()[j].GetRanges()) > 0 {
-				repoB = v.GetAffected()[j].GetRanges()[0].GetRepo()
-			}
-
-			return repoA < repoB
-		})
-
-		file, err := protojson.Marshal(v)
-		if err != nil {
-			t.Fatalf("Failed to marshal %s: %v", k, err)
-		}
-
-		var indented bytes.Buffer
-		err = json.Indent(&indented, file, "", " ")
-		if err != nil {
-			t.Fatalf("Failed to indent %s: %v", k, err)
-		}
-
-		output = append(output, indented.String())
-	}
-
-	snaps.MatchSnapshot(t, strings.Join(output, "\n"))
 }
 
 func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {

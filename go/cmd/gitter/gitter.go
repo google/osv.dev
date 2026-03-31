@@ -688,30 +688,28 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var affectedCommits []*Commit
-	var newIntroHashes []string
-	var newFixedHashes []string
-	var newLimitHashes []string
+	var cherrypicks cherrypickedHashes
 
 	if len(se.Limit) > 0 {
-		affectedCommits, newIntroHashes, newLimitHashes = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
 	} else {
-		affectedCommits, newIntroHashes, newFixedHashes = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	}
 
-	cherryPickedEvents := make([]*pb.Event, 0, len(newIntroHashes)+len(newFixedHashes)+len(newLimitHashes))
-	for _, h := range newIntroHashes {
+	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))
+	for _, h := range cherrypicks.Introduced {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_INTRODUCED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newFixedHashes {
+	for _, h := range cherrypicks.Fixed {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_FIXED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newLimitHashes {
+	for _, h := range cherrypicks.Limit {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_LIMIT,
 			Hash:      h,

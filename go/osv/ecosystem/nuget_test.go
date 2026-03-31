@@ -6,11 +6,16 @@ import (
 )
 
 func TestNuGet_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := nugetEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("NuGet")
+	if !ok {
+		t.Fatalf("Failed to retrieve NuGet ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("Newtonsoft.Json", func(t *testing.T) {
-		versions, err := e.GetVersions("Newtonsoft.Json")
+		versions, err := ecosystem.GetVersions("Newtonsoft.Json")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -21,7 +26,7 @@ func TestNuGet_GetVersions(t *testing.T) {
 	})
 
 	t.Run("NuGet.Server.Core", func(t *testing.T) {
-		versions, err := e.GetVersions("NuGet.Server.Core")
+		versions, err := ecosystem.GetVersions("NuGet.Server.Core")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -29,7 +34,7 @@ func TestNuGet_GetVersions(t *testing.T) {
 	})
 
 	t.Run("Castle.Core", func(t *testing.T) {
-		versions, err := e.GetVersions("Castle.Core")
+		versions, err := ecosystem.GetVersions("Castle.Core")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -38,7 +43,7 @@ func TestNuGet_GetVersions(t *testing.T) {
 	})
 
 	t.Run("Serilog", func(t *testing.T) {
-		versions, err := e.GetVersions("Serilog")
+		versions, err := ecosystem.GetVersions("Serilog")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -47,9 +52,14 @@ func TestNuGet_GetVersions(t *testing.T) {
 }
 
 func TestNuGet_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := nugetEcosystem{}
-	_, err := e.GetVersions("DoesNotExist.123456")
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("NuGet")
+	if !ok {
+		t.Fatalf("Failed to retrieve NuGet ecosystem")
+	}
+	ecosystem := e.(Enumerable)
+	_, err := ecosystem.GetVersions("DoesNotExist.123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)
 	}

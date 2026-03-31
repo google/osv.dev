@@ -35,7 +35,7 @@ func runRootTest(t *testing.T, e Ecosystem, tests []rootTestCase) {
 }
 
 func TestRootEcosystem_Alpine(t *testing.T) {
-	e := rootEcosystemFactory("Root:Alpine:3.18")
+	e := rootEcosystemFactory(nil, "Root:Alpine:3.18")
 	tests := []rootTestCase{
 		{"1.51.0-r20072", "1.51.0-r20071", 1},
 		{"1.0.0-r2", "1.0.0-r1", 1},
@@ -46,7 +46,7 @@ func TestRootEcosystem_Alpine(t *testing.T) {
 }
 
 func TestRootEcosystem_Debian(t *testing.T) {
-	e := rootEcosystemFactory("Root:Debian:12")
+	e := rootEcosystemFactory(nil, "Root:Debian:12")
 	tests := []rootTestCase{
 		{"22.12.0-2+deb12u1.root.io.5", "22.12.0-2.root.io.1", 1},
 		{"1.18.0-6+deb11u3-r20072", "1.18.0-6+deb11u3-r20071", 1},
@@ -56,7 +56,7 @@ func TestRootEcosystem_Debian(t *testing.T) {
 }
 
 func TestRootEcosystem_Ubuntu(t *testing.T) {
-	e := rootEcosystemFactory("Root:Ubuntu:22.04")
+	e := rootEcosystemFactory(nil, "Root:Ubuntu:22.04")
 	tests := []rootTestCase{
 		{"1.2.3-4ubuntu2", "1.2.3-4ubuntu1", 1},
 	}
@@ -64,7 +64,7 @@ func TestRootEcosystem_Ubuntu(t *testing.T) {
 }
 
 func TestRootEcosystem_PyPI(t *testing.T) {
-	e := rootEcosystemFactory("Root:PyPI")
+	e := rootEcosystemFactory(nil, "Root:PyPI")
 	tests := []rootTestCase{
 		{"1.0.0+root.io.5", "1.0.0+root.io.1", 1},
 		{"2.0.0", "1.9.9", 1},
@@ -74,7 +74,7 @@ func TestRootEcosystem_PyPI(t *testing.T) {
 }
 
 func TestRootEcosystem_NPM(t *testing.T) {
-	e := rootEcosystemFactory("Root:npm")
+	e := rootEcosystemFactory(nil, "Root:npm")
 	tests := []rootTestCase{
 		{"1.0.0.root.io.5", "1.0.0.root.io.1", 1},
 		{"2.0.0", "1.9.9", 1},
@@ -84,7 +84,7 @@ func TestRootEcosystem_NPM(t *testing.T) {
 }
 
 func TestRootEcosystem_Maven(t *testing.T) {
-	e := rootEcosystemFactory("Root:Maven")
+	e := rootEcosystemFactory(nil, "Root:Maven")
 	tests := []rootTestCase{
 		{"2.0", "1.0", 1},
 		{"1.0", "1.0-SNAPSHOT", 1},
@@ -93,7 +93,7 @@ func TestRootEcosystem_Maven(t *testing.T) {
 }
 
 func TestRootEcosystem_Unknown(t *testing.T) {
-	e := rootEcosystemFactory("Root")
+	e := rootEcosystemFactory(nil, "Root")
 	tests := []rootTestCase{
 		{"1.0.0-r2", "1.0.0-r1", 1},
 		{"2.0.0", "1.0.0", 1},
@@ -102,7 +102,7 @@ func TestRootEcosystem_Unknown(t *testing.T) {
 }
 
 func TestRootEcosystem_Issue4396(t *testing.T) {
-	e := rootEcosystemFactory("Root:Debian:12")
+	e := rootEcosystemFactory(nil, "Root:Debian:12")
 	tests := []rootTestCase{
 		{"22.12.0-2.root.io.1", "22.12.0-2+deb12u1.root.io.5", -1},
 	}

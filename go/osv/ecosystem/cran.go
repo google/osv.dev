@@ -21,7 +21,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type cranEcosystem struct{}
+type cranEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = cranEcosystem{}
 
@@ -57,7 +59,7 @@ func (e cranEcosystem) GetVersions(pkg string) ([]string, error) {
 			Version string `json:"version"`
 		} `json:"archived"`
 	}
-	if err := fetchJSON(cranAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(cranAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get CRAN versions for %s: %w", pkg, err)
 	}
 	var versions []string

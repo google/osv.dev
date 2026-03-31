@@ -17,8 +17,6 @@ package ecosystem
 
 import (
 	"errors"
-	"net/http"
-	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -28,41 +26,16 @@ var ErrCoarseNotSupported = errors.New("coarse version not supported")
 var ErrVersionEcosystemMismatch = errors.New("version ecosystem mismatch")
 var ErrPackageNotFound = errors.New("package not found")
 
-// HTTPClient is the global HTTP client used by ecosystems for fetching
-// version information and other external data. It may be overridden for testing.
-var HTTPClient = http.DefaultClient
+type ecosystemFactory func(p *Provider, suffix string) Ecosystem
 
-// Get returns an ecosystem for the given ecosystem name.
-// If the ecosystem is not found, it returns nil, false.
-//
-// The ecosystem name can optionally include a version suffix (e.g. "Debian:10").
-func Get(ecosystem string) (Ecosystem, bool) {
-	name, suffix, _ := strings.Cut(ecosystem, ":")
-	f, ok := ecosystems[osvconstants.Ecosystem(name)]
-	if !ok {
-		return nil, false
-	}
-	// Wrap the ecosystem to handle "0" versions.
-	e := f(suffix)
-	if enum, ok := e.(Enumerable); ok {
-		return &enumerableWrapper{Enumerable: enum}, true
-	}
-
-	return &ecosystemWrapper{Ecosystem: e}, true
-}
-
-type ecosystemFactory func(suffix string) Ecosystem
-
-// statelessFactory returns a factory for the given ecosystem type that ignores the suffix
-// and returns the zero value of E.
-func statelessFactory[E Ecosystem](_ string) Ecosystem {
+func statelessFactory[E Ecosystem](_ *Provider, _ string) Ecosystem {
 	var e E
 	return e
 }
 
 // debianFactory returns a factory that injects the release suffix.
-func debianFactory(suffix string) Ecosystem {
-	return debianEcosystem{release: suffix}
+func debianFactory(p *Provider, suffix string) Ecosystem {
+	return debianEcosystem{release: suffix, p: p}
 }
 
 var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
@@ -70,35 +43,35 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemAlpaquita:                  statelessFactory[apkEcosystem],
 	osvconstants.EcosystemAlpine:                     statelessFactory[apkEcosystem],
 	osvconstants.EcosystemBellSoftHardenedContainers: statelessFactory[apkEcosystem],
-	osvconstants.EcosystemBioconductor:               statelessFactory[bioconductorEcosystem],
+	osvconstants.EcosystemBioconductor:               func(p *Provider, _ string) Ecosystem { return bioconductorEcosystem{p: p} },
 	osvconstants.EcosystemBitnami:                    statelessFactory[semverEcosystem],
 	osvconstants.EcosystemChainguard:                 statelessFactory[apkEcosystem],
 	osvconstants.EcosystemCleanStart:                 statelessFactory[apkEcosystem],
-	osvconstants.EcosystemCRAN:                       statelessFactory[cranEcosystem],
+	osvconstants.EcosystemCRAN:                       func(p *Provider, _ string) Ecosystem { return cranEcosystem{p: p} },
 	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
 	osvconstants.EcosystemDebian:                     debianFactory,
 	osvconstants.EcosystemDockerHardenedImages:       statelessFactory[semverEcosystem],
 	osvconstants.EcosystemEcho:                       statelessFactory[dpkgEcosystem],
-	osvconstants.EcosystemGHC:                        statelessFactory[ghcEcosystem],
+	osvconstants.EcosystemGHC:                        func(p *Provider, _ string) Ecosystem { return ghcEcosystem{p: p} },
 	osvconstants.EcosystemGo:                         statelessFactory[semverEcosystem],
-	osvconstants.EcosystemHackage:                    statelessFactory[hackageEcosystem],
-	osvconstants.EcosystemHex:                        statelessFactory[hexEcosystem],
+	osvconstants.EcosystemHackage:                    func(p *Provider, _ string) Ecosystem { return hackageEcosystem{p: p} },
+	osvconstants.EcosystemHex:                        func(p *Provider, _ string) Ecosystem { return hexEcosystem{p: p} },
 	osvconstants.EcosystemJulia:                      statelessFactory[semverEcosystem],
 	osvconstants.EcosystemMageia:                     statelessFactory[rpmEcosystem],
-	osvconstants.EcosystemMaven:                      statelessFactory[mavenEcosystem],
+	osvconstants.EcosystemMaven:                      func(p *Provider, _ string) Ecosystem { return mavenEcosystem{p: p} },
 	osvconstants.EcosystemMinimOS:                    statelessFactory[apkEcosystem],
 	osvconstants.EcosystemNPM:                        statelessFactory[semverEcosystem],
-	osvconstants.EcosystemNuGet:                      statelessFactory[nugetEcosystem],
+	osvconstants.EcosystemNuGet:                      func(p *Provider, _ string) Ecosystem { return nugetEcosystem{p: p} },
 	osvconstants.EcosystemOpam:                       statelessFactory[opamEcosystem],
 	osvconstants.EcosystemOpenEuler:                  statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemOpenSUSE:                   statelessFactory[rpmEcosystem],
-	osvconstants.EcosystemPackagist:                  statelessFactory[packagistEcosystem],
-	osvconstants.EcosystemPub:                        statelessFactory[pubEcosystem],
-	osvconstants.EcosystemPyPI:                       statelessFactory[pyPIEcosystem],
+	osvconstants.EcosystemPackagist:                  func(p *Provider, _ string) Ecosystem { return packagistEcosystem{p: p} },
+	osvconstants.EcosystemPub:                        func(p *Provider, _ string) Ecosystem { return pubEcosystem{p: p} },
+	osvconstants.EcosystemPyPI:                       func(p *Provider, _ string) Ecosystem { return pypiEcosystem{p: p} },
 	osvconstants.EcosystemRedHat:                     statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemRockyLinux:                 statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemRoot:                       rootEcosystemFactory,
-	osvconstants.EcosystemRubyGems:                   statelessFactory[rubyGemsEcosystem],
+	osvconstants.EcosystemRubyGems:                   func(p *Provider, _ string) Ecosystem { return rubyGemsEcosystem{p: p} },
 	osvconstants.EcosystemSUSE:                       statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemSwiftURL:                   statelessFactory[semverEcosystem],
 	osvconstants.EcosystemUbuntu:                     statelessFactory[dpkgEcosystem],

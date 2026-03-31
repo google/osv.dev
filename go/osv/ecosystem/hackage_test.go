@@ -6,8 +6,13 @@ import (
 )
 
 func TestHackage_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := hackageEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Hackage")
+	if !ok {
+		t.Fatalf("Failed to retrieve Hackage ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("aeson", func(t *testing.T) {
 		versions, err := ecosystem.GetVersions("aeson")
@@ -21,8 +26,13 @@ func TestHackage_GetVersions(t *testing.T) {
 }
 
 func TestHackage_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := hackageEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Hackage")
+	if !ok {
+		t.Fatalf("Failed to retrieve Hackage ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

@@ -6,8 +6,13 @@ import (
 )
 
 func TestCRAN_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := cranEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("CRAN")
+	if !ok {
+		t.Fatalf("Failed to retrieve CRAN ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("readxl", func(t *testing.T) {
 		versions, err := ecosystem.GetVersions("readxl")
@@ -30,8 +35,13 @@ func TestCRAN_GetVersions(t *testing.T) {
 }
 
 func TestCRAN_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := cranEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("CRAN")
+	if !ok {
+		t.Fatalf("Failed to retrieve CRAN ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

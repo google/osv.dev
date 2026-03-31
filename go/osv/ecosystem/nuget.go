@@ -22,7 +22,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type nugetEcosystem struct{}
+type nugetEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = nugetEcosystem{}
 
@@ -68,7 +70,7 @@ type nugetPage struct {
 
 func (e nugetEcosystem) GetVersions(pkg string) ([]string, error) {
 	var resp nugetResponse
-	if err := fetchJSON(nugetAPIURL(pkg), &resp); err != nil {
+	if err := e.p.fetchJSON(nugetAPIURL(pkg), &resp); err != nil {
 		return nil, err
 	}
 
@@ -80,7 +82,7 @@ func (e nugetEcosystem) GetVersions(pkg string) ([]string, error) {
 			}
 		} else {
 			var nested nugetPage
-			if err := fetchJSON(page.ID, &nested); err != nil {
+			if err := e.p.fetchJSON(page.ID, &nested); err != nil {
 				return nil, err
 			}
 			for _, item := range nested.Items {

@@ -6,8 +6,13 @@ import (
 )
 
 func TestHex_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := hexEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Hex")
+	if !ok {
+		t.Fatalf("Failed to retrieve Hex ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("ash", func(t *testing.T) {
 		versions, err := ecosystem.GetVersions("ash")
@@ -20,8 +25,13 @@ func TestHex_GetVersions(t *testing.T) {
 }
 
 func TestHex_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := hexEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Hex")
+	if !ok {
+		t.Fatalf("Failed to retrieve Hex ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

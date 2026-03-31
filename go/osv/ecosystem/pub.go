@@ -21,7 +21,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type pubEcosystem struct{}
+type pubEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = pubEcosystem{}
 
@@ -47,7 +49,7 @@ func (e pubEcosystem) GetVersions(pkg string) ([]string, error) {
 			Version string `json:"version"`
 		} `json:"versions"`
 	}
-	if err := fetchJSON(pubAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(pubAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get Pub versions for %s: %w", pkg, err)
 	}
 

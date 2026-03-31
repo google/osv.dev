@@ -15,30 +15,9 @@
 package ecosystem
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"slices"
 )
-
-// fetchJSON fetches a JSON payload from the given URL and decodes it into the provided target.
-// It translates HTTP 404 into ErrPackageNotFound.
-func fetchJSON(urlStr string, target any) error {
-	resp, err := HTTPClient.Get(urlStr)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return ErrPackageNotFound
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %s", resp.Status)
-	}
-
-	return json.NewDecoder(resp.Body).Decode(target)
-}
 
 type parsedVersion struct {
 	str string
@@ -78,31 +57,4 @@ func sortVersions(e Ecosystem, versions []string) ([]string, error) {
 	}
 
 	return result, sortErr
-}
-
-// getVersionsDepsDev enumerates versions for a package using the deps.dev API.
-func getVersionsDepsDev(e Ecosystem, depsDevSystem string, pkg string) ([]string, error) {
-	urlStr := fmt.Sprintf("https://api.deps.dev/v3alpha/systems/%s/packages/%s",
-		url.PathEscape(depsDevSystem),
-		url.PathEscape(pkg),
-	)
-
-	var data struct {
-		Versions []struct {
-			VersionKey struct {
-				Version string `json:"version"`
-			} `json:"versionKey"`
-		} `json:"versions"`
-	}
-
-	if err := fetchJSON(urlStr, &data); err != nil {
-		return nil, fmt.Errorf("failed to get %s versions from deps.dev for %s: %w", depsDevSystem, pkg, err)
-	}
-
-	versions := make([]string, 0, len(data.Versions))
-	for _, v := range data.Versions {
-		versions = append(versions, v.VersionKey.Version)
-	}
-
-	return sortVersions(e, versions)
 }

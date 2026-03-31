@@ -5,11 +5,12 @@ import (
 )
 
 func TestGHC_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := ghcEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	ecosystem := ghcEcosystem{p: p}
 
 	t.Run("ghc", func(t *testing.T) {
-		versions, err := e.GetVersions("ghc")
+		versions, err := ecosystem.GetVersions("ghc")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}

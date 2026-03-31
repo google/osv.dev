@@ -24,6 +24,8 @@ import (
 
 type ghcEcosystem struct {
 	semverLikeEcosystem
+
+	p *Provider
 }
 
 var _ Enumerable = ghcEcosystem{}
@@ -60,7 +62,7 @@ func (e ghcEcosystem) GetVersions(_ string) ([]string, error) {
 			return nil, err
 		}
 
-		resp, err := HTTPClient.Do(req)
+		resp, err := e.p.Client.Do(req)
 		if err != nil {
 			return nil, err
 		}

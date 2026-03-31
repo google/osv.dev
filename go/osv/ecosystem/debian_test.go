@@ -5,8 +5,9 @@ import (
 )
 
 func TestDebian_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e, ok := Get("Debian:11")
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Debian:11")
 	if !ok {
 		t.Fatalf("Failed to retrieve Debian ecosystem")
 	}
@@ -27,7 +28,10 @@ func TestDebian_GetVersions(t *testing.T) {
 		checkNextVersion(t, versions, "7.74.0-1.3", "7.74.0-1.3+deb11u1")
 	})
 
-	e9, _ := Get("Debian:9")
+	e9, ok := p.Get("Debian:9")
+	if !ok {
+		t.Fatalf("Failed to retrieve Debian 9 ecosystem")
+	}
 	en9 := e9.(Enumerable)
 
 	t.Run("nginx", func(t *testing.T) {

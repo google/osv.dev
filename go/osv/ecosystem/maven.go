@@ -16,7 +16,9 @@ package ecosystem
 
 import "github.com/google/osv-scalibr/semantic"
 
-type mavenEcosystem struct{}
+type mavenEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = mavenEcosystem{}
 
@@ -33,5 +35,5 @@ func (e mavenEcosystem) IsSemver() bool {
 }
 
 func (e mavenEcosystem) GetVersions(pkg string) ([]string, error) {
-	return getVersionsDepsDev(e, "maven", pkg)
+	return e.p.getVersionsDepsDev(e, "maven", pkg)
 }

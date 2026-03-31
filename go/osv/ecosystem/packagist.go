@@ -20,7 +20,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type packagistEcosystem struct{}
+type packagistEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = packagistEcosystem{}
 
@@ -50,7 +52,7 @@ type packagistResponse struct {
 
 func (e packagistEcosystem) GetVersions(pkg string) ([]string, error) {
 	var resp packagistResponse
-	if err := fetchJSON(packagistAPIURL(pkg), &resp); err != nil {
+	if err := e.p.fetchJSON(packagistAPIURL(pkg), &resp); err != nil {
 		return nil, err
 	}
 

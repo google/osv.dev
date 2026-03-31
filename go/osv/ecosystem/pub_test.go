@@ -6,8 +6,13 @@ import (
 )
 
 func TestPub_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := pubEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Pub")
+	if !ok {
+		t.Fatalf("Failed to retrieve Pub ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("pub_semver", func(t *testing.T) {
 		versions, err := ecosystem.GetVersions("pub_semver")
@@ -30,8 +35,13 @@ func TestPub_GetVersions(t *testing.T) {
 }
 
 func TestPub_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := pubEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Pub")
+	if !ok {
+		t.Fatalf("Failed to retrieve Pub ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

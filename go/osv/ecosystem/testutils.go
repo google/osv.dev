@@ -7,16 +7,12 @@ import (
 	"github.com/google/osv.dev/go/testutils"
 )
 
-// setupHTTPClientForTest sets up the global HTTPClient for testing.
-// Tests requiring this cannot be run in parallel.
-func setupHTTPClientForTest(t *testing.T) {
+// getTestProvider sets up an isolated Provider with a VCR client for testing.
+func getTestProvider(t *testing.T) *Provider {
 	t.Helper()
 	rec := testutils.SetupVCR(t)
-	var oldClient = HTTPClient
-	t.Cleanup(func() {
-		HTTPClient = oldClient
-	})
-	HTTPClient = rec.GetDefaultClient()
+
+	return NewProvider(rec.GetDefaultClient())
 }
 
 // checkNextVersion verifies that expectedNext is the version immediately following current in the versions list.

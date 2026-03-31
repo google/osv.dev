@@ -6,11 +6,12 @@ import (
 )
 
 func TestOpam_getVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := opamEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	ecosystem := opamEcosystem{p: p}
 
 	t.Run("zarith", func(t *testing.T) {
-		versions, err := e.getVersions("zarith")
+		versions, err := ecosystem.getVersions("zarith")
 		if err != nil {
 			t.Fatalf("getVersions() err = %v", err)
 		}
@@ -22,9 +23,10 @@ func TestOpam_getVersions(t *testing.T) {
 }
 
 func TestOpam_getVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := opamEcosystem{}
-	_, err := e.getVersions("doesnotexist123456")
+	t.Parallel()
+	p := getTestProvider(t)
+	ecosystem := opamEcosystem{p: p}
+	_, err := ecosystem.getVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)
 	}

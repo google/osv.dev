@@ -21,6 +21,8 @@ import (
 
 type opamEcosystem struct {
 	dpkgEcosystem
+
+	p *Provider
 }
 
 var _ Ecosystem = opamEcosystem{}
@@ -38,8 +40,8 @@ func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 	url2 := "https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/" + pkg
 
 	var list1, list2 []githubContent
-	err1 := fetchJSON(url1, &list1)
-	err2 := fetchJSON(url2, &list2)
+	err1 := e.p.fetchJSON(url1, &list1)
+	err2 := e.p.fetchJSON(url2, &list2)
 
 	if errors.Is(err1, ErrPackageNotFound) && errors.Is(err2, ErrPackageNotFound) {
 		return nil, ErrPackageNotFound

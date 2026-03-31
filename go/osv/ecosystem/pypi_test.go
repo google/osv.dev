@@ -6,8 +6,13 @@ import (
 )
 
 func TestPyPI_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := pyPIEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("PyPI")
+	if !ok {
+		t.Fatalf("Failed to retrieve PyPI ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("grpcio", func(t *testing.T) {
 		versions, err := ecosystem.GetVersions("grpcio")
@@ -20,8 +25,13 @@ func TestPyPI_GetVersions(t *testing.T) {
 }
 
 func TestPyPI_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := pyPIEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("PyPI")
+	if !ok {
+		t.Fatalf("Failed to retrieve PyPI ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

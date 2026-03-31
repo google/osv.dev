@@ -21,11 +21,13 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type pyPIEcosystem struct{}
+type pypiEcosystem struct {
+	p *Provider
+}
 
-var _ Enumerable = pyPIEcosystem{}
+var _ Enumerable = pypiEcosystem{}
 
-func (e pyPIEcosystem) Parse(version string) (Version, error) {
+func (e pypiEcosystem) Parse(version string) (Version, error) {
 	ver, err := semantic.ParsePyPIVersion(version)
 	if err != nil {
 		return nil, err
@@ -34,11 +36,11 @@ func (e pyPIEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.PyPIVersion]{ver}, nil
 }
 
-func (e pyPIEcosystem) Coarse(_ string) (string, error) {
+func (e pypiEcosystem) Coarse(_ string) (string, error) {
 	return "", ErrCoarseNotSupported
 }
 
-func (e pyPIEcosystem) IsSemver() bool {
+func (e pypiEcosystem) IsSemver() bool {
 	return false
 }
 
@@ -46,11 +48,11 @@ func pypiAPIURL(pkg string) string {
 	return fmt.Sprintf("https://pypi.org/pypi/%s/json", url.PathEscape(pkg))
 }
 
-func (e pyPIEcosystem) GetVersions(pkg string) ([]string, error) {
+func (e pypiEcosystem) GetVersions(pkg string) ([]string, error) {
 	var data struct {
 		Releases map[string]any `json:"releases"`
 	}
-	if err := fetchJSON(pypiAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(pypiAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get PyPI versions for %s: %w", pkg, err)
 	}
 

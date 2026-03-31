@@ -11,8 +11,8 @@ import (
 
 func TestBioconductor_GetBiocVersions(t *testing.T) {
 	t.SkipNow()
-	setupHTTPClientForTest(t)
-	versions, err := bioconductorEcosystem{}.getBiocVersions()
+	p := getTestProvider(t)
+	versions, err := bioconductorEcosystem{p: p}.getBiocVersions()
 	if err != nil {
 		t.Errorf("getBiocVersions() error = %v", err)
 		return
@@ -29,8 +29,8 @@ func TestBioconductor_GetBiocVersions(t *testing.T) {
 
 func TestBioconductor_GetVersions(t *testing.T) {
 	t.SkipNow()
-	setupHTTPClientForTest(t)
-	versions, err := bioconductorEcosystem{}.getVersions("a4") // TODO(michaelkedar): getVersions -> GetVersions
+	p := getTestProvider(t)
+	versions, err := bioconductorEcosystem{p: p}.getVersions("a4") // TODO(michaelkedar): getVersions -> GetVersions
 	if err != nil {
 		t.Errorf("GetVersions() error = %v", err)
 		return
@@ -47,8 +47,8 @@ func TestBioconductor_GetVersions(t *testing.T) {
 
 func TestBioconductor_GetVersionsNotFound(t *testing.T) {
 	t.SkipNow()
-	setupHTTPClientForTest(t)
-	_, err := bioconductorEcosystem{}.getVersions("doesnotexist123456") // TODO(michaelkedar): getVersions -> GetVersions
+	p := getTestProvider(t)
+	_, err := bioconductorEcosystem{p: p}.getVersions("doesnotexist123456") // TODO(michaelkedar): getVersions -> GetVersions
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("GetVersions() error = %v, want %v", err, ErrPackageNotFound)
 	}

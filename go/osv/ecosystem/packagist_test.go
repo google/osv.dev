@@ -7,11 +7,16 @@ import (
 )
 
 func TestPackagist_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := packagistEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Packagist")
+	if !ok {
+		t.Fatalf("Failed to retrieve Packagist ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("monolog/monolog", func(t *testing.T) {
-		versions, err := e.GetVersions("monolog/monolog")
+		versions, err := ecosystem.GetVersions("monolog/monolog")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -22,7 +27,7 @@ func TestPackagist_GetVersions(t *testing.T) {
 	})
 
 	t.Run("neos/neos", func(t *testing.T) {
-		versions, err := e.GetVersions("neos/neos")
+		versions, err := ecosystem.GetVersions("neos/neos")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -36,9 +41,14 @@ func TestPackagist_GetVersions(t *testing.T) {
 }
 
 func TestPackagist_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := packagistEcosystem{}
-	_, err := e.GetVersions("doesnotexist/doesnotexist")
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Packagist")
+	if !ok {
+		t.Fatalf("Failed to retrieve Packagist ecosystem")
+	}
+	ecosystem := e.(Enumerable)
+	_, err := ecosystem.GetVersions("doesnotexist/doesnotexist")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)
 	}

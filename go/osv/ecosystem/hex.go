@@ -21,6 +21,8 @@ import (
 
 type hexEcosystem struct {
 	semverEcosystem // note hex currently uses SEMVER version types.
+
+	p *Provider
 }
 
 var _ Enumerable = hexEcosystem{}
@@ -35,7 +37,7 @@ func (e hexEcosystem) GetVersions(pkg string) ([]string, error) {
 			Version string `json:"version"`
 		} `json:"releases"`
 	}
-	if err := fetchJSON(hexAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(hexAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get Hex versions for %s: %w", pkg, err)
 	}
 

@@ -6,11 +6,16 @@ import (
 )
 
 func TestMaven_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := mavenEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Maven")
+	if !ok {
+		t.Fatalf("Failed to retrieve Maven ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 
 	t.Run("com.google.guava:guava", func(t *testing.T) {
-		versions, err := e.GetVersions("com.google.guava:guava")
+		versions, err := ecosystem.GetVersions("com.google.guava:guava")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -21,7 +26,7 @@ func TestMaven_GetVersions(t *testing.T) {
 	})
 
 	t.Run("io.grpc:grpc-core", func(t *testing.T) {
-		versions, err := e.GetVersions("io.grpc:grpc-core")
+		versions, err := ecosystem.GetVersions("io.grpc:grpc-core")
 		if err != nil {
 			t.Fatalf("GetVersions() err = %v", err)
 		}
@@ -31,9 +36,14 @@ func TestMaven_GetVersions(t *testing.T) {
 }
 
 func TestMaven_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	e := mavenEcosystem{}
-	_, err := e.GetVersions("doesnotexist:doesnotexist")
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("Maven")
+	if !ok {
+		t.Fatalf("Failed to retrieve Maven ecosystem")
+	}
+	ecosystem := e.(Enumerable)
+	_, err := ecosystem.GetVersions("doesnotexist:doesnotexist")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)
 	}

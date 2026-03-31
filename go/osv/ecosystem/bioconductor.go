@@ -22,6 +22,8 @@ import (
 
 type bioconductorEcosystem struct {
 	semverLikeEcosystem
+
+	p *Provider
 }
 
 var _ Ecosystem = bioconductorEcosystem{}
@@ -56,7 +58,7 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 		var data struct {
 			Version string `json:"version"`
 		}
-		if err := fetchJSON(apiPackageURLPositBioconductor(pkg, biocVersion), &data); err != nil {
+		if err := e.p.fetchJSON(apiPackageURLPositBioconductor(pkg, biocVersion), &data); err != nil {
 			if errors.Is(err, ErrPackageNotFound) {
 				continue
 			}
@@ -81,7 +83,7 @@ func (e bioconductorEcosystem) getBiocVersions() ([]string, error) {
 			BiocVersion string `json:"bioc_version"`
 		} `json:"bioc_versions"`
 	}
-	if err := fetchJSON(apiBiocVersionsURL, &data); err != nil {
+	if err := e.p.fetchJSON(apiBiocVersionsURL, &data); err != nil {
 		return nil, fmt.Errorf("failed to get Bioconductor versions: %w", err)
 	}
 	versions := make([]string, 0, len(data.BiocVersions))

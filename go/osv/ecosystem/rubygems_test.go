@@ -6,8 +6,13 @@ import (
 )
 
 func TestRubyGems_GetVersions(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := rubyGemsEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("RubyGems")
+	if !ok {
+		t.Fatalf("Failed to retrieve RubyGems ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	versions, err := ecosystem.GetVersions("rails")
 	if err != nil {
 		t.Fatalf("failed to get RubyGems versions for rails: %v", err)
@@ -24,8 +29,13 @@ func TestRubyGems_GetVersions(t *testing.T) {
 }
 
 func TestRubyGems_GetVersions_NotFound(t *testing.T) {
-	setupHTTPClientForTest(t)
-	ecosystem := rubyGemsEcosystem{}
+	t.Parallel()
+	p := getTestProvider(t)
+	e, ok := p.Get("RubyGems")
+	if !ok {
+		t.Fatalf("Failed to retrieve RubyGems ecosystem")
+	}
+	ecosystem := e.(Enumerable)
 	_, err := ecosystem.GetVersions("doesnotexist123456")
 	if !errors.Is(err, ErrPackageNotFound) {
 		t.Errorf("expected ErrPackageNotFound, got %v", err)

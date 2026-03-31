@@ -21,7 +21,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type hackageEcosystem struct{}
+type hackageEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = hackageEcosystem{}
 
@@ -48,7 +50,7 @@ func hackageAPIURL(pkg string) string {
 
 func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
 	var data map[string]any
-	if err := fetchJSON(hackageAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(hackageAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
 	}
 

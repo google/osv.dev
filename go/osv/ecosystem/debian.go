@@ -27,6 +27,7 @@ type debianEcosystem struct {
 	dpkgEcosystem
 
 	release string
+	p       *Provider
 }
 
 var _ Enumerable = debianEcosystem{}
@@ -34,14 +35,14 @@ var _ Enumerable = debianEcosystem{}
 const debianSnapshotURL = "https://snapshot.debian.org/mr/package/%s/"
 const debianFirstPackageOutputURL = "https://storage.googleapis.com/debian-osv/first_package_output/%s.json"
 
-func getDebianFirstPackageVersion(release, pkg string) (string, error) {
-	if release == "" {
+func (e debianEcosystem) getDebianFirstPackageVersion(pkg string) (string, error) {
+	if e.release == "" {
 		return "0", nil
 	}
-	urlStr := fmt.Sprintf(debianFirstPackageOutputURL, url.PathEscape(release))
+	urlStr := fmt.Sprintf(debianFirstPackageOutputURL, url.PathEscape(e.release))
 	var data map[string]string
-	if err := fetchJSON(urlStr, &data); err != nil {
-		return "0", fmt.Errorf("failed to load release cache %s: %w", release, err)
+	if err := e.p.fetchJSON(urlStr, &data); err != nil {
+		return "0", fmt.Errorf("failed to load release cache %s: %w", e.release, err)
 	}
 	if v, ok := data[pkg]; ok {
 		return v, nil
@@ -59,7 +60,7 @@ func (e debianEcosystem) GetVersions(pkg string) ([]string, error) {
 		} `json:"result"`
 	}
 
-	if err := fetchJSON(urlStr, &data); err != nil {
+	if err := e.p.fetchJSON(urlStr, &data); err != nil {
 		return nil, fmt.Errorf("failed to get Debian versions for %s: %w", pkg, err)
 	}
 
@@ -93,7 +94,7 @@ func (e debianEcosystem) GetVersions(pkg string) ([]string, error) {
 		return nil, err
 	}
 
-	firstVersion, err := getDebianFirstPackageVersion(e.release, pkg)
+	firstVersion, err := e.getDebianFirstPackageVersion(pkg)
 	if err != nil {
 		return nil, err
 	}

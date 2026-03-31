@@ -21,7 +21,9 @@ import (
 	"github.com/google/osv-scalibr/semantic"
 )
 
-type rubyGemsEcosystem struct{}
+type rubyGemsEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = rubyGemsEcosystem{}
 
@@ -45,7 +47,7 @@ func (e rubyGemsEcosystem) GetVersions(pkg string) ([]string, error) {
 	var data []struct {
 		Number string `json:"number"`
 	}
-	if err := fetchJSON(rubyGemsAPIURL(pkg), &data); err != nil {
+	if err := e.p.fetchJSON(rubyGemsAPIURL(pkg), &data); err != nil {
 		return nil, fmt.Errorf("failed to get RubyGems versions for %s: %w", pkg, err)
 	}
 	versions := make([]string, 0, len(data))

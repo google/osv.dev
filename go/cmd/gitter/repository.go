@@ -547,14 +547,26 @@ func (r *Repository) findAncestorRoots(from []int) []int {
 	return foundRoots
 }
 
+// Hash strings of commits cherrypicked from input (excluding the input commits)
+type cherrypickedHashes struct {
+	Introduced []string
+	Fixed      []string
+	Limit      []string
+}
+
+type resolvedEvents struct {
+	introduced   []int
+	allFixes     []int
+	cherrypicked cherrypickedHashes
+}
+
 // resolveEvents parses and expands SeparatedEvents into lists of introduced and fixed commits
 // In case of intro=0, it will not include root commits that are not ancestors of any fixed commits
-func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]int, []int, []string, []string) {
+func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) resolvedEvents {
 	// Parsing and expanding fixed events first because we need them to find relevant roots for intro=0
 	fixed := r.parseHashes(ctx, se.Fixed)
 	lastAffected := r.parseHashes(ctx, se.LastAffected)
 
-	// Hash strings of commits cherrypicked from fixed commits (excluding the original commits)
 	var cherrypickedFixedHashes []string
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
 	if cherrypickFixed {
@@ -595,7 +607,6 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 		}
 	}
 
-	// Hash strings of commits cherrypicked from introduced commits (excluding the original commits)
 	var cherrypickedIntroHashes []string
 	if cherrypickIntro {
 		newIntro := r.expandByCherrypick(introduced)
@@ -603,18 +614,26 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 		introduced = append(introduced, newIntro...)
 	}
 
-	return introduced, allFixes, cherrypickedIntroHashes, cherrypickedFixedHashes
+	return resolvedEvents{
+		introduced: introduced,
+		allFixes:   allFixes,
+		cherrypicked: cherrypickedHashes{
+			Introduced: cherrypickedIntroHashes,
+			Fixed:      cherrypickedFixedHashes,
+		},
+	}
 }
 
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events.
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and fixed commits.
 // A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
 // A fix can either be a fixed commit, or the children of a lastAffected commit.
-func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, []string, []string) {
+func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, cherrypickedHashes) {
 	logger.InfoContext(ctx, "Starting affected commit walking")
 	start := time.Now()
 
-	introduced, allFixes, cherrypickedIntroHashes, cherrypickedFixedHashes := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
+	resEvents := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
+	introduced, allFixes := resEvents.introduced, resEvents.allFixes
 
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("allFixes", allFixes))
 
@@ -713,12 +732,12 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 
 	logger.InfoContext(ctx, "Affected commit walking completed", slog.Duration("duration", time.Since(start)))
 
-	return affectedCommits, cherrypickedIntroHashes, cherrypickedFixedHashes
+	return affectedCommits, resEvents.cherrypicked
 }
 
 // Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive).
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and limit commits.
-func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, []string, []string) {
+func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, cherrypickedHashes) {
 	introduced := r.parseHashes(ctx, se.Introduced)
 	limit := r.parseHashes(ctx, se.Limit)
 
@@ -779,5 +798,8 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 		}
 	}
 
-	return affectedCommits, cherrypickedIntroHashes, cherrypickedLimitHashes
+	return affectedCommits, cherrypickedHashes{
+		Introduced: cherrypickedIntroHashes,
+		Limit:      cherrypickedLimitHashes,
+	}
 }

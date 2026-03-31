@@ -347,7 +347,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -463,7 +463,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -568,7 +568,7 @@ func TestAffected_Combined(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, _, _ := repo.Affected(t.Context(), tt.se, false, false)
+			gotCommits, _ := repo.Affected(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -687,7 +687,8 @@ func TestAffected_Cherrypick(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, gotIntro, gotFixed := repo.Affected(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickFixed)
+			gotCommits, res := repo.Affected(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickFixed)
+			gotIntro, gotFixed := res.Introduced, res.Fixed
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -777,7 +778,7 @@ func TestLimit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, _, _ := repo.Limit(t.Context(), tt.se, false, false)
+			gotCommits, _ := repo.Limit(t.Context(), tt.se, false, false)
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -886,7 +887,8 @@ func TestLimit_Cherrypick(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, gotIntro, gotLimit := repo.Limit(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickLimit)
+			gotCommits, res := repo.Limit(t.Context(), tt.se, tt.cherrypickIntro, tt.cherrypickLimit)
+			gotIntro, gotLimit := res.Introduced, res.Limit
 
 			var got []SHA1
 			for _, c := range gotCommits {
@@ -1015,7 +1017,8 @@ func TestResolveEvents_MultipleRoots(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotIntro, _, _, _ := repo.resolveEvents(t.Context(), tt.se, false, false)
+			res := repo.resolveEvents(t.Context(), tt.se, false, false)
+			gotIntro := res.introduced
 
 			if diff := cmp.Diff(tt.expectedIntro, gotIntro, cmpopts.SortSlices(func(a, b int) bool { return a < b })); diff != "" {
 				t.Errorf("TestResolveEvents_MultipleRoots() mismatch (-want +got):\n%s", diff)

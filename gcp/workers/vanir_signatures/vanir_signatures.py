@@ -94,7 +94,7 @@ def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
 
 def process_batch(vuln_ids: list[str],
                   dry_run: bool = False,
-                  max_workers: int = 20) -> int:
+                  max_workers: int = 10) -> int:
   """Process a batch of vulnerabilities."""
   if not vuln_ids:
     return 0
@@ -199,8 +199,9 @@ def main():
   parser.add_argument(
       '--max-workers',
       type=int,
-      default=20,
-      help='Maximum number of parallel workers.')
+      default=10,
+      help=('Maximum number of parallel workers. Note that total threads '
+            'spawned will be max_workers * max_workers (default 100).'))
   parser.add_argument(
       '--dry-run', action='store_true', help='Perform a dry run.')
   parser.add_argument(
@@ -239,6 +240,8 @@ def main():
   total_generated_count = 0
   total_processed_count = 0
 
+  # Note that total threads spawned will be max_workers * max_workers (one pool
+  # for batches, one pool within each batch for GCS fetches).
   with futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
 
     def process_with_context(batch):

@@ -144,7 +144,7 @@ class VanirSignaturesTest(unittest.TestCase):
     with mock.patch(
         'argparse.ArgumentParser.parse_args',
         return_value=mock.Mock(
-            dry_run=True, batch_size=100, max_workers=20, hours=None)):
+            dry_run=True, batch_size=100, max_workers=10, hours=None)):
       vanir_signatures.main()
 
     # Verify process_batch was called for each chunk (BATCH_SIZE=100)
@@ -153,11 +153,11 @@ class VanirSignaturesTest(unittest.TestCase):
 
     # First batch of 100
     expected_batch1 = [f'VULN-{i}' for i in range(100)]
-    mock_process_batch.assert_any_call(expected_batch1, True, 20)
+    mock_process_batch.assert_any_call(expected_batch1, True, 10)
 
     # Second batch of 50
     expected_batch2 = [f'VULN-{i}' for i in range(100, 150)]
-    mock_process_batch.assert_any_call(expected_batch2, True, 20)
+    mock_process_batch.assert_any_call(expected_batch2, True, 10)
 
 
 if __name__ == '__main__':

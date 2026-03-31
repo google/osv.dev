@@ -134,7 +134,7 @@ class VanirSignaturesTest(unittest.TestCase):
   @mock.patch('vanir_signatures._generate_vanir_signatures_batch')
   def test_process_batch_failure(self, mock_gen_signatures, mock_upload,
                                  mock_get_gcs):
-    """Test GCS failure adding ID to retry list and skipping Datastore update."""
+    """Test GCS failure adding ID to retry list and skipping Datastore update"""
     vuln_id = 'VULN-1'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     affected = vuln.affected.add()

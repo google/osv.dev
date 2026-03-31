@@ -462,23 +462,25 @@ func TestCombineDirsSnapshot(t *testing.T) {
 		v := combined[models.CVEID(k)]
 
 		// Ensure deterministic order for slices inside Vulnerability
-		sort.Strings(v.Aliases)
+		sort.Strings(v.GetAliases())
 
-		sort.Slice(v.References, func(i, j int) bool {
-			if v.References[i].Type != v.References[j].Type {
-				return v.References[i].Type < v.References[j].Type
+		sort.Slice(v.GetReferences(), func(i, j int) bool {
+			if v.GetReferences()[i].GetType() != v.GetReferences()[j].GetType() {
+				return v.GetReferences()[i].GetType() < v.GetReferences()[j].GetType()
 			}
-			return v.References[i].Url < v.References[j].Url
+
+			return v.GetReferences()[i].GetUrl() < v.GetReferences()[j].GetUrl()
 		})
 
-		sort.Slice(v.Affected, func(i, j int) bool {
+		sort.Slice(v.GetAffected(), func(i, j int) bool {
 			var repoA, repoB string
-			if len(v.Affected[i].GetRanges()) > 0 {
-				repoA = v.Affected[i].GetRanges()[0].GetRepo()
+			if len(v.GetAffected()[i].GetRanges()) > 0 {
+				repoA = v.GetAffected()[i].GetRanges()[0].GetRepo()
 			}
-			if len(v.Affected[j].GetRanges()) > 0 {
-				repoB = v.Affected[j].GetRanges()[0].GetRepo()
+			if len(v.GetAffected()[j].GetRanges()) > 0 {
+				repoB = v.GetAffected()[j].GetRanges()[0].GetRepo()
 			}
+
 			return repoA < repoB
 		})
 

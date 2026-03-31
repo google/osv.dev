@@ -38,22 +38,86 @@ func TestGetRepoDirName(t *testing.T) {
 	}
 }
 
-func TestNormalizeURL(t *testing.T) {
+func TestPrepareURL(t *testing.T) {
 	tests := []struct {
-		url      string
-		expected string
+		name      string
+		url       string
+		expected  string
+		expectErr bool
 	}{
-		{"git://github.com/google/osv.dev.git", "https://github.com/google/osv.dev.git"},
-		{"https://github.com/google/osv.dev.git", "https://github.com/google/osv.dev.git"},
-		{"git://github.com/google/osv.dev", "https://github.com/google/osv.dev"},
-		{"http://github.com/google/osv.dev", "http://github.com/google/osv.dev"},
-		{"git://gitlab.com/google/osv.dev", "git://gitlab.com/google/osv.dev"},
+		{
+			name:      "Normal https protocol",
+			url:       "https://github.com/google/osv.dev.git",
+			expected:  "https://github.com/google/osv.dev.git",
+			expectErr: false,
+		},
+		{
+			name:      "GitHub http protocol",
+			url:       "http://github.com/google/osv.dev",
+			expected:  "http://github.com/google/osv.dev",
+			expectErr: false,
+		},
+		{
+			name:      "GitHub git protocol, change to https",
+			url:       "git://github.com/google/osv.dev.git",
+			expected:  "https://github.com/google/osv.dev.git",
+			expectErr: false,
+		},
+		{
+			name:      "Non-github git protocol, no change",
+			url:       "git://code.qt.io/qt/qt5.git",
+			expected:  "git://code.qt.io/qt/qt5.git",
+			expectErr: false,
+		},
+		{
+			name:      "Non github url",
+			url:       "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expected:  "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expectErr: false,
+		},
+		{
+			name:      "URL with query parameters",
+			url:       "https://github.com/google/osv.dev.git?q=value",
+			expected:  "https://github.com/google/osv.dev.git",
+			expectErr: false,
+		},
+		{
+			name:      "URL with fragment",
+			url:       "https://github.com/lxml/lxml#diff-59130575b4fb2932c957db2922977d7d89afb0b2085357db1a14615a2fcad776",
+			expected:  "https://github.com/lxml/lxml",
+			expectErr: false,
+		},
+		{
+			name:      "Empty URL",
+			url:       "",
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "Unsupported protocol file://",
+			url:       "file://this-is-invalid",
+			expected:  "",
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		if result := normalizeURL(tt.url); result != tt.expected {
-			t.Errorf("normalizeURL(%s) = %s, expected %s", tt.url, result, tt.expected)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/test", nil)
+			result, err := prepareURL(req, tt.url)
+			if tt.expectErr {
+				if err == nil {
+					t.Errorf("prepareURL() expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("prepareURL() unexpected error: %v", err)
+				}
+				if result != tt.expected {
+					t.Errorf("prepareURL() = %s, expected %s", result, tt.expected)
+				}
+			}
+		})
 	}
 }
 

@@ -547,7 +547,6 @@ func (r *Repository) findAncestorRoots(from []int) []int {
 	return foundRoots
 }
 
-// Hash strings of commits cherrypicked from input (excluding the input commits)
 type cherrypickedHashes struct {
 	Introduced []string
 	Fixed      []string
@@ -555,8 +554,11 @@ type cherrypickedHashes struct {
 }
 
 type resolvedEvents struct {
-	introduced   []int
-	allFixes     []int
+	// Introduced commits (from input) + cherrypicked intro commits (if enabled) + resolved roots (if there is intro=0)
+	introduced []int
+	// Fixed commits (from input) + children of last_affected commits (from input) + cherrypick of fixed commit (if enabled)
+	allFixes []int
+	// Cherrypicked commit hash strings (excluding original input commits)
 	cherrypicked cherrypickedHashes
 }
 

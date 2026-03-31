@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for vanir_signatures."""
 
+import datetime
 import unittest
 from unittest import mock
 
@@ -45,8 +46,9 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch([vuln_id])
       self.assertEqual(result, 0)
+      self.assertEqual(failed_ids, [])
       self.assertTrue(any('no GIT affected ranges' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
@@ -64,8 +66,9 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch([vuln_id])
       self.assertEqual(result, 0)
+      self.assertEqual(failed_ids, [])
       self.assertTrue(
           any('is a Kernel vulnerability' in log for log in cm.output))
 
@@ -82,8 +85,9 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch([vuln_id])
       self.assertEqual(result, 0)
+      self.assertEqual(failed_ids, [])
       self.assertTrue(any('it is withdrawn' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
@@ -114,15 +118,56 @@ class VanirSignaturesTest(unittest.TestCase):
     vuln_entity = osv.Vulnerability(id=vuln_id)
     vuln_entity.put()
 
-    result = vanir_signatures.process_batch([vuln_id])
+    result, failed_ids = vanir_signatures.process_batch([vuln_id])
 
     self.assertEqual(result, 1)
+    self.assertEqual(failed_ids, [])
     mock_upload.assert_called_once()
     mock_gen_signatures.assert_called_once_with([vuln])
 
     # Verify Datastore update
     updated_vuln = osv.Vulnerability.get_by_id(vuln_id)
     self.assertIsNotNone(updated_vuln.modified)
+
+  @mock.patch('osv.gcs.get_by_id_with_generation')
+  @mock.patch('osv.gcs.upload_vulnerability')
+  @mock.patch('vanir_signatures._generate_vanir_signatures_batch')
+  def test_process_batch_failure(self, mock_gen_signatures, mock_upload,
+                                 mock_get_gcs):
+    """Test GCS failure adding ID to retry list and skipping Datastore update."""
+    vuln_id = 'VULN-1'
+    vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
+    affected = vuln.affected.add()
+    affected.ranges.add(
+        type=vulnerability_pb2.Range.GIT, repo='https://example.com/repo')
+
+    mock_get_gcs.return_value = (vuln, '123')
+
+    # Mock generation result (must be different from original to trigger update)
+    enriched_vuln = vulnerability_pb2.Vulnerability()
+    enriched_vuln.CopyFrom(vuln)
+    enriched_vuln.affected[0].database_specific['vanir_signatures'] = [{
+        'id': 'sig1'
+    }]
+    mock_gen_signatures.return_value = {vuln_id: [enriched_vuln]}
+    mock_upload.side_effect = Exception('GCS down')
+
+    # Setup Datastore Vulnerability
+    vuln_entity = osv.Vulnerability(id=vuln_id)
+    vuln_entity.modified = datetime.datetime(
+        2026, 1, 1, tzinfo=datetime.timezone.utc)
+    vuln_entity.put()
+    initial_modified = vuln_entity.modified
+
+    result, failed_ids = vanir_signatures.process_batch([vuln_id])
+
+    # Result should be 0 because upload failed
+    self.assertEqual(result, 0)
+    self.assertEqual(failed_ids, [vuln_id])
+
+    # Verify Datastore was NOT updated
+    updated_vuln = osv.Vulnerability.get_by_id(vuln_id, use_cache=False)
+    self.assertEqual(updated_vuln.modified, initial_modified)
 
   @mock.patch('osv.models.Vulnerability.query')
   @mock.patch('vanir_signatures.process_batch')
@@ -138,7 +183,7 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_query.filter.return_value = mock_query
     mock_query.iter.return_value = vuln_keys
 
-    mock_process_batch.return_value = 10
+    mock_process_batch.return_value = (10, [])
 
     # Run main with dry-run and batch_size=100
     with mock.patch(

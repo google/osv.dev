@@ -33,6 +33,7 @@ from vanir import vulnerability_manager
 
 JOB_NAME = 'vanir_signatures'
 JOB_DATA_LAST_RUN = 'vanir_signatures_last_run'
+JOB_DATA_RETRY_LIST = 'vanir_signatures_retry_list'
 
 
 def _generate_vanir_signatures_batch(
@@ -94,10 +95,10 @@ def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
 
 def process_batch(vuln_ids: list[str],
                   dry_run: bool = False,
-                  max_workers: int = 10) -> int:
+                  max_workers: int = 10) -> tuple[int, list[str]]:
   """Process a batch of vulnerabilities."""
   if not vuln_ids:
-    return 0
+    return 0, []
 
   logging.info('Processing batch of %d vulnerabilities', len(vuln_ids))
 
@@ -137,12 +138,12 @@ def process_batch(vuln_ids: list[str],
       gcs_generations[vulnerability.id] = gcs_gen
 
   if not vulnerabilities_to_process:
-    return 0
+    return 0, []
 
   # Batch signature generation
   batch_results = _generate_vanir_signatures_batch(vulnerabilities_to_process)
 
-  # Collect all enriched vulnerabilities
+  # Collect all vulnerabilities to update in GCS/Datastore.
   all_enriched = []
   for original_vuln in vulnerabilities_to_process:
     enriched = batch_results.get(original_vuln.id, [original_vuln])
@@ -151,15 +152,16 @@ def process_batch(vuln_ids: list[str],
         all_enriched.append(v)
 
   if not all_enriched:
-    return 0
+    return 0, []
 
   if dry_run:
     for enriched_vuln in all_enriched:
       logging.info('Dry run: would have updated %s', enriched_vuln.id)
-    return len(all_enriched)
+    return len(all_enriched), []
 
   # Update Datastore and GCS
   updated_count = 0
+  failed_ids = []
 
   # Batch fetch Vulnerabilities from Datastore
   vuln_keys = [ndb.Key(osv.models.Vulnerability, v.id) for v in all_enriched]
@@ -170,12 +172,10 @@ def process_batch(vuln_ids: list[str],
       logging.error('Vulnerability %s not found in Datastore', v.id)
       continue
 
+    # Capture current time, but only apply to proto now.
+    # We will only apply to Datastore entity and put() on successful GCS upload.
     now = osv.utcnow()
     v.modified.FromDatetime(now)
-    vuln.modified = now
-
-    # Update Vulnerability entity in Datastore
-    vuln.put()
 
     # Use gcs_generations[original_id] ONLY if it matches enriched ID.
     gen = gcs_generations.get(v.id)
@@ -183,9 +183,15 @@ def process_batch(vuln_ids: list[str],
       osv.gcs.upload_vulnerability(v, gen)
       updated_count += 1
     except Exception:
-      logging.exception('Failed to upload vulnerability %s to GCS', v.id)
+      logging.exception('Failed upload for %s. Adding to retry list.', v.id)
+      failed_ids.append(v.id)
+      continue
 
-  return updated_count
+    # On successful upload, update Datastore entity.
+    vuln.modified = now
+    vuln.put()
+
+  return updated_count, failed_ids
 
 
 def main():
@@ -216,6 +222,9 @@ def main():
   last_run_key = ndb.Key(osv.models.JobData, JOB_DATA_LAST_RUN)
   last_run_data = last_run_key.get()
 
+  retry_list_key = ndb.Key(osv.models.JobData, JOB_DATA_RETRY_LIST)
+  retry_list_data = retry_list_key.get()
+
   # Capture current time to use as last_run for the next time.
   current_run = osv.utcnow()
 
@@ -239,6 +248,7 @@ def main():
 
   total_generated_count = 0
   total_processed_count = 0
+  all_failed_ids = []
 
   # Note that total threads spawned will be max_workers * max_workers (one pool
   # for batches, one pool within each batch for GCS fetches).
@@ -259,6 +269,15 @@ def main():
         future_to_batch[f] = current_batch
         current_batch = []
 
+    # Also add IDs from the retry list
+    if retry_list_data and retry_list_data.value:
+      retry_ids = list(set(retry_list_data.value))
+      logging.info('Adding %d IDs from retry list.', len(retry_ids))
+      for i in range(0, len(retry_ids), args.batch_size):
+        batch = retry_ids[i:i + args.batch_size]
+        f = executor.submit(process_with_context, batch)
+        future_to_batch[f] = batch
+
     if current_batch:
       f = executor.submit(process_with_context, current_batch)
       future_to_batch[f] = current_batch
@@ -270,8 +289,9 @@ def main():
                    len(future_to_batch))
       for future in futures.as_completed(future_to_batch):
         try:
-          generated = future.result()
+          generated, failed_ids = future.result()
           total_generated_count += generated
+          all_failed_ids.extend(failed_ids)
           total_processed_count += len(future_to_batch[future])
         except Exception:
           logging.exception('Failed to process a batch of vulnerabilities')
@@ -281,6 +301,9 @@ def main():
 
   if args.dry_run:
     logging.info('Dry run: would have updated last_run to %s', current_run)
+    if all_failed_ids:
+      logging.info('Dry run: would have saved %d failed IDs to retry list.',
+                   len(set(all_failed_ids)))
     return
 
   # Update last_run timestamp
@@ -289,6 +312,16 @@ def main():
 
   last_run_data.value = current_run
   last_run_data.put()
+
+  # Update retry list
+  if not retry_list_data:
+    retry_list_data = osv.models.JobData(id=JOB_DATA_RETRY_LIST)
+
+  retry_list_data.value = list(set(all_failed_ids))
+  retry_list_data.put()
+  if retry_list_data.value:
+    logging.info('Saved %d failed IDs to retry list.',
+                 len(retry_list_data.value))
 
 
 if __name__ == '__main__':

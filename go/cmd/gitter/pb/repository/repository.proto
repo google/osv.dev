@@ -14,3 +14,44 @@ message CommitDetail {
 message RepositoryCache {
     repeated CommitDetail commits = 1;
 }
+
+message Commit {
+    bytes hash = 1;
+}
+
+message Ref {
+    string label = 1;
+    bytes hash = 2;
+}
+
+message AffectedCommitsResponse {
+    repeated Commit commits = 1;
+    repeated Ref tags = 2;
+    repeated Event cherry_picked_events = 3;
+}
+
+enum EventType {
+    INTRODUCED = 0;
+    FIXED = 1;
+    LAST_AFFECTED = 2;
+    LIMIT = 3;
+}
+
+message Event {
+    EventType event_type = 1;
+    string hash = 2;
+}
+
+message CacheRequest {
+    string url = 1;
+    bool force_update = 2;
+}
+
+message AffectedCommitsRequest {
+    string url = 1;
+    repeated Event events = 2;
+    bool detect_cherrypicks_introduced = 3;
+    bool detect_cherrypicks_fixed = 4;
+    bool detect_cherrypicks_limit = 5;
+    bool force_update = 6;
+}

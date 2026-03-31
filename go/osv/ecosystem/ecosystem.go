@@ -56,6 +56,7 @@ func statelessFactory[E Ecosystem](_ string) Ecosystem {
 
 var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemAlmaLinux:                  statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemAzureLinux:                 statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemAlpaquita:                  statelessFactory[apkEcosystem],
 	osvconstants.EcosystemAlpine:                     statelessFactory[apkEcosystem],
 	osvconstants.EcosystemBellSoftHardenedContainers: statelessFactory[apkEcosystem],

@@ -31,6 +31,10 @@
         {
           "id": "CVE-2024-7254",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "CVE-2025-4565",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

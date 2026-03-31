@@ -59,6 +59,10 @@
         {
           "id": "GO-2024-2937",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4815",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

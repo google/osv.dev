@@ -37,6 +37,7 @@ from .ubuntu import Ubuntu
 _ecosystems = {
     'AlmaLinux': RPM,
     'Alpaquita': APK,
+    'Azure Linux': RPM,
     'Alpine': Alpine,
     'BellSoft Hardened Containers': APK,
     'Bioconductor': Bioconductor,

@@ -90,7 +90,7 @@ func saveRepositoryCache(cachePath string, repo *Repository) error {
 	logger.Info("Saving repository cache", slog.String("path", cachePath))
 
 	cache := &pb.RepositoryCache{}
-	for _, commit := range repo.commitDetails {
+	for _, commit := range repo.commits {
 		cache.Commits = append(cache.Commits, &pb.CommitDetail{
 			Hash:    commit.Hash[:],
 			PatchId: commit.PatchID[:],

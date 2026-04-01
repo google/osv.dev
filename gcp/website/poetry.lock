@@ -732,14 +732,14 @@ Flask = "*"
 
 [[package]]
 name = "flask-compress"
-version = "1.23"
+version = "1.24"
 description = "Compress responses in your Flask app with gzip, deflate, brotli or zstandard."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "flask_compress-1.23-py3-none-any.whl", hash = "sha256:52108afb4d133a5aab9809e6ac3c085ed7b9c788c75c6846c129faa28468f08c"},
-    {file = "flask_compress-1.23.tar.gz", hash = "sha256:5580935b422e3f136b9a90909e4b1015ac2b29c9aebe0f8733b790fde461c545"},
+    {file = "flask_compress-1.24-py3-none-any.whl", hash = "sha256:1e63668eb6e3242bd4f6ad98825a924e3984409be90c125477893d586007d00c"},
+    {file = "flask_compress-1.24.tar.gz", hash = "sha256:14097cefe59ecb3e466d52a6aeb62f34f125a9f7dadf1f33a53e430ce4a50f31"},
 ]
 
 [package.dependencies]
@@ -892,18 +892,18 @@ libcst = ["libcst (>=0.2.5)"]
 
 [[package]]
 name = "google-cloud-logging"
-version = "3.14.0"
+version = "3.15.0"
 description = "Google Cloud Logging API client library"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_cloud_logging-3.14.0-py3-none-any.whl", hash = "sha256:4767ebdb3b46a3052d5185a7d5cf02829d33ea12a0aab1d57221110d581b9e1a"},
-    {file = "google_cloud_logging-3.14.0.tar.gz", hash = "sha256:361e83cd692fecc7da10351f641c474591f586f234fc49394db4ba5c8c5994a7"},
+    {file = "google_cloud_logging-3.15.0-py3-none-any.whl", hash = "sha256:7dcc67434c4e7181510c133d5ac8fd4ce60c23fa4158661f67e54bf440c32450"},
+    {file = "google_cloud_logging-3.15.0.tar.gz", hash = "sha256:72168a1e98bbfc27c75f0b8f630a7f5d786065f3f1f7e9e53d2d787a03693a4a"},
 ]
 
 [package.dependencies]
-google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0", extras = ["grpc"]}
+google-api-core = {version = ">=2.11.0,<3.0.0", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
 google-cloud-appengine-logging = ">=0.1.3,<2.0.0"
 google-cloud-audit-log = ">=0.3.1,<1.0.0"
@@ -915,24 +915,24 @@ grpcio = [
 ]
 opentelemetry-api = ">=1.9.0"
 proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
-protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
+protobuf = ">=4.25.8,<8.0.0"
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.4.0"
+version = "2.4.1"
 description = "NDB library for Google Cloud Datastore"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.4.0-py3-none-any.whl", hash = "sha256:adbb34d14f6657b48d8b3d460fcf2dcb274acf2d574d5efc33d13e903504fe85"},
-    {file = "google_cloud_ndb-2.4.0.tar.gz", hash = "sha256:3a2ab97b4402f1e18cca0ef31ea40695a07483421dd1a59d4aa36c59916d10d0"},
+    {file = "google_cloud_ndb-2.4.1-py3-none-any.whl", hash = "sha256:60d97d8dda599d64ccd221a73ff018a67b0c7152cfe76932b7a50e88ba458c48"},
+    {file = "google_cloud_ndb-2.4.1.tar.gz", hash = "sha256:13eb3d8a81afcdb0627ec535be27a99312c0966a7b1d170afb169840a84ab439"},
 ]
 
 [package.dependencies]
-google-api-core = {version = ">=1.34.0,<2.0.dev0 || >=2.11.dev0,<3.0.0", extras = ["grpc"]}
+google-api-core = {version = ">=2.11.0,<3.0.0", extras = ["grpc"]}
 google-cloud-datastore = ">=2.16.0,<2.20.2 || >2.20.2,<3.0.0"
-protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
+protobuf = ">=4.25.8,<8.0.0"
 pymemcache = ">=2.1.0,<5.0.0"
 pytz = ">=2018.3"
 redis = ">=3.0.0,<7.0.0"
@@ -1183,14 +1183,14 @@ protobuf = ">=6.31.1,<7.0.0"
 
 [[package]]
 name = "gunicorn"
-version = "25.2.0"
+version = "25.3.0"
 description = "WSGI HTTP Server for UNIX"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "gunicorn-25.2.0-py3-none-any.whl", hash = "sha256:88f5b444d0055bf298435384af7294f325e2273fd37ba9f9ff7b98e0a1e5dfdc"},
-    {file = "gunicorn-25.2.0.tar.gz", hash = "sha256:10bd7adb36d44945d97d0a1fdf9a0fb086ae9c7b39e56b4dece8555a6bf4a09c"},
+    {file = "gunicorn-25.3.0-py3-none-any.whl", hash = "sha256:cacea387dab08cd6776501621c295a904fe8e3b7aae9a1a3cbb26f4e7ed54660"},
+    {file = "gunicorn-25.3.0.tar.gz", hash = "sha256:f74e1b2f9f76f6cd1ca01198968bd2dd65830edc24b6e8e4d78de8320e2fe889"},
 ]
 
 [package.dependencies]
@@ -1198,7 +1198,7 @@ packaging = "*"
 
 [package.extras]
 eventlet = ["eventlet (>=0.40.3)"]
-fast = ["gunicorn_h1c (>=0.4.1)"]
+fast = ["gunicorn_h1c (>=0.6.3)"]
 gevent = ["gevent (>=24.10.1)"]
 http2 = ["h2 (>=4.1.0)"]
 setproctitle = ["setproctitle"]
@@ -1904,14 +1904,14 @@ rpds-py = ">=0.7.0"
 
 [[package]]
 name = "requests"
-version = "2.33.0"
+version = "2.33.1"
 description = "Python HTTP for Humans."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b"},
-    {file = "requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652"},
+    {file = "requests-2.33.1-py3-none-any.whl", hash = "sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a"},
+    {file = "requests-2.33.1.tar.gz", hash = "sha256:18817f8c57c6263968bc123d237e3b8b08ac046f5456bd1e307ee8f4250d3517"},
 ]
 
 [package.dependencies]
@@ -1922,7 +1922,6 @@ urllib3 = ">=1.26,<3"
 
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
-test = ["PySocks (>=1.5.6,!=1.5.7)", "pytest (>=3)", "pytest-cov", "pytest-httpbin (==2.1.0)", "pytest-mock", "pytest-xdist"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<8)"]
 
 [[package]]
@@ -2175,4 +2174,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "98467b9c7fe64ed0ab9feee576fa4f2d1a215e2d4bca706e7827023733e858b1"
+content-hash = "a2f41a849c05155b916c4ca5e1736e9b620146c0dc7b3289a5c03df7445398e5"

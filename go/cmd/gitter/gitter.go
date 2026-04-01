@@ -72,7 +72,9 @@ var (
 	repoCacheMaxCostBytes int64
 	// Cache for invalid (does not exist, or does not have tags) repos
 	// Maps repo URL to the HTTP status code (404 or 204) to return
-	invalidRepoCache *ristretto.Cache[string, int]
+	invalidRepoCache           *ristretto.Cache[string, int]
+	invalidRepoTTL             time.Duration
+	invalidRepoCacheMaxEntries int64
 )
 
 var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
@@ -176,9 +178,11 @@ func CloseRepoCache() {
 func InitInvalidRepoCache() {
 	var err error
 	invalidRepoCache, err = ristretto.NewCache(&ristretto.Config[string, int]{
-		NumCounters: numCounters,
-		MaxCost:     repoCacheMaxCostBytes, // Just reuse the same max cost, cost function is implicitly 1
+		NumCounters: invalidRepoCacheMaxEntries * 10,
+		MaxCost:     invalidRepoCacheMaxEntries, // Cost for each entry is 1
 		BufferItems: 64,
+		// Check for TTL expiry every 60 seconds
+		TtlTickerDurationInSec: 60,
 	})
 	if err != nil {
 		logger.FatalContext(context.Background(), "Failed to initialize invalid repository cache", slog.Any("err", err))
@@ -505,6 +509,8 @@ func main() {
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
 	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
 	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
+	flag.DurationVar(&invalidRepoTTL, "invalid-repo-cache-ttl", time.Hour, "Invalid repository cache time-to-live duration")
+	flag.Int64Var(&invalidRepoCacheMaxEntries, "invalid-repo-cache-max-entries", 5000, "Invalid repository cache max entries")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)
 
@@ -847,7 +853,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			if errLsRemote != nil {
 				if isAuthError(errLsRemote) {
-					invalidRepoCache.SetWithTTL(url, http.StatusNotFound, 1, time.Hour)
+					invalidRepoCache.SetWithTTL(url, http.StatusNotFound, 1, invalidRepoTTL)
 					http.Error(w, "Repository not found", http.StatusNotFound)
 					return
 				}
@@ -860,7 +866,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(tagsMap) == 0 {
-		invalidRepoCache.SetWithTTL(url, http.StatusNoContent, 1, time.Hour)
+		invalidRepoCache.SetWithTTL(url, http.StatusNoContent, 1, invalidRepoTTL)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}

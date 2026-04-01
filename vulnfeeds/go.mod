@@ -9,10 +9,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.31.0
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0
 	github.com/aquasecurity/go-pep440-version v0.0.1
-	github.com/atombender/go-jsonschema v0.22.0
+	github.com/atombender/go-jsonschema v0.23.0
 	github.com/fsouza/fake-gcs-server v1.54.0
 	github.com/gkampitakis/go-snaps v0.5.21
-	github.com/go-git/go-git/v5 v5.17.1
+	github.com/go-git/go-git/v5 v5.17.2
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.42.0
 	go.opentelemetry.io/otel/trace v1.42.0
 	golang.org/x/text v0.35.0
-	google.golang.org/api v0.272.0
+	google.golang.org/api v0.273.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0
@@ -74,7 +74,7 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
-	github.com/googleapis/gax-go/v2 v2.18.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.19.0 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -115,9 +115,9 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/genproto v0.0.0-20260217215200-42d3e9bedb6d // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260217215200-42d3e9bedb6d // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
+	google.golang.org/genproto v0.0.0-20260316180232-0b37fe3546d5 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

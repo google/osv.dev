@@ -9,6 +9,16 @@ import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js'
 import { LitElement, html } from 'lit';
 import { ExpandableSearch, SearchSuggestionsManager } from './search.js';
 
+const COPY_ICON_RESET_MS = 1500;
+
+document.addEventListener('clipboard-copy', ({target}) => {
+  const icon = target.querySelector('md-icon');
+  if (!icon) return;
+  clearTimeout(target._copyResetTimer);
+  icon.textContent = 'check';
+  target._copyResetTimer = setTimeout(() => { icon.textContent = 'content_copy'; }, COPY_ICON_RESET_MS);
+});
+
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting
 // page, but we want to let Turbo speed up renders as intended.

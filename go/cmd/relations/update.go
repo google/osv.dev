@@ -222,6 +222,7 @@ ConsumerLoop:
 		}
 		opts := &clients.WriteOptions{
 			IfGenerationMatches: &attrs.Generation,
+			CustomTime:          &modified,
 		}
 		if err := u.gcsClient.WriteObject(ctx, path, newData, opts); err != nil {
 			logger.Error("failed to write vuln to GCS", slog.String("id", id), slog.Any("err", err))

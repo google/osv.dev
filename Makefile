@@ -112,4 +112,4 @@ run-api-server-test:
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests alias-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests

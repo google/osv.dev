@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/cvelist2osv"
+	"github.com/google/osv/vulnfeeds/conversion/cve5"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// Perform the conversion and export the results.
-	if metrics, err := cvelist2osv.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, ""); err != nil {
+	if metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, ""); err != nil {
 		logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 	} else {
 		logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))

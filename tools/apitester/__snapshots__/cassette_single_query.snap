@@ -22,18 +22,6 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/d3e09bf4654fe5478b6dbf2b26ebab6271317d81"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.gentoo.org/glsa/202209-11"
         },
         {
@@ -46,16 +34,25 @@
         },
         {
           "type": "EVIDENCE",
-          "url": "https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=37425"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://github.com/google/oss-fuzz-vulns/blob/main/vulns/harfbuzz/OSV-2021-1159.yaml"
         }
       ],
       "affected": [
         {
           "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/behdad/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "9aa6f8a93f035dd0a1e3978da495d830049480c8"
+                }
+              ],
+              "database_specific": "<Any value>"
+            },
             {
               "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
@@ -73,7 +70,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -96,10 +93,6 @@
       "references": [
         {
           "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
-        },
-        {
-          "type": "WEB",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
         },
         {
@@ -107,7 +100,8 @@
           "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
         },
         {
-          "type": "WEB"
+          "type": "WEB",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
         },
         {
           "type": "ADVISORY",
@@ -139,6 +133,7 @@
               "database_specific": "<Any value>"
             },
             {
+              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -159,53 +154,6 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-1055",
-      "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-02-27T22:15:09.990Z",
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "last_affected": "bf8929fbfb623703cf1522b372cab80002c17c95"
-                }
-              ]
-            }
-          ],
-          "versions": 202,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
         }
       ]
     },
@@ -250,15 +198,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://chromium.googlesource.com/chromium/src/+/e1f324aa681af54101c1f2d173d92adb80e37088/DEPS#361"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/blob/2822b589bc837fae6f66233e2cf2eef0f6ce8470/src/hb-ot-layout-gsubgpos.hh"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/85be877925ddbf34f74a1229f3ca1716bb6170dc"
         },
         {
           "type": "ADVISORY",
@@ -286,6 +226,19 @@
                 {
                   "last_affected": "afcae83a064843d71d47624bc162e121cc56c08b"
                 }
+              ],
+              "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/harfbuzz/harfbuzz",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "85be877925ddbf34f74a1229f3ca1716bb6170dc"
+                }
               ]
             }
           ],
@@ -293,263 +246,11 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-35074",
-      "details": "The issue was addressed with improved memory handling. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-09-27T15:18:52.800Z",
-      "related": [
-        "SUSE-SU-2023:4209-1",
-        "SUSE-SU-2023:4211-1",
-        "SUSE-SU-2023:4294-1",
-        "SUSE-SU-2023:4339-1"
-      ],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202401-33"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213936"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213937"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213938"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213940"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213941"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 180,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-        }
-      ]
-    },
-    {
-      "id": "CVE-2023-41074",
-      "details": "The issue was addressed with improved checks. This issue is fixed in tvOS 17, Safari 17, watchOS 10, iOS 17 and iPadOS 17, macOS Sonoma 14. Processing web content may lead to arbitrary code execution.",
-      "modified": "<RFC3339 date with the year 2026>",
-      "published": "2023-09-27T15:19:26.570Z",
-      "related": [
-        "CGA-gq9c-f99g-p3pc",
-        "MGASA-2024-0148",
-        "SUSE-SU-2023:4209-1",
-        "SUSE-SU-2023:4211-1",
-        "SUSE-SU-2023:4294-1",
-        "SUSE-SU-2023:4339-1",
-        "SUSE-SU-2023:4978-1",
-        "SUSE-SU-2024:0002-1",
-        "SUSE-SU-2024:0003-1",
-        "SUSE-SU-2024:0004-1"
-      ],
-      "references": [
-        {
-          "type": "WEB",
-          "url": "https://webkitgtk.org/security/WSA-2023-0009.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.gentoo.org/glsa/202401-33"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213936"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213937"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213938"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213940"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/en-us/HT213941"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://www.debian.org/security/2023/dsa-5527"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/10"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/8"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2023/Oct/9"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2023/09/28/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4EEMDC5TQAANFH5D77QM34ZTUKXPFGVL/"
-        }
-      ],
-      "affected": [
-        {
-          "ranges": [
-            {
-              "type": "GIT",
-              "repo": "https://github.com/harfbuzz/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "d5261f7234ab072a2aa1758ccfe37372df9927a9"
-                }
-              ]
-            }
-          ],
-          "versions": 180,
-          "database_specific": "<Any value>"
-        }
-      ],
-      "schema_version": "1.7.3",
-      "severity": [
-        {
-          "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -563,7 +264,9 @@
       "related": [
         "MGASA-2026-0015",
         "SUSE-SU-2026:0287-1",
-        "openSUSE-SU-2026:10065-1"
+        "SUSE-SU-2026:20762-1",
+        "openSUSE-SU-2026:10065-1",
+        "openSUSE-SU-2026:20409-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -580,16 +283,16 @@
           "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/22xxx/CVE-2026-22693.json"
         },
         {
-          "type": "FIX",
-          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
-        },
-        {
           "type": "ADVISORY",
           "url": "https://github.com/harfbuzz/harfbuzz/security/advisories/GHSA-xvjr-f2r9-c7ww"
         },
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-22693"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/harfbuzz/harfbuzz/commit/1265ff8d990284f04d8768f35b0e20ae5f60daae"
         }
       ],
       "affected": [
@@ -1740,10 +1443,6 @@
         {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2298922"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2298922"
         }
       ],
       "affected": [
@@ -1759,14 +1458,15 @@
                 {
                   "last_affected": "7161cb17c01dcff1dc5bf89a18437d9d729f1ecd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 204,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -1797,15 +1497,7 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250131-0003/"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
           "type": "ADVISORY",
@@ -1817,7 +1509,15 @@
         },
         {
           "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250124-0012/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250131-0003/"
         },
         {
           "type": "REPORT",
@@ -1873,11 +1573,39 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+          "url": "https://security.netapp.com/advisory/ntap-20240524-0006/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2004.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/GMD6UYKCCRCYETWQZUJ65ZRFULT6SHLI/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
@@ -1892,59 +1620,7 @@
           "url": "https://curl.se/docs/CVE-2024-2004.html"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2004.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2384833"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/2D44YLAUFJU6BZ4XFG2FYV7SBKXB5IZ6/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/GMD6UYKCCRCYETWQZUJ65ZRFULT6SHLI/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240524-0006/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214118"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214119"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
           "type": "REPORT",
-          "url": "https://hackerone.com/reports/2384833"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2384833"
         }
       ],
@@ -1961,18 +1637,106 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 16,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2024-2379",
+      "details": "libcurl skips the certificate verification for a QUIC connection under certain conditions, when built to use wolfSSL. If told to use an unknown/bad cipher or curve, the error path accidentally skips the verification and returns OK, thus ignoring any certificate problems.",
+      "aliases": ["CURL-CVE-2024-2379"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2024-03-27T08:15:41.230Z",
+      "related": [
+        "CGA-6rjf-f6x6-r857",
+        "MGASA-2024-0099",
+        "SUSE-SU-2025:20029-1",
+        "openSUSE-SU-2024:13805-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2379.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214118"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214119"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2379.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240531-0001/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://support.apple.com/kb/HT214120"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/2410774"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "last_affected": "5ce164e0e9290c96eb7d502173426c0a135ec008"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 205,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:L"
         }
       ]
     },
@@ -1998,14 +1762,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
-        },
-        {
-          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
         },
         {
@@ -2022,7 +1778,11 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2402845"
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
           "type": "ADVISORY",
@@ -2031,10 +1791,6 @@
         {
           "type": "ADVISORY",
           "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/GMD6UYKCCRCYETWQZUJ65ZRFULT6SHLI/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0009/"
         },
         {
           "type": "ADVISORY",
@@ -2049,27 +1805,11 @@
           "url": "https://support.apple.com/kb/HT214120"
         },
         {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2402845"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
-        },
-        {
-          "type": "EVIDENCE",
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2402845"
         }
       ],
@@ -2086,14 +1826,15 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 77,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2115,16 +1856,8 @@
       ],
       "references": [
         {
-          "type": "WEB",
-          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
-        },
-        {
           "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
+          "url": "https://support.apple.com/kb/HT214120"
         },
         {
           "type": "ADVISORY",
@@ -2132,23 +1865,7 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2024-2466.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-2466.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2416725"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20240503-0010/"
         },
         {
           "type": "ADVISORY",
@@ -2160,34 +1877,26 @@
         },
         {
           "type": "ADVISORY",
-          "url": "https://support.apple.com/kb/HT214120"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://www.vicarius.io/vsociety/posts/tls-certificate-check-bypass-curl-with-mbedtls-cve-2024-2466-2468"
-        },
-        {
-          "type": "REPORT",
-          "url": "https://hackerone.com/reports/2416725"
-        },
-        {
-          "type": "ARTICLE",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/18"
         },
         {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://seclists.org/fulldisclosure/2024/Jul/19"
         },
         {
-          "type": "ARTICLE",
-          "url": "http://seclists.org/fulldisclosure/2024/Jul/20"
-        },
-        {
-          "type": "ARTICLE",
+          "type": "ADVISORY",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
         },
         {
-          "type": "EVIDENCE",
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-2466.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20240503-0010/"
+        },
+        {
+          "type": "REPORT",
           "url": "https://hackerone.com/reports/2416725"
         },
         {
@@ -2208,14 +1917,15 @@
                 {
                   "fixed": "72cf468d459d29e5366e416c014faaaf281dfa2d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 2,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2250,18 +1960,6 @@
         {
           "type": "REPORT",
           "url": "https://hackerone.com/reports/2604391"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2024/07/24/2"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "https://hackerone.com/reports/2604391"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2604391"
         }
       ],
       "affected": [
@@ -2277,14 +1975,15 @@
                 {
                   "last_affected": "fd567d4f06857f4fc8e2f64ea727b1318f76ad33"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 208,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2314,18 +2013,6 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-7264.html"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2024-7264.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2629968"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20240828-0008/"
         },
         {
@@ -2335,6 +2022,14 @@
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-7264.html"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2024-7264.json"
         },
         {
           "type": "REPORT",
@@ -2347,10 +2042,6 @@
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
-        },
-        {
-          "type": "EVIDENCE",
-          "url": "https://hackerone.com/reports/2629968"
         }
       ],
       "affected": [
@@ -2365,15 +2056,19 @@
                 },
                 {
                   "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
+                },
+                {
+                  "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2399,15 +2094,15 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://lists.debian.org/debian-lts-announce/2024/11/msg00008.html"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20241011-0005/"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
         },
         {
           "type": "ADVISORY",
@@ -2471,7 +2166,7 @@
       "references": [
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
         },
         {
           "type": "WEB",
@@ -2491,7 +2186,7 @@
         },
         {
           "type": "WEB",
-          "url": "http://seclists.org/fulldisclosure/2025/Apr/11"
+          "url": "http://seclists.org/fulldisclosure/2025/Apr/12"
         },
         {
           "type": "WEB",
@@ -2569,6 +2264,10 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0167.html"
         },
         {
@@ -2576,19 +2275,7 @@
           "url": "https://curl.se/docs/CVE-2025-0167.json"
         },
         {
-          "type": "ADVISORY",
-          "url": "https://hackerone.com/reports/2917232"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0008/"
-        },
-        {
           "type": "REPORT",
-          "url": "https://hackerone.com/reports/2917232"
-        },
-        {
-          "type": "EVIDENCE",
           "url": "https://hackerone.com/reports/2917232"
         }
       ],
@@ -2605,14 +2292,15 @@
                 {
                   "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 37,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2636,11 +2324,11 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-0665.html"
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/2"
         },
         {
           "type": "ADVISORY",
-          "url": "https://curl.se/docs/CVE-2025-0665.json"
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
         },
         {
           "type": "ADVISORY",
@@ -2648,11 +2336,11 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/2"
+          "url": "https://curl.se/docs/CVE-2025-0665.html"
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/05/5"
+          "url": "https://curl.se/docs/CVE-2025-0665.json"
         },
         {
           "type": "REPORT",
@@ -2684,7 +2372,7 @@
       "severity": [
         {
           "type": "CVSS_V3",
-          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:H"
         }
       ]
     },
@@ -2706,15 +2394,15 @@
       "references": [
         {
           "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
+        },
+        {
+          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0725.html"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-0725.json"
-        },
-        {
-          "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250306-0009/"
         },
         {
           "type": "REPORT",
@@ -2726,15 +2414,15 @@
         },
         {
           "type": "ARTICLE",
+          "url": "http://www.openwall.com/lists/oss-security/2025/02/06/2"
+        },
+        {
+          "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/06/4"
         },
         {
           "type": "ARTICLE",
           "url": "http://www.openwall.com/lists/oss-security/2025/02/05/3"
-        },
-        {
-          "type": "ARTICLE",
-          "url": "http://www.openwall.com/lists/oss-security/2025/02/06/2"
         }
       ],
       "affected": [
@@ -2852,15 +2540,15 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-14017.html"
         },
         {
           "type": "ADVISORY",
           "url": "https://curl.se/docs/CVE-2025-14017.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
         }
       ],
       "affected": [
@@ -3210,6 +2898,193 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-1965",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with  `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "aliases": ["CURL-CVE-2026-1965"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:15:59.177Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "SUSE-SU-2026:0903-1",
+        "SUSE-SU-2026:0911-1",
+        "SUSE-SU-2026:0921-1",
+        "SUSE-SU-2026:20668-1",
+        "SUSE-SU-2026:20722-1",
+        "SUSE-SU-2026:20760-1",
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-1965.json"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-1965.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
+                },
+                {
+                  "fixed": "8c908d2d0a6d32abdedda2c52e90bd56ec76c24d"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 181,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-3783",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a redirect to a second URL, curl could leak that token to the second\nhostname under some circumstances.\n\nIf the hostname that the first request is redirected to has information in the\nused .netrc file, with either of the `machine` or `default` keywords, curl\nwould pass on the bearer token set for the first host also to the second one.",
+      "aliases": ["CURL-CVE-2026-3783"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:16:00.080Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "SUSE-SU-2026:0903-1",
+        "SUSE-SU-2026:0911-1",
+        "SUSE-SU-2026:0921-1",
+        "SUSE-SU-2026:20668-1",
+        "SUSE-SU-2026:20722-1",
+        "SUSE-SU-2026:20760-1",
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/2"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-3783.json"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3583983"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-3783.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "fixed": "8c908d2d0a6d32abdedda2c52e90bd56ec76c24d"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 116,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-3784",
+      "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
+      "aliases": ["CURL-CVE-2026-3784"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T11:16:00.437Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "SUSE-SU-2026:0903-1",
+        "SUSE-SU-2026:0911-1",
+        "SUSE-SU-2026:0921-1",
+        "SUSE-SU-2026:20668-1",
+        "SUSE-SU-2026:20722-1",
+        "SUSE-SU-2026:20760-1",
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://curl.se/docs/CVE-2026-3784.json"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://hackerone.com/reports/3584903"
+        },
+        {
+          "type": "FIX",
+          "url": "https://curl.se/docs/CVE-2026-3784.html"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
+                },
+                {
+                  "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 207,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"
         }
       ]
     }

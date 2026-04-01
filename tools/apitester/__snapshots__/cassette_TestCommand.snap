@@ -879,11 +879,11 @@
       "vulns": [
         {
           "id": "CVE-2023-39137",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "CVE-2023-39139",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2099,6 +2099,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-2673",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DLA-3008-1",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -3100,7 +3104,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},
@@ -3434,6 +3445,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-gc5v-m9x4-r6x2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-j8r2-6x86-q33q",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -3451,6 +3466,10 @@
         },
         {
           "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gc5v-m9x4-r6x2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -3633,7 +3652,14 @@
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names#01 - 1]
 {
   "results": [
-    {},
+    {
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {},
     {},
     {},
@@ -3967,6 +3993,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-gc5v-m9x4-r6x2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-j8r2-6x86-q33q",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -3984,6 +4014,10 @@
         },
         {
           "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gc5v-m9x4-r6x2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

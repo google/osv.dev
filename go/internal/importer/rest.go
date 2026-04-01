@@ -38,6 +38,10 @@ func (r restSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("failed to fetch REST API: %d %s for %s", resp.StatusCode, resp.Status, u)
+	}
+
 	return resp.Body, nil
 }
 
@@ -100,7 +104,12 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		return fmt.Errorf("REST API response is not an array for %s", sourceRepo.REST.URL)
 	}
 	maxModified := time.Time{}
+	var iterErr error
 	result.ForEach(func(_, vuln gjson.Result) bool {
+		if err := ctx.Err(); err != nil {
+			iterErr = err
+			return false
+		}
 		id := vuln.Get("id")
 		if !id.Exists() {
 			logger.ErrorContext(ctx, "Vulnerability missing id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
@@ -129,25 +138,33 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			return true
 		}
 		path := id.String() + sourceRepo.Extension
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			iterErr = ctx.Err()
+			return false
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: restSourceRecord{
 				cl:      config.HTTPClient,
 				urlBase: sourceRepo.Link,
 				urlPath: path,
 			},
-			SourceRepository: sourceRepo.Name,
-			SourcePath:       path,
-			LastUpdated:      lastUpdated,
-			HasLastUpdated:   hasUpdateTime,
-			Format:           RecordFormatJSON,
-			KeyPath:          sourceRepo.KeyPath,
-			Strict:           sourceRepo.Strictness,
-			IsReimport:       !hasUpdateTime,
+			SourceRepository:       sourceRepo.Name,
+			SourcePath:             path,
+			CompareAgainstDatabase: hasUpdateTime,
+			Format:                 RecordFormatJSON,
+			KeyPath:                sourceRepo.KeyPath,
+			Strict:                 sourceRepo.Strictness,
+			IsReimport:             !hasUpdateTime,
+		}:
 		}
 
 		return true
 	})
+
+	if iterErr != nil {
+		return iterErr
+	}
 
 	// Set the last updated time to the minimum of:
 	// - the time of run
@@ -207,13 +224,22 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	}
 
 	idsInREST := make(map[string]bool)
+	var iterErr error
 	result.ForEach(func(_, vuln gjson.Result) bool {
+		if err := ctx.Err(); err != nil {
+			iterErr = err
+			return false
+		}
 		if id := vuln.Get("id"); id.Exists() {
 			idsInREST[id.String()] = true
 		}
 
 		return true
 	})
+
+	if iterErr != nil {
+		return iterErr
+	}
 
 	// Get all non-withdrawn vulnerabilities in Datastore for this source
 	vulnsInDatastore := make([]*models.VulnSourceRef, 0, len(idsInREST))
@@ -265,7 +291,10 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 
 	// Trigger deletions
 	for _, entry := range toDelete {
-		ch <- WorkItem{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: restSourceRecord{
 				cl:      config.HTTPClient,
@@ -274,7 +303,8 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			},
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
-			IsDeleted:        true,
+			Action:           ActionWithdraw,
+		}:
 		}
 	}
 
@@ -322,4 +352,80 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 	}
 
 	return lastModTime, nil
+}
+
+func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
+		return errors.New("invalid SourceRepository for REST reconcile")
+	}
+
+	logger.InfoContext(ctx, "Processing REST reconcile",
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+
+	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
+
+	// Fetch datastore records for the source
+	dbRecords, err := fetchDBRecords(ctx, config, sourceRepo)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, sourceRepo.REST.URL, nil)
+	if err != nil {
+		return err
+	}
+	req = req.WithContext(ctx)
+	resp, err := config.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to fetch REST API for reconcile: %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	result := gjson.ParseBytes(data)
+	if !result.IsArray() {
+		return errors.New("REST API response is not an array")
+	}
+
+	var iterErr error
+	result.ForEach(func(_, vuln gjson.Result) bool {
+		if err := ctx.Err(); err != nil {
+			iterErr = err
+			return false
+		}
+		id := vuln.Get("id")
+		if !id.Exists() {
+			logger.ErrorContext(ctx, "Vulnerability missing id in reconcile", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL))
+			return true
+		}
+		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return true
+		}
+
+		pathValue := id.String() + sourceRepo.Extension
+		sourceRecord := restSourceRecord{
+			cl:      config.HTTPClient,
+			urlBase: sourceRepo.Link,
+			urlPath: pathValue,
+		}
+
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON)
+
+		return true
+	})
+
+	if iterErr != nil {
+		return iterErr
+	}
+
+	logger.InfoContext(ctx, "Finished reconciling REST source repository",
+		slog.String("source", sourceRepo.Name),
+		slog.String("url", sourceRepo.REST.URL))
+
+	return nil
 }

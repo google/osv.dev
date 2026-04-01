@@ -185,7 +185,8 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     # Initialise fake source_repo.
     self.tmp_dir = tempfile.TemporaryDirectory()
     self.addCleanup(self.tmp_dir.cleanup)
-
+    osv.repos._GIT_MIRRORS[
+        'https://osv-test/repo/url'] = 'https://github.com/oliverchang/osv-test.git'
     self.mock_repo = tests.mock_repository(self)
     self.remote_source_repo_path = self.mock_repo.path
     self.mock_repo.add_file(
@@ -320,6 +321,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertCountEqual(
         [
+            b'4c155795426727ea05575bd5904321def23c03f4',  # from cherrypicked limit event
             b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
             b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
             b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
@@ -329,10 +331,10 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     )
 
   def test_update_no_introduced(self):
-    """Test update vulnerability with no introduced commit."""
+    """Test update vulnerability with introduced '0' commit."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
                                     None)
-
+    self.source_repo.detect_cherrypicks = True
     message = mock.Mock()
     message.attributes = {
         'source': 'source',
@@ -349,7 +351,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     affected_commits = list(osv.AffectedCommits.query())
     self.assertEqual(1, len(affected_commits))
     affected_commits = affected_commits[0]
-
     self.assertCountEqual(
         [
             b'00514d6f244f696e750a37083163992c6a50cfd3',
@@ -477,7 +478,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertCountEqual(
         [
+            b'4c155795426727ea05575bd5904321def23c03f4',
             b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',  # cherrypicked fix commit
             b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
@@ -528,7 +531,9 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertCountEqual(
         [
+            b'4c155795426727ea05575bd5904321def23c03f4',
             b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
             b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
@@ -890,9 +895,13 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
 
     self.assertCountEqual(
         [
+            b'4c155795426727ea05575bd5904321def23c03f4',
             b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
+            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
             b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
             b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
+            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
+            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
         ],
         [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )

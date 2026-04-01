@@ -299,13 +299,35 @@ steps:
   waitFor: ['build-indexer', 'cloud-build-queue']
   
 # Build/push debian converter image
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '-f', 'vulnfeeds/tools/debian/Dockerfile', '.']
-  id: 'build-debian-convert'
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/debian-convert:latest || exit 0']
+  id: 'pull-debian-convert'
   waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '-f', 'cmd/converters/dsa-dla-dtsa/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/debian-convert:latest', '--pull', '.']
+  dir: 'vulnfeeds'
+  id: 'build-debian-convert'
+  waitFor: ['pull-debian-convert']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-convert']
   waitFor: ['build-debian-convert', 'cloud-build-queue']
+
+# Build/push first package finder image
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/run_first_package_finder:latest || exit 0']
+  id: 'pull-first-package-finder'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/oss-vdb/run_first_package_finder:latest', '-t', 'gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA', '-f', 'cmd/first_package_finder/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/run_first_package_finder:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-first-package-finder'
+  waitFor: ['pull-first-package-finder']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/run_first_package_finder']
+  waitFor: ['build-first-package-finder', 'cloud-build-queue']
+
 
 # Build/push api backend
 - name: 'gcr.io/cloud-builders/docker'
@@ -395,6 +417,7 @@ steps:
      staging-api-test=gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA,\
      osv-linter=gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA,\
      debian-convert=gcr.io/oss-vdb/debian-convert:$COMMIT_SHA,\
+     run_first_package_finder=gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA,\
      combine-to-osv=gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA,\
      alpine-cve-convert=gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA,\
      debian-cve-convert=gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA,\

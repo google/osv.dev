@@ -23,6 +23,19 @@ import requests
 import pygit2
 import pygit2.enums
 
+# We need to get GITTER_HOST from the environment, but we can't do it in the
+# global scope because it's not set in the test environment until after the
+# module is imported.
+_gitter_host = None
+
+
+def gitter_host():
+  global _gitter_host
+  if _gitter_host is None:
+    _gitter_host = os.getenv('GITTER_HOST', '')
+  return _gitter_host
+
+
 CLONE_TRIES = int(os.getenv('CLONE_TRIES', '3'))
 RETRY_SLEEP_SECONDS = 5
 
@@ -36,8 +49,6 @@ _GIT_MIRRORS = {
 
 FETCH_CACHE: dict[tuple, datetime.datetime] = {}
 FETCH_CACHE_SECONDS = 5 * 60  # 5 minutes
-
-GITTER_HOST = os.getenv('GITTER_HOST', '')
 
 
 class GitRemoteCallback(pygit2.RemoteCallbacks):
@@ -131,7 +142,7 @@ def clone(git_url,
   """Perform a clone."""
   # Don't user Gitter for oss-fuzz-vulns repo because it requires auth
   logging.info('Cloning %s to %s.', git_url, checkout_dir)
-  if GITTER_HOST and git_url != 'ssh://github.com/google/oss-fuzz-vulns':
+  if gitter_host() and git_url != 'ssh://github.com/google/oss-fuzz-vulns':
     try:
       os.makedirs(checkout_dir, exist_ok=True)
       params = {'url': _git_mirror(git_url)}
@@ -140,7 +151,7 @@ def clone(git_url,
 
       # Long timeout duration (1hr) because it could be cloning a large repo
       resp = requests.get(
-          f'{GITTER_HOST}/git',
+          f'{gitter_host()}/git',
           params=params,
           stream=True,
           timeout=3600,

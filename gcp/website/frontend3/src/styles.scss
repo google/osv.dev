@@ -1927,6 +1927,11 @@ div.highlight {
 }
 
 /* Navbar search styles */
+$navbar-search-surface: rgba(41, 41, 41, 0.95);
+$navbar-search-border: rgba(255, 255, 255, 0.3);
+$navbar-search-radius: 19px;
+$navbar-search-divider: rgba(255, 255, 255, 0.16);
+
 .search-container-nav {
   position: relative;
   display: flex;
@@ -1954,16 +1959,16 @@ div.highlight {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, opacity 0.3s ease, visibility 0.3s ease;
+  transition: background-color 0.2s ease-in-out, opacity 0.15s ease-in-out, visibility 0s linear 0.15s;
   border-radius: 50%;
 
-  &:hover {
+  &:hover,
+  &:focus {
     background-color: rgba(255, 255, 255, 0.1);
   }
 
   &:focus {
     outline: none;
-    background-color: rgba(255, 255, 255, 0.1);
   }
 
   &.active {
@@ -1980,19 +1985,20 @@ div.highlight {
 .search-form {
   position: absolute;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: calc(50% - 19px);
+  transform: none;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   width: 0;
   overflow: hidden;
-  transition: width 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
-  background: rgba(41, 41, 41, 0.95);
-  border-radius: 24px;
+  transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+  background: $navbar-search-surface;
+  border-radius: $navbar-search-radius;
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid $navbar-search-border;
   box-sizing: border-box;
 
   &.active {
@@ -2000,10 +2006,12 @@ div.highlight {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     opacity: 1;
     visibility: visible;
+    transition: width 0.3s ease-in-out, opacity 0.15s ease-in-out 0.1s, visibility 0s linear;
   }
 
   .search-input {
     flex: 1;
+    min-width: 0;
     border: none;
     padding: 10px 16px;
     font-size: 14px;
@@ -2036,7 +2044,7 @@ div.highlight {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease-in-out;
     height: 36px;
     width: 36px;
 
@@ -2050,7 +2058,7 @@ div.highlight {
   }
 }
 
-/* --- Base styles for the suggestions dropdown --- */
+/* --- Suggestions dropdown --- */
 .search-suggestions {
   position: absolute;
   z-index: 9999;
@@ -2063,20 +2071,33 @@ div.highlight {
   &--hidden {
     display: none;
   }
-}
 
-/* --- Base styles for a single suggestion item --- */
-.search-suggestions__item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  cursor: pointer;
-  color: $osv-text-color;
-  transition: background-color 0.15s ease;
-  
-  &:last-child {
-    border-bottom: none;
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: $osv-text-color;
+    transition: background-color 0.15s ease;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $osv-grey-600;
+    border-radius: 3px;
+
+    &:hover {
+      background-color: $osv-grey-800;
+    }
   }
 }
 
@@ -2087,61 +2108,48 @@ div.highlight {
 }
 
 .search-form.suggestions-active {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  flex-wrap: wrap;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
 }
 
-
-/* --- Styles for the Main List Page Search Bar --- */
+/* --- List page suggestions --- */
 .search-suggestions--list-page {
-  background: $osv-background; 
-  border: 2px solid $osv-text-color; 
+  background: $osv-background;
+  border: 2px solid $osv-text-color;
   border-top: none;
   border-radius: 0 0 8px 8px;
-  margin-top: -2px; 
+  margin-top: -2px;
 
   .search-suggestions__item {
     border-bottom: 1px dashed $osv-grey-600;
 
+    &:last-child {
+      border-bottom: none;
+    }
+
     &:hover,
     &--selected {
-      background-color: $osv-grey-800; 
+      background-color: $osv-grey-800;
     }
   }
 }
 
-/* --- Styles for the Navbar Search Bar --- */
+/* --- Navbar suggestions --- */
 .search-suggestions--nav {
-  background: rgba(41, 41, 41, 0.95); 
-  border: 1px solid rgba(255, 255, 255, 0.3); 
-  border-top: none;
-  border-radius: 0 0 24px 24px; 
-  width: 280px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-  margin-top: -1px; 
-  
+  position: static;
+  flex-basis: 100%;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid $navbar-search-divider;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+
   .search-suggestions__item {
     &:hover,
     &--selected {
       background: rgba($osv-accent-color, 0.2);
     }
   }
-}
-
-.search-suggestions::-webkit-scrollbar {
-  width: 6px;
-}
-
-.search-suggestions::-webkit-scrollbar-track {
-  background: transparent;
-  margin: 4px 0;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb {
-  background-color: $osv-grey-600;
-  border-radius: 3px;
-}
-
-.search-suggestions::-webkit-scrollbar-thumb:hover {
-  background-color: $osv-grey-800;
 }

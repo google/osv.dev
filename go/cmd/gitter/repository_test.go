@@ -61,7 +61,8 @@ func setupTestRepo(t *testing.T) string {
 
 func TestBuildCommitGraph(t *testing.T) {
 	repoPath := setupTestRepo(t)
-	r := NewRepository(repoPath)
+	r := NewRepository("test-url")
+	r.repoPath = repoPath
 	ctx := context.WithValue(t.Context(), urlKey, "test-url")
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
@@ -86,7 +87,8 @@ func TestBuildCommitGraph(t *testing.T) {
 
 func TestCalculatePatchIDs(t *testing.T) {
 	repoPath := setupTestRepo(t)
-	r := NewRepository(repoPath)
+	r := NewRepository("test-url")
+	r.repoPath = repoPath
 	ctx := context.WithValue(t.Context(), urlKey, "test-url")
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
@@ -191,7 +193,8 @@ var cmpSHA1Opts = []cmp.Option{
 }
 
 func TestExpandByCherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Commit hashes
 	h1 := decodeSHA1("aaaa")
@@ -246,7 +249,8 @@ func TestExpandByCherrypick(t *testing.T) {
 
 // Testing cases with introduced and fixed only.
 func TestAffected_Introduced_Fixed(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -362,7 +366,8 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 }
 
 func TestAffected_Introduced_LastAffected(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -479,7 +484,8 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 // Testing with both fixed and lastAffected
 func TestAffected_Combined(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -583,7 +589,8 @@ func TestAffected_Combined(t *testing.T) {
 }
 
 func TestAffected_Cherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D
@@ -711,7 +718,8 @@ func TestAffected_Cherrypick(t *testing.T) {
 }
 
 func TestLimit(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D -> E
@@ -793,7 +801,8 @@ func TestLimit(t *testing.T) {
 }
 
 func TestLimit_Cherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("test-url")
+	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D

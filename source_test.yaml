@@ -250,7 +250,7 @@
 
 - name: 'echo'
   versions_from_repo: False
-  rest_api_url: 'https://advisory.echohq.com/osv/all.json'
+  rest_api_url: 'https://advisory.dev.echohq.com/osv/all.json'
   type: 2
   ignore_patterns: ['^(?!ECHO-).*$']
   directory_path: 'osv'

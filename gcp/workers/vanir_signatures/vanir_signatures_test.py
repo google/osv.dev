@@ -24,6 +24,35 @@ import osv.tests
 import vanir_signatures
 from osv import vulnerability_pb2
 
+VANIR_SIGNATURES_EXAMPLE = [{
+    'target': {
+        'function': 'mock_function',
+        'file': 'src/mock_file.c'
+    },
+    'id': 'MOCK-SIG-1',
+    'deprecated': False,
+    'digest': {
+        'function_hash': '12345678901234567890',
+        'length': 500
+    },
+    'signature_type': 'Function',
+    'source': 'https://github.com/example/repo/commit/mock_commit_hash',
+    'signature_version': 'v1'
+}, {
+    'target': {
+        'file': 'src/mock_file.c'
+    },
+    'id': 'MOCK-SIG-2',
+    'deprecated': False,
+    'digest': {
+        'threshold': 0.9,
+        'line_hashes': ['11111111111111111111', '22222222222222222222']
+    },
+    'signature_type': 'Line',
+    'source': 'https://github.com/example/repo/commit/mock_commit_hash',
+    'signature_version': 'v1'
+}]
+
 
 class VanirSignaturesTest(unittest.TestCase):
   """Tests for vanir_signatures."""
@@ -91,6 +120,25 @@ class VanirSignaturesTest(unittest.TestCase):
       self.assertTrue(any('it is withdrawn' in log for log in cm.output))
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
+  def test_process_batch_skip_existing_signatures(self, mock_get_gcs):
+    """Test skipping when Vanir signatures are already present in database_specific."""
+    vuln_id = 'VULN-1'
+    vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
+    affected = vuln.affected.add()
+    affected.ranges.add(
+        type=vulnerability_pb2.Range.GIT, repo='https://example.com/repo')
+    affected.database_specific['vanir_signatures'] = VANIR_SIGNATURES_EXAMPLE
+
+    mock_get_gcs.return_value = (vuln, '123')
+
+    with self.assertLogs(level='DEBUG') as cm:
+      result, failed_ids = vanir_signatures.process_batch([vuln_id])
+      self.assertEqual(result, 0)
+      self.assertEqual(failed_ids, [])
+      self.assertTrue(
+          any('already has Vanir signatures' in log for log in cm.output))
+
+  @mock.patch('osv.gcs.get_by_id_with_generation')
   @mock.patch('osv.gcs.upload_vulnerability')
   @mock.patch('vanir_signatures._generate_vanir_signatures_batch')
   def test_process_batch_success(self, mock_gen_signatures, mock_upload,
@@ -109,9 +157,8 @@ class VanirSignaturesTest(unittest.TestCase):
     # Mock generation result
     enriched_vuln = vulnerability_pb2.Vulnerability()
     enriched_vuln.CopyFrom(vuln)
-    enriched_vuln.affected[0].database_specific['vanir_signatures'] = [{
-        'id': 'sig1'
-    }]
+    enriched_vuln.affected[0].database_specific[
+        'vanir_signatures'] = VANIR_SIGNATURES_EXAMPLE
     mock_gen_signatures.return_value = {vuln_id: [enriched_vuln]}
 
     # Setup Datastore Vulnerability
@@ -128,6 +175,11 @@ class VanirSignaturesTest(unittest.TestCase):
     # Verify Datastore update
     updated_vuln = osv.Vulnerability.get_by_id(vuln_id)
     self.assertIsNotNone(updated_vuln.modified)
+
+    # Verify GCS upload with timestamp
+    uploaded_vuln = mock_upload.call_args[0][0]
+    self.assertIn('vanir_signature_modified',
+                  uploaded_vuln.affected[0].database_specific)
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
   @mock.patch('osv.gcs.upload_vulnerability')
@@ -146,9 +198,8 @@ class VanirSignaturesTest(unittest.TestCase):
     # Mock generation result (must be different from original to trigger update)
     enriched_vuln = vulnerability_pb2.Vulnerability()
     enriched_vuln.CopyFrom(vuln)
-    enriched_vuln.affected[0].database_specific['vanir_signatures'] = [{
-        'id': 'sig1'
-    }]
+    enriched_vuln.affected[0].database_specific[
+        'vanir_signatures'] = VANIR_SIGNATURES_EXAMPLE
     mock_gen_signatures.return_value = {vuln_id: [enriched_vuln]}
     mock_upload.side_effect = Exception('GCS down')
 

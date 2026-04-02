@@ -93,6 +93,16 @@ def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
   return False
 
 
+def has_vanir_signatures(
+    vulnerability: vulnerability_pb2.Vulnerability) -> bool:
+  """Returns True if any affected entry has a vanir_signatures."""
+  for affected in vulnerability.affected:
+    if (affected.HasField('database_specific') and
+        'vanir_signatures' in affected.database_specific):
+      return True
+  return False
+
+
 def process_batch(vuln_ids: list[str],
                   dry_run: bool = False,
                   max_workers: int = 10) -> tuple[int, list[str]]:
@@ -132,6 +142,11 @@ def process_batch(vuln_ids: list[str],
 
       if vulnerability.HasField('withdrawn'):
         logging.debug('Skipping %s: it is withdrawn', vuln_id)
+        continue
+
+      # This is for the initial run otherwise it will take too long time for all vulnerabilities
+      if has_vanir_signatures(vulnerability):
+        logging.debug('Skipping %s: already has Vanir signatures', vuln_id)
         continue
 
       vulnerabilities_to_process.append(vulnerability)
@@ -176,6 +191,12 @@ def process_batch(vuln_ids: list[str],
     # We will only apply to Datastore entity and put() on successful GCS upload.
     now = osv.utcnow()
     v.modified.FromDatetime(now)
+    now_iso = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    for affected in v.affected:
+      if (affected.HasField('database_specific') and
+          'vanir_signatures' in affected.database_specific):
+        affected.database_specific['vanir_signature_modified'] = now_iso
 
     # Use gcs_generations[original_id] ONLY if it matches enriched ID.
     gen = gcs_generations.get(v.id)

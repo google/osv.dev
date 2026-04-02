@@ -29,8 +29,9 @@ func TestZeroVersion(t *testing.T) {
 		{"openSUSE:Tumbleweed", "0~20240902.c95cc9e-1.1"},                                  // openSUSE-SU-2024:14314-1
 	}
 
+	p := NewProvider(nil)
 	for _, test := range tests {
-		e, ok := Get(test.ecosystem)
+		e, ok := p.Get(test.ecosystem)
 		if !ok {
 			t.Fatalf("%s ecosystem not found", test.ecosystem)
 		}

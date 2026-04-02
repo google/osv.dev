@@ -14,9 +14,16 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
 
-type hackageEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type hackageEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = hackageEcosystem{}
 
@@ -36,6 +43,21 @@ func (e hackageEcosystem) Coarse(_ string) (string, error) {
 func (e hackageEcosystem) IsSemver() bool {
 	return false
 }
-func (e hackageEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+
+func hackageAPIURL(pkg string) string {
+	return fmt.Sprintf("https://hackage.haskell.org/package/%s.json", url.PathEscape(pkg))
+}
+
+func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
+	var data map[string]any
+	if err := e.p.fetchJSON(hackageAPIURL(pkg), &data); err != nil {
+		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
+	}
+
+	versions := make([]string, 0, len(data))
+	for v := range data {
+		versions = append(versions, v)
+	}
+
+	return sortVersions(e, versions)
 }

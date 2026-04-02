@@ -14,11 +14,22 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
 
-type rubyGemsEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type rubyGemsEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = rubyGemsEcosystem{}
+
+func rubyGemsAPIURL(pkg string) string {
+	return fmt.Sprintf("https://rubygems.org/api/v1/versions/%s.json", url.PathEscape(pkg))
+}
 
 func (e rubyGemsEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.RubyGemsVersion]{semantic.ParseRubyGemsVersion(version)}, nil
@@ -32,6 +43,17 @@ func (e rubyGemsEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e rubyGemsEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func (e rubyGemsEcosystem) GetVersions(pkg string) ([]string, error) {
+	var data []struct {
+		Number string `json:"number"`
+	}
+	if err := e.p.fetchJSON(rubyGemsAPIURL(pkg), &data); err != nil {
+		return nil, fmt.Errorf("failed to get RubyGems versions for %s: %w", pkg, err)
+	}
+	versions := make([]string, 0, len(data))
+	for _, entry := range data {
+		versions = append(versions, entry.Number)
+	}
+
+	return sortVersions(e, versions)
 }

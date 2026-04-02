@@ -136,7 +136,8 @@ def process_batch(vuln_ids: list[str],
         continue
 
       if any(
-          affected_is_kernel(affected) for affected in vulnerability_pb.affected):
+          affected_is_kernel(affected)
+          for affected in vulnerability_pb.affected):
         logging.debug('Skipping %s: it is a Kernel vulnerability', vuln_id)
         continue
 
@@ -181,7 +182,8 @@ def process_batch(vuln_ids: list[str],
 
   # Batch fetch Vulnerabilities from Datastore
   vuln_keys = [
-      ndb.Key(osv.models.Vulnerability, vuln_pb.id) for vuln_pb in all_enriched_pbs
+      ndb.Key(osv.models.Vulnerability, vuln_pb.id)
+      for vuln_pb in all_enriched_pbs
   ]
   vulns_ds = ndb.get_multi(vuln_keys)
 
@@ -207,7 +209,8 @@ def process_batch(vuln_ids: list[str],
       osv.gcs.upload_vulnerability(vuln_pb, gen)
       updated_count += 1
     except Exception:
-      logging.exception('Failed upload for %s. Adding to retry list.', vuln_pb.id)
+      logging.exception('Failed upload for %s. Adding to retry list.',
+                        vuln_pb.id)
       failed_ids.append(vuln_pb.id)
       continue
 

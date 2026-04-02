@@ -144,7 +144,8 @@ def process_batch(vuln_ids: list[str],
         logging.debug('Skipping %s: it is withdrawn', vuln_id)
         continue
 
-      # This is for the initial run otherwise it will take too long time for all vulnerabilities
+      # This is for the initial run otherwise it will take too long time for
+      # all vulnerabilities
       if has_vanir_signatures(vulnerability):
         logging.debug('Skipping %s: already has Vanir signatures', vuln_id)
         continue

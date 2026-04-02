@@ -121,7 +121,7 @@ class VanirSignaturesTest(unittest.TestCase):
 
   @mock.patch('osv.gcs.get_by_id_with_generation')
   def test_process_batch_skip_existing_signatures(self, mock_get_gcs):
-    """Test skipping when Vanir signatures are already present in database_specific."""
+    """Test skipping when Vanir signatures are already there."""
     vuln_id = 'VULN-1'
     vuln = vulnerability_pb2.Vulnerability(id=vuln_id)
     affected = vuln.affected.add()

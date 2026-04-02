@@ -1779,14 +1779,7 @@
     {},
     {},
     {},
-    {
-      "vulns": [
-        {
-          "id": "DEBIAN-CVE-2017-20229",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
+    {},
     {},
     {},
     {
@@ -2533,6 +2526,10 @@
         },
         {
           "id": "DEBIAN-CVE-2025-31115",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-34743",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

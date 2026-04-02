@@ -2529,6 +2529,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-34743",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DSA-5123-1",
           "modified": "<RFC3339 date with the year 2026>"
         },

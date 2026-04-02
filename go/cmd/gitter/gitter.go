@@ -14,6 +14,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -223,32 +224,35 @@ func isLocalRequest(r *http.Request) bool {
 	return ip.IsLoopback()
 }
 
-func prepareURL(r *http.Request, url string) (string, error) {
-	if url == "" {
+func prepareURL(r *http.Request, repoURL string) (string, error) {
+	if repoURL == "" {
 		return "", errors.New("missing url parameter")
 	}
 
-	url = normalizeURL(url)
+	u, err := url.Parse(repoURL)
+	if err != nil {
+		return "", fmt.Errorf("error parsing url: %w", err)
+	}
 
-	// If request came from a local ip, don't do the check
+	// Convert git://github.com to https://github.com because it times out for some reason
+	// git protocol on non-github urls works fine
+	if u.Scheme == "git" && u.Host == "github.com" {
+		u.Scheme = "https"
+	}
+
+	// Remove query and fragment from the URL
+	u.RawQuery = ""
+	u.Fragment = ""
+
 	if !isLocalRequest(r) {
-		// Check if url starts with protocols: http(s)://, git://
-		if !validURLRegex.MatchString(url) {
-			return "", errors.New("invalid url parameter")
+		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
 		}
 	}
 
-	return url, nil
-}
+	logger.Info("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
 
-func normalizeURL(url string) string {
-	// Convert git://github.com/ to https://github.com/ because it times out for some reason
-	// git protocol on non-github urls works fine
-	if s, ok := strings.CutPrefix(url, "git://github.com/"); ok {
-		return "https://github.com/" + s
-	}
-
-	return url
+	return u.String(), nil
 }
 
 func getRepoDirName(url string) string {

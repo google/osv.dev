@@ -3,9 +3,9 @@ name = "pypi-publish"
 requires-python = ">=3.13,<4.0"
 dependencies = [
     "cryptography (==46.0.6)",
-    "google-cloud-secret-manager (==2.26.0)",
+    "google-cloud-secret-manager (==2.27.0)",
     "osv (==0.1.2)",
-    "requests (==2.33.0)",
+    "requests (==2.33.1)",
 ]
 [tool.poetry]
 package-mode = false

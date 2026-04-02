@@ -37,19 +37,19 @@ JOB_DATA_RETRY_LIST = 'vanir_signatures_retry_list'
 
 
 def _generate_vanir_signatures_batch(
-    vulnerabilities: list[vulnerability_pb2.Vulnerability]
+    vulnerability_pbs: list[vulnerability_pb2.Vulnerability]
 ) -> dict[str, list[vulnerability_pb2.Vulnerability]]:
-  """Generates Vanir signatures for a batch of vulnerabilities."""
-  if not vulnerabilities:
+  """Generates Vanir signatures for a batch of vulnerability_pbs."""
+  if not vulnerability_pbs:
     return {}
 
   logging.info('Generating Vanir signatures for batch of %d',
-               len(vulnerabilities))
+               len(vulnerability_pbs))
 
   try:
     vuln_dicts = [
-        json_format.MessageToDict(v, preserving_proto_field_name=True)
-        for v in vulnerabilities
+        json_format.MessageToDict(vuln_pb, preserving_proto_field_name=True)
+        for vuln_pb in vulnerability_pbs
     ]
     vuln_manager = vulnerability_manager.generate_from_json_string(
         content=json.dumps(vuln_dicts))
@@ -57,27 +57,27 @@ def _generate_vanir_signatures_batch(
 
     if not vuln_manager.vulnerabilities:
       logging.warning('Vanir signature generation resulted in no '
-                      'vulnerabilities.')
-      return {v.id: [v] for v in vulnerabilities}
+                      'vulnerability_pbs.')
+      return {vuln_pb.id: [vuln_pb] for vuln_pb in vulnerability_pbs}
 
     results = {}
-    for v in vuln_manager.vulnerabilities:
-      proto = v.to_proto()
+    for vuln_pb in vuln_manager.vulnerabilities:
+      proto = vuln_pb.to_proto()
       if proto.id not in results:
         results[proto.id] = []
       results[proto.id].append(proto)
 
     # Ensure all input IDs are in results, even if they weren't enriched
-    for v in vulnerabilities:
-      if v.id not in results:
-        results[v.id] = [v]
+    for vuln_pb in vulnerability_pbs:
+      if vuln_pb.id not in results:
+        results[vuln_pb.id] = [vuln_pb]
 
     return results
 
   except Exception:
     logging.exception('Failed to generate Vanir signatures for batch of %d',
-                      len(vulnerabilities))
-    return {v.id: [v] for v in vulnerabilities}
+                      len(vulnerability_pbs))
+    return {vuln_pb.id: [vuln_pb] for vuln_pb in vulnerability_pbs}
 
 
 def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
@@ -94,9 +94,9 @@ def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
 
 
 def has_vanir_signatures(
-    vulnerability: vulnerability_pb2.Vulnerability) -> bool:
+    vulnerability_pb: vulnerability_pb2.Vulnerability) -> bool:
   """Returns True if any affected entry has a vanir_signatures."""
-  for affected in vulnerability.affected:
+  for affected in vulnerability_pb.affected:
     if (affected.HasField('database_specific') and
         'vanir_signatures' in affected.database_specific):
       return True
@@ -113,7 +113,7 @@ def process_batch(vuln_ids: list[str],
   logging.info('Processing batch of %d vulnerabilities', len(vuln_ids))
 
   # Parallel fetch OSV records from GCS
-  vulnerabilities_to_process = []
+  vulnerability_pbs_to_process = []
   gcs_generations = {}
 
   with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -126,92 +126,94 @@ def process_batch(vuln_ids: list[str],
         logging.warning('Vulnerability %s not found in GCS', vuln_id)
         continue
 
-      vulnerability, gcs_gen = res
+      vulnerability_pb, gcs_gen = res
 
       # Filter
       if not any(r.type == vulnerability_pb2.Range.GIT
-                 for affected in vulnerability.affected
+                 for affected in vulnerability_pb.affected
                  for r in affected.ranges):
         logging.debug('Skipping %s: no GIT affected ranges.', vuln_id)
         continue
 
       if any(
-          affected_is_kernel(affected) for affected in vulnerability.affected):
+          affected_is_kernel(affected) for affected in vulnerability_pb.affected):
         logging.debug('Skipping %s: it is a Kernel vulnerability', vuln_id)
         continue
 
-      if vulnerability.HasField('withdrawn'):
+      if vulnerability_pb.HasField('withdrawn'):
         logging.debug('Skipping %s: it is withdrawn', vuln_id)
         continue
 
       # This is for the initial run otherwise it will take too long time for
       # all vulnerabilities
-      if has_vanir_signatures(vulnerability):
+      if has_vanir_signatures(vulnerability_pb):
         logging.debug('Skipping %s: already has Vanir signatures', vuln_id)
         continue
 
-      vulnerabilities_to_process.append(vulnerability)
-      gcs_generations[vulnerability.id] = gcs_gen
+      vulnerability_pbs_to_process.append(vulnerability_pb)
+      gcs_generations[vulnerability_pb.id] = gcs_gen
 
-  if not vulnerabilities_to_process:
+  if not vulnerability_pbs_to_process:
     return 0, []
 
   # Batch signature generation
-  batch_results = _generate_vanir_signatures_batch(vulnerabilities_to_process)
+  batch_results = _generate_vanir_signatures_batch(vulnerability_pbs_to_process)
 
   # Collect all vulnerabilities to update in GCS/Datastore.
-  all_enriched = []
-  for original_vuln in vulnerabilities_to_process:
-    enriched = batch_results.get(original_vuln.id, [original_vuln])
-    for v in enriched:
-      if v != original_vuln:
-        all_enriched.append(v)
+  all_enriched_pbs = []
+  for original_vuln_pb in vulnerability_pbs_to_process:
+    enriched_pbs = batch_results.get(original_vuln_pb.id, [original_vuln_pb])
+    for vuln_pb in enriched_pbs:
+      if vuln_pb != original_vuln_pb:
+        all_enriched_pbs.append(vuln_pb)
 
-  if not all_enriched:
+  if not all_enriched_pbs:
     return 0, []
 
   if dry_run:
-    for enriched_vuln in all_enriched:
-      logging.info('Dry run: would have updated %s', enriched_vuln.id)
-    return len(all_enriched), []
+    for enriched_vuln_pb in all_enriched_pbs:
+      logging.info('Dry run: would have updated %s', enriched_vuln_pb.id)
+    return len(all_enriched_pbs), []
 
   # Update Datastore and GCS
   updated_count = 0
   failed_ids = []
 
   # Batch fetch Vulnerabilities from Datastore
-  vuln_keys = [ndb.Key(osv.models.Vulnerability, v.id) for v in all_enriched]
-  vulns = ndb.get_multi(vuln_keys)
+  vuln_keys = [
+      ndb.Key(osv.models.Vulnerability, vuln_pb.id) for vuln_pb in all_enriched_pbs
+  ]
+  vulns_ds = ndb.get_multi(vuln_keys)
 
-  for v, vuln in zip(all_enriched, vulns):
-    if not vuln:
-      logging.error('Vulnerability %s not found in Datastore', v.id)
+  for vuln_pb, vuln_ds in zip(all_enriched_pbs, vulns_ds):
+    if not vuln_ds:
+      logging.error('Vulnerability %s not found in Datastore', vuln_pb.id)
       continue
 
     # Capture current time, but only apply to proto now.
     # We will only apply to Datastore entity and put() on successful GCS upload.
     now = osv.utcnow()
-    v.modified.FromDatetime(now)
+    vuln_pb.modified.FromDatetime(now)
     now_iso = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    for affected in v.affected:
+    for affected in vuln_pb.affected:
       if (affected.HasField('database_specific') and
           'vanir_signatures' in affected.database_specific):
         affected.database_specific['vanir_signatures_modified'] = now_iso
 
     # Use gcs_generations[original_id] ONLY if it matches enriched ID.
-    gen = gcs_generations.get(v.id)
+    gen = gcs_generations.get(vuln_pb.id)
     try:
-      osv.gcs.upload_vulnerability(v, gen)
+      osv.gcs.upload_vulnerability(vuln_pb, gen)
       updated_count += 1
     except Exception:
-      logging.exception('Failed upload for %s. Adding to retry list.', v.id)
-      failed_ids.append(v.id)
+      logging.exception('Failed upload for %s. Adding to retry list.', vuln_pb.id)
+      failed_ids.append(vuln_pb.id)
       continue
 
     # On successful upload, update Datastore entity.
-    vuln.modified = now
-    vuln.put()
+    vuln_ds.modified = now
+    vuln_ds.put()
 
   return updated_count, failed_ids
 

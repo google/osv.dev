@@ -589,6 +589,52 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 	}
 }
 
+func TestCVE5Snapshot(t *testing.T) {
+	testDir := "../../test_data/cve5"
+	files, err := os.ReadDir(testDir)
+	if err != nil {
+		t.Fatalf("Failed to read test directory %s: %v", testDir, err)
+	}
+
+	results := make([]string, 0, len(files))
+	for _, file := range files {
+		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
+			continue
+		}
+
+		path := filepath.Join(testDir, file.Name())
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("Failed to read %s: %v", path, err)
+		}
+
+		var cve models.CVE5
+		err = json.Unmarshal(content, &cve)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal %s: %v", path, err)
+		}
+
+		vWriter := bytes.NewBuffer(nil)
+		mWriter := bytes.NewBuffer(nil)
+		_, err = ConvertAndExportCVEToOSV(cve, vWriter, mWriter, "")
+		if err != nil {
+			t.Fatalf("Failed to convert %s: %v", path, err)
+		}
+
+		results = append(results, vWriter.String())
+	}
+
+	// Sort results for deterministic snapshot
+	sort.Strings(results)
+
+	keys := make([]any, 0, len(results))
+	for _, r := range results {
+		keys = append(keys, r)
+	}
+
+	snaps.MatchSnapshot(t, keys...)
+}
+
 func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
 	cve := models.CVE5{}
 	metrics := &models.ConversionMetrics{}

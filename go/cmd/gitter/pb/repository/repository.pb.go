@@ -327,6 +327,50 @@ func (x *AffectedCommitsResponse) GetCherryPickedEvents() []*Event {
 	return nil
 }
 
+type TagsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tags          []*Ref                 `protobuf:"bytes,1,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TagsResponse) Reset() {
+	*x = TagsResponse{}
+	mi := &file_repository_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TagsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TagsResponse) ProtoMessage() {}
+
+func (x *TagsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TagsResponse.ProtoReflect.Descriptor instead.
+func (*TagsResponse) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TagsResponse) GetTags() []*Ref {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type Event struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EventType     EventType              `protobuf:"varint,1,opt,name=event_type,json=eventType,proto3,enum=gitter.EventType" json:"event_type,omitempty"`
@@ -337,7 +381,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +393,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +406,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_repository_proto_rawDescGZIP(), []int{5}
+	return file_repository_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Event) GetEventType() EventType {
@@ -389,7 +433,7 @@ type CacheRequest struct {
 
 func (x *CacheRequest) Reset() {
 	*x = CacheRequest{}
-	mi := &file_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +445,7 @@ func (x *CacheRequest) String() string {
 func (*CacheRequest) ProtoMessage() {}
 
 func (x *CacheRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +458,7 @@ func (x *CacheRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CacheRequest.ProtoReflect.Descriptor instead.
 func (*CacheRequest) Descriptor() ([]byte, []int) {
-	return file_repository_proto_rawDescGZIP(), []int{6}
+	return file_repository_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CacheRequest) GetUrl() string {
@@ -445,7 +489,7 @@ type AffectedCommitsRequest struct {
 
 func (x *AffectedCommitsRequest) Reset() {
 	*x = AffectedCommitsRequest{}
-	mi := &file_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -457,7 +501,7 @@ func (x *AffectedCommitsRequest) String() string {
 func (*AffectedCommitsRequest) ProtoMessage() {}
 
 func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -470,7 +514,7 @@ func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommitsRequest.ProtoReflect.Descriptor instead.
 func (*AffectedCommitsRequest) Descriptor() ([]byte, []int) {
-	return file_repository_proto_rawDescGZIP(), []int{7}
+	return file_repository_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AffectedCommitsRequest) GetUrl() string {
@@ -533,7 +577,9 @@ const file_repository_proto_rawDesc = "" +
 	"\x17AffectedCommitsResponse\x12(\n" +
 	"\acommits\x18\x01 \x03(\v2\x0e.gitter.CommitR\acommits\x12\x1f\n" +
 	"\x04tags\x18\x02 \x03(\v2\v.gitter.RefR\x04tags\x12?\n" +
-	"\x14cherry_picked_events\x18\x03 \x03(\v2\r.gitter.EventR\x12cherryPickedEvents\"M\n" +
+	"\x14cherry_picked_events\x18\x03 \x03(\v2\r.gitter.EventR\x12cherryPickedEvents\"/\n" +
+	"\fTagsResponse\x12\x1f\n" +
+	"\x04tags\x18\x01 \x03(\v2\v.gitter.RefR\x04tags\"M\n" +
 	"\x05Event\x120\n" +
 	"\n" +
 	"event_type\x18\x01 \x01(\x0e2\x11.gitter.EventTypeR\teventType\x12\x12\n" +
@@ -568,7 +614,7 @@ func file_repository_proto_rawDescGZIP() []byte {
 }
 
 var file_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_repository_proto_goTypes = []any{
 	(EventType)(0),                  // 0: gitter.EventType
 	(*CommitDetail)(nil),            // 1: gitter.CommitDetail
@@ -576,22 +622,24 @@ var file_repository_proto_goTypes = []any{
 	(*Commit)(nil),                  // 3: gitter.Commit
 	(*Ref)(nil),                     // 4: gitter.Ref
 	(*AffectedCommitsResponse)(nil), // 5: gitter.AffectedCommitsResponse
-	(*Event)(nil),                   // 6: gitter.Event
-	(*CacheRequest)(nil),            // 7: gitter.CacheRequest
-	(*AffectedCommitsRequest)(nil),  // 8: gitter.AffectedCommitsRequest
+	(*TagsResponse)(nil),            // 6: gitter.TagsResponse
+	(*Event)(nil),                   // 7: gitter.Event
+	(*CacheRequest)(nil),            // 8: gitter.CacheRequest
+	(*AffectedCommitsRequest)(nil),  // 9: gitter.AffectedCommitsRequest
 }
 var file_repository_proto_depIdxs = []int32{
 	1, // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
 	3, // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.Commit
 	4, // 2: gitter.AffectedCommitsResponse.tags:type_name -> gitter.Ref
-	6, // 3: gitter.AffectedCommitsResponse.cherry_picked_events:type_name -> gitter.Event
-	0, // 4: gitter.Event.event_type:type_name -> gitter.EventType
-	6, // 5: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	7, // 3: gitter.AffectedCommitsResponse.cherry_picked_events:type_name -> gitter.Event
+	4, // 4: gitter.TagsResponse.tags:type_name -> gitter.Ref
+	0, // 5: gitter.Event.event_type:type_name -> gitter.EventType
+	7, // 6: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_repository_proto_init() }
@@ -605,7 +653,7 @@ func file_repository_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

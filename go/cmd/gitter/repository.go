@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +32,8 @@ type Commit struct {
 type Repository struct {
 	// Protects patchIDToCommits during parallel patch ID calculations
 	patchIDMu sync.Mutex
+	// Remote URL for this repository
+	URL string
 	// Path to the .git directory within gitter's working dir
 	repoPath string
 	// All commits in the repository (the array index is used as the commit index below)
@@ -54,19 +58,35 @@ const gitLogFormat = "%H%x09%P%x09%D"
 // Number of workers for patch ID calculation
 var workers = 16
 
-// NewRepository initializes a new Repository struct.
-func NewRepository(repoPath string) *Repository {
-	return &Repository{
+// NewRepository initializes a new Repository struct from a URL.
+// If the repository is cloned locally, repoPath is set. Otherwise it remains empty.
+func NewRepository(url string) *Repository {
+	r := &Repository{
+		URL:              url,
+		hashToIndex:      make(map[SHA1]int),
+		tagToCommit:      make(map[string]int),
+		patchIDToCommits: make(map[SHA1][]int),
+	}
+
+	repoDirName := getRepoDirName(url)
+	path := filepath.Join(gitStorePath, repoDirName)
+
+	// Only if the repo is cloned locally, set repoPath
+	if _, err := os.Stat(filepath.Join(path, ".git")); err == nil {
+		r.repoPath = path
+	}
+
+	return r
+}
+
+// LoadRepository loads a repo from disk into memory.
+func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
+	repo := &Repository{
 		repoPath:         repoPath,
 		hashToIndex:      make(map[SHA1]int),
 		tagToCommit:      make(map[string]int),
 		patchIDToCommits: make(map[SHA1][]int),
 	}
-}
-
-// LoadRepository loads a repo from disk into memory.
-func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
-	repo := NewRepository(repoPath)
 
 	cachePath := repoPath + ".pb"
 	var cache *pb.RepositoryCache
@@ -804,4 +824,77 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 		Introduced: cherrypickedIntroHashes,
 		Limit:      cherrypickedLimitHashes,
 	}
+}
+
+// runAndParseTags runs input command (git ls-remote or show-ref) and parses tags from stdout into repository structure
+func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[string]SHA1, error) {
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+
+	stdout, errPipe := cmd.StdoutPipe()
+	if errPipe != nil {
+		return nil, errPipe
+	}
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	tagsMap := make(map[string]SHA1)
+
+	for scanner.Scan() {
+		// Both git ls-remote and show-ref return in the format:
+		// "<hash> <ref/tags/tag-name>\n"
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+
+		hashHex := fields[0]
+		refRaw := fields[1]
+
+		// This shouldn't happen with the --tags flag, but we will skip any non-tag refs just in case
+		if !strings.HasPrefix(refRaw, "refs/tags/") {
+			continue
+		}
+
+		tag := strings.TrimPrefix(refRaw, "refs/tags/")
+
+		hashBytes, err := hex.DecodeString(hashHex)
+		if err != nil || len(hashBytes) != 20 {
+			// We don't expect invalid hashes from git binary, this is a safeguard for the SHA1 type conversion below
+			continue
+		}
+
+		tagsMap[tag] = SHA1(hashBytes)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		// git show-ref returns with exit code 1 if there is no tags (ls-remote return 0)
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			// We don't consider this an error and can just return the empty tagsMap
+			return tagsMap, nil
+		}
+		return nil, fmt.Errorf("%w: %s", err, stderr.String())
+	}
+
+	return tagsMap, nil
+}
+
+// GetLocalTags uses git show-ref to get tags from local git directory
+func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) {
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags")
+	return r.runAndParseTags(ctx, cmd)
+}
+
+// GetRemoteTags uses git ls-remote to get tags from remote git repository
+func (r *Repository) GetRemoteTags(ctx context.Context) (map[string]SHA1, error) {
+	cmd := prepareCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "ls-remote", "--tags", "--quiet", r.URL)
+	return r.runAndParseTags(ctx, cmd)
 }

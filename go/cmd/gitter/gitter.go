@@ -52,6 +52,7 @@ const gitStoreFileName = "git-store"
 var endpointHandlers = map[string]http.HandlerFunc{
 	"GET /git":               gitHandler,
 	"POST /cache":            cacheHandler,
+	"GET /tags":              tagsHandler,
 	"POST /affected-commits": affectedCommitsHandler,
 }
 
@@ -59,6 +60,8 @@ var (
 	gFetch          singleflight.Group
 	gArchive        singleflight.Group
 	gLoad           singleflight.Group
+	gLsRemote       singleflight.Group
+	gLocalTags      singleflight.Group
 	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
@@ -67,6 +70,11 @@ var (
 	repoCache             *ristretto.Cache[string, *Repository]
 	repoTTL               time.Duration
 	repoCacheMaxCostBytes int64
+	// Cache for invalid (does not exist, or does not have tags) repos
+	// Maps repo URL to the HTTP status code (404 or 204) to return
+	invalidRepoCache           *ristretto.Cache[string, int]
+	invalidRepoTTL             time.Duration
+	invalidRepoCacheMaxEntries int64
 )
 
 var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
@@ -163,6 +171,28 @@ func InitRepoCache() {
 func CloseRepoCache() {
 	if repoCache != nil {
 		repoCache.Close()
+	}
+}
+
+// InitInvalidRepoCache initializes the cache for invalid repositories.
+func InitInvalidRepoCache() {
+	var err error
+	invalidRepoCache, err = ristretto.NewCache(&ristretto.Config[string, int]{
+		NumCounters: invalidRepoCacheMaxEntries * 10,
+		MaxCost:     invalidRepoCacheMaxEntries, // Cost for each entry is 1
+		BufferItems: 64,
+		// Check for TTL expiry every 60 seconds
+		TtlTickerDurationInSec: 60,
+	})
+	if err != nil {
+		logger.FatalContext(context.Background(), "Failed to initialize invalid repository cache", slog.Any("err", err))
+	}
+}
+
+// CloseInvalidRepoCache closes the cache for invalid repositories.
+func CloseInvalidRepoCache() {
+	if invalidRepoCache != nil {
+		invalidRepoCache.Close()
 	}
 }
 
@@ -339,7 +369,7 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceU
 		return nil, err
 	}
 
-	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+	repoAny, err, _ := gLoad.Do(url, func() (any, error) {
 		repoLock := GetRepoLock(url)
 		repoLock.RLock()
 		defer repoLock.RUnlock()
@@ -479,6 +509,8 @@ func main() {
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
 	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
 	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
+	flag.DurationVar(&invalidRepoTTL, "invalid-repo-cache-ttl", time.Hour, "Invalid repository cache time-to-live duration")
+	flag.Int64Var(&invalidRepoCacheMaxEntries, "invalid-repo-cache-max-entries", 5000, "Invalid repository cache max entries")
 	flag.Parse()
 	semaphore = make(chan struct{}, *concurrentLimit)
 
@@ -500,6 +532,8 @@ func main() {
 	loadLastFetchMap()
 	InitRepoCache()
 	defer CloseRepoCache()
+	InitInvalidRepoCache()
+	defer CloseInvalidRepoCache()
 
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -747,4 +781,108 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
 	}
 	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.Duration("duration", time.Since(start)))
+}
+
+func makeTagsResponse(tagsMap map[string]SHA1) *pb.TagsResponse {
+	resp := &pb.TagsResponse{
+		Tags: make([]*pb.Ref, 0, len(tagsMap)),
+	}
+	for tag, hash := range tagsMap {
+		resp.Tags = append(resp.Tags, &pb.Ref{
+			Label: tag,
+			Hash:  hash[:],
+		})
+	}
+	return resp
+}
+
+func tagsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
+	url, err := prepareURL(r, r.URL.Query().Get("url"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.WithValue(r.Context(), urlKey, url)
+	logger.InfoContext(ctx, "Received request: /tags")
+
+	// Previously cached invalid repo (does not exist or does not have tags)
+	// Get() will not return if the entry is past its TTL, so we can safely return the same http status code as is.
+	if code, found := invalidRepoCache.Get(url); found {
+		w.WriteHeader(code)
+		return
+	}
+
+	var tagsMap map[string]SHA1
+
+	// If repository is recently loaded, we can return the tags directly from the cached repo
+	if cachedRepo, found := repoCache.Get(url); found {
+		tagsMap = make(map[string]SHA1)
+		for tag, idx := range cachedRepo.tagToCommit {
+			tagsMap[tag] = cachedRepo.commits[idx].Hash
+		}
+	} else {
+		repo := NewRepository(url)
+
+		// If repoPath is not empty, it means there is a local git directory for this repo on disk
+		// We want to use show-ref instead of ls-remote because it's faster and we don't have to worry about rate limits
+		if repo.repoPath != "" {
+			if _, errFetch, _ := gFetch.Do(url, func() (any, error) {
+				return nil, FetchRepo(ctx, url, false)
+			}); errFetch != nil {
+				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
+				http.Error(w, "Error fetching repository", http.StatusInternalServerError)
+				return
+			}
+
+			tagsMapAny, errLocal, _ := gLocalTags.Do(url, func() (any, error) {
+				return repo.GetLocalTags(ctx)
+			})
+			if errLocal != nil {
+				logger.ErrorContext(ctx, "Error parsing local tags", slog.Any("error", errLocal))
+				http.Error(w, "Error parsing local tags", http.StatusInternalServerError)
+				return
+			}
+			tagsMap = tagsMapAny.(map[string]SHA1)
+		} else {
+			// If repo is not on disk, we use ls-remote to get the tags instead
+			tagsMapAny, errLsRemote, _ := gLsRemote.Do(url, func() (any, error) {
+				return repo.GetRemoteTags(ctx)
+			})
+			if errLsRemote != nil {
+				if isAuthError(errLsRemote) {
+					invalidRepoCache.SetWithTTL(url, http.StatusNotFound, 1, invalidRepoTTL)
+					http.Error(w, "Repository not found", http.StatusNotFound)
+					return
+				}
+				logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", errLsRemote))
+				http.Error(w, "Error listing remote tags", http.StatusInternalServerError)
+				return
+			}
+			tagsMap = tagsMapAny.(map[string]SHA1)
+		}
+	}
+
+	if len(tagsMap) == 0 {
+		invalidRepoCache.SetWithTTL(url, http.StatusNoContent, 1, invalidRepoTTL)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	resp := makeTagsResponse(tagsMap)
+	out, err := marshalResponse(r, resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling tags response", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error marshaling tags response: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
+	}
+	logger.InfoContext(ctx, "Request completed successfully: /tags", slog.Duration("duration", time.Since(start)))
 }

@@ -30,6 +30,10 @@ message AffectedCommitsResponse {
     repeated Event cherry_picked_events = 3;
 }
 
+message TagsResponse {
+    repeated Ref tags = 1;
+}
+
 enum EventType {
     INTRODUCED = 0;
     FIXED = 1;

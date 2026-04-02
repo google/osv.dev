@@ -16,8 +16,8 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
@@ -92,7 +92,7 @@ func main() {
 		vulnerabilities = append(vulnerabilities, v)
 	}
 
-	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
+	writer.UploadVulnsToGCS(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.

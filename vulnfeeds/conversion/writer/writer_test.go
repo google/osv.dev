@@ -1,4 +1,4 @@
-package upload
+package writer
 
 import (
 	"bytes"
@@ -59,7 +59,7 @@ func TestUploadToGCS(t *testing.T) {
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
 	t.Run("Upload new object", func(t *testing.T) {
-		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		err := uploadIfChanged(ctx, v, preModifiedBuf, bkt, "")
 		if err != nil {
 			t.Errorf("Expected uploadToGCS to return nil for new object, got %v", err)
 		}
@@ -81,7 +81,7 @@ func TestUploadToGCS(t *testing.T) {
 	t.Run("Skip upload if hash matches", func(t *testing.T) {
 		// Modify the vulnerability to simulate a change in modified time but not content
 		v.Modified = timestamppb.New(time.Now().Add(1 * time.Hour))
-		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		err := uploadIfChanged(ctx, v, preModifiedBuf, bkt, "")
 		if !errors.Is(err, ErrUploadSkipped) {
 			t.Errorf("Expected uploadToGCS to return ErrUploadSkipped when hash matches, got %v", err)
 		}
@@ -101,7 +101,7 @@ func TestUploadToGCS(t *testing.T) {
 
 	t.Run("Upload if hash differs", func(t *testing.T) {
 		preModifiedBuf2 := []byte(`{"id":"CVE-2023-1234", "summary": "updated"}`)
-		err := uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
+		err := uploadIfChanged(ctx, v, preModifiedBuf2, bkt, "")
 		if err != nil {
 			t.Errorf("Expected uploadToGCS to return nil when hash differs, got %v", err)
 		}
@@ -244,7 +244,7 @@ func TestWorker(t *testing.T) {
 	w.Close()
 
 	var counter atomic.Uint64
-	Worker(ctx, vulnChan, outBkt, overridesBkt, "", &counter)
+	VulnWorker(ctx, vulnChan, outBkt, overridesBkt, "", &counter)
 
 	if counter.Load() != 2 {
 		t.Errorf("Expected counter to be 2, got %d", counter.Load())
@@ -299,7 +299,7 @@ func TestUpload(t *testing.T) {
 		},
 	}
 
-	Upload(ctx, "test-job", true, outBucketName, "", 1, "", vulnerabilities, false)
+	UploadVulnsToGCS(ctx, "test-job", true, outBucketName, "", 1, "", vulnerabilities, false)
 
 	client := server.Client()
 	bkt := client.Bucket(outBucketName)

@@ -2,8 +2,26 @@
 [Test/cassette_TestCommand/TestCommand/.gitignored_files - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -12,7 +30,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_cyclonedx_1.4_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -21,7 +48,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_cyclonedx_1.5_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -30,7 +66,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_gh-annotations_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -39,7 +84,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_sarif_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -48,7 +102,16 @@
 [Test/cassette_TestCommand/TestCommand/Empty_spdx_2.3_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -58,6 +121,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      },
       "vulns": [
         {
           "id": "GO-2024-2598",
@@ -230,6 +300,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      },
       "vulns": [
         {
           "id": "GO-2024-2598",
@@ -394,6 +471,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      },
       "vulns": [
         {
           "id": "GO-2024-2598",
@@ -566,6 +650,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.21.7"
+      },
       "vulns": [
         {
           "id": "GO-2024-2598",
@@ -737,16 +828,104 @@
 [Test/cassette_TestCommand/TestCommand/PURL_SBOM_case_sensitivity_(api) - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -754,10 +933,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -786,6 +999,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -801,10 +1021,44 @@
 [Test/cassette_TestCommand/TestCommand/Scan_locks-many - 1]
 {
   "results": [
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -812,15 +1066,94 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -828,11 +1161,54 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -852,10 +1228,46 @@
 [Test/cassette_TestCommand/TestCommand/Scan_locks-many#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -864,8 +1276,26 @@
 [Test/cassette_TestCommand/TestCommand/all_supported_lockfiles_in_the_directory_should_be_checked - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -874,8 +1304,18 @@
 [Test/cassette_TestCommand/TestCommand/config_file_can_be_broad - 1]
 {
   "results": [
-    {},
     {
+      "query": {
+        "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
+        "package": {}
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
+        "package": {}
+      },
       "vulns": [
         {
           "id": "CVE-2023-39137",
@@ -887,15 +1327,91 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
+        "package": {}
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      },
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
@@ -903,10 +1419,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -914,13 +1464,74 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -940,7 +1551,16 @@
 [Test/cassette_TestCommand/TestCommand/config_file_is_invalid - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -949,10 +1569,44 @@
 [Test/cassette_TestCommand/TestCommand/config_files_should_not_have_multiple_ignores_with_the_same_id - 1]
 {
   "results": [
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -960,15 +1614,94 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -976,11 +1709,54 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.13-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -1000,10 +1776,46 @@
 [Test/cassette_TestCommand/TestCommand/config_files_should_not_have_multiple_ignores_with_the_same_id#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1012,8 +1824,24 @@
 [Test/cassette_TestCommand/TestCommand/cyclonedx_1.4_output - 1]
 {
   "results": [
-    {},
     {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      },
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
@@ -1021,9 +1849,36 @@
         }
       ]
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1032,8 +1887,24 @@
 [Test/cassette_TestCommand/TestCommand/cyclonedx_1.5_output - 1]
 {
   "results": [
-    {},
     {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      },
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
@@ -1041,9 +1912,36 @@
         }
       ]
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1053,6 +1951,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      },
       "vulns": [
         {
           "id": "UBUNTU-CVE-2017-11164",
@@ -1069,6 +1974,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      },
       "vulns": [
         {
           "id": "UBUNTU-CVE-2017-11164",
@@ -1084,19 +1996,134 @@
 [Test/cassette_TestCommand/TestCommand/folder_of_supported_sbom_with_vulns - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "adduser",
+          "ecosystem": "Debian"
+        },
+        "version": "3.115"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apt",
+          "ecosystem": "Debian"
+        },
+        "version": "1.4.11"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2011-3374",
@@ -1128,9 +2155,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "base-files",
+          "ecosystem": "Debian"
+        },
+        "version": "9.9+deb9u13"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "base-passwd",
+          "ecosystem": "Debian"
+        },
+        "version": "3.5.43"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "bash",
+          "ecosystem": "Debian"
+        },
+        "version": "4.4-5"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2019-18276",
@@ -1142,13 +2194,74 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "bsdutils",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "coreutils",
+          "ecosystem": "Debian"
+        },
+        "version": "8.26-3"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2016-2781",
@@ -1168,9 +2281,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "dash",
+          "ecosystem": "Debian"
+        },
+        "version": "0.5.8-2.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "debconf",
+          "ecosystem": "Debian"
+        },
+        "version": "1.5.61"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "debian-archive-keyring",
+          "ecosystem": "Debian"
+        },
+        "version": "2017.5+deb9u2"
+      },
       "vulns": [
         {
           "id": "DLA-3482-1",
@@ -1178,10 +2316,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "debianutils",
+          "ecosystem": "Debian"
+        },
+        "version": "4.8.1.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "diffutils",
+          "ecosystem": "Debian"
+        },
+        "version": "1:3.5-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "dirmngr",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "dpkg",
+          "ecosystem": "Debian"
+        },
+        "version": "1.18.25"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1664",
@@ -1205,8 +2377,24 @@
         }
       ]
     },
-    {},
     {
+      "query": {
+        "package": {
+          "name": "e2fslibs",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "e2fsprogs",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2019-5094",
@@ -1230,9 +2418,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "findutils",
+          "ecosystem": "Debian"
+        },
+        "version": "4.6.0+git+20161106-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gcc-6-base",
+          "ecosystem": "Debian"
+        },
+        "version": "6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "github.com/opencontainers/runc",
+          "ecosystem": "Go"
+        },
+        "version": "v1.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-9493-h29p-rfm2",
@@ -1316,10 +2529,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "github.com/tianon/gosu",
+          "ecosystem": "Go"
+        },
+        "version": "(devel)"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gnupg",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gnupg-agent",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "golang.org/x/sys",
+          "ecosystem": "Go"
+        },
+        "version": "v0.0.0-20210817142637-7d9622a276b7"
+      },
       "vulns": [
         {
           "id": "GHSA-p782-xgp4-8hr8",
@@ -1331,9 +2578,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "gpgv",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.18-8~deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "grep",
+          "ecosystem": "Debian"
+        },
+        "version": "2.27-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "gzip",
+          "ecosystem": "Debian"
+        },
+        "version": "1.6-5+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1271",
@@ -1345,35 +2617,294 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "hostname",
+          "ecosystem": "Debian"
+        },
+        "version": "3.18+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "init-system-helpers",
+          "ecosystem": "Debian"
+        },
+        "version": "1.48"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libacl1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.2.52-3+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libapt-pkg5.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.4.11"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libassuan0",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.3-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libattr1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.4.47-2+b2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libaudit-common",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.6.7-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libaudit1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:2.6.7-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libblkid1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libbsd0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.8.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libbz2-1.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.6-8.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-l10n",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc6",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcap-ng0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.7.7-3+b1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcomerr2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libdb5.3",
+          "ecosystem": "Debian"
+        },
+        "version": "5.3.28-12+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libdebconfclient0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.227"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libedit2",
+          "ecosystem": "Debian"
+        },
+        "version": "3.1-20160903-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libfdisk1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libffi6",
+          "ecosystem": "Debian"
+        },
+        "version": "3.2.1-6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgcc1",
+          "ecosystem": "Debian"
+        },
+        "version": "1:6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgcrypt20",
+          "ecosystem": "Debian"
+        },
+        "version": "1.7.6-2+deb9u4"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-0379",
@@ -1409,56 +2940,504 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "libgdbm3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.8.3-14"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgmp10",
+          "ecosystem": "Debian"
+        },
+        "version": "2:6.1.2+dfsg-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgnutls30",
+          "ecosystem": "Debian"
+        },
+        "version": "3.5.8-5+deb9u6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgpg-error0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.26-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libgssapi-krb5-2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libhogweed4",
+          "ecosystem": "Debian"
+        },
+        "version": "3.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libicu57",
+          "ecosystem": "Debian"
+        },
+        "version": "57.1-6+deb9u5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libidn11",
+          "ecosystem": "Debian"
+        },
+        "version": "1.33-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libjson-perl",
+          "ecosystem": "Debian"
+        },
+        "version": "2.90-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libk5crypto3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkeyutils1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.5.9-9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkrb5-3",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libkrb5support0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.15-1+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libksba8",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3.5-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libldap-2.4-2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.44+dfsg-5+deb9u8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libldap-common",
+          "ecosystem": "Debian"
+        },
+        "version": "2.4.44+dfsg-5+deb9u8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libllvm6.0",
+          "ecosystem": "Debian"
+        },
+        "version": "1:6.0-1~bpo9+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "liblz4-1",
+          "ecosystem": "Debian"
+        },
+        "version": "0.0~r131-2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "liblzma5",
+          "ecosystem": "Debian"
+        },
+        "version": "5.2.2-1.2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libmount1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libncurses5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libncursesw5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnettle6",
+          "ecosystem": "Debian"
+        },
+        "version": "3.3-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnpth0",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libnss-wrapper",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.3-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libp11-kit0",
+          "ecosystem": "Debian"
+        },
+        "version": "0.23.3-2+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-modules",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-modules-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam-runtime",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpam0g",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.8-3.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpcre3",
+          "ecosystem": "Debian"
+        },
+        "version": "2:8.39-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libperl5.24",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libpq5",
+          "ecosystem": "Debian"
+        },
+        "version": "14.2-1.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libreadline7",
+          "ecosystem": "Debian"
+        },
+        "version": "7.0-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsasl2-2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsasl2-modules-db",
+          "ecosystem": "Debian"
+        },
+        "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libselinux1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-3+b3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsemanage-common",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsemanage1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsepol1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.6-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsmartcols1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsqlite3-0",
+          "ecosystem": "Debian"
+        },
+        "version": "3.16.2-5+deb9u3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libss2",
+          "ecosystem": "Debian"
+        },
+        "version": "1.43.4-2+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl1.1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.0l-1~deb9u5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libstdc++6",
+          "ecosystem": "Debian"
+        },
+        "version": "6.3.0-18+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libsystemd0",
+          "ecosystem": "Debian"
+        },
+        "version": "232-25+deb9u13"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libtasn1-6",
+          "ecosystem": "Debian"
+        },
+        "version": "4.10-1.1+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-10790",
@@ -1498,11 +3477,54 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "libtinfo5",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libudev1",
+          "ecosystem": "Debian"
+        },
+        "version": "232-25+deb9u13"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libustr-1.0-1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.4-6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libuuid1",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libxml2",
+          "ecosystem": "Debian"
+        },
+        "version": "2.9.4+dfsg1-2.2+deb9u6"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2016-3709",
@@ -1774,15 +3796,99 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "libxslt1.1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.29-2.1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libzstd1",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "locales",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "login",
+          "ecosystem": "Debian"
+        },
+        "version": "1:4.4-4.1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "lsb-base",
+          "ecosystem": "Debian"
+        },
+        "version": "9.20161125"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mawk",
+          "ecosystem": "Debian"
+        },
+        "version": "1.3.3-17+b3"
+      },
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2017-20229",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mount",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "multiarch-support",
+          "ecosystem": "Debian"
+        },
+        "version": "2.24-11+deb9u4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -1791,6 +3897,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -1798,13 +3911,74 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ncurses-base",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ncurses-bin",
+          "ecosystem": "Debian"
+        },
+        "version": "6.0+20161126-1+deb9u2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "netbase",
+          "ecosystem": "Debian"
+        },
+        "version": "5.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "openssl",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.0l-1~deb9u5"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2018-0732",
@@ -2204,8 +4378,24 @@
         }
       ]
     },
-    {},
     {
+      "query": {
+        "package": {
+          "name": "passwd",
+          "ecosystem": "Debian"
+        },
+        "version": "1:4.4-4.1+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pcre3",
+          "ecosystem": "Ubuntu"
+        },
+        "version": "2:8.39-12ubuntu0.1"
+      },
       "vulns": [
         {
           "id": "UBUNTU-CVE-2017-11164",
@@ -2214,6 +4404,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "perl",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2011-4116",
@@ -2313,12 +4510,64 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "perl-base",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "perl-modules-5.24",
+          "ecosystem": "Debian"
+        },
+        "version": "5.24.1-3+deb9u7"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pgdg-keyring",
+          "ecosystem": "Debian"
+        },
+        "version": "2018.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pinentry-curses",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.0-2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql",
+          "ecosystem": "OSS-Fuzz"
+        },
+        "version": "11.15"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-11",
+          "ecosystem": "Debian"
+        },
+        "version": "11.15-1.pgdg90+1"
+      },
       "vulns": [
         {
           "id": "DLA-3072-1",
@@ -2354,15 +4603,94 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "postgresql-client-11",
+          "ecosystem": "Debian"
+        },
+        "version": "11.15-1.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-client-common",
+          "ecosystem": "Debian"
+        },
+        "version": "238.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "postgresql-common",
+          "ecosystem": "Debian"
+        },
+        "version": "238.pgdg90+1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "readline-common",
+          "ecosystem": "Debian"
+        },
+        "version": "7.0-3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sed",
+          "ecosystem": "Debian"
+        },
+        "version": "4.4-1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sensible-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "0.0.9+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2017-17512",
@@ -2370,11 +4698,54 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "ssl-cert",
+          "ecosystem": "Debian"
+        },
+        "version": "1.0.39"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sysvinit-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "2.88dsf-59.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "tar",
+          "ecosystem": "Debian"
+        },
+        "version": "1.29b-1.1+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2005-2541",
@@ -2407,6 +4778,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "tzdata",
+          "ecosystem": "Debian"
+        },
+        "version": "2021a-0+deb9u3"
+      },
       "vulns": [
         {
           "id": "DLA-3051-1",
@@ -2455,6 +4833,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "ucf",
+          "ecosystem": "Debian"
+        },
+        "version": "3.0036"
+      },
       "vulns": [
         {
           "id": "DLA-4016-1",
@@ -2463,6 +4848,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "util-linux",
+          "ecosystem": "Debian"
+        },
+        "version": "2.29.2-1+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2016-2779",
@@ -2515,6 +4907,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "xz-utils",
+          "ecosystem": "Debian"
+        },
+        "version": "5.2.2-1.2+deb9u1"
+      },
       "vulns": [
         {
           "id": "DEBIAN-CVE-2022-1271",
@@ -2543,6 +4942,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -2563,6 +4969,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -2583,6 +4996,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -2603,6 +5023,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.12-r1"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2022-37434",
@@ -2618,8 +5045,26 @@
         }
       ]
     },
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "zlib1g",
+          "ecosystem": "Debian"
+        },
+        "version": "1:1.2.8.dfsg-5+deb9u1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zstd",
+          "ecosystem": "Debian"
+        },
+        "version": "1.1.2-1+deb9u1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2629,6 +5074,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -2645,6 +5097,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.24.4"
+      },
       "vulns": [
         {
           "id": "GO-2025-3849",
@@ -2733,6 +5192,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.24.4"
+      },
       "vulns": [
         {
           "id": "GO-2025-3828",
@@ -2757,6 +5223,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -2772,14 +5245,86 @@
 [Test/cassette_TestCommand/TestCommand/ignoring_.gitignore - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2788,7 +5333,16 @@
 [Test/cassette_TestCommand/TestCommand/json_output - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2797,8 +5351,26 @@
 [Test/cassette_TestCommand/TestCommand/nested_directories_are_checked_when_`--recursive`_is_passed - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2807,7 +5379,16 @@
 [Test/cassette_TestCommand/TestCommand/no_lockfiles_with_recursion_and_with_allow_flag_are_fine - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2816,7 +5397,16 @@
 [Test/cassette_TestCommand/TestCommand/no_lockfiles_with_recursion_but_without_allow_flag_are_fine - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2825,7 +5415,16 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_lockfile - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2835,6 +5434,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -2850,7 +5456,16 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_lockfile_with_offline_explicitly_false - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2859,16 +5474,104 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_duplicate_PURLs - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -2876,10 +5579,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -2907,16 +5644,104 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_duplicate_PURLs_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -2924,10 +5749,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -2955,14 +5814,86 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_invalid_PURLs - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2971,14 +5902,86 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_invalid_PURLs_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -2987,16 +5990,104 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_vulns - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -3004,10 +6095,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -3035,16 +6160,104 @@
 [Test/cassette_TestCommand/TestCommand/one_specific_supported_sbom_with_vulns_using_-L_flag - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "busybox-binsh",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ca-certificates-bundle",
+          "ecosystem": "Alpine"
+        },
+        "version": "20220614-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libc-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "0.7.2-r3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libcrypto3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "libssl3",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.0.8-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "musl",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
@@ -3052,10 +6265,44 @@
         }
       ]
     },
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "musl-utils",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.3-r4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "scanelf",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.3.5-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ssl_client",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.36.1-r27"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "zlib",
+          "ecosystem": "Alpine"
+        },
+        "version": "1.2.10-r0"
+      },
       "vulns": [
         {
           "id": "ALPINE-CVE-2018-25032",
@@ -3083,7 +6330,16 @@
 [Test/cassette_TestCommand/TestCommand/only_the_files_in_the_given_directories_are_checked_by_default_(no_recursion) - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -3093,6 +6349,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.1"
+      },
       "vulns": [
         {
           "id": "GHSA-whgm-jr23-g3j9",
@@ -3109,6 +6372,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "black",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-3936-cmfr-pm3m",
@@ -3116,15 +6386,94 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
       "vulns": [
         {
           "id": "GHSA-68w8-qjq3-2gfm",
@@ -3161,6 +6510,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
       "vulns": [
         {
           "id": "GHSA-68w8-qjq3-2gfm",
@@ -3197,6 +6553,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.24"
+      },
       "vulns": [
         {
           "id": "GHSA-2gwj-7jmv-h26r",
@@ -3289,6 +6652,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3305,6 +6675,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3321,6 +6698,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3337,6 +6721,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3353,6 +6744,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask-cors",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
       "vulns": [
         {
           "id": "GHSA-43qf-4rqw-9q2g",
@@ -3389,6 +6787,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
       "vulns": [
         {
           "id": "GHSA-jjg7-2v4v-x38h",
@@ -3401,6 +6806,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
       "vulns": [
         {
           "id": "GHSA-jjg7-2v4v-x38h",
@@ -3412,20 +6824,144 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mypy-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "packaging",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pandas",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.23.4"
+      },
       "vulns": [
         {
           "id": "PYSEC-2020-73",
@@ -3433,12 +6969,64 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "pathspec",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "platformdirs",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.4.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
       "vulns": [
         {
           "id": "GHSA-9hjg-9r4m-mvj7",
@@ -3463,6 +7051,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
       "vulns": [
         {
           "id": "GHSA-9hjg-9r4m-mvj7",
@@ -3487,6 +7082,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "sqlparse",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.5.3"
+      },
       "vulns": [
         {
           "id": "GHSA-27jp-wm6q-gp25",
@@ -3494,9 +7096,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "tomli",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "typing-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.15.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
       "vulns": [
         {
           "id": "GHSA-2xpw-w6gg-jr37",
@@ -3549,6 +7176,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
       "vulns": [
         {
           "id": "GHSA-2xpw-w6gg-jr37",
@@ -3601,6 +7235,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -3617,6 +7258,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -3633,6 +7281,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -3657,6 +7312,13 @@
 {
   "results": [
     {
+      "query": {
+        "package": {
+          "name": "black",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-3936-cmfr-pm3m",
@@ -3664,15 +7326,94 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
       "vulns": [
         {
           "id": "GHSA-68w8-qjq3-2gfm",
@@ -3709,6 +7450,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
       "vulns": [
         {
           "id": "GHSA-68w8-qjq3-2gfm",
@@ -3745,6 +7493,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.24"
+      },
       "vulns": [
         {
           "id": "GHSA-2gwj-7jmv-h26r",
@@ -3837,6 +7592,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3853,6 +7615,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3869,6 +7638,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3885,6 +7661,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
       "vulns": [
         {
           "id": "GHSA-68rp-wp8r-4726",
@@ -3901,6 +7684,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "flask-cors",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
       "vulns": [
         {
           "id": "GHSA-43qf-4rqw-9q2g",
@@ -3937,6 +7727,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
       "vulns": [
         {
           "id": "GHSA-jjg7-2v4v-x38h",
@@ -3949,6 +7746,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
       "vulns": [
         {
           "id": "GHSA-jjg7-2v4v-x38h",
@@ -3960,20 +7764,144 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mypy-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "packaging",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pandas",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.23.4"
+      },
       "vulns": [
         {
           "id": "PYSEC-2020-73",
@@ -3981,12 +7909,64 @@
         }
       ]
     },
-    {},
-    {},
-    {},
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "pathspec",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "platformdirs",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.5.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
       "vulns": [
         {
           "id": "GHSA-9hjg-9r4m-mvj7",
@@ -4011,6 +7991,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
       "vulns": [
         {
           "id": "GHSA-9hjg-9r4m-mvj7",
@@ -4035,6 +8022,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "sqlparse",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.5.3"
+      },
       "vulns": [
         {
           "id": "GHSA-27jp-wm6q-gp25",
@@ -4042,9 +8036,34 @@
         }
       ]
     },
-    {},
-    {},
     {
+      "query": {
+        "package": {
+          "name": "tomli",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "typing-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.15.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
       "vulns": [
         {
           "id": "GHSA-2xpw-w6gg-jr37",
@@ -4097,6 +8116,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
       "vulns": [
         {
           "id": "GHSA-2xpw-w6gg-jr37",
@@ -4149,6 +8175,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -4165,6 +8198,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -4181,6 +8221,13 @@
       ]
     },
     {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",
@@ -4204,8 +8251,24 @@
 [Test/cassette_TestCommand/TestCommand/spdx_2.3_output - 1]
 {
   "results": [
-    {},
     {
+      "query": {
+        "package": {
+          "name": "has-flag",
+          "ecosystem": "npm"
+        },
+        "version": "4.0.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      },
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
@@ -4213,9 +8276,36 @@
         }
       ]
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "wrappy",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -4224,7 +8314,16 @@
 [Test/cassette_TestCommand/TestCommand/verbosity_level_=_error - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -4233,7 +8332,16 @@
 [Test/cassette_TestCommand/TestCommand/verbosity_level_=_info - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/google/apitester/internal/vcr"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
+	"github.com/tidwall/sjson"
 )
 
 var (
@@ -79,7 +80,7 @@ func jsonReplaceRules(t *testing.T, resp *http.Response) []jsonreplace.Rule {
 	}
 }
 
-func normalizeJSONBody(t *testing.T, resp *http.Response) string {
+func normalizeJSONBody(t *testing.T, reqBody []byte, resp *http.Response) string {
 	t.Helper()
 
 	body, err := io.ReadAll(resp.Body)
@@ -89,6 +90,44 @@ func normalizeJSONBody(t *testing.T, resp *http.Response) string {
 	}
 
 	body = jsonreplace.DoBytes(t, body, jsonReplaceRules(t, resp))
+
+	switch resp.Request.URL.Path {
+	case "/v1/query":
+		if len(reqBody) > 0 {
+			res, err := sjson.SetRawBytes(body, "query", reqBody)
+			if err == nil {
+				body = res
+			}
+		}
+		if !gjson.GetBytes(body, "vulns").Exists() && !gjson.GetBytes(body, "code").Exists() {
+			res, err := sjson.SetRawBytes(body, "vulns", []byte("[]"))
+			if err == nil {
+				body = res
+			}
+		} else if vulns := gjson.GetBytes(body, "vulns"); vulns.Exists() {
+			body, _ = sjson.DeleteBytes(body, "vulns")
+			body, _ = sjson.SetRawBytes(body, "vulns", []byte(vulns.Raw))
+		}
+	case "/v1/querybatch":
+		queries := gjson.GetBytes(reqBody, "queries")
+		if queries.IsArray() {
+			for i, query := range queries.Array() {
+				res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.query", i), []byte(query.Raw))
+				if err == nil {
+					body = res
+				}
+				if !gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)).Exists() && !gjson.GetBytes(body, "code").Exists() {
+					res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte("[]"))
+					if err == nil {
+						body = res
+					}
+				} else if vulns := gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)); vulns.Exists() {
+					body, _ = sjson.DeleteBytes(body, fmt.Sprintf("results.%d.vulns", i))
+					body, _ = sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte(vulns.Raw))
+				}
+			}
+		}
+	}
 
 	return string(pretty.Pretty(body))
 }
@@ -105,8 +144,9 @@ func Test(t *testing.T) {
 				t.Run(vcr.DetermineInteractionName(interaction), func(t *testing.T) {
 					t.Parallel()
 
+					reqBody := []byte(interaction.Request.Body)
 					resp := vcr.Play(t, interaction)
-					body := normalizeJSONBody(t, resp)
+					body := normalizeJSONBody(t, reqBody, resp)
 
 					resp.Body.Close()
 

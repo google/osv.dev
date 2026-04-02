@@ -2,7 +2,16 @@
 [Test/cassette_TestCommand_HtmlFile/TestCommand_HtmlFile - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 

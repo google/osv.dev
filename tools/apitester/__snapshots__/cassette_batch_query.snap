@@ -3,6 +3,9 @@
 {
   "results": [
     {
+      "query": {
+        "commit": "17b30e96476be70b8773b2b807bab857fd3ceb39"
+      },
       "vulns": [
         {
           "id": "CVE-2021-22569",

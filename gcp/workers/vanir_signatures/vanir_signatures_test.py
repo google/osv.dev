@@ -178,7 +178,7 @@ class VanirSignaturesTest(unittest.TestCase):
 
     # Verify GCS upload with timestamp
     uploaded_vuln = mock_upload.call_args[0][0]
-    self.assertIn('vanir_signature_modified',
+    self.assertIn('vanir_signatures_modified',
                   uploaded_vuln.affected[0].database_specific)
 
   @mock.patch('osv.gcs.get_by_id_with_generation')

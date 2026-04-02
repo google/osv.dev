@@ -197,7 +197,7 @@ def process_batch(vuln_ids: list[str],
     for affected in v.affected:
       if (affected.HasField('database_specific') and
           'vanir_signatures' in affected.database_specific):
-        affected.database_specific['vanir_signature_modified'] = now_iso
+        affected.database_specific['vanir_signatures_modified'] = now_iso
 
     # Use gcs_generations[original_id] ONLY if it matches enriched ID.
     gen = gcs_generations.get(v.id)

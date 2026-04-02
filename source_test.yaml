@@ -557,6 +557,20 @@
   editable: False
   strict_validation: True
 
+- name: 'tuxcare'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!CLSA-).*$']
+  directory_path: 'data'
+  repo_url: 'https://github.com/cloudlinux/tuxcare-osv.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CLSA-']
+  ignore_git: False
+  link: 'https://github.com/cloudlinux/tuxcare-osv/tree/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'ubuntu-cve'
   versions_from_repo: False
   type: 0

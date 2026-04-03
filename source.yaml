@@ -72,6 +72,20 @@
   editable: False
   strict_validation: True
 
+- name: 'azurelinux'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!AZL-).*$']
+  directory_path: 'osv'
+  repo_url: 'https://github.com/microsoft/AzureLinuxVulnerabilityData.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['AZL-']
+  ignore_git: False
+  link: 'https://github.com/microsoft/AzureLinuxVulnerabilityData/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'bellsoft'
   versions_from_repo: False
   type: 0

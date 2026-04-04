@@ -742,6 +742,10 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 	}
 	v.AddSeverity(cve.Metrics)
 
+	if cve.VulnStatus != nil && *cve.VulnStatus == "REJECTED" {
+		v.Withdrawn = v.Modified
+	}
+
 	return v
 }
 

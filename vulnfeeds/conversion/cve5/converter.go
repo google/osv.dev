@@ -96,6 +96,10 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	}
 	v.Modified = timestamppb.New(modified)
 
+	if cve.Metadata.State == "REJECTED" {
+		v.Withdrawn = v.Modified
+	}
+
 	// Try to extract repository URLs from references.
 	repos := conversion.ReposFromReferencesCVEList(refs, models.RefTagDenyList, metrics)
 	metrics.Repos = repos

@@ -161,6 +161,8 @@ func TestFromCVE5(t *testing.T) {
 	cve21772Pub, _ := models.ParseCVE5Timestamp("2025-02-27T02:18:19.528Z")
 	cve21772Mod, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
 	cvePlaceholder, _ := models.ParseCVE5Timestamp("2025-05-04T07:20:46.575Z")
+	rejectedPub, _ := models.ParseCVE5Timestamp("2024-04-01T00:00:00.000Z")
+	rejectedMod, _ := models.ParseCVE5Timestamp("2024-06-01T00:00:00.000Z")
 	testCases := []struct {
 		name string
 		cve  models.CVE5
@@ -329,6 +331,43 @@ func TestFromCVE5(t *testing.T) {
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/6578717ebca91678131d2b1f4ba4258e60536e9f"},
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/7fa9706722882f634090bfc9af642bf9ed719e27"},
 						{Type: osvschema.Reference_WEB, Url: "https://git.kernel.org/stable/c/80e648042e512d5a767da251d44132553fe04ae0"},
+					},
+				},
+			},
+		},
+		{
+			name: "rejected CVE is withdrawn",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID:         "CVE-2024-31745",
+					State:         "REJECTED",
+					DatePublished: "2024-04-01T00:00:00.000Z",
+					DateUpdated:   "2024-06-01T00:00:00.000Z",
+				},
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						Descriptions: []models.LangString{
+							{Lang: "en", Value: "This CVE was rejected."},
+						},
+					},
+				},
+			},
+			refs: []models.Reference{},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:            "CVE-2024-31745",
+					SchemaVersion: "1.7.3",
+					Published:     timestamppb.New(rejectedPub),
+					Modified:      timestamppb.New(rejectedMod),
+					Withdrawn:     timestamppb.New(rejectedMod),
+					Details:       "This CVE was rejected.",
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
 					},
 				},
 			},

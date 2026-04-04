@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/gcs-tools"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, *syncDeletions)
+	gcs.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

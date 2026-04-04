@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 
 	"slices"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestClassifyReferenceLink(t *testing.T) {
@@ -511,5 +513,65 @@ func TestClassifyReferences_Determinism(t *testing.T) {
 		if diff := gocmp.Diff(firstResult, got, protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestFromNVDCVE(t *testing.T) {
+	rejectedStatus := "REJECTED"
+	publishedTime := time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC)
+	modifiedTime := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+
+	testCases := []struct {
+		name         string
+		cve          models.NVDCVE
+		expectedVuln *Vulnerability
+	}{
+		{
+			name: "rejected CVE has Withdrawn set to Modified",
+			cve: models.NVDCVE{
+				ID:           "CVE-2024-31745",
+				VulnStatus:   &rejectedStatus,
+				Descriptions: []models.LangString{{Lang: "en", Value: "This CVE was rejected."}},
+				Published:    models.NVDTime{Time: publishedTime},
+				LastModified: models.NVDTime{Time: modifiedTime},
+				Metrics:      &models.CVEItemMetrics{},
+			},
+			expectedVuln: &Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:        "CVE-2024-31745",
+					Details:   "This CVE was rejected.",
+					Published: timestamppb.New(publishedTime),
+					Modified:  timestamppb.New(modifiedTime),
+					Withdrawn: timestamppb.New(modifiedTime),
+				},
+			},
+		},
+		{
+			name: "non-rejected CVE does not have Withdrawn set",
+			cve: models.NVDCVE{
+				ID:           "CVE-2024-99999",
+				Descriptions: []models.LangString{{Lang: "en", Value: "A published vulnerability."}},
+				Published:    models.NVDTime{Time: publishedTime},
+				LastModified: models.NVDTime{Time: modifiedTime},
+				Metrics:      &models.CVEItemMetrics{},
+			},
+			expectedVuln: &Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:        "CVE-2024-99999",
+					Details:   "A published vulnerability.",
+					Published: timestamppb.New(publishedTime),
+					Modified:  timestamppb.New(modifiedTime),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := FromNVDCVE(tc.cve.ID, tc.cve)
+			if diff := gocmp.Diff(tc.expectedVuln, got, protocmp.Transform()); diff != "" {
+				t.Errorf("FromNVDCVE() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -1090,6 +1090,12 @@ def relative_time(timestamp: str) -> str:
   return utils.relative_time(timestamp)
 
 
+@blueprint.app_template_filter('should_add_nofollow')
+def should_add_nofollow_filter(url: str) -> bool:
+  """Determine if a URL should have rel=nofollow added."""
+  return utils.should_add_nofollow(url)
+
+
 class ComputedHierarchy(NamedTuple):
   """Represents the computed hierarchy of upstream/downstream vulnerabilities.
   For use with construct_hierarchy_string.

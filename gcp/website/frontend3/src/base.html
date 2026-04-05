@@ -32,6 +32,14 @@
     gtag('config', 'G-ZXG9G6HTBR', { 'anonymize_ip': true });
   </script>
   {% block extra_head %}{% endblock %}
+  {% macro get_link_rel(url) %}
+    {% if url and url.startswith('http') %}
+      {% set should_nofollow = url | should_add_nofollow %}
+      {% if should_nofollow %}rel="noopener noreferrer nofollow"{% else %}rel="noopener noreferrer"{% endif %}
+    {% else %}
+      rel="noopener noreferrer"
+    {% endif %}
+  {% endmacro %}
 </head>
 
 <body>
@@ -62,10 +70,10 @@
           <a href="{{ url_for('frontend_handlers.blog') }}">Blog</a>
         </li>
         <li class="{{ 'active' if active_section == 'faq' else '' }} page-link external-link">
-          <a href="https://google.github.io/osv.dev/faq/" target="_blank">FAQ</a>
+          <a href="https://google.github.io/osv.dev/faq/" target="_blank" rel="noopener noreferrer">FAQ</a>
         </li>
         <li class="{{ 'active' if active_section == 'docs' else '' }} page-link external-link">
-          <a href="https://google.github.io/osv.dev/" target="_blank">Docs</a>
+          <a href="https://google.github.io/osv.dev/" target="_blank" rel="noopener noreferrer">Docs</a>
         </li>
         
         <ul class="push social-icons">

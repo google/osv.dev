@@ -16,6 +16,7 @@
 import os
 from datetime import datetime, UTC
 from functools import cache
+from urllib.parse import urlparse
 
 import osv.utils
 
@@ -42,6 +43,46 @@ def is_cloud_run() -> bool:
   """Check if we are running in Cloud Run."""
   # https://cloud.google.com/run/docs/container-contract#env-vars
   return 'K_SERVICE' in os.environ
+
+
+# List of trusted domains that should not have nofollow
+TRUSTED_DOMAINS = {
+    'deps.dev',
+    'first.org',
+    'github.com',
+    'google.github.io',
+    'ossf.github.io',
+    'api.osv.dev',
+    'api.test.osv.dev'
+}
+
+
+def should_add_nofollow(url: str) -> bool:
+  """
+  Determine if a URL should have rel=nofollow added.
+  
+  Args:
+      url: The URL to check
+  
+  Returns:
+      bool: True if the URL should have nofollow, False if it's a trusted domain
+  """
+  if not url or not url.startswith('http'):
+    return False
+  
+  try:
+    parsed = urlparse(url)
+    domain = parsed.netloc
+    
+    # Check if domain is in trusted domains
+    for trusted_domain in TRUSTED_DOMAINS:
+      if domain.endswith(trusted_domain):
+        return False
+    
+    return True
+  except:
+    # If parsing fails, assume it's external and should have nofollow
+    return True
 
 
 def relative_time(value: datetime | str) -> str:

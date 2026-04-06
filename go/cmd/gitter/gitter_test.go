@@ -103,7 +103,7 @@ func TestPrepareURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			result, err := prepareURL(req, tt.url)
 			if tt.expectErr {
 				if err == nil {

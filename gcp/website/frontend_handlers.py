@@ -65,7 +65,47 @@ _GO_VANITY_METADATA = \
    'content="osv.dev git https://github.com/google/osv.dev">')
 MAX_SUGGESTIONS = 10
 
+# List of trusted domains that should not have nofollow
+_TRUSTED_DOMAINS = [
+    'deps.dev',
+    'github.com',
+    'google.github.io',
+    'ossf.github.io',
+    'first.org',
+    'www.first.org',
+    'ossf.org'
+]
+
 _ndb_client = ndb.Client()
+
+
+def _should_add_nofollow(url: str) -> bool:
+  """Determine if a URL should have rel=nofollow added.
+  
+  Args:
+      url: The URL to check
+  
+  Returns:
+      True if the URL should have nofollow, False otherwise
+  """
+  if not url or not url.startswith('http'):
+    return False
+    
+  # Parse the URL to extract the domain
+  try:
+    parsed_url = parse.urlparse(url)
+    domain = parsed_url.netloc
+    
+    # Check if the domain is in our trusted list
+    for trusted_domain in _TRUSTED_DOMAINS:
+      if domain.endswith(trusted_domain):
+        return False
+        
+    # If it's not a trusted domain, add nofollow
+    return True
+  except:
+    # If there's any error parsing the URL, don't add nofollow
+    return False
 
 
 class VulnerabilityNotFound(exceptions.NotFound):
@@ -887,6 +927,30 @@ _ANCHOR_TAG_REPLACER = re.compile(
 @blueprint.app_template_filter('markdown')
 def markdown(text):
   """Render markdown."""
+  if text:
+    try:
+      md = markdown2.markdown(
+          text, safe_mode='escape', extras=['fenced-code-blocks'])
+      # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+      # unclosed HTML comments <!--, which ends up commenting out the whole page
+      # See: https://github.com/trentm/python-markdown2/issues/563
+      # For now, manually replace any leftover comments with the escaped form
+      md = md.replace('<!--', '&lt;!--')
+
+      # TODO(rexpan): There is a bug with the markdown2 escaping + as
+      # space rather than %2B
+      # See: https://github.com/trentm/python-markdown2/issues/621
+      md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+      # Removes empty anchor tags that cause visual artifacts
+      # in rendered markdown
+      # See: https://github.com/google/osv.dev/issues/4237
+      md = _ANCHOR_TAG_REPLACER.sub('', md)
+
+      return md
+    except Exception as e:
+      logging.error('Failed to render markdown: %s', e)
+      escaped_text = escape(text)
+      return escaped_text
   if text:
     try:
       md = markdown2.markdown(

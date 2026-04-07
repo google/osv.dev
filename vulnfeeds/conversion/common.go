@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -391,7 +392,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 
 		// Check if the list contains elements of the same type as val2
 		if len(v1) > 0 {
-			if fmt.Sprintf("%T", v1[0]) != fmt.Sprintf("%T", val2) {
+			if reflect.TypeOf(v1[0]) != reflect.TypeOf(val2) {
 				return nil, fmt.Errorf("mismatching types: list of %T and %T", v1[0], val2)
 			}
 		}

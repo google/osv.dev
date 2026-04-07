@@ -237,7 +237,7 @@ func FindCanonicalLink(link string, httpClient *http.Client, cache *RepoTagsCach
 	}
 	canonicalLink, err = ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
-		return "", err
+		return link, err
 	}
 	cache.SetCanonicalLink(link, canonicalLink)
 

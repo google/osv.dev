@@ -61,7 +61,7 @@ func setupTestRepo(t *testing.T, url string) string {
 	runGit(t, repoPath, "commit", "-m", "commit 3")
 	runGit(t, repoPath, "tag", "v1.1.0")
 
-	return repoPath
+	return url
 }
 
 // An extremely simple test repository with 1 commit and no tags.
@@ -84,13 +84,13 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 	runGit(t, repoPath, "add", "file1")
 	runGit(t, repoPath, "commit", "-m", "commit 1")
 
-	return repoPath
+	return url
 }
 
 func TestBuildCommitGraph(t *testing.T) {
-	setupTestRepo(t, "git://test-repo.git")
-	r := NewRepository("git://test-repo.git")
-	ctx := context.WithValue(t.Context(), urlKey, "git://test-repo.git")
+	url := setupTestRepo(t, "git://test-repo.git")
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
 
@@ -113,9 +113,9 @@ func TestBuildCommitGraph(t *testing.T) {
 }
 
 func TestCalculatePatchIDs(t *testing.T) {
-	setupTestRepo(t, "git://test-repo.git")
-	r := NewRepository("git://test-repo.git")
-	ctx := context.WithValue(t.Context(), urlKey, "git://test-repo.git")
+	url := setupTestRepo(t, "git://test-repo.git")
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
 	if err != nil {
@@ -137,8 +137,9 @@ func TestCalculatePatchIDs(t *testing.T) {
 }
 
 func TestLoadRepository(t *testing.T) {
-	repoPath := setupTestRepo(t, "git://test-repo.git")
-	ctx := context.WithValue(t.Context(), urlKey, "git://test-repo.git")
+	url := setupTestRepo(t, "git://test-repo.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	// First loadRepository with a brand new repo
 	r1, err := LoadRepository(ctx, repoPath)
@@ -220,7 +221,6 @@ var cmpSHA1Opts = []cmp.Option{
 
 func TestExpandByCherrypick(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Commit hashes
 	h1 := decodeSHA1("aaaa")
@@ -276,7 +276,6 @@ func TestExpandByCherrypick(t *testing.T) {
 // Testing cases with introduced and fixed only.
 func TestAffected_Introduced_Fixed(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -393,7 +392,6 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 
 func TestAffected_Introduced_LastAffected(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -511,7 +509,6 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 // Testing with both fixed and lastAffected
 func TestAffected_Combined(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -616,7 +613,6 @@ func TestAffected_Combined(t *testing.T) {
 
 func TestAffected_Cherrypick(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D
@@ -745,7 +741,6 @@ func TestAffected_Cherrypick(t *testing.T) {
 
 func TestLimit(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D -> E
@@ -828,7 +823,6 @@ func TestLimit(t *testing.T) {
 
 func TestLimit_Cherrypick(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
-	repo.repoPath = "/repo"
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D
@@ -1251,13 +1245,61 @@ func TestGetLocalTags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.setupFunc(t, "git://test-repo.git")
-			r := NewRepository("git://test-repo.git")
-			ctx := context.WithValue(t.Context(), urlKey, "git://test-repo.git")
+			url := tt.setupFunc(t, "git://test-repo.git")
+			r := NewRepository(url)
+			ctx := context.WithValue(t.Context(), urlKey, url)
 
 			tags, err := r.GetLocalTags(ctx)
 			if err != nil {
 				t.Fatalf("GetLocalTags failed: %v", err)
+			}
+
+			if len(tags) != tt.wantCount {
+				t.Errorf("expected %d tags, got %d", tt.wantCount, len(tags))
+			}
+
+			for _, wantTag := range tt.wantTags {
+				if _, ok := tags[wantTag]; !ok {
+					t.Errorf("expected tag %s to exist", wantTag)
+				}
+			}
+		})
+	}
+}
+
+func TestGetRemoteTags(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupFunc func(t *testing.T, url string) string
+		wantTags  []string
+		wantCount int
+	}{
+		{
+			name:      "Repo with tags",
+			setupFunc: setupTestRepo,
+			wantTags:  []string{"v1.0.0", "v1.1.0"},
+			wantCount: 2,
+		},
+		{
+			name:      "Empty repo (no tags)",
+			setupFunc: setupEmptyTestRepo,
+			wantTags:  []string{},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := tt.setupFunc(t, "git://test-repo.git")
+			repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+			r := NewRepository(url)
+			// Overwriting URL with repoPath to simulate remote repo without needing to query an actual repo url
+			r.URL = r.repoPath
+			ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+			tags, err := r.GetRemoteTags(ctx)
+			if err != nil {
+				t.Fatalf("GetRemoteTags failed: %v", err)
 			}
 
 			if len(tags) != tt.wantCount {

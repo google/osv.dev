@@ -752,7 +752,7 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 	for _, fromIdx := range walkFrom {
 		stack := []int{fromIdx}
 		var affectedPath []int
-		foundIntro := false
+		pathValid := false
 
 		for len(stack) > 0 {
 			curr := stack[len(stack)-1]
@@ -760,9 +760,11 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 
 			affectedPath = append(affectedPath, curr)
 
-			// If commit is in introduced, we can stop the traversal
-			if introMap[curr] {
-				foundIntro = true
+			// Stop traversal and keep affectedPath when:
+			// 1. commit is introduced -> this path is a full path from walkFrom to introduced
+			// 2. commit is already marked as affected -> this partial path is guaranteed to hit an introduced commit from curr
+			if introMap[curr] || affectedMap[curr] {
+				pathValid = true
 				break
 			}
 
@@ -773,8 +775,7 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 			}
 		}
 
-		// Only add to affected if the path actually encounters an introduced commit
-		if foundIntro {
+		if pathValid {
 			for _, idx := range affectedPath {
 				affectedMap[idx] = true
 			}
@@ -833,7 +834,7 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 	}
 }
 
-// AffectedSingleBranch walks backward from the lastAffected commits following the first parent.
+// AffectedSingleBranch finds affected commits by walking backward from fixed and lastAffected commits to introduced commit following the first parent.
 func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEvents) []*Commit {
 	logger.InfoContext(ctx, "Starting affected commits (single branch) walking")
 	start := time.Now()

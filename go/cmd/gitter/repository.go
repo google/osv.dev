@@ -891,6 +891,7 @@ func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEven
 
 // runAndParseTags runs input command (git ls-remote or show-ref) and parses tags from stdout into repository structure
 func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[string]SHA1, error) {
+	logger.DebugContext(ctx, "Running git cmd and parsing tags", slog.String("cmd", cmd.String()))
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 
@@ -940,13 +941,17 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 
 	if err := cmd.Wait(); err != nil {
 		// git show-ref returns with exit code 1 if there is no tags (ls-remote return 0)
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			logger.InfoContext(ctx, "No tags found (git show-ref exit code 1)")
 			// We don't consider this an error and can just return the empty tagsMap
 			return tagsMap, nil
 		}
+		
 		return nil, fmt.Errorf("%w: %s", err, stderr.String())
 	}
 
+	logger.DebugContext(ctx, "Finished parsing tags", slog.Int("tags_count", len(tagsMap)))
 	return tagsMap, nil
 }
 

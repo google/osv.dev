@@ -799,6 +799,7 @@ func makeTagsResponse(tagsMap map[string]SHA1) *pb.TagsResponse {
 			Hash:  hash[:],
 		})
 	}
+
 	return resp
 }
 
@@ -817,6 +818,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	// Previously cached invalid repo (does not exist or does not have tags)
 	// Get() will not return if the entry is past its TTL, so we can safely return the same http status code as is.
 	if code, found := invalidRepoCache.Get(url); found {
+		logger.InfoContext(ctx, "Invalid repo cache hit", slog.Int("code", code))
 		w.WriteHeader(code)
 		return
 	}
@@ -825,6 +827,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If repository is recently loaded, we can return the tags directly from the cached repo
 	if cachedRepo, found := repoCache.Get(url); found {
+		logger.InfoContext(ctx, "Repo cache hit, returning cached tags")
 		tagsMap = make(map[string]SHA1)
 		for tag, idx := range cachedRepo.tagToCommit {
 			tagsMap[tag] = cachedRepo.commits[idx].Hash
@@ -835,11 +838,13 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 		// If repoPath is not empty, it means there is a local git directory for this repo on disk
 		// We want to use show-ref instead of ls-remote because it's faster and we don't have to worry about rate limits
 		if repo.repoPath != "" {
+			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch, _ := gFetch.Do(url, func() (any, error) {
 				return nil, FetchRepo(ctx, url, false)
 			}); errFetch != nil {
 				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
 				http.Error(w, "Error fetching repository", http.StatusInternalServerError)
+
 				return
 			}
 
@@ -849,11 +854,13 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 			if errLocal != nil {
 				logger.ErrorContext(ctx, "Error parsing local tags", slog.Any("error", errLocal))
 				http.Error(w, "Error parsing local tags", http.StatusInternalServerError)
+
 				return
 			}
 			tagsMap = tagsMapAny.(map[string]SHA1)
 		} else {
 			// If repo is not on disk, we use ls-remote to get the tags instead
+			logger.DebugContext(ctx, "Local repo not found, using ls-remote")
 			tagsMapAny, errLsRemote, _ := gLsRemote.Do(url, func() (any, error) {
 				return repo.GetRemoteTags(ctx)
 			})
@@ -861,10 +868,12 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 				if isAuthError(errLsRemote) {
 					invalidRepoCache.SetWithTTL(url, http.StatusNotFound, 1, invalidRepoTTL)
 					http.Error(w, "Repository not found", http.StatusNotFound)
+
 					return
 				}
 				logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", errLsRemote))
 				http.Error(w, "Error listing remote tags", http.StatusInternalServerError)
+
 				return
 			}
 			tagsMap = tagsMapAny.(map[string]SHA1)
@@ -872,8 +881,10 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(tagsMap) == 0 {
+		logger.InfoContext(ctx, "No tags in repository")
 		invalidRepoCache.SetWithTTL(url, http.StatusNoContent, 1, invalidRepoTTL)
 		w.WriteHeader(http.StatusNoContent)
+
 		return
 	}
 
@@ -882,6 +893,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.ErrorContext(ctx, "Error marshaling tags response", slog.Any("error", err))
 		http.Error(w, fmt.Sprintf("Error marshaling tags response: %v", err), http.StatusInternalServerError)
+		
 		return
 	}
 

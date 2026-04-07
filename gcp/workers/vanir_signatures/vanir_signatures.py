@@ -334,21 +334,27 @@ def main():
     return
 
   # Update last_run timestamp
-  if not last_run_data:
-    last_run_data = osv.models.JobData(id=JOB_DATA_LAST_RUN)
+  try:
+    if not last_run_data:
+      last_run_data = osv.models.JobData(id=JOB_DATA_LAST_RUN)
 
-  last_run_data.value = current_run
-  last_run_data.put()
+    last_run_data.value = current_run
+    last_run_data.put()
+  except Exception:
+    logging.exception('Failed to update last run timestamp.')
 
   # Update retry list
-  if not retry_list_data:
-    retry_list_data = osv.models.JobData(id=JOB_DATA_RETRY_LIST)
+  try:
+    if not retry_list_data:
+      retry_list_data = osv.models.JobData(id=JOB_DATA_RETRY_LIST)
 
-  retry_list_data.value = list(set(all_failed_ids))
-  retry_list_data.put()
-  if retry_list_data.value:
-    logging.info('Saved %d failed IDs to retry list.',
-                 len(retry_list_data.value))
+    retry_list_data.value = list(set(all_failed_ids))
+    retry_list_data.put()
+    if retry_list_data.value:
+      logging.info('Saved %d failed IDs to retry list.',
+                   len(retry_list_data.value))
+  except Exception:
+    logging.exception('Failed to update retry list.')
 
 
 if __name__ == '__main__':

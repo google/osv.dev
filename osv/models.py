@@ -976,9 +976,8 @@ class Vulnerability(ndb.Model):
 # --- JobData ---
 
 
-class JobData(ndb.Model):
+class JobData(ndb.Expando):
   """Job data."""
-  value = ndb.GenericProperty()
 
 
 # --- Affected versions for matching ---

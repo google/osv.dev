@@ -255,6 +255,51 @@ class VanirSignaturesTest(unittest.TestCase):
     expected_batch2 = [f'VULN-{i}' for i in range(100, 150)]
     mock_process_batch.assert_any_call(expected_batch2, True, 10)
 
+  @mock.patch('osv.models.Vulnerability.query')
+  @mock.patch('vanir_signatures.process_batch')
+  def test_updates_job_data(self, mock_process_batch, mock_vuln_query):
+    """Test that correctly updates JobData."""
+    # Mock query to return nothing
+    mock_query = mock.Mock()
+    mock_vuln_query.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.iter.return_value = []
+
+    # Mock process_batch to return some failed IDs
+    failed_ids = ['FAILED-1', 'FAILED-2']
+    mock_process_batch.return_value = (0, failed_ids)
+
+    # Setup some dummy current batch to be processed
+    with mock.patch(
+        'argparse.ArgumentParser.parse_args',
+        return_value=mock.Mock(
+            dry_run=False, batch_size=100, max_workers=1, hours=None)):
+      # Patch process_batch to be called once with a dummy ID
+      with mock.patch(
+          'vanir_signatures.process_batch',
+          return_value=(0, failed_ids)) as mock_pb:
+        # We need the loop in main to run at least once or have failed IDs from somewhere
+        # Let's mock retry_list_data to have something
+        retry_key = ndb.Key(osv.models.JobData,
+                            vanir_signatures.JOB_DATA_RETRY_LIST)
+        osv.models.JobData(id=retry_key.id(), value=['RETRY-1']).put()
+
+        vanir_signatures.main()
+
+    # Verify last_run was updated
+    last_run_data = ndb.Key(osv.models.JobData,
+                            vanir_signatures.JOB_DATA_LAST_RUN).get()
+    self.assertIsNotNone(last_run_data)
+    self.assertIsInstance(last_run_data.value, datetime.datetime)
+
+    # Verify retry_list was updated with the failed IDs (from mock_pb)
+    retry_list_data = ndb.Key(osv.models.JobData,
+                              vanir_signatures.JOB_DATA_RETRY_LIST).get()
+    self.assertIsNotNone(retry_list_data)
+    # The retry list in main is updated with all_failed_ids
+    # In main(), all_failed_ids is extended with failed_ids from each future.result()
+    self.assertCountEqual(retry_list_data.value, failed_ids)
+
 
 if __name__ == '__main__':
   unittest.main()

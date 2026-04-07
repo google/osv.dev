@@ -335,9 +335,7 @@ def main():
 
   # Update last_run timestamp
   try:
-    if not last_run_data:
-      last_run_data = osv.models.JobData(id=JOB_DATA_LAST_RUN)
-
+    last_run_data = osv.models.JobData(id=JOB_DATA_LAST_RUN)
     last_run_data.value = current_run
     last_run_data.put()
   except Exception:
@@ -345,9 +343,7 @@ def main():
 
   # Update retry list
   try:
-    if not retry_list_data:
-      retry_list_data = osv.models.JobData(id=JOB_DATA_RETRY_LIST)
-
+    retry_list_data = osv.models.JobData(id=JOB_DATA_RETRY_LIST)
     retry_list_data.value = list(set(all_failed_ids))
     retry_list_data.put()
     if retry_list_data.value:

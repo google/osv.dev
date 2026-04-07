@@ -277,8 +277,8 @@ class VanirSignaturesTest(unittest.TestCase):
       # Patch process_batch to be called once with a dummy ID
       with mock.patch(
           'vanir_signatures.process_batch',
-          return_value=(0, failed_ids)) as mock_pb:
-        # We need the loop in main to run at least once or have failed IDs from somewhere
+          return_value=(0, failed_ids)):
+        # We need the loop in main to run at least once or have failed IDs.
         # Let's mock retry_list_data to have something
         retry_key = ndb.Key(osv.models.JobData,
                             vanir_signatures.JOB_DATA_RETRY_LIST)
@@ -292,12 +292,13 @@ class VanirSignaturesTest(unittest.TestCase):
     self.assertIsNotNone(last_run_data)
     self.assertIsInstance(last_run_data.value, datetime.datetime)
 
-    # Verify retry_list was updated with the failed IDs (from mock_pb)
+    # Verify retry_list was updated with the failed IDs.
     retry_list_data = ndb.Key(osv.models.JobData,
                               vanir_signatures.JOB_DATA_RETRY_LIST).get()
     self.assertIsNotNone(retry_list_data)
     # The retry list in main is updated with all_failed_ids
-    # In main(), all_failed_ids is extended with failed_ids from each future.result()
+    # In main(), all_failed_ids is extended with failed_ids from each
+    # future.result()
     self.assertCountEqual(retry_list_data.value, failed_ids)
 
 

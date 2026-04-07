@@ -295,7 +295,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 			},
 		},
 		{
-			name: "Merge DatabaseSpecific versions",
+			name: "Merge DatabaseSpecific extracted events",
 			affected: []*osvschema.Affected{
 				{
 					Ranges: []*osvschema.Range{
@@ -307,7 +307,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v1"),
 										},
@@ -323,7 +323,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v2"),
 										},
@@ -346,7 +346,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v1"),
 											structpb.NewStringValue("v2"),
@@ -360,7 +360,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 			},
 		},
 		{
-			name: "Deduplicate DatabaseSpecific versions",
+			name: "Deduplicate DatabaseSpecific extracted events",
 			affected: []*osvschema.Affected{
 				{
 					Ranges: []*osvschema.Range{
@@ -372,7 +372,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v1"),
 										},
@@ -388,7 +388,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v1"),
 											structpb.NewStringValue("v2"),
@@ -412,7 +412,7 @@ func TestGroupAffectedRanges(t *testing.T) {
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"versions": structpb.NewListValue(&structpb.ListValue{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("v1"),
 											structpb.NewStringValue("v2"),

@@ -257,7 +257,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				successfulRepos = append(successfulRepos, repo)
 				if len(vr.Range.GetEvents()) > 0 {
 					dbSpecificMap := map[string]any{
-						"versions": vr.Range.GetEvents(),
+						"extracted_events": vr.Range.GetEvents(),
 					}
 					if vr.Metadata.CPE != "" {
 						dbSpecificMap["cpe"] = vr.Metadata.CPE
@@ -548,19 +548,14 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 			}
 		}
 
-		metadata := make(map[string]any)
 		if k.CPE != "" {
-			metadata["cpe"] = k.CPE
+			unresolvedRangesMap["cpe"] = k.CPE
 		}
 		if k.Source != "" {
-			metadata["source"] = k.Source
+			unresolvedRangesMap["source"] = k.Source
 		}
 
-		if len(metadata) > 0 {
-			unresolvedRangesMap["metadata"] = metadata
-		}
-
-		unresolvedRangesMap["versions"] = events
+		unresolvedRangesMap["extracted_events"] = events
 		listElements = append(listElements, unresolvedRangesMap)
 	}
 

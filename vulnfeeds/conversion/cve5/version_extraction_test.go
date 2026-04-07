@@ -390,7 +390,7 @@ func TestExtractVersions(t *testing.T) {
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							"source": structpb.NewStringValue("AFFECTED_FIELD"),
-							"versions": {
+							"extracted_events": {
 								Kind: &structpb.Value_ListValue{
 									ListValue: &structpb.ListValue{
 										Values: []*structpb.Value{
@@ -436,7 +436,7 @@ func TestExtractVersions(t *testing.T) {
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							"source": structpb.NewStringValue("AFFECTED_FIELD"),
-							"versions": {
+							"extracted_events": {
 								Kind: &structpb.Value_ListValue{
 									ListValue: &structpb.ListValue{
 										Values: []*structpb.Value{

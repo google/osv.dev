@@ -72,7 +72,7 @@ func GroupRanges(ranges []models.RangeWithMetadata) []models.RangeWithMetadata {
 		if _, exists := groups[key]; !exists {
 			// Initialize with a deep copy of the first range found for this group
 			// We need to be careful about DatabaseSpecific.
-			// We want to keep the "versions" from this first range.
+			// We want to keep the "extracted_events" from this first range.
 			groups[key] = models.RangeWithMetadata{
 				Range: &osvschema.Range{
 					Type:             r.GetType(),
@@ -104,8 +104,8 @@ func GroupRanges(ranges []models.RangeWithMetadata) []models.RangeWithMetadata {
 }
 
 // mergeDatabaseSpecific merges the source DatabaseSpecific into the target DatabaseSpecific.
-// It uses MergeDatabaseSpecificValues for all fields except "versions", which is handled
-// by mergeDatabaseSpecificVersions for deduplication.
+// It uses MergeDatabaseSpecificValues for all fields except "extracted_events", which is handled
+// by mergeDatabaseSpecificExtractedEvents for deduplication.
 func mergeDatabaseSpecific(target *osvschema.Range, source *structpb.Struct) {
 	if source == nil {
 		return
@@ -126,7 +126,7 @@ func mergeDatabaseSpecific(target *osvschema.Range, source *structpb.Struct) {
 	}
 
 	for k, v := range source.GetFields() {
-		if k == "versions" {
+		if k == "extracted_events" {
 			continue // Handled separately
 		}
 		val2 := v.AsInterface()
@@ -145,28 +145,28 @@ func mergeDatabaseSpecific(target *osvschema.Range, source *structpb.Struct) {
 		}
 	}
 
-	mergeDatabaseSpecificVersions(target, source)
+	mergeDatabaseSpecificExtractedEvents(target, source)
 }
 
-// mergeDatabaseSpecificVersions merges the "versions" field from the source DatabaseSpecific
+// mergeDatabaseSpecificExtractedEvents merges the "extracted_events" field from the source DatabaseSpecific
 // into the target DatabaseSpecific.
 //
 // Examples:
-//  1. Target: nil, Source: {"versions": ["v1", "v2"]}
-//     Result: Target becomes {"versions": ["v1", "v2"]}
-//  2. Target: {}, Source: {"versions": ["v1", "v2"]}
-//     Result: Target becomes {"versions": ["v1", "v2"]}
-//  3. Target: {"versions": ["v1", "v3"]}, Source: {"versions": ["v1", "v2"]}
-//     Result: Target becomes {"versions": ["v1", "v3", "v2"]} (order might vary for new additions, but existing order is preserved)
-//  4. Target: {"other": "data"}, Source: {"versions": ["v1", "v2"]}
-//     Result: Target becomes {"other": "data", "versions": ["v1", "v2"]}
-//  5. Target: {"versions": ["v1", "v2"]}, Source: nil
-//     Result: Target remains {"versions": ["v1", "v2"]}
-func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Struct) {
+//  1. Target: nil, Source: {"extracted_events": ["v1", "v2"]}
+//     Result: Target becomes {"extracted_events": ["v1", "v2"]}
+//  2. Target: {}, Source: {"extracted_events": ["v1", "v2"]}
+//     Result: Target becomes {"extracted_events": ["v1", "v2"]}
+//  3. Target: {"extracted_events": ["v1", "v3"]}, Source: {"extracted_events": ["v1", "v2"]}
+//     Result: Target becomes {"extracted_events": ["v1", "v3", "v2"]} (order might vary for new additions, but existing order is preserved)
+//  4. Target: {"other": "data"}, Source: {"extracted_events": ["v1", "v2"]}
+//     Result: Target becomes {"other": "data", "extracted_events": ["v1", "v2"]}
+//  5. Target: {"extracted_events": ["v1", "v2"]}, Source: nil
+//     Result: Target remains {"extracted_events": ["v1", "v2"]}
+func mergeDatabaseSpecificExtractedEvents(target *osvschema.Range, source *structpb.Struct) {
 	if source == nil {
 		return
 	}
-	sourceVersions := source.GetFields()["versions"]
+	sourceVersions := source.GetFields()["extracted_events"]
 	if sourceVersions == nil {
 		return
 	}
@@ -185,19 +185,19 @@ func mergeDatabaseSpecificVersions(target *osvschema.Range, source *structpb.Str
 		target.DatabaseSpecific.Fields = targetFields
 	}
 
-	targetVersions := targetFields["versions"]
+	targetVersions := targetFields["extracted_events"]
 	if targetVersions == nil {
-		targetFields["versions"] = sourceVersions
+		targetFields["extracted_events"] = sourceVersions
 		return
 	}
 
-	// Both have versions, merge them
-	// Assuming versions is a ListValue
+	// Both have extracted events, merge them
+	// Assuming extracted_events is a ListValue
 	if targetVersions.GetListValue() != nil && sourceVersions.GetListValue() != nil {
-		// Append source versions to target versions
+		// Append source events to target events
 		targetVersions.GetListValue().Values = append(targetVersions.GetListValue().GetValues(), sourceVersions.GetListValue().GetValues()...)
 
-		// Deduplicate versions
+		// Deduplicate events
 		uniqueVersions := make([]*structpb.Value, 0, len(targetVersions.GetListValue().GetValues()))
 		seenVersions := make(map[string]bool)
 

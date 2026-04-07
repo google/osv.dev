@@ -26,6 +26,8 @@ EcosystemPURL = namedtuple('EcosystemPURL', ['type', 'namespace'])
 ECOSYSTEM_PURL_DATA = {
     'AlmaLinux':
         EcosystemPURL('rpm', 'almalinux'),
+    'Azure Linux':
+        EcosystemPURL('rpm', 'azure-linux'),
     'Alpaquita':
         EcosystemPURL('apk', 'alpaquita'),
     'Alpine':

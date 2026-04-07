@@ -29,6 +29,10 @@
     {
       "vulns": [
         {
+          "id": "GHSA-44p7-9xx4-hf2g",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-9phm-fm57-rhg8",
           "modified": "<RFC3339 date with the year 2026>"
         },

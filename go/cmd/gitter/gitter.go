@@ -668,9 +668,24 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
 	cherrypickFixed := body.GetDetectCherrypicksFixed()
 	cherrypickLimit := body.GetDetectCherrypicksLimit()
+	considerAllBranches := body.GetConsiderAllBranches()
+
+	if !considerAllBranches && (cherrypickFixed || cherrypickIntro) {
+		http.Error(w, "Cannot detect cherrypicks without considering all branches", http.StatusBadRequest)
+		return
+	}
 
 	ctx := context.WithValue(r.Context(), urlKey, repoURL)
-	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed), slog.Bool("cherrypickLimit", cherrypickLimit))
+	logger.InfoContext(ctx, "Received request: /affected-commits",
+		slog.Any("introduced", se.Introduced),
+		slog.Any("fixed", se.Fixed),
+		slog.Any("last_affected", se.LastAffected),
+		slog.Any("limit", se.Limit),
+		slog.Bool("cherrypickIntro", cherrypickIntro),
+		slog.Bool("cherrypickFixed", cherrypickFixed),
+		slog.Bool("cherrypickLimit", cherrypickLimit),
+		slog.Bool("considerAllBranches", considerAllBranches),
+	)
 
 	select {
 	case semaphore <- struct{}{}:
@@ -694,7 +709,11 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if len(se.Limit) > 0 {
 		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
 	} else {
-		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		if considerAllBranches {
+			affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		} else {
+			affectedCommits = repo.AffectedSingleBranch(ctx, se)
+		}
 	}
 
 	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))

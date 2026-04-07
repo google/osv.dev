@@ -214,6 +214,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 
 		switch resp.StatusCode / 100 {
 		// 4xx response codes are an instant fail.
+		// This will be retried next time the conversion is run so 429 errors may be resolved.
 		case 4:
 			return fmt.Errorf("bad response: %v", resp.StatusCode)
 		// 5xx response codes are retriable.

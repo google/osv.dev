@@ -739,7 +739,6 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 
 // walkRevFirstParent walks backward from the walkFrom commits following the first parent until it hits an introduced commit.
 // If a path does not encounter an introduced, it is discarded.
-// This is effectively git rev-list --first-parent introduced..walkFrom but also including introduced.
 // Returns a list of affected commits
 func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Commit {
 	introMap := make([]bool, len(r.commits))

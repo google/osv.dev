@@ -947,22 +947,25 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 			// We don't consider this an error and can just return the empty tagsMap
 			return tagsMap, nil
 		}
-		
+
 		return nil, fmt.Errorf("%w: %s", err, stderr.String())
 	}
 
 	logger.DebugContext(ctx, "Finished parsing tags", slog.Int("tags_count", len(tagsMap)))
+
 	return tagsMap, nil
 }
 
 // GetLocalTags uses git show-ref to get tags from local git directory
 func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) {
 	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags")
+
 	return r.runAndParseTags(ctx, cmd)
 }
 
 // GetRemoteTags uses git ls-remote to get tags from remote git repository
 func (r *Repository) GetRemoteTags(ctx context.Context) (map[string]SHA1, error) {
 	cmd := prepareCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "ls-remote", "--tags", "--quiet", r.URL)
+	
 	return r.runAndParseTags(ctx, cmd)
 }

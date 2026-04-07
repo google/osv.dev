@@ -732,7 +732,7 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 		}
 	}
 
-	logger.InfoContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, resEvents.cherrypicked
 }
@@ -788,6 +788,7 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 			affectedCommits = append(affectedCommits, r.commits[idx])
 		}
 	}
+
 	return affectedCommits
 }
 
@@ -815,7 +816,7 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 	}
 
 	// Walk from the first parent of limit, as limit commits are exclusive from affected range
-	var walkFrom []int
+	walkFrom := make([]int, 0, len(limit))
 	for _, idx := range limit {
 		commit := r.commits[idx]
 		if len(commit.Parents) > 0 {
@@ -824,9 +825,8 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 	}
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
-
 	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
-	logger.InfoContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, cherrypickedHashes{
 		Introduced: cherrypickedIntroHashes,
@@ -844,20 +844,18 @@ func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEven
 	lastAffected := r.parseHashes(ctx, se.LastAffected)
 
 	// Walk from the parent of fixed commits and lastAffected commits
-	var walkFrom []int
+	walkFrom := make([]int, 0, len(fixed)+len(lastAffected))
 	for _, idx := range fixed {
 		commit := r.commits[idx]
 		if len(commit.Parents) > 0 {
 			walkFrom = append(walkFrom, commit.Parents[0])
 		}
 	}
-	for _, idx := range lastAffected {
-		walkFrom = append(walkFrom, idx)
-	}
+	walkFrom = append(walkFrom, lastAffected...)
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
 	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
-	logger.InfoContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits
 }

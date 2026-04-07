@@ -99,6 +99,7 @@ func TestCVEToOSV_429(t *testing.T) {
 
 func TestNVDSnapshot(t *testing.T) {
 	testPath := "test.json"
+	//TODO: individually test records
 	file, err := os.Open(testPath)
 
 	if err != nil {

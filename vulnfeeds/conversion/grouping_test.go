@@ -518,6 +518,54 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 			},
 		},
 		{
+			name:           "No resolved ranges, multiple commits for multiple repos grouped and sorted",
+			resolvedRanges: nil,
+			commits: []models.AffectedCommit{
+				{
+					Repo:       "repo_b",
+					Introduced: "0",
+				},
+				{
+					Repo:  "repo_b",
+					Fixed: "1.0",
+				},
+				{
+					Repo:       "repo_a",
+					Introduced: "0.5",
+				},
+			},
+			successfulRepos: []string{"repo_a", "repo_b"},
+			want: &osvschema.Affected{
+				Ranges: []*osvschema.Range{
+					{
+						Events: []*osvschema.Event{
+							{Introduced: "0.5"},
+						},
+						Repo: "repo_a",
+						Type: osvschema.Range_GIT,
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
+						},
+					},
+					{
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "1.0"},
+						},
+						Repo: "repo_b",
+						Type: osvschema.Range_GIT,
+						DatabaseSpecific: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"source": structpb.NewStringValue("REFERENCES"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Duplicate events are deduplicated",
 			resolvedRanges: []*osvschema.Range{
 				{

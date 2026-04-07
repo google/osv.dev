@@ -330,17 +330,34 @@ func MergeRangesAndCreateAffected(
 		}
 	}
 
-	// if there are no resolved version but there are commits, we should create a range for each commit
+	// if there are no resolved version but there are commits, we should group them by repository
 	if len(resolvedRanges) == 0 && len(commits) > 0 {
+		repoToRange := make(map[string]*osvschema.Range)
+		var repoOrder []string
+
 		for _, commit := range commits {
-			vr := BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, commit.Repo)
-			vr.DatabaseSpecific = &structpb.Struct{
-				Fields: map[string]*structpb.Value{
-					"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
-				},
+			repo := commit.Repo
+			if vr, ok := repoToRange[repo]; !ok {
+				vr := BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, repo)
+				vr.DatabaseSpecific = &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
+					},
+				}
+				repoToRange[repo] = vr
+				repoOrder = append(repoOrder, repo)
+				metrics.ResolvedRangesCount++
+			} else {
+				event := convertCommitToEvent(commit)
+				if event != nil {
+					addEventToRange(vr, event)
+				}
 			}
-			newResolvedRanges = append(newResolvedRanges, vr)
-			metrics.ResolvedRangesCount++
+		}
+
+		slices.Sort(repoOrder)
+		for _, repo := range repoOrder {
+			newResolvedRanges = append(newResolvedRanges, repoToRange[repo])
 		}
 	}
 

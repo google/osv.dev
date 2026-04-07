@@ -2401,6 +2401,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-5704",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DLA-3755-1",
           "modified": "<RFC3339 date with the year 2026>"
         }

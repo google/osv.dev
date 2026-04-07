@@ -591,6 +591,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 
 func TestCVE5Snapshot(t *testing.T) {
 	testDir := "../../test_data/cve5"
+	//TODO: split this into individual records.
 	files, err := os.ReadDir(testDir)
 	if err != nil {
 		t.Fatalf("Failed to read test directory %s: %v", testDir, err)

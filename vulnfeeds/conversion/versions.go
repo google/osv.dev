@@ -1161,6 +1161,9 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 
+		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
+			continue
+		}
 		// Check if the repo URL has changed (e.g. via redirect)
 		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {

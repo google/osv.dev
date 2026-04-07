@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -317,6 +318,114 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 			}
 			if !tt.wantErr && !cmp.Equal(got, tt.want) {
 				t.Errorf("MergeDatabaseSpecificValues() mismatch (-want +got):\n%s", cmp.Diff(tt.want, got))
+			}
+		})
+	}
+}
+
+func TestCreateUnresolvedRanges(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []models.RangeWithMetadata
+		want  *structpb.ListValue
+	}{
+		{
+			name:  "Empty ranges",
+			input: []models.RangeWithMetadata{},
+			want:  nil,
+		},
+		{
+			name: "Multiple ranges with different sources and CPEs, sorted and grouped correctly",
+			input: []models.RangeWithMetadata{
+				{
+					Range: &osvschema.Range{
+						Events: []*osvschema.Event{
+							{Introduced: "1.0"},
+						},
+					},
+					Metadata: models.Metadata{
+						Source: models.VersionSourceDescription,
+						CPE:    "cpe:2.3:a:example:app:*:*:*:*:*:*:*:*",
+					},
+				},
+				{
+					Range: &osvschema.Range{
+						Events: []*osvschema.Event{
+							{Fixed: "2.0"},
+						},
+					},
+					Metadata: models.Metadata{
+						Source: models.VersionSourceCPE,
+						CPE:    "cpe:2.3:a:another:app:*:*:*:*:*:*:*:*",
+					},
+				},
+			},
+			want: &structpb.ListValue{
+				Values: []*structpb.Value{
+					{
+						Kind: &structpb.Value_StructValue{
+							StructValue: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"cpe":    structpb.NewStringValue("cpe:2.3:a:another:app:*:*:*:*:*:*:*:*"),
+									"source": structpb.NewStringValue(string(models.VersionSourceCPE)),
+									"extracted_events": {
+										Kind: &structpb.Value_ListValue{
+											ListValue: &structpb.ListValue{
+												Values: []*structpb.Value{
+													{
+														Kind: &structpb.Value_StructValue{
+															StructValue: &structpb.Struct{
+																Fields: map[string]*structpb.Value{
+																	"fixed": structpb.NewStringValue("2.0"),
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Kind: &structpb.Value_StructValue{
+							StructValue: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"cpe":    structpb.NewStringValue("cpe:2.3:a:example:app:*:*:*:*:*:*:*:*"),
+									"source": structpb.NewStringValue(string(models.VersionSourceDescription)),
+									"extracted_events": {
+										Kind: &structpb.Value_ListValue{
+											ListValue: &structpb.ListValue{
+												Values: []*structpb.Value{
+													{
+														Kind: &structpb.Value_StructValue{
+															StructValue: &structpb.Struct{
+																Fields: map[string]*structpb.Value{
+																	"introduced": structpb.NewStringValue("1.0"),
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CreateUnresolvedRanges(tt.input)
+			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("CreateUnresolvedRanges() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

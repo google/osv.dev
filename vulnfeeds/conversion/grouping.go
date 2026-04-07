@@ -270,11 +270,12 @@ func cleanEvents(events []*osvschema.Event) []*osvschema.Event {
 // Arguments:
 //   - resolvedRanges: A slice of resolved OSV ranges to be merged.
 //   - commits: A slice of affected commits to be converted into events and added to ranges.
-//   - successfulRepos: A slice of repository URLs that were successfully processed. 
-							// FYI: this argument exists because navigating and extracting the repository information
-							// when it is nested inside the range is a pain, considering we don't want to use
-							// maps for storing information due to their non-deterministic behaviour in conjunction
-							// with protojson
+//   - successfulRepos: A slice of repository URLs that were successfully processed.
+//
+// FYI: this argument exists because navigating and extracting the repository information
+// when it is nested inside the range is a pain, considering we don't want to use
+// maps for storing information due to their non-deterministic behaviour in conjunction
+// with protojson
 //   - metrics: A pointer to ConversionMetrics to track the outcome and notes.
 func MergeRangesAndCreateAffected(
 	resolvedRanges []models.RangeWithMetadata,
@@ -361,7 +362,7 @@ func MergeRangesAndCreateAffected(
 			}
 		}
 
-		// Make sure that packages/repos are added deterministically. 
+		// Make sure that packages/repos are added deterministically.
 		// doesn't use successful repos as that is more-or-less just a resolvedRanges-specific crutch
 		slices.Sort(repoOrder)
 		for _, repo := range repoOrder {

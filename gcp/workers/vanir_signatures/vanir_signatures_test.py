@@ -276,8 +276,7 @@ class VanirSignaturesTest(unittest.TestCase):
             dry_run=False, batch_size=100, max_workers=1, hours=None)):
       # Patch process_batch to be called once with a dummy ID
       with mock.patch(
-          'vanir_signatures.process_batch',
-          return_value=(0, failed_ids)):
+          'vanir_signatures.process_batch', return_value=(0, failed_ids)):
         # We need the loop in main to run at least once or have failed IDs.
         # Let's mock retry_list_data to have something
         retry_key = ndb.Key(osv.models.JobData,

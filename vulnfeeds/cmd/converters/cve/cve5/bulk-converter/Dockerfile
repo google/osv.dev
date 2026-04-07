@@ -25,7 +25,7 @@ RUN go mod download && go mod verify
 COPY ./ /src/
 RUN go build -o cve-bulk-converter ./cmd/converters/cve/cve5/bulk-converter/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:0b8e46240c0eb9d38f1af094f9adb73939b0ed26f0eb36b12d88ab1a33d54b33
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:3293540b35a930023e12066437a939a7ad6f27f01c6e65f52558534682f57ca5
 RUN apk --no-cache add jq
 
 WORKDIR /root/

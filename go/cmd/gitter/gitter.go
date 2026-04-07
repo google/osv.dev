@@ -670,9 +670,9 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	cherrypickLimit := body.GetDetectCherrypicksLimit()
 	considerAllBranches := body.GetConsiderAllBranches()
 
-	if !considerAllBranches && (cherrypickFixed || cherrypickIntro) {
-		http.Error(w, "Cannot detect cherrypicks without considering all branches", http.StatusBadRequest)
-		return
+	// If cherrypick is true, consider all branches must be true
+	if cherrypickIntro || cherrypickFixed {
+		considerAllBranches = true
 	}
 
 	ctx := context.WithValue(r.Context(), urlKey, repoURL)
@@ -706,14 +706,13 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	var affectedCommits []*Commit
 	var cherrypicks cherrypickedHashes
 
-	if len(se.Limit) > 0 {
+	switch {
+	case len(se.Limit) > 0:
 		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
-	} else {
-		if considerAllBranches {
-			affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
-		} else {
-			affectedCommits = repo.AffectedSingleBranch(ctx, se)
-		}
+	case considerAllBranches:
+		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+	default:
+		affectedCommits = repo.AffectedSingleBranch(ctx, se)
 	}
 
 	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))

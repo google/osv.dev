@@ -277,8 +277,8 @@ func MergeRangesAndCreateAffected(
 	commits []models.AffectedCommit,
 	successfulRepos []string,
 	metrics *models.ConversionMetrics,
-) *osvschema.Affected {
-	var newResolvedRanges []*osvschema.Range
+) []*osvschema.Affected {
+	var newAffected []*osvschema.Affected
 	// Combine the ranges appropriately
 	if len(resolvedRanges) > 0 {
 		slices.Sort(successfulRepos)
@@ -325,7 +325,9 @@ func MergeRangesAndCreateAffected(
 				}
 			}
 			if mergedRange != nil {
-				newResolvedRanges = append(newResolvedRanges, mergedRange)
+				newAffected = append(newAffected, &osvschema.Affected{
+					Ranges: []*osvschema.Range{mergedRange},
+				})
 			}
 		}
 	}
@@ -357,12 +359,10 @@ func MergeRangesAndCreateAffected(
 
 		slices.Sort(repoOrder)
 		for _, repo := range repoOrder {
-			newResolvedRanges = append(newResolvedRanges, repoToRange[repo])
+			newAffected = append(newAffected, &osvschema.Affected{
+				Ranges: []*osvschema.Range{repoToRange[repo]},
+			})
 		}
-	}
-
-	newAffected := &osvschema.Affected{
-		Ranges: newResolvedRanges,
 	}
 
 	return newAffected

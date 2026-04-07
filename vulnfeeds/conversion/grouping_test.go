@@ -700,8 +700,14 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 			for _, r := range tt.resolvedRanges {
 				rwms = append(rwms, models.RangeWithMetadata{Range: r})
 			}
+			var want []*osvschema.Affected
+			for _, r := range tt.want.GetRanges() {
+				want = append(want, &osvschema.Affected{
+					Ranges: []*osvschema.Range{r},
+				})
+			}
 			got := MergeRangesAndCreateAffected(rwms, tt.commits, tt.successfulRepos, &models.ConversionMetrics{})
-			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
+			if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
 				t.Errorf("MergeRangesAndCreateAffected() mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -88,7 +88,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
 	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
-	v.Affected = append(v.Affected, affected)
+	v.Affected = append(v.Affected, affected...)
 
 	if len(unresolvedRanges) > 0 {
 		unresolvedRangesList := c.CreateUnresolvedRanges(unresolvedRanges)

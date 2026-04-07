@@ -136,7 +136,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
 	affected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
-	v.Affected = append(v.Affected, affected)
+	v.Affected = append(v.Affected, affected...)
 
 	unresolvedRangesList := c.CreateUnresolvedRanges(unresolvedRanges)
 	if unresolvedRangesList != nil {

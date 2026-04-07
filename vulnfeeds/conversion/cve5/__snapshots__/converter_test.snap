@@ -1,9 +1,6 @@
 
 [TestConvertAndExportCVEToOSV/disputed_record - 1]
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "unknown",
     "isDisputed": true,
@@ -1393,9 +1390,6 @@
   "summary": "Tokio's reject_remote_clients configuration may get dropped when creating a Windows named pipe"
 }
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "mitre",
     "osv_generated_from": "unknown"
@@ -1437,9 +1431,6 @@
   "schema_version": "1.7.3"
 }
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "mitre",
     "osv_generated_from": "unknown"
@@ -1505,9 +1496,6 @@
   "schema_version": "1.7.3"
 }
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "redhat",
     "cwe_ids": [
@@ -1597,9 +1585,6 @@
   ]
 }
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "redhat",
     "cwe_ids": [
@@ -1638,9 +1623,6 @@
   "schema_version": "1.7.3"
 }
 {
-  "affected": [
-    {}
-  ],
   "database_specific": {
     "cna_assigner": "redhat",
     "cwe_ids": [

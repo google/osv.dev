@@ -186,11 +186,13 @@ class AffectedCommitsRequest(_message.Message):
     DETECT_CHERRYPICKS_FIXED_FIELD_NUMBER: _builtins.int
     DETECT_CHERRYPICKS_LIMIT_FIELD_NUMBER: _builtins.int
     FORCE_UPDATE_FIELD_NUMBER: _builtins.int
+    CONSIDER_ALL_BRANCHES_FIELD_NUMBER: _builtins.int
     url: _builtins.str
     detect_cherrypicks_introduced: _builtins.bool
     detect_cherrypicks_fixed: _builtins.bool
     detect_cherrypicks_limit: _builtins.bool
     force_update: _builtins.bool
+    consider_all_branches: _builtins.bool
     @_builtins.property
     def events(self) -> _containers.RepeatedCompositeFieldContainer[Global___Event]: ...
     def __init__(
@@ -202,8 +204,9 @@ class AffectedCommitsRequest(_message.Message):
         detect_cherrypicks_fixed: _builtins.bool = ...,
         detect_cherrypicks_limit: _builtins.bool = ...,
         force_update: _builtins.bool = ...,
+        consider_all_branches: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["detect_cherrypicks_fixed", b"detect_cherrypicks_fixed", "detect_cherrypicks_introduced", b"detect_cherrypicks_introduced", "detect_cherrypicks_limit", b"detect_cherrypicks_limit", "events", b"events", "force_update", b"force_update", "url", b"url"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["consider_all_branches", b"consider_all_branches", "detect_cherrypicks_fixed", b"detect_cherrypicks_fixed", "detect_cherrypicks_introduced", b"detect_cherrypicks_introduced", "detect_cherrypicks_limit", b"detect_cherrypicks_limit", "events", b"events", "force_update", b"force_update", "url", b"url"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___AffectedCommitsRequest: _TypeAlias = AffectedCommitsRequest  # noqa: Y015

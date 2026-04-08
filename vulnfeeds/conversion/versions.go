@@ -565,6 +565,68 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 	return commits, nil
 }
 
+// ExtractVersionFromCompareURL parses a GitHub/GitLab compare URL and returns the
+// introduced version, fixed version, and repository URL.
+// Returns an error if the URL is not a parseable compare URL with a version range.
+// Example: https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0
+func ExtractVersionFromCompareURL(u string) (introduced, fixed, repo string, err error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	if !strings.Contains(parsedURL.Path, "compare") {
+		return "", "", "", fmt.Errorf("not a compare URL: %s", u)
+	}
+
+	repo, err = Repo(u)
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to extract repo from %s: %w", u, err)
+	}
+
+	// Find the "compare" segment in the path and get the version range from the next part.
+	pathParts := strings.Split(parsedURL.Path, "/")
+	for i, part := range pathParts {
+		if part != "compare" || i+1 >= len(pathParts) {
+			continue
+		}
+		compareStr := pathParts[i+1]
+
+		var parts []string
+		if strings.Contains(compareStr, "...") {
+			parts = strings.SplitN(compareStr, "...", 2)
+		} else if strings.Contains(compareStr, "..") {
+			parts = strings.SplitN(compareStr, "..", 2)
+		}
+
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			return parts[0], parts[1], repo, nil
+		}
+
+		return "", "", "", fmt.Errorf("could not parse version range from compare URL: %s", u)
+	}
+
+	return "", "", "", fmt.Errorf("could not find compare segment in URL: %s", u)
+}
+
+// ExtractVersionsFromCompareURLs iterates over the provided references and extracts
+// ECOSYSTEM version ranges from GitHub/GitLab compare URLs. For a URL like:
+// https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0
+// it returns a range with introduced=v9.0.0 and fixed=v10.1.0.
+func ExtractVersionsFromCompareURLs(refs []models.Reference) []*osvschema.Range {
+	var ranges []*osvschema.Range
+	for _, ref := range refs {
+		introduced, fixed, _, err := ExtractVersionFromCompareURL(ref.URL)
+		if err != nil {
+			continue
+		}
+		vr := BuildVersionRange(introduced, "", fixed)
+		ranges = append(ranges, vr)
+	}
+
+	return ranges
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
@@ -922,6 +984,28 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 				}
 				v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
 			}
+		}
+	}
+
+	// If no versions were found from CPEs, try to infer introduced/fixed versions
+	// from compare URLs in the references (e.g. github.com/.../compare/v1.0...v2.0).
+	if len(v.AffectedVersions) == 0 {
+		for _, ref := range cve.References {
+			introduced, fixed, _, err := ExtractVersionFromCompareURL(ref.URL)
+			if err != nil {
+				continue
+			}
+			possibleNewAffectedVersion := models.AffectedVersion{
+				Introduced: introduced,
+				Fixed:      fixed,
+			}
+			if slices.Contains(v.AffectedVersions, possibleNewAffectedVersion) {
+				continue
+			}
+			v.AffectedVersions = append(v.AffectedVersions, possibleNewAffectedVersion)
+		}
+		if len(v.AffectedVersions) > 0 {
+			metrics.AddNote("Extracted versions from compare URLs: %v", v.AffectedVersions)
 		}
 	}
 

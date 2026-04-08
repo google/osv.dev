@@ -1816,3 +1816,133 @@ func TestVendorProduct_UnmarshalText(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractVersionFromCompareURL(t *testing.T) {
+	tests := []struct {
+		description        string
+		inputURL           string
+		expectedIntroduced string
+		expectedFixed      string
+		expectedRepo       string
+		expectError        bool
+	}{
+		{
+			description:        "GitHub compare URL with three-dot range",
+			inputURL:           "https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0",
+			expectedIntroduced: "v9.0.0",
+			expectedFixed:      "v10.1.0",
+			expectedRepo:       "https://github.com/JSONPath-Plus/JSONPath",
+		},
+		{
+			description:        "GitHub compare URL with v-prefixed versions",
+			inputURL:           "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
+			expectedIntroduced: "v0.26.1",
+			expectedFixed:      "v0.26.2",
+			expectedRepo:       "https://github.com/kovidgoyal/kitty",
+		},
+		{
+			description:        "GitLab compare URL with three-dot range and query params",
+			inputURL:           "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master?from_project_id=396557&straight=false",
+			expectedIntroduced: "development",
+			expectedFixed:      "master",
+			expectedRepo:       "https://gitlab.com/mayan-edms/mayan-edms",
+		},
+		{
+			description:        "GitLab compare URL with ambiguous version and branch",
+			inputURL:           "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedIntroduced: "7.x-3.21",
+			expectedFixed:      "7.x-3.x",
+			expectedRepo:       "https://git.drupalcode.org/project/views",
+		},
+		{
+			description: "non-compare URL returns error",
+			inputURL:    "https://github.com/foo/bar/commit/abc123",
+			expectError: true,
+		},
+		{
+			description: "compare URL without version range returns error",
+			inputURL:    "https://github.com/foo/bar/compare/",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			gotIntroduced, gotFixed, gotRepo, err := ExtractVersionFromCompareURL(tc.inputURL)
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("ExtractVersionFromCompareURL(%q) expected error but got nil", tc.inputURL)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("ExtractVersionFromCompareURL(%q) unexpected error: %v", tc.inputURL, err)
+				return
+			}
+			if gotIntroduced != tc.expectedIntroduced {
+				t.Errorf("ExtractVersionFromCompareURL(%q) introduced = %q, want %q", tc.inputURL, gotIntroduced, tc.expectedIntroduced)
+			}
+			if gotFixed != tc.expectedFixed {
+				t.Errorf("ExtractVersionFromCompareURL(%q) fixed = %q, want %q", tc.inputURL, gotFixed, tc.expectedFixed)
+			}
+			if gotRepo != tc.expectedRepo {
+				t.Errorf("ExtractVersionFromCompareURL(%q) repo = %q, want %q", tc.inputURL, gotRepo, tc.expectedRepo)
+			}
+		})
+	}
+}
+
+func TestExtractVersionsFromCompareURLs(t *testing.T) {
+	tests := []struct {
+		description    string
+		inputRefs      []models.Reference
+		expectedRanges int
+	}{
+		{
+			description: "single compare URL reference",
+			inputRefs: []models.Reference{
+				{URL: "https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0"},
+			},
+			expectedRanges: 1,
+		},
+		{
+			description: "multiple references with one compare URL",
+			inputRefs: []models.Reference{
+				{URL: "https://nvd.nist.gov/vuln/detail/CVE-2024-21534"},
+				{URL: "https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0"},
+				{URL: "https://github.com/JSONPath-Plus/JSONPath/issues/123"},
+			},
+			expectedRanges: 1,
+		},
+		{
+			description: "multiple compare URLs",
+			inputRefs: []models.Reference{
+				{URL: "https://github.com/foo/bar/compare/v1.0.0...v1.0.1"},
+				{URL: "https://github.com/foo/bar/compare/v2.0.0...v2.0.1"},
+			},
+			expectedRanges: 2,
+		},
+		{
+			description: "no compare URL references",
+			inputRefs: []models.Reference{
+				{URL: "https://nvd.nist.gov/vuln/detail/CVE-2024-21534"},
+				{URL: "https://github.com/foo/bar/commit/abc123def456"},
+			},
+			expectedRanges: 0,
+		},
+		{
+			description:    "empty references",
+			inputRefs:      []models.Reference{},
+			expectedRanges: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			got := ExtractVersionsFromCompareURLs(tc.inputRefs)
+			if len(got) != tc.expectedRanges {
+				t.Errorf("ExtractVersionsFromCompareURLs() returned %d ranges, want %d; got: %+v", len(got), tc.expectedRanges, got)
+			}
+		})
+	}
+}

@@ -112,6 +112,7 @@ const (
 	VersionSourceCPE         VersionSource = "CPEVERS"
 	VersionSourceDescription VersionSource = "DESCRVERS"
 	VersionSourceRefs        VersionSource = "REFS"
+	VersionSourceCompareURL  VersionSource = "COMPAREURL"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {

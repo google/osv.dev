@@ -97,6 +97,24 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, direc
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceRefs)
 	}
 
+	// Extract version ranges from compare URLs (e.g. github.com/.../compare/v1.0...v2.0)
+	// before falling back to text description extraction.
+	if len(resolvedRanges) == 0 {
+		compareRanges := c.ExtractVersionsFromCompareURLs(cve.References)
+		if len(compareRanges) > 0 {
+			metrics.AddNote("Extracted versions from compare URLs: %v", compareRanges)
+			r, un, sR := processRanges(compareRanges, repos, metrics, cache, models.VersionSourceCompareURL)
+			if metrics.Outcome == models.Error {
+				return models.Error
+			}
+			resolvedRanges = append(resolvedRanges, r...)
+			unresolvedRanges = append(unresolvedRanges, un...)
+			for _, s := range sR {
+				successfulRepos[s] = true
+			}
+		}
+	}
+
 	// Extract Versions From Text if no CPE versions found
 	if len(resolvedRanges) == 0 {
 		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics)

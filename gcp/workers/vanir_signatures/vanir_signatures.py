@@ -74,9 +74,9 @@ def _generate_vanir_signatures_batch(
 
     return results
 
-  except Exception:
-    logging.exception('Failed to generate Vanir signatures for batch of %d',
-                      len(vulnerability_pbs))
+  except Exception as e:
+    logging.exception('Failed to generate Vanir signatures for batch of %d: %s',
+                      len(vulnerability_pbs), e)
     return {vuln_pb.id: [vuln_pb] for vuln_pb in vulnerability_pbs}
 
 
@@ -208,9 +208,9 @@ def process_batch(vuln_ids: list[str],
     try:
       osv.gcs.upload_vulnerability(vuln_pb, gen)
       updated_count += 1
-    except Exception:
-      logging.exception('Failed upload for %s. Adding to retry list.',
-                        vuln_pb.id)
+    except Exception as e:
+      logging.exception('Failed upload for %s. Adding to retry list: %s',
+                        vuln_pb.id, e)
       failed_ids.append(vuln_pb.id)
       continue
 
@@ -320,8 +320,9 @@ def main():
           total_generated_count += generated
           all_failed_ids.extend(failed_ids)
           total_processed_count += len(future_to_batch[future])
-        except Exception:
-          logging.exception('Failed to process a batch of vulnerabilities')
+        except Exception as e:
+          logging.exception('Failed to process a batch of vulnerabilities: %s',
+                            e)
 
   logging.info('Processed %d vulnerabilities, generated %d new signatures.',
                total_processed_count, total_generated_count)
@@ -338,8 +339,8 @@ def main():
     last_run_data = osv.models.JobData(id=JOB_DATA_LAST_RUN)
     last_run_data.value = current_run
     last_run_data.put()
-  except Exception:
-    logging.exception('Failed to update last run timestamp.')
+  except Exception as e:
+    logging.exception('Failed to update last run timestamp: %s', e)
 
   # Update retry list
   try:
@@ -349,8 +350,8 @@ def main():
     if retry_list_data.value:
       logging.info('Saved %d failed IDs to retry list.',
                    len(retry_list_data.value))
-  except Exception:
-    logging.exception('Failed to update retry list.')
+  except Exception as e:
+    logging.exception('Failed to update retry list: %s', e)
 
 
 if __name__ == '__main__':

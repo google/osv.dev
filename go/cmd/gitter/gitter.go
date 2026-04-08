@@ -210,9 +210,11 @@ func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
 	case semaphore <- struct{}{}:
 		defer func() { <-semaphore }()
 		logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
 		return f()
 	case <-ctx.Done():
 		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		
 		return nil, ctx.Err()
 	}
 }

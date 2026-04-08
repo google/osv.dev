@@ -111,7 +111,7 @@ func saveRepositoryCache(cachePath string, repo *Repository) (int, error) {
 		return 0, err
 	}
 
-	return len(cache.Commits), nil
+	return len(cache.GetCommits()), nil
 }
 
 func loadRepositoryCache(cachePath string) (*pb.RepositoryCache, error) {

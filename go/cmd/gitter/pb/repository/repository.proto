@@ -54,4 +54,5 @@ message AffectedCommitsRequest {
     bool detect_cherrypicks_fixed = 4;
     bool detect_cherrypicks_limit = 5;
     bool force_update = 6;
+    bool consider_all_branches = 7;
 }

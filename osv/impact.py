@@ -657,7 +657,9 @@ def _analyze_git_ranges(repo_analyzer: RepoAnalyzer, checkout_path: str,
   if repos.gitter_host():
     try:
       versions, new_commits, cherries = gitter_client.get_affected_commits(
-          affected_range, detect_cherrypicks=repo_analyzer.detect_cherrypicks)
+          affected_range,
+          detect_cherrypicks=repo_analyzer.detect_cherrypicks,
+          consider_all_branches=repo_analyzer.consider_all_branches)
       new_versions.update(versions)
       commits.update(new_commits)
       for cherry in cherries:

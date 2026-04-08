@@ -449,6 +449,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.consider_all_branches = True
     self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 
@@ -502,6 +503,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.source_repo.ignore_git = False
     self.source_repo.versions_from_repo = False
     self.source_repo.detect_cherrypicks = False
+    self.source_repo.consider_all_branches = True
     self.source_repo.db_prefix.append('PYSEC-')
     self.source_repo.put()
 

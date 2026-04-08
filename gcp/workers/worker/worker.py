@@ -33,7 +33,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
-from google.protobuf import json_format, timestamp_pb2
+from google.protobuf import timestamp_pb2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -43,8 +43,6 @@ import osv.gcs
 import osv.logs
 from osv import vulnerability_pb2, purl_helpers
 import oss_fuzz
-
-from vanir import vulnerability_manager
 
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
@@ -228,57 +226,6 @@ def add_fix_information(vulnerability, fix_result):
       affected_package.database_specific.update(database_specific)
 
   return has_changes
-
-
-# TODO(ochang): Remove this function once GHSA's encoding is fixed.
-def fix_invalid_ghsa(vulnerability):
-  """Attempt to fix an invalid GHSA entry.
-
-  Args:
-    vulnerability: a vulnerability object.
-
-  Returns:
-    whether the GHSA entry is valid.
-  """
-  packages = {}
-  for affected in vulnerability.affected:
-    details = packages.setdefault(
-        (affected.package.ecosystem, affected.package.name), {
-            'has_single_introduced': False,
-            'has_fixed': False
-        })
-
-    has_bad_equals_encoding = False
-    for affected_range in affected.ranges:
-      if len(
-          affected_range.events) == 1 and affected_range.events[0].introduced:
-        details['has_single_introduced'] = True
-        if (affected.versions and
-            affected.versions[0] == affected_range.events[0].introduced):
-          # https://github.com/github/advisory-database/issues/59.
-          has_bad_equals_encoding = True
-
-      for event in affected_range.events:
-        if event.fixed:
-          details['has_fixed'] = True
-
-    if has_bad_equals_encoding:
-      if len(affected.ranges) == 1:
-        # Try to fix this by removing the range.
-        del affected.ranges[:]
-        logging.info('Removing bad range from %s', vulnerability.id)
-      else:
-        # Unable to fix this if there are multiple ranges.
-        return False
-
-  for details in packages.values():
-    # Another case of a bad encoding: Having ranges with a single "introduced"
-    # event, when there are actually "fix" events encoded in another range for
-    # the same package.
-    if details['has_single_introduced'] and details['has_fixed']:
-      return False
-
-  return True
 
 
 def maybe_normalize_package_names(
@@ -551,43 +498,6 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
-  def _generate_vanir_signatures(
-      self, vulnerability: vulnerability_pb2.Vulnerability
-  ) -> vulnerability_pb2.Vulnerability:
-    """Generates Vanir signatures for a vulnerability."""
-    if not any(r.type == vulnerability_pb2.Range.GIT
-               for affected in vulnerability.affected
-               for r in affected.ranges):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it has no '
-          'GIT affected ranges.', vulnerability.id)
-      return vulnerability
-    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it is a '
-          'Kernel vulnerability.', vulnerability.id)
-      return vulnerability
-
-    logging.info('Generating Vanir signatures for %s', vulnerability.id)
-    try:
-      vuln_manager = vulnerability_manager.generate_from_json_string(
-          content=json.dumps([
-              json_format.MessageToDict(
-                  vulnerability, preserving_proto_field_name=True)
-          ]),)
-      vuln_manager.generate_signatures()
-
-      if not vuln_manager.vulnerabilities:
-        logging.warning('Vanir signature generation resulted in no '
-                        'vulnerabilities.')
-        return vulnerability
-
-      return vuln_manager.vulnerabilities[0].to_proto()
-    except Exception:
-      logging.exception('Failed to generate Vanir signatures for %s',
-                        vulnerability.id)
-      return vulnerability
-
   def _do_update(self, source_repo: osv.SourceRepository,
                  repo: pygit2.Repository | None,
                  vulnerability: vulnerability_pb2.Vulnerability,
@@ -596,9 +506,6 @@ class TaskRunner:
     _state.bug_id = vulnerability.id
     logging.info('Processing update for vulnerability %s', vulnerability.id)
     vulnerability = maybe_normalize_package_names(vulnerability)
-    if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):
-      logging.warning('%s has an encoding error, skipping.', vulnerability.id)
-      return
 
     filter_unknown_ecosystems(vulnerability)
 
@@ -606,7 +513,6 @@ class TaskRunner:
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
 
     # Fully enrich the vulnerability object in memory.
-    vulnerability = self._generate_vanir_signatures(vulnerability)
     if any(affected_is_kernel(affected) for affected in vulnerability.affected):
       result = None
       logging.info(

@@ -62,6 +62,14 @@ steps:
     - GITTER_PORT=8891
   waitFor: ['init', 'sync']
 
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'vanir-signatures-tests'
+  dir: gcp/workers/vanir_signatures
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - DATASTORE_EMULATOR_PORT=8006
+  waitFor: ['init', 'sync']
+
 timeout: 7200s
 options:
   machineType: E2_HIGHCPU_8

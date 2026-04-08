@@ -303,9 +303,10 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.Cl
 		return res
 	}
 
-	// CustomTime is millisecond precision, while Modified is microsecond precision.
-	// So we add a millisecond to CustomTime to account for the difference.
-	if attrs.CustomTime.Add(time.Millisecond).Before(vuln.Modified) {
+	// Modified is microsecond precision, CustomTime is supposedly millisecond precision
+	// though seemingly, we have CustomTimes in GCS with second precision.
+	// Add a second to CustomTime to account for the difference.
+	if attrs.CustomTime.Add(time.Second).Before(vuln.Modified) {
 		logger.InfoContext(ctx, "record is stale in gcs",
 			slog.String("id", id),
 			slog.String("custom_time", attrs.CustomTime.String()),

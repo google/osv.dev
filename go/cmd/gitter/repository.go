@@ -631,7 +631,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 // A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
 // A fix can either be a fixed commit, or the children of a lastAffected commit.
 func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, cherrypickedHashes) {
-	logger.InfoContext(ctx, "Starting affected commit walking")
+	logger.InfoContext(ctx, "Starting affected commits (all branches) walking")
 	start := time.Now()
 
 	resEvents := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
@@ -732,14 +732,72 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 		}
 	}
 
-	logger.InfoContext(ctx, "Affected commit walking completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, resEvents.cherrypicked
+}
+
+// walkRevFirstParent walks backward from the walkFrom commits following the first parent until it hits an introduced commit.
+// If a path does not encounter an introduced, it is discarded.
+// Returns a list of affected commits
+func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Commit {
+	introMap := make([]bool, len(r.commits))
+	for _, idx := range introduced {
+		introMap[idx] = true
+	}
+
+	affectedMap := make([]bool, len(r.commits))
+
+	// DFS to walk from walkFrom to introduced (follow first parent)
+	for _, fromIdx := range walkFrom {
+		stack := []int{fromIdx}
+		var affectedPath []int
+		pathValid := false
+
+		for len(stack) > 0 {
+			curr := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+
+			affectedPath = append(affectedPath, curr)
+
+			// Stop traversal and keep affectedPath when:
+			// 1. commit is introduced -> this path is a full path from walkFrom to introduced
+			// 2. commit is already marked as affected -> this partial path is guaranteed to hit an introduced commit from curr
+			if introMap[curr] || affectedMap[curr] {
+				pathValid = true
+				break
+			}
+
+			commit := r.commits[curr]
+			// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
+			if len(commit.Parents) > 0 {
+				stack = append(stack, commit.Parents[0])
+			}
+		}
+
+		if pathValid {
+			for _, idx := range affectedPath {
+				affectedMap[idx] = true
+			}
+		}
+	}
+
+	var affectedCommits []*Commit
+	for idx, isAffected := range affectedMap {
+		if isAffected {
+			affectedCommits = append(affectedCommits, r.commits[idx])
+		}
+	}
+
+	return affectedCommits
 }
 
 // Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive).
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and limit commits.
 func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, cherrypickedHashes) {
+	logger.InfoContext(ctx, "Starting limit walking")
+	start := time.Now()
+
 	introduced := r.parseHashes(ctx, se.Introduced)
 	limit := r.parseHashes(ctx, se.Limit)
 
@@ -757,51 +815,47 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 		limit = append(limit, newLimit...)
 	}
 
-	var affectedCommits []*Commit
-
-	introMap := make([]bool, len(r.commits))
-	for _, idx := range introduced {
-		introMap[idx] = true
-	}
-
-	// DFS to walk from limit(s) to introduced (follow first parent)
-	stack := make([]int, 0, len(limit))
-	// Start from limits' parents
+	// Walk from the first parent of limit, as limit commits are exclusive from affected range
+	walkFrom := make([]int, 0, len(limit))
 	for _, idx := range limit {
 		commit := r.commits[idx]
 		if len(commit.Parents) > 0 {
-			stack = append(stack, commit.Parents[0])
+			walkFrom = append(walkFrom, commit.Parents[0])
 		}
 	}
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
-	visited := make([]bool, len(r.commits))
-
-	for len(stack) > 0 {
-		curr := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if visited[curr] {
-			continue
-		}
-		visited[curr] = true
-
-		// Add current node to affected commits
-		commit := r.commits[curr]
-		affectedCommits = append(affectedCommits, commit)
-
-		// If commit is in introduced, we can stop the traversal after adding it to affected
-		if introMap[curr] {
-			continue
-		}
-
-		// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
-		if len(commit.Parents) > 0 {
-			stack = append(stack, commit.Parents[0])
-		}
-	}
+	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	logger.InfoContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, cherrypickedHashes{
 		Introduced: cherrypickedIntroHashes,
 		Limit:      cherrypickedLimitHashes,
 	}
+}
+
+// AffectedSingleBranch finds affected commits by walking backward from fixed and lastAffected commits to introduced commit following the first parent.
+func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEvents) []*Commit {
+	logger.InfoContext(ctx, "Starting affected commits (single branch) walking")
+	start := time.Now()
+
+	introduced := r.parseHashes(ctx, se.Introduced)
+	fixed := r.parseHashes(ctx, se.Fixed)
+	lastAffected := r.parseHashes(ctx, se.LastAffected)
+
+	// Walk from the parent of fixed commits and lastAffected commits
+	walkFrom := make([]int, 0, len(fixed)+len(lastAffected))
+	for _, idx := range fixed {
+		commit := r.commits[idx]
+		if len(commit.Parents) > 0 {
+			walkFrom = append(walkFrom, commit.Parents[0])
+		}
+	}
+	walkFrom = append(walkFrom, lastAffected...)
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
+
+	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	logger.InfoContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
+
+	return affectedCommits
 }

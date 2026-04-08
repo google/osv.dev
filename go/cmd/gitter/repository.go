@@ -966,6 +966,6 @@ func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) 
 // GetRemoteTags uses git ls-remote to get tags from remote git repository
 func (r *Repository) GetRemoteTags(ctx context.Context) (map[string]SHA1, error) {
 	cmd := prepareCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "ls-remote", "--tags", "--quiet", r.URL)
-	
+
 	return r.runAndParseTags(ctx, cmd)
 }

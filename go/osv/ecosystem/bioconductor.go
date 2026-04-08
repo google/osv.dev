@@ -80,5 +80,6 @@ func (e bioconductorEcosystem) getBiocVersions() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Bioconductor versions: %w", err)
 	}
+
 	return versions, nil
 }

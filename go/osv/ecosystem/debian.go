@@ -40,7 +40,7 @@ func (e debianEcosystem) getDebianFirstPackageVersion(pkg string) (string, error
 		return "0", nil
 	}
 	urlStr := fmt.Sprintf(debianFirstPackageOutputURL, url.PathEscape(e.release))
-	
+
 	escapedPkg := strings.ReplaceAll(pkg, ".", `\.`)
 	res, err := e.p.fetchJSONPaths(urlStr, escapedPkg)
 	if err != nil {

@@ -29,19 +29,14 @@ var _ Ecosystem = opamEcosystem{}
 
 // Opam disables the Enumerable ecosystem interface as the record is pre-enumerated on import.
 // var _ Enumerable = opamEcosystem{}
-type githubContent struct {
-	Name string `json:"name"`
-}
-
 func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 	// TODO(michaelkedar): these unauthenticated GitHub API requests have a rate limit of 60/hr.
 	// If we enable this, we'd probably want to add some auth key to our workers.
 	url1 := "https://api.github.com/repos/ocaml/opam-repository/contents/packages/" + pkg
 	url2 := "https://api.github.com/repos/ocaml/opam-repository-archive/contents/packages/" + pkg
 
-	var list1, list2 []githubContent
-	err1 := e.p.fetchJSON(url1, &list1)
-	err2 := e.p.fetchJSON(url2, &list2)
+	list1, err1 := e.p.fetchJSONPaths(url1, "#.name")
+	list2, err2 := e.p.fetchJSONPaths(url2, "#.name")
 
 	if errors.Is(err1, ErrPackageNotFound) && errors.Is(err2, ErrPackageNotFound) {
 		return nil, ErrPackageNotFound
@@ -58,18 +53,18 @@ func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 	prefix := pkg + "."
 	seen := make(map[string]bool)
 
-	for _, item := range list1 {
-		if strings.HasPrefix(item.Name, prefix) {
-			v := strings.TrimPrefix(item.Name, prefix)
+	for _, name := range list1 {
+		if strings.HasPrefix(name, prefix) {
+			v := strings.TrimPrefix(name, prefix)
 			if !seen[v] {
 				versions = append(versions, v)
 				seen[v] = true
 			}
 		}
 	}
-	for _, item := range list2 {
-		if strings.HasPrefix(item.Name, prefix) {
-			v := strings.TrimPrefix(item.Name, prefix)
+	for _, name := range list2 {
+		if strings.HasPrefix(name, prefix) {
+			v := strings.TrimPrefix(name, prefix)
 			if !seen[v] {
 				versions = append(versions, v)
 				seen[v] = true

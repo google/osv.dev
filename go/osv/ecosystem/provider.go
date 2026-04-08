@@ -3,11 +3,13 @@ package ecosystem
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
+	"github.com/tidwall/gjson"
 )
 
 // Provider is the dependency container for ecosystems.
@@ -57,6 +59,46 @@ func (p *Provider) fetchJSON(urlStr string, target any) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
+// fetchJSONPaths fetches JSON from the given URL and extracts strings from one or more GJSON paths.
+// It flattens any arrays it finds into a single string slice.
+// It translates HTTP 404 into ErrPackageNotFound.
+// It uses gjson.GetBytes to scan the raw JSON bytes without fully decoding them into Go structs.
+func (p *Provider) fetchJSONPaths(urlStr string, paths ...string) ([]string, error) {
+	resp, err := p.Client.Get(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ErrPackageNotFound
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []string
+	for _, path := range paths {
+		res := gjson.GetBytes(body, path)
+		if res.IsArray() {
+			for _, v := range res.Array() {
+				if v.String() != "" {
+					results = append(results, v.String())
+				}
+			}
+		} else if res.String() != "" {
+			results = append(results, res.String())
+		}
+	}
+
+	return results, nil
+}
+
 // getVersionsDepsDev enumerates versions for a package using the deps.dev API.
 func (p *Provider) getVersionsDepsDev(e Ecosystem, depsDevSystem string, pkg string) ([]string, error) {
 	urlStr := fmt.Sprintf("https://api.deps.dev/v3alpha/systems/%s/packages/%s",
@@ -64,21 +106,9 @@ func (p *Provider) getVersionsDepsDev(e Ecosystem, depsDevSystem string, pkg str
 		url.PathEscape(pkg),
 	)
 
-	var data struct {
-		Versions []struct {
-			VersionKey struct {
-				Version string `json:"version"`
-			} `json:"versionKey"`
-		} `json:"versions"`
-	}
-
-	if err := p.fetchJSON(urlStr, &data); err != nil {
+	versions, err := p.fetchJSONPaths(urlStr, "versions.#.versionKey.version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get %s versions from deps.dev for %s: %w", depsDevSystem, pkg, err)
-	}
-
-	versions := make([]string, 0, len(data.Versions))
-	for _, v := range data.Versions {
-		versions = append(versions, v.VersionKey.Version)
 	}
 
 	return sortVersions(e, versions)

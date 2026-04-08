@@ -49,16 +49,9 @@ func pypiAPIURL(pkg string) string {
 }
 
 func (e pypiEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data struct {
-		Releases map[string]any `json:"releases"`
-	}
-	if err := e.p.fetchJSON(pypiAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(pypiAPIURL(pkg), "releases.@keys")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get PyPI versions for %s: %w", pkg, err)
-	}
-
-	versions := make([]string, 0, len(data.Releases))
-	for v := range data.Releases {
-		versions = append(versions, v)
 	}
 
 	return sortVersions(e, versions)

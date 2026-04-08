@@ -53,23 +53,9 @@ func (e cranEcosystem) IsSemver() bool {
 }
 
 func (e cranEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data struct {
-		Version  string `json:"version"`
-		Archived []struct {
-			Version string `json:"version"`
-		} `json:"archived"`
-	}
-	if err := e.p.fetchJSON(cranAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(cranAPIURL(pkg), "version", "archived.#.version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get CRAN versions for %s: %w", pkg, err)
-	}
-	var versions []string
-	if data.Version != "" {
-		versions = append(versions, data.Version)
-	}
-	for _, v := range data.Archived {
-		if v.Version != "" {
-			versions = append(versions, v.Version)
-		}
 	}
 
 	return sortVersions(e, versions)

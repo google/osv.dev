@@ -40,12 +40,14 @@ func (e debianEcosystem) getDebianFirstPackageVersion(pkg string) (string, error
 		return "0", nil
 	}
 	urlStr := fmt.Sprintf(debianFirstPackageOutputURL, url.PathEscape(e.release))
-	var data map[string]string
-	if err := e.p.fetchJSON(urlStr, &data); err != nil {
+	
+	escapedPkg := strings.ReplaceAll(pkg, ".", `\.`)
+	res, err := e.p.fetchJSONPaths(urlStr, escapedPkg)
+	if err != nil {
 		return "0", fmt.Errorf("failed to load release cache %s: %w", e.release, err)
 	}
-	if v, ok := data[pkg]; ok {
-		return v, nil
+	if len(res) > 0 {
+		return res[0], nil
 	}
 
 	return "0", nil
@@ -54,19 +56,9 @@ func (e debianEcosystem) getDebianFirstPackageVersion(pkg string) (string, error
 func (e debianEcosystem) GetVersions(pkg string) ([]string, error) {
 	urlStr := fmt.Sprintf(debianSnapshotURL, url.PathEscape(strings.ToLower(pkg)))
 
-	var data struct {
-		Result []struct {
-			Version string `json:"version"`
-		} `json:"result"`
-	}
-
-	if err := e.p.fetchJSON(urlStr, &data); err != nil {
+	rawVersions, err := e.p.fetchJSONPaths(urlStr, "result.#.version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get Debian versions for %s: %w", pkg, err)
-	}
-
-	rawVersions := make([]string, 0, len(data.Result))
-	for _, r := range data.Result {
-		rawVersions = append(rawVersions, r.Version)
 	}
 
 	var filtered []string

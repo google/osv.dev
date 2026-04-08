@@ -55,18 +55,16 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 	}
 	var versions []string
 	for _, biocVersion := range biocVersions {
-		var data struct {
-			Version string `json:"version"`
-		}
-		if err := e.p.fetchJSON(apiPackageURLPositBioconductor(pkg, biocVersion), &data); err != nil {
+		res, err := e.p.fetchJSONPaths(apiPackageURLPositBioconductor(pkg, biocVersion), "version")
+		if err != nil {
 			if errors.Is(err, ErrPackageNotFound) {
 				continue
 			}
 
 			return nil, fmt.Errorf("failed to get Bioconductor versions for %s: %w", pkg, err)
 		}
-		if data.Version != "" {
-			versions = append(versions, data.Version)
+		if len(res) > 0 && res[0] != "" {
+			versions = append(versions, res[0])
 		}
 	}
 
@@ -78,18 +76,9 @@ func (e bioconductorEcosystem) getVersions(pkg string) ([]string, error) {
 }
 
 func (e bioconductorEcosystem) getBiocVersions() ([]string, error) {
-	var data struct {
-		BiocVersions []struct {
-			BiocVersion string `json:"bioc_version"`
-		} `json:"bioc_versions"`
-	}
-	if err := e.p.fetchJSON(apiBiocVersionsURL, &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(apiBiocVersionsURL, "bioc_versions.#.bioc_version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get Bioconductor versions: %w", err)
 	}
-	versions := make([]string, 0, len(data.BiocVersions))
-	for _, biocVersion := range data.BiocVersions {
-		versions = append(versions, biocVersion.BiocVersion)
-	}
-
 	return versions, nil
 }

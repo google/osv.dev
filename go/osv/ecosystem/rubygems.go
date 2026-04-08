@@ -44,15 +44,9 @@ func (e rubyGemsEcosystem) IsSemver() bool {
 }
 
 func (e rubyGemsEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data []struct {
-		Number string `json:"number"`
-	}
-	if err := e.p.fetchJSON(rubyGemsAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(rubyGemsAPIURL(pkg), "#.number")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get RubyGems versions for %s: %w", pkg, err)
-	}
-	versions := make([]string, 0, len(data))
-	for _, entry := range data {
-		versions = append(versions, entry.Number)
 	}
 
 	return sortVersions(e, versions)

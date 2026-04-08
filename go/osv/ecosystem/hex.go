@@ -32,20 +32,9 @@ func hexAPIURL(pkg string) string {
 }
 
 func (e hexEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data struct {
-		Releases []struct {
-			Version string `json:"version"`
-		} `json:"releases"`
-	}
-	if err := e.p.fetchJSON(hexAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(hexAPIURL(pkg), "releases.#.version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get Hex versions for %s: %w", pkg, err)
-	}
-
-	var versions []string
-	for _, r := range data.Releases {
-		if r.Version != "" {
-			versions = append(versions, r.Version)
-		}
 	}
 
 	return sortVersions(e, versions)

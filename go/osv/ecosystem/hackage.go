@@ -49,14 +49,9 @@ func hackageAPIURL(pkg string) string {
 }
 
 func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data map[string]any
-	if err := e.p.fetchJSON(hackageAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(hackageAPIURL(pkg), "@keys")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
-	}
-
-	versions := make([]string, 0, len(data))
-	for v := range data {
-		versions = append(versions, v)
 	}
 
 	return sortVersions(e, versions)

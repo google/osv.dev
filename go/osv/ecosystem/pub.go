@@ -44,20 +44,9 @@ func pubAPIURL(pkg string) string {
 }
 
 func (e pubEcosystem) GetVersions(pkg string) ([]string, error) {
-	var data struct {
-		Versions []struct {
-			Version string `json:"version"`
-		} `json:"versions"`
-	}
-	if err := e.p.fetchJSON(pubAPIURL(pkg), &data); err != nil {
+	versions, err := e.p.fetchJSONPaths(pubAPIURL(pkg), "versions.#.version")
+	if err != nil {
 		return nil, fmt.Errorf("failed to get Pub versions for %s: %w", pkg, err)
-	}
-
-	var versions []string
-	for _, v := range data.Versions {
-		if v.Version != "" {
-			versions = append(versions, v.Version)
-		}
 	}
 
 	return sortVersions(e, versions)

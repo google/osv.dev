@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -278,9 +277,8 @@ func TestCacheHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reqProto := &pb.CacheRequest{Url: tt.url}
-			body, _ := protojson.Marshal(reqProto)
+			body, _ := proto.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/cache", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -367,9 +365,8 @@ func TestAffectedCommitsHandler(t *testing.T) {
 				Events: events,
 			}
 
-			body, _ := protojson.Marshal(reqProto)
+			body, _ := proto.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/affected-commits", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -386,14 +383,8 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			}
 
 			respBody := &pb.AffectedCommitsResponse{}
-			if rr.Header().Get("Content-Type") == "application/json" {
-				if err := protojson.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-					t.Fatalf("Failed to unmarshal JSON response: %v", err)
-				}
-			} else {
-				if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-					t.Fatalf("Failed to unmarshal proto response: %v", err)
-				}
+			if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+				t.Fatalf("Failed to unmarshal proto response: %v", err)
 			}
 
 			var gotHashes []string
@@ -451,7 +442,6 @@ func TestTagsHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/tags?url="+tt.url, nil)
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -465,8 +455,8 @@ func TestTagsHandler(t *testing.T) {
 
 			if tt.expectedTags != nil {
 				respBody := &pb.TagsResponse{}
-				if err := protojson.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-					t.Fatalf("Failed to unmarshal JSON response: %v", err)
+				if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+					t.Fatalf("Failed to unmarshal proto response: %v", err)
 				}
 
 				gotTags := make(map[string]string)

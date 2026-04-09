@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//nolint:dupl
 package ecosystem
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -37,8 +38,15 @@ func (e hackageEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.HackageVersion]{ver}, nil
 }
 
-func (e hackageEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+func (e hackageEcosystem) Coarse(version string) (string, error) {
+	version = strings.TrimPrefix(version, "v")
+	// hackage versions are only allowed to be digits and dots
+	idx := strings.IndexFunc(version, func(r rune) bool { return (r < '0' || r > '9') && r != '.' })
+	if idx >= 0 {
+		return "", errors.New("version contains invalid characters")
+	}
+
+	return semverCoarseVersioner.Format(0, version), nil
 }
 
 func (e hackageEcosystem) IsSemver() bool {

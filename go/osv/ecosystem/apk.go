@@ -14,7 +14,11 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"regexp"
+
+	"github.com/google/osv-scalibr/semantic"
+)
 
 // apkEcosystem is an ecosystem for ecosystems using Alpine Package Keeper versioning.
 type apkEcosystem struct{}
@@ -30,7 +34,18 @@ func (e apkEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.AlpineVersion]{ver}, nil
 }
 
+//nolint:unused
+var apkCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`(?:\.0|[_-])`),
+	ImplicitSplit: true,
+	EmptyAs:       &[]string{""}[0],
+}
+
 func (e apkEcosystem) Coarse(_ string) (string, error) {
+	// TODO(michaelkedar): semantic.AlpineVersion currently breaks transitivity rules
+	// (a < b, b < c, c < a) in some cases with invalid versions.
+	// Which makes coarse versions kinda broken.
 	return "", ErrCoarseNotSupported
 }
 

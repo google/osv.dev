@@ -37,8 +37,8 @@ func (e nugetEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.NuGetVersion]{semantic.ParseNuGetVersion(version)}, nil
 }
 
-func (e nugetEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+func (e nugetEcosystem) Coarse(version string) (string, error) {
+	return semverCoarseVersioner.Format(0, strings.TrimPrefix(version, "v")), nil
 }
 
 func (e nugetEcosystem) IsSemver() bool {

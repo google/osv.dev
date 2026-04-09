@@ -16,7 +16,9 @@ package ecosystem
 
 import (
 	"fmt"
+	"math/big"
 	"net/url"
+	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -44,8 +46,29 @@ func (e cranEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.CRANVersion]{ver}, nil
 }
 
-func (e cranEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+func (e cranEcosystem) Coarse(version string) (string, error) {
+	// this logic is lifted directly from semantic.ParseCRANVersion
+	// for now, treat an empty version string as valid
+	if version == "" {
+		version = "0"
+	}
+
+	// dashes and periods have the same weight, so we can just normalize to periods
+	parts := strings.Split(strings.ReplaceAll(version, "-", "."), ".")
+
+	comps := make([]*big.Int, 0, len(parts))
+
+	for _, s := range parts {
+		v, ok := new(big.Int).SetString(s, 10)
+
+		if !ok {
+			return "", fmt.Errorf("invalid component in version: %s", s)
+		}
+
+		comps = append(comps, v)
+	}
+
+	return coarseFromInts(bigZero, comps...), nil
 }
 
 func (e cranEcosystem) IsSemver() bool {

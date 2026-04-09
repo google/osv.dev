@@ -16,6 +16,9 @@ package ecosystem
 
 import (
 	"fmt"
+	"math/big"
+	"regexp"
+	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -30,8 +33,47 @@ func (e packagistEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.PackagistVersion]{semantic.ParsePackagistVersion(version)}, nil
 }
 
-func (e packagistEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+var packagistSepRegex = regexp.MustCompile(`[-_+.]`)
+
+// Treats version as integers separated by ., -, _, or +.
+// Treats 'p'/'pl' prefixes as maximal ints to ensure they sort after base versions
+// (e.g. 1.0 < 1.0-p1).
+func (e packagistEcosystem) Coarse(version string) (string, error) {
+	version = strings.TrimPrefix(version, "v")
+	version = strings.TrimPrefix(version, "V")
+
+	sepParts := packagistSepRegex.Split(version, -1)
+
+	var parts []string
+	for _, sp := range sepParts {
+		if sp == "" {
+			parts = append(parts, "")
+			continue
+		}
+		subParts := implicitRegex.FindAllString(sp, -1)
+		parts = append(parts, subParts...)
+	}
+
+	var comps []*big.Int
+	count := 0
+	for _, p := range parts {
+		if count >= 3 {
+			break
+		}
+		// 'p' and 'pl' (and similar) are considered greater than numbers
+		if strings.HasPrefix(p, "p") {
+			comps = append(comps, big.NewInt(100000000))
+		} else if !isDecimal(p) || p == "" {
+			break
+		} else {
+			bi := new(big.Int)
+			bi.SetString(p, 10)
+			comps = append(comps, bi)
+		}
+		count++
+	}
+
+	return coarseFromInts(bigZero, comps...), nil
 }
 
 func (e packagistEcosystem) IsSemver() bool {

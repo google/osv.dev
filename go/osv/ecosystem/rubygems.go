@@ -17,6 +17,7 @@ package ecosystem
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -35,8 +36,15 @@ func (e rubyGemsEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.RubyGemsVersion]{semantic.ParseRubyGemsVersion(version)}, nil
 }
 
-func (e rubyGemsEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+var rubyGemsCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`-`),
+	ImplicitSplit: true,
+	EmptyAs:       &[]string{""}[0],
+}
+
+func (e rubyGemsEcosystem) Coarse(version string) (string, error) {
+	return rubyGemsCoarseVersioner.Format(0, version), nil
 }
 
 func (e rubyGemsEcosystem) IsSemver() bool {

@@ -17,6 +17,7 @@ package ecosystem
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/google/osv-scalibr/semantic"
 )
@@ -31,8 +32,8 @@ func (e pubEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.PubVersion]{semantic.ParsePubVersion(version)}, nil
 }
 
-func (e pubEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+func (e pubEcosystem) Coarse(version string) (string, error) {
+	return semverCoarseVersioner.Format(0, strings.TrimPrefix(version, "v")), nil
 }
 
 func (e pubEcosystem) IsSemver() bool {

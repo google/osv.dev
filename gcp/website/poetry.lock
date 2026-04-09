@@ -916,14 +916,14 @@ protobuf = ">=4.25.8,<8.0.0"
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.4.1"
+version = "2.4.2"
 description = "NDB library for Google Cloud Datastore"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.4.1-py3-none-any.whl", hash = "sha256:60d97d8dda599d64ccd221a73ff018a67b0c7152cfe76932b7a50e88ba458c48"},
-    {file = "google_cloud_ndb-2.4.1.tar.gz", hash = "sha256:13eb3d8a81afcdb0627ec535be27a99312c0966a7b1d170afb169840a84ab439"},
+    {file = "google_cloud_ndb-2.4.2-py3-none-any.whl", hash = "sha256:3522f271141f718d6ae390e6cb522c7c1805ded52e4743b1aa289cfaf44c2bdd"},
+    {file = "google_cloud_ndb-2.4.2.tar.gz", hash = "sha256:44e64e25a15f168ddff0f8c5a7288f7b0256ec51737948388df58b0ddc22586f"},
 ]
 
 [package.dependencies]
@@ -932,7 +932,7 @@ google-cloud-datastore = ">=2.16.0,<2.20.2 || >2.20.2,<3.0.0"
 protobuf = ">=4.25.8,<8.0.0"
 pymemcache = ">=2.1.0,<5.0.0"
 pytz = ">=2018.3"
-redis = ">=3.0.0,<7.0.0"
+redis = ">=3.0.0,<8.0.0"
 
 [[package]]
 name = "google-cloud-pubsub"
@@ -2102,14 +2102,14 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [[package]]
 name = "werkzeug"
-version = "3.1.7"
+version = "3.1.8"
 description = "The comprehensive WSGI web application library."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "werkzeug-3.1.7-py3-none-any.whl", hash = "sha256:4b314d81163a3e1a169b6a0be2a000a0e204e8873c5de6586f453c55688d422f"},
-    {file = "werkzeug-3.1.7.tar.gz", hash = "sha256:fb8c01fe6ab13b9b7cdb46892b99b1d66754e1d7ab8e542e865ec13f526b5351"},
+    {file = "werkzeug-3.1.8-py3-none-any.whl", hash = "sha256:63a77fb8892bf28ebc3178683445222aa500e48ebad5ec77b0ad80f8726b1f50"},
+    {file = "werkzeug-3.1.8.tar.gz", hash = "sha256:9bad61a4268dac112f1c5cd4630a56ede601b6ed420300677a869083d70a4c44"},
 ]
 
 [package.dependencies]
@@ -2171,4 +2171,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "a2f41a849c05155b916c4ca5e1736e9b620146c0dc7b3289a5c03df7445398e5"
+content-hash = "d2d0a86f0d700143a0b201b007effaaee43cdfef0e359a6c47dc7f556777d015"

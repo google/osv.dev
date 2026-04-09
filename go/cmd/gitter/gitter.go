@@ -204,6 +204,20 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	return nil
 }
 
+// runWithSemaphore runs function after waiting at semaphore for concurrency control
+func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
+	select {
+	case semaphore <- struct{}{}:
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
+		return f()
+	case <-ctx.Done():
+		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		return nil, ctx.Err()
+	}
+}
+
 func isLocalRequest(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -305,7 +319,9 @@ func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
 
 func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) error {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
-		return nil, FetchRepo(ctx, repoURL, forceUpdate)
+		return runWithSemaphore(ctx, func() (any, error) {
+			return nil, FetchRepo(ctx, repoURL, forceUpdate)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
@@ -341,11 +357,13 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 	}
 
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
-		repoLock := GetRepoLock(repoURL)
-		repoLock.RLock()
-		defer repoLock.RUnlock()
+		return runWithSemaphore(ctx, func() (any, error) {
+			repoLock := GetRepoLock(repoURL)
+			repoLock.RLock()
+			defer repoLock.RUnlock()
 
-		return LoadRepository(ctx, repoPath)
+			return LoadRepository(ctx, repoPath)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
@@ -568,17 +586,6 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(r.Context(), urlKey, repoURL)
 	logger.InfoContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
-	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
-
 	// Fetch repo first
 	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
 		return
@@ -586,7 +593,9 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Archive repo
 	fileDataAny, err, _ := gArchive.Do(repoURL, func() (any, error) {
-		return ArchiveRepo(ctx, repoURL)
+		return runWithSemaphore(ctx, func() (any, error) {
+			return ArchiveRepo(ctx, repoURL)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
@@ -625,17 +634,6 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.WithValue(r.Context(), urlKey, repoURL)
 	logger.InfoContext(ctx, "Received request: /cache")
-
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
-	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	if _, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate()); err != nil {
 		return
@@ -686,17 +684,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Bool("cherrypickLimit", cherrypickLimit),
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
-
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
-	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
 	repo, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate())
 	if err != nil {

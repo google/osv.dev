@@ -311,13 +311,7 @@
                 }
               ],
               "database_specific": "<Any value>"
-            }
-          ],
-          "versions": 206,
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
+            },
             {
               "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
@@ -326,12 +320,12 @@
                   "introduced": "0"
                 },
                 {
-                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                  "fixed": "1265ff8d990284f04d8768f35b0e20ae5f60daae"
                 }
               ]
             }
           ],
-          "versions": 206,
+          "versions": 195,
           "database_specific": "<Any value>"
         }
       ],

@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
 
-type hackageEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type hackageEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = hackageEcosystem{}
 
@@ -36,6 +44,16 @@ func (e hackageEcosystem) Coarse(_ string) (string, error) {
 func (e hackageEcosystem) IsSemver() bool {
 	return false
 }
-func (e hackageEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+
+func hackageAPIURL(pkg string) string {
+	return fmt.Sprintf("https://hackage.haskell.org/package/%s.json", url.PathEscape(pkg))
+}
+
+func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
+	versions, err := e.p.fetchJSONPaths(hackageAPIURL(pkg), "@keys")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
+	}
+
+	return sortVersions(e, versions)
 }

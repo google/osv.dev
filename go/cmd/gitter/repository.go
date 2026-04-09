@@ -90,15 +90,24 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		return nil, fmt.Errorf("failed to build commit graph: %w", err)
 	}
 
+	var patchIDErr error
 	if len(newCommits) > 0 {
-		if err := repo.calculatePatchIDs(ctx, newCommits); err != nil {
-			return nil, fmt.Errorf("failed to calculate patch id for commits: %w", err)
-		}
+		patchIDErr = repo.calculatePatchIDs(ctx, newCommits)
+	}
+
+	// If error is anything other than context cancel, exit early without saving
+	if patchIDErr != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		return nil, fmt.Errorf("failed to calculate patch id for commits: %w", patchIDErr)
 	}
 
 	// Save cache
-	if err := saveRepositoryCache(cachePath, repo); err != nil {
+	patchIDCount, err := saveRepositoryCache(cachePath, repo)
+	if err != nil {
 		logger.ErrorContext(ctx, "Failed to save repository cache", slog.Any("err", err))
+	}
+
+	if patchIDErr != nil {
+		return nil, fmt.Errorf("failed to fully calculate patch id for commits: %w, saved %d", patchIDErr, patchIDCount)
 	}
 
 	return repo, nil

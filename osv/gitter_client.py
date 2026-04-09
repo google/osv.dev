@@ -26,7 +26,8 @@ from .repos import gitter_host, RepoInaccessibleError, _git_mirror
 
 def get_affected_commits(
     affected_range: Range,
-    detect_cherrypicks=True
+    detect_cherrypicks=True,
+    consider_all_branches=True,
 ) -> tuple[list[str], list[bytes], list[repository_pb2.Event]]:
   """
     Get affected commits and tags from Gitter.
@@ -54,6 +55,7 @@ def get_affected_commits(
       detect_cherrypicks_fixed=detect_cherrypicks,
       detect_cherrypicks_introduced=detect_cherrypicks,
       detect_cherrypicks_limit=detect_cherrypicks,
+      consider_all_branches=consider_all_branches,
   )
   for event in affected_range.events:
     if event.introduced:

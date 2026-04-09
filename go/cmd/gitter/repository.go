@@ -90,15 +90,24 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		return nil, fmt.Errorf("failed to build commit graph: %w", err)
 	}
 
+	var patchIDErr error
 	if len(newCommits) > 0 {
-		if err := repo.calculatePatchIDs(ctx, newCommits); err != nil {
-			return nil, fmt.Errorf("failed to calculate patch id for commits: %w", err)
-		}
+		patchIDErr = repo.calculatePatchIDs(ctx, newCommits)
+	}
+
+	// If error is anything other than context cancel, exit early without saving
+	if patchIDErr != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		return nil, fmt.Errorf("failed to calculate patch id for commits: %w", patchIDErr)
 	}
 
 	// Save cache
-	if err := saveRepositoryCache(cachePath, repo); err != nil {
+	patchIDCount, err := saveRepositoryCache(cachePath, repo)
+	if err != nil {
 		logger.ErrorContext(ctx, "Failed to save repository cache", slog.Any("err", err))
+	}
+
+	if patchIDErr != nil {
+		return nil, fmt.Errorf("failed to fully calculate patch id for commits: %w, saved %d", patchIDErr, patchIDCount)
 	}
 
 	return repo, nil
@@ -509,48 +518,139 @@ func (r *Repository) expandByCherrypick(commits []int) []int {
 	return cherrypicked
 }
 
+// findAncestorRoots returns the subset of r.rootCommits that are ancestors of any of the input commits.
+// It performs a BFS from the input fix commits to find reachable roots.
+func (r *Repository) findAncestorRoots(from []int) []int {
+	visited := make([]bool, len(r.commits))
+	queue := make([]int, 0, len(from))
+	foundRoots := make([]int, 0, len(r.rootCommits))
+
+	for _, idx := range from {
+		if !visited[idx] {
+			visited[idx] = true
+			queue = append(queue, idx)
+		}
+	}
+
+	for len(queue) > 0 {
+		if len(foundRoots) == len(r.rootCommits) {
+			// All roots are found, we can terminate early
+			break
+		}
+
+		curr := queue[0]
+		queue = queue[1:]
+
+		if len(r.commits[curr].Parents) == 0 {
+			foundRoots = append(foundRoots, curr)
+		}
+
+		for _, pIdx := range r.commits[curr].Parents {
+			if !visited[pIdx] {
+				visited[pIdx] = true
+				queue = append(queue, pIdx)
+			}
+		}
+	}
+
+	return foundRoots
+}
+
+type cherrypickedHashes struct {
+	Introduced []string
+	Fixed      []string
+	Limit      []string
+}
+
+type resolvedEvents struct {
+	// Introduced commits (from input) + cherrypicked intro commits (if enabled) + resolved roots (if there is intro=0)
+	introduced []int
+	// Fixed commits (from input) + children of last_affected commits (from input) + cherrypick of fixed commit (if enabled)
+	allFixes []int
+	// Cherrypicked commit hash strings (excluding original input commits)
+	cherrypicked cherrypickedHashes
+}
+
+// resolveEvents parses and expands SeparatedEvents into lists of introduced and fixed commits
+// In case of intro=0, it will not include root commits that are not ancestors of any fixed commits
+func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) resolvedEvents {
+	// Parsing and expanding fixed events first because we need them to find relevant roots for intro=0
+	fixed := r.parseHashes(ctx, se.Fixed)
+	lastAffected := r.parseHashes(ctx, se.LastAffected)
+
+	var cherrypickedFixedHashes []string
+	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
+	if cherrypickFixed {
+		newFixed := r.expandByCherrypick(fixed)
+		cherrypickedFixedHashes = r.hexHashes(newFixed)
+		fixed = append(fixed, newFixed...)
+	}
+
+	// Fixed commits and children of last affected are both in this list
+	// For graph traversal sake they are both considered the fix
+	allFixes := make([]int, 0, len(se.Fixed)+len(se.LastAffected))
+	allFixes = append(allFixes, fixed...)
+	for _, idx := range lastAffected {
+		if idx < len(r.commitGraph) {
+			allFixes = append(allFixes, r.commitGraph[idx]...)
+		}
+	}
+
+	hasIntroZero := false
+	filteredIntro := make([]string, 0, len(se.Introduced))
+	for _, s := range se.Introduced {
+		if s == "0" {
+			hasIntroZero = true
+		} else {
+			filteredIntro = append(filteredIntro, s)
+		}
+	}
+
+	introduced := r.parseHashes(ctx, filteredIntro)
+
+	if hasIntroZero {
+		if len(allFixes) > 0 {
+			// If there are fixes, introduced=0 should only include root commits that are ancestors of the fixes
+			introduced = append(introduced, r.findAncestorRoots(allFixes)...)
+		} else {
+			// If there are no fixes, then introduced=0 means all root commits
+			introduced = append(introduced, r.rootCommits...)
+		}
+	}
+
+	var cherrypickedIntroHashes []string
+	if cherrypickIntro {
+		newIntro := r.expandByCherrypick(introduced)
+		cherrypickedIntroHashes = r.hexHashes(newIntro)
+		introduced = append(introduced, newIntro...)
+	}
+
+	return resolvedEvents{
+		introduced: introduced,
+		allFixes:   allFixes,
+		cherrypicked: cherrypickedHashes{
+			Introduced: cherrypickedIntroHashes,
+			Fixed:      cherrypickedFixedHashes,
+		},
+	}
+}
+
 // Affected returns a list of commits that are affected by the given introduced, fixed and last_affected events.
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and fixed commits.
 // A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
 // A fix can either be a fixed commit, or the children of a lastAffected commit.
-func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, []string, []string) {
-	logger.InfoContext(ctx, "Starting affected commit walking")
+func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, cherrypickedHashes) {
+	logger.InfoContext(ctx, "Starting affected commits (all branches) walking")
 	start := time.Now()
 
-	introduced := r.parseHashes(ctx, se.Introduced)
-	fixed := r.parseHashes(ctx, se.Fixed)
-	lastAffected := r.parseHashes(ctx, se.LastAffected)
+	resEvents := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
+	introduced, allFixes := resEvents.introduced, resEvents.allFixes
 
-	var newIntroHashes []string
-	var newFixedHashes []string
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("allFixes", allFixes))
 
-	// Expands the introduced and fixed commits to include cherrypick equivalents
-	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
-	if cherrypickIntro {
-		newIntro := r.expandByCherrypick(introduced)
-		newIntroHashes = r.hexHashes(newIntro)
-		introduced = append(introduced, newIntro...)
-	}
-	if cherrypickFixed {
-		newFixed := r.expandByCherrypick(fixed)
-		newFixedHashes = r.hexHashes(newFixed)
-		fixed = append(fixed, newFixed...)
-	}
-
-	// Fixed commits and children of last affected are both in this set
-	// For graph traversal sake they are both considered the fix
 	fixedMap := make([]bool, len(r.commits))
-
-	for _, idx := range fixed {
+	for _, idx := range allFixes {
 		fixedMap[idx] = true
-	}
-
-	for _, idx := range lastAffected {
-		if idx < len(r.commitGraph) {
-			for _, childIdx := range r.commitGraph[idx] {
-				fixedMap[childIdx] = true
-			}
-		}
 	}
 
 	// The graph traversal
@@ -641,73 +741,130 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 		}
 	}
 
-	logger.InfoContext(ctx, "Affected commit walking completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
-	return affectedCommits, newIntroHashes, newFixedHashes
+	return affectedCommits, resEvents.cherrypicked
 }
 
-// Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive).
-// It also returns two slices of hex hashes for newly identified cherry-picked introduced and limit commits.
-func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, []string, []string) {
-	introduced := r.parseHashes(ctx, se.Introduced)
-	limit := r.parseHashes(ctx, se.Limit)
-
-	var newIntroHashes []string
-	var newLimitHashes []string
-
-	if cherrypickIntro {
-		newIntro := r.expandByCherrypick(introduced)
-		newIntroHashes = r.hexHashes(newIntro)
-		introduced = append(introduced, newIntro...)
-	}
-	if cherrypickLimit {
-		newLimit := r.expandByCherrypick(limit)
-		newLimitHashes = r.hexHashes(newLimit)
-		limit = append(limit, newLimit...)
-	}
-
-	var affectedCommits []*Commit
-
+// walkRevFirstParent walks backward from the walkFrom commits following the first parent until it hits an introduced commit.
+// If a path does not encounter an introduced, it is discarded.
+// Returns a list of affected commits
+func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Commit {
 	introMap := make([]bool, len(r.commits))
 	for _, idx := range introduced {
 		introMap[idx] = true
 	}
 
-	// DFS to walk from limit(s) to introduced (follow first parent)
-	stack := make([]int, 0, len(limit))
-	// Start from limits' parents
+	affectedMap := make([]bool, len(r.commits))
+
+	// DFS to walk from walkFrom to introduced (follow first parent)
+	for _, fromIdx := range walkFrom {
+		stack := []int{fromIdx}
+		var affectedPath []int
+		pathValid := false
+
+		for len(stack) > 0 {
+			curr := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+
+			affectedPath = append(affectedPath, curr)
+
+			// Stop traversal and keep affectedPath when:
+			// 1. commit is introduced -> this path is a full path from walkFrom to introduced
+			// 2. commit is already marked as affected -> this partial path is guaranteed to hit an introduced commit from curr
+			if introMap[curr] || affectedMap[curr] {
+				pathValid = true
+				break
+			}
+
+			commit := r.commits[curr]
+			// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
+			if len(commit.Parents) > 0 {
+				stack = append(stack, commit.Parents[0])
+			}
+		}
+
+		if pathValid {
+			for _, idx := range affectedPath {
+				affectedMap[idx] = true
+			}
+		}
+	}
+
+	var affectedCommits []*Commit
+	for idx, isAffected := range affectedMap {
+		if isAffected {
+			affectedCommits = append(affectedCommits, r.commits[idx])
+		}
+	}
+
+	return affectedCommits
+}
+
+// Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive).
+// It also returns two slices of hex hashes for newly identified cherry-picked introduced and limit commits.
+func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, cherrypickedHashes) {
+	logger.InfoContext(ctx, "Starting limit walking")
+	start := time.Now()
+
+	introduced := r.parseHashes(ctx, se.Introduced)
+	limit := r.parseHashes(ctx, se.Limit)
+
+	var cherrypickedIntroHashes []string
+	var cherrypickedLimitHashes []string
+
+	if cherrypickIntro {
+		newIntro := r.expandByCherrypick(introduced)
+		cherrypickedIntroHashes = r.hexHashes(newIntro)
+		introduced = append(introduced, newIntro...)
+	}
+	if cherrypickLimit {
+		newLimit := r.expandByCherrypick(limit)
+		cherrypickedLimitHashes = r.hexHashes(newLimit)
+		limit = append(limit, newLimit...)
+	}
+
+	// Walk from the first parent of limit, as limit commits are exclusive from affected range
+	walkFrom := make([]int, 0, len(limit))
 	for _, idx := range limit {
 		commit := r.commits[idx]
 		if len(commit.Parents) > 0 {
-			stack = append(stack, commit.Parents[0])
+			walkFrom = append(walkFrom, commit.Parents[0])
 		}
 	}
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
-	visited := make([]bool, len(r.commits))
+	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	logger.InfoContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
-	for len(stack) > 0 {
-		curr := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
+	return affectedCommits, cherrypickedHashes{
+		Introduced: cherrypickedIntroHashes,
+		Limit:      cherrypickedLimitHashes,
+	}
+}
 
-		if visited[curr] {
-			continue
-		}
-		visited[curr] = true
+// AffectedSingleBranch finds affected commits by walking backward from fixed and lastAffected commits to introduced commit following the first parent.
+func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEvents) []*Commit {
+	logger.InfoContext(ctx, "Starting affected commits (single branch) walking")
+	start := time.Now()
 
-		// Add current node to affected commits
-		commit := r.commits[curr]
-		affectedCommits = append(affectedCommits, commit)
+	introduced := r.parseHashes(ctx, se.Introduced)
+	fixed := r.parseHashes(ctx, se.Fixed)
+	lastAffected := r.parseHashes(ctx, se.LastAffected)
 
-		// If commit is in introduced, we can stop the traversal after adding it to affected
-		if introMap[curr] {
-			continue
-		}
-
-		// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
+	// Walk from the parent of fixed commits and lastAffected commits
+	walkFrom := make([]int, 0, len(fixed)+len(lastAffected))
+	for _, idx := range fixed {
+		commit := r.commits[idx]
 		if len(commit.Parents) > 0 {
-			stack = append(stack, commit.Parents[0])
+			walkFrom = append(walkFrom, commit.Parents[0])
 		}
 	}
+	walkFrom = append(walkFrom, lastAffected...)
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
-	return affectedCommits, newIntroHashes, newLimitHashes
+	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	logger.InfoContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
+
+	return affectedCommits
 }

@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: repo.packagist.org
+        url: https://repo.packagist.org/p2/doesnotexist/doesnotexist.json
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 34
+        body: |
+            "404 not found, no packages here"
+        headers:
+            Cache-Control:
+                - public, must-revalidate, max-age=2592000
+            Cdn-Cache:
+                - MISS
+            Cdn-Cachedat:
+                - 03/27/2026 03:19:24
+            Cdn-Edgestorageid:
+                - "980"
+            Cdn-Proxyver:
+                - "1.49"
+            Cdn-Pullzone:
+                - "3363232"
+            Cdn-Requestcountrycode:
+                - AU
+            Cdn-Requestid:
+                - 35ddd6d4321169b4ac4bb3f84f49d590
+            Cdn-Requestpullcode:
+                - "404"
+            Cdn-Requestpullsuccess:
+                - "True"
+            Cdn-Requesttime:
+                - "0"
+            Cdn-Status:
+                - "404"
+            Content-Length:
+                - "34"
+            Content-Type:
+                - application/json
+            Date:
+                - Fri, 27 Mar 2026 03:19:24 GMT
+            Etag:
+                - '"69c40afd-22"'
+            Server:
+                - BunnyCDN-SG1-1173
+        status: 404 Not Found
+        code: 404
+        duration: 763.68777ms

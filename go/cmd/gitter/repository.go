@@ -95,6 +95,11 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		patchIDErr = repo.calculatePatchIDs(ctx, newCommits)
 	}
 
+	// If error is anything other than context cancel, exit early without saving
+	if patchIDErr != nil && !errors.Is(ctx.Err(), context.Canceled) {
+		return nil, fmt.Errorf("failed to calculate patch id for commits: %w", patchIDErr)
+	}
+
 	// Save cache
 	patchIDCount, err := saveRepositoryCache(cachePath, repo)
 	if err != nil {

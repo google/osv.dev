@@ -162,7 +162,9 @@ class ConstructHierarchyStringTest(unittest.TestCase):
 
   def _hierarchy(self, roots, graph):
     return frontend_handlers.ComputedHierarchy(
-        root_nodes=set(roots), graph={k: set(v) for k, v in graph.items()})
+        root_nodes=set(roots), graph={
+            k: set(v) for k, v in graph.items()
+        })
 
   def test_escapes_known_id(self):
     """IDs that match known_ids must be HTML-escaped inside the <a> tag."""

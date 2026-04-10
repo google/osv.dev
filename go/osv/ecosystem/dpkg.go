@@ -37,6 +37,7 @@ func (e dpkgEcosystem) Parse(version string) (Version, error) {
 }
 
 func (e dpkgEcosystem) Coarse(version string) (string, error) {
+	version = strings.TrimSpace(version)
 	epochStr, rest, hasColon := strings.Cut(version, ":")
 	epoch := big.NewInt(0)
 	if hasColon {
@@ -57,7 +58,9 @@ func (e dpkgEcosystem) Coarse(version string) (string, error) {
 	if len(parts) > 0 && !isDecimal(parts[0]) {
 		// dpkg versions are actually required to start with numbers.
 		// For some reason, semantic just treats these invalid versions as greater.
-		comps = append(comps, big.NewInt(100000000))
+		if !strings.HasPrefix(parts[0], "~") {
+			comps = append(comps, big.NewInt(100000000))
+		}
 	} else {
 		for i := 0; i < len(parts); i += 2 {
 			p := parts[i]
@@ -86,6 +89,8 @@ func (e dpkgEcosystem) Coarse(version string) (string, error) {
 				firstChar < '.',
 				firstChar == '~':
 				// These are allowed characters that do not trigger overflow.
+			case strings.HasPrefix(sep, ".~"):
+				// "0.~" < "0."
 			default:
 				// Trigger an overflow because these characters are considered
 				// greater than a single dot separator

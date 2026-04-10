@@ -15,6 +15,7 @@
 package ecosystem
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"regexp"
@@ -30,6 +31,15 @@ type packagistEcosystem struct {
 var _ Enumerable = packagistEcosystem{}
 
 func (e packagistEcosystem) Parse(version string) (Version, error) {
+	if strings.Contains(version, "#") {
+		// A quirk of packagist comparison is that to compare numbers against non-numbers, numbers are replaced with '#'
+		// This means versions with a literal '#' compare equally to every number.
+		// e.g. 1.0 == #.0 and 2.0 == #.0 (but 1.0 < 2.0)
+		// If we allow this, we cannot guarantee an ordering of versions, so just treat any versions with # as invalid.
+		// No current Packagist vulns in OSV have '#' in their versions.
+		return nil, errors.New("packagist version may not contain '#'")
+	}
+
 	return SemanticVersionWrapper[semantic.PackagistVersion]{semantic.ParsePackagistVersion(version)}, nil
 }
 
@@ -39,6 +49,9 @@ var packagistSepRegex = regexp.MustCompile(`[-_+.]`)
 // Treats 'p'/'pl' prefixes as maximal ints to ensure they sort after base versions
 // (e.g. 1.0 < 1.0-p1).
 func (e packagistEcosystem) Coarse(version string) (string, error) {
+	if strings.Contains(version, "#") {
+		return "", errors.New("packagist version may not contain '#'")
+	}
 	version = strings.TrimPrefix(version, "v")
 	version = strings.TrimPrefix(version, "V")
 

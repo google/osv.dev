@@ -3,9 +3,9 @@ kind: CronJob
 metadata:
   name: vanir-signatures
   labels:
-    cronLastSuccessfulTimeMins: "1500"
+    cronLastSuccessfulTimeMins: "400"
 spec:
-  schedule: "0 9 * * *"
+  schedule: "0 */6 * * *"
   timeZone: "Australia/Sydney"
   concurrencyPolicy: Forbid
   jobTemplate:

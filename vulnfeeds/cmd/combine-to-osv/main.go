@@ -384,8 +384,15 @@ func repoURLFromRanges(ranges []*osvschema.Range) string {
 	return ""
 }
 
-// enrichRepoPURLs sets affected.package.purl to an unversioned pkg:generic repo pURL
-// when a GIT range with a repo URL exists and purl is currently empty.
+// maxRepoPURLTags caps the number of versioned pURLs attached to a record
+const maxRepoPURLTags = 200
+
+var repoTagsCache = &gitpurl.RepoTagsCache{}
+
+// enrichRepoPURLs populates repo-derived pURLs on each affected entry that
+// has a GIT-type range: an unversioned pkg:generic purl on
+// affected.package.purl (when unset), and a list of versioned variants under
+// affected.database_specific["repo_purls"].
 func enrichRepoPURLs(v *osvschema.Vulnerability) {
 	if v == nil || len(v.GetAffected()) == 0 {
 		return
@@ -396,7 +403,6 @@ func enrichRepoPURLs(v *osvschema.Vulnerability) {
 			continue
 		}
 
-		// Ensure base purl is set (unversioned).
 		if aff.Package == nil {
 			aff.Package = &osvschema.Package{}
 		}
@@ -406,15 +412,13 @@ func enrichRepoPURLs(v *osvschema.Vulnerability) {
 			}
 		}
 
-		// Add versioned repo pURLs when possible.
 		addVersionedRepoPURLs(aff, repo)
 	}
 }
 
-var repoTagsCache = &gitpurl.RepoTagsCache{}
-
 // addVersionedRepoPURLs populates affected.database_specific["repo_purls"]
-// with pkg:generic/...@<tag> entries, using affected.versions if available.
+// with pkg:generic/...@<tag> entries, using affected.versions if available
+// or (behind ENABLE_REPO_PURL_TAGS) tags discovered from the remote repo.
 func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 	if aff == nil || repo == "" {
 		return
@@ -430,11 +434,10 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 				tags = append(tags, tag)
 			}
 			sort.Strings(tags)
-			const maxTags = 200
-			if len(tags) > maxTags {
-				tags = tags[:maxTags]
-			}
 		}
+	}
+	if len(tags) > maxRepoPURLTags {
+		tags = tags[:maxRepoPURLTags]
 	}
 
 	if len(tags) == 0 {
@@ -446,9 +449,8 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 		return
 	}
 
-	// Dedup and format.
 	seen := make(map[string]struct{}, len(tags))
-	vPURLs := make([]string, 0, len(tags))
+	versionedPURLs := make([]string, 0, len(tags))
 	for _, t := range tags {
 		if t == "" {
 			continue
@@ -457,14 +459,14 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 			continue
 		}
 		seen[t] = struct{}{}
-		vPURLs = append(vPURLs, base+"@"+t)
+		versionedPURLs = append(versionedPURLs, base+"@"+t)
 	}
-	if len(vPURLs) == 0 {
+	if len(versionedPURLs) == 0 {
 		return
 	}
 
-	anys := make([]any, len(vPURLs))
-	for i, s := range vPURLs {
+	anys := make([]any, len(versionedPURLs))
+	for i, s := range versionedPURLs {
 		anys[i] = s
 	}
 	listVal, err := structpb.NewValue(anys)

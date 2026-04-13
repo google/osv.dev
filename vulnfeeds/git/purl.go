@@ -3,6 +3,7 @@ package git
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	packageurl "github.com/package-url/packageurl-go"
@@ -11,46 +12,92 @@ import (
 // BuildGenericRepoPURL returns an unversioned generic purl for a repo URL.
 // Example: pkg:generic/github.com/owner/repo
 func BuildGenericRepoPURL(repoURL string) (string, error) {
-	return buildGenericRepoPURL(repoURL, "")
-}
-
-// BuildVersionedGenericRepoPURL returns a generic purl whose version
-// component is the given string, encoded by packageurl-go.
-// A tag like "release/1.2.3" becomes "...@release%2F1.2.3" rather than a
-// malformed "...@release/1.2.3".
-// Example: pkg:generic/github.com/owner/repo@v1.0.0
-func BuildVersionedGenericRepoPURL(repoURL, version string) (string, error) {
-	return buildGenericRepoPURL(repoURL, version)
-}
-
-func buildGenericRepoPURL(repoURL, version string) (string, error) {
-	u, err := url.Parse(repoURL)
+	p, err := ParseRepoPURL(repoURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid repo url: %w", err)
+		return "", err
+	}
+
+	return p.ToString(), nil
+}
+
+// ParseRepoPURL decodes a repo URL into a PackageURL template with type,
+// namespace, and name populated. packageurl-go handles version
+// escaping so reserved characters such as "/" are encoded to "%2F".
+func ParseRepoPURL(repoURL string) (*packageurl.PackageURL, error) {
+	u, err := url.Parse(normalizeRepoURL(repoURL))
+	if err != nil {
+		return nil, fmt.Errorf("invalid repo url: %w", err)
 	}
 
 	switch strings.ToLower(u.Scheme) {
 	case "http", "https":
 	default:
-		return "", fmt.Errorf("unsupported scheme %q in %q", u.Scheme, repoURL)
+		return nil, fmt.Errorf("unsupported scheme %q in %q", u.Scheme, repoURL)
 	}
 
 	host := strings.ToLower(u.Hostname())
 	if host == "" {
-		return "", fmt.Errorf("missing host in %q", repoURL)
+		return nil, fmt.Errorf("missing host in %q", repoURL)
 	}
 
 	path := strings.Trim(strings.TrimSuffix(u.Path, ".git"), "/")
 	parts := strings.Split(path, "/")
 	if len(parts) < 2 || parts[0] == "" {
-		return "", fmt.Errorf("invalid repo path in %q", repoURL)
+		return nil, fmt.Errorf("invalid repo path in %q", repoURL)
 	}
 
-	// Namespace is host + all path segments except the last; name is the last segment.
-	ns := strings.Join(append([]string{host}, parts[:len(parts)-1]...), "/")
-	name := parts[len(parts)-1]
+	return packageurl.NewPackageURL(
+		"generic",
+		strings.Join(append([]string{host}, parts[:len(parts)-1]...), "/"),
+		parts[len(parts)-1],
+		"", nil, "",
+	), nil
+}
 
-	p := packageurl.NewPackageURL("generic", ns, name, version, nil, "")
+// normalizeRepoURL rewrites common git-transport variants into an https URL
+// so ParseRepoPURL can treat them uniformly.
+// Inputs with an unrecognized scheme (ftp://, file://, …) are returned as-is
+// so ParseRepoPURL can reject them via its scheme check.
+func normalizeRepoURL(raw string) string {
+	raw = strings.TrimSpace(raw)
 
-	return p.ToString(), nil
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		return raw
+	}
+
+	body := raw
+	hadScheme := false
+	if i := strings.Index(body, "://"); i != -1 {
+		scheme := strings.ToLower(body[:i])
+		if scheme != "git" && scheme != "ssh" {
+			return raw
+		}
+		body = body[i+3:]
+		hadScheme = true
+	}
+
+	if at := strings.Index(body, "@"); at != -1 {
+		if slash := strings.Index(body, "/"); slash == -1 || at < slash {
+			body = body[at+1:]
+		}
+	}
+
+	if colon := strings.Index(body, ":"); colon != -1 {
+		slash := strings.Index(body, "/")
+		if slash == -1 || colon < slash {
+			portEnd := slash
+			if portEnd == -1 {
+				portEnd = len(body)
+			}
+			if _, err := strconv.Atoi(body[colon+1 : portEnd]); err != nil {
+				body = body[:colon] + "/" + body[colon+1:]
+			}
+		}
+	}
+
+	if hadScheme || body != raw {
+		return "https://" + body
+	}
+
+	return raw
 }

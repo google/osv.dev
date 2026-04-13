@@ -535,7 +535,7 @@ func repoPURLs(t *testing.T, aff *osvschema.Affected) []string {
 	return out
 }
 
-func TestEnrichRepoPURLs_Issue3807(t *testing.T) {
+func TestEnrichRepoPURLs_GITRangeWithTagVersions(t *testing.T) {
 	t.Parallel()
 
 	repo := "https://github.com/chriskohlhoff/asio"

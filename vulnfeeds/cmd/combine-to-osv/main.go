@@ -20,11 +20,11 @@ import (
 	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -410,10 +410,15 @@ func repoURLFromRanges(ranges []*osvschema.Range) string {
 	return ""
 }
 
-// maxRepoPURLTags caps the number of versioned pURLs attached to a record
-const maxRepoPURLTags = 200
+const (
+	maxRepoPURLTags = 200
+	repoPURLsKey    = "repo_purls"
+)
 
-var repoTagsCache = &gitpurl.RepoTagsCache{}
+var (
+	repoTagsCache      = &gitpurl.RepoTagsCache{}
+	enableRepoPURLTags = os.Getenv("ENABLE_REPO_PURL_TAGS") == "1"
+)
 
 // enrichRepoPURLs populates repo-derived pURLs on each affected entry that
 // has a GIT-type range: an unversioned pkg:generic purl on
@@ -442,20 +447,20 @@ func enrichRepoPURLs(v *osvschema.Vulnerability) {
 	}
 }
 
-// addVersionedRepoPURLs populates affected.database_specific["repo_purls"]
-// with pkg:generic/...@<tag> entries, using affected.versions if available
-// or (behind ENABLE_REPO_PURL_TAGS) tags discovered from the remote repo.
+// addVersionedRepoPURLs attaches versioned pkg:generic/...@<tag> entries
+// under affected.database_specific[repoPURLsKey], using affected.versions
+// if available or (behind ENABLE_REPO_PURL_TAGS) tags discovered from the
+// remote repo.
 func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 	if aff == nil || repo == "" {
 		return
 	}
 
-	var tags []string
-	if len(aff.Versions) > 0 {
-		tags = append(tags, aff.Versions...)
-	} else if os.Getenv("ENABLE_REPO_PURL_TAGS") == "1" {
+	tags := aff.Versions
+	if len(tags) == 0 && enableRepoPURLTags {
 		norm, err := gitpurl.NormalizeRepoTags(repo, repoTagsCache)
 		if err == nil && len(norm) > 0 {
+			tags = make([]string, 0, len(norm))
 			for tag := range norm {
 				tags = append(tags, tag)
 			}
@@ -465,50 +470,35 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 	if len(tags) > maxRepoPURLTags {
 		tags = tags[:maxRepoPURLTags]
 	}
-
 	if len(tags) == 0 {
 		return
 	}
 
-	// Validate the repo URL once up front; if the base purl can't be built
-	// the per-tag calls below will all fail for the same reason.
-	if _, err := gitpurl.BuildGenericRepoPURL(repo); err != nil {
+	tmpl, err := gitpurl.ParseRepoPURL(repo)
+	if err != nil {
 		return
 	}
 
-	seen := make(map[string]struct{}, len(tags))
-	versionedPURLs := make([]string, 0, len(tags))
+	versionedPURLs := make([]any, 0, len(tags))
 	for _, t := range tags {
 		if t == "" {
 			continue
 		}
-		if _, ok := seen[t]; ok {
-			continue
-		}
-		seen[t] = struct{}{}
-		p, err := gitpurl.BuildVersionedGenericRepoPURL(repo, t)
-		if err != nil || p == "" {
-			continue
-		}
-		versionedPURLs = append(versionedPURLs, p)
+		tmpl.Version = t
+		versionedPURLs = append(versionedPURLs, tmpl.ToString())
 	}
 	if len(versionedPURLs) == 0 {
 		return
 	}
 
-	anys := make([]any, len(versionedPURLs))
-	for i, s := range versionedPURLs {
-		anys[i] = s
+	if aff.DatabaseSpecific == nil {
+		ds, err := utility.NewStructpbFromMap(nil)
+		if err != nil {
+			return
+		}
+		aff.DatabaseSpecific = ds
 	}
-	listVal, err := structpb.NewValue(anys)
-	if err != nil {
+	if err := conversion.AddFieldToDatabaseSpecific(aff.DatabaseSpecific, repoPURLsKey, versionedPURLs); err != nil {
 		return
 	}
-	if aff.DatabaseSpecific == nil {
-		aff.DatabaseSpecific = &structpb.Struct{Fields: map[string]*structpb.Value{}}
-	}
-	if aff.DatabaseSpecific.Fields == nil {
-		aff.DatabaseSpecific.Fields = map[string]*structpb.Value{}
-	}
-	aff.DatabaseSpecific.Fields["repo_purls"] = listVal
 }

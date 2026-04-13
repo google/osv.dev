@@ -277,26 +277,49 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	if len(nvdAffected) == 0 {
 		return cve5Affected
 	}
+	// If NVD has more affected packages, prefer it entirely.
 	if len(cve5Affected) == 0 || len(nvdAffected) > len(cve5Affected) {
 		return nvdAffected
 	}
 
-	cve5Ranges, cve5Versions := bucketByRepo(cve5Affected)
-	nvdRanges, nvdVersions := bucketByRepo(nvdAffected)
+	nvdRepoMap := make(map[string][]*osvschema.Range)
+	nvdRepoVersions := make(map[string][]string)
+	for _, affected := range nvdAffected {
+		for _, r := range affected.GetRanges() {
+			if r.GetRepo() != "" {
+				repo := strings.ToLower(r.GetRepo())
+				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
+				nvdRepoVersions[repo] = append(nvdRepoVersions[repo], affected.GetVersions()...)
+			}
+		}
+	}
+
+	cve5RepoMap := make(map[string][]*osvschema.Range)
+	cve5RepoVersions := make(map[string][]string)
+	for _, affected := range cve5Affected {
+		for _, r := range affected.GetRanges() {
+			if r.GetRepo() != "" {
+				repo := strings.ToLower(r.GetRepo())
+				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
+				cve5RepoVersions[repo] = append(cve5RepoVersions[repo], affected.GetVersions()...)
+			}
+		}
+	}
 
 	newRepoAffectedMap := make(map[string]*osvschema.Affected)
 
 	// Finds ranges with the same repo and merges them into one affected set.
-	for repo, cveRanges := range cve5Ranges {
-		if nvd, ok := nvdRanges[repo]; ok {
+	for repo, cveRanges := range cve5RepoMap {
+		if nvdRanges, ok := nvdRepoMap[repo]; ok {
 			var newAffectedRanges []*osvschema.Range
 
 			// Found a match. If NVD has more ranges, use its ranges.
-			if len(nvd) > len(cveRanges) {
-				newAffectedRanges = nvd
-			} else if len(cveRanges) == 1 && len(nvd) == 1 {
+			if len(nvdRanges) > len(cveRanges) {
+				// just use  the nvd ranges
+				newAffectedRanges = nvdRanges
+			} else if len(cveRanges) == 1 && len(nvdRanges) == 1 {
 				c5Intro, c5Fixed := getRangeBoundaryVersions(cveRanges[0].GetEvents())
-				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvd[0].GetEvents())
+				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].GetEvents())
 
 				// Prefer cve5 data, but use nvd data if cve5 data is missing.
 				if c5Intro == "" {
@@ -316,28 +339,29 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				newAffectedRanges = cveRanges
 			}
 
-			delete(nvdRanges, repo)
+			// Remove from map so we know which NVD packages are left.
+			delete(nvdRepoMap, repo)
 			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges:   newAffectedRanges,
-				Versions: vulns.Unique(slices.Concat(cve5Versions[repo], nvdVersions[repo])),
+				Versions: vulns.Unique(slices.Concat(cve5RepoVersions[repo], nvdRepoVersions[repo])),
 			}
 		} else {
 			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges:   cveRanges,
-				Versions: vulns.Unique(cve5Versions[repo]),
+				Versions: vulns.Unique(cve5RepoVersions[repo]),
 			}
 		}
 	}
 
 	// Add remaining NVD packages that were not in cve5.
-	for repo, nvdRange := range nvdRanges {
+	for repo, nvdRange := range nvdRepoMap {
 		newRepoAffectedMap[repo] = &osvschema.Affected{
 			Ranges:   nvdRange,
-			Versions: vulns.Unique(nvdVersions[repo]),
+			Versions: vulns.Unique(nvdRepoVersions[repo]),
 		}
 	}
 
-	combinedAffected := make([]*osvschema.Affected, 0, len(newRepoAffectedMap))
+	var combinedAffected []*osvschema.Affected //nolint:prealloc
 	for _, aff := range newRepoAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}
@@ -381,25 +405,6 @@ func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed stri
 	}
 
 	return introduced, fixed
-}
-
-// bucketByRepo groups each Affected's ranges (and the parent Affected's
-// Versions) by the lowercased repo URL of every GIT-bearing range.
-func bucketByRepo(affected []*osvschema.Affected) (map[string][]*osvschema.Range, map[string][]string) {
-	ranges := make(map[string][]*osvschema.Range)
-	versions := make(map[string][]string)
-	for _, a := range affected {
-		for _, r := range a.GetRanges() {
-			if r.GetRepo() == "" {
-				continue
-			}
-			repo := strings.ToLower(r.GetRepo())
-			ranges[repo] = append(ranges[repo], r)
-			versions[repo] = append(versions[repo], a.GetVersions()...)
-		}
-	}
-
-	return ranges, versions
 }
 
 // repoURLFromRanges returns the first repo URL from a GIT-type range, if present.

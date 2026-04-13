@@ -468,56 +468,6 @@ func TestRepoURLFromRanges_NoGIT(t *testing.T) {
 	}
 }
 
-func TestAddVersionedRepoPURLs_FromVersions(t *testing.T) {
-	t.Setenv("ENABLE_REPO_PURL_TAGS", "") // ensure derivation path is off
-
-	repo := "https://github.com/chriskohlhoff/asio"
-	aff := &osvschema.Affected{
-		Package:  &osvschema.Package{Ecosystem: "GIT", Name: "asio"},
-		Versions: []string{"asio-1-13-0", "asio-1-12-0"},
-		Ranges: []*osvschema.Range{{
-			Type:   osvschema.Range_GIT,
-			Repo:   repo,
-			Events: []*osvschema.Event{{Introduced: "0"}},
-		}},
-	}
-
-	addVersionedRepoPURLs(aff, repo)
-
-	base, err := gitpurl.BuildGenericRepoPURL(repo)
-	if err != nil || base == "" {
-		t.Fatalf("failed to build base purl: %v", err)
-	}
-
-	field := aff.GetDatabaseSpecific().GetFields()["repo_purls"]
-	if field == nil {
-		t.Fatalf("repo_purls missing: %#v", aff.GetDatabaseSpecific())
-	}
-	values := field.GetListValue().GetValues()
-	if len(values) == 0 {
-		t.Fatalf("repo_purls empty: %#v", aff.GetDatabaseSpecific())
-	}
-	list := make([]string, 0, len(values))
-	for _, v := range values {
-		list = append(list, v.GetStringValue())
-	}
-
-	want1 := base + "@asio-1-13-0"
-	want2 := base + "@asio-1-12-0"
-	found1, found2 := false, false
-	for _, p := range list {
-		if p == want1 {
-			found1 = true
-		}
-		if p == want2 {
-			found2 = true
-		}
-	}
-	if !found1 || !found2 {
-		t.Fatalf("missing expected entries, got %#v", list)
-	}
-}
-
 // repoPURLs pulls the string list stored under database_specific["repo_purls"]
 // so tests can assert on the versioned pURLs attached by enrichRepoPURLs.
 func repoPURLs(t *testing.T, aff *osvschema.Affected) []string {
@@ -628,6 +578,45 @@ func TestEnrichRepoPURLs_NonGITRangeNoop(t *testing.T) {
 	}
 }
 
+func TestEnrichRepoPURLs_MalformedRepoIsNoop(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]string{
+		"unsupported scheme":        "ftp://example.com/owner/repo",
+		"missing host":              "https:///owner/repo",
+		"insufficient path":         "https://github.com/onlyowner",
+		"scp-like, bad port hybrid": "git://git@gitlab.com:gitlab-org",
+	}
+
+	for desc, repo := range cases {
+		t.Run(desc, func(t *testing.T) {
+			t.Parallel()
+			v := &osvschema.Vulnerability{
+				Affected: []*osvschema.Affected{
+					{
+						Versions: []string{"v1.0.0"},
+						Ranges: []*osvschema.Range{{
+							Type:   osvschema.Range_GIT,
+							Repo:   repo,
+							Events: []*osvschema.Event{{Introduced: "0"}},
+						}},
+					},
+				},
+			}
+
+			enrichRepoPURLs(v)
+
+			aff := v.Affected[0]
+			if aff.Package != nil {
+				t.Errorf("Package was populated as %#v, want nil (malformed repo should be a no-op)", aff.Package)
+			}
+			if aff.DatabaseSpecific != nil {
+				t.Errorf("DatabaseSpecific was populated as %#v, want nil", aff.DatabaseSpecific)
+			}
+		})
+	}
+}
+
 func TestEnrichRepoPURLs_DotGitSuffix(t *testing.T) {
 	t.Parallel()
 
@@ -710,7 +699,11 @@ func TestAddVersionedRepoPURLs_EscapesSpecialCharsInTags(t *testing.T) {
 		}},
 	}
 
-	addVersionedRepoPURLs(aff, repo)
+	tmpl, err := gitpurl.ParseRepoPURL(repo)
+	if err != nil {
+		t.Fatalf("ParseRepoPURL unexpected error: %v", err)
+	}
+	addVersionedRepoPURLs(aff, tmpl)
 
 	got := repoPURLs(t, aff)
 	want := []string{
@@ -732,15 +725,20 @@ func TestAddVersionedRepoPURLs_CapsLargeVersionLists(t *testing.T) {
 	for i := range versions {
 		versions[i] = fmt.Sprintf("v1.0.%d", i)
 	}
+	repo := "https://github.com/example/big"
 	aff := &osvschema.Affected{
 		Versions: versions,
 		Ranges: []*osvschema.Range{{
 			Type: osvschema.Range_GIT,
-			Repo: "https://github.com/example/big",
+			Repo: repo,
 		}},
 	}
 
-	addVersionedRepoPURLs(aff, "https://github.com/example/big")
+	tmpl, err := gitpurl.ParseRepoPURL(repo)
+	if err != nil {
+		t.Fatalf("ParseRepoPURL unexpected error: %v", err)
+	}
+	addVersionedRepoPURLs(aff, tmpl)
 
 	got := repoPURLs(t, aff)
 	if len(got) != maxRepoPURLTags {

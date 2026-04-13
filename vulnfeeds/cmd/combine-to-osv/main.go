@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -22,7 +21,9 @@ import (
 	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	packageurl "github.com/package-url/packageurl-go"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -276,53 +277,26 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	if len(nvdAffected) == 0 {
 		return cve5Affected
 	}
-	// If NVD has more affected packages, prefer it entirely.
 	if len(cve5Affected) == 0 || len(nvdAffected) > len(cve5Affected) {
 		return nvdAffected
 	}
 
-	nvdRepoMap := make(map[string][]*osvschema.Range)
-	nvdRepoVersions := make(map[string][]string)
-	for _, affected := range nvdAffected {
-		for _, r := range affected.GetRanges() {
-			if r.GetRepo() != "" {
-				repo := strings.ToLower(r.GetRepo())
-				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
-				nvdRepoVersions[repo] = append(nvdRepoVersions[repo], affected.GetVersions()...)
-			}
-		}
-	}
-
-	cve5RepoMap := make(map[string][]*osvschema.Range)
-	cve5RepoVersions := make(map[string][]string)
-	for _, affected := range cve5Affected {
-		for _, r := range affected.GetRanges() {
-			if r.GetRepo() != "" {
-				repo := strings.ToLower(r.GetRepo())
-				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
-				cve5RepoVersions[repo] = append(cve5RepoVersions[repo], affected.GetVersions()...)
-			}
-		}
-	}
-
-	mergedVersions := func(repo string) []string {
-		return mergeUniqueStrings(cve5RepoVersions[repo], nvdRepoVersions[repo])
-	}
+	cve5Ranges, cve5Versions := bucketByRepo(cve5Affected)
+	nvdRanges, nvdVersions := bucketByRepo(nvdAffected)
 
 	newRepoAffectedMap := make(map[string]*osvschema.Affected)
 
 	// Finds ranges with the same repo and merges them into one affected set.
-	for repo, cveRanges := range cve5RepoMap {
-		if nvdRanges, ok := nvdRepoMap[repo]; ok {
+	for repo, cveRanges := range cve5Ranges {
+		if nvd, ok := nvdRanges[repo]; ok {
 			var newAffectedRanges []*osvschema.Range
 
 			// Found a match. If NVD has more ranges, use its ranges.
-			if len(nvdRanges) > len(cveRanges) {
-				// just use  the nvd ranges
-				newAffectedRanges = nvdRanges
-			} else if len(cveRanges) == 1 && len(nvdRanges) == 1 {
+			if len(nvd) > len(cveRanges) {
+				newAffectedRanges = nvd
+			} else if len(cveRanges) == 1 && len(nvd) == 1 {
 				c5Intro, c5Fixed := getRangeBoundaryVersions(cveRanges[0].GetEvents())
-				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRanges[0].GetEvents())
+				nvdIntro, nvdFixed := getRangeBoundaryVersions(nvd[0].GetEvents())
 
 				// Prefer cve5 data, but use nvd data if cve5 data is missing.
 				if c5Intro == "" {
@@ -342,29 +316,28 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				newAffectedRanges = cveRanges
 			}
 
-			// Remove from map so we know which NVD packages are left.
-			delete(nvdRepoMap, repo)
+			delete(nvdRanges, repo)
 			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges:   newAffectedRanges,
-				Versions: mergedVersions(repo),
+				Versions: vulns.Unique(slices.Concat(cve5Versions[repo], nvdVersions[repo])),
 			}
 		} else {
 			newRepoAffectedMap[repo] = &osvschema.Affected{
 				Ranges:   cveRanges,
-				Versions: mergedVersions(repo),
+				Versions: vulns.Unique(cve5Versions[repo]),
 			}
 		}
 	}
 
 	// Add remaining NVD packages that were not in cve5.
-	for repo, nvdRange := range nvdRepoMap {
+	for repo, nvdRange := range nvdRanges {
 		newRepoAffectedMap[repo] = &osvschema.Affected{
 			Ranges:   nvdRange,
-			Versions: mergedVersions(repo),
+			Versions: vulns.Unique(nvdVersions[repo]),
 		}
 	}
 
-	var combinedAffected []*osvschema.Affected //nolint:prealloc
+	combinedAffected := make([]*osvschema.Affected, 0, len(newRepoAffectedMap))
 	for _, aff := range newRepoAffectedMap {
 		combinedAffected = append(combinedAffected, aff)
 	}
@@ -410,31 +383,23 @@ func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed stri
 	return introduced, fixed
 }
 
-// mergeUniqueStrings returns the order-preserving union of two string slices.
-// Entries from a come first, followed by entries from b that aren't already
-// present. Used to combine per-repo version lists from cve5 and NVD.
-func mergeUniqueStrings(a, b []string) []string {
-	if len(a) == 0 && len(b) == 0 {
-		return nil
-	}
-	out := make([]string, 0, len(a)+len(b))
-	seen := make(map[string]struct{}, len(a)+len(b))
-	for _, s := range a {
-		if _, ok := seen[s]; ok {
-			continue
+// bucketByRepo groups each Affected's ranges (and the parent Affected's
+// Versions) by the lowercased repo URL of every GIT-bearing range.
+func bucketByRepo(affected []*osvschema.Affected) (map[string][]*osvschema.Range, map[string][]string) {
+	ranges := make(map[string][]*osvschema.Range)
+	versions := make(map[string][]string)
+	for _, a := range affected {
+		for _, r := range a.GetRanges() {
+			if r.GetRepo() == "" {
+				continue
+			}
+			repo := strings.ToLower(r.GetRepo())
+			ranges[repo] = append(ranges[repo], r)
+			versions[repo] = append(versions[repo], a.GetVersions()...)
 		}
-		seen[s] = struct{}{}
-		out = append(out, s)
-	}
-	for _, s := range b {
-		if _, ok := seen[s]; ok {
-			continue
-		}
-		seen[s] = struct{}{}
-		out = append(out, s)
 	}
 
-	return out
+	return ranges, versions
 }
 
 // repoURLFromRanges returns the first repo URL from a GIT-type range, if present.
@@ -453,11 +418,6 @@ const (
 	repoPURLsKey    = "repo_purls"
 )
 
-var (
-	repoTagsCache      = &gitpurl.RepoTagsCache{}
-	enableRepoPURLTags = os.Getenv("ENABLE_REPO_PURL_TAGS") == "1"
-)
-
 // enrichRepoPURLs populates repo-derived pURLs on each affected entry that
 // has a GIT-type range: an unversioned pkg:generic purl on
 // affected.package.purl (when unset), and a list of versioned variants under
@@ -471,51 +431,30 @@ func enrichRepoPURLs(v *osvschema.Vulnerability) {
 		if repo == "" {
 			continue
 		}
+		tmpl, err := gitpurl.ParseRepoPURL(repo)
+		if err != nil {
+			continue
+		}
 
 		if aff.Package == nil {
 			aff.Package = &osvschema.Package{}
 		}
 		if aff.Package.Purl == "" {
-			if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
-				aff.Package.Purl = p
-			}
+			aff.Package.Purl = tmpl.ToString()
 		}
 
-		addVersionedRepoPURLs(aff, repo)
+		addVersionedRepoPURLs(aff, tmpl)
 	}
 }
 
-// addVersionedRepoPURLs attaches versioned pkg:generic/...@<tag> entries
-// under affected.database_specific[repoPURLsKey], using affected.versions
-// if available or (behind ENABLE_REPO_PURL_TAGS) tags discovered from the
-// remote repo.
-func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
-	if aff == nil || repo == "" {
+// addVersionedRepoPURLs attaches one versioned pkg:generic/...@<tag> entry
+// under affected.database_specific[repoPURLsKey] per entry in aff.Versions.
+func addVersionedRepoPURLs(aff *osvschema.Affected, tmpl *packageurl.PackageURL) {
+	if len(aff.Versions) == 0 {
 		return
 	}
 
-	tags := aff.Versions
-	if len(tags) == 0 && enableRepoPURLTags {
-		norm, err := gitpurl.NormalizeRepoTags(repo, repoTagsCache)
-		if err == nil && len(norm) > 0 {
-			tags = make([]string, 0, len(norm))
-			for tag := range norm {
-				tags = append(tags, tag)
-			}
-			sort.Strings(tags)
-		}
-	}
-	if len(tags) > maxRepoPURLTags {
-		tags = tags[:maxRepoPURLTags]
-	}
-	if len(tags) == 0 {
-		return
-	}
-
-	tmpl, err := gitpurl.ParseRepoPURL(repo)
-	if err != nil {
-		return
-	}
+	tags := aff.Versions[:min(len(aff.Versions), maxRepoPURLTags)]
 
 	versionedPURLs := make([]any, 0, len(tags))
 	for _, t := range tags {

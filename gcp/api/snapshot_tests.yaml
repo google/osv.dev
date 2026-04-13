@@ -1,0 +1,40 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# api e2e test runner
+# This should be triggered on changes to the following:
+# gcp/api/poetry.lock
+# gcp/api/run_tests_e2e.sh
+# gcp/api/*.py
+# gcp/api/**/*.py
+# osv/*.py
+# osv/**/*.py
+# tools/apitester/**
+steps:
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'sync'
+  dir: gcp/api
+  args: ['poetry', 'sync']
+
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'api-snapshot-tests'
+  dir: gcp/api
+  args: ['bash', '-ex', 'run_tests_e2e.sh', '/workspace/dummy.json']
+
+timeout: 7200s
+serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - CLOUDBUILD=1

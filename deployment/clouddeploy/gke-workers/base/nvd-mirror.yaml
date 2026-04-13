@@ -5,7 +5,8 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "240"
 spec:
-  schedule: "0 */2 * * *"
+  timeZone: "Australia/Sydney"
+  schedule: "5 */2 * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -24,8 +25,6 @@ spec:
               value: /tmp
             image: nvd-mirror
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "30"

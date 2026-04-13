@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25.7-alpine@sha256:81d49e1de26fa223b9ae0b4d5a4065ff8176a7d80aa5ef0bd9f2eee430afe4d7 AS build
+FROM golang:1.26.2-alpine@sha256:c2a1f7b2095d046ae14b286b18413a05bb82c9bca9b25fe7ff5efef0f0826166 AS build
 
 WORKDIR /src
 
@@ -27,7 +27,10 @@ RUN CGO_ENABLED=0 go build -o gitter ./cmd/gitter/
 FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
-RUN apk add --no-cache git zstd tar
+RUN apk add --no-cache bash git zstd tar
+
+# Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
+RUN git config --system maintenance.autoDetach false
 
 COPY --from=build /src/gitter /
 

@@ -9,6 +9,7 @@ module.exports = {
   entry: {
     main: './src/index.js',
     linter: './src/linter.js',
+    triage: './src/triage.js',
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
@@ -24,7 +25,7 @@ module.exports = {
         vendorsJs: {
           test: /node_modules/,
           chunks: 'initial',
-          filename: 'static/vendors.[contenthash].js',
+          name: 'vendors',
           priority: 1,
           maxInitialRequests: 2,
           minChunks: 1,
@@ -35,7 +36,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/*.html', to: '[name].html' },
+        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
@@ -50,6 +51,12 @@ module.exports = {
       template: './src/templates/linter/index.html',
       chunks: ['linter'],
       excludeChunks: ['main'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'triage.html',
+      template: './src/templates/triage.html',
+      chunks: ['triage'],
+      excludeChunks: ['main', 'linter'],
     }),
     new MiniCssExtractPlugin({
       filename: 'static/[name].[contenthash].css'

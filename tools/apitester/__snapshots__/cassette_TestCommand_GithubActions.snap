@@ -7,11 +7,11 @@
       "vulns": [
         {
           "id": "CVE-2023-39137",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "CVE-2023-39139",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -29,11 +29,11 @@
       "vulns": [
         {
           "id": "CVE-2023-39137",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "CVE-2023-39139",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

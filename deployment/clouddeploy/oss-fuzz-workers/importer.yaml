@@ -29,8 +29,6 @@ spec:
                 name: "ssd"
               - mountPath: "/secrets"
                 name: "secrets"
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

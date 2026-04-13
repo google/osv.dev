@@ -50,6 +50,14 @@ type Attrs struct {
 	CustomTime time.Time
 	// CRC32C is the CRC32 checksum of the object, using the Castagnoli93 polynomial.
 	CRC32C uint32
+	// Updated is the time the object was last updated.
+	Updated time.Time
+}
+
+// Object represents a storage object and its metadata.
+type Object struct {
+	Name  string
+	Attrs Attrs
 }
 
 // CloudStorage defines a generic interface for blob storage operations.
@@ -66,8 +74,13 @@ type CloudStorage interface {
 	WriteObject(ctx context.Context, path string, data []byte, opts *WriteOptions) error
 
 	// Objects returns an iterator over objects that match the prefix.
-	Objects(ctx context.Context, prefix string) iter.Seq2[string, error]
+	Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error]
 
 	// Close closes the CloudStorage client.
 	Close() error
+}
+
+// CloudStorageProvider provides CloudStorage instances for a given bucket.
+type CloudStorageProvider interface {
+	Bucket(name string) CloudStorage
 }

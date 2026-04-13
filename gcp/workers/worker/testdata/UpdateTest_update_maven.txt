@@ -38,7 +38,6 @@
                           'url': 'https://github.com/apache/any23'},
                       {   'type': 'WEB',
                           'url': 'https://lists.apache.org/thread.html/r589d1a9f94dbeee7a0f5dbe8513a0e300dfe669bd964ba2fbfe28e07%40%3Cannounce.apache.org%3E'}],
-    'schema_version': '1.7.3',
     'severity': [   {   'score': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N',
                         'type': 'CVSS_V3'}],
     'summary': 'XML Injection in Any23'}

@@ -1,6 +1,9 @@
 package git
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -321,5 +324,72 @@ func TestParseVersionRange(t *testing.T) {
 				t.Errorf("ParseVersionRange(%q) got = %v, want %v", tc.input, got, tc.expectedResult)
 			}
 		})
+	}
+}
+
+func TestValidateAndCanonicalizeLink(t *testing.T) {
+	type args struct {
+		link string
+	}
+	tests := []struct {
+		name              string
+		args              args
+		wantCanonicalLink string
+		wantErr           bool
+		skipOnCloudBuild  bool
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
+	}{
+		{
+			name: "A link that 404's",
+			args: args{
+				link: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			},
+			wantCanonicalLink: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			wantErr:           true,
+		},
+		{
+			name: "A functioning link",
+			args: args{
+				link: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantErr:           false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := testutils.SetupVCR(t)
+			client := r.GetDefaultClient()
+
+			if time.Now().Before(tt.disableExpiryDate) {
+				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
+			}
+			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
+				t.Skipf("test %q: running on Cloud Build", tt.name)
+			}
+			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link, client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateAndCanonicalizeLink() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotCanonicalLink != tt.wantCanonicalLink {
+				t.Errorf("ValidateAndCanonicalizeLink() = %v, want %v", gotCanonicalLink, tt.wantCanonicalLink)
+			}
+		})
+	}
+}
+
+func TestValidateAndCanonicalizeLink_429(t *testing.T) {
+	requests := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer ts.Close()
+
+	client := ts.Client()
+	_, err := ValidateAndCanonicalizeLink(ts.URL, client)
+	if err == nil {
+		t.Errorf("ValidateAndCanonicalizeLink() expected error, got nil")
 	}
 }

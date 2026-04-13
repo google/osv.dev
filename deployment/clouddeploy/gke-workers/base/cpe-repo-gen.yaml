@@ -5,7 +5,8 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "2880"
 spec:
-  schedule: "0 6 * * *"
+  timeZone: "Australia/Sydney"
+  schedule: "15 5 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -16,8 +17,6 @@ spec:
           - name: cpe-repo-gen
             image: cpe-repo-gen
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

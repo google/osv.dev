@@ -31,6 +31,9 @@ spec:
           - mountPath: "/secrets"
             name: "secrets"
         securityContext:
+          capabilities:
+            add:
+            - all
           privileged: true
         resources:
           requests:

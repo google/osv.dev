@@ -27,18 +27,27 @@ spec:
         imagePullPolicy: Always
         args:
           - "--port=8888"
-          - "--work_dir=/work/gitter"
-          - "--fetch_timeout=1h"
+          - "--work-dir=/work/gitter"
+          - "--fetch-timeout=1h"
+          - "--repo-cache-ttl=1h"
+          - "--repo-cache-max-cost=100GiB"
+        env:
+        - name: GOMEMLIMIT
+          value: "100GiB"
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: TRACE_SAMPLE_RATE
+          value: "1.0"
         volumeMounts:
         - mountPath: /work
           name: disk-data
         resources:
           requests:
             cpu: "28"
-            memory: "200Gi"
+            memory: "250G"
           limits:
             cpu: "28"
-            memory: "200Gi"
+            memory: "250G"
       volumes:
       - name: disk-data
         persistentVolumeClaim:
@@ -52,11 +61,12 @@ metadata:
 spec:
   storageClassName: ""
   capacity:
-    storage: 2Ti
+    storage: 4Ti
   accessModes:
     - ReadWriteOnce
-  gcePersistentDisk:
-    pdName: gitter-disk
+  csi:
+    driver: pd.csi.storage.gke.io
+    volumeHandle: projects/oss-vdb/zones/us-central1-f/disks/gitter-disk
     fsType: ext4
 ---
 apiVersion: v1
@@ -70,7 +80,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Ti
+      storage: 4Ti
 ---
 apiVersion: v1
 kind: Service

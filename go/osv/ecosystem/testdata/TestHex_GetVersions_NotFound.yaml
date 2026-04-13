@@ -1,0 +1,48 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: hex.pm
+        url: https://hex.pm/api/packages/doesnotexist123456
+        method: GET
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 41
+        body: '{"message":"Page not found","status":404}'
+        headers:
+            Alt-Svc:
+                - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+            Cache-Control:
+                - max-age=0, private, must-revalidate
+            Content-Length:
+                - "41"
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Fri, 27 Mar 2026 03:18:55 GMT
+            Server:
+                - Cowboy
+            Strict-Transport-Security:
+                - max-age=31536000
+            Vary:
+                - accept-encoding
+            Via:
+                - 1.1 google
+            X-Ratelimit-Limit:
+                - "100"
+            X-Ratelimit-Remaining:
+                - "99"
+            X-Ratelimit-Reset:
+                - "1774581540"
+            X-Request-Id:
+                - GKCUgSdcVmMX0kUClzZB
+        status: 404 Not Found
+        code: 404
+        duration: 226.99574ms

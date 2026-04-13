@@ -5,6 +5,8 @@ import (
 	"cmp"
 	"reflect"
 	"strings"
+
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type AffectedCommit struct {
@@ -27,6 +29,16 @@ func SetCommitByType(ac *AffectedCommit, commitType CommitType, commitHash strin
 	case Fixed:
 		ac.SetFixed(commitHash)
 	}
+}
+
+type RangeWithMetadata struct {
+	Range    *osvschema.Range
+	Metadata Metadata
+}
+
+type Metadata struct {
+	CPE    string
+	Source VersionSource
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {
@@ -75,14 +87,20 @@ func AffectedCommitCompare(i, j AffectedCommit) int {
 	if n := cmp.Compare(i.Repo, j.Repo); n != 0 {
 		return n
 	}
+	if i.Introduced == "" && j.Introduced != "" {
+		return 1
+	}
+	if i.Introduced != "" && j.Introduced == "" {
+		return -1
+	}
+	if n := cmp.Compare(i.Introduced, j.Introduced); n != 0 {
+		return n
+	}
 	if n := cmp.Compare(i.Fixed, j.Fixed); n != 0 {
 		return n
 	}
-	if n := cmp.Compare(i.LastAffected, j.LastAffected); n != 0 {
-		return n
-	}
 
-	return cmp.Compare(i.Introduced, j.Introduced)
+	return cmp.Compare(i.LastAffected, j.LastAffected)
 }
 
 type AffectedVersion struct {

@@ -33,6 +33,7 @@ const (
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
@@ -110,10 +111,9 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 			if !ok {
 				v = &vulns.Vulnerability{
 					Vulnerability: &osvschema.Vulnerability{
-						Id:        "DEBIAN-" + cveID,
-						Upstream:  []string{cveID},
-						Published: timestamppb.New(currentNVDCVE.CVE.Published.Time),
-						Details:   cveData.Description,
+						Id:       "DEBIAN-" + cveID,
+						Upstream: []string{cveID},
+						Details:  cveData.Description,
 						References: []*osvschema.Reference{
 							{
 								Type: osvschema.Reference_ADVISORY,
@@ -122,6 +122,11 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 						},
 					},
 				}
+
+				if !currentNVDCVE.CVE.Published.IsZero() {
+					v.Published = timestamppb.New(currentNVDCVE.CVE.Published.Time)
+				}
+
 				if currentNVDCVE.CVE.Metrics != nil {
 					v.AddSeverity(currentNVDCVE.CVE.Metrics)
 				}

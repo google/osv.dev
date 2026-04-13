@@ -17,6 +17,7 @@ import datetime
 import difflib
 import os
 import shutil
+import socket
 import pprint
 import signal
 import time
@@ -273,7 +274,7 @@ def setup_gitter():
   # Create a temporary directory for gitter working directory
   work_dir = tempfile.mkdtemp(prefix='gitter-work-')
 
-  print(f'Starting gitter at: "{gitter_host}". with work_dir: "{work_dir}"')
+  print(f'Starting gitter at: "{gitter_host}". with work-dir: "{work_dir}"')
   # Start gitter
   cmd = [
       'go',
@@ -281,7 +282,7 @@ def setup_gitter():
       './cmd/gitter',
       '-port',
       str(gitter_port),
-      '-work_dir',
+      '-work-dir',
       work_dir,
   ]
 
@@ -295,17 +296,23 @@ def setup_gitter():
   )
 
   try:
-    # Wait a bit for it to start (optional, but good for stability)
-    # Basic check to see if it crashed immediately
-    try:
-      proc.wait(timeout=1.0)
-      # If it returns, it exited
-      raise RuntimeError(
-          f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
-          f'{proc.stderr.read().decode()}')
-    except subprocess.TimeoutExpired:
-      # Process is still running
-      pass
+    # Wait for it to start
+    start = time.time()
+    while time.time() - start < 60:
+      if proc.poll() is not None:
+        # If it returns, it exited
+        raise RuntimeError(
+            f'Gitter exited early:\n{proc.stdout.read().decode()}\n\n'
+            f'{proc.stderr.read().decode()}')
+
+      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(('localhost', int(gitter_port))) == 0:
+          print(f'Gitter ready in {time.time() - start:.2f}s.')
+          break
+      time.sleep(0.5)
+    else:
+      os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+      raise RuntimeError('Gitter did not get ready in time.')
 
     yield
 

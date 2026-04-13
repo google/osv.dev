@@ -33,6 +33,7 @@ const (
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	alpineOutputPath := flag.String(
 		"output-path",

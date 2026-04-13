@@ -21,7 +21,9 @@ from osv import vulnerability_pb2
 from google.cloud import ndb
 import osv
 import datetime
-from gcp.workers.alias import upstream_computation, alias_computation
+
+import emulator_aliases
+import emulator_upstream
 
 if __name__ == '__main__':
   # The datastore emulator needs to be started before main is imported
@@ -115,8 +117,8 @@ if __name__ == '__main__':
             bug.put()
 
         # Compute upstream/alias groups based on loaded bugs.
-        upstream_computation.main()
-        alias_computation.main()
+        emulator_aliases.run()
+        emulator_upstream.run()
 
         for b in osv.Bug.query():
           b.put()

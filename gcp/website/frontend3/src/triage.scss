@@ -1,0 +1,126 @@
+.triage-container {
+  // padding: 40px;
+    padding: 20px 40px;
+  width: 100%;
+  box-sizing: border-box;
+
+  --md-sys-color-primary: #c5221f;
+  --md-sys-color-on-primary: #ffffff;
+  --md-filled-text-field-focus-active-indicator-color: #c5221f;
+  --md-filled-text-field-focus-label-text-color: #c5221f;
+  --md-filled-button-container-color: #c5221f;
+
+  .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+  h1 {
+    margin: 0;
+    }
+
+    .input-section {
+      display: flex;
+      align-items: center;
+    gap: 16px;
+
+
+    .standard-input {
+        flex: 1;
+        max-width: 400px;
+      }
+    }
+    }
+
+.triage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.triage-column {
+  border: 1px solid #555;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 75vh;
+  background-color: #333;
+}
+
+.column-header {
+  padding: 16px;
+  background-color: #3c4043;
+  border-bottom: 1px solid #555;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+
+  label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+  }
+}
+
+.select-wrapper {
+  margin-top: 5px;
+}
+
+.source-select {
+  width: 100%;
+  padding: 8px;
+  background-color: #292929;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+}
+
+.content-display {
+  flex-grow: 1;
+  padding: 16px;
+  overflow: auto;
+  position: relative;
+  background-color: #1e1e1e;
+}
+
+.json-content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: "Overpass Mono", monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #d4d4d4;
+
+  .json-key {
+      color: #9cdcfe;
+    }
+  
+    .json-string {
+      color: #ce9178;
+    }
+  
+    .json-number {
+      color: #b5cea8;
+    }
+  
+    .json-boolean {
+      color: #569cd6;
+    }
+  
+    .json-null {
+      color: #569cd6;
+    }
+}
+
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  --md-circular-progress-active-indicator-color: white;
+}
+
+.hidden {
+  display: none;
+}

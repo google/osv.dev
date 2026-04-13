@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:68100018e78bc098b4dc04a95416edd3ad6a3c7bb5947531b4747176953918f8
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:3293540b35a930023e12066437a939a7ad6f27f01c6e65f52558534682f57ca5
 
 RUN apk add py3-yaml
 

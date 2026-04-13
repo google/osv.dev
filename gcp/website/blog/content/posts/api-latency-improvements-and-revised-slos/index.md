@@ -31,7 +31,7 @@ This change is now fully rolled out to production, and the impact on API latency
 
 On average, the `GET /v1/vulns/{id}` endpoint is 5x faster, `POST /v1/query` is 2.5x faster, and `POST /v1/querybatch` is 3x faster.
 
-In terms of percentiles, you can see our P50 (blue), P90 (green), and P95 (purple) latencies below:
+In terms of percentiles, you can see our P50 (blue), P90 (yellow), and P95 (red) latencies below:
 ![Line graph of GET /v1/vulns/{id} latency percentiles, comparing the higher 'before' state (dashed lines) to the significantly lower 'after' state (solid lines).](getvulnbyid_percentiles.png "P50/P90/P95 latencies for GET /v1/vulns/{id} before (dashed) and after (solid), showing a significant drop.")
 ![Line graph of POST /v1/query latency percentiles, comparing the higher 'before' state (dashed lines) to the significantly lower 'after' state (solid lines).](queryaffected_percentiles.png "P50/P90/P95 latencies for POST /v1/query before (dashed) and after (solid), showing a significant drop.")
 ![Line graph of POST /v1/querybatch latency percentiles, comparing the higher 'before' state (dashed lines) to the significantly lower 'after' state (solid lines).](queryaffectedbatch_percentiles.png "P50/P90/P95 latencies for POST /v1/querybatch before (dashed) and after (solid), showing a significant drop.")

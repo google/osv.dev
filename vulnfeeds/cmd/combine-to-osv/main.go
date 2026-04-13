@@ -199,6 +199,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 				continue
 			}
 		}
+		enrichRepoPURLs(baseOSV)
 		osvRecords[cveID] = baseOSV
 	}
 

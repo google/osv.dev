@@ -472,3 +472,72 @@ func TestBuildGenericRepoPURL(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildVersionedGenericRepoPURL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc      string
+		inputURL  string
+		version   string
+		wantPURL  string
+		wantError bool
+	}{
+		{
+			desc:     "simple version",
+			inputURL: "https://github.com/owner/repo",
+			version:  "v1.2.3",
+			wantPURL: "pkg:generic/github.com/owner/repo@v1.2.3",
+		},
+		{
+			desc:     "tag with slash is percent-encoded",
+			inputURL: "https://github.com/owner/repo",
+			version:  "release/1.2.3",
+			wantPURL: "pkg:generic/github.com/owner/repo@release%2F1.2.3",
+		},
+		{
+			desc:     "tag with space",
+			inputURL: "https://github.com/owner/repo",
+			version:  "v1.0 beta",
+			wantPURL: "pkg:generic/github.com/owner/repo@v1.0%20beta",
+		},
+		{
+			desc:     "tag with hash",
+			inputURL: "https://github.com/owner/repo",
+			version:  "rel#1",
+			wantPURL: "pkg:generic/github.com/owner/repo@rel%231",
+		},
+		{
+			desc:     "empty version produces unversioned purl",
+			inputURL: "https://github.com/owner/repo",
+			version:  "",
+			wantPURL: "pkg:generic/github.com/owner/repo",
+		},
+		{
+			desc:      "invalid repo url still fails",
+			inputURL:  "ftp://example.com/owner/repo",
+			version:   "v1.0",
+			wantError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+			got, err := BuildVersionedGenericRepoPURL(tc.inputURL, tc.version)
+			if tc.wantError {
+				if err == nil {
+					t.Fatalf("BuildVersionedGenericRepoPURL(%q, %q) = %q, want error", tc.inputURL, tc.version, got)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("BuildVersionedGenericRepoPURL(%q, %q) unexpected error: %v", tc.inputURL, tc.version, err)
+			}
+			if got != tc.wantPURL {
+				t.Fatalf("BuildVersionedGenericRepoPURL(%q, %q) = %q, want %q", tc.inputURL, tc.version, got, tc.wantPURL)
+			}
+		})
+	}
+}

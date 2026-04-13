@@ -8,9 +8,22 @@ import (
 	packageurl "github.com/package-url/packageurl-go"
 )
 
-// BuildGenericRepoPURL returns an unversioned generic purl
+// BuildGenericRepoPURL returns an unversioned generic purl for a repo URL.
 // Example: pkg:generic/github.com/owner/repo
 func BuildGenericRepoPURL(repoURL string) (string, error) {
+	return buildGenericRepoPURL(repoURL, "")
+}
+
+// BuildVersionedGenericRepoPURL returns a generic purl whose version
+// component is the given string, encoded by packageurl-go.
+// A tag like "release/1.2.3" becomes "...@release%2F1.2.3" rather than a
+// malformed "...@release/1.2.3".
+// Example: pkg:generic/github.com/owner/repo@v1.0.0
+func BuildVersionedGenericRepoPURL(repoURL, version string) (string, error) {
+	return buildGenericRepoPURL(repoURL, version)
+}
+
+func buildGenericRepoPURL(repoURL, version string) (string, error) {
 	u, err := url.Parse(repoURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid repo url: %w", err)
@@ -37,7 +50,7 @@ func BuildGenericRepoPURL(repoURL string) (string, error) {
 	ns := strings.Join(append([]string{host}, parts[:len(parts)-1]...), "/")
 	name := parts[len(parts)-1]
 
-	p := packageurl.NewPackageURL("generic", ns, name, "", nil, "")
+	p := packageurl.NewPackageURL("generic", ns, name, version, nil, "")
 
 	return p.ToString(), nil
 }

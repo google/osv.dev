@@ -698,6 +698,33 @@ func TestEnrichRepoPURLs_MultipleAffectedOnlyGITEnriched(t *testing.T) {
 	}
 }
 
+func TestAddVersionedRepoPURLs_EscapesSpecialCharsInTags(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/example/repo"
+	aff := &osvschema.Affected{
+		Versions: []string{"release/1.2.3", "v1.0 beta", "rel#1"},
+		Ranges: []*osvschema.Range{{
+			Type: osvschema.Range_GIT,
+			Repo: repo,
+		}},
+	}
+
+	addVersionedRepoPURLs(aff, repo)
+
+	got := repoPURLs(t, aff)
+	want := []string{
+		"pkg:generic/github.com/example/repo@rel%231",
+		"pkg:generic/github.com/example/repo@release%2F1.2.3",
+		"pkg:generic/github.com/example/repo@v1.0%20beta",
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestAddVersionedRepoPURLs_CapsLargeVersionLists(t *testing.T) {
 	t.Parallel()
 

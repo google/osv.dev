@@ -470,8 +470,9 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 		return
 	}
 
-	base, err := gitpurl.BuildGenericRepoPURL(repo)
-	if err != nil || base == "" {
+	// Validate the repo URL once up front; if the base purl can't be built
+	// the per-tag calls below will all fail for the same reason.
+	if _, err := gitpurl.BuildGenericRepoPURL(repo); err != nil {
 		return
 	}
 
@@ -485,7 +486,11 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 			continue
 		}
 		seen[t] = struct{}{}
-		versionedPURLs = append(versionedPURLs, base+"@"+t)
+		p, err := gitpurl.BuildVersionedGenericRepoPURL(repo, t)
+		if err != nil || p == "" {
+			continue
+		}
+		versionedPURLs = append(versionedPURLs, p)
 	}
 	if len(versionedPURLs) == 0 {
 		return

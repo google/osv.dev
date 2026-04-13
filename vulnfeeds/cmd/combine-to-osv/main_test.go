@@ -780,3 +780,88 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 		}
 	}
 }
+
+func TestPickAffectedInformation_PreservesVersions(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/chriskohlhoff/asio"
+	cve5 := []*osvschema.Affected{{
+		Versions: []string{"asio-1-12-0", "asio-1-12-1"},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_GIT,
+			Repo:   repo,
+			Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+		}},
+	}}
+	nvd := []*osvschema.Affected{{
+		Versions: []string{"asio-1-12-1", "asio-1-13-0"},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_GIT,
+			Repo:   repo,
+			Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+		}},
+	}}
+
+	got := pickAffectedInformation(cve5, nvd)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 merged affected, got %d", len(got))
+	}
+	wantVersions := []string{"asio-1-12-0", "asio-1-12-1", "asio-1-13-0"}
+	gotVersions := append([]string(nil), got[0].GetVersions()...)
+	sort.Strings(gotVersions)
+	sort.Strings(wantVersions)
+	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
+		t.Errorf("merged Versions mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEnrichRepoPURLs_AfterMerge(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/chriskohlhoff/asio"
+	cve5 := &osvschema.Vulnerability{
+		Id: "CVE-2019-25219",
+		Affected: []*osvschema.Affected{{
+			Versions: []string{"asio-1-12-0", "asio-1-12-1"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_GIT,
+				Repo:   repo,
+				Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+			}},
+		}},
+	}
+	nvd := &osvschema.Vulnerability{
+		Id: "CVE-2019-25219",
+		Affected: []*osvschema.Affected{{
+			Versions: []string{"asio-1-12-1", "asio-1-13-0"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_GIT,
+				Repo:   repo,
+				Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+			}},
+		}},
+	}
+
+	merged := combineTwoOSVRecords(cve5, nvd)
+	enrichRepoPURLs(merged)
+
+	if len(merged.Affected) != 1 {
+		t.Fatalf("expected 1 affected after merge, got %d", len(merged.Affected))
+	}
+	aff := merged.Affected[0]
+
+	wantBase := "pkg:generic/github.com/chriskohlhoff/asio"
+	if got := aff.GetPackage().GetPurl(); got != wantBase {
+		t.Errorf("package.purl = %q, want %q", got, wantBase)
+	}
+	got := repoPURLs(t, aff)
+	sort.Strings(got)
+	want := []string{
+		wantBase + "@asio-1-12-0",
+		wantBase + "@asio-1-12-1",
+		wantBase + "@asio-1-13-0",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}

@@ -282,23 +282,31 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	}
 
 	nvdRepoMap := make(map[string][]*osvschema.Range)
+	nvdRepoVersions := make(map[string][]string)
 	for _, affected := range nvdAffected {
 		for _, r := range affected.GetRanges() {
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
+				nvdRepoVersions[repo] = append(nvdRepoVersions[repo], affected.GetVersions()...)
 			}
 		}
 	}
 
 	cve5RepoMap := make(map[string][]*osvschema.Range)
+	cve5RepoVersions := make(map[string][]string)
 	for _, affected := range cve5Affected {
 		for _, r := range affected.GetRanges() {
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
+				cve5RepoVersions[repo] = append(cve5RepoVersions[repo], affected.GetVersions()...)
 			}
 		}
+	}
+
+	mergedVersions := func(repo string) []string {
+		return mergeUniqueStrings(cve5RepoVersions[repo], nvdRepoVersions[repo])
 	}
 
 	newRepoAffectedMap := make(map[string]*osvschema.Affected)
@@ -337,11 +345,13 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			// Remove from map so we know which NVD packages are left.
 			delete(nvdRepoMap, repo)
 			newRepoAffectedMap[repo] = &osvschema.Affected{
-				Ranges: newAffectedRanges,
+				Ranges:   newAffectedRanges,
+				Versions: mergedVersions(repo),
 			}
 		} else {
 			newRepoAffectedMap[repo] = &osvschema.Affected{
-				Ranges: cveRanges,
+				Ranges:   cveRanges,
+				Versions: mergedVersions(repo),
 			}
 		}
 	}
@@ -349,7 +359,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	// Add remaining NVD packages that were not in cve5.
 	for repo, nvdRange := range nvdRepoMap {
 		newRepoAffectedMap[repo] = &osvschema.Affected{
-			Ranges: nvdRange,
+			Ranges:   nvdRange,
+			Versions: mergedVersions(repo),
 		}
 	}
 
@@ -397,6 +408,33 @@ func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed stri
 	}
 
 	return introduced, fixed
+}
+
+// mergeUniqueStrings returns the order-preserving union of two string slices.
+// Entries from a come first, followed by entries from b that aren't already
+// present. Used to combine per-repo version lists from cve5 and NVD.
+func mergeUniqueStrings(a, b []string) []string {
+	if len(a) == 0 && len(b) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(a)+len(b))
+	seen := make(map[string]struct{}, len(a)+len(b))
+	for _, s := range a {
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+	for _, s := range b {
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		out = append(out, s)
+	}
+
+	return out
 }
 
 // repoURLFromRanges returns the first repo URL from a GIT-type range, if present.

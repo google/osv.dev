@@ -16,10 +16,20 @@ func BuildGenericRepoPURL(repoURL string) (string, error) {
 		return "", fmt.Errorf("invalid repo url: %w", err)
 	}
 
+	switch strings.ToLower(u.Scheme) {
+	case "http", "https":
+	default:
+		return "", fmt.Errorf("unsupported scheme %q in %q", u.Scheme, repoURL)
+	}
+
 	host := strings.ToLower(u.Hostname())
-	path := strings.Trim(strings.TrimSuffix(u.EscapedPath(), ".git"), "/")
+	if host == "" {
+		return "", fmt.Errorf("missing host in %q", repoURL)
+	}
+
+	path := strings.Trim(strings.TrimSuffix(u.Path, ".git"), "/")
 	parts := strings.Split(path, "/")
-	if len(parts) < 2 {
+	if len(parts) < 2 || parts[0] == "" {
 		return "", fmt.Errorf("invalid repo path in %q", repoURL)
 	}
 

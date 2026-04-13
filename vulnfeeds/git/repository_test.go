@@ -430,6 +430,26 @@ func TestBuildGenericRepoPURL(t *testing.T) {
 			inputURL:  "https://github.com/onlyowner",
 			wantError: true,
 		},
+		{
+			desc:      "SCP-style git URL",
+			inputURL:  "git@github.com:owner/repo.git",
+			wantError: true,
+		},
+		{
+			desc:      "Unsupported scheme",
+			inputURL:  "ftp://example.com/owner/repo",
+			wantError: true,
+		},
+		{
+			desc:      "Missing host",
+			inputURL:  "https:///owner/repo",
+			wantError: true,
+		},
+		{
+			desc:      "Empty input",
+			inputURL:  "",
+			wantError: true,
+		},
 	}
 
 	for _, tc := range tests {

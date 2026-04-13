@@ -11,8 +11,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sort"
 	"slices"
+	"sort"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -24,6 +24,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -206,7 +207,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 		if len(nvd.GetAffected()) == 0 {
 			continue
 		}
-		enrichRepoPURLs(convertedCve)
+		enrichRepoPURLs(nvd)
 		osvRecords[cveID] = nvd
 	}
 
@@ -372,10 +373,10 @@ func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed stri
 }
 
 // repoURLFromRanges returns the first repo URL from a GIT-type range, if present.
-func repoURLFromRanges(ranges []osvschema.Range) string {
+func repoURLFromRanges(ranges []*osvschema.Range) string {
 	for _, r := range ranges {
-		if r.Type == "GIT" && r.Repo != "" {
-			return r.Repo
+		if r.GetType() == osvschema.Range_GIT && r.GetRepo() != "" {
+			return r.GetRepo()
 		}
 	}
 
@@ -384,30 +385,32 @@ func repoURLFromRanges(ranges []osvschema.Range) string {
 
 // enrichRepoPURLs sets affected.package.purl to an unversioned pkg:generic repo pURL
 // when a GIT range with a repo URL exists and purl is currently empty.
-func enrichRepoPURLs(v *vulns.Vulnerability) {
-	if v == nil || len(v.Affected) == 0 {
+func enrichRepoPURLs(v *osvschema.Vulnerability) {
+	if v == nil || len(v.GetAffected()) == 0 {
 		return
 	}
-	for i := range v.Affected {
-		aff := &v.Affected[i]
+	for _, aff := range v.Affected {
+		repo := repoURLFromRanges(aff.GetRanges())
+		if repo == "" {
+			continue
+		}
 
 		// Ensure base purl is set (unversioned).
+		if aff.Package == nil {
+			aff.Package = &osvschema.Package{}
+		}
 		if aff.Package.Purl == "" {
-			if repo := repoURLFromRanges(aff.Ranges); repo != "" {
-				if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
-					aff.Package.Purl = p
-				}
+			if p, err := gitpurl.BuildGenericRepoPURL(repo); err == nil && p != "" {
+				aff.Package.Purl = p
 			}
 		}
 
 		// Add versioned repo pURLs when possible.
-		if repo := repoURLFromRanges(aff.Ranges); repo != "" {
-			addVersionedRepoPURLs(aff, repo)
-		}
+		addVersionedRepoPURLs(aff, repo)
 	}
 }
 
-var repoTagsCache = make(gitpurl.RepoTagsCache)
+var repoTagsCache = &gitpurl.RepoTagsCache{}
 
 // addVersionedRepoPURLs populates affected.database_specific["repo_purls"]
 // with pkg:generic/...@<tag> entries, using affected.versions if available.
@@ -459,8 +462,19 @@ func addVersionedRepoPURLs(aff *osvschema.Affected, repo string) {
 		return
 	}
 
-	if aff.DatabaseSpecific == nil {
-		aff.DatabaseSpecific = map[string]any{}
+	anys := make([]any, len(vPURLs))
+	for i, s := range vPURLs {
+		anys[i] = s
 	}
-	aff.DatabaseSpecific["repo_purls"] = vPURLs
+	listVal, err := structpb.NewValue(anys)
+	if err != nil {
+		return
+	}
+	if aff.DatabaseSpecific == nil {
+		aff.DatabaseSpecific = &structpb.Struct{Fields: map[string]*structpb.Value{}}
+	}
+	if aff.DatabaseSpecific.Fields == nil {
+		aff.DatabaseSpecific.Fields = map[string]*structpb.Value{}
+	}
+	aff.DatabaseSpecific.Fields["repo_purls"] = listVal
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	gitpurl "github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -435,11 +434,11 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 func TestRepoURLFromRanges_GIT(t *testing.T) {
 	t.Parallel()
 
-	ranges := []osvschema.Range{
+	ranges := []*osvschema.Range{
 		{
-			Type: "GIT",
+			Type: osvschema.Range_GIT,
 			Repo: "https://github.com/eclipse-openj9/openj9",
-			Events: []osvschema.Event{
+			Events: []*osvschema.Event{
 				{Introduced: "0"},
 			},
 		},
@@ -454,10 +453,10 @@ func TestRepoURLFromRanges_GIT(t *testing.T) {
 func TestRepoURLFromRanges_NoGIT(t *testing.T) {
 	t.Parallel()
 
-	ranges := []osvschema.Range{
+	ranges := []*osvschema.Range{
 		{
-			Type: "ECOSYSTEM",
-			Events: []osvschema.Event{
+			Type: osvschema.Range_ECOSYSTEM,
+			Events: []*osvschema.Event{
 				{Introduced: "0"},
 				{Fixed: "1.2.3"},
 			},
@@ -473,9 +472,13 @@ func TestAddVersionedRepoPURLs_FromVersions(t *testing.T) {
 
 	repo := "https://github.com/chriskohlhoff/asio"
 	aff := &osvschema.Affected{
-		Package:  osvschema.Package{Ecosystem: "GIT", Name: "asio"},
+		Package:  &osvschema.Package{Ecosystem: "GIT", Name: "asio"},
 		Versions: []string{"asio-1-13-0", "asio-1-12-0"},
-		Ranges:   []osvschema.Range{{Type: "GIT", Repo: repo, Events: []osvschema.Event{{Introduced: "0"}}}},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_GIT,
+			Repo:   repo,
+			Events: []*osvschema.Event{{Introduced: "0"}},
+		}},
 	}
 
 	addVersionedRepoPURLs(aff, repo)
@@ -485,10 +488,17 @@ func TestAddVersionedRepoPURLs_FromVersions(t *testing.T) {
 		t.Fatalf("failed to build base purl: %v", err)
 	}
 
-	ds := aff.DatabaseSpecific
-	list, ok := ds["repo_purls"].([]string)
-	if !ok || len(list) == 0 {
-		t.Fatalf("repo_purls missing/empty: %#v", ds)
+	field := aff.GetDatabaseSpecific().GetFields()["repo_purls"]
+	if field == nil {
+		t.Fatalf("repo_purls missing: %#v", aff.GetDatabaseSpecific())
+	}
+	values := field.GetListValue().GetValues()
+	if len(values) == 0 {
+		t.Fatalf("repo_purls empty: %#v", aff.GetDatabaseSpecific())
+	}
+	list := make([]string, 0, len(values))
+	for _, v := range values {
+		list = append(list, v.GetStringValue())
 	}
 
 	want1 := base + "@asio-1-13-0"

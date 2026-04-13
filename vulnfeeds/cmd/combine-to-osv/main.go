@@ -442,9 +442,8 @@ func enrichRepoPURLs(v *osvschema.Vulnerability) {
 		}
 
 		if aff.Package == nil {
-			aff.Package = &osvschema.Package{}
-		}
-		if aff.Package.Purl == "" {
+			aff.Package = &osvschema.Package{Purl: tmpl.ToString()}
+		} else if aff.Package.GetPurl() == "" && aff.Package.GetName() == "" && aff.Package.GetEcosystem() == "" {
 			aff.Package.Purl = tmpl.ToString()
 		}
 

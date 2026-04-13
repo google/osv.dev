@@ -551,6 +551,45 @@ func TestEnrichRepoPURLs_PreservesExistingPurl(t *testing.T) {
 		t.Errorf("expected repo_purls to be populated, got none")
 	}
 }
+func TestEnrichRepoPURLs_PreservesExistingPackageIdentity(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/upstream/libfoo"
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "Debian:11",
+					Name:      "libfoo",
+				},
+				Versions: []string{"1.2.3"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   repo,
+					Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "1.2.4"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	pkg := v.Affected[0].GetPackage()
+	if got := pkg.GetPurl(); got != "" {
+		t.Errorf("package.purl = %q, want empty (Debian identity must not be overwritten)", got)
+	}
+	if got := pkg.GetEcosystem(); got != "Debian:11" {
+		t.Errorf("package.ecosystem = %q, want %q", got, "Debian:11")
+	}
+	if got := pkg.GetName(); got != "libfoo" {
+		t.Errorf("package.name = %q, want %q", got, "libfoo")
+	}
+
+	want := []string{"pkg:generic/github.com/upstream/libfoo@1.2.3"}
+	if diff := cmp.Diff(want, repoPURLs(t, v.Affected[0])); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
 
 func TestEnrichRepoPURLs_NonGITRangeNoop(t *testing.T) {
 	t.Parallel()

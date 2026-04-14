@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -430,6 +432,359 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	}
 }
 
+func TestRepoURLFromRanges_GIT(t *testing.T) {
+	t.Parallel()
+
+	ranges := []*osvschema.Range{
+		{
+			Type: osvschema.Range_GIT,
+			Repo: "https://github.com/eclipse-openj9/openj9",
+			Events: []*osvschema.Event{
+				{Introduced: "0"},
+			},
+		},
+	}
+	got := repoURLFromRanges(ranges)
+	want := "https://github.com/eclipse-openj9/openj9"
+	if got != want {
+		t.Fatalf("repoURLFromRanges() = %q, want %q", got, want)
+	}
+}
+
+func TestRepoURLFromRanges_NoGIT(t *testing.T) {
+	t.Parallel()
+
+	ranges := []*osvschema.Range{
+		{
+			Type: osvschema.Range_ECOSYSTEM,
+			Events: []*osvschema.Event{
+				{Introduced: "0"},
+				{Fixed: "1.2.3"},
+			},
+		},
+	}
+	if got := repoURLFromRanges(ranges); got != "" {
+		t.Fatalf("repoURLFromRanges() = %q, want empty", got)
+	}
+}
+
+// repoPURLs pulls the string list stored under database_specific["repo_purls"]
+// so tests can assert on the versioned pURLs attached by enrichRepoPURLs.
+func repoPURLs(t *testing.T, aff *osvschema.Affected) []string {
+	t.Helper()
+	field := aff.GetDatabaseSpecific().GetFields()["repo_purls"]
+	if field == nil {
+		return nil
+	}
+	values := field.GetListValue().GetValues()
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		out = append(out, v.GetStringValue())
+	}
+
+	return out
+}
+
+func TestEnrichRepoPURLs_GITRangeWithTagVersions(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/chriskohlhoff/asio"
+	v := &osvschema.Vulnerability{
+		Id: "CVE-2019-25219",
+		Affected: []*osvschema.Affected{
+			{
+				Versions: []string{"asio-1-12-0", "asio-1-12-1", "asio-1-13-0"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   repo,
+					Events: []*osvschema.Event{{Introduced: "0"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	aff := v.Affected[0]
+	wantBase := "pkg:generic/github.com/chriskohlhoff/asio"
+	if got := aff.GetPackage().GetPurl(); got != wantBase {
+		t.Errorf("package.purl = %q, want %q", got, wantBase)
+	}
+
+	got := repoPURLs(t, aff)
+	want := []string{
+		wantBase + "@asio-1-12-0",
+		wantBase + "@asio-1-12-1",
+		wantBase + "@asio-1-13-0",
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEnrichRepoPURLs_PreservesExistingPurl(t *testing.T) {
+	t.Parallel()
+
+	existing := "pkg:deb/debian/libasio-dev"
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Package:  &osvschema.Package{Purl: existing},
+				Versions: []string{"asio-1-12-0"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   "https://github.com/chriskohlhoff/asio",
+					Events: []*osvschema.Event{{Introduced: "0"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	if got := v.Affected[0].GetPackage().GetPurl(); got != existing {
+		t.Errorf("package.purl clobbered: got %q, want %q", got, existing)
+	}
+	if got := repoPURLs(t, v.Affected[0]); len(got) == 0 {
+		t.Errorf("expected repo_purls to be populated, got none")
+	}
+}
+func TestEnrichRepoPURLs_PreservesExistingPackageIdentity(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/upstream/libfoo"
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "Debian:11",
+					Name:      "libfoo",
+				},
+				Versions: []string{"1.2.3"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   repo,
+					Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "1.2.4"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	pkg := v.Affected[0].GetPackage()
+	if got := pkg.GetPurl(); got != "" {
+		t.Errorf("package.purl = %q, want empty (Debian identity must not be overwritten)", got)
+	}
+	if got := pkg.GetEcosystem(); got != "Debian:11" {
+		t.Errorf("package.ecosystem = %q, want %q", got, "Debian:11")
+	}
+	if got := pkg.GetName(); got != "libfoo" {
+		t.Errorf("package.name = %q, want %q", got, "libfoo")
+	}
+
+	want := []string{"pkg:generic/github.com/upstream/libfoo@1.2.3"}
+	if diff := cmp.Diff(want, repoPURLs(t, v.Affected[0])); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEnrichRepoPURLs_NonGITRangeNoop(t *testing.T) {
+	t.Parallel()
+
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Package:  &osvschema.Package{Ecosystem: "Debian:11", Name: "libasio"},
+				Versions: []string{"1.18.1"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "1.18.2"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	if got := v.Affected[0].GetPackage().GetPurl(); got != "" {
+		t.Errorf("package.purl = %q, want empty (no GIT range)", got)
+	}
+	if got := repoPURLs(t, v.Affected[0]); len(got) != 0 {
+		t.Errorf("repo_purls should be absent, got %v", got)
+	}
+}
+
+func TestEnrichRepoPURLs_MalformedRepoIsNoop(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]string{
+		"unsupported scheme":        "ftp://example.com/owner/repo",
+		"missing host":              "https:///owner/repo",
+		"insufficient path":         "https://github.com/onlyowner",
+		"scp-like, bad port hybrid": "git://git@gitlab.com:gitlab-org",
+	}
+
+	for desc, repo := range cases {
+		t.Run(desc, func(t *testing.T) {
+			t.Parallel()
+			v := &osvschema.Vulnerability{
+				Affected: []*osvschema.Affected{
+					{
+						Versions: []string{"v1.0.0"},
+						Ranges: []*osvschema.Range{{
+							Type:   osvschema.Range_GIT,
+							Repo:   repo,
+							Events: []*osvschema.Event{{Introduced: "0"}},
+						}},
+					},
+				},
+			}
+
+			enrichRepoPURLs(v)
+
+			aff := v.Affected[0]
+			if aff.Package != nil {
+				t.Errorf("Package was populated as %#v, want nil (malformed repo should be a no-op)", aff.Package)
+			}
+			if aff.DatabaseSpecific != nil {
+				t.Errorf("DatabaseSpecific was populated as %#v, want nil", aff.DatabaseSpecific)
+			}
+		})
+	}
+}
+
+func TestEnrichRepoPURLs_DotGitSuffix(t *testing.T) {
+	t.Parallel()
+
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Versions: []string{"v1.2.11"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   "https://github.com/madler/zlib.git",
+					Events: []*osvschema.Event{{Introduced: "0"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	wantBase := "pkg:generic/github.com/madler/zlib"
+	if got := v.Affected[0].GetPackage().GetPurl(); got != wantBase {
+		t.Errorf("package.purl = %q, want %q (.git suffix should be stripped)", got, wantBase)
+	}
+	want := []string{wantBase + "@v1.2.11"}
+	if diff := cmp.Diff(want, repoPURLs(t, v.Affected[0])); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEnrichRepoPURLs_MultipleAffectedOnlyGITEnriched(t *testing.T) {
+	t.Parallel()
+
+	v := &osvschema.Vulnerability{
+		Affected: []*osvschema.Affected{
+			{
+				Package:  &osvschema.Package{Ecosystem: "Debian:11", Name: "libasio"},
+				Versions: []string{"1.18.1"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "1.18.2"}},
+				}},
+			},
+			{
+				Versions: []string{"asio-1-12-0"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   "https://github.com/chriskohlhoff/asio",
+					Events: []*osvschema.Event{{Introduced: "0"}},
+				}},
+			},
+		},
+	}
+
+	enrichRepoPURLs(v)
+
+	if got := v.Affected[0].GetPackage().GetPurl(); got != "" {
+		t.Errorf("affected[0] (ECOSYSTEM) package.purl = %q, want empty", got)
+	}
+	if got := repoPURLs(t, v.Affected[0]); len(got) != 0 {
+		t.Errorf("affected[0] (ECOSYSTEM) repo_purls should be empty, got %v", got)
+	}
+
+	wantBase := "pkg:generic/github.com/chriskohlhoff/asio"
+	if got := v.Affected[1].GetPackage().GetPurl(); got != wantBase {
+		t.Errorf("affected[1] (GIT) package.purl = %q, want %q", got, wantBase)
+	}
+	if got := repoPURLs(t, v.Affected[1]); len(got) != 1 || got[0] != wantBase+"@asio-1-12-0" {
+		t.Errorf("affected[1] (GIT) repo_purls = %v, want [%s@asio-1-12-0]", got, wantBase)
+	}
+}
+
+func TestAddVersionedRepoPURLs_EscapesSpecialCharsInTags(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/example/repo"
+	aff := &osvschema.Affected{
+		Versions: []string{"release/1.2.3", "v1.0 beta", "rel#1"},
+		Ranges: []*osvschema.Range{{
+			Type: osvschema.Range_GIT,
+			Repo: repo,
+		}},
+	}
+
+	tmpl, err := gitpurl.ParseRepoPURL(repo)
+	if err != nil {
+		t.Fatalf("ParseRepoPURL unexpected error: %v", err)
+	}
+	addVersionedRepoPURLs(aff, tmpl)
+
+	got := repoPURLs(t, aff)
+	want := []string{
+		"pkg:generic/github.com/example/repo@rel%231",
+		"pkg:generic/github.com/example/repo@release%2F1.2.3",
+		"pkg:generic/github.com/example/repo@v1.0%20beta",
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAddVersionedRepoPURLs_CapsLargeVersionLists(t *testing.T) {
+	t.Parallel()
+
+	versions := make([]string, maxRepoPURLTags+50)
+	for i := range versions {
+		versions[i] = fmt.Sprintf("v1.0.%d", i)
+	}
+	repo := "https://github.com/example/big"
+	aff := &osvschema.Affected{
+		Versions: versions,
+		Ranges: []*osvschema.Range{{
+			Type: osvschema.Range_GIT,
+			Repo: repo,
+		}},
+	}
+
+	tmpl, err := gitpurl.ParseRepoPURL(repo)
+	if err != nil {
+		t.Fatalf("ParseRepoPURL unexpected error: %v", err)
+	}
+	addVersionedRepoPURLs(aff, tmpl)
+
+	got := repoPURLs(t, aff)
+	if len(got) != maxRepoPURLTags {
+		t.Errorf("len(repo_purls) = %d, want %d", len(got), maxRepoPURLTags)
+	}
+}
+
 func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 	cve5 := &osvschema.Vulnerability{
 		Id: "CVE-2023-1234",
@@ -460,5 +815,90 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 		if diff := cmp.Diff(firstResult.GetReferences(), got.GetReferences(), protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestPickAffectedInformation_PreservesVersions(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/chriskohlhoff/asio"
+	cve5 := []*osvschema.Affected{{
+		Versions: []string{"asio-1-12-0", "asio-1-12-1"},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_GIT,
+			Repo:   repo,
+			Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+		}},
+	}}
+	nvd := []*osvschema.Affected{{
+		Versions: []string{"asio-1-12-1", "asio-1-13-0"},
+		Ranges: []*osvschema.Range{{
+			Type:   osvschema.Range_GIT,
+			Repo:   repo,
+			Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+		}},
+	}}
+
+	got := pickAffectedInformation(cve5, nvd)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 merged affected, got %d", len(got))
+	}
+	wantVersions := []string{"asio-1-12-0", "asio-1-12-1", "asio-1-13-0"}
+	gotVersions := append([]string(nil), got[0].GetVersions()...)
+	sort.Strings(gotVersions)
+	sort.Strings(wantVersions)
+	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
+		t.Errorf("merged Versions mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEnrichRepoPURLs_AfterMerge(t *testing.T) {
+	t.Parallel()
+
+	repo := "https://github.com/chriskohlhoff/asio"
+	cve5 := &osvschema.Vulnerability{
+		Id: "CVE-2019-25219",
+		Affected: []*osvschema.Affected{{
+			Versions: []string{"asio-1-12-0", "asio-1-12-1"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_GIT,
+				Repo:   repo,
+				Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+			}},
+		}},
+	}
+	nvd := &osvschema.Vulnerability{
+		Id: "CVE-2019-25219",
+		Affected: []*osvschema.Affected{{
+			Versions: []string{"asio-1-12-1", "asio-1-13-0"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_GIT,
+				Repo:   repo,
+				Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "asio-1-13-0"}},
+			}},
+		}},
+	}
+
+	merged := combineTwoOSVRecords(cve5, nvd)
+	enrichRepoPURLs(merged)
+
+	if len(merged.Affected) != 1 {
+		t.Fatalf("expected 1 affected after merge, got %d", len(merged.Affected))
+	}
+	aff := merged.Affected[0]
+
+	wantBase := "pkg:generic/github.com/chriskohlhoff/asio"
+	if got := aff.GetPackage().GetPurl(); got != wantBase {
+		t.Errorf("package.purl = %q, want %q", got, wantBase)
+	}
+	got := repoPURLs(t, aff)
+	sort.Strings(got)
+	want := []string{
+		wantBase + "@asio-1-12-0",
+		wantBase + "@asio-1-12-1",
+		wantBase + "@asio-1-13-0",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("repo_purls mismatch (-want +got):\n%s", diff)
 	}
 }

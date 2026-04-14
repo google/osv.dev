@@ -16,10 +16,14 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion"
+	gitpurl "github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/upload"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	packageurl "github.com/package-url/packageurl-go"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -197,6 +201,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 				continue
 			}
 		}
+		enrichRepoPURLs(baseOSV)
 		osvRecords[cveID] = baseOSV
 	}
 
@@ -205,6 +210,7 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 		if len(nvd.GetAffected()) == 0 || !hasRanges(nvd.GetAffected()) {
 			continue
 		}
+		enrichRepoPURLs(nvd)
 		osvRecords[cveID] = nvd
 	}
 
@@ -277,21 +283,25 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	}
 
 	nvdRepoMap := make(map[string][]*osvschema.Range)
+	nvdRepoVersions := make(map[string][]string)
 	for _, affected := range nvdAffected {
 		for _, r := range affected.GetRanges() {
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				nvdRepoMap[repo] = append(nvdRepoMap[repo], r)
+				nvdRepoVersions[repo] = append(nvdRepoVersions[repo], affected.GetVersions()...)
 			}
 		}
 	}
 
 	cve5RepoMap := make(map[string][]*osvschema.Range)
+	cve5RepoVersions := make(map[string][]string)
 	for _, affected := range cve5Affected {
 		for _, r := range affected.GetRanges() {
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				cve5RepoMap[repo] = append(cve5RepoMap[repo], r)
+				cve5RepoVersions[repo] = append(cve5RepoVersions[repo], affected.GetVersions()...)
 			}
 		}
 	}
@@ -332,11 +342,13 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			// Remove from map so we know which NVD packages are left.
 			delete(nvdRepoMap, repo)
 			newRepoAffectedMap[repo] = &osvschema.Affected{
-				Ranges: newAffectedRanges,
+				Ranges:   newAffectedRanges,
+				Versions: vulns.Unique(slices.Concat(cve5RepoVersions[repo], nvdRepoVersions[repo])),
 			}
 		} else {
 			newRepoAffectedMap[repo] = &osvschema.Affected{
-				Ranges: cveRanges,
+				Ranges:   cveRanges,
+				Versions: vulns.Unique(cve5RepoVersions[repo]),
 			}
 		}
 	}
@@ -344,7 +356,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	// Add remaining NVD packages that were not in cve5.
 	for repo, nvdRange := range nvdRepoMap {
 		newRepoAffectedMap[repo] = &osvschema.Affected{
-			Ranges: nvdRange,
+			Ranges:   nvdRange,
+			Versions: vulns.Unique(nvdRepoVersions[repo]),
 		}
 	}
 
@@ -392,4 +405,81 @@ func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed stri
 	}
 
 	return introduced, fixed
+}
+
+// repoURLFromRanges returns the first repo URL from a GIT-type range, if present.
+func repoURLFromRanges(ranges []*osvschema.Range) string {
+	for _, r := range ranges {
+		if r.GetType() == osvschema.Range_GIT && r.GetRepo() != "" {
+			return r.GetRepo()
+		}
+	}
+
+	return ""
+}
+
+const (
+	maxRepoPURLTags = 200
+	repoPURLsKey    = "repo_purls"
+)
+
+// enrichRepoPURLs populates repo-derived pURLs on each affected entry that
+// has a GIT-type range: an unversioned pkg:generic purl on
+// affected.package.purl (when unset), and a list of versioned variants under
+// affected.database_specific["repo_purls"].
+func enrichRepoPURLs(v *osvschema.Vulnerability) {
+	if v == nil || len(v.GetAffected()) == 0 {
+		return
+	}
+	for _, aff := range v.Affected {
+		repo := repoURLFromRanges(aff.GetRanges())
+		if repo == "" {
+			continue
+		}
+		tmpl, err := gitpurl.ParseRepoPURL(repo)
+		if err != nil {
+			continue
+		}
+
+		if aff.Package == nil {
+			aff.Package = &osvschema.Package{Purl: tmpl.ToString()}
+		} else if aff.Package.GetPurl() == "" && aff.Package.GetName() == "" && aff.Package.GetEcosystem() == "" {
+			aff.Package.Purl = tmpl.ToString()
+		}
+
+		addVersionedRepoPURLs(aff, tmpl)
+	}
+}
+
+// addVersionedRepoPURLs attaches one versioned pkg:generic/...@<tag> entry
+// under affected.database_specific[repoPURLsKey] per entry in aff.Versions.
+func addVersionedRepoPURLs(aff *osvschema.Affected, tmpl *packageurl.PackageURL) {
+	if len(aff.Versions) == 0 {
+		return
+	}
+
+	tags := aff.Versions[:min(len(aff.Versions), maxRepoPURLTags)]
+
+	versionedPURLs := make([]any, 0, len(tags))
+	for _, t := range tags {
+		if t == "" {
+			continue
+		}
+		tmpl.Version = t
+		versionedPURLs = append(versionedPURLs, tmpl.ToString())
+	}
+	if len(versionedPURLs) == 0 {
+		return
+	}
+
+	if aff.DatabaseSpecific == nil {
+		ds, err := utility.NewStructpbFromMap(nil)
+		if err != nil {
+			return
+		}
+		aff.DatabaseSpecific = ds
+	}
+	if err := conversion.AddFieldToDatabaseSpecific(aff.DatabaseSpecific, repoPURLsKey, versionedPURLs); err != nil {
+		return
+	}
 }

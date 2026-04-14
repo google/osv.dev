@@ -395,3 +395,125 @@ func TestInvalidRepos(t *testing.T) {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}
 }
+
+func TestBuildGenericRepoPURL(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc      string
+		inputURL  string
+		wantPURL  string
+		wantError bool
+	}{
+		{
+			desc:     "GitHub repo",
+			inputURL: "https://github.com/eclipse-openj9/openj9",
+			wantPURL: "pkg:generic/github.com/eclipse-openj9/openj9",
+		},
+		{
+			desc:     "GitHub repo with .git suffix",
+			inputURL: "https://github.com/torvalds/linux.git",
+			wantPURL: "pkg:generic/github.com/torvalds/linux",
+		},
+		{
+			desc:     "GitLab subgroup repo",
+			inputURL: "https://gitlab.com/group/subgroup/repo",
+			wantPURL: "pkg:generic/gitlab.com/group/subgroup/repo",
+		},
+		{
+			desc:     "Self-hosted cgit repo with .git",
+			inputURL: "https://git.libssh.org/projects/libssh.git",
+			wantPURL: "pkg:generic/git.libssh.org/projects/libssh",
+		},
+		{
+			desc:      "Insufficient path segments",
+			inputURL:  "https://github.com/onlyowner",
+			wantError: true,
+		},
+		{
+			desc:     "git:// transport",
+			inputURL: "git://github.com/owner/repo.git",
+			wantPURL: "pkg:generic/github.com/owner/repo",
+		},
+		{
+			desc:     "ssh:// transport with user",
+			inputURL: "ssh://git@github.com/owner/repo.git",
+			wantPURL: "pkg:generic/github.com/owner/repo",
+		},
+		{
+			desc:     "SCP-style git URL",
+			inputURL: "git@github.com:owner/repo.git",
+			wantPURL: "pkg:generic/github.com/owner/repo",
+		},
+		{
+			desc:     "malformed hybrid (CVE-2025-1110)",
+			inputURL: "git://git@gitlab.com:gitlab-org/gitlab.git",
+			wantPURL: "pkg:generic/gitlab.com/gitlab-org/gitlab",
+		},
+		{
+			desc:     "ssh:// transport with numeric port",
+			inputURL: "ssh://git@git.example.com:22/owner/repo.git",
+			wantPURL: "pkg:generic/git.example.com/owner/repo",
+		},
+		{
+			desc:      "Unsupported scheme",
+			inputURL:  "ftp://example.com/owner/repo",
+			wantError: true,
+		},
+		{
+			desc:      "Missing host",
+			inputURL:  "https:///owner/repo",
+			wantError: true,
+		},
+		{
+			desc:      "Empty input",
+			inputURL:  "",
+			wantError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+			got, err := BuildGenericRepoPURL(tc.inputURL)
+			if tc.wantError {
+				if err == nil {
+					t.Fatalf("BuildGenericRepoPURL(%q) = %q, want error", tc.inputURL, got)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("BuildGenericRepoPURL(%q) unexpected error: %v", tc.inputURL, err)
+			}
+			if got != tc.wantPURL {
+				t.Fatalf("BuildGenericRepoPURL(%q) = %q, want %q", tc.inputURL, got, tc.wantPURL)
+			}
+		})
+	}
+}
+
+func TestParseRepoPURL_VersionEscape(t *testing.T) {
+	t.Parallel()
+
+	tmpl, err := ParseRepoPURL("https://github.com/owner/repo")
+	if err != nil {
+		t.Fatalf("ParseRepoPURL unexpected error: %v", err)
+	}
+	if got := tmpl.ToString(); got != "pkg:generic/github.com/owner/repo" {
+		t.Errorf("unversioned ToString = %q, want %q", got, "pkg:generic/github.com/owner/repo")
+	}
+
+	cases := map[string]string{
+		"v1.2.3":        "pkg:generic/github.com/owner/repo@v1.2.3",
+		"release/1.2.3": "pkg:generic/github.com/owner/repo@release%2F1.2.3",
+		"v1.0 beta":     "pkg:generic/github.com/owner/repo@v1.0%20beta",
+		"rel#1":         "pkg:generic/github.com/owner/repo@rel%231",
+	}
+	for version, want := range cases {
+		tmpl.Version = version
+		if got := tmpl.ToString(); got != want {
+			t.Errorf("version %q: ToString = %q, want %q", version, got, want)
+		}
+	}
+}

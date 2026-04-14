@@ -3,11 +3,12 @@ package purl
 import (
 	"strings"
 
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/package-url/packageurl-go"
 )
 
 func init() {
-	Register("Go", EcosystemConfig{
+	Register(osvconstants.EcosystemGo, EcosystemConfig{
 		Type:    "golang",
 		Adapter: goAdapter,
 		Reverse: goParser,

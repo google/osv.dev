@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	packageurl "github.com/package-url/packageurl-go"
 )
 
@@ -23,12 +24,12 @@ type EcosystemConfig struct {
 }
 
 var (
-	ecosystemConfigs = make(map[string]EcosystemConfig)
-	reverseLookup    = make(map[string]string) // "type/namespace" -> "EcosystemName"
+	ecosystemConfigs = make(map[osvconstants.Ecosystem]EcosystemConfig)
+	reverseLookup    = make(map[string]osvconstants.Ecosystem) // "type/namespace" -> "EcosystemName"
 )
 
 // Register adds a new ecosystem configuration.
-func Register(name string, config EcosystemConfig) {
+func Register(name osvconstants.Ecosystem, config EcosystemConfig) {
 	ecosystemConfigs[name] = config
 
 	// Build reverse lookup key
@@ -48,13 +49,9 @@ func Register(name string, config EcosystemConfig) {
 
 // PackageToPURL converts an ecosystem and package name to a PURL string.
 func PackageToPURL(ecosystem, packageName string) (string, error) {
-	baseEcosystem := ecosystem
-	if strings.Contains(ecosystem, ":") {
-		parts := strings.SplitN(ecosystem, ":", 2)
-		baseEcosystem = parts[0]
-	}
+	baseEcosystem, _, _ := strings.Cut(ecosystem, ":")
 
-	config, ok := ecosystemConfigs[baseEcosystem]
+	config, ok := ecosystemConfigs[osvconstants.Ecosystem(baseEcosystem)]
 	if !ok {
 		return "", fmt.Errorf("unknown ecosystem: %s", ecosystem)
 	}
@@ -103,7 +100,7 @@ func ParsePURL(purlStr string) (ecosystem, packageName, version string, err erro
 
 	config := ecosystemConfigs[ecoName]
 	packageName = purl.Name
-	ecosystem = ecoName
+	ecosystem = string(ecoName)
 
 	if config.Reverse != nil {
 		pName, eco, err := config.Reverse(purl)

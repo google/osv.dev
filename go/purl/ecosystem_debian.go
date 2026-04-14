@@ -3,6 +3,7 @@ package purl
 import (
 	"strings"
 
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/package-url/packageurl-go"
 )
 
@@ -25,7 +26,7 @@ func init() {
 		debianVersions[codename] = version
 	}
 
-	Register("Debian", EcosystemConfig{
+	Register(osvconstants.EcosystemDebian, EcosystemConfig{
 		Type:       "deb",
 		Namespace:  "debian",
 		Qualifiers: packageurl.Qualifiers{packageurl.Qualifier{Key: "arch", Value: "source"}},

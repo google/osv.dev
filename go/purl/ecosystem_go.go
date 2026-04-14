@@ -7,21 +7,23 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-func init() {
-	Register(osvconstants.EcosystemGo, EcosystemConfig{
+func registerGo() {
+	register(osvconstants.EcosystemGo, EcosystemConfig{
 		Type:    "golang",
 		Adapter: goAdapter,
 		Reverse: goParser,
 	})
 }
 
-func goAdapter(ecosystem, packageName string) (string, string, packageurl.Qualifiers) {
+func goAdapter(_, packageName string) (string, string, packageurl.Qualifiers) {
 	if strings.Contains(packageName, "/") {
 		parts := strings.Split(packageName, "/")
 		name := parts[len(parts)-1]
 		namespace := strings.Join(parts[:len(parts)-1], "/")
+
 		return namespace, name, nil
 	}
+
 	return "", packageName, nil
 }
 
@@ -33,5 +35,6 @@ func goParser(purl packageurl.PackageURL) (string, string, error) {
 	if purl.Subpath != "" {
 		packageName = packageName + "/" + purl.Subpath
 	}
+
 	return packageName, "Go", nil
 }

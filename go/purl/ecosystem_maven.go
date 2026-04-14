@@ -6,8 +6,8 @@ import (
 	"github.com/package-url/packageurl-go"
 )
 
-func init() {
-	Register("Maven", EcosystemConfig{
+func registerMaven() {
+	register("Maven", EcosystemConfig{
 		Type:    "maven",
 		Adapter: mavenAdapter,
 		Reverse: mavenParser,
@@ -16,11 +16,12 @@ func init() {
 	reverseLookup["gradle"] = "Maven"
 }
 
-func mavenAdapter(ecosystem, packageName string) (string, string, packageurl.Qualifiers) {
+func mavenAdapter(_, packageName string) (string, string, packageurl.Qualifiers) {
 	parts := strings.SplitN(packageName, ":", 2)
 	if len(parts) == 2 {
 		return parts[0], parts[1], nil
 	}
+
 	return "", packageName, nil
 }
 
@@ -29,5 +30,6 @@ func mavenParser(purl packageurl.PackageURL) (string, string, error) {
 	if purl.Namespace != "" {
 		packageName = purl.Namespace + ":" + purl.Name
 	}
+
 	return packageName, "Maven", nil
 }

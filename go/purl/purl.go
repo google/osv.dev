@@ -1,35 +1,47 @@
+// Package purl provides utilities for converting between OSV ecosystems and Package URLs (PURLs).
 package purl
 
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	packageurl "github.com/package-url/packageurl-go"
 )
 
-// PURLAdapter transforms a package name into PURL components.
-type PURLAdapter func(ecosystem, packageName string) (namespace, name string, qualifiers packageurl.Qualifiers)
+// Adapter transforms a package name into PURL components.
+type Adapter func(ecosystem, packageName string) (namespace, name string, qualifiers packageurl.Qualifiers)
 
-// PURLParser transforms a parsed PURL back into an OSV package name and ecosystem.
-type PURLParser func(purl packageurl.PackageURL) (packageName string, ecosystem string, err error)
+// Parser transforms a parsed PURL back into an OSV package name and ecosystem.
+type Parser func(purl packageurl.PackageURL) (packageName string, ecosystem string, err error)
 
 // EcosystemConfig holds the configuration and special logic for an ecosystem.
 type EcosystemConfig struct {
 	Type       string
 	Namespace  string
 	Qualifiers packageurl.Qualifiers
-	Adapter    PURLAdapter
-	Reverse    PURLParser
+	Adapter    Adapter
+	Reverse    Parser
 }
 
 var (
 	ecosystemConfigs = make(map[osvconstants.Ecosystem]EcosystemConfig)
 	reverseLookup    = make(map[string]osvconstants.Ecosystem) // "type/namespace" -> "EcosystemName"
+	registryOnce     sync.Once
 )
 
-// Register adds a new ecosystem configuration.
-func Register(name osvconstants.Ecosystem, config EcosystemConfig) {
+func ensureRegistryPopulated() {
+	registryOnce.Do(func() {
+		registerSimpleEcosystems()
+		registerDebian()
+		registerGo()
+		registerMaven()
+	})
+}
+
+// register adds a new ecosystem configuration.
+func register(name osvconstants.Ecosystem, config EcosystemConfig) {
 	ecosystemConfigs[name] = config
 
 	// Build reverse lookup key
@@ -49,6 +61,7 @@ func Register(name osvconstants.Ecosystem, config EcosystemConfig) {
 
 // PackageToPURL converts an ecosystem and package name to a PURL string.
 func PackageToPURL(ecosystem, packageName string) (string, error) {
+	ensureRegistryPopulated()
 	baseEcosystem, _, _ := strings.Cut(ecosystem, ":")
 
 	config, ok := ecosystemConfigs[osvconstants.Ecosystem(baseEcosystem)]
@@ -74,11 +87,13 @@ func PackageToPURL(ecosystem, packageName string) (string, error) {
 	}
 
 	purl := packageurl.NewPackageURL(config.Type, namespace, name, "", qualifiers, "")
+
 	return purl.ToString(), nil
 }
 
 // ParsePURL parses a PURL string and returns the ecosystem, package, and version.
 func ParsePURL(purlStr string) (ecosystem, packageName, version string, err error) {
+	ensureRegistryPopulated()
 	purl, err := packageurl.FromString(purlStr)
 	if err != nil {
 		return "", "", "", err
@@ -109,14 +124,10 @@ func ParsePURL(purlStr string) (ecosystem, packageName, version string, err erro
 		}
 		packageName = pName
 		ecosystem = eco
-	} else {
+	} else if purl.Namespace != "" && key == purl.Type {
 		// Default fallback for implicit namespaces (e.g. NPM scopes)
-		if purl.Namespace != "" && key == purl.Type {
-			packageName = purl.Namespace + "/" + purl.Name
-		}
+		packageName = purl.Namespace + "/" + purl.Name
 	}
 
 	return ecosystem, packageName, purl.Version, nil
 }
-
-

@@ -20,13 +20,13 @@ var debianCodenames = map[string]string{
 
 var debianVersions = map[string]string{}
 
-func init() {
+func registerDebian() {
 	// Invert the map for reverse lookup
 	for version, codename := range debianCodenames {
 		debianVersions[codename] = version
 	}
 
-	Register(osvconstants.EcosystemDebian, EcosystemConfig{
+	register(osvconstants.EcosystemDebian, EcosystemConfig{
 		Type:       "deb",
 		Namespace:  "debian",
 		Qualifiers: packageurl.Qualifiers{packageurl.Qualifier{Key: "arch", Value: "source"}},

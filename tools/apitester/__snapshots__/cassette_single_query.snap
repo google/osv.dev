@@ -66,7 +66,7 @@
               ]
             }
           ],
-          "versions": 138,
+          "versions": 135,
           "database_specific": "<Any value>"
         }
       ],
@@ -145,7 +145,7 @@
               ]
             }
           ],
-          "versions": 154,
+          "versions": 151,
           "database_specific": "<Any value>"
         }
       ],
@@ -242,7 +242,7 @@
               ]
             }
           ],
-          "versions": 163,
+          "versions": 160,
           "database_specific": "<Any value>"
         }
       ],
@@ -1457,7 +1457,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 204,
+          "versions": 203,
           "database_specific": "<Any value>"
         }
       ],
@@ -1489,10 +1489,11 @@
         "SUSE-SU-2025:20239-1",
         "openSUSE-SU-2024:14575-1"
       ],
+      "database_specific": "<Any value>",
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
+          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
         },
         {
           "type": "ADVISORY",
@@ -1504,15 +1505,15 @@
         },
         {
           "type": "ADVISORY",
-          "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
-        },
-        {
-          "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250124-0012/"
         },
         {
           "type": "ADVISORY",
           "url": "https://security.netapp.com/advisory/ntap-20250131-0003/"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://security.netapp.com/advisory/ntap-20250131-0004/"
         },
         {
           "type": "REPORT",
@@ -1723,7 +1724,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 205,
+          "versions": 204,
           "database_specific": "<Any value>"
         }
       ],
@@ -1974,7 +1975,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 208,
+          "versions": 207,
           "database_specific": "<Any value>"
         }
       ],
@@ -2359,7 +2360,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 214,
+          "versions": 213,
           "database_specific": "<Any value>"
         }
       ],
@@ -2446,7 +2447,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 164,
+          "versions": 163,
           "database_specific": "<Any value>"
         }
       ],
@@ -2563,7 +2564,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 146,
+          "versions": 145,
           "database_specific": "<Any value>"
         }
       ],
@@ -2942,7 +2943,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 181,
+          "versions": 177,
           "database_specific": "<Any value>"
         }
       ],
@@ -3008,7 +3009,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 116,
+          "versions": 113,
           "database_specific": "<Any value>"
         }
       ],
@@ -3074,7 +3075,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 207,
+          "versions": 203,
           "database_specific": "<Any value>"
         }
       ],

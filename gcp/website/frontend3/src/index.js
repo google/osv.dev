@@ -56,6 +56,20 @@ function initializeSearch() {
   searchInstance = new ExpandableSearch();
 }
 
+function initializeThemeToggle() {
+  const toggle = document.getElementById('theme-toggle');
+  // Ensure the event handler is attached only once.
+  if (toggle && !toggle.dataset.themeInitialized) {
+    toggle.dataset.themeInitialized = 'true';
+    toggle.addEventListener('click', () => {
+        const currentTheme = localStorage.getItem("theme") || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+    });
+  }
+}
+
 // Ensure initialization happens after all dependencies are loaded
 function ensureInitialization() {
   if (!customElements) {
@@ -65,6 +79,7 @@ function ensureInitialization() {
 
   if (customElements.get('md-filled-text-field')) {
     initializeSearch();
+    initializeThemeToggle();
   } else {
     // wait a bit longer for components to load
     setTimeout(ensureInitialization, 50);

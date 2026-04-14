@@ -85,7 +85,7 @@ _ecosystems = {
     'Linux': None,
     'OSS-Fuzz': None,
     'Photon OS': None,
-    'Tuxcare': None,
+    'TuxCare': None,
 }
 
 

@@ -17,6 +17,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.18.5
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260331231022-2a6a0b9b0ccd
+	github.com/package-url/packageurl-go v0.1.3
 	github.com/tidwall/gjson v1.18.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.42.0

@@ -3,26 +3,28 @@ package purl
 import (
 	"strings"
 
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/package-url/packageurl-go"
 )
 
-func registerMaven() {
-	register("Maven", EcosystemConfig{
-		Type:    "maven",
-		Adapter: mavenAdapter,
-		Reverse: mavenParser,
-	})
+//nolint:gochecknoinits // init is used here to register the ecosystem with the global PURL registry.
+func init() {
+	registerGenerator(osvconstants.EcosystemMaven, generatorFunc(mavenGenerator))
+	registerParser("maven", "", parserFunc(mavenParser))
 	// Add Gradle alias for reverse lookup
-	reverseLookup["gradle"] = "Maven"
+	registerParser("gradle", "", parserFunc(mavenParser))
 }
 
-func mavenAdapter(_, packageName string) (string, string, packageurl.Qualifiers) {
+func mavenGenerator(_, packageName string) (packageurl.PackageURL, error) {
+	namespace := ""
+	name := packageName
 	parts := strings.SplitN(packageName, ":", 2)
 	if len(parts) == 2 {
-		return parts[0], parts[1], nil
+		namespace = parts[0]
+		name = parts[1]
 	}
 
-	return "", packageName, nil
+	return *packageurl.NewPackageURL("maven", namespace, name, "", nil, ""), nil
 }
 
 func mavenParser(purl packageurl.PackageURL) (string, string, error) {

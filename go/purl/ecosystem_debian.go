@@ -8,34 +8,42 @@ import (
 )
 
 var debianCodenames = map[string]string{
-	"7":  "wheezy",
-	"8":  "jessie",
-	"9":  "stretch",
-	"10": "buster",
-	"11": "bullseye",
-	"12": "bookworm",
-	"13": "trixie",
-	"14": "forky",
+	"1.1": "buzz",
+	"1.2": "rex",
+	"1.3": "bo",
+	"2":   "hamm",
+	"2.1": "slink",
+	"2.2": "potato",
+	"3":   "woody",
+	"3.1": "sarge",
+	"4":   "etch",
+	"5":   "lenny",
+	"6":   "squeeze",
+	"7":   "wheezy",
+	"8":   "jessie",
+	"9":   "stretch",
+	"10":  "buster",
+	"11":  "bullseye",
+	"12":  "bookworm",
+	"13":  "trixie",
+	"14":  "forky",
+	"15":  "duke",
 }
 
 var debianVersions = map[string]string{}
 
-func registerDebian() {
+//nolint:gochecknoinits // init is used here to register the ecosystem with the global PURL registry.
+func init() {
 	// Invert the map for reverse lookup
 	for version, codename := range debianCodenames {
 		debianVersions[codename] = version
 	}
 
-	register(osvconstants.EcosystemDebian, EcosystemConfig{
-		Type:       "deb",
-		Namespace:  "debian",
-		Qualifiers: packageurl.Qualifiers{packageurl.Qualifier{Key: "arch", Value: "source"}},
-		Adapter:    debianAdapter,
-		Reverse:    debianParser,
-	})
+	registerGenerator(osvconstants.EcosystemDebian, generatorFunc(debianGenerator))
+	registerParser("deb", "debian", parserFunc(debianParser))
 }
 
-func debianAdapter(ecosystem, packageName string) (string, string, packageurl.Qualifiers) {
+func debianGenerator(ecosystem, packageName string) (packageurl.PackageURL, error) {
 	var qualifiers packageurl.Qualifiers
 
 	if strings.Contains(ecosystem, ":") {
@@ -49,7 +57,10 @@ func debianAdapter(ecosystem, packageName string) (string, string, packageurl.Qu
 		}
 	}
 
-	return "debian", packageName, qualifiers
+	// Add static qualifiers
+	qualifiers = append(qualifiers, packageurl.Qualifier{Key: "arch", Value: "source"})
+
+	return *packageurl.NewPackageURL("deb", "debian", packageName, "", qualifiers, ""), nil
 }
 
 func debianParser(purl packageurl.PackageURL) (string, string, error) {

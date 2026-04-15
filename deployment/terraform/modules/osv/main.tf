@@ -103,6 +103,30 @@ resource "google_storage_bucket" "osv_vulnerabilities_export" {
   location                    = "US"
   uniform_bucket_level_access = true
 
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      num_newer_versions = 673
+      with_state         = "ARCHIVED"
+    }
+  }
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      days_since_noncurrent_time = 7
+      with_state                 = "ANY"
+    }
+  }
+
   lifecycle {
     prevent_destroy = true
   }

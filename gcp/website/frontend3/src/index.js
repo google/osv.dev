@@ -56,18 +56,17 @@ function initializeSearch() {
   searchInstance = new ExpandableSearch();
 }
 
+function handleThemeToggle() {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', newTheme);
+  document.documentElement.setAttribute('data-theme', newTheme);
+}
+
 function initializeThemeToggle() {
   const toggle = document.getElementById('theme-toggle');
-  // Ensure the event handler is attached only once.
-  if (toggle && !toggle.dataset.themeInitialized) {
-    toggle.dataset.themeInitialized = 'true';
-    toggle.addEventListener('click', () => {
-        const currentTheme = localStorage.getItem("theme") || 'dark';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
-    });
-  }
+  if (!toggle) return;
+  toggle.addEventListener('click', handleThemeToggle);
 }
 
 // Ensure initialization happens after all dependencies are loaded
@@ -102,6 +101,11 @@ if (document.readyState === 'complete') {
 // Handle Turbo navigation
 document.addEventListener('turbo:load', () => {
   setTimeout(ensureInitialization, 0);
+});
+
+document.addEventListener('turbo:before-cache', () => {
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.removeEventListener('click', handleThemeToggle);
 });
 
 // Fallback

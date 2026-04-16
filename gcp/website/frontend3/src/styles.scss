@@ -634,6 +634,11 @@ md-icon-button.mdc-data-table__sort-icon-button {
   --md-icon-button-icon-size: 18px;
   --md-icon-button-icon-color: $osv-text-color;
   --md-icon-button-disabled-icon-color: $osv-grey-600;
+  --md-icon-button-disabled-icon-opacity: 1;
+
+  md-icon {
+    color: $osv-grey-600;
+  }
 }
 
 .vuln-table-container {
@@ -1200,18 +1205,23 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       font-weight: bold;
 
       html[data-theme="light"] & {
-        background: $osv-grey-600;
+        background: $osv-grey-200;
+        color: $osv-white;
       }
 
       &::before {
         transform: rotate(90deg);
         background-color: $osv-accent-color;
+
+        html[data-theme="light"] & {
+          background-color: $osv-white;
+        }
       }
 
       &:hover {
         background: $osv-grey-200;
         html[data-theme="light"] & {
-          background: $osv-grey-500;
+          background: $osv-grey-300;
         }
       }
     }
@@ -1232,8 +1242,8 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       }
     }
 
-    $last-ecosystem-border-offset: 12px;
-    $last-ecosystem-border-gap: 16px;
+    $last-ecosystem-border-offset: 4px;
+    $last-ecosystem-border-gap: 8px;
     $last-ecosystem-border-thickness: 1px;
 
     .ecosystem-content-panel--last {

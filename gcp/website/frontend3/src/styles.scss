@@ -636,7 +636,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
   --md-icon-button-disabled-icon-color: $osv-grey-600;
   --md-icon-button-disabled-icon-opacity: 1;
 
-  md-icon {
+  &[disabled] md-icon {
     color: $osv-grey-600;
   }
 }
@@ -1207,22 +1207,23 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       html[data-theme="light"] & {
         background: $osv-grey-200;
         color: $osv-white;
+
+        &::before {
+          background-color: $osv-white;
+        }
+
+        &:hover {
+          background: $osv-grey-300;
+        }
       }
 
       &::before {
         transform: rotate(90deg);
         background-color: $osv-accent-color;
-
-        html[data-theme="light"] & {
-          background-color: $osv-white;
-        }
       }
 
       &:hover {
         background: $osv-grey-200;
-        html[data-theme="light"] & {
-          background: $osv-grey-300;
-        }
       }
     }
 

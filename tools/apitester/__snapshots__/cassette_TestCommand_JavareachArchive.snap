@@ -248,6 +248,10 @@
     {
       "vulns": [
         {
+          "id": "GHSA-355h-qmc2-wpwf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-cj7v-27pg-wf7q",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -544,6 +548,10 @@
     {},
     {
       "vulns": [
+        {
+          "id": "GHSA-355h-qmc2-wpwf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-cj7v-27pg-wf7q",
           "modified": "<RFC3339 date with the year 2026>"

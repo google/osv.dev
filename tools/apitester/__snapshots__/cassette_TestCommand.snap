@@ -120,6 +120,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -316,6 +320,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -501,6 +509,10 @@
         },
         {
           "id": "GO-2025-3447",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2025-3503",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -697,6 +709,10 @@
         },
         {
           "id": "GO-2025-3447",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2025-3503",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

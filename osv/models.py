@@ -922,7 +922,7 @@ def _tokenize(value):
   # Deconstructs the id given into parts by retrieving parts that are
   # alphanumeric.
   # This addresses special cases like SUSE that include ':' in their id suffix
-  tokens = {token for token in re.split(r'\W+', value_lower) if token}
+  tokens = {token for token in re.split(r'[^a-zA-Z0-9]+', value_lower) if token}
   tokens.add(value_lower)
 
   # Add subsection combinations from id (split at '-') in the search indices

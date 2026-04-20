@@ -209,11 +209,11 @@ Please follow these steps to successfully contribute documentation.
         Sample URL: <!-- markdown-link-check-disable -->
         https://github.com/{your-github-profile}/osv.dev/settings/pages
         <!-- markdown-link-check-enable -->
-    -   Under "Build and deployment" select "Build from branch"
-    -   Set the branch to your working branch
-    -   Set the github page to build from the "/docs" folder
-    -   Hit save and wait for your site to build
-    -   Once it is ready, click the link and preview the docs
+   - Under "Build and deployment" select "Github Actions"
+   - Add your working branch to the on push branches (line 5) in the "docs-deploy.yml" file, this can be found in the ".github/workflows" directory
+   - Push your commit and wait for the pages to build
+   - Once it is ready, click the link and preview the docs
+   - If the pages were built successfully, remove your branch from the "docs-deploy.yml" workflow
 
 ![Image shows the UI settings for building the GitHub page, which is described
 in step 3 of the contributing documentation

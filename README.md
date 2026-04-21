@@ -1,10 +1,8 @@
-<picture>
-    <source srcset="docs/images/osv_logo_dark-full.svg"  media="(prefers-color-scheme: dark)">
-    <!-- markdown-link-check-disable-next-line -->
-    <img src="docs/images/osv_logo_light-full.svg">
-</picture>
+> [!WARNING]
+> **This package is archived and no longer maintained.**
+>
+> The Open Source Vulnerabilities (OSV) project is still active on [GitHub](https://github.com/google/osv.dev).
 
----
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://scorecard.dev/viewer/?uri=github.com/google/osv.dev)
 

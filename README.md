@@ -1,8 +1,13 @@
 > [!WARNING]
-> **This package is archived and no longer maintained.**
+> **This Python package is archived and no longer maintained.**
 >
 > The Open Source Vulnerabilities (OSV) project is still active on [GitHub](https://github.com/google/osv.dev).
 
+> If you were using this package, please refer to the following resources:
+> - [OSV Schema Protobuf Definition](https://github.com/ossf/osv-schema/blob/main/proto/vulnerability.proto)
+> - [OSV Documentation](https://google.github.io/osv.dev)
+
+---
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/google/osv.dev/badge)](https://scorecard.dev/viewer/?uri=github.com/google/osv.dev)
 

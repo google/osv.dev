@@ -241,7 +241,7 @@ def maybe_normalize_package_names(
   return vulnerability
 
 
-def filter_unknown_ecosystems(vulnerability):
+def filter_unknown_ecosystems(vulnerability, source_repo: osv.SourceRepository):
   """Remove unknown ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
@@ -249,6 +249,9 @@ def filter_unknown_ecosystems(vulnerability):
     if not affected.HasField('package'):
       filtered.append(affected)
     elif osv.ecosystems.is_known(affected.package.ecosystem):
+      if source_repo.name == 'echo' and affected.package.ecosystem.partition(':')[0] != 'Echo':
+        logging.warning('%s has eosystem %s', vulnerability.id, affected.package.ecosystem)
+        continue
       filtered.append(affected)
     else:
       logging.error('%s contains unknown ecosystem "%s"', vulnerability.id,
@@ -507,7 +510,7 @@ class TaskRunner:
     logging.info('Processing update for vulnerability %s', vulnerability.id)
     vulnerability = maybe_normalize_package_names(vulnerability)
 
-    filter_unknown_ecosystems(vulnerability)
+    filter_unknown_ecosystems(vulnerability, source_repo)
 
     # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)

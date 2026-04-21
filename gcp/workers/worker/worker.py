@@ -249,8 +249,10 @@ def filter_unknown_ecosystems(vulnerability, source_repo: osv.SourceRepository):
     if not affected.HasField('package'):
       filtered.append(affected)
     elif osv.ecosystems.is_known(affected.package.ecosystem):
-      if source_repo.name == 'echo' and affected.package.ecosystem.partition(':')[0] != 'Echo':
-        logging.warning('%s has eosystem %s', vulnerability.id, affected.package.ecosystem)
+      if (source_repo.name == 'echo' and
+          affected.package.ecosystem.partition(':')[0] != 'Echo'):
+        logging.warning('%s has eosystem %s', vulnerability.id,
+                        affected.package.ecosystem)
         continue
       filtered.append(affected)
     else:

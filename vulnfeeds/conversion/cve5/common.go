@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/osv/vulnfeeds/conversion"
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -53,10 +53,10 @@ func toVersionRangeType(s string) VersionRangeType {
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
 // CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve models.CVE5) (versionRanges []*osvschema.Range, cpes []string, err error) {
+func findCPEVersionRanges(cve models.CVE5) (versionRanges []models.RangeWithMetadata, cpes []string, err error) {
 	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
-	for _, c := range cve.Containers.CNA.CPEApplicability {
-		for _, node := range c.Nodes {
+	for _, cpe := range cve.Containers.CNA.CPEApplicability {
+		for _, node := range cpe.Nodes {
 			if node.Operator != "OR" {
 				continue
 			}
@@ -70,11 +70,14 @@ func findCPEVersionRanges(cve models.CVE5) (versionRanges []*osvschema.Range, cp
 				if match.VersionStartIncluding == "" {
 					match.VersionStartIncluding = "0"
 				}
-
+				var nr []*osvschema.Range
 				if match.VersionEndExcluding != "" {
-					versionRanges = append(versionRanges, conversion.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
+					nr = append(nr, c.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
 				} else if match.VersionEndIncluding != "" {
-					versionRanges = append(versionRanges, conversion.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
+					nr = append(nr, c.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
+				}
+				if nr != nil {
+					versionRanges = append(versionRanges, c.ToRangeWithMetadata(nr, models.VersionSourceCPE)...)
 				}
 			}
 		}
@@ -98,8 +101,8 @@ func compareSemverLike(a, b string) int {
 		// We ignore the error, so non-numeric parts default to 0.
 		numA, _ := strconv.Atoi(partsA[i])
 		numB, _ := strconv.Atoi(partsB[i])
-		if c := cmp.Compare(numA, numB); c != 0 {
-			return c
+		if v := cmp.Compare(numA, numB); v != 0 {
+			return v
 		}
 	}
 	// If lengths are the same, they're equal.

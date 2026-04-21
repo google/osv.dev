@@ -1,0 +1,47 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: hackage.haskell.org
+        url: https://hackage.haskell.org/package/doesnotexist123456.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        content_length: -1
+        uncompressed: true
+        body: "<!DOCTYPE html>\n<html>\n<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<link href=\"https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700\" rel=\"stylesheet\">\n<link rel=\"stylesheet\" href=\"/static/hackage.css\" type=\"text/css\" />\n<link rel=\"icon\" type=\"image/png\" href=\"/static/favicon.png\" />\n<link rel=\"search\" type=\"application/opensearchdescription+xml\" title=\"Hackage\" href=\"/packages/opensearch.xml\" />\n<title>Package not found | Hackage</title>\n</head>\n\n<body>\n<div id=\"page-header\">\n\n  <a class=\"caption\" href=\"/\">Hackage :: [Package]</a>\n\n<ul class=\"links\" id=\"page-menu\">\n\n    <li>\n      <form action=\"/packages/search\" method=\"get\" class=\"search\">\n        <button type=\"submit\">Search&nbsp;</button>\n        <input type=\"text\" name=\"terms\" />\n      </form>\n    </li>\n\n    <li><a href=\"/packages/browse\">Browse</a></li>\n\n    <li><a href=\"/packages/recent\">What's new</a></li>\n\n    <li><a href=\"/upload\">Upload</a></li>\n\n    <li><a href=\"/accounts\">User accounts</a></li>\n    \n\n</ul>\n\n</div>\n\n<div id=\"content\">\n<h1>Package not found</h1>\n\n<p>No such package in package index</p>\n\n</div>\n</body>\n</html>"
+        headers:
+            Accept-Ranges:
+                - bytes
+            Connection:
+                - keep-alive
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Fri, 27 Mar 2026 03:18:54 GMT
+            Server:
+                - nginx/1.24.0 (Ubuntu)
+            Vary:
+                - Accept, Accept-Encoding
+            Via:
+                - 1.1 varnish, 1.1 varnish
+            X-Cache:
+                - MISS, MISS
+            X-Cache-Hits:
+                - 0, 0
+            X-Served-By:
+                - cache-dfw-kdal2120087-DFW, cache-wsi-ysbk1060048-WSI
+            X-Timer:
+                - S1774581534.088155,VS0,VE295
+        status: 404 Not Found
+        code: 404
+        duration: 296.855781ms

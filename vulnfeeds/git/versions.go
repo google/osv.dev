@@ -15,13 +15,17 @@
 package git
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/sethvargo/go-retry"
 )
 
 var (
@@ -84,7 +88,7 @@ func VersionToAffectedCommit(version string, repo string, commitType models.Comm
 // Take an unnormalized version string, the pre-normalized mapping of tags to commits and return a commit hash.
 func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (string, error) {
 	if version == "" {
-		return "", errors.New("version cannot be empty")
+		return "", nil
 	}
 	// TODO: try unnormalized version first.
 	normalizedVersion, err := NormalizeVersion(version)
@@ -178,4 +182,65 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 	}
 
 	return av, nil
+}
+
+// Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
+func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonicalLink string, err error) {
+	u, err := url.Parse(link)
+	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
+		// Handle what's presumably a git:// URL.
+		return link, err
+	}
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	backoff := retry.NewExponential(1 * time.Second)
+	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
+		if err != nil {
+			return err
+		}
+
+		// security.alpinelinux.org responds with text/html content.
+		// default HEAD request in Go does not provide any Accept headers, causing a 406 response.
+		req.Header.Set("Accept", "text/html")
+
+		// Send the request
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		switch resp.StatusCode / 100 {
+		// 4xx response codes are an instant fail.
+		// This will be retried next time the conversion is run so 429 errors may be resolved.
+		case 4:
+			return fmt.Errorf("bad response: %v", resp.StatusCode)
+		// 5xx response codes are retriable.
+		case 5:
+			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
+		// Anything else is acceptable.
+		default:
+			canonicalLink = resp.Request.URL.String()
+			return nil
+		}
+	}); err != nil {
+		return link, fmt.Errorf("unable to determine validity of %q: %w", link, err)
+	}
+
+	return canonicalLink, nil
+}
+
+func FindCanonicalLink(link string, httpClient *http.Client, cache *RepoTagsCache) (canonicalLink string, err error) {
+	if canonicalLink, ok := cache.GetCanonicalLink(link); ok {
+		return canonicalLink, nil
+	}
+	canonicalLink, err = ValidateAndCanonicalizeLink(link, httpClient)
+	if err != nil {
+		return link, err
+	}
+	cache.SetCanonicalLink(link, canonicalLink)
+
+	return canonicalLink, nil
 }

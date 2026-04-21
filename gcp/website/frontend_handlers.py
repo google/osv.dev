@@ -1103,7 +1103,7 @@ class ComputedHierarchy(NamedTuple):
 
 
 def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
-                               known_ids: set[str]) -> str:
+                               known_ids: set[str]) -> Markup:
   """Constructs a hierarchy string for display.
 
   Args:
@@ -1112,9 +1112,12 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
     known_ids: A set of bug IDs that are known to exist (for link generation).
 
   Returns:
-    A string representing the hierarchy for display by the frontend.
+    A Markup string representing the hierarchy for display by the frontend.
+    Vulnerability IDs are HTML-escaped so that values originating from
+    source records cannot inject markup when the template renders the
+    result.
   """
-  output_lines = []
+  output_lines: list[Markup] = []
   root_nodes = hierarchy.root_nodes
   graph = hierarchy.graph
 
@@ -1126,28 +1129,29 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
         vuln_id (str): The starting vuln_id for printing the subtree.
     """
     if vuln_id != target_bug_id:
+      escaped_id = escape(vuln_id)
       if vuln_id in known_ids:
-        output_lines.append("<li><a href=\"/vulnerability/" + vuln_id + "\">" +
-                            vuln_id + " </a></li>")
+        output_lines.append(
+            Markup('<li><a href="/vulnerability/{0}">{0} </a></li>').format(
+                escaped_id))
       else:
-        output_lines.append("<li>" + vuln_id + "</li>")
+        output_lines.append(Markup('<li>{0}</li>').format(escaped_id))
 
     if vuln_id in graph:
       sorted_children = sorted(graph[vuln_id])
       for child in sorted_children:
         if child != target_bug_id:
-          output_lines.append("<ul class=\"substream\">")
+          output_lines.append(Markup('<ul class="substream">'))
           print_subtree(child)
-          output_lines.append("</ul>")
+          output_lines.append(Markup('</ul>'))
 
   sorted_root_nodes = sorted(root_nodes)
   for root in sorted_root_nodes:
-    output_lines.append("<ul class=\"aliases\">")
+    output_lines.append(Markup('<ul class="aliases">'))
     print_subtree(root)
-    output_lines.append("</ul>")
+    output_lines.append(Markup('</ul>'))
 
-  final_string = "".join(output_lines)
-  return final_string
+  return Markup('').join(output_lines)
 
 
 def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:

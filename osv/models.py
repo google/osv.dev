@@ -922,7 +922,7 @@ def _tokenize(value):
   # Deconstructs the id given into parts by retrieving parts that are
   # alphanumeric.
   # This addresses special cases like SUSE that include ':' in their id suffix
-  tokens = {token for token in re.split(r'\W+', value_lower) if token}
+  tokens = {token for token in re.split(r'[^a-zA-Z0-9]+', value_lower) if token}
   tokens.add(value_lower)
 
   # Add subsection combinations from id (split at '-') in the search indices
@@ -947,7 +947,7 @@ class Vulnerability(ndb.Model):
   """A Vulnerability entry.
   
   Contains a minimal amount of information of an OSV record, including the
-  overall modified date, an some raw fields that are  overwritten by our
+  overall modified date, an some raw fields that are overwritten by our
   enrichment.
   
   The entity's key/id is ID in OSV.
@@ -971,6 +971,13 @@ class Vulnerability(ndb.Model):
   related_raw: list[str] = ndb.StringProperty(repeated=True)
   # The reported upstream IDs.
   upstream_raw: list[str] = ndb.StringProperty(repeated=True)
+
+
+# --- JobData ---
+
+
+class JobData(ndb.Expando):
+  """Job data."""
 
 
 # --- Affected versions for matching ---

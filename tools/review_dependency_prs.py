@@ -64,8 +64,7 @@ def main():
     # 3. Analyze files changed
     diff_output = run_gh_command(["pr", "diff", str(pr_num), "--name-only"])
     files_changed = [f for f in diff_output.strip().split('\n') if f]
-    files_summary = files_changed[0] + (
-        "..." if len(files_changed) > 1 else "")
+    files_summary = files_changed[0] + ("..." if len(files_changed) > 1 else "")
 
     # 4. Determine categorization
     reasons_for_manual = []

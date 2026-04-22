@@ -1,11 +1,14 @@
 [project]
 name = "osv"
-version = "0.1.2"
-description = "Open Source Vulnerabilities library"
+version = "0.1.3"
+description = "(ARCHIVED) This package is archived and no longer maintained. OSV is still active on https://github.com/google/osv.dev."
 authors = [
     {name = "OSV Authors", email = "osv-discuss@googlegroups.com"}
 ]
 license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 7 - Inactive",
+]
 readme = "README.md"
 requires-python = ">=3.13,<4.0"
 dependencies = [

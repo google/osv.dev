@@ -1,8 +1,11 @@
-<picture>
-    <source srcset="docs/images/osv_logo_dark-full.svg"  media="(prefers-color-scheme: dark)">
-    <!-- markdown-link-check-disable-next-line -->
-    <img src="docs/images/osv_logo_light-full.svg">
-</picture>
+> [!WARNING]
+> **This Python package is archived and no longer maintained.**
+>
+> The Open Source Vulnerabilities (OSV) project is still active on [GitHub](https://github.com/google/osv.dev).
+
+> If you were using this package, please refer to the following resources:
+> - [OSV Schema Protobuf Definition](https://github.com/ossf/osv-schema/blob/main/proto/vulnerability.proto)
+> - [OSV Documentation](https://google.github.io/osv.dev)
 
 ---
 

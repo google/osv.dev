@@ -215,6 +215,54 @@
     {
       "query": {
         "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary#01 - 1]
+{
+  "results": [
+    {
+      "query": {
+        "package": {
           "name": "alpine-baselayout",
           "ecosystem": "Alpine"
         },
@@ -250,7 +298,12 @@
         },
         "version": "0.0.1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-whgm-jr23-g3j9",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
     },
     {
       "query": {
@@ -340,7 +393,20 @@
         },
         "version": "1.2.3-r4"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -390,48 +456,6 @@
         },
         "version": "1.2.13-r0"
       },
-      "vulns": []
-    }
-  ]
-}
-
----
-
-[Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary#01 - 1]
-{
-  "results": [
-    {},
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "GHSA-whgm-jr23-g3j9",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ]
-    },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {},
-    {},
-    {},
-    {},
-    {
       "vulns": [
         {
           "id": "ALPINE-CVE-2026-22184",
@@ -454,40 +478,40 @@
     {
       "query": {
         "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
-        "version": "2.4.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
-        "version": "1.0.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -587,6 +611,14 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -658,10 +690,46 @@
 [Test/cassette_TestCommand_Licenses/TestCommand_Licenses/No_vulnerabilities_with_license_summary_in_markdown#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -721,50 +789,50 @@
     {
       "query": {
         "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "apk-tools",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.12.10-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
           "name": "ast",
           "ecosystem": "RubyGems"
         },
         "version": "2.4.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "league/flysystem",
-          "ecosystem": "Packagist"
-        },
-        "version": "1.0.8"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
-        "version": "1.99.9"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
-        "version": "1.99.9"
       },
       "vulns": []
     },
@@ -844,6 +912,14 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -935,8 +1011,24 @@
 [Test/cassette_TestCommand_Licenses/TestCommand_Licenses/Some_packages_with_ignored_licenses#01 - 1]
 {
   "results": [
-    {},
     {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "league/flysystem",
+          "ecosystem": "Packagist"
+        },
+        "version": "1.0.8"
+      },
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
@@ -944,9 +1036,36 @@
         }
       ]
     },
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "stdlib",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "toolchain",
+          "ecosystem": "Go"
+        },
+        "version": "1.99.9"
+      },
+      "vulns": []
+    }
   ]
 }
 

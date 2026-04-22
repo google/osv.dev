@@ -8,7 +8,7 @@
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -35,8 +35,26 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_individually#01 - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -51,7 +69,7 @@
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -78,8 +96,26 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_a_couple_of_specific_extractors_enabled_specified_together#01 - 1]
 {
   "results": [
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -94,7 +130,7 @@
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -111,7 +147,16 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_an_extractor_that_does_not_exist#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -123,30 +168,30 @@
     {
       "query": {
         "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
         },
-        "version": "2.4.2"
+        "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
         "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
         },
-        "version": "1.0.2"
+        "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
         "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
         },
-        "version": "2.0.4"
+        "version": "2.4-r1"
       },
       "vulns": []
     },
@@ -242,6 +287,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -312,9 +365,36 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_disabled#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -329,7 +409,7 @@
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -346,7 +426,16 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_directory_with_one_specific_extractor_enabled_and_no_defaults#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -361,7 +450,7 @@
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -378,7 +467,16 @@
 [Test/cassette_TestCommand_ExplicitExtractors_WithoutDefaults/TestCommand_ExplicitExtractors_WithoutDefaults/scanning_file_with_one_specific_extractor_enabled#01 - 1]
 {
   "results": [
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    }
   ]
 }
 

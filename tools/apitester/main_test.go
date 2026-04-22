@@ -110,20 +110,23 @@ func normalizeJSONBody(t *testing.T, reqBody []byte, resp *http.Response) string
 		}
 	case "/v1/querybatch":
 		queries := gjson.GetBytes(reqBody, "queries")
-		if queries.IsArray() {
+		results := gjson.GetBytes(body, "results")
+		if queries.IsArray() && results.IsArray() {
 			for i, query := range queries.Array() {
-				res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.query", i), []byte(query.Raw))
-				if err == nil {
-					body = res
-				}
-				if !gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)).Exists() && !gjson.GetBytes(body, "code").Exists() {
-					res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte("[]"))
+				if i < len(results.Array()) {
+					res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.query", i), []byte(query.Raw))
 					if err == nil {
 						body = res
 					}
-				} else if vulns := gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)); vulns.Exists() {
-					body, _ = sjson.DeleteBytes(body, fmt.Sprintf("results.%d.vulns", i))
-					body, _ = sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte(vulns.Raw))
+					if !gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)).Exists() && !gjson.GetBytes(body, "code").Exists() {
+						res, err := sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte("[]"))
+						if err == nil {
+							body = res
+						}
+					} else if vulns := gjson.GetBytes(body, fmt.Sprintf("results.%d.vulns", i)); vulns.Exists() {
+						body, _ = sjson.DeleteBytes(body, fmt.Sprintf("results.%d.vulns", i))
+						body, _ = sjson.SetRawBytes(body, fmt.Sprintf("results.%d.vulns", i), []byte(vulns.Raw))
+					}
 				}
 			}
 		}

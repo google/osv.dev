@@ -190,6 +190,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -287,6 +291,30 @@
         },
         {
           "id": "GO-2026-4603",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4864",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4865",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4869",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4870",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4946",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4947",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -369,6 +397,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -466,6 +498,30 @@
         },
         {
           "id": "GO-2026-4603",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4864",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4865",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4869",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4870",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4946",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4947",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -540,6 +596,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -637,6 +697,30 @@
         },
         {
           "id": "GO-2026-4603",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4864",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4865",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4869",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4870",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4946",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4947",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -719,6 +803,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2025-3503",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2025-3563",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -816,6 +904,30 @@
         },
         {
           "id": "GO-2026-4603",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4864",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4865",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4869",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4870",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4946",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4947",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -930,6 +1042,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1024,40 +1144,40 @@
     {
       "query": {
         "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
-        "version": "2.4.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
-        "version": "1.0.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -1158,6 +1278,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1228,10 +1356,46 @@
 [Test/cassette_TestCommand/TestCommand/Scan_locks-many#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -1425,6 +1589,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1536,40 +1708,40 @@
     {
       "query": {
         "package": {
+          "name": "alpine-baselayout",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-baselayout-data",
+          "ecosystem": "Alpine"
+        },
+        "version": "3.4.0-r0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "alpine-keys",
+          "ecosystem": "Alpine"
+        },
+        "version": "2.4-r1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
           "name": "ansi-html",
           "ecosystem": "npm"
         },
-        "version": "0.0.8"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
-        "version": "2.4.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
-        "version": "1.0.2"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
+        "version": "0.0.1"
       },
       "vulns": [
         {
@@ -1670,6 +1842,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1740,10 +1920,46 @@
 [Test/cassette_TestCommand/TestCommand/config_files_should_not_have_multiple_ignores_with_the_same_id#01 - 1]
 {
   "results": [
-    {},
-    {},
-    {},
-    {}
+    {
+      "query": {
+        "package": {
+          "name": "ansi-html",
+          "ecosystem": "npm"
+        },
+        "version": "0.0.8"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "ast",
+          "ecosystem": "RubyGems"
+        },
+        "version": "2.4.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "balanced-match",
+          "ecosystem": "npm"
+        },
+        "version": "1.0.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sentry/sdk",
+          "ecosystem": "Packagist"
+        },
+        "version": "2.0.4"
+      },
+      "vulns": []
+    }
   ]
 }
 
@@ -3816,6 +4032,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -3830,6 +4054,14 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -4197,6 +4429,34 @@
         },
         {
           "id": "DEBIAN-CVE-2026-2673",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-28386",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-28387",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-28388",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-28389",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-28390",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-31789",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-31790",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -4604,7 +4864,12 @@
         },
         "version": "4.4-1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2026-5958",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -4692,6 +4957,10 @@
         },
         {
           "id": "DEBIAN-CVE-2023-39804",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-5704",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -4812,6 +5081,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-27456",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-3184",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4848,6 +5121,10 @@
         },
         {
           "id": "DEBIAN-CVE-2025-31115",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-34743",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -5107,6 +5384,30 @@
         {
           "id": "GO-2026-4603",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4864",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4865",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4869",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4870",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4946",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4947",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -5129,6 +5430,18 @@
         },
         {
           "id": "GO-2026-4433",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4867",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4868",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4871",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -5495,6 +5808,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -5664,6 +5985,14 @@
       "vulns": [
         {
           "id": "ALPINE-CVE-2025-26519",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -6011,6 +6340,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -6181,6 +6518,14 @@
         {
           "id": "ALPINE-CVE-2025-26519",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-40200",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "ALPINE-CVE-2026-6042",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -6288,6 +6633,946 @@
 ---
 
 [Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names - 1]
+{
+  "results": [
+    {
+      "query": {
+        "package": {
+          "name": "black",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "certifi",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.10.5"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "chardet",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "click",
+          "ecosystem": "PyPI"
+        },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68w8-qjq3-2gfm",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2021-98",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.11.29"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68w8-qjq3-2gfm",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2021-98",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "django",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.24"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-2gwj-7jmv-h26r",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-53qw-q765-4fww",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6cw3-g6wv-c2xv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-6w2r-r2m5-xq5w",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-7xr5-9hcq-chf9",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-8c5j-9r9f-c6w8",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-8x94-hmjh-97hq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-95rw-fx8r-36v6",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-frmv-pr5f-9mcr",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-jrh2-hc4r-7jwx",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-qw25-v68c-qjf3",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-v6rh-hp5x-86rv",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-w24h-v9qh-8gxj",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2021-439",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-1",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-19",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-190",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-191",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-2",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-20",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2022-3",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask-cors",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-43qf-4rqw-9q2g",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-7rxf-gvfg-47g4",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-84pr-m4jr-85g5",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-8vgw-p6qm-5gr7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hxwh-jpp2-84pm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-xc3p-ff3m-f46v",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-43",
+          "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2024-71",
+          "modified": "<RFC3339 date with the year 2025>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-jjg7-2v4v-x38h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2024-60",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "idna",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.7"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-jjg7-2v4v-x38h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2024-60",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "itsdangerous",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "jinja2",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.6"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "markupsafe",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.0.3"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "mypy-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.1.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "numpy",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.3.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "packaging",
+          "ecosystem": "PyPI"
+        },
+        "version": "25.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pandas",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.23.4"
+      },
+      "vulns": [
+        {
+          "id": "PYSEC-2020-73",
+          "modified": "<RFC3339 date with the year 2023>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pathspec",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.12.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "platformdirs",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.4.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "pytz",
+          "ecosystem": "PyPI"
+        },
+        "version": "2025.2"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-9hjg-9r4m-mvj7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gc5v-m9x4-r6x2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-74",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "requests",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.20.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-9hjg-9r4m-mvj7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gc5v-m9x4-r6x2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-74",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "sqlparse",
+          "ecosystem": "PyPI"
+        },
+        "version": "0.5.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-27jp-wm6q-gp25",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "tomli",
+          "ecosystem": "PyPI"
+        },
+        "version": "2.2.1"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "typing-extensions",
+          "ecosystem": "PyPI"
+        },
+        "version": "4.15.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-2xpw-w6gg-jr37",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-34jh-p97f-mpxf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g4mx-q9vg-27p4",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gm62-xv2j-4w53",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-pq67-6m6q-mj2v",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wqvq-5m8c-6g24",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-148",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2021-108",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-192",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "urllib3",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.24.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-2xpw-w6gg-jr37",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-34jh-p97f-mpxf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-38jv-5279-wg99",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g4mx-q9vg-27p4",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-gm62-xv2j-4w53",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-pq67-6m6q-mj2v",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wqvq-5m8c-6g24",
+          "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "PYSEC-2020-148",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2021-108",
+          "modified": "<RFC3339 date with the year 2023>"
+        },
+        {
+          "id": "PYSEC-2023-192",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-29vq-49wr-vm6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-29vq-49wr-vm6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-29vq-49wr-vm6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    }
+  ]
+}
+
+---
+
+[Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names#01 - 1]
 {
   "results": [
     {
@@ -7207,554 +8492,6 @@
         },
         "version": "3.1.3"
       },
-      "vulns": [
-        {
-          "id": "GHSA-29vq-49wr-vm6x",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-87hc-h4r5-73f7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    }
-  ]
-}
-
----
-
-[Test/cassette_TestCommand/TestCommand/requirements.txt_can_have_all_kinds_of_names#01 - 1]
-{
-  "results": [
-    {
-      "vulns": [
-        {
-          "id": "GHSA-3936-cmfr-pm3m",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68w8-qjq3-2gfm",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-6w2r-r2m5-xq5w",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-7xr5-9hcq-chf9",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-8x94-hmjh-97hq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "GHSA-qw25-v68c-qjf3",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-rrqc-c2jx-6jgv",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2021-98",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68w8-qjq3-2gfm",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-6w2r-r2m5-xq5w",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-7xr5-9hcq-chf9",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-8x94-hmjh-97hq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "GHSA-qw25-v68c-qjf3",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-rrqc-c2jx-6jgv",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2021-98",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-2gwj-7jmv-h26r",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "GHSA-53qw-q765-4fww",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-6cw3-g6wv-c2xv",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-6w2r-r2m5-xq5w",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-7xr5-9hcq-chf9",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-8c5j-9r9f-c6w8",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "GHSA-8x94-hmjh-97hq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-95rw-fx8r-36v6",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "GHSA-jrh2-hc4r-7jwx",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-qw25-v68c-qjf3",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-rrqc-c2jx-6jgv",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-v6rh-hp5x-86rv",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-w24h-v9qh-8gxj",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "PYSEC-2021-439",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-19",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-190",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-191",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-2",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-20",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2022-3",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-43qf-4rqw-9q2g",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-7rxf-gvfg-47g4",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-84pr-m4jr-85g5",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-8vgw-p6qm-5gr7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hxwh-jpp2-84pm",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-xc3p-ff3m-f46v",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2020-43",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "PYSEC-2024-71",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-jjg7-2v4v-x38h",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-jjg7-2v4v-x38h",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2024-60",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "PYSEC-2020-73",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
-      ]
-    },
-    {},
-    {},
-    {},
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "GHSA-9hjg-9r4m-mvj7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-9wx4-h78v-vm56",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gc5v-m9x4-r6x2",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-j8r2-6x86-q33q",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-9hjg-9r4m-mvj7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-9wx4-h78v-vm56",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gc5v-m9x4-r6x2",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-j8r2-6x86-q33q",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-74",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-27jp-wm6q-gp25",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {},
-    {},
-    {
-      "vulns": [
-        {
-          "id": "GHSA-2xpw-w6gg-jr37",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-34jh-p97f-mpxf",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-38jv-5279-wg99",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-g4mx-q9vg-27p4",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gm62-xv2j-4w53",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-pq67-6m6q-mj2v",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-v845-jxx5-vc9f",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-wqvq-5m8c-6g24",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2020-148",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2021-108",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-2xpw-w6gg-jr37",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-34jh-p97f-mpxf",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-38jv-5279-wg99",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-g4mx-q9vg-27p4",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-gm62-xv2j-4w53",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-pq67-6m6q-mj2v",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-v845-jxx5-vc9f",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-wqvq-5m8c-6g24",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "PYSEC-2020-148",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2021-108",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "PYSEC-2023-192",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-212",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-29vq-49wr-vm6x",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-87hc-h4r5-73f7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "vulns": [
-        {
-          "id": "GHSA-29vq-49wr-vm6x",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-87hc-h4r5-73f7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
       "vulns": [
         {
           "id": "GHSA-29vq-49wr-vm6x",

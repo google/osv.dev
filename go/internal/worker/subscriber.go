@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -36,55 +37,41 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			SourceID:     m.Attributes["source"],
 			PathInSource: m.Attributes["path"],
 		}
+
 		logInfo := []any{
 			slog.String("source", task.SourceID),
 			slog.String("path", task.PathInSource),
 		}
-		if len(m.Data) != 0 {
-			if m.Attributes["content_encoding"] != "zstd" {
-				logger.ErrorContext(taskCtx, "Unrecognized content encoding", append(logInfo, slog.String("encoding", m.Attributes["content_encoding"]))...)
-				m.Nack()
 
-				return
-			}
-			buf := make([]byte, 0, len(m.Data)*3) // let's guess 3x compression
-			buf, err := zstd.DecodeTo(buf, m.Data)
-			if err != nil {
-				logger.ErrorContext(taskCtx, "Failed to decompress vulnerability", append(logInfo, slog.Any("error", err))...)
-				m.Nack()
+		var err error
+		task.Vuln, err = s.parseVuln(m)
+		if err != nil {
+			logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
+			m.Nack()
 
-				return
-			}
-			task.Vuln = &osvschema.Vulnerability{}
-			if err := proto.Unmarshal(buf, task.Vuln); err != nil {
-				logger.ErrorContext(taskCtx, "Failed to unmarshal vulnerability", append(logInfo, slog.Any("error", err))...)
-				m.Nack()
-
-				return
-			}
+			return
 		}
+
 		deleted, err := strconv.ParseBool(m.Attributes["deleted"])
 		if err != nil {
 			logger.ErrorContext(taskCtx, "Failed to parse deleted attribute, defaulting to false", append(logInfo, slog.Any("error", err))...)
 			deleted = false
 		}
-		task.IsDeleted = deleted
+		if deleted {
+			task.Type = TaskDelete
+		} else {
+			task.Type = TaskUpdate
+		}
 
-		timestamp, err := strconv.ParseInt(m.Attributes["req_timestamp"], 10, 64)
+		task.ReceivedTime, err = s.timeFromUnixSeconds(m.Attributes["req_timestamp"])
 		if err != nil {
 			logger.ErrorContext(taskCtx, "Failed to parse req_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
-		} else {
-			ts := time.Unix(timestamp, 0)
-			task.ReceivedTime = &ts
 		}
 		srcTime := m.Attributes["src_timestamp"]
 		if srcTime != "" {
-			timestamp, err = strconv.ParseInt(srcTime, 10, 64)
+			task.SourceTime, err = s.timeFromUnixSeconds(srcTime)
 			if err != nil {
 				logger.ErrorContext(taskCtx, "Failed to parse src_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
-			} else {
-				ts := time.Unix(timestamp, 0)
-				task.SourceTime = &ts
 			}
 		}
 
@@ -100,4 +87,36 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			m.Ack()
 		}
 	})
+}
+
+func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, error) {
+	if len(m.Data) == 0 {
+		//nolint:nilnil // this is expected for delete requests
+		return nil, nil
+	}
+	if m.Attributes["content_encoding"] != "zstd" {
+		return nil, fmt.Errorf("unrecognized content encoding: %s", m.Attributes["content_encoding"])
+	}
+	// TODO: try to extract the actual uncompressed size from the zstd frame.
+	buf := make([]byte, 0, len(m.Data)*3)
+	buf, err := zstd.DecodeTo(buf, m.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
+	}
+	v := &osvschema.Vulnerability{}
+	if err := proto.Unmarshal(buf, v); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal vulnerability: %w", err)
+	}
+
+	return v, nil
+}
+
+func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {
+	timestamp, err := strconv.ParseInt(tsString, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	ts := time.Unix(timestamp, 0)
+
+	return &ts, nil
 }

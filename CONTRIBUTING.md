@@ -97,6 +97,16 @@ By default, this skips long tests, enable them by setting the `LONG_TESTS` varia
 LONG_TESTS=1 make api-server-tests
 ```
 
+There are additional tests for testing coarse version ordering logic for ecosystem version
+parsers. These are tested against the entire OSV database.
+```shell
+# in go/
+# you must generate the list of all versions by running
+./osv/ecosystem/testdata/regen_coarse_test_data.sh
+# then run the tests
+RUN_COARSE_LARGE_TEST=1 go test ./osv/ecosystem -run TestCoarseMonotonicityLarge
+```
+
 ##### Test result generation
 
 Many tests are written using a

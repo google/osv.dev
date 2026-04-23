@@ -22,71 +22,73 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {
-	return s.PubSubSub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		if taskType := m.Attributes["type"]; taskType != "update" {
-			logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
-			m.Ack()
+	return s.PubSubSub.Receive(ctx, s.handleMessage)
+}
 
-			return
-		}
+func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
+	if taskType := m.Attributes["type"]; taskType != "update" {
+		logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
+		m.Ack()
 
-		taskCtx := otel.GetTextMapPropagator().Extract(ctx, propagation.MapCarrier(m.Attributes))
-		taskCtx, span := otel.Tracer("worker").Start(taskCtx, "process_message")
-		defer span.End()
-		task := Task{
-			SourceID:     m.Attributes["source"],
-			PathInSource: m.Attributes["path"],
-		}
+		return
+	}
 
-		logInfo := []any{
-			slog.String("source", task.SourceID),
-			slog.String("path", task.PathInSource),
-		}
+	taskCtx := otel.GetTextMapPropagator().Extract(ctx, propagation.MapCarrier(m.Attributes))
+	taskCtx, span := otel.Tracer("worker").Start(taskCtx, "process_message")
+	defer span.End()
+	task := Task{
+		SourceID:     m.Attributes["source"],
+		PathInSource: m.Attributes["path"],
+	}
 
-		var err error
-		task.Vuln, err = s.parseVuln(m)
+	logInfo := []any{
+		slog.String("source", task.SourceID),
+		slog.String("path", task.PathInSource),
+	}
+
+	var err error
+	task.Vuln, err = s.parseVuln(m)
+	if err != nil {
+		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
+		m.Nack()
+
+		return
+	}
+
+	deleted, err := strconv.ParseBool(m.Attributes["deleted"])
+	if err != nil {
+		logger.ErrorContext(taskCtx, "Failed to parse deleted attribute, defaulting to false", append(logInfo, slog.Any("error", err))...)
+		deleted = false
+	}
+	if deleted {
+		task.Type = TaskDelete
+	} else {
+		task.Type = TaskUpdate
+	}
+
+	task.ReceivedTime, err = s.timeFromUnixSeconds(m.Attributes["req_timestamp"])
+	if err != nil {
+		logger.ErrorContext(taskCtx, "Failed to parse req_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
+	}
+	srcTime := m.Attributes["src_timestamp"]
+	if srcTime != "" {
+		task.SourceTime, err = s.timeFromUnixSeconds(srcTime)
 		if err != nil {
-			logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
-			m.Nack()
+			logger.ErrorContext(taskCtx, "Failed to parse src_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
+		}
+	}
 
-			return
-		}
+	skipHash, ok := m.Attributes["skip_hash_check"]
+	if !ok || skipHash != "true" {
+		task.SHA256 = m.Attributes["original_sha256"]
+	}
 
-		deleted, err := strconv.ParseBool(m.Attributes["deleted"])
-		if err != nil {
-			logger.ErrorContext(taskCtx, "Failed to parse deleted attribute, defaulting to false", append(logInfo, slog.Any("error", err))...)
-			deleted = false
-		}
-		if deleted {
-			task.Type = TaskDelete
-		} else {
-			task.Type = TaskUpdate
-		}
-
-		task.ReceivedTime, err = s.timeFromUnixSeconds(m.Attributes["req_timestamp"])
-		if err != nil {
-			logger.ErrorContext(taskCtx, "Failed to parse req_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
-		}
-		srcTime := m.Attributes["src_timestamp"]
-		if srcTime != "" {
-			task.SourceTime, err = s.timeFromUnixSeconds(srcTime)
-			if err != nil {
-				logger.ErrorContext(taskCtx, "Failed to parse src_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)
-			}
-		}
-
-		skipHash, ok := m.Attributes["skip_hash_check"]
-		if !ok || skipHash != "true" {
-			task.SHA256 = m.Attributes["original_sha256"]
-		}
-
-		if err := s.Engine.RunTask(taskCtx, task); err != nil {
-			logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
-			m.Nack()
-		} else {
-			m.Ack()
-		}
-	})
+	if err := s.Engine.RunTask(taskCtx, task); err != nil {
+		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
+		m.Nack()
+	} else {
+		m.Ack()
+	}
 }
 
 func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, error) {

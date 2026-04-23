@@ -1205,15 +1205,15 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       font-weight: bold;
 
       html[data-theme="light"] & {
-        background: $osv-grey-700;
-        color: $osv-accent-color;
+        background: #c4c4c4;
+        color: $osv-red-700;
 
         &::before {
-          background-color: $osv-accent-color;
+          background-color: $osv-red-700;
         }
 
         &:hover {
-          background: $osv-grey-600;
+          background: $osv-grey-500;
         }
       }
 

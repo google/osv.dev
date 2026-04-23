@@ -84,7 +84,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		Source:    task.SourceID,
 		Path:      task.PathInSource,
 		Raw:       task.Vuln,
-		Processed: enriched,
+		Enriched: enriched,
 		AffectedCommits: models.AffectedCommitsResult{
 			Skip: true,
 		},

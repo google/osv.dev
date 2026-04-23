@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"reflect"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
@@ -53,7 +52,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		if err := enricher.Enrich(ctx, enriched, &params); err != nil {
 			logger.ErrorContext(ctx, "Enricher failed with error",
 				slog.String("id", task.Vuln.GetId()),
-				slog.String("enricher", reflect.TypeOf(enricher).Name()),
+				slog.String("enricher", fmt.Sprintf("%T", enricher)),
 				slog.Any("error", err),
 			)
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/proto"
@@ -19,7 +20,7 @@ import (
 
 type Engine struct {
 	Stores   Stores
-	Pipeline []Enricher
+	Pipeline []pipeline.Enricher
 }
 
 func (e *Engine) RunTask(ctx context.Context, task Task) error {
@@ -34,7 +35,7 @@ func (e *Engine) RunTask(ctx context.Context, task Task) error {
 }
 
 func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
-	params := EnrichParams{
+	params := pipeline.EnrichParams{
 		PathInSource: task.PathInSource,
 	}
 	var err error

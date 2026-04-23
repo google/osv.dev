@@ -1,19 +1,21 @@
-// Package enrich contains individual vulnerability enrichers for the worker pipeline.
-package enrich
+// Package sourcelink implements an enricher that adds the source link to the vulnerability.
+// The source link is added under the database_specific field under each affected range,
+// with they key "source" and the value being the full path to the vulnerability in the source repo.
+package sourcelink
 
 import (
 	"context"
 
-	"github.com/google/osv.dev/go/internal/worker"
+	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type SourceLinkAdder struct{}
+type Enricher struct{}
 
-var _ worker.Enricher = (*SourceLinkAdder)(nil)
+var _ pipeline.Enricher = (*Enricher)(nil)
 
-func (*SourceLinkAdder) Enrich(_ context.Context, vuln *osvschema.Vulnerability, params *worker.EnrichParams) error {
+func (*Enricher) Enrich(_ context.Context, vuln *osvschema.Vulnerability, params *pipeline.EnrichParams) error {
 	if params.SourceRepo == nil || params.SourceRepo.Link == "" {
 		return nil
 	}

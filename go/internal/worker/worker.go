@@ -2,7 +2,6 @@
 package worker
 
 import (
-	"context"
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
@@ -33,13 +32,4 @@ type Task struct {
 type Stores struct {
 	SourceRepo    models.SourceRepositoryStore
 	Vulnerability models.VulnerabilityStore
-}
-
-type EnrichParams struct {
-	PathInSource string
-	SourceRepo   *models.SourceRepository
-}
-
-type Enricher interface {
-	Enrich(ctx context.Context, vuln *osvschema.Vulnerability, params *EnrichParams) error
 }

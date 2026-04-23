@@ -76,7 +76,7 @@ type CoarseVersioner struct {
 	EmptyAs       *string        // If not nil, treats empty parts as the given string instead of removing them. If nil, removes them.
 }
 
-var implicitRegex = regexp.MustCompile(`\d+|\D+`)
+var implicitSplitRegex = regexp.MustCompile(`\d+|\D+`) // used to split on transition between letter and number
 
 // Format converts a version string into a coarse, lexicographically comparable string.
 func (v CoarseVersioner) Format(epoch int, version string) string {
@@ -99,7 +99,7 @@ func (v CoarseVersioner) Format(epoch int, version string) string {
 				splitParts = append(splitParts, "")
 				continue
 			}
-			splitParts = append(splitParts, implicitRegex.FindAllString(part, -1)...)
+			splitParts = append(splitParts, implicitSplitRegex.FindAllString(part, -1)...)
 		}
 		parts = splitParts
 	}

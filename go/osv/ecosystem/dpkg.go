@@ -52,7 +52,7 @@ func (e dpkgEcosystem) Coarse(version string) (string, error) {
 	}
 
 	// Versions are treated as alternating digit/non-digit strings.
-	parts := implicitRegex.FindAllString(version, -1)
+	parts := implicitSplitRegex.FindAllString(version, -1)
 	var comps []*big.Int
 
 	if len(parts) > 0 && !isDecimal(parts[0]) {

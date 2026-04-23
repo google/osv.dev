@@ -63,7 +63,7 @@ func (e packagistEcosystem) Coarse(version string) (string, error) {
 			parts = append(parts, "")
 			continue
 		}
-		subParts := implicitRegex.FindAllString(sp, -1)
+		subParts := implicitSplitRegex.FindAllString(sp, -1)
 		parts = append(parts, subParts...)
 	}
 

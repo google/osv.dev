@@ -80,10 +80,10 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	}
 
 	return e.Stores.Vulnerability.Write(ctx, models.WriteRequest{
-		ID:        enriched.GetId(),
-		Source:    task.SourceID,
-		Path:      task.PathInSource,
-		Raw:       task.Vuln,
+		ID:       enriched.GetId(),
+		Source:   task.SourceID,
+		Path:     task.PathInSource,
+		Raw:      task.Vuln,
 		Enriched: enriched,
 		AffectedCommits: models.AffectedCommitsResult{
 			Skip: true,

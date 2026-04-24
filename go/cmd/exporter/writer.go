@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/google/osv.dev/go/logger"
@@ -42,16 +43,44 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 					break
 				}
 			} else {
+				cleanPath := filepath.Clean(msg.path)
+				if filepath.IsAbs(cleanPath) || cleanPath == ".." || strings.HasPrefix(cleanPath, ".."+string(filepath.Separator)) {
+					logger.Error("invalid file path", slog.String("path", msg.path))
+					cancel()
+
+					break
+				}
+				basePath, err := filepath.Abs(pathPrefix)
+				if err != nil {
+					logger.Error("failed to get absolute path", slog.String("path", pathPrefix), slog.Any("err", err))
+					cancel()
+
+					break
+				}
+				localPath, err := filepath.Abs(filepath.Join(basePath, cleanPath))
+				if err != nil {
+					logger.Error("failed to get absolute path", slog.String("path", cleanPath), slog.Any("err", err))
+					cancel()
+
+					break
+				}
+				relPath, err := filepath.Rel(basePath, localPath)
+				if err != nil || relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+					logger.Error("invalid file path", slog.String("path", msg.path), slog.Any("err", err))
+					cancel()
+
+					break
+				}
 				// Write locally.
-				dir := filepath.Dir(path)
+				dir := filepath.Dir(localPath)
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
 					cancel()
 
 					break
 				}
-				if err := os.WriteFile(path, msg.data, 0600); err != nil {
-					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+				if err := os.WriteFile(localPath, msg.data, 0600); err != nil {
+					logger.Error("failed to write file", slog.String("path", localPath), slog.Any("err", err))
 					cancel()
 
 					break

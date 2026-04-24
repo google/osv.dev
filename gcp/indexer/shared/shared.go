@@ -19,9 +19,11 @@ package shared
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 )
@@ -45,6 +47,7 @@ func CopyFromBucket(ctx context.Context, bucketHdl *storage.BucketHandle, name s
 	if err != nil {
 		return "", err
 	}
+	defer r.Close()
 	tarRdr := tar.NewReader(r)
 	for {
 		hdr, err := tarRdr.Next()
@@ -55,11 +58,32 @@ func CopyFromBucket(ctx context.Context, bucketHdl *storage.BucketHandle, name s
 			return "", err
 		}
 
+		name := filepath.Clean(hdr.Name)
+		if filepath.IsAbs(name) || name == ".." || strings.HasPrefix(name, ".."+string(os.PathSeparator)) {
+			return "", fmt.Errorf("invalid tar path: %q", hdr.Name)
+		}
+		path := filepath.Clean(filepath.Join(tmpDir, name))
+		if path != tmpDir && !strings.HasPrefix(path, tmpDir+string(os.PathSeparator)) {
+			return "", fmt.Errorf("invalid tar path: %q", hdr.Name)
+		}
+
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(path, 0760); err != nil {
+				return "", err
+			}
+			continue
+		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeSymlink, tar.TypeLink:
+			return "", fmt.Errorf("unsupported tar entry type: %q", hdr.Name)
+		default:
+			return "", fmt.Errorf("unsupported tar entry type: %q", hdr.Name)
+		}
+
 		buf, err := io.ReadAll(tarRdr)
 		if err != nil {
 			return "", err
 		}
-		path := filepath.Clean(filepath.Join(tmpDir, hdr.Name))
 		if err := os.MkdirAll(filepath.Dir(path), 0760); err != nil {
 			return "", err
 		}

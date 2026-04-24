@@ -141,6 +141,25 @@ class OssFuzzDetailsTest(unittest.TestCase):
     )
 
 
+class FormatCommitRangeTest(unittest.TestCase):
+  """Tests for format_commit_range."""
+
+  def test_same_commit_returns_single(self):
+    """Same old and new commit should return just the single commit hash."""
+    commit = 'abc123'
+    self.assertEqual(commit, oss_fuzz.format_commit_range(commit, commit))
+
+  def test_different_commits_returns_range(self):
+    """Different commits should produce a colon-separated range."""
+    result = oss_fuzz.format_commit_range('abc123', 'def456')
+    self.assertEqual('abc123:def456', result)
+
+  def test_no_old_commit_uses_unknown(self):
+    """Missing old commit should use UNKNOWN_COMMIT sentinel."""
+    result = oss_fuzz.format_commit_range('', 'def456')
+    self.assertEqual('unknown:def456', result)
+
+
 class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Impact task tests."""
 

@@ -193,6 +193,15 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   _set_result_attributes(oss_fuzz_dir, message, entity)
 
   if result and result.commit:
+    if ':' in result.commit:
+      range_start, range_end = result.commit.split(':')
+      if range_start == range_end:
+        logging.warning(
+            'Bisect produced a zero-length range for %s, ignoring result.',
+            source_id)
+        result = None
+
+  if result and result.commit:
     logging.info('Bisected to %s', result.commit)
     entity.commit = result.commit
     entity.repo_url = result.repo_url
@@ -253,6 +262,11 @@ def _get_commit_range(repo, commit_or_range):
   if start_commit == UNKNOWN_COMMIT:
     # Special case: No information about earlier builds. Assume the end_commit
     # is the regressing commit as that's the best we can do.
+    return [end_commit]
+
+  if start_commit == end_commit:
+    # Zero-length range: start and end are the same commit. Return just the
+    # single commit rather than producing an empty list.
     return [end_commit]
 
   commits, _ = osv.get_commit_and_tag_list(repo, start_commit, end_commit)

@@ -194,7 +194,7 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
 
   if result and result.commit:
     if ':' in result.commit:
-      range_start, range_end = result.commit.split(':')
+      range_start, range_end = result.commit.split(':', 1)
       if range_start == range_end:
         logging.warning(
             'Bisect produced a zero-length range for %s, ignoring result.',

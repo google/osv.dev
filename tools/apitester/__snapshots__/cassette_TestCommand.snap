@@ -1550,6 +1550,14 @@
         {
           "id": "DEBIAN-CVE-2024-2236",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-41989",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-41990",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1862,6 +1870,10 @@
         },
         {
           "id": "DEBIAN-CVE-2026-1757",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-6732",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -2416,6 +2428,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2017-20230",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2018-12015",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -2549,7 +2565,14 @@
     {},
     {},
     {},
-    {},
+    {
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2026-5958",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
     {
       "vulns": [
         {

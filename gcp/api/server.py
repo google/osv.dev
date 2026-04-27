@@ -99,6 +99,11 @@ _TAG_PREFIX = "refs/tags/"
 
 _TEST_INSTANCE = 'oss-vdb-test'
 
+# CORS header injected via gRPC initial metadata so that ESPv2 transcoding
+# includes it in every HTTP response, including application-generated 5xx errors
+# that would otherwise bypass ESPv2's per-route CORS filter.
+_CORS_METADATA = (('access-control-allow-origin', '*'),)
+
 # ----
 
 _ndb_client = ndb.Client()
@@ -153,6 +158,42 @@ class LogTraceFilter:
 
 
 trace_filter = LogTraceFilter()
+
+
+class CORSInterceptor(grpc.ServerInterceptor):
+  """gRPC server interceptor that injects CORS headers into every response.
+
+  ESPv2's --cors_preset=basic only adds CORS headers to successfully-routed
+  responses. By sending the header as gRPC initial metadata from the backend,
+  ESPv2 will forward it in the HTTP response headers for all responses,
+  including application-generated 5xx errors.
+  """
+
+  def intercept_service(self, continuation, handler_call_details):
+    handler = continuation(handler_call_details)
+    if handler is None:
+      return handler
+
+    # Wrap whichever handler variant is present so that CORS headers are sent
+    # as initial metadata before the response body.
+    def wrap(behavior):
+
+      def new_behavior(request_or_iterator, servicer_context):
+        servicer_context.send_initial_metadata(_CORS_METADATA)
+        return behavior(request_or_iterator, servicer_context)
+
+      return new_behavior
+
+    if handler.unary_unary:
+      return handler._replace(unary_unary=wrap(handler.unary_unary))
+    if handler.unary_stream:
+      return handler._replace(unary_stream=wrap(handler.unary_stream))
+    if handler.stream_unary:
+      return handler._replace(stream_unary=wrap(handler.stream_unary))
+    if handler.stream_stream:
+      return handler._replace(stream_stream=wrap(handler.stream_stream))
+
+    return handler
 
 
 class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
@@ -1149,7 +1190,9 @@ def get_vuln_async(vuln_id: str) -> ndb.Future:
 
 def serve(port: int, local: bool):
   """Configures and runs the OSV API server."""
-  server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=5))
+  server = grpc.server(
+      concurrent.futures.ThreadPoolExecutor(max_workers=5),
+      interceptors=[CORSInterceptor()])
   servicer = OSVServicer()
   osv_service_v1_pb2_grpc.add_OSVServicer_to_server(servicer, server)
   health_pb2_grpc.add_HealthServicer_to_server(servicer, server)

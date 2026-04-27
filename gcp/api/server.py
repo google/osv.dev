@@ -170,6 +170,7 @@ class CORSInterceptor(grpc.ServerInterceptor):
   """
 
   def intercept_service(self, continuation, handler_call_details):
+    """Intercept incoming RPCs and inject CORS initial metadata."""
     handler = continuation(handler_call_details)
     if handler is None:
       return handler

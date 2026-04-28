@@ -13,12 +13,15 @@
 # limitations under the License.
 """Echo ecosystem helper."""
 
+import re
+from itertools import batched
 import packaging_legacy.version
 
 from ..third_party.univers.debian import Version as DebianVersion
 from .ecosystems_base import (
     coarse_version_generic,
     coarse_version_from_ints,
+    MAX_COARSE_PART,
     OrderedEcosystem,
 )
 
@@ -64,10 +67,6 @@ class Echo(OrderedEcosystem):
 
   def _dpkg_coarse_version(self, version: str) -> str:
     """Coarse version using Debian dpkg semantics."""
-    from itertools import batched
-    import re
-    from .ecosystems_base import MAX_COARSE_PART
-
     if not DebianVersion.is_valid(version):
       raise ValueError(f'Invalid version: {version}')
 

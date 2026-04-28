@@ -23,4 +23,5 @@ patches:
 - path: cve5-to-osv.yaml
 - path: custommetrics.yaml
 - path: gitter.yaml
+- path: vanir-signatures.yaml
 

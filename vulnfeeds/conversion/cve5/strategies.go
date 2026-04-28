@@ -7,7 +7,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([]*osvschema.Range, error) {
+func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 	if err == nil && len(cpeRanges) > 0 {
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
@@ -19,19 +19,6 @@ func cpeVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([
 	}
 
 	return nil, err
-}
-
-// textVersionExtraction is a helper function for CPE and description extraction.
-func textVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) []*osvschema.Range {
-	// As a last resort, try extracting versions from the description text.
-	versions := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics)
-	if len(versions) > 0 {
-		// NOTE: These versions are not currently saved due to the need for better validation.
-		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceDescription)
-		metrics.AddNote("Extracted versions from description but did not save them: %+v", versions)
-	}
-
-	return []*osvschema.Range{}
 }
 
 // initialNormalExtraction handles an expected case of version ranges in the affected field of CVE5
@@ -54,13 +41,18 @@ func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMet
 	vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
 
 	hasRange := vLessThanQual.AtLeast(acceptableQuality) || vLTOEQual.AtLeast(acceptableQuality)
-	metrics.AddNote("Range detected: %v", hasRange)
+
 	// Handle cases where 'lessThan' is mistakenly the same as 'version'.
 	if vers.LessThan != "" && vers.LessThan == vers.Version {
 		metrics.AddNote("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version)
 		hasRange = false
 	}
+	if vers.LessThanOrEqual != "" && vers.LessThanOrEqual == vers.Version {
+		metrics.AddNote("Warning: lessThanOrEqual (%s) is the same as introduced (%s)\n", vers.LessThanOrEqual, vers.Version)
+		hasRange = false
+	}
 
+	metrics.AddNote("Range detected: %v", hasRange)
 	if hasRange {
 		if vQuality.AtLeast(acceptableQuality) {
 			introduced = vers.Version

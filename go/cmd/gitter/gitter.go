@@ -14,12 +14,12 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -69,8 +69,6 @@ var (
 	repoCacheMaxCostBytes int64
 )
 
-var validURLRegex = regexp.MustCompile(`^(https?|git)://`)
-
 const shutdownTimeout = 10 * time.Second
 
 type SeparatedEvents struct {
@@ -112,8 +110,8 @@ func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 // - Allowing multiple concurrent reads.
 var repoLocks sync.Map
 
-func GetRepoLock(url string) *sync.RWMutex {
-	lock, _ := repoLocks.LoadOrStore(url, &sync.RWMutex{})
+func GetRepoLock(repoURL string) *sync.RWMutex {
+	lock, _ := repoLocks.LoadOrStore(repoURL, &sync.RWMutex{})
 	return lock.(*sync.RWMutex)
 }
 
@@ -206,6 +204,20 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	return nil
 }
 
+// runWithSemaphore runs function after waiting at semaphore for concurrency control
+func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
+	select {
+	case semaphore <- struct{}{}:
+		defer func() { <-semaphore }()
+		logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+
+		return f()
+	case <-ctx.Done():
+		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
+		return nil, ctx.Err()
+	}
+}
+
 func isLocalRequest(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -223,26 +235,42 @@ func isLocalRequest(r *http.Request) bool {
 	return ip.IsLoopback()
 }
 
-func validateURL(r *http.Request, url string) error {
-	if url == "" {
-		return errors.New("missing url parameter")
+func prepareURL(r *http.Request, repoURL string) (string, error) {
+	if repoURL == "" {
+		return "", errors.New("missing url parameter")
 	}
-	// If request came from a local ip, don't do the check
+
+	u, err := url.Parse(repoURL)
+	if err != nil {
+		return "", fmt.Errorf("error parsing url: %w", err)
+	}
+
+	// Convert git://github.com to https://github.com because it times out for some reason
+	// git protocol on non-github urls works fine
+	if u.Scheme == "git" && u.Host == "github.com" {
+		u.Scheme = "https"
+	}
+
+	// Remove query and fragment from the URL
+	u.RawQuery = ""
+	u.Fragment = ""
+
 	if !isLocalRequest(r) {
-		// Check if url starts with protocols: http(s)://, git://
-		if !validURLRegex.MatchString(url) {
-			return errors.New("invalid url parameter")
+		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
 		}
 	}
 
-	return nil
+	logger.Info("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
+
+	return u.String(), nil
 }
 
-func getRepoDirName(url string) string {
-	base := path.Base(url)
+func getRepoDirName(repoURL string) string {
+	base := path.Base(repoURL)
 	base = filepath.Base(base)
 	base = strings.TrimSuffix(base, ".git")
-	hash := sha256.Sum256([]byte(url))
+	hash := sha256.Sum256([]byte(repoURL))
 
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))
 }
@@ -289,9 +317,11 @@ func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
 	return proto.Marshal(m)
 }
 
-func doFetch(ctx context.Context, w http.ResponseWriter, url string, forceUpdate bool) error {
-	_, err, _ := gFetch.Do(url, func() (any, error) {
-		return nil, FetchRepo(ctx, url, forceUpdate)
+func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) error {
+	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
+		return runWithSemaphore(ctx, func() (any, error) {
+			return nil, FetchRepo(ctx, repoURL, forceUpdate)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
@@ -310,28 +340,30 @@ func doFetch(ctx context.Context, w http.ResponseWriter, url string, forceUpdate
 // getFreshRepo handles fetching and loading of a repository
 // If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
 // Otherwise, it will use a cache if available
-func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceUpdate bool) (*Repository, error) {
-	repoDirName := getRepoDirName(url)
+func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) (*Repository, error) {
+	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
 	if !forceUpdate {
-		if repo, ok := repoCache.Get(url); ok {
+		if repo, ok := repoCache.Get(repoURL); ok {
 			// repoCache.Get() will not return expired items, so we can safely return the repo
 			logger.DebugContext(ctx, "Repository already in cache, skipping fetch and load")
 			return repo, nil
 		}
 	}
 
-	if err := doFetch(ctx, w, url, forceUpdate); err != nil {
+	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
 		return nil, err
 	}
 
 	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
-		repoLock := GetRepoLock(url)
-		repoLock.RLock()
-		defer repoLock.RUnlock()
+		return runWithSemaphore(ctx, func() (any, error) {
+			repoLock := GetRepoLock(repoURL)
+			repoLock.RLock()
+			defer repoLock.RUnlock()
 
-		return LoadRepository(ctx, repoPath)
+			return LoadRepository(ctx, repoPath)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
@@ -340,24 +372,24 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, url string, forceU
 		return nil, err
 	}
 	repo := repoAny.(*Repository)
-	repoCache.SetWithTTL(url, repo, 0, repoTTL)
+	repoCache.SetWithTTL(repoURL, repo, 0, repoTTL)
 
 	return repo, nil
 }
 
-func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
+func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	logger.InfoContext(ctx, "Starting fetch repo")
 	start := time.Now()
 
-	repoDirName := getRepoDirName(url)
+	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
-	repoLock := GetRepoLock(url)
+	repoLock := GetRepoLock(repoURL)
 	repoLock.Lock()
 	defer repoLock.Unlock()
 
 	lastFetchMu.Lock()
-	accessTime, ok := lastFetch[url]
+	accessTime, ok := lastFetch[repoURL]
 	lastFetchMu.Unlock()
 
 	// Check if we need to fetch
@@ -366,7 +398,7 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			logger.InfoContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", url, repoPath)
+			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
 			if err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
 			}
@@ -396,14 +428,14 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 			}
 		}
 
-		updateLastFetch(url)
+		updateLastFetch(repoURL)
 	}
 
 	// Double check if the git directory exist
 	_, err := os.Stat(filepath.Join(repoPath, ".git"))
 	if err != nil {
 		if os.IsNotExist(err) {
-			deleteLastFetch(url)
+			deleteLastFetch(repoURL)
 		}
 
 		return fmt.Errorf("failed to read file: %w", err)
@@ -414,17 +446,17 @@ func FetchRepo(ctx context.Context, url string, forceUpdate bool) error {
 	return nil
 }
 
-func ArchiveRepo(ctx context.Context, url string) ([]byte, error) {
-	repoDirName := getRepoDirName(url)
+func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
+	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 	archivePath := repoPath + ".zst"
 
-	repoLock := GetRepoLock(url)
+	repoLock := GetRepoLock(repoURL)
 	repoLock.RLock()
 	defer repoLock.RUnlock()
 
 	lastFetchMu.Lock()
-	accessTime := lastFetch[url]
+	accessTime := lastFetch[repoURL]
 	lastFetchMu.Unlock()
 
 	// Check if archive needs update
@@ -544,35 +576,26 @@ func main() {
 }
 
 func gitHandler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Query().Get("url")
-	if err := validateURL(r, url); err != nil {
+	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	forceUpdate := r.URL.Query().Get("force-update") == "true"
 
-	ctx := context.WithValue(r.Context(), urlKey, url)
+	ctx := context.WithValue(r.Context(), urlKey, repoURL)
 	logger.InfoContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
-	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
-
 	// Fetch repo first
-	if err := doFetch(ctx, w, url, forceUpdate); err != nil {
+	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
 		return
 	}
 
 	// Archive repo
-	fileDataAny, err, _ := gArchive.Do(url, func() (any, error) {
-		return ArchiveRepo(ctx, url)
+	fileDataAny, err, _ := gArchive.Do(repoURL, func() (any, error) {
+		return runWithSemaphore(ctx, func() (any, error) {
+			return ArchiveRepo(ctx, repoURL)
+		})
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
@@ -603,27 +626,16 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.GetUrl()
-	if err := validateURL(r, url); err != nil {
+	repoURL, err := prepareURL(r, body.GetUrl())
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ctx := context.WithValue(r.Context(), urlKey, url)
+	ctx := context.WithValue(r.Context(), urlKey, repoURL)
 	logger.InfoContext(ctx, "Received request: /cache")
 
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
-	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
-
-	if _, err := getFreshRepo(ctx, w, url, body.GetForceUpdate()); err != nil {
+	if _, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate()); err != nil {
 		return
 	}
 
@@ -639,8 +651,8 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := body.GetUrl()
-	if err := validateURL(r, url); err != nil {
+	repoURL, err := prepareURL(r, body.GetUrl())
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -654,51 +666,56 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
 	cherrypickFixed := body.GetDetectCherrypicksFixed()
 	cherrypickLimit := body.GetDetectCherrypicksLimit()
+	considerAllBranches := body.GetConsiderAllBranches()
 
-	ctx := context.WithValue(r.Context(), urlKey, url)
-	logger.InfoContext(ctx, "Received request: /affected-commits", slog.Any("introduced", se.Introduced), slog.Any("fixed", se.Fixed), slog.Any("last_affected", se.LastAffected), slog.Any("limit", se.Limit), slog.Bool("cherrypickIntro", cherrypickIntro), slog.Bool("cherrypickFixed", cherrypickFixed), slog.Bool("cherrypickLimit", cherrypickLimit))
-
-	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-	case <-ctx.Done():
-		logger.WarnContext(ctx, "Request cancelled while waiting for semaphore")
-		http.Error(w, "Server context cancelled", http.StatusServiceUnavailable)
-
-		return
+	// If cherrypick is true, consider all branches must be true
+	if cherrypickIntro || cherrypickFixed {
+		considerAllBranches = true
 	}
-	logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
 
-	repo, err := getFreshRepo(ctx, w, url, body.GetForceUpdate())
+	ctx := context.WithValue(r.Context(), urlKey, repoURL)
+	logger.InfoContext(ctx, "Received request: /affected-commits",
+		slog.Any("introduced", se.Introduced),
+		slog.Any("fixed", se.Fixed),
+		slog.Any("last_affected", se.LastAffected),
+		slog.Any("limit", se.Limit),
+		slog.Bool("cherrypickIntro", cherrypickIntro),
+		slog.Bool("cherrypickFixed", cherrypickFixed),
+		slog.Bool("cherrypickLimit", cherrypickLimit),
+		slog.Bool("considerAllBranches", considerAllBranches),
+	)
+
+	repo, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate())
 	if err != nil {
 		return
 	}
 
 	var affectedCommits []*Commit
-	var newIntroHashes []string
-	var newFixedHashes []string
-	var newLimitHashes []string
+	var cherrypicks cherrypickedHashes
 
-	if len(se.Limit) > 0 {
-		affectedCommits, newIntroHashes, newLimitHashes = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
-	} else {
-		affectedCommits, newIntroHashes, newFixedHashes = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+	switch {
+	case len(se.Limit) > 0:
+		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+	case considerAllBranches:
+		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+	default:
+		affectedCommits = repo.AffectedSingleBranch(ctx, se)
 	}
 
-	cherryPickedEvents := make([]*pb.Event, 0, len(newIntroHashes)+len(newFixedHashes)+len(newLimitHashes))
-	for _, h := range newIntroHashes {
+	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))
+	for _, h := range cherrypicks.Introduced {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_INTRODUCED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newFixedHashes {
+	for _, h := range cherrypicks.Fixed {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_FIXED,
 			Hash:      h,
 		})
 	}
-	for _, h := range newLimitHashes {
+	for _, h := range cherrypicks.Limit {
 		cherryPickedEvents = append(cherryPickedEvents, &pb.Event{
 			EventType: pb.EventType_LIMIT,
 			Hash:      h,

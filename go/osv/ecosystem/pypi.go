@@ -14,13 +14,23 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 
-type pyPIEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
 
-var _ Enumerable = pyPIEcosystem{}
+type pypiEcosystem struct {
+	p *Provider
+}
 
-func (e pyPIEcosystem) Parse(version string) (Version, error) {
+var _ Enumerable = pypiEcosystem{}
+
+func (e pypiEcosystem) Parse(version string) (Version, error) {
 	ver, err := semantic.ParsePyPIVersion(version)
 	if err != nil {
 		return nil, err
@@ -29,14 +39,56 @@ func (e pyPIEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.PyPIVersion]{ver}, nil
 }
 
-func (e pyPIEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+// https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+// Capture epoch, and remainder, since that's all we need to actually parse
+var pypiCanonicalRegex = regexp.MustCompile(`^\s*v?(?:(?:([0-9]+)!)?((?:[0-9]+(?:\.[0-9]+)*)(?:[-_\.]?(?:(?:a|b|c|rc|alpha|beta|pre|preview))[-_\.]?(?:[0-9]+)?)?(?:(?:-(?:[0-9]+))|(?:[-_\.]?(?:post|rev|r)[-_\.]?(?:[0-9]+)?))?(?:[-_\.]?(?:dev)[-_\.]?(?:[0-9]+)?)?)(?:\+(?:[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?)\s*$`)
+
+var pypiCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`[+_-]`),
+	ImplicitSplit: true,
+	EmptyAs:       nil,
 }
 
-func (e pyPIEcosystem) IsSemver() bool {
+func (e pypiEcosystem) Coarse(version string) (string, error) {
+	version = strings.ToLower(version)
+	match := pypiCanonicalRegex.FindStringSubmatch(version)
+	if match == nil {
+		// no match, this is a legacy version which sorts before non-legacy
+		return "00:00000000.00000000.00000000", nil
+	}
+	epochStr := match[1]
+	epochlessVer := match[2]
+	epochStr = strings.TrimLeft(epochStr, "0")
+	if epochStr == "" {
+		epochStr = "0"
+	}
+	if len(epochStr) > 2 {
+		// epoch is > 99, return maximum coarse version
+		return "99:99999999.99999999.99999999", nil
+	}
+	epoch, err := strconv.Atoi(epochStr)
+	if err != nil {
+		// we've validated the string, so this should be unreachable
+		return "", err
+	}
+
+	return pypiCoarseVersioner.Format(epoch, epochlessVer), nil
+}
+
+func (e pypiEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e pyPIEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func pypiAPIURL(pkg string) string {
+	return fmt.Sprintf("https://pypi.org/pypi/%s/json", url.PathEscape(pkg))
+}
+
+func (e pypiEcosystem) GetVersions(pkg string) ([]string, error) {
+	versions, err := e.p.fetchJSONPaths(pypiAPIURL(pkg), "releases.@keys")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PyPI versions for %s: %w", pkg, err)
+	}
+
+	return sortVersions(e, versions)
 }

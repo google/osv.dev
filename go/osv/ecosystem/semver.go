@@ -14,7 +14,12 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"regexp"
+	"strings"
+
+	"github.com/google/osv-scalibr/semantic"
+)
 
 // semverLikeEcosystem is an ecosystem that uses a SemVer-like versions in the OSV schema.
 // but uses the ECOSYSTEM version type in the OSV schema.
@@ -26,8 +31,15 @@ func (e semverLikeEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.SemverVersion]{semantic.ParseSemverVersion(version)}, nil
 }
 
-func (e semverLikeEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+var semverCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`[-+]`),
+	ImplicitSplit: true,
+	EmptyAs:       nil,
+}
+
+func (e semverLikeEcosystem) Coarse(version string) (string, error) {
+	return semverCoarseVersioner.Format(0, strings.TrimPrefix(version, "v")), nil
 }
 
 func (e semverLikeEcosystem) IsSemver() bool {

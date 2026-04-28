@@ -154,8 +154,10 @@ class IntegrationTests(unittest.TestCase,
         }),
         timeout=_TIMEOUT)
     osv_2023_890 = self._get('OSV-2023-890')
+    cve_2024_2002 = self._get('CVE-2024-2002')
 
-    self.assert_results_equal({'vulns': [osv_2023_890]}, response.json())
+    self.assert_results_equal({'vulns': [cve_2024_2002, osv_2023_890]},
+                              response.json())
 
   def test_query_version(self):
     """Test querying by version."""
@@ -731,6 +733,8 @@ class IntegrationTests(unittest.TestCase,
                 {},
                 {
                     'vulns': [{
+                        'id': 'CVE-2020-15866',
+                    }, {
                         'id': 'CVE-2020-36401',
                     }, {
                         'id': 'CVE-2021-4110',

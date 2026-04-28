@@ -72,6 +72,20 @@
   editable: False
   strict_validation: True
 
+- name: 'azurelinux'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!AZL-).*$']
+  directory_path: 'osv'
+  repo_url: 'https://github.com/microsoft/AzureLinuxVulnerabilityData.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['AZL-']
+  ignore_git: False
+  link: 'https://github.com/microsoft/AzureLinuxVulnerabilityData/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'bellsoft'
   versions_from_repo: False
   type: 0
@@ -236,7 +250,7 @@
 
 - name: 'echo'
   versions_from_repo: False
-  rest_api_url: 'https://advisory.echohq.com/osv/all.json'
+  rest_api_url: 'https://advisory.dev.echohq.com/osv/all.json'
   type: 2
   ignore_patterns: ['^(?!ECHO-).*$']
   directory_path: 'osv'
@@ -540,6 +554,20 @@
   ignore_git: True
   human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
+  editable: False
+  strict_validation: True
+
+- name: 'tuxcare'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!CLSA-).*$']
+  directory_path: 'data'
+  repo_url: 'https://github.com/cloudlinux/tuxcare-osv.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['CLSA-']
+  ignore_git: False
+  link: 'https://github.com/cloudlinux/tuxcare-osv/tree/main/'
   editable: False
   strict_validation: True
 

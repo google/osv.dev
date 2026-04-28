@@ -17,6 +17,7 @@ func TestZeroVersion(t *testing.T) {
 		{"Maven", "alpha-alpha-alpha"},
 		{"npm", "0-pre"},
 		{"AlmaLinux:8", "B.02.19.2-6.el8"},                                                 // ALBA-2021:4442
+		{"Azure Linux:2", "5.15.55.1-1"},                                                   // AZL-10003
 		{"Debian:11", "0~20200923.3-2+deb11u1"},                                            // DLA-4116-1
 		{"Go", "0.0.0-20250619215741-6356e984b82a"},                                        // GHSA-24ch-w38v-xmh8
 		{"Mageia:9", "gtk+2.0-2.24.33-5.1.mga9"},                                           // MGASA-2024-0312
@@ -28,8 +29,9 @@ func TestZeroVersion(t *testing.T) {
 		{"openSUSE:Tumbleweed", "0~20240902.c95cc9e-1.1"},                                  // openSUSE-SU-2024:14314-1
 	}
 
+	p := NewProvider(nil)
 	for _, test := range tests {
-		e, ok := Get(test.ecosystem)
+		e, ok := p.Get(test.ecosystem)
 		if !ok {
 			t.Fatalf("%s ecosystem not found", test.ecosystem)
 		}

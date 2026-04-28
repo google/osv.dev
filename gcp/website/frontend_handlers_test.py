@@ -157,6 +157,43 @@ class MarkdownFilterTest(unittest.TestCase):
     self.assertIn('&lt;script&gt;', result)
 
 
+class ConstructHierarchyStringTest(unittest.TestCase):
+  """Tests for frontend_handlers.construct_hierarchy_string."""
+
+  def _hierarchy(self, roots, graph):
+    return frontend_handlers.ComputedHierarchy(
+        root_nodes=set(roots), graph={
+            k: set(v) for k, v in graph.items()
+        })
+
+  def test_escapes_known_id(self):
+    """IDs that match known_ids must be HTML-escaped inside the <a> tag."""
+    payload = '<script>alert(1)</script>'
+    hierarchy = self._hierarchy([payload], {})
+    result = frontend_handlers.construct_hierarchy_string(
+        'CVE-TARGET', hierarchy, {payload})
+    self.assertNotIn('<script>', result)
+    self.assertIn('&lt;script&gt;', result)
+
+  def test_escapes_unknown_id(self):
+    """IDs that are not known still appear in a <li> and must be escaped."""
+    payload = '"><img src=x onerror=alert(1)>'
+    hierarchy = self._hierarchy([payload], {})
+    result = frontend_handlers.construct_hierarchy_string(
+        'CVE-TARGET', hierarchy, set())
+    self.assertNotIn('<img', result)
+    self.assertIn('&lt;img', result)
+    self.assertIn('&#34;', result)
+
+  def test_plain_id_rendered_as_link(self):
+    """Well-formed IDs still render as a normal anchor."""
+    hierarchy = self._hierarchy(['CVE-2024-0001'], {})
+    result = frontend_handlers.construct_hierarchy_string(
+        'CVE-TARGET', hierarchy, {'CVE-2024-0001'})
+    self.assertIn('<a href="/vulnerability/CVE-2024-0001">', result)
+    self.assertIn('CVE-2024-0001 </a>', result)
+
+
 def setUpModule():
   """Set up the test module."""
   # Start the emulator BEFORE creating the ndb client

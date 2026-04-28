@@ -26,6 +26,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:rpm/almalinux/libvpx',
                      purl_helpers.package_to_purl('AlmaLinux', 'libvpx'))
 
+    self.assertEqual(
+        'pkg:rpm/azure-linux/test-package',
+        purl_helpers.package_to_purl('Azure Linux', 'test-package'))
+
     self.assertEqual('pkg:apk/alpaquita/xz?arch=source',
                      purl_helpers.package_to_purl('Alpaquita', 'xz'))
 
@@ -183,6 +187,10 @@ class PurlHelpersTest(unittest.TestCase):
     """Test parse purl"""
     self.assertEqual(('AlmaLinux', 'libvpx', None),
                      purl_helpers.parse_purl('pkg:rpm/almalinux/libvpx'))
+
+    self.assertEqual(
+        ('Azure Linux', 'test-package', '1.2.3'),
+        purl_helpers.parse_purl('pkg:rpm/azure-linux/test-package@1.2.3'))
 
     self.assertEqual(('Alpaquita', 'xz', None),
                      purl_helpers.parse_purl(

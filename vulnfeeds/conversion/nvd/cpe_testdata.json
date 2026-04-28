@@ -1,0 +1,24 @@
+{
+  "ffmpeg:ffmpeg": [
+    "https://github.com/ffmpeg/ffmpeg"
+  ],
+  "google:protobuf-python": [
+    "https://github.com/protocolbuffers/protobuf"
+  ],
+  "harfbuzz_project:harfbuzz": [
+    "https://github.com/behdad/harfbuzz",
+    "https://github.com/harfbuzz/harfbuzz"
+  ],
+  "haxx:curl": [
+    "https://github.com/curl/curl"
+  ],
+  "haxx:libcurl": [
+    "https://github.com/curl/curl"
+  ],
+  "libdwarf_project:libdwarf": [
+    "https://github.com/davea42/libdwarf-code"
+  ],
+  "tokio:tokio": [
+    "https://github.com/tokio-rs/tokio"
+  ]
+}

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS build
+FROM golang:1.26.2-alpine@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 AS build
 
 WORKDIR /src
 
@@ -25,7 +25,7 @@ RUN go mod download && go mod verify
 COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o dsa-dla-dtsa ./cmd/converters/dsa-dla-dtsa/main.go
 
-FROM alpine:3.23@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
+FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 RUN apk add --no-cache git ca-certificates
 # Increase the Git buffer to 500MB and disable compression to prevent timeouts
 # downgrading http to 1.1 seems to be the only thing that works

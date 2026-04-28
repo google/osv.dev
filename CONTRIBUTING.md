@@ -48,7 +48,7 @@ You must install:
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/) >= 2.2.1
+1.  [Poetry](https://python-poetry.org/) >= 2.3.3
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
@@ -95,6 +95,16 @@ make api-server-tests
 By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
 ```shell
 LONG_TESTS=1 make api-server-tests
+```
+
+There are additional tests for testing coarse version ordering logic for ecosystem version
+parsers. These are tested against the entire OSV database.
+```shell
+# in go/
+# you must generate the list of all versions by running
+./osv/ecosystem/testdata/regen_coarse_test_data.sh
+# then run the tests
+RUN_COARSE_LARGE_TEST=1 go test ./osv/ecosystem -run TestCoarseMonotonicityLarge
 ```
 
 ##### Test result generation

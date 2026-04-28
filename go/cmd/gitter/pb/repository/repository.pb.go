@@ -7,11 +7,12 @@
 package repository
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -439,6 +440,7 @@ type AffectedCommitsRequest struct {
 	DetectCherrypicksFixed      bool                   `protobuf:"varint,4,opt,name=detect_cherrypicks_fixed,json=detectCherrypicksFixed,proto3" json:"detect_cherrypicks_fixed,omitempty"`
 	DetectCherrypicksLimit      bool                   `protobuf:"varint,5,opt,name=detect_cherrypicks_limit,json=detectCherrypicksLimit,proto3" json:"detect_cherrypicks_limit,omitempty"`
 	ForceUpdate                 bool                   `protobuf:"varint,6,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
+	ConsiderAllBranches         bool                   `protobuf:"varint,7,opt,name=consider_all_branches,json=considerAllBranches,proto3" json:"consider_all_branches,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -515,6 +517,13 @@ func (x *AffectedCommitsRequest) GetForceUpdate() bool {
 	return false
 }
 
+func (x *AffectedCommitsRequest) GetConsiderAllBranches() bool {
+	if x != nil {
+		return x.ConsiderAllBranches
+	}
+	return false
+}
+
 var File_repository_proto protoreflect.FileDescriptor
 
 const file_repository_proto_rawDesc = "" +
@@ -540,14 +549,15 @@ const file_repository_proto_rawDesc = "" +
 	"\x04hash\x18\x02 \x01(\tR\x04hash\"C\n" +
 	"\fCacheRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12!\n" +
-	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\"\xac\x02\n" +
+	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\"\xe0\x02\n" +
 	"\x16AffectedCommitsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x06events\x18\x02 \x03(\v2\r.gitter.EventR\x06events\x12B\n" +
 	"\x1ddetect_cherrypicks_introduced\x18\x03 \x01(\bR\x1bdetectCherrypicksIntroduced\x128\n" +
 	"\x18detect_cherrypicks_fixed\x18\x04 \x01(\bR\x16detectCherrypicksFixed\x128\n" +
 	"\x18detect_cherrypicks_limit\x18\x05 \x01(\bR\x16detectCherrypicksLimit\x12!\n" +
-	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate*D\n" +
+	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate\x122\n" +
+	"\x15consider_all_branches\x18\a \x01(\bR\x13considerAllBranches*D\n" +
 	"\tEventType\x12\x0e\n" +
 	"\n" +
 	"INTRODUCED\x10\x00\x12\t\n" +

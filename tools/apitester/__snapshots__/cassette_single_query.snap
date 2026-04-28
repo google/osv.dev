@@ -257,7 +257,7 @@
       "id": "CVE-2026-22693",
       "summary": "Null Pointer Dereference in SubtableUnicodesCache::create leading to DoS",
       "details": "HarfBuzz is a text shaping engine. Prior to version 12.3.0, a null pointer dereference vulnerability exists in the SubtableUnicodesCache::create function located in src/hb-ot-cmap-table.hh. The function fails to check if hb_malloc returns NULL before using placement new to construct an object at the returned pointer address. When hb_malloc fails to allocate memory (which can occur in low-memory conditions or when using custom allocators that simulate allocation failures), it returns NULL. The code then attempts to call the constructor on this null pointer using placement new syntax, resulting in undefined behavior and a Segmentation Fault. This issue has been patched in version 12.3.0.",
-      "aliases": ["ECHO-7ecb-7a01-33a3", "GHSA-xvjr-f2r9-c7ww"],
+      "aliases": ["GHSA-xvjr-f2r9-c7ww"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-10T05:53:21.019Z",
       "related": [
@@ -390,7 +390,7 @@
       "summary": "OCSP verification bypass with TLS session reuse",
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even\nwhen the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh,\nwhich then skipped the verify status check.",
       "aliases": ["CVE-2024-0853"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-01-31T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -424,7 +424,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -441,7 +441,7 @@
       "summary": "netrc and redirect credential leak",
       "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits just the password or\nomits both login and password.",
       "aliases": ["CVE-2024-11053"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-11T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -475,7 +475,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -492,7 +492,7 @@
       "summary": "Usage of disabled protocol",
       "details": "When a protocol selection parameter option disables all protocols without\nadding any then the default set of protocols would remain in the allowed set\ndue to an error in the logic for removing protocols. The below command would\nperform a request to curl.se with a plaintext protocol which has been\nexplicitly disabled.\n\n    curl --proto -all,-http http://curl.se\n\nThe flaw is only present if the set of selected protocols disables the entire\nset of available protocols, in itself a command with no practical use and\ntherefore unlikely to be encountered in real situations. The curl security team\nhas thus assessed this to be low severity bug.",
       "aliases": ["CVE-2024-2004"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -526,7 +526,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Dan Fandrich",
@@ -543,7 +543,7 @@
       "summary": "HTTP/2 push headers memory-leak",
       "details": "When an application tells libcurl it wants to allow HTTP/2 server push, and\nthe amount of received headers for the push surpasses the maximum allowed\nlimit (1000), libcurl aborts the server push. When aborting, libcurl\ninadvertently does not free all the previously allocated headers and instead\nleaks the memory.\n\nFurther, this error condition fails silently and is therefore not easily\ndetected by an application.",
       "aliases": ["CVE-2024-2398"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -577,7 +577,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "w0x42 on hackerone",
@@ -594,7 +594,7 @@
       "summary": "TLS certificate check bypass with mbedTLS",
       "details": "libcurl did not check the server certificate of TLS connections done to a host\nspecified as an IP address, when built to use mbedTLS.\n\nlibcurl would wrongly avoid using the set hostname function when the specified\nhostname was given as an IP address, therefore completely skipping the\ncertificate check. This affects all uses of TLS protocols (HTTPS, FTPS, IMAPS,\nPOPS3, SMTPS, etc).",
       "aliases": ["CVE-2024-2466"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -628,7 +628,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Frank Yueh",
@@ -645,7 +645,7 @@
       "summary": "ASN.1 date parser overread",
       "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
       "aliases": ["CVE-2024-7264"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-31T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -679,7 +679,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Dov Murik (Transmit Security)",
@@ -696,7 +696,7 @@
       "summary": "OCSP stapling bypass with GnuTLS",
       "details": "When curl is told to use the Certificate Status Request TLS extension, often\nreferred to as OCSP stapling, to verify that the server certificate is valid,\nit might fail to detect some OCSP problems and instead wrongly consider the\nresponse as fine.\n\nIf the returned status reports another error than \"revoked\" (like for example\n\"unauthorized\") it is not treated as a bad certificate.",
       "aliases": ["CVE-2024-8096"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-09-11T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -730,7 +730,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -748,7 +748,7 @@
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
       "aliases": ["CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
-      "published": "2024-11-05T08:00:00Z",
+      "published": "2024-11-06T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
         {
@@ -781,7 +781,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "newfunction",
@@ -798,7 +798,7 @@
       "summary": "netrc and default credential leak",
       "details": "When asked to use a `.netrc` file for credentials **and** to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has a `default` entry that\nomits both login and password. A rare circumstance.",
       "aliases": ["CVE-2025-0167"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -832,7 +832,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Yihang Zhou",
@@ -849,7 +849,7 @@
       "summary": "gzip integer overflow",
       "details": "When libcurl is asked to perform automatic gzip decompression of\ncontent-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option,\n**using zlib 1.2.0.3 or older**, an attacker-controlled integer overflow would\nmake libcurl perform a buffer overflow.",
       "aliases": ["CVE-2025-0725"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -883,7 +883,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "z2_",
@@ -899,7 +899,7 @@
       "id": "CURL-CVE-2025-10966",
       "summary": "missing SFTP host verification with wolfSSH",
       "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
-      "aliases": ["CVE-2025-10966", "ECHO-84eb-3f66-73a1"],
+      "aliases": ["CVE-2025-10966"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-11-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -934,7 +934,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -950,7 +950,7 @@
       "id": "CURL-CVE-2025-14017",
       "summary": "broken TLS options for threaded LDAPS",
       "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
-      "aliases": ["CVE-2025-14017", "ECHO-8091-7fb3-2ea0"],
+      "aliases": ["CVE-2025-14017"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
@@ -985,7 +985,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1001,9 +1001,9 @@
       "id": "CURL-CVE-2025-14524",
       "summary": "bearer token leak on cross-protocol redirect",
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
-      "aliases": ["CVE-2025-14524", "ECHO-5c48-9921-1026"],
+      "aliases": ["CVE-2025-14524"],
       "modified": "<RFC3339 date with the year 2026>",
-      "published": "2026-01-06T08:00:00Z",
+      "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
         {
@@ -1036,7 +1036,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "anonymous237 on hackerone",
@@ -1087,7 +1087,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1103,7 +1103,7 @@
       "id": "CURL-CVE-2025-15079",
       "summary": "libssh global known_hosts override",
       "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
-      "aliases": ["CVE-2025-15079", "ECHO-77ba-e0af-7bbd"],
+      "aliases": ["CVE-2025-15079"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1138,7 +1138,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1154,7 +1154,7 @@
       "id": "CURL-CVE-2025-15224",
       "summary": "libssh key passphrase bypass without agent set",
       "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
-      "aliases": ["CVE-2025-15224", "ECHO-a8e4-f399-f8ec"],
+      "aliases": ["CVE-2025-15224"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1189,7 +1189,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1206,7 +1206,7 @@
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
       "aliases": ["CVE-2025-5025"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-05-28T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -1240,7 +1240,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -1256,7 +1256,7 @@
       "id": "CURL-CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
       "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
-      "aliases": ["CVE-2026-1965", "ECHO-3c02-5957-bbd3"],
+      "aliases": ["CVE-2026-1965"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1307,7 +1307,7 @@
       "id": "CURL-CVE-2026-3783",
       "summary": "token leak with redirect and netrc",
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a redirect to a second URL, curl could leak that token to the second\nhostname under some circumstances.\n\nIf the hostname that the first request is redirected to has information in the\nused .netrc file, with either of the `machine` or `default` keywords, curl\nwould pass on the bearer token set for the first host also to the second one.",
-      "aliases": ["CVE-2026-3783", "ECHO-de93-d97b-29a9"],
+      "aliases": ["CVE-2026-3783"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1358,7 +1358,7 @@
       "id": "CURL-CVE-2026-3784",
       "summary": "wrong proxy connection reuse with credentials",
       "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
-      "aliases": ["CVE-2026-3784", "ECHO-f726-ae66-88e1"],
+      "aliases": ["CVE-2026-3784"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T08:00:00Z",
       "database_specific": "<Any value>",
@@ -2451,7 +2451,7 @@
     {
       "id": "CVE-2025-10966",
       "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
-      "aliases": ["CURL-CVE-2025-10966", "ECHO-84eb-3f66-73a1"],
+      "aliases": ["CURL-CVE-2025-10966"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-11-07T08:15:39.617Z",
       "related": ["openSUSE-SU-2025:15757-1"],
@@ -2505,7 +2505,7 @@
     {
       "id": "CVE-2025-14017",
       "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
-      "aliases": ["CURL-CVE-2025-14017", "ECHO-8091-7fb3-2ea0"],
+      "aliases": ["CURL-CVE-2025-14017"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:45.667Z",
       "related": [
@@ -2567,7 +2567,7 @@
     {
       "id": "CVE-2025-14524",
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
-      "aliases": ["CURL-CVE-2025-14524", "ECHO-5c48-9921-1026"],
+      "aliases": ["CURL-CVE-2025-14524"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:46.607Z",
       "related": [
@@ -2695,7 +2695,7 @@
     {
       "id": "CVE-2025-15079",
       "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
-      "aliases": ["CURL-CVE-2025-15079", "ECHO-77ba-e0af-7bbd"],
+      "aliases": ["CURL-CVE-2025-15079"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:47.100Z",
       "related": [
@@ -2761,7 +2761,7 @@
     {
       "id": "CVE-2025-15224",
       "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
-      "aliases": ["CURL-CVE-2025-15224", "ECHO-a8e4-f399-f8ec"],
+      "aliases": ["CURL-CVE-2025-15224"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:47.207Z",
       "related": [
@@ -2884,7 +2884,7 @@
     {
       "id": "CVE-2026-1965",
       "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with  `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
-      "aliases": ["CURL-CVE-2026-1965", "ECHO-3c02-5957-bbd3"],
+      "aliases": ["CURL-CVE-2026-1965"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T11:15:59.177Z",
       "related": [
@@ -2942,7 +2942,7 @@
     {
       "id": "CVE-2026-3783",
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a redirect to a second URL, curl could leak that token to the second\nhostname under some circumstances.\n\nIf the hostname that the first request is redirected to has information in the\nused .netrc file, with either of the `machine` or `default` keywords, curl\nwould pass on the bearer token set for the first host also to the second one.",
-      "aliases": ["CURL-CVE-2026-3783", "ECHO-de93-d97b-29a9"],
+      "aliases": ["CURL-CVE-2026-3783"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T11:16:00.080Z",
       "related": [
@@ -3008,7 +3008,7 @@
     {
       "id": "CVE-2026-3784",
       "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
-      "aliases": ["CURL-CVE-2026-3784", "ECHO-f726-ae66-88e1"],
+      "aliases": ["CURL-CVE-2026-3784"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T11:16:00.437Z",
       "related": [
@@ -3387,7 +3387,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ECHO-d102-c54d-3424"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],
@@ -3604,7 +3604,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ECHO-d102-c54d-3424"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],
@@ -3821,7 +3821,7 @@
       "id": "GHSA-cpwx-vrp4-4pq7",
       "summary": "Jinja2 vulnerable to sandbox breakout through attr filter selecting format method",
       "details": "An oversight in how the Jinja sandboxed environment interacts with the `|attr` filter allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to use the `|attr` filter to get a reference to a string's plain format method, bypassing the sandbox. After the fix, the `|attr` filter no longer bypasses the environment's attribute lookup.",
-      "aliases": ["CVE-2025-27516", "ECHO-d102-c54d-3424"],
+      "aliases": ["CVE-2025-27516"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-05T20:40:14Z",
       "related": ["CGA-xx5r-cxh4-797p"],

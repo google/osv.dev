@@ -163,7 +163,6 @@
     {
       "id": "CVE-2023-25193",
       "details": "hb-ot-layout-gsubgpos.hh in HarfBuzz through 6.0.0 allows attackers to trigger O(n^2) growth via consecutive marks during the process of looking back for base glyphs when attaching marks.",
-      "aliases": ["ECHO-4f23-7a7e-c10a"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2023-02-04T20:15:08.027Z",
       "related": [
@@ -313,13 +312,7 @@
                 }
               ],
               "database_specific": "<Any value>"
-            }
-          ],
-          "versions": 194,
-          "database_specific": "<Any value>"
-        },
-        {
-          "ranges": [
+            },
             {
               "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
@@ -328,12 +321,12 @@
                   "introduced": "0"
                 },
                 {
-                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                  "fixed": "1265ff8d990284f04d8768f35b0e20ae5f60daae"
                 }
               ]
             }
           ],
-          "versions": 194,
+          "versions": 195,
           "database_specific": "<Any value>"
         }
       ],
@@ -407,7 +400,7 @@
       "summary": "OCSP verification bypass with TLS session reuse",
       "details": "curl inadvertently kept the SSL session ID for connections in its cache even\nwhen the verify status (*OCSP stapling*) test failed. A subsequent transfer to\nthe same hostname could then succeed if the session ID cache was still fresh,\nwhich then skipped the verify status check.",
       "aliases": ["CVE-2024-0853"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-01-31T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -441,7 +434,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -458,7 +451,7 @@
       "summary": "netrc and redirect credential leak",
       "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits just the password or\nomits both login and password.",
       "aliases": ["CVE-2024-11053"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-11T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -492,7 +485,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -509,7 +502,7 @@
       "summary": "Usage of disabled protocol",
       "details": "When a protocol selection parameter option disables all protocols without\nadding any then the default set of protocols would remain in the allowed set\ndue to an error in the logic for removing protocols. The below command would\nperform a request to curl.se with a plaintext protocol which has been\nexplicitly disabled.\n\n    curl --proto -all,-http http://curl.se\n\nThe flaw is only present if the set of selected protocols disables the entire\nset of available protocols, in itself a command with no practical use and\ntherefore unlikely to be encountered in real situations. The curl security team\nhas thus assessed this to be low severity bug.",
       "aliases": ["CVE-2024-2004"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -543,7 +536,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Dan Fandrich",
@@ -560,7 +553,7 @@
       "summary": "HTTP/2 push headers memory-leak",
       "details": "When an application tells libcurl it wants to allow HTTP/2 server push, and\nthe amount of received headers for the push surpasses the maximum allowed\nlimit (1000), libcurl aborts the server push. When aborting, libcurl\ninadvertently does not free all the previously allocated headers and instead\nleaks the memory.\n\nFurther, this error condition fails silently and is therefore not easily\ndetected by an application.",
       "aliases": ["CVE-2024-2398"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -594,7 +587,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "w0x42 on hackerone",
@@ -611,7 +604,7 @@
       "summary": "TLS certificate check bypass with mbedTLS",
       "details": "libcurl did not check the server certificate of TLS connections done to a host\nspecified as an IP address, when built to use mbedTLS.\n\nlibcurl would wrongly avoid using the set hostname function when the specified\nhostname was given as an IP address, therefore completely skipping the\ncertificate check. This affects all uses of TLS protocols (HTTPS, FTPS, IMAPS,\nPOPS3, SMTPS, etc).",
       "aliases": ["CVE-2024-2466"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -645,7 +638,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Frank Yueh",
@@ -662,7 +655,7 @@
       "summary": "ASN.1 date parser overread",
       "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
       "aliases": ["CVE-2024-7264"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-31T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -696,7 +689,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Dov Murik (Transmit Security)",
@@ -713,7 +706,7 @@
       "summary": "OCSP stapling bypass with GnuTLS",
       "details": "When curl is told to use the Certificate Status Request TLS extension, often\nreferred to as OCSP stapling, to verify that the server certificate is valid,\nit might fail to detect some OCSP problems and instead wrongly consider the\nresponse as fine.\n\nIf the returned status reports another error than \"revoked\" (like for example\n\"unauthorized\") it is not treated as a bad certificate.",
       "aliases": ["CVE-2024-8096"],
-      "modified": "<RFC3339 date with the year 2024>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-09-11T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -747,7 +740,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -765,7 +758,7 @@
       "details": "When curl is asked to use HSTS, the expiry time for a subdomain might\noverwrite a parent domain's cache entry, making it end sooner or later than\notherwise intended.\n\nThis affects curl using applications that enable HSTS and use URLs with the\ninsecure `HTTP://` scheme and perform transfers with hosts like\n`x.example.com` as well as `example.com` where the first host is a subdomain\nof the second host.\n\n(The HSTS cache either needs to have been populated manually or there needs to\nhave been previous HTTPS accesses done as the cache needs to have entries for\nthe domains involved to trigger this problem.)\n\nWhen `x.example.com` responds with `Strict-Transport-Security:` headers, this\nbug can make the subdomain's expiry timeout *bleed over* and get set for the\nparent domain `example.com` in curl's HSTS cache.\n\nThe result of a triggered bug is that HTTP accesses to `example.com` get\nconverted to HTTPS for a different period of time than what was asked for by\nthe origin server. If `example.com` for example stops supporting HTTPS at its\nexpiry time, curl might then fail to access `http://example.com` until the\n(wrongly set) timeout expires. This bug can also expire the parent's entry\n*earlier*, thus making curl inadvertently switch back to insecure HTTP earlier\nthan otherwise intended.",
       "aliases": ["CVE-2024-9681"],
       "modified": "<RFC3339 date with the year 2026>",
-      "published": "2024-11-05T08:00:00Z",
+      "published": "2024-11-06T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
         {
@@ -798,7 +791,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "newfunction",
@@ -815,7 +808,7 @@
       "summary": "netrc and default credential leak",
       "details": "When asked to use a `.netrc` file for credentials **and** to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has a `default` entry that\nomits both login and password. A rare circumstance.",
       "aliases": ["CVE-2025-0167"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -849,7 +842,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Yihang Zhou",
@@ -865,7 +858,7 @@
       "id": "CURL-CVE-2025-0725",
       "summary": "gzip integer overflow",
       "details": "When libcurl is asked to perform automatic gzip decompression of\ncontent-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option,\n**using zlib 1.2.0.3 or older**, an attacker-controlled integer overflow would\nmake libcurl perform a buffer overflow.",
-      "aliases": ["CVE-2025-0725", "ECHO-f69f-cbd4-841a"],
+      "aliases": ["CVE-2025-0725"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T08:00:00Z",
       "database_specific": "<Any value>",
@@ -900,7 +893,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "z2_",
@@ -951,7 +944,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1002,7 +995,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1020,7 +1013,7 @@
       "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
       "aliases": ["CVE-2025-14524"],
       "modified": "<RFC3339 date with the year 2026>",
-      "published": "2026-01-06T08:00:00Z",
+      "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
         {
@@ -1053,7 +1046,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "anonymous237 on hackerone",
@@ -1069,7 +1062,7 @@
       "id": "CURL-CVE-2025-14819",
       "summary": "OpenSSL partial chain store policy bypass",
       "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
-      "aliases": ["CVE-2025-14819", "ECHO-2c28-953d-b5a0"],
+      "aliases": ["CVE-2025-14819"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-07T08:00:00Z",
       "database_specific": "<Any value>",
@@ -1104,7 +1097,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1155,7 +1148,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1206,7 +1199,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1223,7 +1216,7 @@
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS\ntransfers. Due to an omission, this check is not performed when connecting\nwith QUIC for HTTP/3, when the TLS backend is wolfSSL.\n\nDocumentation says the option works with wolfSSL, failing to specify that it\ndoes not for QUIC and HTTP/3.\n\nSince pinning makes the transfer succeed if the pin is fine, users could\nunwittingly connect to an impostor server without noticing.",
       "aliases": ["CVE-2025-5025"],
-      "modified": "<RFC3339 date with the year 2025>",
+      "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-05-28T08:00:00Z",
       "database_specific": "<Any value>",
       "affected": [
@@ -1257,7 +1250,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.7.5",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -1665,7 +1658,7 @@
     {
       "id": "CVE-2024-2379",
       "details": "libcurl skips the certificate verification for a QUIC connection under certain conditions, when built to use wolfSSL. If told to use an unknown/bad cipher or curve, the error path accidentally skips the verification and returns OK, thus ignoring any certificate problems.",
-      "aliases": ["CURL-CVE-2024-2379", "ECHO-b0de-6c4f-e1fd"],
+      "aliases": ["CURL-CVE-2024-2379"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-03-27T08:15:41.230Z",
       "related": [
@@ -2382,7 +2375,7 @@
     {
       "id": "CVE-2025-0725",
       "details": "When libcurl is asked to perform automatic gzip decompression of\ncontent-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option,\n**using zlib 1.2.0.3 or older**, an attacker-controlled integer overflow would\nmake libcurl perform a buffer overflow.",
-      "aliases": ["CURL-CVE-2025-0725", "ECHO-f69f-cbd4-841a"],
+      "aliases": ["CURL-CVE-2025-0725"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-05T10:15:22.980Z",
       "related": [
@@ -2650,7 +2643,7 @@
     {
       "id": "CVE-2025-14819",
       "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the  `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
-      "aliases": ["CURL-CVE-2025-14819", "ECHO-2c28-953d-b5a0"],
+      "aliases": ["CURL-CVE-2025-14819"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:15:46.730Z",
       "related": [
@@ -3491,7 +3484,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ECHO-2933-1e79-af27"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -3562,7 +3555,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ECHO-1d31-dacb-27da"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],
@@ -3713,7 +3706,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ECHO-2933-1e79-af27"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -3784,7 +3777,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ECHO-1d31-dacb-27da"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],
@@ -3936,7 +3929,7 @@
       "id": "GHSA-gmj6-6f8f-6699",
       "summary": "Jinja has a sandbox breakout through malicious filenames",
       "details": "A bug in the Jinja compiler allows an attacker that controls both the content and filename of a template to execute arbitrary Python code, regardless of if Jinja's sandbox is used.\n\nTo exploit the vulnerability, an attacker needs to control both the filename and the contents of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates where the template author can also choose the template filename.",
-      "aliases": ["CVE-2024-56201", "ECHO-2933-1e79-af27"],
+      "aliases": ["CVE-2024-56201"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:54:12Z",
       "related": ["CGA-cxrh-g24g-3973"],
@@ -4007,7 +4000,7 @@
       "id": "GHSA-q2x7-8rv6-6q7h",
       "summary": "Jinja has a sandbox breakout through indirect reference to format method",
       "details": "An oversight in how the Jinja sandboxed environment detects calls to `str.format` allows an attacker that controls the content of a template to execute arbitrary Python code.\n\nTo exploit the vulnerability, an attacker needs to control the content of a template. Whether that is the case depends on the type of application using Jinja. This vulnerability impacts users of applications which execute untrusted templates.\n\nJinja's sandbox does catch calls to `str.format` and ensures they don't escape the sandbox. However, it's possible to store a reference to a malicious string's `format` method, then pass that to a filter that calls it. No such filters are built-in to Jinja, but could be present through custom filters in an application. After the fix, such indirect calls are also handled by the sandbox.",
-      "aliases": ["CVE-2024-56326", "ECHO-1d31-dacb-27da"],
+      "aliases": ["CVE-2024-56326"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-23T17:56:08Z",
       "related": ["CGA-vf88-6cvh-mxch"],

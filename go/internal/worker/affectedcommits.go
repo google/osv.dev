@@ -78,7 +78,7 @@ func callGitter(ctx context.Context, gitterHost string, aRange *osvschema.Range,
 	}
 	defer httpResp.Body.Close()
 	if httpResp.StatusCode == http.StatusForbidden {
-		return nil, nil // Return nil to indicate skipped/forbidden
+		return nil, nil //nolint:nilnil // repository is inacessible - somewhat expected
 	}
 	if httpResp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("gitter responded with %s", httpResp.Status)
@@ -91,6 +91,7 @@ func callGitter(ctx context.Context, gitterHost string, aRange *osvschema.Range,
 	if err := proto.Unmarshal(respBytes, resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal gitter response: %w", err)
 	}
+
 	return resp, nil
 }
 
@@ -124,6 +125,9 @@ func applyGitterResponse(resp *gitterpb.AffectedCommitsResponse, affected *osvsc
 				currentHash = e.GetFixed()
 			case gitterpb.EventType_LIMIT:
 				currentHash = e.GetLimit()
+			case gitterpb.EventType_LAST_AFFECTED:
+				// probably impossible, but just in case
+				currentHash = e.GetLastAffected()
 			}
 			if currentHash == hash {
 				exists = true
@@ -140,6 +144,9 @@ func applyGitterResponse(resp *gitterpb.AffectedCommitsResponse, affected *osvsc
 				newEvent = &osvschema.Event{Fixed: hash}
 			case gitterpb.EventType_LIMIT:
 				newEvent = &osvschema.Event{Limit: hash}
+			case gitterpb.EventType_LAST_AFFECTED:
+				// probably impossible, but just in case
+				newEvent = &osvschema.Event{LastAffected: hash}
 			}
 			aRange.Events = append(aRange.Events, newEvent)
 		}
@@ -176,5 +183,6 @@ func makeAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *mod
 		}
 		gitterReq.Events = append(gitterReq.Events, &gitterpb.Event{Hash: commit, EventType: eventType})
 	}
+
 	return gitterReq, nil
 }

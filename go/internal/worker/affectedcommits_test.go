@@ -30,10 +30,12 @@ func TestPopulateAffectedCommitsAndTags(t *testing.T) {
 	mockRespBytes, _ := proto.Marshal(mockResp)
 
 	// Create mock server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/x-protobuf")
 		w.WriteHeader(http.StatusOK)
-		w.Write(mockRespBytes)
+		if _, err := w.Write(mockRespBytes); err != nil {
+			t.Fatalf("Failed to write mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 

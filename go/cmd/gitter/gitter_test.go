@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"google.golang.org/protobuf/proto"
 )
 

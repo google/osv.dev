@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
 )

@@ -35,7 +35,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 )
 
 type contextKey string

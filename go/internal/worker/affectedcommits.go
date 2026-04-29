@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
@@ -30,7 +29,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := callGitter(ctx, e.GitterHost, aRange, sourceRepo.GitAnalysis)
+			resp, err := callGitter(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis)
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}
@@ -53,7 +52,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	}, nil
 }
 
-func callGitter(ctx context.Context, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsResponse, error) {
+func callGitter(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsResponse, error) {
 	req, err := makeAffectedCommitsRequest(aRange, gitAnalysis)
 	if err != nil {
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
@@ -71,7 +70,11 @@ func callGitter(ctx context.Context, gitterHost string, aRange *osvschema.Range,
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
 	}
 	httpReq.Header.Add("Content-Type", "application/x-protobuf")
-	client := http.Client{Timeout: 1 * time.Hour}
+
+	if client == nil {
+		client = http.DefaultClient
+	}
+
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("error from gitter: %w", err)

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"path"
 	"strings"
 
@@ -25,8 +26,9 @@ type Engine struct {
 	Stores   Stores
 	Pipeline []pipeline.Enricher
 
-	GitterHost string
-	NotifyPyPI bool
+	GitterHost   string
+	GitterClient *http.Client
+	NotifyPyPI   bool
 }
 
 func (e *Engine) RunTask(ctx context.Context, task Task) error {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
@@ -38,11 +37,9 @@ func TestPopulateAffectedCommitsAndTags(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Set environment variable
-	os.Setenv("GITTER_HOST", server.URL)
-	defer os.Unsetenv("GITTER_HOST")
-
-	e := &Engine{}
+	e := &Engine{
+		GitterHost: server.URL,
+	}
 	vuln := &osvschema.Vulnerability{
 		Affected: []*osvschema.Affected{
 			{

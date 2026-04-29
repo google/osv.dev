@@ -25,6 +25,7 @@ type Engine struct {
 	Stores   Stores
 	Pipeline []pipeline.Enricher
 
+	GitterHost string
 	NotifyPyPI bool
 }
 
@@ -102,6 +103,8 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	if e.NotifyPyPI {
 		e.notifyPyPI(ctx, enriched, current)
 	}
+
+	// TODO: Remove ImportFindings for the record
 
 	return nil
 }

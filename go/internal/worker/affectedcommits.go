@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
@@ -21,9 +20,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	if sourceRepo.GitAnalysis.IgnoreGit {
 		return models.AffectedCommitsResult{}, nil
 	}
-	gitterHost := os.Getenv("GITTER_HOST")
-	if gitterHost == "" {
-		return models.AffectedCommitsResult{}, errors.New("GITTER_HOST not set")
+	if e.GitterHost == "" {
+		return models.AffectedCommitsResult{}, errors.New("GitterHost not set")
 	}
 	var allCommits [][]byte
 	for _, affected := range vuln.GetAffected() {
@@ -32,7 +30,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := callGitter(ctx, gitterHost, aRange, sourceRepo.GitAnalysis)
+			resp, err := callGitter(ctx, e.GitterHost, aRange, sourceRepo.GitAnalysis)
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}

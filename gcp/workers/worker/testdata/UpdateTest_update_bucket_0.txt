@@ -33,5 +33,4 @@
                       {   'type': 'FIX',
                           'url': 'https://github.com/opencontainers/selinux/commit/03b517dc4fd57245b1cf506e8ba7b817b6d309da'},
                       {   'type': 'WEB',
-                          'url': 'https://github.com/opencontainers/runc/issues/2128'}],
-    'schema_version': '1.7.3'}
+                          'url': 'https://github.com/opencontainers/runc/issues/2128'}]}

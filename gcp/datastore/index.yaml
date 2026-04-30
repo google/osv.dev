@@ -145,3 +145,8 @@ indexes:
       - name: published
         direction: desc
 
+  # Used by importer-deleter
+  - kind: Vulnerability
+    properties:
+      - name: is_withdrawn
+      - name: source_id

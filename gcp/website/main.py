@@ -17,12 +17,15 @@ from flask import Flask
 from flask_compress import Compress
 from google.cloud import ndb
 from whitenoise import WhiteNoise
+import os
 
 import cache
 import frontend_handlers
 import handlers
 import linter_api
+import triage_handlers
 import osv.logs
+import auth
 
 ndb_client = ndb.Client()
 
@@ -43,9 +46,13 @@ def create_app():
 
   flask_app = Flask(
       __name__, template_folder='dist', static_folder='dist/static')
+  flask_app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY',
+                                                  os.urandom(24))
   flask_app.register_blueprint(handlers.blueprint)
   flask_app.register_blueprint(frontend_handlers.blueprint)
   flask_app.register_blueprint(linter_api.blueprint)
+  flask_app.register_blueprint(triage_handlers.blueprint)
+  flask_app.register_blueprint(auth.blueprint)
   flask_app.config['TEMPLATES_AUTO_RELOAD'] = True
   flask_app.config['COMPRESS_MIMETYPES'] = ['text/html']
 

@@ -40,6 +40,7 @@ var cvePath = flag.String("cve-path", CVEPathDefault, "Where to download CVEs to
 
 func main() {
 	logger.InitGlobalLogger()
+	defer logger.Close()
 
 	flag.Parse()
 	// if *apiKey != "" {

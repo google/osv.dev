@@ -14,7 +14,6 @@
                           'url': 'https://android.googlesource.com/platform/frameworks/av/+/084077feb6b8c961adcbe77b2bd76601ca54e534'},
                       {   'type': 'FIX',
                           'url': 'https://android.googlesource.com/platform/frameworks/av/+/cc2165840d524bb9553f9d73d1904633d20100a2'}],
-    'schema_version': '1.7.3',
     'summary': 'In multiple methods of AAudioService, there is a possible '
                'use-after-free due to a race condition. This could lead to '
                'local escalation of privilege with User execution privileges '

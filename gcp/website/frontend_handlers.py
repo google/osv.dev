@@ -220,6 +220,8 @@ def docs():
 
 @blueprint.route('/linter', strict_slashes=False)
 def linter():
+  if request.host_url == 'osv.dev':
+    return redirect(request.url.replace('osv.dev', 'test.osv.dev'), code=302)
   return render_template('linter.html')
 
 
@@ -462,7 +464,7 @@ def add_links(record: dict):
   for entry in record.get('affected', []):
     for i, affected_range in enumerate(entry.get('ranges', [])):
       affected_range['id'] = i
-      if affected_range['type'] != 'GIT':
+      if affected_range.get('type') != 'GIT':
         continue
 
       repo_url = affected_range.get('repo')
@@ -886,23 +888,32 @@ _ANCHOR_TAG_REPLACER = re.compile(
 def markdown(text):
   """Render markdown."""
   if text:
-    md = markdown2.markdown(
-        text, safe_mode='escape', extras=['fenced-code-blocks'])
-    # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
-    # unclosed HTML comments <!--, which ends up commenting out the whole page
-    # See: https://github.com/trentm/python-markdown2/issues/563
-    # For now, manually replace any leftover comments with the escaped form
-    md = md.replace('<!--', '&lt;!--')
+    try:
+      md = markdown2.markdown(
+          text, safe_mode='escape', extras=['fenced-code-blocks'])
+      # TODO(michaelkedar): Seems like there's a bug with markdown2 not escaping
+      # unclosed HTML comments <!--, which ends up commenting out the whole page
+      # See: https://github.com/trentm/python-markdown2/issues/563
+      # For now, manually replace any leftover comments with the escaped form
+      md = md.replace('<!--', '&lt;!--')
 
-    # TODO(rexpan): There is a bug with the markdown2 escaping + as
-    # space rather than %2B
-    # See: https://github.com/trentm/python-markdown2/issues/621
-    md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
-    # Removes empty anchor tags that cause visual artifacts in rendered markdown
-    # See: https://github.com/google/osv.dev/issues/4237
-    md = _ANCHOR_TAG_REPLACER.sub('', md)
+      # TODO(rexpan): There is a bug with the markdown2 escaping + as
+      # space rather than %2B
+      # See: https://github.com/trentm/python-markdown2/issues/621
+      md = _URL_MARKDOWN_REPLACER.sub(r'\1/+/\3', md)
+      # Removes empty anchor tags that cause visual artifacts
+      # in rendered markdown
+      # See: https://github.com/google/osv.dev/issues/4237
+      md = _ANCHOR_TAG_REPLACER.sub('', md)
 
-    return md
+      return md
+    except Exception as e:
+      logging.error('Failed to render markdown: %s', e)
+      escaped_text = escape(text)
+      return Markup(f'''
+        <h4>Failed to render markdown, so here\'s the raw details field:</h4>
+        <pre><code>{escaped_text}</code></pre>
+      ''')
 
   return ''
 
@@ -942,9 +953,9 @@ def git_repo(affected):
 
 @blueprint.app_template_filter('package_in_ecosystem')
 def package_in_ecosystem(package):
-  ecosystem = osv.ecosystems.normalize(package['ecosystem'])
+  ecosystem = osv.ecosystems.normalize(package.get('ecosystem', ''))
   if ecosystem in osv.ecosystems.package_urls:
-    return osv.ecosystems.package_urls[ecosystem] + package['name']
+    return osv.ecosystems.package_urls[ecosystem] + package.get('name', '')
   return ''
 
 
@@ -956,13 +967,13 @@ def list_packages(vuln_affected: list[dict]):
 
   for affected in vuln_affected:
     if 'package' in affected:
-      package_entry = affected['package']['ecosystem'] + '/' + affected[
-          'package']['name']
+      package_entry = affected['package'].get(
+          'ecosystem', '') + '/' + affected['package'].get('name', '')
       if package_entry not in packages:
         packages.append(package_entry)
     for affected_range in affected.get('ranges', []):
-      if affected_range['type'] == 'GIT':
-        parsed_scheme = strip_scheme(affected_range['repo'])
+      if affected_range.get('type') == 'GIT':
+        parsed_scheme = strip_scheme(affected_range.get('repo', ''))
         if parsed_scheme not in packages:
           packages.append(parsed_scheme)
 
@@ -1092,7 +1103,7 @@ class ComputedHierarchy(NamedTuple):
 
 
 def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
-                               known_ids: set[str]) -> str:
+                               known_ids: set[str]) -> Markup:
   """Constructs a hierarchy string for display.
 
   Args:
@@ -1101,9 +1112,12 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
     known_ids: A set of bug IDs that are known to exist (for link generation).
 
   Returns:
-    A string representing the hierarchy for display by the frontend.
+    A Markup string representing the hierarchy for display by the frontend.
+    Vulnerability IDs are HTML-escaped so that values originating from
+    source records cannot inject markup when the template renders the
+    result.
   """
-  output_lines = []
+  output_lines: list[Markup] = []
   root_nodes = hierarchy.root_nodes
   graph = hierarchy.graph
 
@@ -1115,28 +1129,29 @@ def construct_hierarchy_string(target_bug_id: str, hierarchy: ComputedHierarchy,
         vuln_id (str): The starting vuln_id for printing the subtree.
     """
     if vuln_id != target_bug_id:
+      escaped_id = escape(vuln_id)
       if vuln_id in known_ids:
-        output_lines.append("<li><a href=\"/vulnerability/" + vuln_id + "\">" +
-                            vuln_id + " </a></li>")
+        output_lines.append(
+            Markup('<li><a href="/vulnerability/{0}">{0} </a></li>').format(
+                escaped_id))
       else:
-        output_lines.append("<li>" + vuln_id + "</li>")
+        output_lines.append(Markup('<li>{0}</li>').format(escaped_id))
 
     if vuln_id in graph:
       sorted_children = sorted(graph[vuln_id])
       for child in sorted_children:
         if child != target_bug_id:
-          output_lines.append("<ul class=\"substream\">")
+          output_lines.append(Markup('<ul class="substream">'))
           print_subtree(child)
-          output_lines.append("</ul>")
+          output_lines.append(Markup('</ul>'))
 
   sorted_root_nodes = sorted(root_nodes)
   for root in sorted_root_nodes:
-    output_lines.append("<ul class=\"aliases\">")
+    output_lines.append(Markup('<ul class="aliases">'))
     print_subtree(root)
-    output_lines.append("</ul>")
+    output_lines.append(Markup('</ul>'))
 
-  final_string = "".join(output_lines)
-  return final_string
+  return Markup('').join(output_lines)
 
 
 def reverse_tree(graph: dict[str, set[str]]) -> dict[str, set[str]]:

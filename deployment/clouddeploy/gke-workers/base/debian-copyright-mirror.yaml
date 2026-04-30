@@ -5,7 +5,8 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "2880"
 spec:
-  schedule: "0 6 * * *"
+  timeZone: "Australia/Sydney"
+  schedule: "0 5 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -16,8 +17,6 @@ spec:
           - name: debian-copyright-mirror
             image: debian-copyright-mirror
             imagePullPolicy: Always
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

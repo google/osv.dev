@@ -37,6 +37,10 @@ def normalize_tag(tag):
   if tag.startswith('.'):
     tag = '0' + tag
   components = VERSION_COMPONENT_REGEX.findall(tag)
+  if not components:
+    # Don't collapse tags with no version-like components to '', otherwise any
+    # digit-free query would fuzzy-match any digit-free tag.
+    return tag
   return '-'.join(components)
 
 

@@ -5,7 +5,7 @@
   <div class="author">Posted by {{ .Params.author }} on {{ .PublishDate.Format "Jan 2, 2006" }}</div>
   <div class="summary">
     {{ .Summary }}
-    <p><a href="{{ .Permalink | relURL }}">Read more...</a></p>
+    <p><a class="read-more" href="{{ .Permalink | relURL }}">Read more...</a></p>
   </div>
 </div>
 {{ end }}

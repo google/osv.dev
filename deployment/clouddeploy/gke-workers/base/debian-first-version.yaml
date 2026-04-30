@@ -5,6 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "2880"
 spec:
+  timeZone: "Australia/Sydney"
   schedule: "0 1 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
@@ -14,15 +15,11 @@ spec:
         spec:
           containers:
           - name: debian-first-version
-            image: debian-convert
+            image: run_first_package_finder
             imagePullPolicy: Always
-            command:
-              - "/src/run_first_package_finder.sh"
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

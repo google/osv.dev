@@ -33,7 +33,7 @@ from google.cloud import ndb
 from google.cloud import pubsub_v1
 from google.cloud import storage
 from google.cloud.storage import retry
-from google.protobuf import json_format, timestamp_pb2
+from google.protobuf import timestamp_pb2
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import osv
@@ -43,8 +43,6 @@ import osv.gcs
 import osv.logs
 from osv import vulnerability_pb2, purl_helpers
 import oss_fuzz
-
-from vanir import vulnerability_manager
 
 DEFAULT_WORK_DIR = '/work'
 OSS_FUZZ_GIT_URL = 'https://github.com/google/oss-fuzz.git'
@@ -105,6 +103,18 @@ class _ContextFilter(logging.Filter):
 def _setup_logging_extra_info():
   """Set up extra GCP logging information."""
   logging.getLogger().addFilter(_ContextFilter())
+
+
+def affected_is_kernel(affected: vulnerability_pb2.Affected) -> bool:
+  if affected.package.name == 'Kernel' and \
+     affected.package.ecosystem == 'Linux':
+    return True
+
+  if any('git.kernel.org/pub/scm/linux/kernel/git' in ar.repo
+         for ar in affected.ranges):
+    return True
+
+  return False
 
 
 class _PubSubLeaserThread(threading.Thread):
@@ -218,57 +228,6 @@ def add_fix_information(vulnerability, fix_result):
   return has_changes
 
 
-# TODO(ochang): Remove this function once GHSA's encoding is fixed.
-def fix_invalid_ghsa(vulnerability):
-  """Attempt to fix an invalid GHSA entry.
-
-  Args:
-    vulnerability: a vulnerability object.
-
-  Returns:
-    whether the GHSA entry is valid.
-  """
-  packages = {}
-  for affected in vulnerability.affected:
-    details = packages.setdefault(
-        (affected.package.ecosystem, affected.package.name), {
-            'has_single_introduced': False,
-            'has_fixed': False
-        })
-
-    has_bad_equals_encoding = False
-    for affected_range in affected.ranges:
-      if len(
-          affected_range.events) == 1 and affected_range.events[0].introduced:
-        details['has_single_introduced'] = True
-        if (affected.versions and
-            affected.versions[0] == affected_range.events[0].introduced):
-          # https://github.com/github/advisory-database/issues/59.
-          has_bad_equals_encoding = True
-
-      for event in affected_range.events:
-        if event.fixed:
-          details['has_fixed'] = True
-
-    if has_bad_equals_encoding:
-      if len(affected.ranges) == 1:
-        # Try to fix this by removing the range.
-        del affected.ranges[:]
-        logging.info('Removing bad range from %s', vulnerability.id)
-      else:
-        # Unable to fix this if there are multiple ranges.
-        return False
-
-  for details in packages.values():
-    # Another case of a bad encoding: Having ranges with a single "introduced"
-    # event, when there are actually "fix" events encoded in another range for
-    # the same package.
-    if details['has_single_introduced'] and details['has_fixed']:
-      return False
-
-  return True
-
-
 def maybe_normalize_package_names(
     vulnerability: vulnerability_pb2.Vulnerability
 ) -> vulnerability_pb2.Vulnerability:
@@ -282,7 +241,7 @@ def maybe_normalize_package_names(
   return vulnerability
 
 
-def filter_unknown_ecosystems(vulnerability):
+def filter_unknown_ecosystems(vulnerability, source_repo: osv.SourceRepository):
   """Remove unknown ecosystems from vulnerability."""
   filtered = []
   for affected in vulnerability.affected:
@@ -290,6 +249,11 @@ def filter_unknown_ecosystems(vulnerability):
     if not affected.HasField('package'):
       filtered.append(affected)
     elif osv.ecosystems.is_known(affected.package.ecosystem):
+      if (source_repo.name == 'echo' and
+          affected.package.ecosystem.partition(':')[0] != 'Echo'):
+        logging.warning('%s has eosystem %s', vulnerability.id,
+                        affected.package.ecosystem)
+        continue
       filtered.append(affected)
     else:
       logging.error('%s contains unknown ecosystem "%s"', vulnerability.id,
@@ -335,7 +299,8 @@ class TaskRunner:
           source_repo.repo_url,
           os.path.join(self._sources_dir, source),
           git_callbacks=self._git_callbacks(source_repo),
-          branch=source_repo.repo_branch)
+          branch=source_repo.repo_branch,
+          force_update=True)
 
       vuln_path = os.path.join(osv.repo_path(repo), path)
       if not os.path.exists(vuln_path):
@@ -538,45 +503,6 @@ class TaskRunner:
                     vulnerability.id)
     raise UpdateConflictError
 
-  def _generate_vanir_signatures(
-      self, vulnerability: vulnerability_pb2.Vulnerability
-  ) -> vulnerability_pb2.Vulnerability:
-    """Generates Vanir signatures for a vulnerability."""
-    if not any(r.type == vulnerability_pb2.Range.GIT
-               for affected in vulnerability.affected
-               for r in affected.ranges):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it has no '
-          'GIT affected ranges.', vulnerability.id)
-      return vulnerability
-    if any(affected.package.name == "Kernel" and
-           affected.package.ecosystem == "Linux"
-           for affected in vulnerability.affected):
-      logging.info(
-          'Skipping Vanir signature generation for %s as it is a '
-          'Kernel vulnerability.', vulnerability.id)
-      return vulnerability
-
-    logging.info('Generating Vanir signatures for %s', vulnerability.id)
-    try:
-      vuln_manager = vulnerability_manager.generate_from_json_string(
-          content=json.dumps([
-              json_format.MessageToDict(
-                  vulnerability, preserving_proto_field_name=True)
-          ]),)
-      vuln_manager.generate_signatures()
-
-      if not vuln_manager.vulnerabilities:
-        logging.warning('Vanir signature generation resulted in no '
-                        'vulnerabilities.')
-        return vulnerability
-
-      return vuln_manager.vulnerabilities[0].to_proto()
-    except Exception:
-      logging.exception('Failed to generate Vanir signatures for %s',
-                        vulnerability.id)
-      return vulnerability
-
   def _do_update(self, source_repo: osv.SourceRepository,
                  repo: pygit2.Repository | None,
                  vulnerability: vulnerability_pb2.Vulnerability,
@@ -585,23 +511,25 @@ class TaskRunner:
     _state.bug_id = vulnerability.id
     logging.info('Processing update for vulnerability %s', vulnerability.id)
     vulnerability = maybe_normalize_package_names(vulnerability)
-    if source_repo.name == 'ghsa' and not fix_invalid_ghsa(vulnerability):
-      logging.warning('%s has an encoding error, skipping.', vulnerability.id)
-      return
 
-    filter_unknown_ecosystems(vulnerability)
+    filter_unknown_ecosystems(vulnerability, source_repo)
 
     # Keep a copy of the original modified date from the source file.
     orig_modified_date = vulnerability.modified.ToDatetime(datetime.UTC)
 
     # Fully enrich the vulnerability object in memory.
-    vulnerability = self._generate_vanir_signatures(vulnerability)
-    try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
-    except UpdateConflictError:
-      # Discard changes due to conflict.
-      return
+    if any(affected_is_kernel(affected) for affected in vulnerability.affected):
+      result = None
+      logging.info(
+          'Skipping Vuln Analysis for %s as it is a '
+          'Kernel vulnerability.', vulnerability.id)
+    else:
+      try:
+        result = self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                             relative_path, original_sha256)
+      except UpdateConflictError:
+        # Discard changes due to conflict.
+        return
 
     vuln_and_gen = osv.gcs.get_by_id_with_generation(vulnerability.id)
     gcs_gen = None
@@ -678,9 +606,12 @@ class TaskRunner:
       # Update the bug entity based on the comparison.
       if has_changed:
         ds_vuln.modified = osv.utcnow()
-      else:
+      elif ds_vuln.modified:
         # If no meaningful change, ensure last_modified reflects the source
-        # file's modified date, as only metadata might have changed.
+        # file's modified date or the date in the database, whichever is later.
+        ds_vuln.modified = max(ds_vuln.modified, orig_modified_date)
+      else:
+        # New record, so set it to the upstream records modified date.
         ds_vuln.modified = orig_modified_date
 
       # Overwrite aliases / upstream from computation
@@ -713,6 +644,7 @@ class TaskRunner:
         else:
           vulnerability.published.CopyFrom(vulnerability.modified)
 
+      ds_vuln.source_id = f'{source_repo.name}:{relative_path}'
       osv.models.put_entities(ds_vuln, vulnerability)
 
     try:
@@ -732,7 +664,8 @@ class TaskRunner:
       osv.pubsub.publish_failure(data, type='gcs_retry')
 
     try:
-      osv.update_affected_commits(vulnerability.id, result.commits, True)
+      if result:
+        osv.update_affected_commits(vulnerability.id, result.commits, True)
     except (google.api_core.exceptions.Cancelled, ndb.exceptions.Error) as e:
       e.add_note(f'Happened processing {vulnerability.id}')
       logging.exception(

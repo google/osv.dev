@@ -1,16 +1,17 @@
 # Build the Javascript frontend
-FROM node:24.13@sha256:1de022d8459f896fff2e7b865823699dc7a8d5567507e8b87b14a7442e07f206 AS FRONTEND3_BUILD
+FROM node:24.14@sha256:80fc934952c8f1b2b4d39907af7211f8a9fff1a4c2cf673fb49099292c251cec AS FRONTEND3_BUILD
 WORKDIR /build/frontend3
 
 # Install dependencies first for better caching
-COPY gcp/website/frontend3/package.json gcp/website/frontend3/package-lock.json ./
-RUN npm ci
+RUN corepack enable pnpm
+COPY gcp/website/frontend3/package.json gcp/website/frontend3/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY gcp/website/frontend3/webpack.prod.js ./
 COPY gcp/website/frontend3/img img
 COPY gcp/website/frontend3/src src
 
-RUN npm run build:prod
+RUN pnpm run build:prod
 
 # Build hugo blogs
 # Use the ci image, since it already built the version of hugo we want from source

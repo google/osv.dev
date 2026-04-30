@@ -125,7 +125,7 @@ If you are not able to get satisfaction after dealing directly with the source o
 
 Yes!
 
-The database in available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://storage.googleapis.com/osv-vulnerabilities/index.html) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
+The database is available in a GCS bucket maintained by OSV: [gs://osv-vulnerabilities](https://storage.googleapis.com/osv-vulnerabilities/index.html) (also [publicly browseable via the Google Cloud Console](https://console.cloud.google.com/storage/browser/osv-vulnerabilities) with a login)
 
 More information about how to download the database is available [here](data.md#data-dumps).
 
@@ -176,7 +176,7 @@ Records that have the [`withdrawn`](https://ossf.github.io/osv-schema/#withdrawn
 The entry remains in the database, and is:
 
 * returned by the `/vulns/<ID>` GET API
-* visible at `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")
+* visible at the `https://osv.dev/vulnerability/<ID>` page (and clearly visibly marked as "withdrawn")
 * still exported in the [GCS exports](#is-the-database-available-to-download) (including the `withdrawn` field)
 
 ### How does OSV.dev handle deleted records?

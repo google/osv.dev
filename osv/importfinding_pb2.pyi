@@ -16,29 +16,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
-import google.protobuf.timestamp_pb2
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
 if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+    from typing import TypeAlias as _TypeAlias
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _ImportFindingType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _ImportFindingTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ImportFindingType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _ImportFindingTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ImportFindingType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     IMPORT_FINDING_TYPE_NONE: _ImportFindingType.ValueType  # 0
     IMPORT_FINDING_TYPE_DELETED: _ImportFindingType.ValueType  # 1
     IMPORT_FINDING_TYPE_INVALID_JSON: _ImportFindingType.ValueType  # 2
@@ -68,40 +68,42 @@ IMPORT_FINDING_TYPE_INVALID_ALIASES: ImportFindingType.ValueType  # 9
 IMPORT_FINDING_TYPE_INVALID_UPSTREAM: ImportFindingType.ValueType  # 10
 IMPORT_FINDING_TYPE_INVALID_RELATED: ImportFindingType.ValueType  # 11
 IMPORT_FINDING_TYPE_BAD_ALIASED_CVE: ImportFindingType.ValueType  # 12
-global___ImportFindingType = ImportFindingType
+Global___ImportFindingType: _TypeAlias = ImportFindingType  # noqa: Y015
 
-@typing.final
-class ImportFinding(google.protobuf.message.Message):
+@_typing.final
+class ImportFinding(_message.Message):
     """An importfinding entry.
     The protobuf representation is *NOT* stable and only used for implementing
     the JSON based API.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BUG_ID_FIELD_NUMBER: builtins.int
-    SOURCE_FIELD_NUMBER: builtins.int
-    FINDINGS_FIELD_NUMBER: builtins.int
-    FIRST_SEEN_FIELD_NUMBER: builtins.int
-    LAST_ATTEMPT_FIELD_NUMBER: builtins.int
-    bug_id: builtins.str
-    source: builtins.str
-    @property
-    def findings(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[global___ImportFindingType.ValueType]: ...
-    @property
-    def first_seen(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
-    @property
-    def last_attempt(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
+    BUG_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_FIELD_NUMBER: _builtins.int
+    FINDINGS_FIELD_NUMBER: _builtins.int
+    FIRST_SEEN_FIELD_NUMBER: _builtins.int
+    LAST_ATTEMPT_FIELD_NUMBER: _builtins.int
+    bug_id: _builtins.str
+    source: _builtins.str
+    @_builtins.property
+    def findings(self) -> _containers.RepeatedScalarFieldContainer[Global___ImportFindingType.ValueType]: ...
+    @_builtins.property
+    def first_seen(self) -> _timestamp_pb2.Timestamp: ...
+    @_builtins.property
+    def last_attempt(self) -> _timestamp_pb2.Timestamp: ...
     def __init__(
         self,
         *,
-        bug_id: builtins.str = ...,
-        source: builtins.str = ...,
-        findings: collections.abc.Iterable[global___ImportFindingType.ValueType] | None = ...,
-        first_seen: google.protobuf.timestamp_pb2.Timestamp | None = ...,
-        last_attempt: google.protobuf.timestamp_pb2.Timestamp | None = ...,
+        bug_id: _builtins.str = ...,
+        source: _builtins.str = ...,
+        findings: _abc.Iterable[Global___ImportFindingType.ValueType] | None = ...,
+        first_seen: _timestamp_pb2.Timestamp | None = ...,
+        last_attempt: _timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["first_seen", b"first_seen", "last_attempt", b"last_attempt"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["bug_id", b"bug_id", "findings", b"findings", "first_seen", b"first_seen", "last_attempt", b"last_attempt", "source", b"source"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["first_seen", b"first_seen", "last_attempt", b"last_attempt"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["bug_id", b"bug_id", "findings", b"findings", "first_seen", b"first_seen", "last_attempt", b"last_attempt", "source", b"source"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ImportFinding = ImportFinding
+Global___ImportFinding: _TypeAlias = ImportFinding  # noqa: Y015

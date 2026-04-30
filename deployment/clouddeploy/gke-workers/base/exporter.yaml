@@ -5,6 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "30"
 spec:
+  timeZone: "Australia/Sydney"
   schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   # If the previous job overruns by more than a minute,
@@ -31,4 +32,7 @@ spec:
               limits:
                 cpu: "20"
                 memory: "64Gi"
+            env:
+              - name: TRACE_SAMPLE_RATE
+                value: "0.0"
           restartPolicy: Never

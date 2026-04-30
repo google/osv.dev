@@ -9,8 +9,10 @@ spec:
       - name: gitter
         args:
           - "--port=8888"
-          - "--work_dir=/work/gitter"
-          - "--fetch_timeout=1h"
+          - "--work-dir=/work/gitter"
+          - "--fetch-timeout=1h"
+          - "--repo-cache-ttl=1h"
+          - "--repo-cache-max-cost=100GiB"
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb

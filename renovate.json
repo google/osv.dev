@@ -9,6 +9,7 @@
   ],
   "prHourlyLimit": 0,
   "prConcurrentLimit": 20,
+  "minimumReleaseAge": "7 days",
   "labels": [
     "dependencies"
   ],
@@ -141,6 +142,18 @@
       "matchDatasources": [
         "docker"
       ],
+      "matchPackageNames": [
+        "ruby"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "docker"
     },
     {
@@ -157,7 +170,8 @@
     },
     {
       "matchDatasources": [
-        "git-refs"
+        "git-refs",
+        "github-tags"
       ],
       "groupName": "submodules"
     },
@@ -206,6 +220,18 @@
       "packageNameTemplate": "https://github.com/ossf/osv-schema",
       "datasourceTemplate": "git-refs",
       "versioningTemplate": "git"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "osv/models.py"
+      ],
+      "matchStrings": [
+        "SCHEMA_VERSION\\s*=\\s*'(?<currentValue>.*)'"
+      ],
+      "packageNameTemplate": "ossf/osv-schema",
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver"
     }
   ],
   "ignorePaths": ["docker/poetry/requirements.txt"]

@@ -1,0 +1,1748 @@
+package conversion
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"reflect"
+	"slices"
+	"testing"
+	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/git"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
+	"github.com/google/osv/vulnfeeds/models"
+)
+
+func loadTestData2(cveName string) models.Vulnerability {
+	fileName := fmt.Sprintf("../test_data/nvdcve-2.0/%s.json", cveName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Failed to load test data from %q", fileName)
+	}
+	var nvdCves models.CVEAPIJSON20Schema
+	err = json.NewDecoder(file).Decode(&nvdCves)
+	if err != nil {
+		log.Fatalf("Failed to decode %q: %+v", fileName, err)
+	}
+	for _, vulnerability := range nvdCves.Vulnerabilities {
+		if string(vulnerability.CVE.ID) == cveName {
+			return vulnerability
+		}
+	}
+	log.Fatalf("test data doesn't contain %q", cveName)
+
+	return models.Vulnerability{}
+}
+
+func TestParseCPE(t *testing.T) {
+	tests := []struct {
+		description       string
+		inputCPEString    string
+		expectedCPEStruct *models.CPEString
+		expectedOk        bool
+	}{
+		{
+			description:       "invalid input (empty string)",
+			inputCPEString:    "",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
+		},
+
+		{
+			description:       "invalid input (corrupt)",
+			inputCPEString:    "fnord:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
+		},
+		{
+			description:       "invalid input (truncated)",
+			inputCPEString:    "cpe:2.3:h:intel:core_i3-1005g1:",
+			expectedCPEStruct: nil,
+			expectedOk:        false,
+		},
+		{
+			description: "valid input (hardware)", inputCPEString: "cpe:2.3:h:intel:core_i3-1005g1:-:*:*:*:*:*:*:*",
+			expectedCPEStruct: &models.CPEString{
+				CPEVersion: "2.3",
+				Part:       "h",
+				Vendor:     "intel",
+				Product:    "core_i3-1005g1",
+				Version:    "NA",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
+		},
+		{
+			description:    "valid input (software)",
+			inputCPEString: "cpe:2.3:a:gitlab:gitlab:*:*:*:*:community:*:*:*",
+			expectedCPEStruct: &models.CPEString{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "gitlab",
+				Product:    "gitlab",
+				Version:    "ANY",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "community",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
+		},
+		{
+			description:    "valid input (software) with embedded colons",
+			inputCPEString: "cpe:2.3:a:http\\:\\:daemon_project:http\\:\\:daemon:*:*:*:*:*:*:*:*",
+			expectedCPEStruct: &models.CPEString{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "http::daemon_project",
+				Product:    "http::daemon",
+				Version:    "ANY",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
+		},
+		{
+			description:    "valid input (software) with escaped characters",
+			inputCPEString: "cpe:2.3:a:bloodshed:dev-c\\+\\+:4.9.9.2:*:*:*:*:*:*:*",
+			expectedCPEStruct: &models.CPEString{
+				CPEVersion: "2.3",
+				Part:       "a",
+				Vendor:     "bloodshed",
+				Product:    "dev-c++",
+				Version:    "4.9.9.2",
+				Update:     "ANY",
+				Edition:    "ANY",
+				Language:   "ANY",
+				SWEdition:  "ANY",
+				TargetSW:   "ANY",
+				TargetHW:   "ANY",
+				Other:      "ANY",
+			},
+			expectedOk: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			got, err := ParseCPE(tc.inputCPEString)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: ParseCPE for %q unexpectedly failed: %+v", tc.description, tc.inputCPEString, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedCPEStruct) {
+				t.Errorf("test %q: ParseCPE for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputCPEString, got, tc.expectedCPEStruct)
+			}
+		})
+	}
+}
+
+func TestRepo(t *testing.T) {
+	tests := []struct {
+		description       string    // human-readable description of test case
+		inputLink         string    // a possible repository URL to call Repo() with
+		expectedRepoURL   string    // The expected  repository URL to get back from Repo()
+		expectedOk        bool      // If an error is expected
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
+	}{
+		{
+			description:     "GitHub compare URL",
+			inputLink:       "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
+			expectedRepoURL: "https://github.com/kovidgoyal/kitty",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitLab compare URL",
+			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master?from_project_id=396557&straight=false",
+			expectedRepoURL: "https://gitlab.com/mayan-edms/mayan-edms",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitHub releases URL",
+			inputLink:       "https://github.com/apache/activemq-artemis/releases",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitHub releases URL",
+			inputLink:       "https://github.com/apache/activemq-artemis/tags",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitHub advisory URL",
+			inputLink:       "https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79",
+			expectedRepoURL: "https://github.com/ballcat-projects/ballcat-codegen",
+			expectedOk:      true,
+		},
+		{
+			description:     "Ambiguous GitLab compare URL",
+			inputLink:       "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedRepoURL: "https://git.drupalcode.org/project/views",
+			expectedOk:      true,
+		},
+		{
+			description:     "Exact repository URL",
+			inputLink:       "https://github.com/apache/activemq-artemis",
+			expectedRepoURL: "https://github.com/apache/activemq-artemis",
+			expectedOk:      true,
+		},
+		{
+			description:     "Freedesktop GitLab commit URL observed in CVE-2022-46285",
+			inputLink:       "https://gitlab.freedesktop.org/xorg/lib/libxpm/-/commit/a3a7c6dcc3b629d7650148",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxpm",
+			expectedOk:      true,
+		},
+		{
+			description:     "Freedesktop cGit mirror",
+			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedOk:      true,
+		},
+		{
+			description:     "Exact Freedesktop cGit mirror",
+			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedOk:      true,
+		},
+		{
+			description:     "Freedesktop cGit mirror refs/tags URL",
+			inputLink:       "http://cgit.freedesktop.org/spice/spice/refs/tags",
+			expectedRepoURL: "https://gitlab.freedesktop.org/spice/spice",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitWeb URL, remapped to something cloneable (CVE-2022-47629)",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedRepoURL: "git://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GitWeb URL, remapped to something cloneable (CVE-2023-1579)",
+			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git;h=11d171f1910b508a81d21faa087ad1af573407d8",
+			expectedRepoURL: "https://sourceware.org/git/binutils-gdb.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Exact repo URL with a trailing slash",
+			inputLink:       "https://github.com/pyca/pyopenssl/",
+			expectedRepoURL: "https://github.com/pyca/pyopenssl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket download URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket wiki URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/wiki/Home",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket security URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/security",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket pull-request URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket commit URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/commits/6e8cd890716dfe22d5ba56f9a592225fb7fa2803",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket issue URL with title",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566/build-android",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Bitbucket bare issue URL",
+			inputLink:       "https://bitbucket.org/snakeyaml/snakeyaml/issues/566",
+			expectedRepoURL: "https://bitbucket.org/snakeyaml/snakeyaml",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/Ko-kn3t/CVE-2020-29156",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/GitHubAssessments/CVE_Assessment_04_2018",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/jenaye/cve",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid URL (unnormalized) but not wanted (by deny regexp)",
+			inputLink:       "https://github.com/vlakhani28/CVE-2022-22296/blob/main/README.md",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/bgermann/unrar-free",
+			expectedRepoURL: "https://gitlab.com/bgermann/unrar-free",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.xiph.org/xiph/ezstream",
+			expectedRepoURL: "https://gitlab.xiph.org/xiph/ezstream",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xdg/xdg-utils",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "http://git.linuxtv.org/xawtv3.git",
+			expectedRepoURL: "http://git.linuxtv.org/xawtv3.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.gnu.org/git/emacs.git",
+			expectedRepoURL: "https://git.savannah.gnu.org/git/emacs.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.libssh.org/projects/libssh.git",
+			expectedRepoURL: "https://git.libssh.org/projects/libssh.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://pagure.io/libaio.git",
+			expectedRepoURL: "https://pagure.io/libaio.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "git://git.infradead.org/mtd-utils.git",
+			expectedRepoURL: "git://git.infradead.org/mtd-utils.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedRepoURL: "https://git.savannah.nongnu.org/git/davfs2.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://xenbits.xen.org/git-http/xen.git",
+			expectedRepoURL: "https://xenbits.xen.org/git-http/xen.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedRepoURL: "https://opendev.org/x/sqlalchemy-migrate.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://git.netfilter.org/libnftnl",
+			expectedRepoURL: "https://git.netfilter.org/libnftnl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid repo previously being discarded",
+			inputLink:       "https://gitlab.com/ubports/development/core/click/",
+			expectedRepoURL: "https://gitlab.com/ubports/development/core/click",
+			expectedOk:      true,
+		},
+		{
+			description:     "cGit URL on git.kernel.org remapped to be cloneable",
+			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Valid Gitweb repo",
+			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			expectedRepoURL: "https://git.ffmpeg.org/ffmpeg.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Undesired researcher repo (by deny regex)",
+			inputLink:       "https://github.com/bigzooooz/CVE-2023-26692#readme",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "GNU glibc GitWeb repo (with no distinguishing marks)",
+			inputLink:       "https://sourceware.org/git/?p=glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GNU glibc GitWeb repo (with distinguishing marks)",
+			inputLink:       "https://sourceware.org/git/gitweb.cgi?p=glibc.git",
+			expectedRepoURL: "https://sourceware.org/git/glibc.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "GnuPG GitWeb repo that doesn't talk https",
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			expectedRepoURL: "git://git.gnupg.org/libksba.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "high profile repo encountered on CVE-2024-3094",
+			inputLink:       "https://git.tukaani.org/?p=xz.git;a=tags",
+			expectedRepoURL: "https://git.tukaani.org/xz.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "PostgreSQL repo",
+			inputLink:       "https://git.postgresql.org/gitweb/?p=postgresql.git;a=summary",
+			expectedRepoURL: "https://git.postgresql.org/git/postgresql.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "libcap repo on kernel.org (with a trailing slash)",
+			inputLink:       "https://git.kernel.org/pub/scm/libs/libcap/libcap.git/",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/libs/libcap/libcap.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "Linux kernel URL that doesn't require remapping to be cloneable",
+			inputLink:       "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			expectedRepoURL: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+			expectedOk:      true,
+		},
+		{
+			description:     "musl-libc repo that requires remapping",
+			inputLink:       "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+			expectedRepoURL: "https://git.musl-libc.org/git/musl",
+			expectedOk:      true,
+		},
+		{
+			description:     "Savannah repo that requires remapping",
+			inputLink:       "https://git.savannah.gnu.org/cgit/wget.git/commit/?id=c419542d956a2607bbce5df64b9d378a8588d778",
+			expectedRepoURL: "https://git.savannah.gnu.org/git/wget.git",
+			expectedOk:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: Repo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: Repo(%q) has been enabled on %s.", tc.description, tc.inputLink, tc.disableExpiryDate)
+			}
+			got, err := Repo(tc.inputLink)
+			if err != nil && tc.expectedOk {
+				t.Errorf("test %q: Repo(%q) unexpectedly failed: %+v", tc.description, tc.inputLink, err)
+			}
+			if !reflect.DeepEqual(got, tc.expectedRepoURL) {
+				t.Errorf("test %q: Repo(%q) was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedRepoURL)
+			}
+		})
+	}
+}
+
+func TestExtractGitCommit(t *testing.T) {
+	tests := []struct {
+		description            string
+		inputLink              string
+		inputCommitType        models.CommitType
+		expectedAffectedCommit models.AffectedCommit
+		expectFailure          bool
+		skipOnCloudBuild       bool
+		disableExpiryDate      time.Time // If test needs to be disabled due to known outage.
+	}{
+		{
+			description:     "Valid GitHub commit URL",
+			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/google/osv.dev",
+				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			},
+		},
+		{
+			description:     "Undesired GitHub commit URL", // TODO(apollock): be able to parse this a LastAffected commit
+			inputLink:       "https://github.com/Budibase/budibase/commits/develop?after=93d6939466aec192043d8ac842e754f65fdf2e8a+594\u0026branch=develop\u0026qualified_name=refs%2Fheads%2Fdevelop",
+			inputCommitType: models.Fixed,
+			expectFailure:   true,
+		},
+		{
+			description:     "Valid GitHub commit URL with .patch extension",
+			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/pimcore/customer-data-framework",
+				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
+			},
+		},
+		{
+			description:     "Undesired GitHub PR commit URL",
+			inputLink:       "https://github.com/OpenZeppelin/cairo-contracts/pull/542/commits/6d4cb750478fca2fd916f73297632f899aca9299",
+			inputCommitType: models.Fixed,
+			expectFailure:   true,
+		},
+		{
+			description:     "Valid GitLab commit URL",
+			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+			},
+		},
+		{
+			description:     "Valid GitLab commit URL with .patch extension",
+			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://gitlab.com/muttmua/mutt",
+				Fixed: "452ee330e094bfc7c9a68555e5152b1826534555",
+			},
+		},
+		{
+			description:     "Valid GitLab.com commit URL",
+			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://gitlab.com/mayan-edms/mayan-edms",
+				Fixed: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+			},
+		},
+		{
+			description:     "Valid bitbucket.org commit URL",
+			inputLink:       "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://bitbucket.org/openpyxl/openpyxl",
+				Fixed: "3b4905f428e1",
+			},
+		},
+		{
+			description:     "Valid bitbucket.org commit URL with trailing slash",
+			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://bitbucket.org/utmandrew/pcrs",
+				Fixed: "5f18bcb",
+			},
+		},
+		{
+			description:     "Valid cGit commit URL",
+			inputLink:       "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://git.dpkg.org/cgit/dpkg/dpkg.git",
+				Fixed: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+			},
+		},
+		{
+			description: "Valid GitWeb commit URL",
+			// inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			// go-vcr / go's url parser does not support ';' in query strings.
+			// This does actually successfully parse outside of the tests, but there's no way to have go-vcr skip the URL validation.
+			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git&a=commit&h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "git://git.gnupg.org/libksba.git",
+				Fixed: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+			},
+		},
+		{
+			description:            "Unsupported GitHub PR URL",
+			inputLink:              "https://github.com/google/osv/pull/123",
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
+			expectFailure:          true,
+		},
+		{
+			description:     "Supported GitHub tag URL",
+			inputLink:       "https://github.com/google/osv.dev/releases/tag/v0.0.14",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/google/osv.dev",
+				Fixed: "8de7697b3b8a73e79a73ec34f17ef0fa842cfbb2",
+			},
+			expectFailure: false,
+		},
+		{
+			description:            "Completely invalid input",
+			inputLink:              "",
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
+			expectFailure:          true,
+		},
+		{
+			description:     "cGit reference from CVE-2022-30594, remapped to be cloneable",
+			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			skipOnCloudBuild: true, // observing indications of IP denylisting as at 2025-02-13
+		},
+		{
+			description:     "Valid GitWeb commit URL",
+			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
+				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
+		},
+		{
+			description:     "A GitHub repo that has been renamed (as seen on CVE-2016-10544)",
+			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/unetworking/uwebsockets",
+				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
+			},
+		},
+		{
+			description:     "A GitHub repo that should be working (as seen on CVE-2021-23568)",
+			inputLink:       "https://github.com/eggjs/extend2/commit/aa332a59116c8398976434b57ea477c6823054f8",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/eggjs/extend2",
+				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
+			},
+		},
+		{
+			description:            "A GitHub commit link that is 404'ing (as seen on CVE-2019-8375)",
+			inputLink:              "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
+			expectFailure:          true,
+		},
+		{
+			description:     "A GitHub link with tags",
+			inputLink:       "https://github.com/redis/redis/releases/tag/6.2.17",
+			inputCommitType: models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{
+				Repo:  "https://github.com/redis/redis",
+				Fixed: "441001a4e5e37a7a450c0929d2a94ba489941874",
+			},
+			expectFailure: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			r := testutils.SetupVCR(t)
+			client := r.GetDefaultClient()
+
+			if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
+				t.Skipf("test %q: running on Cloud Build", tc.description)
+			}
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: extractGitAffectedCommit for %q (%v) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: extractGitAffectedCommit(%q, %v) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
+			}
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
+			if err != nil && !tc.expectFailure {
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
+			}
+			if err == nil && tc.expectFailure {
+				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) did not error as unexpected!", tc.description, tc.inputLink, tc.inputCommitType)
+			}
+			if !reflect.DeepEqual(got, tc.expectedAffectedCommit) {
+				t.Errorf("test %q: extractGitAffectedCommit for %q was incorrect, got: %#v, expected: %#v", tc.description, tc.inputLink, got, tc.expectedAffectedCommit)
+			}
+		})
+	}
+}
+
+func TestExtractVersionInfo(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputCVEItem        models.Vulnerability
+		inputValidVersions  []string
+		expectedVersionInfo models.VersionInfo
+		expectedNotes       []string
+		disableExpiryDate   time.Time // If test needs to be disabled due to known outage.
+	}{
+		{
+			description:        "A CVE with multiple affected versions",
+			inputCVEItem:       loadTestData2("CVE-2022-32746"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
+					{
+						Introduced:   "4.3.0",
+						Fixed:        "4.14.14",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "4.15.0",
+						Fixed:        "4.15.9",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "4.16.0",
+						Fixed:        "4.16.4",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with duplicate affected versions squashed",
+			inputCVEItem:       loadTestData2("CVE-2022-0090"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
+					{
+						Introduced:   "",
+						Fixed:        "14.4.5",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "14.5.0",
+						Fixed:        "14.5.3",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "14.6.0",
+						Fixed:        "14.6.1",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with no explicit versions",
+			inputCVEItem:       loadTestData2("CVE-2022-1122"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion{
+					{
+						Introduced:   "",
+						Fixed:        "",
+						LastAffected: "2.4.0",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with fix commits in references and CPE match info",
+			inputCVEItem:       loadTestData2("CVE-2022-25929"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:       "https://github.com/joewalnes/smoothie",
+						Introduced: "0",
+						Fixed:      "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
+					},
+				},
+				AffectedVersions: []models.AffectedVersion{
+					{
+						Introduced:   "1.31.0",
+						Fixed:        "1.36.1",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with fix commits in references and (more complex) CPE match info",
+			inputCVEItem:       loadTestData2("CVE-2022-29194"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
+					},
+					{
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "33ed2b11cb8e879d86c371700e6573db1814a69e",
+					},
+					{
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
+					},
+					{
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
+					},
+					{
+						Repo:       "https://github.com/tensorflow/tensorflow",
+						Introduced: "0",
+						Fixed:      "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
+					},
+				},
+				AffectedVersions: []models.AffectedVersion{
+					{
+						Introduced:   "",
+						Fixed:        "2.6.4",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "2.7.0",
+						Fixed:        "2.7.2",
+						LastAffected: "",
+					},
+					{
+						Introduced:   "2.8.0",
+						Fixed:        "2.8.1",
+						LastAffected: "",
+					},
+				},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with undesired wildcards and no versions",
+			inputCVEItem:       loadTestData2("CVE-2022-2956"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit(nil),
+				AffectedVersions: []models.AffectedVersion(nil),
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:        "A CVE with a weird GitLab reference that breaks version enumeration in the worker",
+			inputCVEItem:       loadTestData2("CVE-2022-46285"),
+			inputValidVersions: []string{},
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "3.5.15"}},
+			},
+			expectedNotes: []string{},
+		},
+		{
+			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
+			inputCVEItem: loadTestData2("CVE-2021-28429"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", LastAffected: "4.3.2"}},
+			},
+		},
+		{
+			description:  "A CVE with a configuration unsupported by ExtractVersionInfo and a limit version in the description",
+			inputCVEItem: loadTestData2("CVE-2020-13595"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedVersions: []models.AffectedVersion{{Introduced: "4.0.0", LastAffected: "4.2"}},
+			},
+		},
+		{
+			description:  "CVE with duplicate hashes",
+			inputCVEItem: loadTestData2("CVE-2022-25761"),
+			expectedVersionInfo: models.VersionInfo{
+				AffectedCommits: []models.AffectedCommit{
+					{
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
+					},
+					{
+						Repo:       "https://github.com/open62541/open62541",
+						Introduced: "0",
+						Fixed:      "b79db1ac78146fc06b0b8435773d3967de2d659c",
+					},
+				},
+
+				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "1.2.5"}},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			r := testutils.SetupVCR(t)
+			client := r.GetDefaultClient()
+
+			if time.Now().Before(tc.disableExpiryDate) {
+				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
+			}
+			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
+				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
+			}
+			metrics := &models.ConversionMetrics{}
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
+			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
+				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
+			}
+		})
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestExtractVersionInfo_429(t *testing.T) {
+	requests := 0
+	client := &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			return &http.Response{
+				StatusCode: http.StatusTooManyRequests,
+				Body:       http.NoBody,
+				Request:    req,
+			}, nil
+		}),
+	}
+
+	cve := models.NVDCVE{
+		References: []models.Reference{
+			{
+				URL: "https://github.com/foo/bar/commit/1234567890abcdef1234567890abcdef12345678",
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics)
+
+	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
+	if len(gotVersionInfo.AffectedCommits) != 0 {
+		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
+	}
+}
+
+func TestCPEs(t *testing.T) {
+	tests := []struct {
+		description  string
+		inputCVEItem models.Vulnerability
+		expectedCPEs []string
+	}{
+		{
+			description:  "A CVE with child CPEs",
+			inputCVEItem: loadTestData2("CVE-2023-24256"),
+			expectedCPEs: []string{"cpe:2.3:o:nio:aspen:*:*:*:*:*:*:*:*", "cpe:2.3:h:nio:ec6:-:*:*:*:*:*:*:*"},
+		},
+		{
+			description:  "A CVE without child CPEs",
+			inputCVEItem: loadTestData2("CVE-2022-33745"),
+			expectedCPEs: []string{"cpe:2.3:o:xen:xen:*:*:*:*:*:*:x86:*", "cpe:2.3:o:debian:debian_linux:11.0:*:*:*:*:*:*:*", "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*", "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			gotCPEs := CPEs(tc.inputCVEItem.CVE)
+			if diff := cmp.Diff(gotCPEs, tc.expectedCPEs); diff != "" {
+				t.Errorf("test %q: CPEs for %#v were incorrect: %s", tc.description, tc.inputCVEItem.CVE.Configurations, diff)
+			}
+		})
+	}
+}
+
+func TestVersionInfoDuplicateDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputVersionInfo    models.VersionInfo
+		inputAffectedCommit models.AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty VersionInfo and AffectedCommit",
+			inputVersionInfo:    models.VersionInfo{},
+			inputAffectedCommit: models.AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "A populated VersionInfo and empty AffectedCommit",
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "An empty VersionInfo and a populated AffectedCommit",
+			inputVersionInfo:    models.VersionInfo{},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "A bonafide full duplicate",
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Duplication across introduced and fixed",
+			inputVersionInfo:    models.VersionInfo{AffectedCommits: []models.AffectedCommit{{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"}}},
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			result := tc.inputVersionInfo.Duplicated(tc.inputAffectedCommit)
+			if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: HasDuplicateAffectedVersions for %#v was incorrect: %s", tc.description, tc.inputVersionInfo, diff)
+			}
+		})
+	}
+}
+
+func TestDeduplicateAffectedCommits(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []models.AffectedCommit
+		expected []models.AffectedCommit
+	}{
+		{
+			name: "All duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Mixed duplicates and uniques (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"}, // Duplicate of first
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"}, // Unique (Introduced different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"}, // Unique (Limit different)
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"}, // Duplicate of third
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v2", Fixed: "commitX", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L2"},
+			},
+		},
+		{
+			name: "No duplicates (map-based, all fields)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitB", LastAffected: "L1"},
+				{Repo: "repo2", Introduced: "v1", Fixed: "commitC", LastAffected: "L1"},
+			},
+		},
+		{
+			name:     "Empty slice (map-based)",
+			input:    []models.AffectedCommit{},
+			expected: []models.AffectedCommit{},
+		},
+		{
+			name: "Single element (map-based)",
+			input: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "repo1", Introduced: "v1", Fixed: "commitA", LastAffected: "L1"},
+			},
+		},
+		{
+			name: "Real-world example",
+			input: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""}, // Unique (Fixed)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Introduced)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Unique (Limit)
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""}, // Duplicate
+			},
+			expected: []models.AffectedCommit{
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "b79db1ac", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.0", Fixed: "3010bc67", LastAffected: ""},
+				{Repo: "https://github.com/open62541/open62541", Introduced: "1.1", Fixed: "b79db1ac", LastAffected: ""},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DeduplicateAffectedCommits(tt.input)
+
+			slices.SortStableFunc(got, models.AffectedCommitCompare)
+			slices.SortStableFunc(tt.expected, models.AffectedCommitCompare)
+			if diff := cmp.Diff(got, tt.expected); diff != "" {
+				t.Errorf("deduplicateAffectedCommits() got = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+func TestInvalidRangeDetection(t *testing.T) {
+	tests := []struct {
+		description         string
+		inputAffectedCommit models.AffectedCommit
+		expectedResult      bool
+	}{
+		{
+			description:         "An empty AffectedCommit",
+			inputAffectedCommit: models.AffectedCommit{},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only an introduced commit",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a fixed commit",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Only a last_affected commit",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and fixed range",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Non-overlapping introduced and last_affected range",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "b48ff2aa1e57e761fa0825e3dc78105a0d016e16"},
+			expectedResult:      false,
+		},
+		{
+			description:         "Overlapping introduced and fixed range",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", Fixed: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+		{
+			description:         "Overlapping introduced and last_affected range",
+			inputAffectedCommit: models.AffectedCommit{Repo: "https://github.com/foo/bar", Introduced: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7", LastAffected: "4089bd6080d41450adab1e0ac0d63cfeab4a78e7"},
+			expectedResult:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
+			result := tc.inputAffectedCommit.InvalidRange()
+			if diff := cmp.Diff(result, tc.expectedResult); diff != "" {
+				t.Errorf("test %q: Duplicated() for %#v was incorrect: %s", tc.description, tc.inputAffectedCommit, diff)
+			}
+		})
+	}
+}
+
+func TestCommit(t *testing.T) {
+	type args struct {
+		u string
+	}
+	tests := []struct {
+		name              string
+		args              args
+		want              string
+		wantErr           bool
+		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
+	}{
+		{
+			name: "a canoncalized kernel.org cGit URL",
+			args: args{
+				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			},
+			want:    "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantErr: false,
+		},
+		{
+			name: "an unusual and technically valid GitHub commit URL based on a tag (with ancestry)",
+			args: args{
+				u: "https://github.com/curl/curl/commit/curl-7_50_2~32",
+			},
+			want:    "", // Ideally it would be 7700fcba64bf5806de28f6c1c7da3b4f0b38567d but this isn't `git rev-parse`
+			wantErr: true,
+		},
+		{
+			name: "Valid GitHub commit URL",
+			args: args{
+				u: "https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			},
+			want:    "b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			wantErr: false,
+		},
+		{
+			name: "Valid FreeDesktop GitLab commit URL",
+			args: args{
+				u: "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			},
+			want:    "b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			wantErr: false,
+		},
+		{
+			name: "Valid GitLab commit URL with a shorter hash",
+			args: args{
+				u: "https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc",
+			},
+			want:    "4367a20cc",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if time.Now().Before(tt.disableExpiryDate) {
+				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
+			}
+			got, err := Commit(tt.args.u)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Commit() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReposFromReferences(t *testing.T) {
+	type args struct {
+		CVE         string
+		cache       *VPRepoCache
+		vp          *VendorProduct
+		refs        []models.Reference
+		tagDenyList []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantRepos []string
+	}{
+		{
+			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
+			args: args{
+				CVE:   "CVE-2023-0327",
+				cache: NewVPRepoCache(),
+				vp:    &VendorProduct{"theradsystem_project", "theradsystem"},
+				refs: []models.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+		},
+		{
+			name: "A CVE with a useless (vulnerability researcher) repo",
+			args: args{
+				CVE: "CVE-2025-0211",
+				refs: []models.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Exploit", "Third Party Advisory"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string(nil),
+		},
+		{
+			name: "A CVE with a cgit repo reference that does not work without transformation",
+			args: args{
+				CVE: "CVE-2025-26519",
+				refs: []models.Reference{
+					{
+						Source: "cna@mitre.org",
+						Tags:   nil,
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://git.musl-libc.org/git/musl"},
+		},
+		{
+			name: "A CVE with a valid GitHub repo that stopped working",
+			args: args{
+				CVE: "CVE-2016-10525",
+				refs: []models.Reference{
+					{
+						Source: "support@hackerone.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
+		},
+		{
+			name: "A CVE with a repo that redirects (docker/docker -> moby/moby)",
+			args: args{
+				CVE: "CVE-2017-12345", // Dummy CVE
+				refs: []models.Reference{
+					{
+						Source: "cna@docker.com",
+						Tags:   []string{"Third Party Advisory"},
+						URL:    "https://github.com/docker/docker",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/moby/moby"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			metrics := &models.ConversionMetrics{}
+			repoTagsCache := &git.RepoTagsCache{}
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
+			}
+		})
+	}
+}
+
+func TestReposFromReferencesCVEList(t *testing.T) {
+	type args struct {
+		CVE         string
+		refs        []models.Reference
+		tagDenyList []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantRepos []string
+	}{
+		{
+			name: "A CVE with a repo not already present in the VendorRepo cache (that happens to have a useful commit and a repo that has no tags)",
+			args: args{
+				CVE: "CVE-2023-0327",
+				refs: []models.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						URL:    "https://github.com/saemorris/TheRadSystem/commit/bfba26bd34af31648a11af35a0bb66f1948752a6"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
+		},
+		{
+			name: "A CVE with a useless (vulnerability researcher) repo",
+			args: args{
+				CVE: "CVE-2025-0211",
+				refs: []models.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Exploit", "Third Party Advisory"},
+						URL:    "https://github.com/shaturo1337/POCs/blob/main/LFI%20in%20School%20Faculty%20Scheduling%20System.md"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string(nil),
+		},
+		{
+			name: "A CVE with a cgit repo reference that does not work without transformation",
+			args: args{
+				CVE: "CVE-2025-26519",
+				refs: []models.Reference{
+					{
+						Source: "cna@mitre.org",
+						Tags:   nil,
+						URL:    "https://git.musl-libc.org/cgit/musl/commit/?id=c47ad25ea3b484e10326f933e927c0bc8cded3da",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://git.musl-libc.org/git/musl"},
+		},
+		{
+			name: "A CVE with a valid GitHub repo that stopped working",
+			args: args{
+				CVE: "CVE-2016-10525",
+				refs: []models.Reference{
+					{
+						Source: "support@hackerone.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						URL:    "https://github.com/dwyl/hapi-auth-jwt2/issues/111",
+					},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/dwyl/hapi-auth-jwt2"},
+		}, {
+			name: "A CVE with a repo not already present)",
+			args: args{
+				CVE: "CVE-2024-7790",
+				refs: []models.Reference{
+					{
+						Source: "cna@vuldb.com",
+						Tags:   []string{"Patch", "Third Party Advisory"},
+						URL:    "https://github.com/stitionai/devika"},
+				},
+				tagDenyList: RefTagDenyList,
+			},
+			wantRepos: []string{"https://github.com/stitionai/devika"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			metrics := &models.ConversionMetrics{}
+			if gotRepos := ReposFromReferencesCVEList(tt.args.refs, tt.args.tagDenyList, metrics); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+				t.Errorf("ReposFromReferencesCVEList() = %#v, want %#v", gotRepos, tt.wantRepos)
+			}
+		})
+	}
+}
+
+func Test_MaybeUpdate(t *testing.T) {
+	type args struct {
+		cache *VPRepoCache
+		vp    *VendorProduct
+		repos []string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with an empty cache",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+			},
+		},
+		{
+			name: "Test with an empty cache and an unusable repo",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/vendor/repo"},
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test with an existing cache",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{
+							"avendor",
+							"aproduct",
+						}: []string{"https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner", "https://github.com/google/osv.dev"},
+			},
+		},
+		{
+			name: "Test with an empty cache adding two values",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    &VendorProduct{"avendor", "aproduct"},
+				repos: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+			},
+		},
+	}
+	for i := range tests {
+		tt := &tests[i]
+		t.Run(tt.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
+			cache := tt.args.cache
+			for _, repo := range tt.args.repos {
+				cache.MaybeUpdate(tt.args.vp, repo)
+			}
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeUpdate() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVPRepoCache_MaybeRemove(t *testing.T) {
+	type args struct {
+		cache *VPRepoCache
+		vp    *VendorProduct
+		repo  string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantCache VendorProductToRepoMap
+	}{
+		{
+			name: "Test with a nil vp",
+			args: args{
+				cache: NewVPRepoCache(),
+				vp:    nil,
+				repo:  "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+		{
+			name: "Test removing existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev", "https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing non-existing repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{
+				VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv-scanner"},
+			},
+		},
+		{
+			name: "Test removing last repo",
+			args: args{
+				cache: &VPRepoCache{
+					m: VendorProductToRepoMap{
+						VendorProduct{"avendor", "aproduct"}: []string{"https://github.com/google/osv.dev"},
+					},
+				},
+				vp:   &VendorProduct{"avendor", "aproduct"},
+				repo: "https://github.com/google/osv.dev",
+			},
+			wantCache: VendorProductToRepoMap{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cache := tt.args.cache
+			cache.MaybeRemove(tt.args.vp, tt.args.repo)
+			if cache == nil {
+				if tt.wantCache != nil {
+					t.Errorf("MaybeRemove() cache is nil, wanted %#v", tt.wantCache)
+				}
+
+				return
+			}
+			if !reflect.DeepEqual(cache.m, tt.wantCache) {
+				t.Errorf("MaybeRemove() have %#v, wanted %#v", cache.m, tt.wantCache)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_MarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		vp      VendorProduct
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			vp: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+			want: "google:chrome",
+		},
+		{
+			name: "with spaces",
+			vp: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+			want: "adobe:acrobat+reader",
+		},
+		{
+			name: "with colons",
+			vp: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+			want: "foo%3Abar:baz",
+		},
+		{
+			name: "empty",
+			vp: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+			want: ":",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vp.MarshalText()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.MarshalText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if string(got) != tt.want {
+				t.Errorf("VendorProduct.MarshalText() = %v, want %v", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestVendorProduct_UnmarshalText(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		want    VendorProduct
+		wantErr bool
+	}{
+		{
+			name: "simple",
+			text: "google:chrome",
+			want: VendorProduct{
+				Vendor:  "google",
+				Product: "chrome",
+			},
+		},
+		{
+			name: "with spaces",
+			text: "adobe:acrobat+reader",
+			want: VendorProduct{
+				Vendor:  "adobe",
+				Product: "acrobat reader",
+			},
+		},
+		{
+			name: "with colons encoded",
+			text: "foo%3Abar:baz",
+			want: VendorProduct{
+				Vendor:  "foo:bar",
+				Product: "baz",
+			},
+		},
+		{
+			name: "empty",
+			text: ":",
+			want: VendorProduct{
+				Vendor:  "",
+				Product: "",
+			},
+		},
+		{
+			name:    "no colon",
+			text:    "invalid",
+			wantErr: true,
+		},
+		{
+			name:    "too many colons",
+			text:    "too:many:colons",
+			wantErr: true,
+		},
+		{
+			name:    "bad encoding",
+			text:    "bad%encoding:foo",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var vp VendorProduct
+			if err := vp.UnmarshalText([]byte(tt.text)); (err != nil) != tt.wantErr {
+				t.Errorf("VendorProduct.UnmarshalText() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && vp != tt.want {
+				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
+			}
+		})
+	}
+}

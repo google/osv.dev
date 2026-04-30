@@ -16,82 +16,84 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
-import importfinding_pb2
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
+import importfinding_pb2 as _importfinding_pb2
 import sys
-import typing
-import vulnerability_pb2
+import typing as _typing
+import vulnerability_pb2 as _vulnerability_pb2
 
 if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+    from typing import TypeAlias as _TypeAlias
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class VulnerabilityList(google.protobuf.message.Message):
+@_typing.final
+class VulnerabilityList(_message.Message):
     """A list of Vulnerability entries."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    VULNS_FIELD_NUMBER: builtins.int
-    NEXT_PAGE_TOKEN_FIELD_NUMBER: builtins.int
-    next_page_token: builtins.str
-    @property
-    def vulns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[vulnerability_pb2.Vulnerability]: ...
+    VULNS_FIELD_NUMBER: _builtins.int
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _builtins.int
+    next_page_token: _builtins.str
+    @_builtins.property
+    def vulns(self) -> _containers.RepeatedCompositeFieldContainer[_vulnerability_pb2.Vulnerability]: ...
     def __init__(
         self,
         *,
-        vulns: collections.abc.Iterable[vulnerability_pb2.Vulnerability] | None = ...,
-        next_page_token: builtins.str = ...,
+        vulns: _abc.Iterable[_vulnerability_pb2.Vulnerability] | None = ...,
+        next_page_token: _builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["next_page_token", b"next_page_token", "vulns", b"vulns"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["next_page_token", b"next_page_token", "vulns", b"vulns"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VulnerabilityList = VulnerabilityList
+Global___VulnerabilityList: _TypeAlias = VulnerabilityList  # noqa: Y015
 
-@typing.final
-class BatchVulnerabilityList(google.protobuf.message.Message):
+@_typing.final
+class BatchVulnerabilityList(_message.Message):
     """Batched lists of Vulnerability entries."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULTS_FIELD_NUMBER: builtins.int
-    @property
-    def results(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___VulnerabilityList]: ...
+    RESULTS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def results(self) -> _containers.RepeatedCompositeFieldContainer[Global___VulnerabilityList]: ...
     def __init__(
         self,
         *,
-        results: collections.abc.Iterable[global___VulnerabilityList] | None = ...,
+        results: _abc.Iterable[Global___VulnerabilityList] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["results", b"results"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["results", b"results"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___BatchVulnerabilityList = BatchVulnerabilityList
+Global___BatchVulnerabilityList: _TypeAlias = BatchVulnerabilityList  # noqa: Y015
 
-@typing.final
-class Query(google.protobuf.message.Message):
+@_typing.final
+class Query(_message.Message):
     """Query format."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    COMMIT_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    PACKAGE_FIELD_NUMBER: builtins.int
-    PAGE_TOKEN_FIELD_NUMBER: builtins.int
-    commit: builtins.str
+    COMMIT_FIELD_NUMBER: _builtins.int
+    VERSION_FIELD_NUMBER: _builtins.int
+    PACKAGE_FIELD_NUMBER: _builtins.int
+    PAGE_TOKEN_FIELD_NUMBER: _builtins.int
+    commit: _builtins.str
     """The commit hash to query for. If specified, `version` should not be set."""
-    version: builtins.str
+    version: _builtins.str
     """The version string to query for. A fuzzy match is done against upstream
     versions. If specified, `commit` should not be set.
     """
-    page_token: builtins.str
-    @property
-    def package(self) -> vulnerability_pb2.Package:
+    page_token: _builtins.str
+    @_builtins.property
+    def package(self) -> _vulnerability_pb2.Package:
         """The package to query against. When a `commit` hash is given, this is
         optional.
         """
@@ -99,276 +101,295 @@ class Query(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        commit: builtins.str = ...,
-        version: builtins.str = ...,
-        package: vulnerability_pb2.Package | None = ...,
-        page_token: builtins.str = ...,
+        commit: _builtins.str = ...,
+        version: _builtins.str = ...,
+        package: _vulnerability_pb2.Package | None = ...,
+        page_token: _builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["commit", b"commit", "package", b"package", "param", b"param", "version", b"version"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["commit", b"commit", "package", b"package", "page_token", b"page_token", "param", b"param", "version", b"version"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["param", b"param"]) -> typing.Literal["commit", "version"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["commit", b"commit", "package", b"package", "param", b"param", "version", b"version"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["commit", b"commit", "package", b"package", "page_token", b"page_token", "param", b"param", "version", b"version"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_param: _TypeAlias = _typing.Literal["commit", "version"]  # noqa: Y015
+    _WhichOneofArgType_param: _TypeAlias = _typing.Literal["param", b"param"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_param) -> _WhichOneofReturnType_param | None: ...
 
-global___Query = Query
+Global___Query: _TypeAlias = Query  # noqa: Y015
 
-@typing.final
-class BatchQuery(google.protobuf.message.Message):
+@_typing.final
+class BatchQuery(_message.Message):
     """Batch query format."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    QUERIES_FIELD_NUMBER: builtins.int
-    @property
-    def queries(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Query]:
+    QUERIES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def queries(self) -> _containers.RepeatedCompositeFieldContainer[Global___Query]:
         """The queries that form this batch query."""
 
     def __init__(
         self,
         *,
-        queries: collections.abc.Iterable[global___Query] | None = ...,
+        queries: _abc.Iterable[Global___Query] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["queries", b"queries"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["queries", b"queries"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___BatchQuery = BatchQuery
+Global___BatchQuery: _TypeAlias = BatchQuery  # noqa: Y015
 
-@typing.final
-class GetVulnByIdParameters(google.protobuf.message.Message):
+@_typing.final
+class GetVulnByIdParameters(_message.Message):
     """Parameters for GetBugById."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ID_FIELD_NUMBER: builtins.int
-    id: builtins.str
+    ID_FIELD_NUMBER: _builtins.int
+    id: _builtins.str
     def __init__(
         self,
         *,
-        id: builtins.str = ...,
+        id: _builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["id", b"id"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["id", b"id"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___GetVulnByIdParameters = GetVulnByIdParameters
+Global___GetVulnByIdParameters: _TypeAlias = GetVulnByIdParameters  # noqa: Y015
 
-@typing.final
-class QueryAffectedParameters(google.protobuf.message.Message):
+@_typing.final
+class QueryAffectedParameters(_message.Message):
     """Parameters for QueryAffected."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    QUERY_FIELD_NUMBER: builtins.int
-    @property
-    def query(self) -> global___Query: ...
+    QUERY_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def query(self) -> Global___Query: ...
     def __init__(
         self,
         *,
-        query: global___Query | None = ...,
+        query: Global___Query | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["query", b"query"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["query", b"query"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___QueryAffectedParameters = QueryAffectedParameters
+Global___QueryAffectedParameters: _TypeAlias = QueryAffectedParameters  # noqa: Y015
 
-@typing.final
-class QueryAffectedBatchParameters(google.protobuf.message.Message):
+@_typing.final
+class QueryAffectedBatchParameters(_message.Message):
     """Parameters for QueryAffectedBatch."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    QUERY_FIELD_NUMBER: builtins.int
-    @property
-    def query(self) -> global___BatchQuery: ...
+    QUERY_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def query(self) -> Global___BatchQuery: ...
     def __init__(
         self,
         *,
-        query: global___BatchQuery | None = ...,
+        query: Global___BatchQuery | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["query", b"query"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["query", b"query"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___QueryAffectedBatchParameters = QueryAffectedBatchParameters
+Global___QueryAffectedBatchParameters: _TypeAlias = QueryAffectedBatchParameters  # noqa: Y015
 
-@typing.final
-class DetermineVersionParameters(google.protobuf.message.Message):
+@_typing.final
+class DetermineVersionParameters(_message.Message):
     """Parameters for DetermineVersion."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    QUERY_FIELD_NUMBER: builtins.int
-    @property
-    def query(self) -> global___VersionQuery: ...
+    QUERY_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def query(self) -> Global___VersionQuery: ...
     def __init__(
         self,
         *,
-        query: global___VersionQuery | None = ...,
+        query: Global___VersionQuery | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["query", b"query"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["query", b"query"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["query", b"query"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___DetermineVersionParameters = DetermineVersionParameters
+Global___DetermineVersionParameters: _TypeAlias = DetermineVersionParameters  # noqa: Y015
 
-@typing.final
-class ImportFindingsParameters(google.protobuf.message.Message):
+@_typing.final
+class ImportFindingsParameters(_message.Message):
     """Parameters for ImportFindings."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_FIELD_NUMBER: builtins.int
-    source: builtins.str
+    SOURCE_FIELD_NUMBER: _builtins.int
+    source: _builtins.str
     def __init__(
         self,
         *,
-        source: builtins.str = ...,
+        source: _builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["source", b"source"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["source", b"source"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ImportFindingsParameters = ImportFindingsParameters
+Global___ImportFindingsParameters: _TypeAlias = ImportFindingsParameters  # noqa: Y015
 
-@typing.final
-class VersionQuery(google.protobuf.message.Message):
+@_typing.final
+class VersionQuery(_message.Message):
     """The version query."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    NAME_FIELD_NUMBER: builtins.int
-    FILE_HASHES_FIELD_NUMBER: builtins.int
-    name: builtins.str
+    NAME_FIELD_NUMBER: _builtins.int
+    FILE_HASHES_FIELD_NUMBER: _builtins.int
+    name: _builtins.str
     """The name of the dependency. Can be empty."""
-    @property
-    def file_hashes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FileHash]: ...
+    @_builtins.property
+    def file_hashes(self) -> _containers.RepeatedCompositeFieldContainer[Global___FileHash]: ...
     def __init__(
         self,
         *,
-        name: builtins.str = ...,
-        file_hashes: collections.abc.Iterable[global___FileHash] | None = ...,
+        name: _builtins.str = ...,
+        file_hashes: _abc.Iterable[Global___FileHash] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["file_hashes", b"file_hashes", "name", b"name"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["file_hashes", b"file_hashes", "name", b"name"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VersionQuery = VersionQuery
+Global___VersionQuery: _TypeAlias = VersionQuery  # noqa: Y015
 
-@typing.final
-class FileHash(google.protobuf.message.Message):
+@_typing.final
+class FileHash(_message.Message):
     """Information about the files in the repository
     to identify the version.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _HashType:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _HashTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[FileHash._HashType.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _HashTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[FileHash._HashType.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         MD5: FileHash._HashType.ValueType  # 0
 
     class HashType(_HashType, metaclass=_HashTypeEnumTypeWrapper): ...
     MD5: FileHash.HashType.ValueType  # 0
 
-    FILE_PATH_FIELD_NUMBER: builtins.int
-    HASH_TYPE_FIELD_NUMBER: builtins.int
-    HASH_FIELD_NUMBER: builtins.int
-    file_path: builtins.str
+    FILE_PATH_FIELD_NUMBER: _builtins.int
+    HASH_TYPE_FIELD_NUMBER: _builtins.int
+    HASH_FIELD_NUMBER: _builtins.int
+    file_path: _builtins.str
     """The file path inside the repository, relative to the repository root."""
-    hash_type: global___FileHash.HashType.ValueType
-    hash: builtins.bytes
+    hash_type: Global___FileHash.HashType.ValueType
+    hash: _builtins.bytes
     def __init__(
         self,
         *,
-        file_path: builtins.str = ...,
-        hash_type: global___FileHash.HashType.ValueType = ...,
-        hash: builtins.bytes = ...,
+        file_path: _builtins.str = ...,
+        hash_type: Global___FileHash.HashType.ValueType = ...,
+        hash: _builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["file_path", b"file_path", "hash", b"hash", "hash_type", b"hash_type"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["file_path", b"file_path", "hash", b"hash", "hash_type", b"hash_type"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___FileHash = FileHash
+Global___FileHash: _TypeAlias = FileHash  # noqa: Y015
 
-@typing.final
-class VersionMatchList(google.protobuf.message.Message):
+@_typing.final
+class VersionMatchList(_message.Message):
     """Result of DetmineVersion."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    MATCHES_FIELD_NUMBER: builtins.int
-    @property
-    def matches(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___VersionMatch]: ...
+    MATCHES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def matches(self) -> _containers.RepeatedCompositeFieldContainer[Global___VersionMatch]: ...
     def __init__(
         self,
         *,
-        matches: collections.abc.Iterable[global___VersionMatch] | None = ...,
+        matches: _abc.Iterable[Global___VersionMatch] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["matches", b"matches"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["matches", b"matches"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VersionMatchList = VersionMatchList
+Global___VersionMatchList: _TypeAlias = VersionMatchList  # noqa: Y015
 
-@typing.final
-class ImportFindingList(google.protobuf.message.Message):
+@_typing.final
+class ImportFindingList(_message.Message):
     """Result of ImportFindings."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    INVALID_RECORDS_FIELD_NUMBER: builtins.int
-    @property
-    def invalid_records(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[importfinding_pb2.ImportFinding]: ...
+    INVALID_RECORDS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def invalid_records(self) -> _containers.RepeatedCompositeFieldContainer[_importfinding_pb2.ImportFinding]: ...
     def __init__(
         self,
         *,
-        invalid_records: collections.abc.Iterable[importfinding_pb2.ImportFinding] | None = ...,
+        invalid_records: _abc.Iterable[_importfinding_pb2.ImportFinding] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["invalid_records", b"invalid_records"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["invalid_records", b"invalid_records"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ImportFindingList = ImportFindingList
+Global___ImportFindingList: _TypeAlias = ImportFindingList  # noqa: Y015
 
-@typing.final
-class VersionMatch(google.protobuf.message.Message):
+@_typing.final
+class VersionMatch(_message.Message):
     """Match information for the provided VersionQuery."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SCORE_FIELD_NUMBER: builtins.int
-    REPO_INFO_FIELD_NUMBER: builtins.int
-    OSV_IDENTIFIER_FIELD_NUMBER: builtins.int
-    CPE23_FIELD_NUMBER: builtins.int
-    MINIMUM_FILE_MATCHES_FIELD_NUMBER: builtins.int
-    ESTIMATED_DIFF_FILES_FIELD_NUMBER: builtins.int
-    score: builtins.float
+    SCORE_FIELD_NUMBER: _builtins.int
+    REPO_INFO_FIELD_NUMBER: _builtins.int
+    OSV_IDENTIFIER_FIELD_NUMBER: _builtins.int
+    CPE23_FIELD_NUMBER: _builtins.int
+    MINIMUM_FILE_MATCHES_FIELD_NUMBER: _builtins.int
+    ESTIMATED_DIFF_FILES_FIELD_NUMBER: _builtins.int
+    score: _builtins.float
     """Score in the interval (0.0, 1.0] with 1.0 being a perfect match."""
-    cpe23: builtins.str
+    cpe23: _builtins.str
     """CPE 2.3."""
-    minimum_file_matches: builtins.int
+    minimum_file_matches: _builtins.int
     """Definite number of files that have matched."""
-    estimated_diff_files: builtins.int
+    estimated_diff_files: _builtins.int
     """Estimated number of files that are different."""
-    @property
-    def repo_info(self) -> global___VersionRepositoryInformation:
+    @_builtins.property
+    def repo_info(self) -> Global___VersionRepositoryInformation:
         """Information about the upstream repository."""
 
-    @property
-    def osv_identifier(self) -> vulnerability_pb2.Package:
+    @_builtins.property
+    def osv_identifier(self) -> _vulnerability_pb2.Package:
         """The OSV identifier."""
 
     def __init__(
         self,
         *,
-        score: builtins.float = ...,
-        repo_info: global___VersionRepositoryInformation | None = ...,
-        osv_identifier: vulnerability_pb2.Package | None = ...,
-        cpe23: builtins.str = ...,
-        minimum_file_matches: builtins.int = ...,
-        estimated_diff_files: builtins.int = ...,
+        score: _builtins.float = ...,
+        repo_info: Global___VersionRepositoryInformation | None = ...,
+        osv_identifier: _vulnerability_pb2.Package | None = ...,
+        cpe23: _builtins.str = ...,
+        minimum_file_matches: _builtins.int = ...,
+        estimated_diff_files: _builtins.int = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["osv_identifier", b"osv_identifier", "repo_info", b"repo_info"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["cpe23", b"cpe23", "estimated_diff_files", b"estimated_diff_files", "minimum_file_matches", b"minimum_file_matches", "osv_identifier", b"osv_identifier", "repo_info", b"repo_info", "score", b"score"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["osv_identifier", b"osv_identifier", "repo_info", b"repo_info"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["cpe23", b"cpe23", "estimated_diff_files", b"estimated_diff_files", "minimum_file_matches", b"minimum_file_matches", "osv_identifier", b"osv_identifier", "repo_info", b"repo_info", "score", b"score"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VersionMatch = VersionMatch
+Global___VersionMatch: _TypeAlias = VersionMatch  # noqa: Y015
 
-@typing.final
-class VersionRepositoryInformation(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VersionRepositoryInformation(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _RepoType:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _RepoTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[VersionRepositoryInformation._RepoType.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _RepoTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[VersionRepositoryInformation._RepoType.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         UNSPECIFIED: VersionRepositoryInformation._RepoType.ValueType  # 0
         GIT: VersionRepositoryInformation._RepoType.ValueType  # 1
 
@@ -376,29 +397,30 @@ class VersionRepositoryInformation(google.protobuf.message.Message):
     UNSPECIFIED: VersionRepositoryInformation.RepoType.ValueType  # 0
     GIT: VersionRepositoryInformation.RepoType.ValueType  # 1
 
-    TYPE_FIELD_NUMBER: builtins.int
-    ADDRESS_FIELD_NUMBER: builtins.int
-    TAG_FIELD_NUMBER: builtins.int
-    VERSION_FIELD_NUMBER: builtins.int
-    COMMIT_FIELD_NUMBER: builtins.int
-    type: global___VersionRepositoryInformation.RepoType.ValueType
-    address: builtins.str
+    TYPE_FIELD_NUMBER: _builtins.int
+    ADDRESS_FIELD_NUMBER: _builtins.int
+    TAG_FIELD_NUMBER: _builtins.int
+    VERSION_FIELD_NUMBER: _builtins.int
+    COMMIT_FIELD_NUMBER: _builtins.int
+    type: Global___VersionRepositoryInformation.RepoType.ValueType
+    address: _builtins.str
     """Source address of the repository."""
-    tag: builtins.str
+    tag: _builtins.str
     """Commit tag"""
-    version: builtins.str
+    version: _builtins.str
     """Parsed version from commit tag"""
-    commit: builtins.str
+    commit: _builtins.str
     """Commit hash hex."""
     def __init__(
         self,
         *,
-        type: global___VersionRepositoryInformation.RepoType.ValueType = ...,
-        address: builtins.str = ...,
-        tag: builtins.str = ...,
-        version: builtins.str = ...,
-        commit: builtins.str = ...,
+        type: Global___VersionRepositoryInformation.RepoType.ValueType = ...,
+        address: _builtins.str = ...,
+        tag: _builtins.str = ...,
+        version: _builtins.str = ...,
+        commit: _builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["address", b"address", "commit", b"commit", "tag", b"tag", "type", b"type", "version", b"version"]) -> None: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["address", b"address", "commit", b"commit", "tag", b"tag", "type", b"type", "version", b"version"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VersionRepositoryInformation = VersionRepositoryInformation
+Global___VersionRepositoryInformation: _TypeAlias = VersionRepositoryInformation  # noqa: Y015

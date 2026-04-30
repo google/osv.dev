@@ -37,7 +37,7 @@ To confirm if the package you are interested in can be versioned by the determin
 
 1. All available package information can be found [here](https://storage.googleapis.com/osv-indexer-configs).
 2. You can look up your specific package using a url in the form <!-- markdown-link-check-disable --> `https://storage.googleapis.com/osv-indexer-configs/generated/{your-package}.yaml` <!-- markdown-link-check-enable--> For example, if you are interested in the library `protobuf`, you can find information for it at [`https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml`](https://storage.googleapis.com/osv-indexer-configs/generated/protobuf.yaml).
-3. You can use [gsutil](https://cloud.google.com/storage/docs/gsutil) to copy everything: `gsutil -m cp -r gs://osv-indexer-configs/ .`
+3. You can use [gsutil](https://cloud.google.com/storage/docs/gsutil) to copy everything: `gcloud storage cp --recursive gs://osv-indexer-configs/ .`
 
 ## Try the API with our tool
 

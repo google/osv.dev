@@ -9,6 +9,14 @@
   {% if disable_turbo_cache %}
   <meta name="turbo-cache-control" content="no-cache">
   {% endif %}
+  <script>
+    // Early inline script element here is necessary to prevent the "flash of
+    // unstyled content" problem where the dark default theme is first rendered
+    // followed by a sudden flash to light mode.
+    // See https://en.wikipedia.org/wiki/Flash_of_unstyled_content.
+    const theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  </script>
   <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32">
   <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,7 +48,9 @@
     <header class="top-bar">
       <div class="logo">
         <a href="{{ url_for('frontend_handlers.index') }}" aria-label="Home page">
-          <img alt="OSV logo" src="/static/img/logo.png" srcset="/static/img/logo.png, /static/img/logo@2x.png 2x"
+          <img alt="OSV logo" class="logo-img-light" src="/static/img/logo.png" srcset="/static/img/logo.png, /static/img/logo@4x.png 4x"
+            width="54" height="20">
+          <img alt="OSV logo" class="logo-img-dark" src="/static/img/logo-dark.png" srcset="/static/img/logo-dark.png, /static/img/logo-dark@4x.png 4x"
             width="54" height="20">
         </a>
       </div>
@@ -62,10 +72,10 @@
           <a href="{{ url_for('frontend_handlers.blog') }}">Blog</a>
         </li>
         <li class="{{ 'active' if active_section == 'faq' else '' }} page-link external-link">
-          <a href="https://google.github.io/osv.dev/faq/" target=”_blank” >FAQ</a>
+          <a href="https://google.github.io/osv.dev/faq/" target="_blank">FAQ</a>
         </li>
         <li class="{{ 'active' if active_section == 'docs' else '' }} page-link external-link">
-          <a href="https://google.github.io/osv.dev/" target=”_blank” >Docs</a>
+          <a href="https://google.github.io/osv.dev/" target="_blank">Docs</a>
         </li>
         
         <ul class="push social-icons">
@@ -92,7 +102,13 @@
               </a>
             </li>
           {% endif %}
-          <li>
+          <li class="theme-toggle-container">
+            <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+              <span class="material-icons icon-light-mode">light_mode</span>
+              <span class="material-icons icon-dark-mode">dark_mode</span>
+            </button>
+          </li>
+          <li class="github-container">
             <a class="logo-img" href="https://github.com/google/osv.dev" target="_blank"
               aria-label="Go to our github page">
               <img class="logo-link" src="/static/img/github-mark-white.svg" alt="Github Logo" width="24" height="24">

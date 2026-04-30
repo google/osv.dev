@@ -5,7 +5,8 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "360"
 spec:
-  schedule: "0 */3 * * *"
+  timeZone: "Australia/Sydney"
+  schedule: "0 */6 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -18,8 +19,6 @@ spec:
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"
-            securityContext:
-              privileged: true
             resources:
               requests:
                 cpu: "1"

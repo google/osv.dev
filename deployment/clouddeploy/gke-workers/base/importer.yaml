@@ -5,6 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "90"
 spec:
+  timeZone: "Australia/Sydney"
   schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
@@ -25,8 +26,10 @@ spec:
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
-            securityContext:
-              privileged: true
+              - name: IMPORT_TRACE_SAMPLE_RATE # for the overall importer trace
+                value: "1.0"
+              - name: TRACE_SAMPLE_RATE # for the individual vulnerability entries
+                value: "0.05"
             resources:
               requests:
                 cpu: "1"

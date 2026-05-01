@@ -16,6 +16,7 @@
 package datastore
 
 import (
+	"strings"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -31,6 +32,50 @@ type Vulnerability struct {
 	AliasRaw    []string       `datastore:"alias_raw"`
 	RelatedRaw  []string       `datastore:"related_raw"`
 	UpstreamRaw []string       `datastore:"upstream_raw"`
+}
+
+type AffectedEvent struct {
+	Type  string `datastore:"type"`
+	Value string `datastore:"value"`
+}
+
+type AffectedVersions struct {
+	VulnID    string          `datastore:"vuln_id"`
+	Ecosystem string          `datastore:"ecosystem"`
+	Name      string          `datastore:"name"`
+	Versions  []string        `datastore:"versions,noindex"`
+	Events    []AffectedEvent `datastore:"events"`
+	CoarseMin string          `datastore:"coarse_min"`
+	CoarseMax string          `datastore:"coarse_max"`
+}
+
+func (av AffectedVersions) sortKey() string {
+	// Serializes all fields using the ASCII Unit Separator (\x1f) as a delimiter.
+	// This provides a stable unique string hash for diffing old vs new entities.
+	var b strings.Builder
+	b.WriteString(av.VulnID)
+	b.WriteString("\x1f")
+	b.WriteString(av.Ecosystem)
+	b.WriteString("\x1f")
+	b.WriteString(av.Name)
+	b.WriteString("\x1f")
+	b.WriteString(strings.Join(av.Versions, ","))
+	b.WriteString("\x1f")
+	for _, e := range av.Events {
+		b.WriteString(e.Type)
+		b.WriteString(":")
+		b.WriteString(e.Value)
+		b.WriteString(",")
+	}
+
+	return b.String()
+}
+
+type AffectedCommits struct {
+	VulnID  string   `datastore:"bug_id"`
+	Commits [][]byte `datastore:"commits"`
+	Public  bool     `datastore:"public"`
+	Page    int      `datastore:"page,noindex"`
 }
 
 type AliasGroup struct {

@@ -92,6 +92,22 @@ func readRecords(ctx context.Context, client *datastore.Client) {
 		fmt.Printf("(Go) Failed getting SourceRepository: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("(Go) Getting AffectedCommits")
+	key = datastore.NameKey("AffectedCommits", "CVE-123-456", nil)
+	var affectedCommits db.AffectedCommits
+	if err := client.Get(ctx, key, &affectedCommits); err != nil {
+		fmt.Printf("(Go) Failed getting AffectedCommits: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Getting AffectedVersions")
+	key = datastore.NameKey("AffectedVersions", "1", nil)
+	var affectedVersions db.AffectedVersions
+	if err := client.Get(ctx, key, &affectedVersions); err != nil {
+		fmt.Printf("(Go) Failed getting AffectedVersions: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func writeRecords(ctx context.Context, client *datastore.Client) {
@@ -215,6 +231,35 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 	}
 	if _, err := client.Put(ctx, key, &goSourceRepo); err != nil {
 		fmt.Printf("(Go) Failed writing SourceRepository %v: %v\n", key, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing AffectedCommits")
+	key = datastore.NameKey("AffectedCommits", "CVE-987-654", nil)
+	affectedCommits := db.AffectedCommits{
+		VulnID:  "CVE-987-654",
+		Commits: [][]byte{[]byte("hash1"), []byte("hash2")},
+		Public:  true,
+		Page:    1,
+	}
+	if _, err := client.Put(ctx, key, &affectedCommits); err != nil {
+		fmt.Printf("(Go) Failed writing AffectedCommits %v: %v\n", key, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing AffectedVersions")
+	key = datastore.NameKey("AffectedVersions", "2", nil)
+	affectedVersions := db.AffectedVersions{
+		VulnID:    "CVE-987-654",
+		Ecosystem: "Go",
+		Name:      "stdlib",
+		Versions:  []string{"v1.0.0", "v1.1.0"},
+		Events:    []db.AffectedEvent{{Type: "introduced", Value: "v1.0.0"}},
+		CoarseMin: "00:00000001.00000000.00000000",
+		CoarseMax: "00:00000001.00000001.00000000",
+	}
+	if _, err := client.Put(ctx, key, &affectedVersions); err != nil {
+		fmt.Printf("(Go) Failed writing AffectedVersions %v: %v\n", key, err)
 		os.Exit(1)
 	}
 }

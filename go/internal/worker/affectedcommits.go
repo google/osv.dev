@@ -29,7 +29,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := callGitter(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis)
+			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis)
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}
@@ -37,7 +37,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 				continue // Forbidden
 			}
 
-			applyGitterResponse(resp, affected, aRange)
+			applyAffectedCommitsAndTags(resp, affected, aRange)
 
 			// Collect commits
 			for _, commit := range resp.GetCommits() {
@@ -52,8 +52,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	}, nil
 }
 
-func callGitter(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsResponse, error) {
-	req, err := makeAffectedCommitsRequest(aRange, gitAnalysis)
+func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsResponse, error) {
+	req, err := newAffectedCommitsRequest(aRange, gitAnalysis)
 	if err != nil {
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
 	}
@@ -98,7 +98,7 @@ func callGitter(ctx context.Context, client *http.Client, gitterHost string, aRa
 	return resp, nil
 }
 
-func applyGitterResponse(resp *gitterpb.AffectedCommitsResponse, affected *osvschema.Affected, aRange *osvschema.Range) {
+func applyAffectedCommitsAndTags(resp *gitterpb.AffectedCommitsResponse, affected *osvschema.Affected, aRange *osvschema.Range) {
 	// Extract tags and add to affected.Versions
 	for _, tag := range resp.GetTags() {
 		exists := false
@@ -156,7 +156,7 @@ func applyGitterResponse(resp *gitterpb.AffectedCommitsResponse, affected *osvsc
 	}
 }
 
-func makeAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsRequest, error) {
+func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsRequest, error) {
 	gitterReq := &gitterpb.AffectedCommitsRequest{
 		Url:                         affectedRange.GetRepo(),
 		ConsiderAllBranches:         gitAnalysis.ConsiderAllBranches,

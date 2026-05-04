@@ -177,6 +177,9 @@ func (e *Engine) handleDelete(ctx context.Context, task Task) error {
 	return nil
 }
 
+// notifyPyPI publishes a message to a Pub/Sub topic.
+// Note that this does not directly notify PyPI; a Cloud Run function
+// consumes from this topic to handle the actual notification.
 func (e *Engine) notifyPyPI(ctx context.Context, vuln, old *osvschema.Vulnerability) {
 	if e.Stores.PyPIPublisher == nil {
 		return

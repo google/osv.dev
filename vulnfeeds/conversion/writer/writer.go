@@ -51,15 +51,37 @@ func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix
 	return nil
 }
 
-// uploadIfChanged uploads the vulnerability to a GCS bucket.
+// prepareVulnUpload marshals a vulnerability record, calculates its SHA256 hash (excluding the Modified time), updates its Modified time, and returns the hash and the updated payload.
+func prepareVulnUpload(vuln *osvschema.Vulnerability) (hexHash string, postModifiedBuf []byte, err error) {
+	if vuln == nil || vuln.GetId() == "" {
+		return "", nil, errors.New("invalid vulnerability provided")
+	}
+
+	var buf bytes.Buffer
+	v := vulns.Vulnerability{Vulnerability: vuln}
+	if err := v.ToJSON(&buf); err != nil {
+		return "", nil, fmt.Errorf("failed to marshal vulnerability %s: %w", vuln.GetId(), err)
+	}
+	preModifiedBuf := buf.Bytes()
+	hash := sha256.Sum256(preModifiedBuf)
+	hexHash = hex.EncodeToString(hash[:])
+
+	vuln.Modified = timestamppb.New(time.Now().UTC())
+	var postBuf bytes.Buffer
+	vPost := vulns.Vulnerability{Vulnerability: vuln}
+	if err := vPost.ToJSON(&postBuf); err != nil {
+		return "", nil, fmt.Errorf("failed to marshal vulnerability with modified time for %s: %w", vuln.GetId(), err)
+	}
+
+	return hexHash, postBuf.Bytes(), nil
+}
+
+// uploadIfChanged uploads the vulnerability to a GCS bucket if it has changed.
 // It returns an error if the upload failed, or ErrUploadSkipped if the upload
 // was intentionally avoided (e.g. because the GCS object has a matching hash).
-func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, preModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) error {
+func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash string, postModifiedBuf []byte, outBkt *storage.BucketHandle, outputPrefix string) error {
 	vulnID := v.GetId()
 	filename := vulnID + ".json"
-
-	hash := sha256.Sum256(preModifiedBuf)
-	hexHash := hex.EncodeToString(hash[:])
 
 	objName := path.Join(outputPrefix, filename)
 	obj := outBkt.Object(objName)
@@ -78,13 +100,6 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, preModifie
 
 	// Object does not exist or hash differs, upload.
 	logger.Info("Uploading vulnerability record to GCS", slog.String("id", vulnID), slog.String("object", objName))
-	v.Modified = timestamppb.New(time.Now().UTC())
-	vuln := vulns.Vulnerability{Vulnerability: v}
-	var buf bytes.Buffer
-	if err := vuln.ToJSON(&buf); err != nil {
-		return fmt.Errorf("failed to marshal vulnerability with modified time for %s: %w", vulnID, err)
-	}
-	postModifiedBuf := buf.Bytes()
 
 	wc := obj.NewWriter(ctx)
 	wc.Metadata = map[string]string{
@@ -155,7 +170,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 // For GCS uploads, it calculates a hash of the vulnerability (excluding the modified time) and compares it
 // with the existing object's hash. The vulnerability is uploaded only if the hashes differ, with the
 // modified time updated. This prevents updating the modified time for vulnerabilities with no content changes.
-func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, outputPrefix string, counter *atomic.Uint64) {
+func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, gcsHelper *gcs.Helper, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
 		if len(v.GetAffected()) == 0 {
@@ -174,24 +189,31 @@ func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, o
 			}
 		}
 
-		if preModifiedBuf == nil {
-			// Marshal before setting modified time to generate hash.
-			vuln := vulns.Vulnerability{Vulnerability: v}
-			var buf bytes.Buffer
-			if err := vuln.ToJSON(&buf); err != nil {
-				logger.Error("failed to marshal vulnerability", slog.String("id", vulnID), slog.Any("err", err))
-				continue
-			}
-			preModifiedBuf = buf.Bytes()
-		}
-
 		var writeErr error
-		if outBkt == nil {
+		if outBkt == nil && gcsHelper == nil {
 			// Write to local disk
+			if preModifiedBuf == nil {
+				// Marshal before setting modified time to generate hash.
+				vuln := vulns.Vulnerability{Vulnerability: v}
+				var buf bytes.Buffer
+				if err := vuln.ToJSON(&buf); err != nil {
+					logger.Error("failed to marshal vulnerability", slog.String("id", vulnID), slog.Any("err", err))
+					continue
+				}
+				preModifiedBuf = buf.Bytes()
+			}
 			writeErr = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
+		} else if gcsHelper != nil {
+			// Upload to GCS asynchronously using pool
+			writeErr = UploadVulnIfChangedAsync(ctx, gcsHelper, outputPrefix, vulnToProcess)
 		} else {
-			// Upload to GCS
-			writeErr = uploadIfChanged(ctx, vulnToProcess, preModifiedBuf, outBkt, outputPrefix)
+			// Upload to GCS synchronously
+			hexHash, postModifiedBuf, err := prepareVulnUpload(vulnToProcess)
+			if err != nil {
+				writeErr = err
+			} else {
+				writeErr = uploadIfChanged(ctx, vulnToProcess, hexHash, postModifiedBuf, outBkt, outputPrefix)
+			}
 		}
 
 		if writeErr == nil {
@@ -220,6 +242,7 @@ func UploadVulnsToGCS(
 	doDeletions bool,
 ) {
 	var outBkt, overridesBkt *storage.BucketHandle
+	var gcsHelper *gcs.Helper
 	if uploadToGCS {
 		storageClient, err := storage.NewClient(ctx)
 		if err != nil {
@@ -233,8 +256,14 @@ func UploadVulnsToGCS(
 		}
 
 		if doDeletions {
-			handleDeletion(ctx, outBkt, osvOutputPath, vulnerabilities)
+			HandleDeletion(ctx, outBkt, osvOutputPath, vulnerabilities)
 		}
+
+		gcsHelper, err = gcs.InitUploadPool(ctx, numWorkers, outputBucketName)
+		if err != nil {
+			logger.Fatal("Failed to initialize GCS upload pool", slog.Any("err", err))
+		}
+		defer gcsHelper.CloseAndWait()
 	}
 	var wg sync.WaitGroup
 	var successCount atomic.Uint64
@@ -244,7 +273,7 @@ func UploadVulnsToGCS(
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			VulnWorker(ctx, vulnChan, outBkt, overridesBkt, osvOutputPath, &successCount)
+			VulnWorker(ctx, vulnChan, outBkt, overridesBkt, gcsHelper, osvOutputPath, &successCount)
 		}()
 	}
 
@@ -254,11 +283,16 @@ func UploadVulnsToGCS(
 
 	close(vulnChan)
 	wg.Wait()
+	if gcsHelper != nil {
+		gcsHelper.CloseAndWait()
+	}
 	logger.Info("Successfully processed "+jobName, slog.Int("count", len(vulnerabilities)))
-	logger.Info("Successfully uploaded records", slog.Uint64("count", successCount.Load()))
+	if outBkt == nil && gcsHelper == nil {
+		logger.Info("Successfully wrote records to disk", slog.Uint64("count", successCount.Load()))
+	}
 }
 
-func handleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {
+func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {
 	// Check if any need to be deleted
 	bucketObjects, err := gcs.ListBucketObjects(ctx, outBkt, osvOutputPath)
 	if err != nil {
@@ -297,23 +331,17 @@ func UploadVulnToGCS(ctx context.Context, bkt *storage.BucketHandle, prefix stri
 	logger.Info("Uploading vulnerability record to GCS", slog.String("id", vuln.GetId()), slog.String("object", objectName))
 	reader := bytes.NewReader(data)
 
-	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json")
+	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json", nil)
 }
 
 // UploadVulnIfChanged marshals a single OSV Vulnerability to JSON and uploads it to GCS if it has changed.
 func UploadVulnIfChanged(ctx context.Context, bkt *storage.BucketHandle, prefix string, vuln *osvschema.Vulnerability) error {
-	if vuln == nil || vuln.GetId() == "" {
-		return errors.New("invalid vulnerability provided")
+	hexHash, postModifiedBuf, err := prepareVulnUpload(vuln)
+	if err != nil {
+		return err
 	}
 
-	var buf bytes.Buffer
-	v := vulns.Vulnerability{Vulnerability: vuln}
-	if err := v.ToJSON(&buf); err != nil {
-		return fmt.Errorf("failed to marshal vulnerability %s: %w", vuln.GetId(), err)
-	}
-	preModifiedBuf := buf.Bytes()
-
-	err := uploadIfChanged(ctx, vuln, preModifiedBuf, bkt, prefix)
+	err = uploadIfChanged(ctx, vuln, hexHash, postModifiedBuf, bkt, prefix)
 	if errors.Is(err, ErrUploadSkipped) {
 		return nil
 	}
@@ -336,7 +364,39 @@ func UploadMetricsToGCS(ctx context.Context, bkt *storage.BucketHandle, prefix s
 	logger.Debug("Uploading conversion metrics record to GCS", slog.String("id", string(cveID)), slog.String("object", objectName))
 	reader := bytes.NewReader(data)
 
-	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json")
+	return gcs.UploadToGCS(ctx, bkt, objectName, reader, "application/json", nil)
+}
+
+// UploadVulnIfChangedAsync marshals a single OSV Vulnerability to JSON and schedules it for upload via the Helper pool if it has changed.
+func UploadVulnIfChangedAsync(ctx context.Context, gcsHelper *gcs.Helper, prefix string, vuln *osvschema.Vulnerability) error {
+	hexHash, postModifiedBuf, err := prepareVulnUpload(vuln)
+	if err != nil {
+		return err
+	}
+
+	objectName := path.Join(prefix, vuln.GetId()+".json")
+	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json")
+
+	return nil
+}
+
+// UploadMetricsToGCSAsync marshals ConversionMetrics to JSON and schedules it for upload via the Helper pool.
+func UploadMetricsToGCSAsync(ctx context.Context, gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
+	if metrics == nil || cveID == "" {
+		return errors.New("invalid metrics or CVE ID provided")
+	}
+
+	data, err := json.MarshalIndent(metrics, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics for %s: %w", cveID, err)
+	}
+
+	objectName := path.Join(prefix, string(cveID)+".metrics.json")
+	reader := bytes.NewReader(data)
+
+	gcsHelper.Upload(objectName, reader, "", "application/json")
+
+	return nil
 }
 
 // CreateMetricsFile creates the initial file for the metrics record.

@@ -21,7 +21,7 @@ func TestUploadToGCS(t *testing.T) {
 	}
 
 	content := []byte("test content")
-	err := UploadToGCS(context.Background(), bkt, "test-object.txt", bytes.NewReader(content), "text/plain")
+	err := UploadToGCS(context.Background(), bkt, "test-object.txt", bytes.NewReader(content), "text/plain", nil)
 	if err != nil {
 		t.Fatalf("UploadToGCS failed: %v", err)
 	}

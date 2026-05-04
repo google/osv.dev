@@ -23,11 +23,11 @@ const (
 )
 
 type Helper struct {
-	wg           sync.WaitGroup
-	bus          chan *uploadMsg
-	bkt          *storage.BucketHandle
-	client       *storage.Client
-	once         sync.Once
+	wg     sync.WaitGroup
+	bus    chan *uploadMsg
+	bkt    *storage.BucketHandle
+	client *storage.Client
+	once   sync.Once
 }
 
 type uploadMsg struct {

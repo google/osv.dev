@@ -2490,13 +2490,9 @@
                   "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
-                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
-                },
-                {
                   "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
-              ],
-              "database_specific": "<Any value>"
+              ]
             }
           ],
           "versions": 94,

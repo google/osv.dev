@@ -85,8 +85,28 @@ _ecosystems = {
     'Linux': None,
     'OSS-Fuzz': None,
     'Photon OS': None,
-    'TuxCare': None,
 }
+
+# TuxCare advisories use the form "TuxCare:<ecosystem>" (e.g.
+# "TuxCare:Red Hat", "TuxCare:Alpine:v3.16", "TuxCare:npm") and delegate
+# version handling to the inner ecosystem.
+# A bare "TuxCare" or a nested "TuxCare:TuxCare:..." is malformed.
+_TUXCARE = 'TuxCare'
+
+
+def _strip_tuxcare(ecosystem: str) -> str | None:
+  """Strip a leading TuxCare prefix and return the inner ecosystem, or None
+  if the input is not a TuxCare ecosystem.
+
+  Returns the original string for non-TuxCare inputs.
+  Returns None for malformed TuxCare inputs (no suffix, or nested TuxCare).
+  """
+  prefix, _, suffix = ecosystem.partition(':')
+  if prefix != _TUXCARE:
+    return ecosystem
+  if not suffix or suffix.partition(':')[0] == _TUXCARE:
+    return None
+  return suffix
 
 
 def is_semver(ecosystem: str) -> bool:
@@ -97,7 +117,10 @@ def is_semver(ecosystem: str) -> bool:
 def is_known(ecosystem: str) -> bool:
   """Returns whether an ecosystem is known to OSV
   (even if ordering is not supported)."""
-  name, _, _ = ecosystem.partition(':')
+  inner = _strip_tuxcare(ecosystem)
+  if inner is None:
+    return False
+  name, _, _ = inner.partition(':')
   return name in _ecosystems
 
 
@@ -132,7 +155,10 @@ _OSV_TO_DEPS_ECOSYSTEMS_MAP = {
 
 def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   """Get ecosystem helpers for a given ecosystem."""
-  name, _, suffix = name.partition(':')
+  inner = _strip_tuxcare(name)
+  if inner is None:
+    return None
+  name, _, suffix = inner.partition(':')
   ecosys = _ecosystems.get(name)
   if ecosys is None:
     return None

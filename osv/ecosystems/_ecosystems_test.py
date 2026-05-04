@@ -91,3 +91,52 @@ class EcosystemTest(unittest.TestCase):
     self.assertLess(
         root_debian.sort_key('1.0.0.root.io.1'),
         root_debian.sort_key('1.0.0.root.io.2'))
+
+  def test_tuxcare_ecosystem(self):
+    """Test TuxCare ecosystem delegates to inner ecosystem parsers."""
+    # TuxCare:<ecosystem> should be recognized when the inner ecosystem is.
+    self.assertTrue(ecosystems.is_known('TuxCare:Red Hat'))
+    self.assertTrue(ecosystems.is_known('TuxCare:AlmaLinux'))
+    self.assertTrue(ecosystems.is_known('TuxCare:Debian'))
+    self.assertTrue(ecosystems.is_known('TuxCare:npm'))
+    self.assertTrue(ecosystems.is_known('TuxCare:Alpine:v3.16'))
+    self.assertTrue(ecosystems.is_known('TuxCare:Ubuntu:22.04:LTS'))
+    # Inner ecosystems known in the schema but without implementations are
+    # still "known".
+    self.assertTrue(ecosystems.is_known('TuxCare:Android'))
+    # Unknown inner ecosystem.
+    self.assertFalse(ecosystems.is_known('TuxCare:NotARealEcosystem'))
+    # Bare TuxCare is malformed.
+    self.assertFalse(ecosystems.is_known('TuxCare'))
+    self.assertFalse(ecosystems.is_known('TuxCare:'))
+    # Nested TuxCare is malformed (loop guard).
+    self.assertFalse(ecosystems.is_known('TuxCare:TuxCare'))
+    self.assertFalse(ecosystems.is_known('TuxCare:TuxCare:Red Hat'))
+
+    # get() returns the inner ecosystem helper.
+    tuxcare_rpm = ecosystems.get('TuxCare:Red Hat')
+    self.assertIsNotNone(tuxcare_rpm)
+    # Sort behaviour matches the underlying RPM parser.
+    plain_rpm = ecosystems.get('Red Hat')
+    self.assertEqual(
+        tuxcare_rpm.sort_key('1.2.3-1.el8'),
+        plain_rpm.sort_key('1.2.3-1.el8'))
+    self.assertLess(
+        tuxcare_rpm.sort_key('1.0.0-1'), tuxcare_rpm.sort_key('1.0.1-1'))
+
+    # Suffixes pass through to the inner ecosystem.
+    tuxcare_alpine = ecosystems.get('TuxCare:Alpine:v3.16')
+    self.assertIsNotNone(tuxcare_alpine)
+    self.assertEqual(tuxcare_alpine.suffix, 'v3.16')
+
+    # Inner ecosystem with multi-segment suffix (e.g. Ubuntu variants).
+    tuxcare_ubuntu = ecosystems.get('TuxCare:Ubuntu:Pro:18.04:LTS')
+    self.assertIsNotNone(tuxcare_ubuntu)
+    self.assertEqual(tuxcare_ubuntu.suffix, 'Pro:18.04:LTS')
+
+    # Bare TuxCare returns None.
+    self.assertIsNone(ecosystems.get('TuxCare'))
+    self.assertIsNone(ecosystems.get('TuxCare:'))
+    # Nested TuxCare returns None (no infinite recursion).
+    self.assertIsNone(ecosystems.get('TuxCare:TuxCare'))
+    self.assertIsNone(ecosystems.get('TuxCare:TuxCare:Red Hat'))

@@ -85,6 +85,11 @@ func ConductAnalysis(year string, dir string) {
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := "nvd-conversion-outcomes-" + year + "-" + currentTime + ".csv"
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
+	}
+
 	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
 	if err != nil {
 		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))

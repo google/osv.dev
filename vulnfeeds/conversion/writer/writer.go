@@ -205,7 +205,7 @@ func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, o
 			writeErr = writeToDisk(vulnToProcess, preModifiedBuf, outputPrefix)
 		} else if gcsHelper != nil {
 			// Upload to GCS asynchronously using pool
-			writeErr = UploadVulnIfChangedAsync(ctx, gcsHelper, outputPrefix, vulnToProcess)
+			writeErr = UploadVulnIfChangedAsync(gcsHelper, outputPrefix, vulnToProcess)
 		} else {
 			// Upload to GCS synchronously
 			hexHash, postModifiedBuf, err := prepareVulnUpload(vulnToProcess)
@@ -368,7 +368,7 @@ func UploadMetricsToGCS(ctx context.Context, bkt *storage.BucketHandle, prefix s
 }
 
 // UploadVulnIfChangedAsync marshals a single OSV Vulnerability to JSON and schedules it for upload via the Helper pool if it has changed.
-func UploadVulnIfChangedAsync(ctx context.Context, gcsHelper *gcs.Helper, prefix string, vuln *osvschema.Vulnerability) error {
+func UploadVulnIfChangedAsync(gcsHelper *gcs.Helper, prefix string, vuln *osvschema.Vulnerability) error {
 	hexHash, postModifiedBuf, err := prepareVulnUpload(vuln)
 	if err != nil {
 		return err
@@ -381,7 +381,7 @@ func UploadVulnIfChangedAsync(ctx context.Context, gcsHelper *gcs.Helper, prefix
 }
 
 // UploadMetricsToGCSAsync marshals ConversionMetrics to JSON and schedules it for upload via the Helper pool.
-func UploadMetricsToGCSAsync(ctx context.Context, gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
+func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
 	if metrics == nil || cveID == "" {
 		return errors.New("invalid metrics or CVE ID provided")
 	}

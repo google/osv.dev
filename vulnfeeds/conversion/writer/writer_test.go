@@ -380,7 +380,7 @@ func TestUploadVulnIfChangedAsync(t *testing.T) {
 	}
 
 	t.Run("Async upload new object", func(t *testing.T) {
-		err := UploadVulnIfChangedAsync(ctx, gcsHelper, "nvd-prefix", v)
+		err := UploadVulnIfChangedAsync(gcsHelper, "nvd-prefix", v)
 		if err != nil {
 			t.Fatalf("Expected UploadVulnIfChangedAsync to succeed, got %v", err)
 		}
@@ -427,7 +427,7 @@ func TestUploadMetricsToGCSAsync(t *testing.T) {
 		CNA:   "nvd",
 	}
 
-	err = UploadMetricsToGCSAsync(ctx, gcsHelper, "nvd-prefix", "CVE-2023-9999", metrics)
+	err = UploadMetricsToGCSAsync(gcsHelper, "nvd-prefix", "CVE-2023-9999", metrics)
 	if err != nil {
 		t.Fatalf("Expected UploadMetricsToGCSAsync to succeed, got %v", err)
 	}

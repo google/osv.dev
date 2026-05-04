@@ -19,7 +19,7 @@ from .ecosystems_base import EnumerableEcosystem, OrderedEcosystem
 from .alpine import Alpine, APK
 from .bioconductor import Bioconductor
 from .cran import CRAN
-from .debian import Debian, DPKG
+from .debian import Debian
 from .echo import Echo
 from .haskell import Hackage, GHC
 from .hex import Hex

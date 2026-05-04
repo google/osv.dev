@@ -73,8 +73,7 @@ class EcosystemTest(unittest.TestCase):
     # PyPI version ordering
     self.assertLess(echo_pypi.sort_key('1.0.0'), echo_pypi.sort_key('1.0.1'))
     self.assertLess(echo_pypi.sort_key('1.0.0a1'), echo_pypi.sort_key('1.0.0'))
-    self.assertLess(
-        echo_pypi.sort_key('1.0.0rc1'), echo_pypi.sort_key('1.0.0'))
+    self.assertLess(echo_pypi.sort_key('1.0.0rc1'), echo_pypi.sort_key('1.0.0'))
     self.assertLess(echo_pypi.sort_key('1.9'), echo_pypi.sort_key('1.10'))
 
   def test_echo_base_ecosystem(self):

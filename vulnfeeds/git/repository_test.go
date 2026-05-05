@@ -1,6 +1,11 @@
 package git
 
 import (
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -393,5 +398,109 @@ func TestInvalidRepos(t *testing.T) {
 	}
 	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
+	}
+}
+
+func TestRepoTagsWithGitter(t *testing.T) {
+	mockHashHex := "c8d47c25296ffda9f2083a813ed719b637f86c59"
+	mockHash, _ := hex.DecodeString(mockHashHex)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/tags" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		repoURL := r.URL.Query().Get("url")
+		if repoURL == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		resp := GitterTagsResponse{
+			Tags: []GitterRef{
+				{
+					Label: "1.5.0.1525",
+					Hash:  base64.StdEncoding.EncodeToString(mockHash),
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer ts.Close()
+
+	t.Setenv("GITTER_HOST", ts.URL)
+
+	tags, err := RepoTags("https://github.com/zblogcn/zblogphp", nil)
+	if err != nil {
+		t.Fatalf("RepoTags failed: %v", err)
+	}
+
+	expected := Tags{
+		{Tag: "1.5.0.1525", Commit: mockHashHex},
+	}
+
+	if diff := cmp.Diff(tags, expected); diff != "" {
+		t.Errorf("RepoTags incorrect result: %s", diff)
+	}
+}
+
+func TestValidRepoWithGitter(t *testing.T) {
+	var responseStatus int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if responseStatus == 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if responseStatus == http.StatusOK {
+			mockHash, _ := hex.DecodeString("c8d47c25296ffda9f2083a813ed719b637f86c59")
+			resp := GitterTagsResponse{
+				Tags: []GitterRef{
+					{
+						Label: "1.5.0.1525",
+						Hash:  base64.StdEncoding.EncodeToString(mockHash),
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			return
+		}
+		w.WriteHeader(responseStatus)
+	}))
+	defer ts.Close()
+
+	t.Setenv("GITTER_HOST", ts.URL)
+
+	// Test 1: StatusOK => both ValidRepo and ValidRepoAndHasUsableRefs are true
+	responseStatus = http.StatusOK
+	if !ValidRepo("https://github.com/zblogcn/zblogphp") {
+		t.Errorf("expected ValidRepo to be true for 200 OK")
+	}
+	if !ValidRepoAndHasUsableRefs("https://github.com/zblogcn/zblogphp") {
+		t.Errorf("expected ValidRepoAndHasUsableRefs to be true for 200 OK")
+	}
+
+	// Test 2: StatusNoContent => ValidRepo is true, but ValidRepoAndHasUsableRefs is false (no tags)
+	responseStatus = http.StatusNoContent
+	if !ValidRepo("https://github.com/zblogcn/zblogphp") {
+		t.Errorf("expected ValidRepo to be true for 204 No Content")
+	}
+	if ValidRepoAndHasUsableRefs("https://github.com/zblogcn/zblogphp") {
+		t.Errorf("expected ValidRepoAndHasUsableRefs to be false for 204 No Content")
+	}
+
+	// Test 3: StatusNotFound (404) => Falls back to legacy check.
+	// We mock a non-existent repo so legacy check also returns false.
+	responseStatus = http.StatusNotFound
+	if ValidRepo("https://github.com/andrewpollock/mybogusrepo") {
+		t.Errorf("expected ValidRepo to be false for 404")
 	}
 }

@@ -433,6 +433,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 			logger.ErrorContext(ctx, "failed to remove index.lock", slog.Any("err", err))
 			return false
 		}
+
 		return true
 	}
 
@@ -444,6 +445,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
 			return false
 		}
+		
 		return true
 	}
 

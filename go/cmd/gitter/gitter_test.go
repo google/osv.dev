@@ -145,7 +145,7 @@ func TestIsIndexLockError(t *testing.T) {
 		err      error
 		expected bool
 	}{
-		{errors.New("fatal: Unable to create '/path/to/repo.git/index.lock': File exists."), true},
+		{errors.New("fatal: Unable to create '/path/to/repo.git/index.lock': File exists"), true},
 		{errors.New("some other error"), false},
 		{nil, false},
 	}

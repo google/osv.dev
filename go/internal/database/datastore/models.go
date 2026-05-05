@@ -16,6 +16,7 @@
 package datastore
 
 import (
+	"slices"
 	"strings"
 	"time"
 
@@ -59,7 +60,10 @@ func (av AffectedVersions) sortKey() string {
 	b.WriteString("\x1f")
 	b.WriteString(av.Name)
 	b.WriteString("\x1f")
-	b.WriteString(strings.Join(av.Versions, ","))
+	sortedVersions := make([]string, len(av.Versions))
+	copy(sortedVersions, av.Versions)
+	slices.Sort(sortedVersions)
+	b.WriteString(strings.Join(sortedVersions, ","))
 	b.WriteString("\x1f")
 	for _, e := range av.Events {
 		b.WriteString(e.Type)

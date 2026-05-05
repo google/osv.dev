@@ -80,4 +80,3 @@ func TestNormalizePackageName(t *testing.T) {
 		}
 	}
 }
-

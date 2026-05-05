@@ -42,7 +42,7 @@ func TestEnricher_Enrich(t *testing.T) {
 		t.Fatalf("Expected DatabaseSpecific to be populated, got nil")
 	}
 
-	sourceVal, ok := dbSpecific.Fields["source"]
+	sourceVal, ok := dbSpecific.GetFields()["source"]
 	if !ok {
 		t.Fatalf("Expected 'source' field in DatabaseSpecific, but not found")
 	}

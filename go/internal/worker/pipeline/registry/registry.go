@@ -3,6 +3,7 @@ package registry
 
 import (
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
+	"github.com/google/osv.dev/go/internal/worker/pipeline/makesemver"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/namenormalize"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/sourcelink"
 )
@@ -10,5 +11,6 @@ import (
 // List is the list of all enrichers used in the worker pipeline.
 var List = []pipeline.Enricher{
 	&namenormalize.Enricher{},
+	&makesemver.Enricher{},
 	&sourcelink.Enricher{},
 }

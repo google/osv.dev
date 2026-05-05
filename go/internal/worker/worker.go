@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -32,4 +33,5 @@ type Task struct {
 type Stores struct {
 	SourceRepo    models.SourceRepositoryStore
 	Vulnerability models.VulnerabilityStore
+	PyPIPublisher clients.Publisher
 }

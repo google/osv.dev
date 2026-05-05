@@ -818,6 +818,12 @@ func CheckQuality(text string) QualityCheck {
 
 // LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
 func LoadAllCVEs(cvePath string) map[models.CVEID]models.Vulnerability {
+	return LoadTargetCVEs(cvePath, nil)
+}
+
+// LoadTargetCVEs loads the downloaded CVE's from the NVD database into memory,
+// filtering by a set of target CVE IDs if provided.
+func LoadTargetCVEs(cvePath string, targetCVEs map[string]bool) map[models.CVEID]models.Vulnerability {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
@@ -849,7 +855,9 @@ func LoadAllCVEs(cvePath string) map[models.CVEID]models.Vulnerability {
 			}
 
 			for _, item := range nvdcve.Vulnerabilities {
-				vulnsChan <- item
+				if targetCVEs == nil || targetCVEs[string(item.CVE.ID)] {
+					vulnsChan <- item
+				}
 			}
 			logger.Info("Loaded "+filename, slog.String("cve", filename))
 		}(entry.Name())

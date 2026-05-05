@@ -19,7 +19,8 @@ from .ecosystems_base import EnumerableEcosystem, OrderedEcosystem
 from .alpine import Alpine, APK
 from .bioconductor import Bioconductor
 from .cran import CRAN
-from .debian import Debian, DPKG
+from .debian import Debian
+from .echo import Echo
 from .haskell import Hackage, GHC
 from .hex import Hex
 from .maven import Maven
@@ -51,7 +52,7 @@ _ecosystems = {
     'crates.io': SemverEcosystem,
     'Debian': Debian,
     'Docker Hardened Images': SemverEcosystem,
-    'Echo': DPKG,
+    'Echo': Echo,
     'GHC': GHC,
     'Go': SemverEcosystem,
     'Hackage': Hackage,
@@ -194,7 +195,7 @@ def map_ecosystem_to_deps_dev(ecosystem_name: str) -> str | None:
 
 def maybe_normalize_package_names(package_name: str, ecosystem: str) -> str:
   """Normalize package names as necessary."""
-  if ecosystem == 'PyPI':
+  if ecosystem in ('PyPI', 'Echo:PyPI'):
     # per https://peps.python.org/pep-0503/#normalized-names
     package_name = re.sub(r'[-_.]+', '-', package_name).lower()
 

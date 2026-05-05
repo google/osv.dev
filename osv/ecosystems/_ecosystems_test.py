@@ -54,6 +54,36 @@ class EcosystemTest(unittest.TestCase):
     actual = ecosystems.maybe_normalize_package_names(package_name, ecosystem)
     self.assertEqual(actual, expected)
 
+  def test_maybe_normalize_package_names_echo_pypi(self):
+    """Test that Echo:PyPI uses PyPI package name normalization"""
+    self.assertEqual(
+        ecosystems.maybe_normalize_package_names('My_Package', 'Echo:PyPI'),
+        'my-package')
+    self.assertEqual(
+        ecosystems.maybe_normalize_package_names('Flask', 'Echo:PyPI'), 'flask')
+
+  def test_echo_pypi_ecosystem(self):
+    """Test that Echo:PyPI uses PyPI version ordering"""
+    self.assertTrue(ecosystems.is_known('Echo'))
+    self.assertTrue(ecosystems.is_known('Echo:PyPI'))
+
+    echo_pypi = ecosystems.get('Echo:PyPI')
+    self.assertIsNotNone(echo_pypi)
+
+    # PyPI version ordering
+    self.assertLess(echo_pypi.sort_key('1.0.0'), echo_pypi.sort_key('1.0.1'))
+    self.assertLess(echo_pypi.sort_key('1.0.0a1'), echo_pypi.sort_key('1.0.0'))
+    self.assertLess(echo_pypi.sort_key('1.0.0rc1'), echo_pypi.sort_key('1.0.0'))
+    self.assertLess(echo_pypi.sort_key('1.9'), echo_pypi.sort_key('1.10'))
+
+  def test_echo_base_ecosystem(self):
+    """Test that plain Echo uses Debian version ordering"""
+    echo = ecosystems.get('Echo')
+    self.assertIsNotNone(echo)
+
+    self.assertLess(echo.sort_key('1.0'), echo.sort_key('1.1'))
+    self.assertLess(echo.sort_key('1.0~rc1'), echo.sort_key('1.0'))
+
   def test_root_ecosystem(self):
     """Test Root ecosystem"""
     # Test that Root ecosystem is recognized

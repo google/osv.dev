@@ -1,4 +1,4 @@
-package upload
+package writer
 
 import (
 	"bytes"
@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
+	gcs "github.com/google/osv/vulnfeeds/gcs-tools"
+	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -59,7 +61,9 @@ func TestUploadToGCS(t *testing.T) {
 	preModifiedBuf := []byte(`{"id":"CVE-2023-1234"}`)
 
 	t.Run("Upload new object", func(t *testing.T) {
-		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		hash := sha256.Sum256(preModifiedBuf)
+		hexHash := hex.EncodeToString(hash[:])
+		err := uploadIfChanged(ctx, v, hexHash, preModifiedBuf, bkt, "")
 		if err != nil {
 			t.Errorf("Expected uploadToGCS to return nil for new object, got %v", err)
 		}
@@ -70,9 +74,6 @@ func TestUploadToGCS(t *testing.T) {
 			t.Fatalf("Failed to get object attrs: %v", err)
 		}
 
-		hash := sha256.Sum256(preModifiedBuf)
-		hexHash := hex.EncodeToString(hash[:])
-
 		if attrs.Metadata[hashMetadataKey] != hexHash {
 			t.Errorf("Expected hash %s, got %s", hexHash, attrs.Metadata[hashMetadataKey])
 		}
@@ -81,7 +82,9 @@ func TestUploadToGCS(t *testing.T) {
 	t.Run("Skip upload if hash matches", func(t *testing.T) {
 		// Modify the vulnerability to simulate a change in modified time but not content
 		v.Modified = timestamppb.New(time.Now().Add(1 * time.Hour))
-		err := uploadToGCS(ctx, v, preModifiedBuf, bkt, "")
+		hash := sha256.Sum256(preModifiedBuf)
+		hexHash := hex.EncodeToString(hash[:])
+		err := uploadIfChanged(ctx, v, hexHash, preModifiedBuf, bkt, "")
 		if !errors.Is(err, ErrUploadSkipped) {
 			t.Errorf("Expected uploadToGCS to return ErrUploadSkipped when hash matches, got %v", err)
 		}
@@ -101,7 +104,9 @@ func TestUploadToGCS(t *testing.T) {
 
 	t.Run("Upload if hash differs", func(t *testing.T) {
 		preModifiedBuf2 := []byte(`{"id":"CVE-2023-1234", "summary": "updated"}`)
-		err := uploadToGCS(ctx, v, preModifiedBuf2, bkt, "")
+		hash2 := sha256.Sum256(preModifiedBuf2)
+		hexHash2 := hex.EncodeToString(hash2[:])
+		err := uploadIfChanged(ctx, v, hexHash2, preModifiedBuf2, bkt, "")
 		if err != nil {
 			t.Errorf("Expected uploadToGCS to return nil when hash differs, got %v", err)
 		}
@@ -111,9 +116,6 @@ func TestUploadToGCS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get object attrs: %v", err)
 		}
-
-		hash2 := sha256.Sum256(preModifiedBuf2)
-		hexHash2 := hex.EncodeToString(hash2[:])
 
 		if attrs3.Metadata[hashMetadataKey] != hexHash2 {
 			t.Errorf("Expected hash %s, got %s", hexHash2, attrs3.Metadata[hashMetadataKey])
@@ -244,7 +246,7 @@ func TestWorker(t *testing.T) {
 	w.Close()
 
 	var counter atomic.Uint64
-	Worker(ctx, vulnChan, outBkt, overridesBkt, "", &counter)
+	VulnWorker(ctx, vulnChan, outBkt, overridesBkt, nil, "", &counter)
 
 	if counter.Load() != 2 {
 		t.Errorf("Expected counter to be 2, got %d", counter.Load())
@@ -299,7 +301,7 @@ func TestUpload(t *testing.T) {
 		},
 	}
 
-	Upload(ctx, "test-job", true, outBucketName, "", 1, "", vulnerabilities, false)
+	UploadVulnsToGCS(ctx, "test-job", true, outBucketName, "", 1, "", vulnerabilities, false)
 
 	client := server.Client()
 	bkt := client.Bucket(outBucketName)
@@ -337,7 +339,7 @@ func TestHandleDeletion(t *testing.T) {
 		{Id: "CVE-2023-3333"},
 	}
 
-	handleDeletion(ctx, bkt, "", vulnerabilities)
+	HandleDeletion(ctx, bkt, "", vulnerabilities)
 
 	// CVE-2023-1111.json should still exist
 	if _, err := bkt.Object("CVE-2023-1111.json").Attrs(ctx); err != nil {
@@ -347,5 +349,96 @@ func TestHandleDeletion(t *testing.T) {
 	// CVE-2023-2222.json should be deleted
 	if _, err := bkt.Object("CVE-2023-2222.json").Attrs(ctx); err == nil {
 		t.Errorf("Expected CVE-2023-2222.json to be deleted, but it still exists")
+	}
+}
+
+func TestUploadVulnIfChangedAsync(t *testing.T) {
+	server, err := fakestorage.NewServerWithOptions(fakestorage.Options{
+		Scheme: "http",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create fake storage server: %v", err)
+	}
+	defer server.Stop()
+
+	t.Setenv("STORAGE_EMULATOR_HOST", server.URL())
+
+	ctx := context.Background()
+	bucketName := "test-out-bucket"
+	server.CreateBucketWithOpts(fakestorage.CreateBucketOpts{Name: bucketName})
+
+	gcsHelper, err := gcs.InitUploadPool(ctx, 2, bucketName)
+	if err != nil {
+		t.Fatalf("Failed to init upload pool: %v", err)
+	}
+
+	v := &osvschema.Vulnerability{
+		Id: "CVE-2023-9999",
+		Affected: []*osvschema.Affected{
+			{Package: &osvschema.Package{Name: "test-pkg"}},
+		},
+	}
+
+	t.Run("Async upload new object", func(t *testing.T) {
+		err := UploadVulnIfChangedAsync(gcsHelper, "nvd-prefix", v)
+		if err != nil {
+			t.Fatalf("Expected UploadVulnIfChangedAsync to succeed, got %v", err)
+		}
+
+		gcsHelper.CloseAndWait()
+
+		client := server.Client()
+		bkt := client.Bucket(bucketName)
+		objName := "nvd-prefix/CVE-2023-9999.json"
+		obj := bkt.Object(objName)
+		attrs, err := obj.Attrs(ctx)
+		if err != nil {
+			t.Fatalf("Expected object %q to exist on GCS, got error: %v", objName, err)
+		}
+
+		if attrs.Metadata[hashMetadataKey] == "" {
+			t.Errorf("Expected hash metadata to be set on GCS object")
+		}
+	})
+}
+
+func TestUploadMetricsToGCSAsync(t *testing.T) {
+	server, err := fakestorage.NewServerWithOptions(fakestorage.Options{
+		Scheme: "http",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create fake storage server: %v", err)
+	}
+	defer server.Stop()
+
+	t.Setenv("STORAGE_EMULATOR_HOST", server.URL())
+
+	ctx := context.Background()
+	bucketName := "test-out-bucket"
+	server.CreateBucketWithOpts(fakestorage.CreateBucketOpts{Name: bucketName})
+
+	gcsHelper, err := gcs.InitUploadPool(ctx, 2, bucketName)
+	if err != nil {
+		t.Fatalf("Failed to init upload pool: %v", err)
+	}
+
+	metrics := &models.ConversionMetrics{
+		CVEID: "CVE-2023-9999",
+		CNA:   "nvd",
+	}
+
+	err = UploadMetricsToGCSAsync(gcsHelper, "nvd-prefix", "CVE-2023-9999", metrics)
+	if err != nil {
+		t.Fatalf("Expected UploadMetricsToGCSAsync to succeed, got %v", err)
+	}
+
+	gcsHelper.CloseAndWait()
+
+	client := server.Client()
+	bkt := client.Bucket(bucketName)
+	objName := "nvd-prefix/CVE-2023-9999.metrics.json"
+	_, err = bkt.Object(objName).Attrs(ctx)
+	if err != nil {
+		t.Fatalf("Expected metrics object %q to exist on GCS, got error: %v", objName, err)
 	}
 }

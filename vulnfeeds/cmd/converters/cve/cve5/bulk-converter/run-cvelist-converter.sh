@@ -32,7 +32,8 @@ set -u
 
 
 echo "Commencing cvelist conversion run"
-NUM_WORKERS="${NUM_WORKERS:=30}"
+NUM_WORKERS="${NUM_WORKERS:=10}"
+GCS_WORKERS="${GCS_WORKERS:=30}"
 
 OUTPUT_BUCKET="${OUTPUT_BUCKET:=osv-test-cve-osv-conversion}"
 OSV_OUTPUT_PATH="cve5"
@@ -53,30 +54,12 @@ fi
 # Convert CVEList records to OSV.
 echo "Commence CVEList bulk conversion run"
 ./cve-bulk-converter \
- --start-year="2022" \
- --out-dir="${LOCAL_OUT_DIR}/${OSV_OUTPUT_PATH}" \
- --workers="${NUM_WORKERS}"
-
-# Copy results to staging area.
-echo "Copying CVEList records successfully converted to OSV to aggregated staging"
-find "${LOCAL_OUT_DIR}/${OSV_OUTPUT_PATH}" -type f -name \*.json \
-  -exec cp '{}' "${LOCAL_OUT_DIR}/gcs_stage/" \;
-
-# Copy (and remove any missing) results to GCS bucket, with some sanity
-# checking.
-objs_present=$(gcloud storage ls "${OSV_OUTPUT_GCS_PATH}" | wc -l)
-objs_deleted=$(gcloud storage rsync --checksums-only --dry-run --delete-unmatched-destination-objects "${LOCAL_OUT_DIR}/gcs_stage" "${OSV_OUTPUT_GCS_PATH}" 2>&1 | grep "Would remove" | wc -l)
-
-threshold=$(echo "scale=2; ${objs_present} * (${SAFETY_THRESHOLD_PCT:-2} / 100)" | bc)
-
-# # Bash can't deal with floats
-if (( $(echo "${objs_deleted} > ${threshold}" | bc -l) )); then
-  echo "Aborting. Unexpectedly high (${objs_deleted}) number of CVE records would be deleted!" >> /dev/stderr
-  gcloud storage rsync --checksums-only --dry-run --delete-unmatched-destination-objects "${LOCAL_OUT_DIR}/gcs_stage" "${OSV_OUTPUT_GCS_PATH}" 2>&1 | grep "Would remove" >> /dev/stderr
-  exit 1
-fi
-
-echo "Copying CVEList records successfully converted to GCS bucket"
-gcloud storage rsync --checksums-only --delete-unmatched-destination-objects "${LOCAL_OUT_DIR}/gcs_stage" "${OSV_OUTPUT_GCS_PATH}"
+  --start-year="2022" \
+  --out-dir="${LOCAL_OUT_DIR}/${OSV_OUTPUT_PATH}" \
+  --workers="${NUM_WORKERS}" \
+  --gcs-workers="${GCS_WORKERS}" \
+  --upload-to-gcs=true \
+  --output-bucket="${OUTPUT_BUCKET}" \
+  --gcs-prefix="${OSV_OUTPUT_PATH}"
 
 echo "Conversion run complete"

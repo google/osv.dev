@@ -85,6 +85,11 @@ func ConductAnalysis(year string, dir string) {
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := "nvd-conversion-outcomes-" + year + "-" + currentTime + ".csv"
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
+	}
+
 	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
 	if err != nil {
 		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))
@@ -131,49 +136,6 @@ func ConductAnalysis(year string, dir string) {
 	if err != nil {
 		logger.Error("Failed to walk directory for analysis", slog.Any("err", err))
 	}
-}
-
-// CreateMetricsFile creates the initial file for the metrics record.
-func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	metricsFile := filepath.Join(vulnDir, string(id)+".metrics"+models.Extension)
-	f, err := os.Create(metricsFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, nil
-}
-
-// CreateOSVFile creates the initial file for the OSV record.
-func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	outputFile := filepath.Join(vulnDir, string(id)+models.Extension)
-
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, err
-}
-
-func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) error {
-	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
-	if err != nil {
-		logger.Info("Failed to marshal", slog.Any("err", err))
-		return err
-	}
-
-	_, err = metricsFile.Write(marshalledMetrics)
-	if err != nil {
-		logger.Warn("Failed to write", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-		return fmt.Errorf("failed to write %s: %w", metricsFile.Name(), err)
-	}
-
-	metricsFile.Close()
-
-	return nil
 }
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.

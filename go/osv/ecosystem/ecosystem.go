@@ -52,7 +52,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
 	osvconstants.EcosystemDebian:                     debianFactory,
 	osvconstants.EcosystemDockerHardenedImages:       statelessFactory[semverEcosystem],
-	osvconstants.EcosystemEcho:                       statelessFactory[dpkgEcosystem],
+	osvconstants.EcosystemEcho:                       echoFactory,
 	osvconstants.EcosystemGHC:                        func(p *Provider, _ string) Ecosystem { return ghcEcosystem{p: p} },
 	osvconstants.EcosystemGo:                         statelessFactory[semverEcosystem],
 	osvconstants.EcosystemHackage:                    func(p *Provider, _ string) Ecosystem { return hackageEcosystem{p: p} },

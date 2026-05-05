@@ -3,10 +3,12 @@ package registry
 
 import (
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
+	"github.com/google/osv.dev/go/internal/worker/pipeline/namenormalize"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/sourcelink"
 )
 
 // List is the list of all enrichers used in the worker pipeline.
 var List = []pipeline.Enricher{
+	&namenormalize.Enricher{},
 	&sourcelink.Enricher{},
 }

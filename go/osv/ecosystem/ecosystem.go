@@ -145,3 +145,25 @@ type Enumerable interface {
 	// The versions should be sorted in ascending order.
 	GetVersions(_ string) ([]string, error)
 }
+
+// PackageNameNormalizer is an ecosystem that can normalize its package names.
+type PackageNameNormalizer interface {
+	NormalizePackageName(_ string) string
+}
+
+// NormalizePackageName normalizes the package name for the given ecosystem.
+func NormalizePackageName(ecosystem Ecosystem, name string) string {
+	inner := ecosystem
+	switch w := ecosystem.(type) {
+	case *ecosystemWrapper:
+		inner = w.Ecosystem
+	case *enumerableWrapper:
+		inner = w.Enumerable
+	}
+
+	if normalizer, ok := inner.(PackageNameNormalizer); ok {
+		return normalizer.NormalizePackageName(name)
+	}
+
+	return name
+}

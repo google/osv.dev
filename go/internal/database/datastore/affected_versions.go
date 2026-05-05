@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/osv/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -73,52 +74,32 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			}
 
 			hasAffected = true
-			var rangeEvents []AffectedEvent
+			var events []osvutil.Event
 			for _, e := range r.GetEvents() {
-				if e.GetIntroduced() != "" {
-					rangeEvents = append(rangeEvents, AffectedEvent{Type: "introduced", Value: e.GetIntroduced()})
-				} else if e.GetFixed() != "" {
-					rangeEvents = append(rangeEvents, AffectedEvent{Type: "fixed", Value: e.GetFixed()})
-				} else if e.GetLimit() != "" {
-					rangeEvents = append(rangeEvents, AffectedEvent{Type: "limit", Value: e.GetLimit()})
-				} else if e.GetLastAffected() != "" {
-					rangeEvents = append(rangeEvents, AffectedEvent{Type: "last_affected", Value: e.GetLastAffected()})
+				evt := osvutil.FromSchemaEvent(e)
+				if evt.Version != "" {
+					events = append(events, evt)
 				}
 			}
 
-			var eventsMap = map[string]int{
-				"introduced":    0,
-				"last_affected": 1,
-				"fixed":         2,
-				"limit":         3,
+			if exists {
+				_ = osvutil.SortEvents(eHelper, events)
 			}
 
-			if exists {
-				// If we have an ecosystem helper, sort the events to help with querying.
-				slices.SortFunc(rangeEvents, func(a, b AffectedEvent) int {
-					pa, errA := eHelper.Parse(a.Value)
-					pb, errB := eHelper.Parse(b.Value)
-					if errA != nil || errB != nil {
-						if a.Value != b.Value {
-							return strings.Compare(a.Value, b.Value)
-						}
-
-						return eventsMap[a.Type] - eventsMap[b.Type]
-					}
-					res, errC := pa.Compare(pb)
-					if errC != nil {
-						if a.Value != b.Value {
-							return strings.Compare(a.Value, b.Value)
-						}
-
-						return eventsMap[a.Type] - eventsMap[b.Type]
-					}
-					if res != 0 {
-						return res
-					}
-
-					return eventsMap[a.Type] - eventsMap[b.Type]
-				})
+			var rangeEvents []AffectedEvent
+			for _, e := range events {
+				var evType string
+				switch e.Type {
+				case osvutil.Introduced:
+					evType = "introduced"
+				case osvutil.LastAffected:
+					evType = "last_affected"
+				case osvutil.Fixed:
+					evType = "fixed"
+				case osvutil.Limit:
+					evType = "limit"
+				}
+				rangeEvents = append(rangeEvents, AffectedEvent{Type: evType, Value: e.Version})
 			}
 
 			coarseMin := minCoarseVersion

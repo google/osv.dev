@@ -15,46 +15,74 @@
 package ecosystem
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 // tuxcareEcosystem represents "TuxCare:<ecosystem>" advisories. It delegates
-// version handling to the inner ecosystem.
+// version handling to the inner ecosystem, resolved lazily via the Provider
+// so that this factory can be registered in the ecosystems map without
+// creating a package-init cycle.
 type tuxcareEcosystem struct {
-	inner Ecosystem
+	p      *Provider
+	suffix string
 }
 
 var _ Ecosystem = tuxcareEcosystem{}
 
-// Registered in init() to break an initialization cycle: the ecosystems map
-// references tuxcareFactory, which calls Provider.Get, which reads the map.
-func init() {
-	ecosystems[osvconstants.EcosystemTuxCare] = tuxcareFactory
-}
-
-// tuxcareFactory builds a tuxcareEcosystem by recursively resolving the inner
-// ecosystem via the provider. Returns nil when the suffix is empty or names
-// another TuxCare (so Provider.Get reports the ecosystem as unknown).
 func tuxcareFactory(p *Provider, suffix string) Ecosystem {
 	innerName, _, _ := strings.Cut(suffix, ":")
 	if suffix == "" || innerName == string(osvconstants.EcosystemTuxCare) {
-		return nil
-	}
-	inner, ok := p.Get(suffix)
-	if !ok {
+		// Bare "TuxCare" or nested "TuxCare:TuxCare:..." is malformed.
 		return nil
 	}
 
-	return tuxcareEcosystem{inner: unwrap(inner)}
+	return tuxcareEcosystem{p: p, suffix: suffix}
 }
 
-// unwrap strips the version-zero wrapper added by Provider.Get, so callers
-// that wrap us again don't produce a doubly-wrapped Version (which would
-// fail to compare against a singly-wrapped Version from the same inner
-// ecosystem).
+// resolve looks up the inner ecosystem on demand. Inner is unwrapped to avoid
+// double-wrapping the resulting Version (which would fail to compare against
+// a singly-wrapped Version from the same inner ecosystem).
+func (e tuxcareEcosystem) resolve() (Ecosystem, error) {
+	inner, ok := e.p.Get(e.suffix)
+	if !ok {
+		return nil, fmt.Errorf("TuxCare: unknown inner ecosystem %q", e.suffix)
+	}
+
+	return unwrap(inner), nil
+}
+
+func (e tuxcareEcosystem) Parse(version string) (Version, error) {
+	inner, err := e.resolve()
+	if err != nil {
+		return nil, err
+	}
+
+	return inner.Parse(version)
+}
+
+func (e tuxcareEcosystem) Coarse(version string) (string, error) {
+	inner, err := e.resolve()
+	if err != nil {
+		return "", err
+	}
+
+	return inner.Coarse(version)
+}
+
+func (e tuxcareEcosystem) IsSemver() bool {
+	inner, err := e.resolve()
+	if err != nil {
+		return false
+	}
+
+	return inner.IsSemver()
+}
+
+// unwrap strips the wrapper added by Provider.Get, so callers that wrap us
+// again don't produce a doubly-wrapped Version.
 func unwrap(e Ecosystem) Ecosystem {
 	switch w := e.(type) {
 	case *ecosystemWrapper:
@@ -64,28 +92,4 @@ func unwrap(e Ecosystem) Ecosystem {
 	}
 
 	return e
-}
-
-func (e tuxcareEcosystem) Parse(version string) (Version, error) {
-	if e.inner == nil {
-		return nil, errors.New("TuxCare ecosystem has no resolvable inner ecosystem")
-	}
-
-	return e.inner.Parse(version)
-}
-
-func (e tuxcareEcosystem) Coarse(version string) (string, error) {
-	if e.inner == nil {
-		return "", errors.New("TuxCare ecosystem has no resolvable inner ecosystem")
-	}
-
-	return e.inner.Coarse(version)
-}
-
-func (e tuxcareEcosystem) IsSemver() bool {
-	if e.inner == nil {
-		return false
-	}
-
-	return e.inner.IsSemver()
 }

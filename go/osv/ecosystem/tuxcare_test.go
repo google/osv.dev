@@ -50,8 +50,6 @@ func TestTuxCareEcosystem_Malformed(t *testing.T) {
 		// Nested TuxCare.
 		"TuxCare:TuxCare",
 		"TuxCare:TuxCare:Red Hat",
-		// Unknown inner ecosystem.
-		"TuxCare:NotARealEcosystem",
 	}
 	for _, ecosystem := range cases {
 		t.Run(ecosystem, func(t *testing.T) {
@@ -59,6 +57,20 @@ func TestTuxCareEcosystem_Malformed(t *testing.T) {
 				t.Errorf("Provider.Get(%q) = (%v, true), want (_, false)", ecosystem, e)
 			}
 		})
+	}
+}
+
+// Unknown inner ecosystems are accepted by Get (the inner is resolved
+// lazily, mirroring debianFactory which accepts any release suffix); the
+// failure surfaces at Parse time.
+func TestTuxCareEcosystem_UnknownInnerFailsAtParse(t *testing.T) {
+	p := NewProvider(nil)
+	e, ok := p.Get("TuxCare:NotARealEcosystem")
+	if !ok {
+		t.Fatalf("Provider.Get(TuxCare:NotARealEcosystem) = ok=false, want true")
+	}
+	if _, err := e.Parse("1.0.0"); err == nil {
+		t.Errorf("Parse on unknown inner ecosystem returned nil error, want non-nil")
 	}
 }
 

@@ -75,6 +75,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemRubyGems:                   func(p *Provider, _ string) Ecosystem { return rubyGemsEcosystem{p: p} },
 	osvconstants.EcosystemSUSE:                       statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemSwiftURL:                   statelessFactory[semverEcosystem],
+	osvconstants.EcosystemTuxCare:                    tuxcareFactory,
 	osvconstants.EcosystemUbuntu:                     statelessFactory[dpkgEcosystem],
 	osvconstants.EcosystemVSCode:                     statelessFactory[semverLikeEcosystem],
 	osvconstants.EcosystemWolfi:                      statelessFactory[apkEcosystem],

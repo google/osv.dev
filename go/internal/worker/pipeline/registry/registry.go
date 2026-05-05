@@ -6,6 +6,7 @@ import (
 	"github.com/google/osv.dev/go/internal/worker/pipeline/enumerateversions"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/makesemver"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/namenormalize"
+	"github.com/google/osv.dev/go/internal/worker/pipeline/schemaversion"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/sourcelink"
 )
 
@@ -14,5 +15,6 @@ var List = []pipeline.Enricher{
 	&namenormalize.Enricher{},
 	&makesemver.Enricher{},
 	&enumerateversions.Enricher{},
+	&schemaversion.Enricher{},
 	&sourcelink.Enricher{},
 }

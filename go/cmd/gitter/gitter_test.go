@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
-	"google.golang.org/protobuf/encoding/protojson"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -197,7 +196,17 @@ func setupTest(t *testing.T) {
 	// Initialize semaphore for tests
 	semaphore = make(chan struct{}, 100)
 
-	t.Cleanup(resetSaveTimer)
+	// Initialize caches for tests
+	repoCacheMaxCostBytes = 1024 * 1024 // 1MB for test
+	invalidRepoCacheMaxEntries = 100
+	InitRepoCache()
+	InitInvalidRepoCache()
+
+	t.Cleanup(func() {
+		resetSaveTimer()
+		CloseRepoCache()
+		CloseInvalidRepoCache()
+	})
 }
 
 func TestGitHandler_Integration(t *testing.T) {
@@ -268,9 +277,8 @@ func TestCacheHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reqProto := &pb.CacheRequest{Url: tt.url}
-			body, _ := protojson.Marshal(reqProto)
+			body, _ := proto.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/cache", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -357,9 +365,8 @@ func TestAffectedCommitsHandler(t *testing.T) {
 				Events: events,
 			}
 
-			body, _ := protojson.Marshal(reqProto)
+			body, _ := proto.Marshal(reqProto)
 			req, err := http.NewRequest(http.MethodPost, "/affected-commits", bytes.NewBuffer(body))
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -376,14 +383,8 @@ func TestAffectedCommitsHandler(t *testing.T) {
 			}
 
 			respBody := &pb.AffectedCommitsResponse{}
-			if rr.Header().Get("Content-Type") == "application/json" {
-				if err := protojson.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-					t.Fatalf("Failed to unmarshal JSON response: %v", err)
-				}
-			} else {
-				if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
-					t.Fatalf("Failed to unmarshal proto response: %v", err)
-				}
+			if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+				t.Fatalf("Failed to unmarshal proto response: %v", err)
 			}
 
 			var gotHashes []string
@@ -396,6 +397,76 @@ func TestAffectedCommitsHandler(t *testing.T) {
 
 			if diff := cmp.Diff(tt.expectedBody, gotHashes); diff != "" {
 				t.Errorf("handler returned wrong body (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTagsHandler(t *testing.T) {
+	setupTest(t)
+
+	tests := []struct {
+		name         string
+		url          string
+		expectedCode int
+		expectedTags map[string]string
+	}{
+		{
+			name:         "Valid repo with tags",
+			url:          "https://github.com/oliverchang/osv-test.git",
+			expectedCode: http.StatusOK,
+			expectedTags: map[string]string{
+				"v0.2":                        "8d8242f545e9cec3e6d0d2e3f5bde8be1c659735",
+				"branch-v0.1.1":               "4c155795426727ea05575bd5904321def23c03f4",
+				"branch-v0.1.1-with-fix":      "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
+				"branch_1_cherrypick_regress": "febfac1940086bc1f6d3dc33fda0a1d1ba336209",
+				"v0.1":                        "a2ba949290915d445d34d0e8e9de2e7ce38198fc",
+				"v0.1.1":                      "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+			},
+		},
+		{
+			name: "Repo exist but no tags",
+			// This repo hasn't gotten a commit in 8 years so should be fairly stable for our testing.
+			url:          "https://github.com/torvalds/test-tlb.git",
+			expectedCode: http.StatusNoContent,
+			expectedTags: nil,
+		},
+		{
+			name:         "Non-existent repo",
+			url:          "https://github.com/google/this-repo-does-not-exist-12345.git",
+			expectedCode: http.StatusNotFound,
+			expectedTags: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, "/tags?url="+tt.url, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+			tagsHandler(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v",
+					status, tt.expectedCode)
+			}
+
+			if tt.expectedTags != nil {
+				respBody := &pb.TagsResponse{}
+				if err := proto.Unmarshal(rr.Body.Bytes(), respBody); err != nil {
+					t.Fatalf("Failed to unmarshal proto response: %v", err)
+				}
+
+				gotTags := make(map[string]string)
+				for _, ref := range respBody.GetTags() {
+					gotTags[ref.GetLabel()] = hex.EncodeToString(ref.GetHash())
+				}
+
+				if diff := cmp.Diff(tt.expectedTags, gotTags); diff != "" {
+					t.Errorf("handler returned wrong tags (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

@@ -50,8 +50,16 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	allAlpineSecDB := getAlpineSecDBData()
+
+	targetCVEs := make(map[string]bool)
+	for cveID := range allAlpineSecDB {
+		if strings.HasPrefix(cveID, "CVE") {
+			targetCVEs[cveID] = true
+		}
+	}
+
+	allCVEs := vulns.LoadTargetCVEs(defaultCvePath, targetCVEs)
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvVulnerabilities))

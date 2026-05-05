@@ -58,11 +58,11 @@ func (m *mockVulnerabilityStore) Get(_ context.Context, _ string) (*osvschema.Vu
 	panic("not implemented")
 }
 
-func (m *mockVulnerabilityStore) Write(_ context.Context, _ models.WriteRequest) error {
+func (m *mockVulnerabilityStore) GetWithMetadata(_ context.Context, _ string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
 	panic("not implemented")
 }
 
-func (m *mockVulnerabilityStore) Withdraw(_ context.Context, _ string) error {
+func (m *mockVulnerabilityStore) Write(_ context.Context, _ models.WriteRequest) error {
 	panic("not implemented")
 }
 

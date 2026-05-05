@@ -57,7 +57,16 @@ func main() {
 		logger.Fatal("Failed to get Debian distro info data", slog.Any("err", err))
 	}
 
-	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
+	targetCVEs := make(map[string]bool)
+	for _, pkg := range debianData {
+		for cveID := range pkg {
+			if strings.HasPrefix(cveID, "CVE") {
+				targetCVEs[cveID] = true
+			}
+		}
+	}
+
+	allCVEs := vulns.LoadTargetCVEs(defaultCvePath, targetCVEs)
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))

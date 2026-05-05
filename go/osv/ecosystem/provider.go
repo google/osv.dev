@@ -34,6 +34,10 @@ func (p *Provider) Get(ecosystem string) (Ecosystem, bool) {
 		return nil, false
 	}
 	e := f(p, suffix)
+	if e == nil {
+		// Factory rejected this ecosystem (e.g. malformed TuxCare).
+		return nil, false
+	}
 	if enum, ok := e.(Enumerable); ok {
 		return &enumerableWrapper{Enumerable: enum}, true
 	}

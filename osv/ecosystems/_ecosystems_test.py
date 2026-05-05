@@ -127,12 +127,12 @@ class EcosystemTest(unittest.TestCase):
     # Suffixes pass through to the inner ecosystem.
     tuxcare_alpine = ecosystems.get('TuxCare:Alpine:v3.16')
     self.assertIsNotNone(tuxcare_alpine)
-    self.assertEqual(tuxcare_alpine.suffix, 'v3.16')
+    self.assertEqual(tuxcare_alpine._inner.suffix, 'v3.16')
 
     # Inner ecosystem with multi-segment suffix (e.g. Ubuntu variants).
     tuxcare_ubuntu = ecosystems.get('TuxCare:Ubuntu:Pro:18.04:LTS')
     self.assertIsNotNone(tuxcare_ubuntu)
-    self.assertEqual(tuxcare_ubuntu.suffix, 'Pro:18.04:LTS')
+    self.assertEqual(tuxcare_ubuntu._inner.suffix, 'Pro:18.04:LTS')
 
     # Bare TuxCare returns None.
     self.assertIsNone(ecosystems.get('TuxCare'))

@@ -83,6 +83,8 @@ func bucketWorker(ctx context.Context, gcsHelper *Helper) {
 			if err := UploadToGCS(ctx, gcsHelper.bkt, msg.objectName, msg.data, msg.contentType, metadata); err != nil {
 				logger.Info("Failed to upload object", slog.String("object", msg.objectName), slog.String("error", err.Error()))
 			}
+
+			logger.Info("Uploaded GCS object", slog.String("object", msg.objectName))
 		}()
 	}
 }

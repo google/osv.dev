@@ -13,6 +13,7 @@ type EnrichParams struct {
 	PathInSource      string
 	SourceRepo        *models.SourceRepository
 	EcosystemProvider *ecosystem.Provider
+	ExistingVuln      *osvschema.Vulnerability
 }
 
 type Enricher interface {

@@ -15,6 +15,7 @@ import (
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -26,9 +27,10 @@ type Engine struct {
 	Stores   Stores
 	Pipeline []pipeline.Enricher
 
-	GitterHost   string
-	GitterClient *http.Client
-	NotifyPyPI   bool
+	GitterHost        string
+	GitterClient      *http.Client
+	NotifyPyPI        bool
+	EcosystemProvider *ecosystem.Provider
 }
 
 func (e *Engine) RunTask(ctx context.Context, task Task) error {
@@ -44,7 +46,8 @@ func (e *Engine) RunTask(ctx context.Context, task Task) error {
 
 func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	params := pipeline.EnrichParams{
-		PathInSource: task.PathInSource,
+		PathInSource:      task.PathInSource,
+		EcosystemProvider: e.EcosystemProvider,
 	}
 	var err error
 	params.SourceRepo, err = e.Stores.SourceRepo.Get(ctx, task.SourceID)
@@ -53,6 +56,19 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	}
 	if task.Vuln == nil {
 		return errors.New("vuln not provided")
+	}
+
+	// Get the current state of the vuln to check against
+	current, err := e.Stores.Vulnerability.Get(ctx, task.Vuln.GetId())
+	currentNotFound := errors.Is(err, models.ErrNotFound)
+	if err != nil && !currentNotFound {
+		logger.ErrorContext(ctx, "Failed to get current vuln state", slog.String("vuln_id", task.Vuln.GetId()), slog.Any("error", err))
+
+		return fmt.Errorf("failed to get current vuln state: %w", err)
+	}
+
+	if !currentNotFound {
+		params.ExistingVuln = current
 	}
 
 	enriched := proto.Clone(task.Vuln).(*osvschema.Vulnerability)
@@ -75,17 +91,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		return err
 	}
 
-	// Get the current state of the vuln to check against
-	current, err := e.Stores.Vulnerability.Get(ctx, enriched.GetId())
-	isNotFound := errors.Is(err, models.ErrNotFound)
-
-	if err != nil && !isNotFound {
-		logger.ErrorContext(ctx, "Failed to get current vuln state", slog.String("vuln_id", enriched.GetId()), slog.Any("error", err))
-
-		return fmt.Errorf("failed to get current vuln state: %w", err)
-	}
-
-	if isNotFound || e.isSemanticallyDifferent(current, enriched) {
+	if currentNotFound || e.isSemanticallyDifferent(current, enriched) {
 		enriched.Modified = timestamppb.Now()
 	} else if current.GetModified().AsTime().After(enriched.GetModified().AsTime()) {
 		enriched.Modified = current.GetModified()

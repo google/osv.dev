@@ -27,7 +27,8 @@ var (
 	repoDir        = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
 	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
 	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
-	workers        = flag.Int("workers", 30, "The number of concurrent workers to use for processing CVEs.")
+	workers        = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
+	gcsWorkers     = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
 	cnaAllowList   = flag.String("cnas-allowlist", "", "A comma-separated list of CNAs to process. If not provided, defaults to cna_allowlist.txt.")
 	rejectFailed   = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
 	uploadToGCS    = flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
@@ -66,7 +67,7 @@ func main() {
 	ctx := context.Background()
 	if *uploadToGCS {
 		var err error
-		gcsHelper, err = gcs.InitUploadPool(ctx, *workers, *outputBucket)
+		gcsHelper, err = gcs.InitUploadPool(ctx, *gcsWorkers, *outputBucket)
 		if err != nil {
 			logger.Fatal("Failed to initialize GCS upload pool", slog.Any("err", err))
 		}

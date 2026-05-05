@@ -32,7 +32,8 @@ set -u
 
 
 echo "Commencing cvelist conversion run"
-NUM_WORKERS="${NUM_WORKERS:=30}"
+NUM_WORKERS="${NUM_WORKERS:=10}"
+GCS_WORKERS="${GCS_WORKERS:=30}"
 
 OUTPUT_BUCKET="${OUTPUT_BUCKET:=osv-test-cve-osv-conversion}"
 OSV_OUTPUT_PATH="cve5"
@@ -56,6 +57,7 @@ echo "Commence CVEList bulk conversion run"
   --start-year="2022" \
   --out-dir="${LOCAL_OUT_DIR}/${OSV_OUTPUT_PATH}" \
   --workers="${NUM_WORKERS}" \
+  --gcs-workers="${GCS_WORKERS}" \
   --upload-to-gcs=true \
   --output-bucket="${OUTPUT_BUCKET}" \
   --gcs-prefix="${OSV_OUTPUT_PATH}"

@@ -312,15 +312,6 @@ func isAuthError(err error) bool {
 		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
 }
 
-func isIndexLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
-}
-
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
 func unmarshalRequest(r *http.Request, body proto.Message) error {
 	data, err := io.ReadAll(r.Body)
@@ -407,6 +398,68 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 	return repo, nil
 }
 
+func isIndexLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
+}
+
+func isRefConflictError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "refname conflict") ||
+		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
+}
+
+// Attempt to recover from git fetch + reset errors
+// Returns true if recovery was attempted and we should retry fetch + reset
+func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Refname conflict, likely name conflict between local and remote refs
+	// We can try removing stale remote-tracking branches and retry
+	if isRefConflictError(err) {
+		logger.WarnContext(ctx, "ref conflict detected, running git remote prune origin")
+		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
+			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
+			return false
+		}
+
+		return true
+	}
+
+	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
+	// We want to reclone as fallback but log a separate warning (for stats)
+	if isIndexLockError(err) {
+		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
+	}
+
+	return false
+}
+
+// Helper function to group git fetch and git reset --hard together
+func fetchAndReset(ctx context.Context, repoPath string) error {
+	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+	if err != nil {
+		return fmt.Errorf("git fetch failed: %w", err)
+	}
+
+	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+	if err != nil {
+		return fmt.Errorf("git reset failed: %w", err)
+	}
+
+	return nil
+}
+
 func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	logger.InfoContext(ctx, "Starting fetch repo")
 	start := time.Now()
@@ -424,7 +477,6 @@ func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 
 	// Check if we need to fetch
 	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		logger.InfoContext(ctx, "Fetching git blob", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			logger.InfoContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
@@ -433,28 +485,33 @@ func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 				return fmt.Errorf("git clone failed: %w", err)
 			}
 		} else {
-			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
-			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
-			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
+			// Fetch and reset
 			logger.InfoContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+			err := fetchAndReset(ctx, repoPath)
+
+			// Attempt recovery and fallback
 			if err != nil {
-				return fmt.Errorf("git fetch failed: %w", err)
-			}
-			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-			if err != nil && isIndexLockError(err) {
-				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
-				// We can remove the file and retry the command
-				logger.WarnContext(ctx, "index.lock exists, attempting to remove and retry")
-				indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
-				if err := os.Remove(indexLockPath); err != nil {
-					return fmt.Errorf("failed to remove index.lock in %s: %w", repoPath, err)
+				logger.WarnContext(ctx, "Initial fetch and reset failed, attempting to recover", slog.Any("err", err))
+
+				// Attempt recovery and retry fetch and reset if successful
+				if attemptGitRecovery(ctx, repoPath, err) {
+					logger.InfoContext(ctx, "Retrying fetch and reset after recovery")
+					err = fetchAndReset(ctx, repoPath)
 				}
-				// One more attempt at git reset
-				err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-			}
-			if err != nil {
-				return fmt.Errorf("git reset failed: %w", err)
+
+				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
+				if err != nil {
+					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
+					if err := os.RemoveAll(repoPath); err != nil {
+						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
+					}
+
+					logger.InfoContext(ctx, "Cloning git repository after fallback", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+					err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+					if err != nil {
+						return fmt.Errorf("git clone failed after fallback: %w", err)
+					}
+				}
 			}
 		}
 

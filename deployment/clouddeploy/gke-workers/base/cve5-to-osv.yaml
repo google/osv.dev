@@ -24,6 +24,9 @@ spec:
               limits:
                 cpu: "12"
                 memory: "96G"
+            env:
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
           restartPolicy: Never
           tolerations:
           - key: workloadType

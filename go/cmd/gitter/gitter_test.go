@@ -140,6 +140,41 @@ func TestIsAuthError(t *testing.T) {
 	}
 }
 
+func TestIsIndexLockError(t *testing.T) {
+	tests := []struct {
+		err      error
+		expected bool
+	}{
+		{errors.New("fatal: Unable to create '/path/to/repo.git/index.lock': File exists"), true},
+		{errors.New("some other error"), false},
+		{nil, false},
+	}
+
+	for _, tt := range tests {
+		if result := isIndexLockError(tt.err); result != tt.expected {
+			t.Errorf("isIndexLockError(%v) = %v, expected %v", tt.err, result, tt.expected)
+		}
+	}
+}
+
+func TestIsRefConflictError(t *testing.T) {
+	tests := []struct {
+		err      error
+		expected bool
+	}{
+		{errors.New("error: some local refs could not be updated; try running 'git remote prune origin' to remove any old, conflicting branches"), true},
+		{errors.New("error: fetching ref refs/remotes/some-ref-name failed: refname conflict"), true},
+		{errors.New("some other error"), false},
+		{nil, false},
+	}
+
+	for _, tt := range tests {
+		if result := isRefConflictError(tt.err); result != tt.expected {
+			t.Errorf("isRefConflictError(%v) = %v, expected %v", tt.err, result, tt.expected)
+		}
+	}
+}
+
 func TestGitHandler_InvalidURL(t *testing.T) {
 	tests := []struct {
 		url          string

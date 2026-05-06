@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -23,11 +24,12 @@ const (
 )
 
 type Helper struct {
-	wg     sync.WaitGroup
-	bus    chan *uploadMsg
-	bkt    *storage.BucketHandle
-	client *storage.Client
-	once   sync.Once
+	wg           sync.WaitGroup
+	bus          chan *uploadMsg
+	bkt          *storage.BucketHandle
+	client       *storage.Client
+	once         sync.Once
+	timesBlocked atomic.Int64
 }
 
 type uploadMsg struct {
@@ -90,12 +92,19 @@ func bucketWorker(ctx context.Context, gcsHelper *Helper) {
 }
 
 func (g *Helper) Upload(objectName string, data io.Reader, hash string, contentType string) {
+	if len(g.bus) == cap(g.bus) {
+		g.timesBlocked.Add(1)
+	}
 	g.bus <- &uploadMsg{
 		objectName:  objectName,
 		data:        data,
 		hash:        hash,
 		contentType: contentType,
 	}
+}
+
+func (g *Helper) GetTimesBlocked() int64 {
+	return g.timesBlocked.Load()
 }
 
 func (g *Helper) CloseAndWait() {

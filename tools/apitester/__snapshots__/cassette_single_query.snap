@@ -298,28 +298,19 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
-                }
-              ],
-              "database_specific": "<Any value>"
-            },
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
                   "introduced": "0"
                 },
                 {
+                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                },
+                {
                   "fixed": "1265ff8d990284f04d8768f35b0e20ae5f60daae"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 195,
@@ -2916,12 +2907,6 @@
                   "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
                 },
                 {
-                  "introduced": "95a4b8db680beeca879f39c161296d29e22138f1"
-                },
-                {
-                  "fixed": "34cf9d54a46598c44938aa7598820484d7af7133"
-                },
-                {
                   "fixed": "76f83f0db23846e254d940ec7"
                 }
               ],
@@ -3460,6 +3445,7 @@
         "SUSE-SU-2026:20722-1",
         "SUSE-SU-2026:20760-1",
         "SUSE-SU-2026:20918-1",
+        "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10371-1",
         "openSUSE-SU-2026:20404-1"
       ],

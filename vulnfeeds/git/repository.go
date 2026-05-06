@@ -17,10 +17,17 @@ package git
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"maps"
+	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"regexp"
 	"slices"
@@ -137,6 +144,75 @@ func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 	return canonicalLink, ok
 }
 
+type GitterRef struct {
+	Label string `json:"label"`
+	Hash  string `json:"hash"` // base64-encoded bytes
+}
+
+type GitterTagsResponse struct {
+	Tags []GitterRef `json:"tags"`
+}
+
+func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
+	gitterHost := os.Getenv("GITTER_HOST")
+	if gitterHost == "" {
+		return nil, errors.New("GITTER_HOST not set")
+	}
+
+	getTagsURL, err := url.JoinPath(gitterHost, "tags")
+	if err != nil {
+		return nil, fmt.Errorf("failed to join path: %w", err)
+	}
+
+	u, err := url.Parse(getTagsURL)
+	if err != nil {
+		return nil, err
+	}
+	q := u.Query()
+	q.Set("url", repoURL)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gitter request failed with status %s: %s", resp.Status, string(body))
+	}
+
+	var tagsResp GitterTagsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tagsResp); err != nil {
+		return nil, fmt.Errorf("failed to decode gitter response: %w", err)
+	}
+
+	refs := make([]*plumbing.Reference, 0, len(tagsResp.Tags))
+	for _, t := range tagsResp.Tags {
+		decodedHash, err := base64.StdEncoding.DecodeString(t.Hash)
+		if err != nil {
+			logger.Warn("failed to decode base64 hash from gitter", slog.String("tag", t.Label), slog.String("hash", t.Hash))
+			continue
+		}
+		name := plumbing.ReferenceName("refs/tags/" + t.Label)
+		ref := plumbing.NewHashReference(name, plumbing.NewHash(hex.EncodeToString(decodedHash)))
+		refs = append(refs, ref)
+	}
+
+	return refs, nil
+}
+
 // RemoteRepoRefsWithRetry will exponentially retry listing the peeled references of the repoURL up to retries times.
 func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.Reference, err error) {
 	remoteConfig := &config.RemoteConfig{
@@ -151,6 +227,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 
 	backoff := retry.NewExponential(1 * time.Second)
 	backoff = retry.WithMaxRetries(retries, backoff)
+	backoff = newLoggingBackoff(backoff, "RemoteRepoRefs")
 
 	if err := retry.Do(ctx, backoff, func(_ context.Context) error {
 		refs, err = repo.List(&git.ListOptions{PeelingOption: git.AppendPeeled})
@@ -200,7 +277,17 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error)
 		}
 	}
 	// Cache miss.
-	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
+	var refs []*plumbing.Reference
+	var err error
+	if os.Getenv("GITTER_HOST") != "" {
+		refs, err = gitterRepoRefs(repoURL)
+		if err != nil {
+			logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
+			refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
+		}
+	} else {
+		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
+	}
 	if err != nil {
 		if repoTagsCache != nil {
 			repoTagsCache.SetInvalid(repoURL)
@@ -332,6 +419,13 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 // Validate the repo by attempting to query it's references.
 // *** Does external calls to verify repos ***
 func ValidRepo(repoURL string) (valid bool) {
+	if os.Getenv("GITTER_HOST") != "" {
+		_, err := gitterRepoRefs(repoURL)
+		if err == nil {
+			return true
+		}
+		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+	}
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
@@ -347,6 +441,13 @@ func ValidRepo(repoURL string) (valid bool) {
 // Otherwise functional repos that don't have any tags are not valid.
 // *** Does external calls to verify repos ***
 func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
+	if os.Getenv("GITTER_HOST") != "" {
+		refs, err := gitterRepoRefs(repoURL)
+		if err == nil {
+			return len(refs) > 0
+		}
+		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+	}
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
 		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.

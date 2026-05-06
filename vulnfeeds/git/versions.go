@@ -195,7 +195,8 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 		httpClient = http.DefaultClient
 	}
 	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+	loggingBackoff := newLoggingBackoff(retry.WithMaxRetries(3, backoff), "ValidateAndCanonicalizeLink")
+	if err := retry.Do(context.Background(), loggingBackoff, func(ctx context.Context) error {
 		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
 		if err != nil {
 			return err

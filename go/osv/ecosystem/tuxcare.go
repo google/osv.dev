@@ -72,13 +72,11 @@ func (e tuxcareEcosystem) Coarse(version string) (string, error) {
 	return inner.Coarse(version)
 }
 
+// IsSemver always returns false: TuxCare advisories should not have their
+// affected[].ranges[].type converted from ECOSYSTEM to SEMVER, regardless of
+// the inner ecosystem's behavior.
 func (e tuxcareEcosystem) IsSemver() bool {
-	inner, err := e.resolve()
-	if err != nil {
-		return false
-	}
-
-	return inner.IsSemver()
+	return false
 }
 
 // unwrap strips the wrapper added by Provider.Get, so callers that wrap us

@@ -1444,16 +1444,7 @@
         "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
         "package": {}
       },
-      "vulns": [
-        {
-          "id": "CVE-2023-39137",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2023-39139",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {

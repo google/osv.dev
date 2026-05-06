@@ -24,6 +24,7 @@ import (
 
 type loggingBackoff struct {
 	retry.Backoff
+
 	attempt int
 	opName  string
 }
@@ -38,6 +39,7 @@ func (b *loggingBackoff) Next() (time.Duration, bool) {
 			slog.String("backoff", next.String()),
 		)
 	}
+
 	return next, stop
 }
 

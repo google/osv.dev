@@ -411,4 +411,3 @@ func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
 		t.Errorf("ValidateAndCanonicalizeLink() expected 4 requests (1 initial + 3 retries), got %d", requests)
 	}
 }
-

@@ -424,19 +424,6 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 		return false
 	}
 
-	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
-	// We can remove the file and retry
-	if isIndexLockError(err) {
-		logger.WarnContext(ctx, "index.lock exists, attempting to remove")
-		indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
-		if err := os.Remove(indexLockPath); err != nil {
-			logger.ErrorContext(ctx, "failed to remove index.lock", slog.Any("err", err))
-			return false
-		}
-
-		return true
-	}
-
 	// Refname conflict, likely name conflict between local and remote refs
 	// We can try removing stale remote-tracking branches and retry
 	if isRefConflictError(err) {
@@ -447,6 +434,12 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 		}
 
 		return true
+	}
+
+	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
+	// We want to reclone as fallback but log a separate warning (for stats)
+	if isIndexLockError(err) {
+		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
 	}
 
 	return false

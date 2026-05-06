@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -147,20 +146,17 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 		}
 
 		if gcsHelper != nil {
-			var vulnBuf, metricsBuf bytes.Buffer
-			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, &vulnBuf, &metricsBuf, sourceLink)
-			if err != nil {
-				logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
+			vuln, metrics := cve5.CVEToOSV(cve, sourceLink)
+			if rejectFailed && metrics.Outcome != models.Successful {
+				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 			} else {
-				if rejectFailed && metrics.Outcome != models.Successful {
-					logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
-				} else {
-					logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
-					objectName := filepath.Join(*gcsPrefix, string(cveID)+".json")
-					gcsHelper.Upload(objectName, bytes.NewReader(vulnBuf.Bytes()), "", "application/json")
+				logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+				if err := writer.UploadVulnIfChangedAsync(gcsHelper, *gcsPrefix, vuln.Vulnerability); err != nil {
+					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+				}
 
-					metricsObjectName := filepath.Join(*gcsPrefix, string(cveID)+".metrics.json")
-					gcsHelper.Upload(metricsObjectName, bytes.NewReader(metricsBuf.Bytes()), "", "application/json")
+				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics); err != nil {
+					logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 			}
 

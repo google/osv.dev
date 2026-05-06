@@ -153,6 +153,15 @@ type GitterTagsResponse struct {
 	Tags []GitterRef `json:"tags"`
 }
 
+type GitterError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *GitterError) Error() string {
+	return fmt.Sprintf("gitter request failed with status %d: %s", e.StatusCode, e.Body)
+}
+
 func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 	gitterHost := os.Getenv("GITTER_HOST")
 	if gitterHost == "" {
@@ -190,7 +199,10 @@ func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("gitter request failed with status %s: %s", resp.Status, string(body))
+		return nil, &GitterError{
+			StatusCode: resp.StatusCode,
+			Body:       string(body),
+		}
 	}
 
 	var tagsResp GitterTagsResponse
@@ -244,7 +256,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 
 		return nil
 	}); err != nil {
-		logger.Warn("Error: "+err.Error(), slog.Any("repo", repo))
+		logger.Warn("Error: "+err.Error(), slog.Any("repo", repoURL))
 		return refs, err
 	}
 
@@ -282,8 +294,11 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error)
 	if os.Getenv("GITTER_HOST") != "" {
 		refs, err = gitterRepoRefs(repoURL)
 		if err != nil {
-			logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
-			refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
+			var gitterErr *GitterError
+			if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
+				logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
+				refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
+			}
 		}
 	} else {
 		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
@@ -424,7 +439,12 @@ func ValidRepo(repoURL string) (valid bool) {
 		if err == nil {
 			return true
 		}
-		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+		var gitterErr *GitterError
+		if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
+			logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+		} else {
+			return false
+		}
 	}
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
@@ -446,7 +466,12 @@ func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 		if err == nil {
 			return len(refs) > 0
 		}
-		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+		var gitterErr *GitterError
+		if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
+			logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+		} else {
+			return false
+		}
 	}
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {

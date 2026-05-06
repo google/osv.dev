@@ -479,28 +479,45 @@ func TestValidRepoWithGitter(t *testing.T) {
 
 	t.Setenv("GITTER_HOST", ts.URL)
 
-	// Test 1: StatusOK => both ValidRepo and ValidRepoAndHasUsableRefs are true
-	responseStatus = http.StatusOK
-	if !ValidRepo("https://github.com/zblogcn/zblogphp") {
-		t.Errorf("expected ValidRepo to be true for 200 OK")
-	}
-	if !ValidRepoAndHasUsableRefs("https://github.com/zblogcn/zblogphp") {
-		t.Errorf("expected ValidRepoAndHasUsableRefs to be true for 200 OK")
+	tests := []struct {
+		name                    string
+		status                  int
+		repo                    string
+		wantValidRepo           bool
+		wantValidRepoAndHasRefs bool
+	}{
+		{
+			name:                    "StatusOK => both ValidRepo and ValidRepoAndHasUsableRefs are true",
+			status:                  http.StatusOK,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           true,
+			wantValidRepoAndHasRefs: true,
+		},
+		{
+			name:                    "StatusNoContent => ValidRepo is true, but ValidRepoAndHasUsableRefs is false",
+			status:                  http.StatusNoContent,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           true,
+			wantValidRepoAndHasRefs: false,
+		},
+		{
+			name:                    "StatusNotFound => Falls back to legacy check and returns false",
+			status:                  http.StatusNotFound,
+			repo:                    "https://github.com/andrewpollock/mybogusrepo",
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
+		},
 	}
 
-	// Test 2: StatusNoContent => ValidRepo is true, but ValidRepoAndHasUsableRefs is false (no tags)
-	responseStatus = http.StatusNoContent
-	if !ValidRepo("https://github.com/zblogcn/zblogphp") {
-		t.Errorf("expected ValidRepo to be true for 204 No Content")
-	}
-	if ValidRepoAndHasUsableRefs("https://github.com/zblogcn/zblogphp") {
-		t.Errorf("expected ValidRepoAndHasUsableRefs to be false for 204 No Content")
-	}
-
-	// Test 3: StatusNotFound (404) => Falls back to legacy check.
-	// We mock a non-existent repo so legacy check also returns false.
-	responseStatus = http.StatusNotFound
-	if ValidRepo("https://github.com/andrewpollock/mybogusrepo") {
-		t.Errorf("expected ValidRepo to be false for 404")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			responseStatus = tc.status
+			if got := ValidRepo(tc.repo); got != tc.wantValidRepo {
+				t.Errorf("ValidRepo(%q) = %v, want %v", tc.repo, got, tc.wantValidRepo)
+			}
+			if got := ValidRepoAndHasUsableRefs(tc.repo); got != tc.wantValidRepoAndHasRefs {
+				t.Errorf("ValidRepoAndHasUsableRefs(%q) = %v, want %v", tc.repo, got, tc.wantValidRepoAndHasRefs)
+			}
+		})
 	}
 }

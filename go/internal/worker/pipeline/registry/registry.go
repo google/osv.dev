@@ -4,6 +4,7 @@ package registry
 import (
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/enumerateversions"
+	"github.com/google/osv.dev/go/internal/worker/pipeline/filterecosystem"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/makesemver"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/namenormalize"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/published"
@@ -15,6 +16,7 @@ import (
 // List is the list of all enrichers used in the worker pipeline.
 var List = []pipeline.Enricher{
 	&namenormalize.Enricher{},
+	&filterecosystem.Enricher{},
 	&makesemver.Enricher{},
 	&enumerateversions.Enricher{},
 	&schemaversion.Enricher{},

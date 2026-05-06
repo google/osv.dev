@@ -41,10 +41,10 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
+	db "github.com/google/osv.dev/go/internal/database/datastore"
+	internalmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
-	"github.com/google/osv.dev/go/osv/models"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/api/iterator"
 )
 
 const (
@@ -57,17 +57,17 @@ const (
 	batchSize          = 500
 )
 
-var errorCodeMapping = map[string]models.ImportFindings{
-	"SCH:001": models.ImportFindingsInvalidJSON,
-	"REC:001": models.ImportFindingsInvalidRecord,
-	"REC:002": models.ImportFindingsInvalidAliases,
-	"REC:003": models.ImportFindingsInvalidUpstream,
-	"REC:004": models.ImportFindingsInvalidRelated,
-	"RNG:001": models.ImportFindingsInvalidRange,
-	"RNG:002": models.ImportFindingsInvalidRange,
-	"PKG:001": models.ImportFindingsInvalidPackage,
-	"PKG:002": models.ImportFindingsInvalidVersion,
-	"PKG:003": models.ImportFindingsInvalidPURL,
+var errorCodeMapping = map[string]internalmodels.ImportFindings{
+	"SCH:001": internalmodels.ImportFindingsInvalidJSON,
+	"REC:001": internalmodels.ImportFindingsInvalidRecord,
+	"REC:002": internalmodels.ImportFindingsInvalidAliases,
+	"REC:003": internalmodels.ImportFindingsInvalidUpstream,
+	"REC:004": internalmodels.ImportFindingsInvalidRelated,
+	"RNG:001": internalmodels.ImportFindingsInvalidRange,
+	"RNG:002": internalmodels.ImportFindingsInvalidRange,
+	"PKG:001": internalmodels.ImportFindingsInvalidPackage,
+	"PKG:002": internalmodels.ImportFindingsInvalidVersion,
+	"PKG:003": internalmodels.ImportFindingsInvalidPURL,
 }
 
 var (
@@ -92,7 +92,16 @@ func run() error {
 	}
 	defer dsClient.Close()
 
-	prefixToSource, err := constructPrefixToSourceMap(ctx, dsClient)
+	storageClient, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create storage client: %w", err)
+	}
+	defer storageClient.Close()
+
+	sourceRepoStore := db.NewSourceRepositoryStore(dsClient)
+	importFindingsStore := db.NewImportFindingsStore(dsClient, storageClient, linterExportBucket, linterResultDir)
+
+	prefixToSource, err := constructPrefixToSourceMap(ctx, sourceRepoStore)
 	if err != nil {
 		return fmt.Errorf("failed to construct prefix map: %w", err)
 	}
@@ -113,27 +122,20 @@ func run() error {
 		return fmt.Errorf("linter execution failed: %w", err)
 	}
 
-	if err := processLinterResult(ctx, dsClient, linterOutput, prefixToSource, *dryRun); err != nil {
+	if err := processLinterResult(ctx, importFindingsStore, linterOutput, prefixToSource, *dryRun); err != nil {
 		return fmt.Errorf("failed to process linter result: %w", err)
 	}
 
 	return nil
 }
 
-func constructPrefixToSourceMap(ctx context.Context, client *datastore.Client) (map[string]string, error) {
+func constructPrefixToSourceMap(ctx context.Context, store internalmodels.SourceRepositoryStore) (map[string]string, error) {
 	prefixToSource := make(map[string]string)
-	query := datastore.NewQuery("SourceRepository")
-	it := client.Run(ctx, query)
-	for {
-		var source models.SourceRepository
-		_, err := it.Next(&source)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
+	for source, err := range store.All(ctx) {
 		if err != nil {
 			return nil, err
 		}
-		for _, prefix := range source.DBPrefix {
+		for _, prefix := range source.IDPrefixes {
 			prefixToSource[prefix] = source.Name
 		}
 	}
@@ -302,7 +304,7 @@ func runLinter(binaryPath, dataDir string) ([]byte, error) {
 	return output, nil
 }
 
-func processLinterResult(ctx context.Context, dsClient *datastore.Client, output []byte, prefixToSource map[string]string, dryRun bool) error {
+func processLinterResult(ctx context.Context, store internalmodels.ImportFindingsStore, output []byte, prefixToSource map[string]string, dryRun bool) error {
 	var results map[string][]map[string]any
 	if len(output) == 0 {
 		return errors.New("linter output is empty")
@@ -316,8 +318,8 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		if err := uploadRecordToBucket(ctx, results, prefixToSource, dryRun); err != nil {
-			logger.Error("Failed to upload results to bucket", slog.Any("err", err))
+		if err := uploadRecordToStore(ctx, store, results, prefixToSource, dryRun); err != nil {
+			logger.Error("Failed to upload results to store", slog.Any("err", err))
 			return nil
 		}
 
@@ -325,15 +327,14 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	})
 
 	// 2. Fetch existing findings (Async)
-	existingIDs := make(map[string]*datastore.Key)
+	existingIDs := make(map[string]bool)
 	g.Go(func() error {
-		query := datastore.NewQuery("ImportFinding").KeysOnly()
-		keys, err := dsClient.GetAll(ctx, query, nil)
+		ids, err := store.ListIDs(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to fetch existing findings: %w", err)
 		}
-		for _, key := range keys {
-			existingIDs[key.Name] = key
+		for _, id := range ids {
+			existingIDs[id] = true
 		}
 
 		return nil
@@ -341,7 +342,7 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 
 	// 3. Process findings and update Datastore (Parallel)
 	linterBugs := make(map[string]bool)
-	findingsToPut := make([]*models.ImportFinding, 0, len(results))
+	findingsToPut := make([]*internalmodels.ImportFinding, 0, len(results))
 	now := time.Now().UTC()
 
 	// Prepare findings in memory first (CPU bound)
@@ -353,7 +354,7 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 			continue
 		}
 
-		uniqueFindings := make(map[models.ImportFindings]bool)
+		uniqueFindings := make(map[internalmodels.ImportFindings]bool)
 		for _, f := range findingsList {
 			code, ok := f["Code"].(string)
 			if !ok {
@@ -361,12 +362,12 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 			}
 			importFinding := errorCodeMapping[code]
 			if importFinding == 0 {
-				importFinding = models.ImportFindingsNone
+				importFinding = internalmodels.ImportFindingsNone
 			}
 			uniqueFindings[importFinding] = true
 		}
 
-		var sortedFindings []models.ImportFindings
+		var sortedFindings []internalmodels.ImportFindings
 		for f := range uniqueFindings {
 			sortedFindings = append(sortedFindings, f)
 		}
@@ -377,9 +378,7 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 		prefix := strings.Split(bugID, "-")[0] + "-"
 		source := prefixToSource[prefix]
 
-		key := datastore.NameKey("ImportFinding", bugID, nil)
-		finding := &models.ImportFinding{
-			Key:         key,
+		finding := &internalmodels.ImportFinding{
 			BugID:       bugID,
 			Source:      source,
 			Findings:    sortedFindings,
@@ -391,7 +390,7 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	// Launch workers to process findingsToPut
 
 	// Create a channel for batches
-	batchChan := make(chan []*models.ImportFinding, len(findingsToPut)/batchSize+1)
+	batchChan := make(chan []*internalmodels.ImportFinding, len(findingsToPut)/batchSize+1)
 
 	// Fill channel
 	for i := 0; i < len(findingsToPut); i += batchSize {
@@ -408,7 +407,7 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	for range maxConcurrency {
 		g.Go(func() error {
 			for batch := range batchChan {
-				if err := processBatch(ctx, dsClient, batch, now, &updatedCount, dryRun); err != nil {
+				if err := processBatch(ctx, store, batch, now, &updatedCount, dryRun); err != nil {
 					return err
 				}
 			}
@@ -423,35 +422,35 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 
 	logger.Info("Updated/Created findings", slog.Int64("count", updatedCount))
 
-	var keysToDelete []*datastore.Key
-	for id, key := range existingIDs {
+	var idsToDelete []string
+	for id := range existingIDs {
 		if !linterBugs[id] {
-			keysToDelete = append(keysToDelete, key)
-			logger.Debug("Deleting stale finding", slog.Any("key", key))
+			idsToDelete = append(idsToDelete, id)
+			logger.Debug("Deleting stale finding", slog.String("bugID", id))
 		}
 	}
 
-	if len(keysToDelete) > 0 {
+	if len(idsToDelete) > 0 {
 		if dryRun {
-			logger.Info("Dry run: skipping deletion of stale findings", slog.Int("count", len(keysToDelete)))
+			logger.Info("Dry run: skipping deletion of stale findings", slog.Int("count", len(idsToDelete)))
 		} else {
 			// Delete in batches
 			deleteG, ctx := errgroup.WithContext(ctx)
-			deleteBatchChan := make(chan []*datastore.Key, len(keysToDelete)/batchSize+1)
+			deleteBatchChan := make(chan []string, len(idsToDelete)/batchSize+1)
 
-			for i := 0; i < len(keysToDelete); i += batchSize {
+			for i := 0; i < len(idsToDelete); i += batchSize {
 				end := i + batchSize
-				if end > len(keysToDelete) {
-					end = len(keysToDelete)
+				if end > len(idsToDelete) {
+					end = len(idsToDelete)
 				}
-				deleteBatchChan <- keysToDelete[i:end]
+				deleteBatchChan <- idsToDelete[i:end]
 			}
 			close(deleteBatchChan)
 
 			for range maxConcurrency {
 				deleteG.Go(func() error {
 					for batch := range deleteBatchChan {
-						if err := dsClient.DeleteMulti(ctx, batch); err != nil {
+						if err := store.DeleteMulti(ctx, batch); err != nil {
 							return err
 						}
 					}
@@ -468,40 +467,36 @@ func processLinterResult(ctx context.Context, dsClient *datastore.Client, output
 	return nil
 }
 
-func processBatch(ctx context.Context, dsClient *datastore.Client, batch []*models.ImportFinding, now time.Time, updatedCount *int64, dryRun bool) error {
-	keys := make([]*datastore.Key, len(batch))
+func processBatch(ctx context.Context, store internalmodels.ImportFindingsStore, batch []*internalmodels.ImportFinding, now time.Time, updatedCount *int64, dryRun bool) error {
+	bugIDs := make([]string, len(batch))
 	for j, f := range batch {
-		keys[j] = f.Key
+		bugIDs[j] = f.BugID
 	}
 
-	existing := make([]*models.ImportFinding, len(batch))
-	if err := dsClient.GetMulti(ctx, keys, existing); err != nil {
-		var multiErr datastore.MultiError
-		if errors.As(err, &multiErr) {
-			for j, e := range multiErr {
-				if errors.Is(e, datastore.ErrNoSuchEntity) {
-					batch[j].FirstSeen = now
-					logger.Info("New finding", slog.String("bugID", batch[j].BugID))
-				} else if e != nil {
-					return err
-				} else {
-					batch[j].FirstSeen = existing[j].FirstSeen
-					if equalFindings(batch[j].Findings, existing[j].Findings) {
-						batch[j] = nil // Skip
-					}
-				}
-			}
+	existing, err := store.GetMulti(ctx, bugIDs)
+	if err != nil {
+		return err
+	}
+
+	for j, f := range batch {
+		if f == nil {
+			continue
+		}
+		if existing[j] == nil {
+			batch[j].FirstSeen = now
+			logger.Info("New finding", slog.String("bugID", batch[j].BugID))
 		} else {
-			return err
+			batch[j].FirstSeen = existing[j].FirstSeen
+			if equalFindings(batch[j].Findings, existing[j].Findings) {
+				batch[j] = nil // Skip
+			}
 		}
 	}
 
-	var cleanBatch []*models.ImportFinding
-	var cleanKeys []*datastore.Key
+	var cleanBatch []*internalmodels.ImportFinding
 	for _, f := range batch {
 		if f != nil {
 			cleanBatch = append(cleanBatch, f)
-			cleanKeys = append(cleanKeys, f.Key)
 		}
 	}
 
@@ -509,7 +504,7 @@ func processBatch(ctx context.Context, dsClient *datastore.Client, batch []*mode
 		if dryRun {
 			logger.Info("Dry run: skipping put of findings", slog.Int("count", len(cleanBatch)))
 		} else {
-			if _, err := dsClient.PutMulti(ctx, cleanKeys, cleanBatch); err != nil {
+			if err := store.PutMulti(ctx, cleanBatch); err != nil {
 				return err
 			}
 		}
@@ -519,7 +514,7 @@ func processBatch(ctx context.Context, dsClient *datastore.Client, batch []*mode
 	return nil
 }
 
-func equalFindings(a, b []models.ImportFindings) bool {
+func equalFindings(a, b []internalmodels.ImportFindings) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -532,26 +527,14 @@ func equalFindings(a, b []models.ImportFindings) bool {
 	return true
 }
 
-func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]any, prefixToSource map[string]string, dryRun bool) error {
-	client, err := storage.NewClient(ctx)
+func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFindingsStore, results map[string][]map[string]any, prefixToSource map[string]string, dryRun bool) error {
+	existingObjects, err := store.ListResultSources(ctx)
 	if err != nil {
 		return err
 	}
-	defer client.Close()
-	bucket := client.Bucket(linterExportBucket)
-
-	// List existing objects to determine what needs to be deleted later
-	existingObjects := make(map[string]bool)
-	it := bucket.Objects(ctx, &storage.Query{Prefix: linterResultDir})
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		existingObjects[attrs.Name] = true
+	existingObjectsMap := make(map[string]bool)
+	for _, obj := range existingObjects {
+		existingObjectsMap[obj] = true
 	}
 
 	sourceResults := make(map[string]map[string][]map[string]any)
@@ -591,20 +574,12 @@ func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]a
 	for range maxConcurrency {
 		gUpload.Go(func() error {
 			for task := range uploadChan {
-				targetPath := filepath.Join(linterResultDir, task.source, "result.json")
-
 				if dryRun {
-					logger.Info("Dry run: skipping upload", slog.String("targetPath", targetPath), slog.String("source", task.source))
+					logger.Info("Dry run: skipping upload", slog.String("source", task.source))
 					continue
 				}
 
-				w := bucket.Object(targetPath).NewWriter(ctx)
-				w.ContentType = "application/json"
-				if _, err := w.Write(task.data); err != nil {
-					w.Close()
-					return err
-				}
-				if err := w.Close(); err != nil {
+				if err := store.UploadResult(ctx, task.source, task.data); err != nil {
 					return err
 				}
 				logger.Info("Uploaded results for "+task.source, slog.String("source", task.source))
@@ -620,7 +595,7 @@ func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]a
 
 	// Calculate what to delete
 	var toDelete []string
-	for objName := range existingObjects {
+	for objName := range existingObjectsMap {
 		relPath, err := filepath.Rel(linterResultDir, objName)
 		if err != nil {
 			continue
@@ -656,7 +631,7 @@ func uploadRecordToBucket(ctx context.Context, results map[string][]map[string]a
 	for range maxConcurrency {
 		gDelete.Go(func() error {
 			for name := range deleteChan {
-				if err := bucket.Object(name).Delete(ctx); err != nil {
+				if err := store.DeleteResult(ctx, name); err != nil {
 					logger.Error("Failed to delete object", slog.String("name", name), slog.Any("err", err))
 				} else {
 					logger.Info("Deleted old result", slog.String("name", name))

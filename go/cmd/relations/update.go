@@ -26,6 +26,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
@@ -199,7 +200,7 @@ ConsumerLoop:
 
 			continue
 		}
-		listedVuln := models.NewListedVulnerabilityFromProto(v)
+		listedVuln := osvdatastore.NewListedVulnerabilityFromProto(v)
 		listedKey := datastore.NameKey("ListedVulnerability", id, nil)
 		if _, err := tx.Put(listedKey, listedVuln); err != nil {
 			logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))

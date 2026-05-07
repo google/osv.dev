@@ -98,6 +98,11 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		enriched.Modified = current.GetModified()
 	}
 
+	// Ensure Modified is at least as new as Withdrawn
+	if enriched.GetWithdrawn() != nil && enriched.GetWithdrawn().AsTime().After(enriched.GetModified().AsTime()) {
+		enriched.Modified = enriched.GetWithdrawn()
+	}
+
 	if err := e.Stores.Vulnerability.Write(ctx, models.WriteRequest{
 		ID:              enriched.GetId(),
 		Source:          task.SourceID,

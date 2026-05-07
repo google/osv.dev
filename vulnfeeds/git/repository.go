@@ -39,7 +39,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
@@ -160,6 +159,15 @@ type GitterError struct {
 
 func (e *GitterError) Error() string {
 	return fmt.Sprintf("gitter request failed with status %d: %s", e.StatusCode, e.Body)
+}
+
+func (e *GitterError) shouldFallback(err error) bool {
+	// Should only fall back when its not a gitter error, or the status code is
+	// StatusNoContent, StatusNotFound, or StatusForbidden
+	return !errors.As(err, &e) ||
+		(e.StatusCode != http.StatusNoContent &&
+			e.StatusCode != http.StatusNotFound &&
+			e.StatusCode != http.StatusForbidden)
 }
 
 func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
@@ -295,7 +303,7 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error)
 		refs, err = gitterRepoRefs(repoURL)
 		if err != nil {
 			var gitterErr *GitterError
-			if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
+			if gitterErr.shouldFallback(err){
 				logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
 				refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
 			}
@@ -433,29 +441,21 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 
 // Validate the repo by attempting to query it's references.
 // *** Does external calls to verify repos ***
-func ValidRepo(repoURL string) (valid bool) {
+func ValidRepo(repoURL string) bool {
 	if os.Getenv("GITTER_HOST") != "" {
 		_, err := gitterRepoRefs(repoURL)
 		if err == nil {
 			return true
 		}
 		var gitterErr *GitterError
-		if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
-			logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
-		} else {
+		if !gitterErr.shouldFallback(err) {
 			return false
 		}
+		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
 	}
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
-		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
-		return false
-	}
-	if err != nil {
-		return false
-	}
 
-	return true
+	return err == nil
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
@@ -467,27 +467,16 @@ func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 			return len(refs) > 0
 		}
 		var gitterErr *GitterError
-		if errors.As(err, &gitterErr) && gitterErr.StatusCode == http.StatusInternalServerError {
-			logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
-		} else {
+		if !gitterErr.shouldFallback(err) {
 			return false
 		}
+		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
 	}
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	if err != nil && errors.Is(err, transport.ErrAuthenticationRequired) {
-		// somewhat strangely, we get an authentication prompt via Git on non-existent repos.
-		return false
-	}
-	if err != nil {
-		return false
-	}
-	if len(refs) == 0 {
+	// Return false if there's an error, or if the repo has no refs (e.g. is empty)
+	if err != nil || len(refs) == 0 {
 		return false
 	}
 	// Repos with no tags aren't useful.
-	if len(RefTags(refs)) == 0 {
-		return false
-	}
-
-	return true
+	return len(RefTags(refs)) > 0
 }

@@ -303,7 +303,7 @@ func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error)
 		refs, err = gitterRepoRefs(repoURL)
 		if err != nil {
 			var gitterErr *GitterError
-			if gitterErr.shouldFallback(err){
+			if gitterErr.shouldFallback(err) {
 				logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
 				refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
 			}

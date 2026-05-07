@@ -87,6 +87,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
+		logTaskLatency(taskCtx, task)
 		m.Ack()
 	}
 }
@@ -121,4 +122,23 @@ func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {
 	ts := time.Unix(timestamp, 0)
 
 	return &ts, nil
+}
+
+func logTaskLatency(ctx context.Context, task Task) {
+	if task.ReceivedTime == nil {
+		return
+	}
+	now := time.Now()
+	latency := now.Sub(*task.ReceivedTime)
+	latencySeconds := int64(latency.Seconds())
+	logAttrs := []any{
+		slog.Int64("latency", latencySeconds),
+		slog.String("source", task.SourceID),
+		slog.String("path", task.PathInSource),
+	}
+	if task.SourceTime != nil {
+		srcLatency := now.Sub(*task.SourceTime)
+		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
+	}
+	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)
 }

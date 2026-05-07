@@ -25,41 +25,29 @@ class TuxCareEcosystem(OrderedEcosystem):
   "TuxCare:Red Hat", "TuxCare:Alpine:v3.16", "TuxCare:npm") and delegate
   version handling to the inner ecosystem.
 
-  A bare "TuxCare" or a nested "TuxCare:TuxCare:..." is malformed and
-  produces an instance with `_inner = None`; calling sort/coarse methods
-  on such an instance raises ValueError.
+  The caller (typically ``_ecosystems.get``) is responsible for resolving
+  and passing in the inner ecosystem helper. A bare "TuxCare" or a nested
+  "TuxCare:TuxCare:..." is malformed; instances built without a resolved
+  inner raise ValueError when sort/coarse methods are invoked.
   """
 
-  def __init__(self, suffix: str | None):
+  def __init__(self, suffix: str | None, inner: OrderedEcosystem | None = None):
     super().__init__(suffix)
-    if not _is_valid_inner(suffix):
-      self._inner = None
-      return
-    # Lazy import to avoid circular dependency with _ecosystems.
-    from ._ecosystems import get
-    self._inner = get(suffix)
+    self.inner = inner
 
-  @classmethod
-  def is_known_inner(cls, suffix: str | None) -> bool:
-    """Whether a TuxCare suffix names a known inner ecosystem."""
-    if not _is_valid_inner(suffix):
+  @staticmethod
+  def is_valid_suffix(suffix: str | None) -> bool:
+    """Reject empty suffix and nested TuxCare."""
+    if not suffix:
       return False
-    from ._ecosystems import is_known
-    return is_known(suffix)
+    return suffix.partition(':')[0] != _TUXCARE
 
   def _sort_key(self, version: str) -> Any:
-    if self._inner is None:
+    if self.inner is None:
       raise ValueError('TuxCare ecosystem has no resolvable inner ecosystem')
-    return self._inner._sort_key(version)  # pylint: disable=protected-access
+    return self.inner._sort_key(version)  # pylint: disable=protected-access
 
   def coarse_version(self, version: str) -> str:
-    if self._inner is None:
+    if self.inner is None:
       raise ValueError('TuxCare ecosystem has no resolvable inner ecosystem')
-    return self._inner.coarse_version(version)
-
-
-def _is_valid_inner(suffix: str | None) -> bool:
-  """Reject empty suffix and nested TuxCare."""
-  if not suffix:
-    return False
-  return suffix.partition(':')[0] != _TUXCARE
+    return self.inner.coarse_version(version)

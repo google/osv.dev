@@ -103,7 +103,9 @@ def is_known(ecosystem: str) -> bool:
   (even if ordering is not supported)."""
   name, _, suffix = ecosystem.partition(':')
   if name == _TUXCARE:
-    return TuxCareEcosystem.is_known_inner(suffix)
+    if not TuxCareEcosystem.is_valid_suffix(suffix):
+      return False
+    return is_known(suffix)
   return name in _ecosystems
 
 
@@ -144,6 +146,8 @@ def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   ecosys = _ecosystems.get(name)
   if ecosys is None:
     return None
+  if ecosys is TuxCareEcosystem:
+    return TuxCareEcosystem(suffix, inner=get(suffix))
   return ecosys(suffix)
 
 

@@ -306,10 +306,23 @@ func getRepoDirName(repoURL string) string {
 }
 
 func isAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
 	errString := err.Error()
+
 	return strings.Contains(errString, "could not read Username") ||
 		strings.Contains(errString, "Authentication failed") ||
-		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
+		strings.Contains(errString, "The requested URL returned error: 403")
+}
+
+func isNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found")
 }
 
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
@@ -348,6 +361,8 @@ func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUp
 		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
 		if isAuthError(err) {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
+		} else if isNotFoundError(err) {
+			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusNotFound)
 		} else {
 			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
 		}
@@ -901,6 +916,18 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 				return nil, FetchRepo(ctx, repoURL, false)
 			}); errFetch != nil {
 				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
+				if isAuthError(errFetch) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
+					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), http.StatusForbidden)
+
+					return
+				}
+				if isNotFoundError(errFetch) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
+					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), http.StatusNotFound)
+
+					return
+				}
 				http.Error(w, "Error fetching repository", http.StatusInternalServerError)
 
 				return
@@ -924,6 +951,12 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 			})
 			if errLsRemote != nil {
 				if isAuthError(errLsRemote) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
+					http.Error(w, fmt.Sprintf("Repository authentication failed: %v", errLsRemote), http.StatusForbidden)
+
+					return
+				}
+				if isNotFoundError(errLsRemote) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
 					http.Error(w, "Repository not found", http.StatusNotFound)
 

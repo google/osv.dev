@@ -501,11 +501,32 @@ func TestValidRepoWithGitter(t *testing.T) {
 			wantValidRepoAndHasRefs: false,
 		},
 		{
-			name:                    "StatusNotFound => Falls back to legacy check and returns false",
+			name:                    "StatusNotFound with Invalid Repo => Does NOT fall back, returns false",
 			status:                  http.StatusNotFound,
 			repo:                    "https://github.com/andrewpollock/mybogusrepo",
 			wantValidRepo:           false,
 			wantValidRepoAndHasRefs: false,
+		},
+		{
+			name:                    "StatusForbidden with Valid Repo => Does NOT fall back, returns false",
+			status:                  http.StatusForbidden,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
+		},
+		// {
+		// 	name:                    "StatusTooManyRequests with Valid Repo => Does NOT fall back, returns false",
+		// 	status:                  http.StatusTooManyRequests,
+		// 	repo:                    "https://github.com/zblogcn/zblogphp",
+		// 	wantValidRepo:           false,
+		// 	wantValidRepoAndHasRefs: false,
+		// },
+		{
+			name:                    "StatusInternalServerError with Valid Repo => Falls back, returns true",
+			status:                  http.StatusInternalServerError,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           true,
+			wantValidRepoAndHasRefs: true,
 		},
 	}
 

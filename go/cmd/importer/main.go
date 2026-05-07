@@ -81,7 +81,7 @@ func main() {
 	}
 	config.SourceRepoStore = db.NewSourceRepositoryStore(datastoreClient)
 	// Needed for deletions only
-	config.VulnerabilityStore = db.NewVulnerabilityStore(datastoreClient)
+	config.VulnerabilityStore = db.NewVulnerabilityStore(datastoreClient, nil)
 
 	psClient, err := pubsub.NewClient(ctx, project)
 	if err != nil {

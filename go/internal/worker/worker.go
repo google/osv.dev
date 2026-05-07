@@ -33,5 +33,6 @@ type Task struct {
 type Stores struct {
 	SourceRepo    models.SourceRepositoryStore
 	Vulnerability models.VulnerabilityStore
+	Relations     models.RelationsStore
 	PyPIPublisher clients.Publisher
 }

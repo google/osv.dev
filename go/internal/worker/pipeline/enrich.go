@@ -14,6 +14,7 @@ type EnrichParams struct {
 	SourceRepo        *models.SourceRepository
 	EcosystemProvider *ecosystem.Provider
 	ExistingVuln      *osvschema.Vulnerability
+	RelationsStore    models.RelationsStore
 }
 
 type Enricher interface {

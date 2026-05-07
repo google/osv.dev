@@ -48,6 +48,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	params := pipeline.EnrichParams{
 		PathInSource:      task.PathInSource,
 		EcosystemProvider: e.EcosystemProvider,
+		RelationsStore:    e.Stores.Relations,
 	}
 	var err error
 	params.SourceRepo, err = e.Stores.SourceRepo.Get(ctx, task.SourceID)

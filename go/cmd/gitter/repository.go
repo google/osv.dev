@@ -958,7 +958,7 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 
 // GetLocalTags uses git show-ref to get tags from local git directory
 func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) {
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags")
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags", "--dereference")
 
 	return r.runAndParseTags(ctx, cmd)
 }

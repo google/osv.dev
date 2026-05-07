@@ -21,7 +21,8 @@ from google.cloud import ndb
 import osv.tests
 from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
     AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup, \
-    RelatedGroup, SourceRepository, SourceRepositoryType
+    RelatedGroup, SourceRepository, SourceRepositoryType, AffectedCommits, \
+    AffectedVersions, AffectedEvent
 
 
 def main() -> int:
@@ -91,6 +92,27 @@ def main() -> int:
       modified=datetime.datetime(2025, 6, 7, 8, 9, 10, tzinfo=datetime.UTC),
   ).put()
 
+  print('(Python) Putting AffectedCommits')
+  AffectedCommits(
+      id='CVE-123-456',
+      bug_id='CVE-123-456',
+      commits=[b'hash1', b'hash2'],
+      public=True,
+      page=1,
+  ).put()
+
+  print('(Python) Putting AffectedVersions')
+  AffectedVersions(
+      id='1',
+      vuln_id='CVE-123-456',
+      ecosystem='Go',
+      name='stdlib',
+      versions=['v1.0.0', 'v1.1.0'],
+      events=[AffectedEvent(type='introduced', value='v1.0.0')],
+      coarse_min='00:00000001.00000000.00000000',
+      coarse_max='00:00000001.00000001.00000000',
+  ).put()
+
   print('(Python) Putting SourceRepository')
   SourceRepository(
       id='oss-fuzz',
@@ -149,8 +171,11 @@ def main() -> int:
   print('(Python) Getting RelatedGroup')
   if RelatedGroup.get_by_id('CVE-987-654') is None:
     return 1
-  print('(Python) Getting SourceRepository')
-  if SourceRepository.get_by_id('go-source') is None:
+  print('(Python) Getting AffectedCommits')
+  if AffectedCommits.get_by_id('CVE-987-654') is None:
+    return 1
+  print('(Python) Getting AffectedVersions')
+  if AffectedVersions.get_by_id('2') is None:
     return 1
 
   return 0

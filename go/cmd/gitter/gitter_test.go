@@ -120,15 +120,15 @@ func TestPrepareURL(t *testing.T) {
 	}
 }
 
-//nolint:revive // These error strings are testing for output from git
 func TestIsAuthError(t *testing.T) {
 	tests := []struct {
 		err      error
 		expected bool
 	}{
 		{errors.New("fatal: Authentication failed for 'https://github.com/google/this-repo-does-not-exist-12345.git/'"), true},
-		{errors.New("remote: Repository not found."), true},
+		{errors.New("remote: Repository not found"), false},
 		{errors.New("fatal: could not read Username for 'https://github.com': terminal prompts disabled"), true},
+		{errors.New("The requested URL returned error: 403"), true},
 		{errors.New("some other error"), false},
 		{errors.New("git clone failed: exit status 128"), false},
 	}
@@ -136,6 +136,24 @@ func TestIsAuthError(t *testing.T) {
 	for _, tt := range tests {
 		if result := isAuthError(tt.err); result != tt.expected {
 			t.Errorf("isAuthError(%v) = %v, expected %v", tt.err, result, tt.expected)
+		}
+	}
+}
+
+func TestIsNotFoundError(t *testing.T) {
+	tests := []struct {
+		err      error
+		expected bool
+	}{
+		{errors.New("remote: Repository not found"), true},
+		{errors.New("repository not found"), true},
+		{errors.New("some other error"), false},
+		{nil, false},
+	}
+
+	for _, tt := range tests {
+		if result := isNotFoundError(tt.err); result != tt.expected {
+			t.Errorf("isNotFoundError(%v) = %v, expected %v", tt.err, result, tt.expected)
 		}
 	}
 }
@@ -467,9 +485,9 @@ func TestTagsHandler(t *testing.T) {
 			expectedTags: nil,
 		},
 		{
-			name:         "Non-existent repo",
+			name:         "Repo asks for username therefore forbidden",
 			url:          "https://github.com/google/this-repo-does-not-exist-12345.git",
-			expectedCode: http.StatusNotFound,
+			expectedCode: http.StatusForbidden,
 			expectedTags: nil,
 		},
 	}

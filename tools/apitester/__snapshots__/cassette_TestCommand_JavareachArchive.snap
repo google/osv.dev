@@ -153,7 +153,7 @@
         },
         {
           "id": "GHSA-9m6f-7xcq-8vf8",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-c8hm-7hpq-7jhg",
@@ -627,7 +627,7 @@
         },
         {
           "id": "GHSA-9m6f-7xcq-8vf8",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-c8hm-7hpq-7jhg",

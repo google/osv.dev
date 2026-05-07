@@ -65,9 +65,15 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 			var events []osvutil.Event
 			for _, e := range r.GetEvents() {
 				evt := osvutil.FromSchemaEvent(e)
-				if evt.Version != "" {
-					events = append(events, evt)
+				if evt.Version == "" {
+					continue
 				}
+				if evt.Type == osvutil.Limit && evt.Version == "*" {
+					// We shouldn't get limit events, but if we do,
+					// limit: "*" is a valid value for indicating no limit.
+					continue
+				}
+				events = append(events, evt)
 			}
 
 			// 2. Sort the events chronologically.
@@ -115,10 +121,8 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 						switch evt.Type {
 						case osvutil.Introduced:
 							isAffected = true
-						case osvutil.Fixed, osvutil.LastAffected:
+						case osvutil.Fixed, osvutil.LastAffected, osvutil.Limit:
 							isAffected = false
-						case osvutil.Limit:
-							// limit events do not apply here
 						}
 						eventIdx++
 
@@ -129,13 +133,11 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 						switch evt.Type {
 						case osvutil.Introduced:
 							isAffected = true
-						case osvutil.Fixed:
+						case osvutil.Fixed, osvutil.Limit: // treat limit as fixed
 							isAffected = false
 						case osvutil.LastAffected:
 							newVersions = append(newVersions, vStr)
 							isAffected = false
-						case osvutil.Limit:
-							// limit events do not apply here
 						}
 						eventIdx++
 

@@ -127,6 +127,32 @@ func TestEnricher_Enrich(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "Mixed valid and invalid ecosystems",
+			repoName: "all-allowed",
+			affected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "PyPI",
+						Name:      "valid-pkg",
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "InvalidEcosystem",
+						Name:      "invalid-pkg",
+					},
+				},
+			},
+			expectedAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "PyPI",
+						Name:      "valid-pkg",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {

@@ -127,7 +127,7 @@ func TestIsAuthError(t *testing.T) {
 		expected bool
 	}{
 		{errors.New("fatal: Authentication failed for 'https://github.com/google/this-repo-does-not-exist-12345.git/'"), true},
-		{errors.New("remote: Repository not found."), false},
+		{errors.New("remote: Repository not found"), false},
 		{errors.New("fatal: could not read Username for 'https://github.com': terminal prompts disabled"), true},
 		{errors.New("The requested URL returned error: 403"), true},
 		{errors.New("some other error"), false},

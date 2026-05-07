@@ -120,7 +120,6 @@ func TestPrepareURL(t *testing.T) {
 	}
 }
 
-//nolint:revive // These error strings are testing for output from git
 func TestIsAuthError(t *testing.T) {
 	tests := []struct {
 		err      error
@@ -146,7 +145,7 @@ func TestIsNotFoundError(t *testing.T) {
 		err      error
 		expected bool
 	}{
-		{errors.New("remote: Repository not found."), true},
+		{errors.New("remote: Repository not found"), true},
 		{errors.New("repository not found"), true},
 		{errors.New("some other error"), false},
 		{nil, false},

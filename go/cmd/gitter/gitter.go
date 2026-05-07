@@ -310,7 +310,7 @@ func isAuthError(err error) bool {
 		return false
 	}
 	errString := err.Error()
-	
+
 	return strings.Contains(errString, "could not read Username") ||
 		strings.Contains(errString, "Authentication failed") ||
 		strings.Contains(errString, "The requested URL returned error: 403")
@@ -925,7 +925,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 				if isNotFoundError(errFetch) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
 					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), http.StatusNotFound)
-					
+
 					return
 				}
 				http.Error(w, "Error fetching repository", http.StatusInternalServerError)

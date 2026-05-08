@@ -88,18 +88,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 
 			var rangeEvents []AffectedEvent
 			for _, e := range events {
-				var evType string
-				switch e.Type {
-				case osvutil.Introduced:
-					evType = "introduced"
-				case osvutil.LastAffected:
-					evType = "last_affected"
-				case osvutil.Fixed:
-					evType = "fixed"
-				case osvutil.Limit:
-					evType = "limit"
-				}
-				rangeEvents = append(rangeEvents, AffectedEvent{Type: evType, Value: e.Version})
+				rangeEvents = append(rangeEvents, AffectedEvent{Type: e.Type.String(), Value: e.Version})
 			}
 
 			coarseMin := minCoarseVersion

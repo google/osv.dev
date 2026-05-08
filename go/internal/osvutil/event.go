@@ -18,6 +18,21 @@ const (
 	Limit
 )
 
+func (e EventType) String() string {
+	switch e {
+	case Introduced:
+		return "introduced"
+	case LastAffected:
+		return "last_affected"
+	case Fixed:
+		return "fixed"
+	case Limit:
+		return "limit"
+	}
+
+	return ""
+}
+
 type Event struct {
 	Type    EventType
 	Version string

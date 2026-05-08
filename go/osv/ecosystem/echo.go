@@ -34,3 +34,14 @@ func echoFactory(p *Provider, suffix string) Ecosystem {
 
 	return echoEcosystem{Ecosystem: dpkgEcosystem{}}
 }
+
+func (e echoEcosystem) NormalizePackageName(name string) string {
+	// We want to apply the normalization of the inner ecosystem.
+	if norm, ok := e.Ecosystem.(PackageNameNormalizer); ok {
+		return norm.NormalizePackageName(name)
+	}
+
+	return name
+}
+
+var _ PackageNameNormalizer = echoEcosystem{}

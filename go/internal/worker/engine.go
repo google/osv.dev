@@ -61,15 +61,12 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 
 	// Get the current state of the vuln to check against
 	current, err := e.Stores.Vulnerability.Get(ctx, task.Vuln.GetId())
-	currentNotFound := errors.Is(err, models.ErrNotFound)
-	if err != nil && !currentNotFound {
+	if err == nil {
+		params.ExistingVuln = current
+	} else if !errors.Is(err, models.ErrNotFound) {
 		logger.ErrorContext(ctx, "Failed to get current vuln state", slog.String("vuln_id", task.Vuln.GetId()), slog.Any("error", err))
 
 		return fmt.Errorf("failed to get current vuln state: %w", err)
-	}
-
-	if !currentNotFound {
-		params.ExistingVuln = current
 	}
 
 	enriched := proto.Clone(task.Vuln).(*osvschema.Vulnerability)
@@ -92,7 +89,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		return err
 	}
 
-	if currentNotFound || e.isSemanticallyDifferent(current, enriched) {
+	if params.ExistingVuln == nil || e.isSemanticallyDifferent(current, enriched) {
 		enriched.Modified = timestamppb.Now()
 	} else if current.GetModified().AsTime().After(enriched.GetModified().AsTime()) {
 		enriched.Modified = current.GetModified()

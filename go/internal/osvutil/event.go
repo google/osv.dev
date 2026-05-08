@@ -64,6 +64,11 @@ func SortEvents(e ecosystem.Ecosystem, events []Event) error {
 
 		// Fallback to string comparison if unparsable
 		if errA != nil || errB != nil {
+			if errA != nil {
+				sortErr = errA
+			} else {
+				sortErr = errB
+			}
 			if a.Version != b.Version {
 				return strings.Compare(a.Version, b.Version)
 			}

@@ -56,6 +56,7 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 
 		var newVersions []string
 
+	RangeLoop:
 		for _, r := range affected.GetRanges() {
 			if r.GetType() != osvschema.Range_ECOSYSTEM && r.GetType() != osvschema.Range_SEMVER {
 				continue
@@ -98,7 +99,14 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 			for _, evt := range events {
 				p, err := sys.Parse(evt.Version)
 				if err != nil {
-					continue
+					logger.ErrorContext(ctx, "failed to parse event version, skipping range",
+						slog.String("vuln_id", vuln.GetId()),
+						slog.String("package", pkg.GetName()),
+						slog.String("ecosystem", ecosystemName),
+						slog.String("version", evt.Version),
+						slog.String("error", err.Error()))
+
+					continue RangeLoop
 				}
 				parsedEvents = append(parsedEvents, parsedEvent{Event: evt, Parsed: p})
 			}

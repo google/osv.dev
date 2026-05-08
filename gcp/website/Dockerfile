@@ -5,7 +5,7 @@ WORKDIR /build/frontend3
 # Install dependencies first for better caching
 RUN corepack enable pnpm
 COPY gcp/website/frontend3/package.json gcp/website/frontend3/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY gcp/website/frontend3/webpack.prod.js ./
 COPY gcp/website/frontend3/img img

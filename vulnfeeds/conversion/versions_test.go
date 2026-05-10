@@ -214,13 +214,13 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{
 			description:     "Exact Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{

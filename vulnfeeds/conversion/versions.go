@@ -131,6 +131,14 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
+	r, err := repo(u)
+	if err != nil {
+		return "", err
+	}
+	return strings.ToLower(r), nil
+}
+
+func repo(u string) (string, error) {
 	var supportedHosts = []string{
 		"bitbucket.org",
 		"github.com",

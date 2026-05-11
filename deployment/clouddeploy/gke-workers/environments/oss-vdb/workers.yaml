@@ -10,6 +10,7 @@ spec:
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb
-        args:
-          - "--vulnerability-bucket=osv-vulnerabilities"
-          - "--notify-pypi=true"
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-vulnerabilities
+          - name: NOTIFY_PYPI
+            value: "true"

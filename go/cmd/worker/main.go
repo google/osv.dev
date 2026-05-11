@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -49,16 +50,17 @@ func run() error {
 	}
 
 	numWorkers := flag.Int("num-workers", 10, "Number of workers used to process tasks")
-	pubsubSubscription := flag.String("bus-sub-name", "tasks", "The name of the Pub/Sub subscription to read tasks from")
-	datastoreID := flag.String("datastore-id", "", "Datastore Database ID (empty string is default database)")
-	vulnBucket := flag.String("vulnerability-bucket", "osv-test-vulnerabilities", "Name of vulnerabilities bucket to write vuln protos to")
-	failTasksTopic := flag.String("failed-tasks-topic", "failed-tasks", "Pub/Sub topic to send failed tasks to (e.g. after failed GCS write)")
-	notifyPyPI := flag.Bool("notify-pypi", false, "whether to send PyPI vulns to the PyPI topic (legacy)")
 
 	flag.Parse()
 
+	pubsubSubscription := envOrDefault("PUBSUB_SUBSCRIPTION", "tasks")
+	datastoreID := envOrDefault("DATASTORE_DATABASE_ID", "") // empty string is the (default) database
+	vulnBucket := envOrDefault("OSV_VULNERABILITIES_BUCKET", "osv-test-vulnerabilities")
+	failTasksTopic := envOrDefault("FAILED_TASKS_TOPIC", "failed-tasks")
+	notifyPyPI, _ := strconv.ParseBool(envOrDefault("NOTIFY_PYPI", "false")) // returns false on error
+
 	// Plug in all the connections to the engine
-	dsClient, err := datastore.NewClientWithDatabase(ctx, project, *datastoreID)
+	dsClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 		return err
@@ -83,8 +85,8 @@ func run() error {
 		SourceRepo: db.NewSourceRepositoryStore(dsClient),
 		Vulnerability: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client:               dsClient,
-			GCS:                  clients.NewGCSClient(gcsClient, *vulnBucket),
-			FailedWritePublisher: &clients.GCPPublisher{Publisher: psClient.Publisher(*failTasksTopic)},
+			GCS:                  clients.NewGCSClient(gcsClient, vulnBucket),
+			FailedWritePublisher: &clients.GCPPublisher{Publisher: psClient.Publisher(failTasksTopic)},
 		}),
 		Relations:      db.NewRelationsStore(dsClient),
 		ImportFindings: db.NewImportFindingsStore(dsClient),
@@ -99,13 +101,13 @@ func run() error {
 		EcosystemProvider: ecosystem.DefaultProvider,
 	}
 
-	if *notifyPyPI {
+	if notifyPyPI {
 		engine.NotifyPyPI = true
 		engine.Stores.PyPIPublisher = &clients.GCPPublisher{Publisher: psClient.Publisher("pypi-bridge")}
 	}
 
 	// Set up and run the subscriber
-	sub := psClient.Subscriber(*pubsubSubscription)
+	sub := psClient.Subscriber(pubsubSubscription)
 	sub.ReceiveSettings.MaxOutstandingMessages = *numWorkers
 	sub.ReceiveSettings.MaxOutstandingBytes = -1 // no limit - we can give lots of memory to these machines
 	sub.ReceiveSettings.MaxExtension = 6 * time.Hour
@@ -116,4 +118,14 @@ func run() error {
 	}
 
 	return subscriber.Run(ctx)
+}
+
+// envOrDefault retrieves the value of the environment variable named by the key.
+// If the variable is not present in the environment, it returns the defaultValue.
+func envOrDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+
+	return defaultValue
 }

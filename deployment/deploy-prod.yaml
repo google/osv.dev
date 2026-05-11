@@ -32,7 +32,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA', 'gcr.io/oss-vdb/worker-base:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', 'gcr.io/oss-vdb/worker:$TAG_NAME']
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-worker:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-worker:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', 'gcr.io/oss-vdb/oss-fuzz-worker:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud

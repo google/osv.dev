@@ -769,7 +769,7 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 // FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
 	decoder := yaml.NewDecoder(r)
-	var vuln Vulnerability
+	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
 	err := decoder.Decode(&vuln)
 	if err != nil {
 		return nil, err
@@ -781,7 +781,7 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 // FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
 	decoder := json.NewDecoder(r)
-	var vuln Vulnerability
+	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
 	err := decoder.Decode(&vuln)
 	if err != nil {
 		return nil, err

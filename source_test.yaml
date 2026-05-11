@@ -12,7 +12,7 @@
   ignore_git: False
   human_link: '{% if ECOSYSTEM_VER %}https://errata.almalinux.org/{{ ECOSYSTEM_VER }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
-  editable: False`
+  editable: False
   strict_validation: True
 
 - name: 'almalinux-alea'

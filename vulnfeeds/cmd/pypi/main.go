@@ -64,9 +64,6 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 		}
 
 		for _, affected := range vuln.GetAffected() {
-			if affected.GetPackage() == nil {
-				continue
-			}
 			pkgName := affected.GetPackage().GetName()
 			if pkgName == "" {
 				continue

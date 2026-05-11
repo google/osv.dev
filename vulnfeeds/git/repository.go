@@ -25,6 +25,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,6 +42,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/sethvargo/go-retry"
 )
 
@@ -82,6 +84,44 @@ type RepoTagsCache struct {
 	m             map[string]RepoTagsMap
 	invalid       map[string]bool
 	canonicalLink map[string]string
+	redisClient   *redis.Client
+}
+
+func NewRepoTagsCache() *RepoTagsCache {
+	c := &RepoTagsCache{
+		m:             make(map[string]RepoTagsMap),
+		invalid:       make(map[string]bool),
+		canonicalLink: make(map[string]string),
+	}
+	c.InitRedis()
+
+	return c
+}
+
+func (c *RepoTagsCache) InitRedis() {
+	redisHost := os.Getenv("REDISHOST")
+	if redisHost == "" {
+		return
+	}
+	redisPort := os.Getenv("REDISPORT")
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+	c.redisClient = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
+		Protocol: 2,
+	})
+}
+
+func randomTTL() time.Duration {
+	// 1 week = 7 days = 168 hours
+	// +- 1 day = +- 24 hours
+	minHours := 144
+	maxHours := 192
+	//nolint:gosec
+	r := rand.Intn(maxHours - minHours + 1)
+
+	return time.Duration(minHours+r) * time.Hour
 }
 
 func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
@@ -125,22 +165,51 @@ func (c *RepoTagsCache) IsInvalid(repo string) bool {
 
 func (c *RepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
 	c.Lock()
-	defer c.Unlock()
 	if c.canonicalLink == nil {
 		c.canonicalLink = make(map[string]string)
 	}
 	c.canonicalLink[repo] = canonicalLink
+	c.Unlock()
+
+	if c.redisClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		key := "canonical_link:" + repo
+		ttl := randomTTL()
+		c.redisClient.Set(ctx, key, canonicalLink, ttl)
+	}
 }
 
 func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 	c.RLock()
-	defer c.RUnlock()
-	if c.canonicalLink == nil {
-		return "", false
+	if c.canonicalLink != nil {
+		if canonicalLink, ok := c.canonicalLink[repo]; ok {
+			c.RUnlock()
+			return canonicalLink, true
+		}
 	}
-	canonicalLink, ok := c.canonicalLink[repo]
+	c.RUnlock()
 
-	return canonicalLink, ok
+	if c.redisClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		key := "canonical_link:" + repo
+		val, err := c.redisClient.Get(ctx, key).Result()
+		if err == nil {
+			c.Lock()
+			if c.canonicalLink == nil {
+				c.canonicalLink = make(map[string]string)
+			}
+			c.canonicalLink[repo] = val
+			c.Unlock()
+
+			return val, true
+		}
+	}
+
+	return "", false
 }
 
 type GitterRef struct {

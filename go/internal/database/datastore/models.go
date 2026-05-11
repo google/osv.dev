@@ -141,6 +141,7 @@ type SourceRepository struct {
 	Editable                bool                        `datastore:"editable"`
 	Extension               string                      `datastore:"extension"`
 	KeyPath                 string                      `datastore:"key_path"`
+	AcceptedEcosystems      []string                    `datastore:"accepted_ecosystems"`
 	IgnoreGit               bool                        `datastore:"ignore_git"`
 	DetectCherrypicks       bool                        `datastore:"detect_cherrypicks"`
 	ConsiderAllBranches     bool                        `datastore:"consider_all_branches"`

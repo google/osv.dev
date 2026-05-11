@@ -219,6 +219,7 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 		Extension:               ".yaml",
 		KeyPath:                 "key",
 		IgnoreGit:               false,
+		AcceptedEcosystems:      []string{"crates.io", "npm"},
 		DetectCherrypicks:       true,
 		ConsiderAllBranches:     true,
 		VersionsFromRepo:        true,

@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -17,13 +18,13 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		repoName         string
+		acceptedEcos     []osvconstants.Ecosystem
 		affected         []*osvschema.Affected
 		expectedAffected []*osvschema.Affected
 	}{
 		{
-			name:     "Keep valid ecosystem",
-			repoName: "all-allowed",
+			name:         "Keep valid ecosystem",
+			acceptedEcos: []osvconstants.Ecosystem{"*"},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -42,8 +43,8 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 		{
-			name:     "Filter out invalid ecosystem",
-			repoName: "all-allowed",
+			name:         "Filter out invalid ecosystem",
+			acceptedEcos: []osvconstants.Ecosystem{"*"},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -55,8 +56,8 @@ func TestEnricher_Enrich(t *testing.T) {
 			expectedAffected: []*osvschema.Affected{},
 		},
 		{
-			name:     "Filter out non-Echo for Echo repo",
-			repoName: "echo",
+			name:         "Filter out non-Echo for Echo repo",
+			acceptedEcos: []osvconstants.Ecosystem{osvconstants.EcosystemEcho},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -68,8 +69,8 @@ func TestEnricher_Enrich(t *testing.T) {
 			expectedAffected: []*osvschema.Affected{},
 		},
 		{
-			name:     "Keep Echo for Echo repo",
-			repoName: "echo",
+			name:         "Keep Echo for Echo repo",
+			acceptedEcos: []osvconstants.Ecosystem{osvconstants.EcosystemEcho},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -88,8 +89,8 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 		{
-			name:     "Preserve GIT ranges when filtering ecosystem",
-			repoName: "all-allowed",
+			name:         "Preserve GIT ranges when filtering ecosystem",
+			acceptedEcos: []osvconstants.Ecosystem{"*"},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -128,8 +129,8 @@ func TestEnricher_Enrich(t *testing.T) {
 			},
 		},
 		{
-			name:     "Mixed valid and invalid ecosystems",
-			repoName: "all-allowed",
+			name:         "Mixed valid and invalid ecosystems",
+			acceptedEcos: []osvconstants.Ecosystem{"*"},
 			affected: []*osvschema.Affected{
 				{
 					Package: &osvschema.Package{
@@ -164,7 +165,7 @@ func TestEnricher_Enrich(t *testing.T) {
 
 			params := &pipeline.EnrichParams{
 				SourceRepo: &models.SourceRepository{
-					Name: tc.repoName,
+					AcceptedEcosystems: tc.acceptedEcos,
 				},
 			}
 

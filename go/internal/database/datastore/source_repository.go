@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"google.golang.org/api/iterator"
 )
 
@@ -80,13 +81,18 @@ func (s *SourceRepositoryStore) All(ctx context.Context) iter.Seq2[*models.Sourc
 }
 
 func (sr *SourceRepository) toModel() *models.SourceRepository {
+	ecos := make([]osvconstants.Ecosystem, 0, len(sr.AcceptedEcosystems))
+	for _, e := range sr.AcceptedEcosystems {
+		ecos = append(ecos, osvconstants.Ecosystem(e))
+	}
 	msr := &models.SourceRepository{
-		Name:           sr.Name,
-		Type:           sr.Type,
-		Strictness:     sr.StrictValidation,
-		IgnorePatterns: sr.IgnorePatterns,
-		Extension:      sr.Extension,
-		KeyPath:        sr.KeyPath,
+		Name:               sr.Name,
+		Type:               sr.Type,
+		Strictness:         sr.StrictValidation,
+		IgnorePatterns:     sr.IgnorePatterns,
+		AcceptedEcosystems: ecos,
+		Extension:          sr.Extension,
+		KeyPath:            sr.KeyPath,
 		GitAnalysis: &models.GitAnalysisConfig{
 			IgnoreGit:           sr.IgnoreGit,
 			DetectCherrypicks:   sr.DetectCherrypicks,
@@ -126,16 +132,21 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 }
 
 func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository {
+	ecos := make([]string, 0, len(r.AcceptedEcosystems))
+	for _, e := range r.AcceptedEcosystems {
+		ecos = append(ecos, string(e))
+	}
 	sr := &SourceRepository{
-		Name:             r.Name,
-		Type:             r.Type,
-		StrictValidation: r.Strictness,
-		IgnorePatterns:   r.IgnorePatterns,
-		Extension:        r.Extension,
-		KeyPath:          r.KeyPath,
-		Link:             r.Link,
-		HumanLink:        r.HumanLink,
-		DBPrefix:         r.IDPrefixes,
+		Name:               r.Name,
+		Type:               r.Type,
+		StrictValidation:   r.Strictness,
+		IgnorePatterns:     r.IgnorePatterns,
+		AcceptedEcosystems: ecos,
+		Extension:          r.Extension,
+		KeyPath:            r.KeyPath,
+		Link:               r.Link,
+		HumanLink:          r.HumanLink,
+		DBPrefix:           r.IDPrefixes,
 	}
 
 	if r.GitAnalysis != nil {

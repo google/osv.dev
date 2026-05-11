@@ -16,3 +16,5 @@ spec:
                 value: oss-vdb-test 
               - name: NUM_WORKERS
                 value: "30"
+              - name: REDISHOST
+                value: "10.102.25.214"

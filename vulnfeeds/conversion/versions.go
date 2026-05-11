@@ -135,6 +135,7 @@ func Repo(u string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return strings.ToLower(r), nil
 }
 

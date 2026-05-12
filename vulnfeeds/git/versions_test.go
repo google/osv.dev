@@ -17,12 +17,12 @@ import (
 )
 
 func TestVersionToAffectedCommit(t *testing.T) {
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
 		description       string
 		inputRepoURL      string
-		cache             *RepoTagsCache
+		cache             RepoTagsCache
 		inputVersion      string
 		expectedResult    string
 		expectedOk        bool
@@ -517,7 +517,11 @@ func TestRedisCanonicalLinkCache(t *testing.T) {
 	t.Setenv("REDISPORT", port)
 
 	cache := NewRepoTagsCache()
-	if cache.redisClient == nil {
+	redisCache, ok := cache.(*RedisRepoTagsCache)
+	if !ok {
+		t.Fatalf("Expected NewRepoTagsCache() to return RedisRepoTagsCache when REDISHOST is set")
+	}
+	if redisCache.redisClient == nil {
 		t.Fatal("Expected redisClient to be initialized, but got nil")
 	}
 
@@ -530,15 +534,6 @@ func TestRedisCanonicalLinkCache(t *testing.T) {
 	}
 
 	cache.SetCanonicalLink(repo, canonical)
-
-	gotInMemory, ok := cache.canonicalLink[repo]
-	if !ok || gotInMemory != canonical {
-		t.Errorf("SetCanonicalLink() failed to populate in-memory cache, got: %q, expected: %q", gotInMemory, canonical)
-	}
-
-	cache.Lock()
-	delete(cache.canonicalLink, repo)
-	cache.Unlock()
 
 	gotFromRedis, ok := cache.GetCanonicalLink(repo)
 	if !ok || gotFromRedis != canonical {

@@ -1980,6 +1980,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-qccp-gfcp-xxvc",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-v845-jxx5-vc9f",
           "modified": "<RFC3339 date with the year 2026>"
         },

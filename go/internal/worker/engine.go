@@ -115,7 +115,13 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		e.notifyPyPI(ctx, enriched, current)
 	}
 
-	// TODO: Remove ImportFindings for the record
+	// Remove ImportFindings
+	if e.Stores.ImportFindings != nil {
+		if err := e.Stores.ImportFindings.Clear(ctx, enriched.GetId()); err != nil {
+			// Don't really want to return an error here since we successfully wrote the vuln
+			logger.ErrorContext(ctx, "Failed to clear import findings", slog.String("vuln_id", enriched.GetId()), slog.Any("error", err))
+		}
+	}
 
 	return nil
 }

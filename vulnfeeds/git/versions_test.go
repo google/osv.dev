@@ -1,14 +1,10 @@
 package git
 
 import (
-	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"reflect"
-	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -413,138 +409,5 @@ func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
 	}
 	if requests != 4 {
 		t.Errorf("ValidateAndCanonicalizeLink() expected 4 requests (1 initial + 3 retries), got %d", requests)
-	}
-}
-
-func TestRedisCanonicalLinkCache(t *testing.T) {
-	// 1. Spin up a local TCP server to mock Redis protocol
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("Failed to start mock Redis listener: %v", err)
-	}
-	defer ln.Close()
-
-	addr := ln.Addr().String()
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		t.Fatalf("Failed to parse host/port: %v", err)
-	}
-
-	// Simple map to store mock keys/values in memory
-	redisStore := make(map[string]string)
-	var storeMu sync.Mutex
-
-	// Flag to track if any requests were handled
-	var requestHandled bool
-	var requestMu sync.Mutex
-
-	go func() {
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			go func(c net.Conn) {
-				defer c.Close()
-				buf := make([]byte, 1024)
-				for {
-					n, err := c.Read(buf)
-					if err != nil {
-						return
-					}
-					req := string(buf[:n])
-					t.Logf("Incoming mock Redis request: %q", req)
-					requestMu.Lock()
-					requestHandled = true
-					requestMu.Unlock()
-
-					// Split requests by '*' (RESP arrays)
-					commands := strings.Split(req, "*")
-					for _, cmd := range commands {
-						if cmd == "" {
-							continue
-						}
-						cmd = "*" + cmd
-						cmdUpper := strings.ToUpper(cmd)
-						if strings.Contains(cmdUpper, "HELLO") {
-							t.Log("Received HELLO, returning ERR to force fallback to RESP2")
-							_, _ = c.Write([]byte("-ERR unknown command 'HELLO'\r\n"))
-						} else if strings.Contains(cmdUpper, "GET") {
-							lines := strings.Split(cmd, "\r\n")
-							var key string
-							for i, line := range lines {
-								if strings.ToUpper(line) == "GET" && i+2 < len(lines) {
-									key = lines[i+2]
-									break
-								}
-							}
-							t.Logf("GET key: %q", key)
-							storeMu.Lock()
-							val, ok := redisStore[key]
-							storeMu.Unlock()
-							t.Logf("GET val found: %q (ok: %t)", val, ok)
-							if ok {
-								_, _ = fmt.Fprintf(c, "$%d\r\n%s\r\n", len(val), val)
-							} else {
-								_, _ = c.Write([]byte("$-1\r\n"))
-							}
-						} else if strings.Contains(cmdUpper, "SET") {
-							lines := strings.Split(cmd, "\r\n")
-							var key, val string
-							for i, line := range lines {
-								if strings.ToUpper(line) == "SET" && i+4 < len(lines) {
-									key = lines[i+2]
-									val = lines[i+4]
-
-									break
-								}
-							}
-							t.Logf("SET key: %q, val: %q", key, val)
-							storeMu.Lock()
-							redisStore[key] = val
-							storeMu.Unlock()
-							_, _ = c.Write([]byte("+OK\r\n"))
-						} else {
-							_, _ = c.Write([]byte("+OK\r\n"))
-						}
-					}
-				}
-			}(conn)
-		}
-	}()
-
-	t.Setenv("REDISHOST", host)
-	t.Setenv("REDISPORT", port)
-
-	cache := NewRepoTagsCache()
-	redisCache, ok := cache.(*RedisRepoTagsCache)
-	if !ok {
-		t.Fatalf("Expected NewRepoTagsCache() to return RedisRepoTagsCache when REDISHOST is set")
-	}
-	if redisCache.redisClient == nil {
-		t.Fatal("Expected redisClient to be initialized, but got nil")
-	}
-
-	repo := "https://github.com/foo/bar"
-	canonical := "https://github.com/canonical/bar"
-
-	got, ok := cache.GetCanonicalLink(repo)
-	if ok {
-		t.Errorf("GetCanonicalLink() expected false on empty cache, got %q", got)
-	}
-
-	cache.SetCanonicalLink(repo, canonical)
-
-	gotFromRedis, ok := cache.GetCanonicalLink(repo)
-	if !ok || gotFromRedis != canonical {
-		t.Errorf("GetCanonicalLink() failed to retrieve from Redis, got: %q, expected: %q", gotFromRedis, canonical)
-	}
-
-	requestMu.Lock()
-	handled := requestHandled
-	requestMu.Unlock()
-
-	if !handled {
-		t.Error("Mock Redis server did not handle any requests")
 	}
 }

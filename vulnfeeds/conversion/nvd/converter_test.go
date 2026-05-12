@@ -68,7 +68,7 @@ func TestCVEToOSV_429(t *testing.T) {
 	cache := &git.InMemoryRepoTagsCache{}
 	outDir := t.TempDir()
 
-	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, metrics)
+	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, nil, cache, metrics)
 
 	// It should fail because of the 429 error causing unresolved fixes
 	if outcome != models.Error {
@@ -110,7 +110,7 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 	var firstResult []*osvschema.Reference
 	for i := range 10 {
 		cache := &git.InMemoryRepoTagsCache{}
-		vuln, _, _ := CVEToOSV(cve, nil, cache, metrics)
+		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics)
 		if vuln == nil {
 			t.Fatalf("Iteration %d produced nil vulnerability", i)
 		}

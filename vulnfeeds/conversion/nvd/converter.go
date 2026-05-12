@@ -27,7 +27,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cache git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	refs := c.DeduplicateRefs(cve.References)
@@ -52,7 +52,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, metric
 
 	// At the bare minimum, we want to attempt to extract the raw version information
 	// from CPEs, whether or not they can resolve to commits.
-	cpeRanges := c.ExtractVersionsFromCPEs(cve, nil, metrics)
+	cpeRanges := c.ExtractVersionsFromCPEs(cve, nil, vpRepoCache, metrics)
 
 	// If there are no repos, there are no commits from the refs either
 	if len(cpeRanges) == 0 && len(repos) == 0 {
@@ -150,6 +150,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, metric
 		return cmp.Compare(repoA, repoB)
 	})
 
+	unresolvedRanges = c.FilterUnresolvedRanges(resolvedRanges, unresolvedRanges)
 	unresolvedRangesList := c.CreateUnresolvedRanges(unresolvedRanges)
 	if unresolvedRangesList != nil {
 		if err := c.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {

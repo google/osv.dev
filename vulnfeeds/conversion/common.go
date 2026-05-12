@@ -147,8 +147,8 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
-		if vr.Range.Repo != "" {
-			claimedRepos[vr.Range.Repo] = true
+		if vr.Range.GetRepo() != "" {
+			claimedRepos[vr.Range.GetRepo()] = true
 		}
 	}
 
@@ -184,7 +184,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
-			if (vr.Range.Repo != "" && vr.Range.Repo != repo) || (vr.Range.Repo == "" && claimedRepos[repo]) {
+			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 				continue
 			}
@@ -604,7 +604,7 @@ func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []mo
 		resolvedKeys[k] = true
 	}
 
-	var filtered []models.RangeWithMetadata
+	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
 	for _, ur := range unresolved {
 		var eventStrings []string
 		for _, e := range ur.Range.GetEvents() {

@@ -738,7 +738,6 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				if match.VersionEndExcluding != nil {
 					fixed = cleanVersion(*match.VersionEndExcluding)
 				} else if match.VersionEndIncluding != nil {
-				
 					var err error
 					// Infer the fixed version from the next version after.
 					fixed, err = nextVersion(validVersions, cleanVersion(*match.VersionEndIncluding))
@@ -756,7 +755,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
-					
+
 					if CPE.Part != "a" && CPE.Part != "o" {
 						continue
 					}
@@ -792,11 +791,10 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				// Get the repositories attached to this CPE
 				var associatedRepos []string
 				if vpRepoCache != nil {
-					
-						vp := VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
-						if repos, ok := vpRepoCache.Get(vp); ok {
-							associatedRepos = repos
-						}
+					vp := VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+					if repos, ok := vpRepoCache.Get(vp); ok {
+						associatedRepos = repos
+					}
 				}
 
 				if len(associatedRepos) > 0 {
@@ -808,7 +806,6 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 								Metadata: models.Metadata{
 									CPE:    match.Criteria,
 									Source: models.VersionSourceCPE,
-									
 								},
 							},
 						)

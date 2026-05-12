@@ -366,8 +366,8 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 						Kind: &structpb.Value_StructValue{
 							StructValue: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"vendor_product":    structpb.NewStringValue("another:app"),
-									"source": structpb.NewStringValue(string(models.VersionSourceCPE)),
+									"vendor_product": structpb.NewStringValue("another:app"),
+									"source":         structpb.NewStringValue(string(models.VersionSourceCPE)),
 									"cpes": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("cpe:2.3:a:another:app:*:*:*:*:*:*:*:*"),
@@ -398,8 +398,8 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 						Kind: &structpb.Value_StructValue{
 							StructValue: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
-									"vendor_product":    structpb.NewStringValue("example:app"),
-									"source": structpb.NewStringValue(string(models.VersionSourceDescription)),
+									"vendor_product": structpb.NewStringValue("example:app"),
+									"source":         structpb.NewStringValue(string(models.VersionSourceDescription)),
 									"cpes": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("cpe:2.3:a:example:app:*:*:*:*:*:*:*:*"),

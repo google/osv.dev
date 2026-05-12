@@ -30,14 +30,17 @@ spec:
       - name: worker-private
         image: worker
         imagePullPolicy: Always
-        volumeMounts:
-          - mountPath: "/work"
-            name: "ssd"
         env:
           - name: GITTER_HOST
             value: http://gitter-service:8888
-        securityContext:
-          privileged: true
+          - name: PUBSUB_SUBSCRIPTION
+            value: tasks
+          - name: DATASTORE_DATABASE_ID
+            value: "" # default
+          - name: FAILED_TASKS_TOPIC
+            value: failed-tasks
+          - name: NOTIFY_PYPI
+            value: "false"
         resources:
           requests:
             cpu: 1
@@ -45,7 +48,3 @@ spec:
           limits:
             cpu: 2
             memory: "13G"
-      volumes:
-        - name: "ssd"
-          hostPath:
-            path: "/mnt/disks/ssd0"

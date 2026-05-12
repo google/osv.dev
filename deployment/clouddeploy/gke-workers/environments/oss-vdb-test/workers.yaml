@@ -12,7 +12,3 @@ spec:
             value: oss-vdb-test
           - name: OSV_VULNERABILITIES_BUCKET
             value: osv-test-vulnerabilities
-        args:
-          # TODO(michaelkedar): ssh secrets
-          # TODO(michaelkedar): Somehow grab or enforce redis endpoint from terraform
-          - "--redis_host=10.102.25.214"

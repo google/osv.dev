@@ -25,6 +25,7 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,6 +42,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/redis/go-redis/v9"
 	"github.com/sethvargo/go-retry"
 )
 
@@ -52,8 +54,8 @@ var ErrRateLimit = errors.New("rate limit exceeded")
 
 // A GitTag holds a Git tag and corresponding commit hash.
 type Tag struct {
-	Tag    string // Git tag
-	Commit string // Git commit hash
+	Tag    string `json:"tag"`    // Git tag
+	Commit string `json:"commit"` // Git commit hash
 }
 
 type Tags []Tag
@@ -64,19 +66,28 @@ func (t Tags) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 
 // NormalizedTag holds a normalized (as by NormalizeRepoTags) tag and corresponding commit hash.
 type NormalizedTag struct {
-	OriginalTag        string
-	Commit             string
-	MatchesVersionText bool
+	OriginalTag        string `json:"original_tag"`
+	Commit             string `json:"commit"`
+	MatchesVersionText bool   `json:"matches_version_text"`
 }
 
 // RepoTagsMap holds all of the tags (naturally occurring and normalized) for a Git repo.
 type RepoTagsMap struct {
-	Tag           map[string]Tag           // The key is the original tag as seen on the repo.
-	NormalizedTag map[string]NormalizedTag // The key is the normalized (as by NormalizeRepoTags) original tag.
+	Tag           map[string]Tag           `json:"tag"`            // The key is the original tag as seen on the repo.
+	NormalizedTag map[string]NormalizedTag `json:"normalized_tag"` // The key is the normalized (as by NormalizeRepoTags) original tag.
 }
 
 // RepoTagsCache acts as a cache for RepoTags results, keyed on the repo's URL.
-type RepoTagsCache struct {
+type RepoTagsCache interface {
+	Get(repo string) (RepoTagsMap, bool)
+	Set(repo string, tags RepoTagsMap)
+	SetInvalid(repo string)
+	IsInvalid(repo string) bool
+	SetCanonicalLink(repo string, canonicalLink string)
+	GetCanonicalLink(repo string) (string, bool)
+}
+
+type InMemoryRepoTagsCache struct {
 	sync.RWMutex
 
 	m             map[string]RepoTagsMap
@@ -84,7 +95,7 @@ type RepoTagsCache struct {
 	canonicalLink map[string]string
 }
 
-func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
+func (c *InMemoryRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	c.RLock()
 	defer c.RUnlock()
 	if c.m == nil {
@@ -95,7 +106,7 @@ func (c *RepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	return tags, ok
 }
 
-func (c *RepoTagsCache) Set(repo string, tags RepoTagsMap) {
+func (c *InMemoryRepoTagsCache) Set(repo string, tags RepoTagsMap) {
 	c.Lock()
 	defer c.Unlock()
 	if c.m == nil {
@@ -104,7 +115,7 @@ func (c *RepoTagsCache) Set(repo string, tags RepoTagsMap) {
 	c.m[repo] = tags
 }
 
-func (c *RepoTagsCache) SetInvalid(repo string) {
+func (c *InMemoryRepoTagsCache) SetInvalid(repo string) {
 	c.Lock()
 	defer c.Unlock()
 	if c.invalid == nil {
@@ -113,7 +124,7 @@ func (c *RepoTagsCache) SetInvalid(repo string) {
 	c.invalid[repo] = true
 }
 
-func (c *RepoTagsCache) IsInvalid(repo string) bool {
+func (c *InMemoryRepoTagsCache) IsInvalid(repo string) bool {
 	c.RLock()
 	defer c.RUnlock()
 	if c.invalid == nil {
@@ -123,7 +134,7 @@ func (c *RepoTagsCache) IsInvalid(repo string) bool {
 	return c.invalid[repo]
 }
 
-func (c *RepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
+func (c *InMemoryRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
 	c.Lock()
 	defer c.Unlock()
 	if c.canonicalLink == nil {
@@ -132,7 +143,7 @@ func (c *RepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
 	c.canonicalLink[repo] = canonicalLink
 }
 
-func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
+func (c *InMemoryRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 	c.RLock()
 	defer c.RUnlock()
 	if c.canonicalLink == nil {
@@ -141,6 +152,119 @@ func (c *RepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 	canonicalLink, ok := c.canonicalLink[repo]
 
 	return canonicalLink, ok
+}
+
+type RedisRepoTagsCache struct {
+	redisClient *redis.Client
+}
+
+func (c *RedisRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "repo_tags:" + repo
+	val, err := c.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		return RepoTagsMap{}, false
+	}
+
+	var tags RepoTagsMap
+	if err := json.Unmarshal([]byte(val), &tags); err != nil {
+		return RepoTagsMap{}, false
+	}
+
+	return tags, true
+}
+
+func (c *RedisRepoTagsCache) Set(repo string, tags RepoTagsMap) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "repo_tags:" + repo
+	val, err := json.Marshal(tags)
+	if err != nil {
+		return
+	}
+
+	ttl := randomTTL()
+	c.redisClient.Set(ctx, key, val, ttl)
+}
+
+func (c *RedisRepoTagsCache) SetInvalid(repo string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "invalid_repo:" + repo
+	ttl := randomTTL()
+	c.redisClient.Set(ctx, key, "true", ttl)
+}
+
+func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "invalid_repo:" + repo
+	val, err := c.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		return false
+	}
+
+	return val == "true"
+}
+
+func (c *RedisRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "canonical_link:" + repo
+	ttl := randomTTL()
+	c.redisClient.Set(ctx, key, canonicalLink, ttl)
+}
+
+func (c *RedisRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	key := "canonical_link:" + repo
+	val, err := c.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		return "", false
+	}
+
+	return val, true
+}
+
+func NewRepoTagsCache() RepoTagsCache {
+	redisHost := os.Getenv("REDISHOST")
+	if redisHost != "" {
+		redisPort := os.Getenv("REDISPORT")
+		if redisPort == "" {
+			redisPort = "6379"
+		}
+		client := redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
+			Protocol: 2,
+		})
+
+		return &RedisRepoTagsCache{redisClient: client}
+	}
+
+	return &InMemoryRepoTagsCache{
+		m:             make(map[string]RepoTagsMap),
+		invalid:       make(map[string]bool),
+		canonicalLink: make(map[string]string),
+	}
+}
+
+func randomTTL() time.Duration {
+	// 1 week = 7 days = 168 hours
+	// +- 1 day = +- 24 hours
+	minHours := 144
+	maxHours := 192
+	//nolint:gosec
+	r := rand.Intn(maxHours - minHours + 1)
+
+	return time.Duration(minHours+r) * time.Hour
 }
 
 type GitterRef struct {
@@ -286,7 +410,7 @@ func RepoName(repoURL string) (name string, e error) {
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 // *** Does external calls to verify repos ***
-func RepoTags(repoURL string, repoTagsCache *RepoTagsCache) (tags Tags, e error) {
+func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
 	if repoTagsCache != nil {
 		tagsRepoMap, ok := repoTagsCache.Get(repoURL)
 		if ok {
@@ -379,7 +503,7 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func NormalizeRepoTags(repoURL string, repoTagsCache *RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
+func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache.Get(repoURL)
 		if ok && tags.NormalizedTag != nil {

@@ -56,12 +56,12 @@ func TestRepoName(t *testing.T) {
 }
 
 func TestRepoTags(t *testing.T) {
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
 		description       string
 		inputRepoURL      string
-		cache             *RepoTagsCache
+		cache             RepoTagsCache
 		expectedResult    Tags
 		expectedOk        bool
 		disableExpiryDate time.Time
@@ -186,9 +186,11 @@ func TestRepoTags(t *testing.T) {
 			}
 			var cacheBefore, cacheAfter int
 			if tc.cache != nil {
-				tc.cache.RLock()
-				cacheBefore = len(tc.cache.m) + len(tc.cache.invalid)
-				tc.cache.RUnlock()
+				if inMem, ok := tc.cache.(*InMemoryRepoTagsCache); ok {
+					inMem.RLock()
+					cacheBefore = len(inMem.m) + len(inMem.invalid)
+					inMem.RUnlock()
+				}
 			}
 			got, err := RepoTags(tc.inputRepoURL, tc.cache)
 			if err != nil && tc.expectedOk {
@@ -198,9 +200,11 @@ func TestRepoTags(t *testing.T) {
 				t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
 			}
 			if tc.cache != nil {
-				tc.cache.RLock()
-				cacheAfter = len(tc.cache.m) + len(tc.cache.invalid)
-				tc.cache.RUnlock()
+				if inMem, ok := tc.cache.(*InMemoryRepoTagsCache); ok {
+					inMem.RLock()
+					cacheAfter = len(inMem.m) + len(inMem.invalid)
+					inMem.RUnlock()
+				}
 			}
 			if tc.cache != nil && (cacheAfter <= cacheBefore) {
 				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cacheBefore, cacheAfter, tc.cache)
@@ -303,7 +307,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 			expectedOk:   false,
 		},
 	}
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			testutils.SetupGitVCR(t)

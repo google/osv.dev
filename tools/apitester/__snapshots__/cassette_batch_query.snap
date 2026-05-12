@@ -10,10 +10,6 @@
         {
           "id": "CVE-2021-22569",
           "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2022-3171",
-          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

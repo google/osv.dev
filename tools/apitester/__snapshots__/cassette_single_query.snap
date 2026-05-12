@@ -2466,13 +2466,9 @@
                   "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
-                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
-                },
-                {
                   "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
-              ],
-              "database_specific": "<Any value>"
+              ]
             }
           ],
           "versions": 94,
@@ -2939,7 +2935,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                  "introduced": "3bc11344deca01726522fadd54927a9f5f3db68f"
                 },
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
@@ -2948,7 +2944,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 142,
+          "versions": 141,
           "database_specific": "<Any value>"
         }
       ],

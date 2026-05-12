@@ -27,7 +27,7 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
-func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+func CVEToOSV(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	refs := c.DeduplicateRefs(cve.References)
@@ -161,7 +161,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, metri
 }
 
 // CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
+func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
 	CPEs := c.CPEs(cve)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 	maybeVendorName := "ENOCPE"
@@ -269,7 +269,7 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache *git.RepoTagsCach
 }
 
 // FindRepos attempts to find the source code repositories for a given CVE.
-func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
+func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) []string {
 	// Find repos
 	refs := c.DeduplicateRefs(cve.References)
 	CPEs := c.CPEs(cve)

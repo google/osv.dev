@@ -65,7 +65,7 @@ func TestCVEToOSV_429(t *testing.T) {
 	}
 
 	metrics := &models.ConversionMetrics{}
-	cache := &git.RepoTagsCache{}
+	cache := &git.InMemoryRepoTagsCache{}
 	outDir := t.TempDir()
 
 	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, metrics)
@@ -109,7 +109,7 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 
 	var firstResult []*osvschema.Reference
 	for i := range 10 {
-		cache := &git.RepoTagsCache{}
+		cache := &git.InMemoryRepoTagsCache{}
 		vuln, _, _ := CVEToOSV(cve, nil, cache, metrics)
 		if vuln == nil {
 			t.Fatalf("Iteration %d produced nil vulnerability", i)

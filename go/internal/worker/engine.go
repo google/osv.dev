@@ -129,7 +129,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 func (e *Engine) isSemanticallyDifferent(vuln1, vuln2 *osvschema.Vulnerability) bool {
 	return !cmp.Equal(vuln1, vuln2,
 		protocmp.Transform(),
-		protocmp.IgnoreFields(&osvschema.Vulnerability{}, "modified", "published"),
+		protocmp.IgnoreFields(&osvschema.Vulnerability{}, "modified", "published", "schema_version"),
 	)
 }
 

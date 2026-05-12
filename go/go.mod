@@ -16,7 +16,7 @@ require (
 	github.com/google/osv-scalibr v0.4.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.18.5
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260331231022-2a6a0b9b0ccd
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260424063704-83285ce2a866
 	github.com/package-url/packageurl-go v0.1.5
 	github.com/tidwall/gjson v1.18.0
 	github.com/xeipuuv/gojsonschema v1.2.0

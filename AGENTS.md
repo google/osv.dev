@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance for AI coding agents (like Gemini, Jetski, etc.) working on the `osv.dev` repository. It outlines the project structure, setup commands, testing instructions, and coding standards.
+This file provides guidance for AI coding agents working on the `osv.dev` repository. It outlines the project structure, setup commands, testing instructions, and coding standards.
 
 > [!IMPORTANT]
 > **Keeping this file up to date**: If you (an AI agent) make any major architectural changes, introduce new services, or modify core workflows (like testing or linting), you **MUST** update this `AGENTS.md` file to reflect those changes.

@@ -75,6 +75,12 @@ var (
 	invalidRepoCache           *ristretto.Cache[string, int]
 	invalidRepoTTL             time.Duration
 	invalidRepoCacheMaxEntries int64
+
+	// gitMirrors lists more performant mirrors for large/popular repos.
+	// TODO: Don't hardcode this.
+	gitMirrors = map[string]string{
+		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+	}
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -284,6 +290,13 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 	// Remove query and fragment from the URL
 	u.RawQuery = ""
 	u.Fragment = ""
+
+	// Reroute to mirrors if applicable
+	urlStr := strings.TrimSuffix(u.String(), "/")
+	if mirror, ok := gitMirrors[urlStr]; ok {
+		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
+		return mirror, nil
+	}
 
 	if !isLocalRequest(r) {
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {

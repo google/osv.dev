@@ -285,15 +285,6 @@ func (e *GitterError) Error() string {
 	return fmt.Sprintf("gitter request failed with status %d: %s", e.StatusCode, e.Body)
 }
 
-func (e *GitterError) shouldFallback(err error) bool {
-	// Should only fall back when its not a gitter error, or the status code is
-	// StatusNoContent, StatusNotFound, or StatusForbidden
-	return !errors.As(err, &e) ||
-		(e.StatusCode != http.StatusNoContent &&
-			e.StatusCode != http.StatusNotFound &&
-			e.StatusCode != http.StatusForbidden)
-}
-
 func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 	gitterHost := os.Getenv("GITTER_HOST")
 	if gitterHost == "" {
@@ -425,13 +416,6 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	var err error
 	if os.Getenv("GITTER_HOST") != "" {
 		refs, err = gitterRepoRefs(repoURL)
-		if err != nil {
-			var gitterErr *GitterError
-			if gitterErr.shouldFallback(err) {
-				logger.Warn("Failed to fetch tags from gitter, falling back to legacy enumeration", slog.String("repo", repoURL), slog.Any("error", err))
-				refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
-			}
-		}
 	} else {
 		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
 	}
@@ -568,14 +552,7 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 func ValidRepo(repoURL string) bool {
 	if os.Getenv("GITTER_HOST") != "" {
 		_, err := gitterRepoRefs(repoURL)
-		if err == nil {
-			return true
-		}
-		var gitterErr *GitterError
-		if !gitterErr.shouldFallback(err) {
-			return false
-		}
-		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+		return err == nil
 	}
 	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
 
@@ -587,14 +564,11 @@ func ValidRepo(repoURL string) bool {
 func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
 	if os.Getenv("GITTER_HOST") != "" {
 		refs, err := gitterRepoRefs(repoURL)
-		if err == nil {
-			return len(refs) > 0
-		}
-		var gitterErr *GitterError
-		if !gitterErr.shouldFallback(err) {
+		if err != nil || len(refs) == 0 {
 			return false
 		}
-		logger.Warn("Failed to validate repo through gitter, falling back to legacy check", slog.String("repo", repoURL), slog.Any("error", err))
+
+		return len(RefTags(refs)) > 0
 	}
 	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
 	// Return false if there's an error, or if the repo has no refs (e.g. is empty)

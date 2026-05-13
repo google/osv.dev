@@ -281,6 +281,9 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
+	// Removing trailing slashes
+	u.Path = strings.TrimSuffix(u.Path, "/")
+
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
 	if u.Scheme == "git" && u.Host == "github.com" {
@@ -291,9 +294,12 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	// Reroute to mirrors if applicable
-	urlStr := strings.TrimSuffix(u.String(), "/")
-	if mirror, ok := gitMirrors[urlStr]; ok {
+	// normalize to https before checking for mirrors.
+	mirrorKey := u.String()
+	if u.Scheme == "http" {
+		mirrorKey = "https" + u.String()[4:]
+	}
+	if mirror, ok := gitMirrors[mirrorKey]; ok {
 		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
 		return mirror, nil
 	}

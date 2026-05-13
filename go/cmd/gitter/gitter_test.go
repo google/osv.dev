@@ -93,6 +93,12 @@ func TestPrepareURL(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "Linux kernel URL with http, reroute to mirror",
+			url:       "http://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+			expected:  "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+			expectErr: false,
+		},
+		{
 			name:      "Linux kernel URL with trailing slash, reroute to mirror",
 			url:       "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/",
 			expected:  "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",

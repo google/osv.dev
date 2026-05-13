@@ -25,6 +25,9 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 	allowAll := slices.Contains(acceptedEcos, "*")
 	for _, affected := range vuln.GetAffected() {
 		pkg := affected.GetPackage()
+		if pkg == nil {
+			continue
+		}
 		ecosystem := pkg.GetEcosystem()
 		ecoBase, _, _ := strings.Cut(ecosystem, ":")
 		shouldRemove := false

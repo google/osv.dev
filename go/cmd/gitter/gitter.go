@@ -75,6 +75,12 @@ var (
 	invalidRepoCache           *ristretto.Cache[string, int]
 	invalidRepoTTL             time.Duration
 	invalidRepoCacheMaxEntries int64
+
+	// gitMirrors lists more performant mirrors for large/popular repos.
+	// TODO: Don't hardcode this.
+	gitMirrors = map[string]string{
+		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+	}
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -275,6 +281,9 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
+	// Removing trailing slashes
+	u.Path = strings.TrimSuffix(u.Path, "/")
+
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
 	if u.Scheme == "git" && u.Host == "github.com" {
@@ -284,6 +293,16 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 	// Remove query and fragment from the URL
 	u.RawQuery = ""
 	u.Fragment = ""
+
+	// normalize to https before checking for mirrors.
+	mirrorKey := u.String()
+	if u.Scheme == "http" {
+		mirrorKey = "https" + u.String()[4:]
+	}
+	if mirror, ok := gitMirrors[mirrorKey]; ok {
+		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
+		return mirror, nil
+	}
 
 	if !isLocalRequest(r) {
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {

@@ -125,3 +125,123 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 		}
 	}
 }
+
+func TestIsLinuxKernelVulnerability(t *testing.T) {
+	tests := []struct {
+		name string
+		cve  models.NVDCVE
+		want bool
+	}{
+		{
+			name: "regular CVE",
+			cve: models.NVDCVE{
+				ID: "CVE-2025-11111",
+				Configurations: []models.Config{
+					{
+						Nodes: []models.Node{
+							{
+								Operator: "OR",
+								CPEMatch: []models.CPEMatch{
+									{
+										Criteria:   "cpe:2.3:a:nginx:nginx:1.19.0:*:*:*:*:*:*:*",
+										Vulnerable: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "CVE with Linux kernel CPE",
+			cve: models.NVDCVE{
+				ID: "CVE-2025-22222",
+				Configurations: []models.Config{
+					{
+						Nodes: []models.Node{
+							{
+								Operator: "OR",
+								CPEMatch: []models.CPEMatch{
+									{
+										Criteria:   "cpe:2.3:o:linux:linux_kernel:5.10:*:*:*:*:*:*:*",
+										Vulnerable: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "CVE with Linux kernel reference git.kernel.org stable",
+			cve: models.NVDCVE{
+				ID: "CVE-2025-33333",
+				References: []models.Reference{
+					{
+						URL: "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/?id=abcdef",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "CVE with Linux kernel reference github torvalds",
+			cve: models.NVDCVE{
+				ID: "CVE-2025-44444",
+				References: []models.Reference{
+					{
+						URL: "https://github.com/torvalds/linux/commit/abcdef",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "CVE with non-kernel git.kernel.org reference",
+			cve: models.NVDCVE{
+				ID: "CVE-2025-55555",
+				References: []models.Reference{
+					{
+						URL: "https://git.kernel.org/pub/scm/libs/libcap/libcap.git/commit/?id=abcdef",
+					},
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsLinuxKernelVulnerability(tt.cve); got != tt.want {
+				t.Errorf("IsLinuxKernelVulnerability() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsLinuxKernelURL(t *testing.T) {
+	tests := []struct {
+		url  string
+		want bool
+	}{
+		{"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git", true},
+		{"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git", true},
+		{"https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git", true},
+		{"https://github.com/torvalds/linux", true},
+		{"https://github.com/stable/linux", true},
+		{"https://git.kernel.org/pub/scm/libs/libcap/libcap.git", false},
+		{"https://github.com/foo/bar", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.url, func(t *testing.T) {
+			if got := IsLinuxKernelURL(tt.url); got != tt.want {
+				t.Errorf("IsLinuxKernelURL(%q) = %v, want %v", tt.url, got, tt.want)
+			}
+		})
+	}
+}

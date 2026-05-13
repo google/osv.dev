@@ -53,7 +53,7 @@ func saveLastFetchMap() {
 	lastFetchMu.Lock()
 	defer lastFetchMu.Unlock()
 
-	logger.Info("Saving lastFetch map", slog.String("path", persistencePath))
+	logger.Debug("Saving lastFetch map", slog.String("path", persistencePath))
 
 	data, err := json.Marshal(lastFetch)
 	if err != nil {
@@ -83,11 +83,11 @@ func loadLastFetchMap() {
 		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 	}
 
-	logger.Info("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
+	logger.Debug("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
 }
 
 func saveRepositoryCache(cachePath string, repo *Repository) (int, error) {
-	logger.Info("Saving repository cache", slog.String("path", cachePath))
+	logger.Debug("Saving repository cache", slog.String("path", cachePath))
 
 	cache := &pb.RepositoryCache{}
 	emptyPatchID := SHA1{}

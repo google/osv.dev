@@ -365,7 +365,7 @@ func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
 	return proto.Marshal(m)
 }
 
-func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) error {
+func doFetch(ctx context.Context, repoURL string, forceUpdate bool) error {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
 		return runWithSemaphore(ctx, func() (any, error) {
 			return nil, FetchRepo(ctx, repoURL, forceUpdate)
@@ -373,14 +373,6 @@ func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUp
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
-		if isAuthError(err) {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
-		} else if isNotFoundError(err) {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusNotFound)
-		} else {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-		}
-
 		return err
 	}
 
@@ -390,7 +382,7 @@ func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUp
 // getFreshRepo handles fetching and loading of a repository
 // If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
 // Otherwise, it will use a cache if available
-func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) (*Repository, error) {
+func getFreshRepo(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
 	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
@@ -402,7 +394,7 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 		}
 	}
 
-	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
+	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
 		return nil, err
 	}
 
@@ -417,8 +409,6 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
-
 		return nil, err
 	}
 	repo := repoAny.(*Repository)
@@ -721,7 +711,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
 	// Fetch repo first
-	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
+	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
 		if isAuthError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -729,6 +719,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
 
 		return
 	}
@@ -787,7 +778,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /cache")
 
-	if _, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate()); err != nil {
+	if _, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate()); err != nil {
 		if isAuthError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -795,6 +786,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
 	}
@@ -856,7 +848,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
 
-	repo, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate())
+	repo, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate())
 	if err != nil {
 		if isAuthError(err) {
 			statusCode = http.StatusForbidden
@@ -865,6 +857,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
 	}

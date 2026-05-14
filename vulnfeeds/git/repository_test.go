@@ -526,11 +526,11 @@ func TestValidRepoWithGitter(t *testing.T) {
 		// 	wantValidRepoAndHasRefs: false,
 		// },
 		{
-			name:                    "StatusInternalServerError with Valid Repo => Falls back, returns true",
+			name:                    "StatusInternalServerError with Valid Repo => Does not fall back, returns false",
 			status:                  http.StatusInternalServerError,
 			repo:                    "https://github.com/zblogcn/zblogphp",
-			wantValidRepo:           true,
-			wantValidRepoAndHasRefs: true,
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
 		},
 	}
 

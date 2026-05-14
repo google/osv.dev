@@ -49,6 +49,7 @@ message Event {
 message CacheRequest {
     string url = 1;
     bool force_update = 2;
+    string ref_id = 3; // Optional reference ID for tracing
 }
 
 message AffectedCommitsRequest {
@@ -59,4 +60,5 @@ message AffectedCommitsRequest {
     bool detect_cherrypicks_limit = 5;
     bool force_update = 6;
     bool consider_all_branches = 7;
+    string ref_id = 8; // Optional reference ID for tracing
 }

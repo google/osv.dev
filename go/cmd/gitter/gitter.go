@@ -105,7 +105,6 @@ func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 	}
 
 	if len(se.Limit) > 0 && (len(se.Fixed) > 0 || len(se.LastAffected) > 0) {
-
 		return nil, errors.New("limit and fixed/last_affected shouldn't exist in the same request")
 	}
 
@@ -771,6 +770,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	if err := unmarshalRequest(r, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+		
 		return
 	}
 
@@ -778,6 +778,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
@@ -811,6 +812,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err := unmarshalRequest(r, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
 		return
 	}
 
@@ -957,6 +959,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 

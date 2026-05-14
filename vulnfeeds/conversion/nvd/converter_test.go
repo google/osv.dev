@@ -143,7 +143,7 @@ func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
 	http.DefaultTransport = customTransport
 	defer func() { http.DefaultTransport = originalTransport }()
 
-	data, err := os.ReadFile("test.json")
+	data, err := os.ReadFile(filepath.Join("testdata", "test.json"))
 	if err != nil {
 		t.Fatalf("Failed to read test.json: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
 	}
 
 	vpCache := c.NewVPRepoCache()
-	if err := c.LoadCPEDictionary(vpCache, "cpe_testdata.json"); err != nil {
+	if err := c.LoadCPEDictionary(vpCache, filepath.Join("testdata", "cpe_testdata.json")); err != nil {
 		t.Fatalf("Failed to load cpe_testdata.json: %v", err)
 	}
 	vpCache.Set(c.VendorProduct{Vendor: "gitea", Product: "gitea"}, []string{"https://github.com/go-gitea/gitea"})

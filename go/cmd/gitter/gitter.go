@@ -42,7 +42,7 @@ type contextKey string
 
 const (
 	urlKey   contextKey = "repoURL"
-	refIdKey contextKey = "refID"
+	refIDKey contextKey = "refID"
 )
 
 const defaultGitterWorkDir = "/work/gitter"
@@ -105,6 +105,7 @@ func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 	}
 
 	if len(se.Limit) > 0 && (len(se.Fixed) > 0 || len(se.LastAffected) > 0) {
+
 		return nil, errors.New("limit and fixed/last_affected shouldn't exist in the same request")
 	}
 
@@ -302,14 +303,12 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 	return u.String(), nil
 }
 
-func logRequestCompletion(ctx *context.Context, endpoint string, start time.Time, statusCode *int) func() {
-	return func() {
-		logger.InfoContext(*ctx, "Request completed",
-			slog.String("endpoint", endpoint),
-			slog.Int("status", *statusCode),
-			slog.Duration("duration", time.Since(start)),
-		)
-	}
+func logRequestCompletion(ctx context.Context, endpoint string, start time.Time, statusCode int) {
+	logger.InfoContext(ctx, "Request completed",
+		slog.String("endpoint", endpoint),
+		slog.Int("status", statusCode),
+		slog.Duration("duration", time.Since(start)),
+	)
 }
 
 func getRepoDirName(repoURL string) string {
@@ -610,7 +609,7 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 func main() {
 	logger.InitGlobalLogger()
 	logger.RegisterContextKey(urlKey, "repoURL")
-	logger.RegisterContextKey(refIdKey, "refID")
+	logger.RegisterContextKey(refIDKey, "refID")
 	defer logger.Close()
 
 	port := flag.Int("port", 8888, "Listen port")
@@ -705,12 +704,13 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
 	ctx := r.Context()
-	defer logRequestCompletion(&ctx, "/git", start, &statusCode)()
+	defer func() { logRequestCompletion(ctx, "/git", start, statusCode) }()
 
 	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
@@ -718,7 +718,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	refID := r.URL.Query().Get("ref_id")
 	ctx = context.WithValue(ctx, urlKey, repoURL)
-	ctx = context.WithValue(ctx, refIdKey, refID)
+	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
 	// Fetch repo first
@@ -730,6 +730,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+
 		return
 	}
 
@@ -764,7 +765,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
 	ctx := r.Context()
-	defer logRequestCompletion(&ctx, "/cache", start, &statusCode)()
+	defer func() { logRequestCompletion(ctx, "/cache", start, statusCode) }()
 
 	body := &pb.CacheRequest{}
 	if err := unmarshalRequest(r, body); err != nil {
@@ -782,7 +783,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	refID := body.GetRefId()
 	ctx = context.WithValue(ctx, urlKey, repoURL)
-	ctx = context.WithValue(ctx, refIdKey, refID)
+	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /cache")
 
 	if _, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate()); err != nil {
@@ -793,6 +794,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+
 		return
 	}
 
@@ -803,7 +805,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
 	ctx := r.Context()
-	defer logRequestCompletion(&ctx, "/affected-commits", start, &statusCode)()
+	defer func() { logRequestCompletion(ctx, "/affected-commits", start, statusCode) }()
 
 	body := &pb.AffectedCommitsRequest{}
 	if err := unmarshalRequest(r, body); err != nil {
@@ -816,6 +818,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
@@ -823,6 +826,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
@@ -838,7 +842,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	refID := body.GetRefId()
 	ctx = context.WithValue(ctx, urlKey, repoURL)
-	ctx = context.WithValue(ctx, refIdKey, refID)
+	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /affected-commits",
 		slog.Any("introduced", se.Introduced),
 		slog.Any("fixed", se.Fixed),
@@ -859,6 +863,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			statusCode = http.StatusInternalServerError
 		}
+
 		return
 	}
 
@@ -946,7 +951,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
 	ctx := r.Context()
-	defer logRequestCompletion(&ctx, "/tags", start, &statusCode)()
+	defer func() { logRequestCompletion(ctx, "/tags", start, statusCode) }()
 
 	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
 	if err != nil {
@@ -957,7 +962,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 
 	refID := r.URL.Query().Get("ref_id")
 	ctx = context.WithValue(ctx, urlKey, repoURL)
-	ctx = context.WithValue(ctx, refIdKey, refID)
+	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /tags")
 
 	// Previously cached invalid repo (does not exist or does not have tags)

@@ -5,6 +5,12 @@ metadata:
 spec:
   template:
     spec:
+      tolerations:
+      - key: workloadType
+        operator: Equal
+        value: worker-pool
+      nodeSelector:
+        workloadType: worker-pool
       containers:
       - name: worker-private
         env:
@@ -12,3 +18,10 @@ spec:
             value: oss-vdb-test
           - name: OSV_VULNERABILITIES_BUCKET
             value: osv-test-vulnerabilities
+        resources:
+          requests:
+            cpu: 14
+            memory: "10G"
+          limits:
+            cpu: 16
+            memory: "13G"

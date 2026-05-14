@@ -94,11 +94,11 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 	// Load cache pb file of the repo if exist
 	if c, err := loadRepositoryCache(cachePath); err == nil {
 		cache = c
-		logger.InfoContext(ctx, "Loaded repository cache", slog.Int("commits", len(cache.GetCommits())))
+		logger.DebugContext(ctx, "Loaded repository cache", slog.Int("commits", len(cache.GetCommits())))
 	} else {
 		if errors.Is(err, os.ErrNotExist) {
 			// It's fine if cache doesn't exist, log it just in case
-			logger.InfoContext(ctx, "No repository cache found")
+			logger.DebugContext(ctx, "No repository cache found")
 		} else {
 			return nil, fmt.Errorf("failed to load repository cache: %w", err)
 		}
@@ -154,7 +154,7 @@ func (r *Repository) getOrCreateIndex(hash SHA1) int {
 // Returns a list of new commit indexes that don't have cached Patch IDs.
 // The new commit list is in reverse chronological order based on commit date (the default for git log).
 func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryCache) ([]int, error) {
-	logger.InfoContext(ctx, "Starting graph construction")
+	logger.DebugContext(ctx, "Starting commit graph construction")
 	start := time.Now()
 
 	// Build cache map
@@ -231,7 +231,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			for _, parent := range parents {
 				hash, err := hex.DecodeString(parent)
 				if err != nil {
-					logger.ErrorContext(ctx, "Failed to decode hash", slog.String("parent", parent), slog.Any("err", err))
+					logger.WarnContext(ctx, "Failed to decode hash", slog.String("parent", parent), slog.Any("err", err))
 					continue
 				}
 				parentHashes = append(parentHashes, SHA1(hash))
@@ -241,7 +241,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		case 1:
 			hash, err := hex.DecodeString(commitInfo[0])
 			if err != nil {
-				logger.ErrorContext(ctx, "Failed to decode hash", slog.String("child", commitInfo[0]), slog.Any("err", err))
+				logger.WarnContext(ctx, "Failed to decode hash", slog.String("child", commitInfo[0]), slog.Any("err", err))
 				continue
 			}
 			childHash = SHA1(hash)
@@ -284,7 +284,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		}
 	}
 
-	logger.InfoContext(ctx, "Commit graph completed", slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
+	logger.DebugContext(ctx, "Commit graph construction completed", slog.Int("new_commits", len(newCommits)), slog.Duration("duration", time.Since(start)))
 
 	return newCommits, nil
 }
@@ -292,7 +292,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []int) error {
-	logger.InfoContext(ctx, "Starting patch ID calculation")
+	logger.DebugContext(ctx, "Starting patch ID calculation")
 	start := time.Now()
 
 	// Number of workers
@@ -322,7 +322,7 @@ func (r *Repository) calculatePatchIDs(ctx context.Context, commits []int) error
 		return fmt.Errorf("failed to calculate patch IDs: %w", err)
 	}
 
-	logger.InfoContext(ctx, "Patch ID calculation completed", slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
+	logger.DebugContext(ctx, "Patch ID calculation completed", slog.Int("commits", len(commits)), slog.Duration("duration", time.Since(start)))
 
 	return nil
 }
@@ -477,11 +477,11 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 		hashBytes, err := hex.DecodeString(hash)
 		// Log error but continue with the rest of the hashes if a commit hash is invalid
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
+			logger.WarnContext(ctx, "Failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
 			continue
 		}
 		if len(hashBytes) != 20 {
-			logger.ErrorContext(ctx, "invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
+			logger.WarnContext(ctx, "Invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
 			continue
 		}
 
@@ -660,7 +660,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 // A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
 // A fix can either be a fixed commit, or the children of a lastAffected commit.
 func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, cherrypickedHashes) {
-	logger.InfoContext(ctx, "Starting affected commits (all branches) walking")
+	logger.DebugContext(ctx, "Starting affected commits (all branches) walking")
 	start := time.Now()
 
 	resEvents := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
@@ -761,7 +761,7 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 		}
 	}
 
-	logger.InfoContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
+	logger.DebugContext(ctx, "Affected commits (all branches) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, resEvents.cherrypicked
 }
@@ -824,7 +824,7 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 // Limit walks and returns the commits that are strictly between introduced (inclusive) and limit (exclusive).
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and limit commits.
 func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickLimit bool) ([]*Commit, cherrypickedHashes) {
-	logger.InfoContext(ctx, "Starting limit walking")
+	logger.DebugContext(ctx, "Starting limit walking")
 	start := time.Now()
 
 	introduced := r.parseHashes(ctx, se.Introduced)
@@ -855,7 +855,7 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
 	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
-	logger.InfoContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
+	logger.DebugContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, cherrypickedHashes{
 		Introduced: cherrypickedIntroHashes,
@@ -865,7 +865,7 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 
 // AffectedSingleBranch finds affected commits by walking backward from fixed and lastAffected commits to introduced commit following the first parent.
 func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEvents) []*Commit {
-	logger.InfoContext(ctx, "Starting affected commits (single branch) walking")
+	logger.DebugContext(ctx, "Starting affected commits (single branch) walking")
 	start := time.Now()
 
 	introduced := r.parseHashes(ctx, se.Introduced)
@@ -884,7 +884,7 @@ func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEven
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
 
 	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
-	logger.InfoContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
+	logger.DebugContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits
 }
@@ -943,7 +943,7 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 		// git show-ref returns with exit code 1 if there is no tags (ls-remote return 0)
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			logger.InfoContext(ctx, "No tags found (git show-ref exit code 1)")
+			logger.DebugContext(ctx, "No tags found (git show-ref exit code 1)")
 			// We don't consider this an error and can just return the empty tagsMap
 			return tagsMap, nil
 		}

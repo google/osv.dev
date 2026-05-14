@@ -191,3 +191,84 @@ func TestNormalizeRepo(t *testing.T) {
 		})
 	}
 }
+
+func TestComputeAffectedVersions_GitWithoutPackage(t *testing.T) {
+	vuln := &osvschema.Vulnerability{
+		Id: "CVE-2024-7264",
+		Affected: []*osvschema.Affected{
+			{
+				// Package intentionally omitted
+				Versions: []string{"curl-8_5_0", "curl-8_6_0"},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_GIT,
+						Repo: "https://github.com/curl/curl",
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "27959ecce75cdb2809c0bdb3286e60e08fadb519"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+
+	want := []AffectedVersions{
+		{
+			VulnID:    "CVE-2024-7264",
+			Ecosystem: "GIT",
+			Name:      "github.com/curl/curl",
+			Versions:  []string{"curl-8_5_0", "curl-8_6_0"},
+		},
+	}
+
+	if diff := gocmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestComputeAffectedVersions_GitAndSemverWithoutPackage(t *testing.T) {
+	vuln := &osvschema.Vulnerability{
+		Id: "CVE-2024-7264-SEMVER",
+		Affected: []*osvschema.Affected{
+			{
+				// Package intentionally omitted
+				Versions: []string{"curl-8_5_0"},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_GIT,
+						Repo: "https://github.com/curl/curl",
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "27959ecce75cdb2809c0bdb3286e60e08fadb519"},
+						},
+					},
+					{
+						Type: osvschema.Range_SEMVER,
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "8.6.0"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+
+	want := []AffectedVersions{
+		{
+			VulnID:    "CVE-2024-7264-SEMVER",
+			Ecosystem: "GIT",
+			Name:      "github.com/curl/curl",
+			Versions:  []string{"curl-8_5_0"},
+		},
+	}
+
+	if diff := gocmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
+	}
+}

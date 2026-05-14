@@ -1,3 +1,0 @@
-[[IgnoredVulns]]
-id = "MAL-2025-1051"
-reason = "This record references the npm package - we are pinned to a specific git commit of a forked repository"

@@ -36,22 +36,21 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 	var res []AffectedVersions
 
 	for _, affected := range vuln.GetAffected() {
+		var allPkgEcosystems []string
 		pkgEcosystem := affected.GetPackage().GetEcosystem()
-		if pkgEcosystem == "" {
-			continue
-		}
+		if pkgEcosystem != "" {
+			allPkgEcosystems = []string{pkgEcosystem}
+			normalized, _, _ := strings.Cut(pkgEcosystem, ":")
+			if normalized != pkgEcosystem {
+				allPkgEcosystems = append(allPkgEcosystems, normalized)
+			}
+			if v := removeVariants(pkgEcosystem); v != "" {
+				allPkgEcosystems = append(allPkgEcosystems, v)
+			}
 
-		allPkgEcosystems := []string{pkgEcosystem}
-		normalized, _, _ := strings.Cut(pkgEcosystem, ":")
-		if normalized != pkgEcosystem {
-			allPkgEcosystems = append(allPkgEcosystems, normalized)
+			slices.Sort(allPkgEcosystems)
+			allPkgEcosystems = slices.Compact(allPkgEcosystems)
 		}
-		if v := removeVariants(pkgEcosystem); v != "" {
-			allPkgEcosystems = append(allPkgEcosystems, v)
-		}
-
-		slices.Sort(allPkgEcosystems)
-		allPkgEcosystems = slices.Compact(allPkgEcosystems)
 
 		pkgName := affected.GetPackage().GetName()
 		eHelper, exists := ecosystem.DefaultProvider.Get(pkgEcosystem)

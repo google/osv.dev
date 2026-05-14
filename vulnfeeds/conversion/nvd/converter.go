@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/conversion/writer"
@@ -334,6 +335,16 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 		}
 	}
 
+	filteredRepos := make([]string, 0, len(reposForCVE))
+	for _, repo := range reposForCVE {
+		if IsLinuxKernelURL(repo) {
+			metrics.AddNote("Disregarding Linux kernel repository: %s", repo)
+			continue
+		}
+		filteredRepos = append(filteredRepos, repo)
+	}
+	reposForCVE = filteredRepos
+
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope
 		metrics.AddNote("Passing due to lack of viable repository")
@@ -344,4 +355,33 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 	metrics.AddNote("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
 
 	return reposForCVE
+}
+
+// IsLinuxKernelVulnerability checks if a CVE is a Linux kernel vulnerability.
+func IsLinuxKernelVulnerability(cve models.NVDCVE) bool {
+	for _, CPEstr := range c.CPEs(cve) {
+		CPE, err := c.ParseCPE(CPEstr)
+		if err != nil {
+			continue
+		}
+		if strings.ToLower(CPE.Vendor) == "linux" && (strings.ToLower(CPE.Product) == "linux_kernel" || strings.ToLower(CPE.Product) == "linux") {
+			return true
+		}
+	}
+
+	for _, ref := range cve.References {
+		if IsLinuxKernelURL(ref.URL) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsLinuxKernelURL checks if a URL belongs to a Linux kernel repository.
+func IsLinuxKernelURL(u string) bool {
+	u = strings.ToLower(u)
+	return (strings.Contains(u, "git.kernel.org") && (strings.Contains(u, "linux/kernel") || strings.Contains(u, "/stable/") || strings.Contains(u, "/torvalds/"))) ||
+		strings.Contains(u, "github.com/torvalds/linux") ||
+		strings.Contains(u, "github.com/stable/linux")
 }

@@ -7,12 +7,11 @@
 package repository
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -428,6 +427,7 @@ type CacheRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	ForceUpdate   bool                   `protobuf:"varint,2,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
+	RefId         string                 `protobuf:"bytes,3,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"` // Optional reference ID for tracing
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -476,6 +476,13 @@ func (x *CacheRequest) GetForceUpdate() bool {
 	return false
 }
 
+func (x *CacheRequest) GetRefId() string {
+	if x != nil {
+		return x.RefId
+	}
+	return ""
+}
+
 type AffectedCommitsRequest struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Url                         string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -485,6 +492,7 @@ type AffectedCommitsRequest struct {
 	DetectCherrypicksLimit      bool                   `protobuf:"varint,5,opt,name=detect_cherrypicks_limit,json=detectCherrypicksLimit,proto3" json:"detect_cherrypicks_limit,omitempty"`
 	ForceUpdate                 bool                   `protobuf:"varint,6,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
 	ConsiderAllBranches         bool                   `protobuf:"varint,7,opt,name=consider_all_branches,json=considerAllBranches,proto3" json:"consider_all_branches,omitempty"`
+	RefId                       string                 `protobuf:"bytes,8,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"` // Optional reference ID for tracing
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -568,6 +576,13 @@ func (x *AffectedCommitsRequest) GetConsiderAllBranches() bool {
 	return false
 }
 
+func (x *AffectedCommitsRequest) GetRefId() string {
+	if x != nil {
+		return x.RefId
+	}
+	return ""
+}
+
 var File_repository_proto protoreflect.FileDescriptor
 
 const file_repository_proto_rawDesc = "" +
@@ -592,10 +607,11 @@ const file_repository_proto_rawDesc = "" +
 	"\x05Event\x120\n" +
 	"\n" +
 	"event_type\x18\x01 \x01(\x0e2\x11.gitter.EventTypeR\teventType\x12\x12\n" +
-	"\x04hash\x18\x02 \x01(\tR\x04hash\"C\n" +
+	"\x04hash\x18\x02 \x01(\tR\x04hash\"Z\n" +
 	"\fCacheRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12!\n" +
-	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\"\xe0\x02\n" +
+	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\x12\x15\n" +
+	"\x06ref_id\x18\x03 \x01(\tR\x05refId\"\xf7\x02\n" +
 	"\x16AffectedCommitsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x06events\x18\x02 \x03(\v2\r.gitter.EventR\x06events\x12B\n" +
@@ -603,7 +619,8 @@ const file_repository_proto_rawDesc = "" +
 	"\x18detect_cherrypicks_fixed\x18\x04 \x01(\bR\x16detectCherrypicksFixed\x128\n" +
 	"\x18detect_cherrypicks_limit\x18\x05 \x01(\bR\x16detectCherrypicksLimit\x12!\n" +
 	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate\x122\n" +
-	"\x15consider_all_branches\x18\a \x01(\bR\x13considerAllBranches*D\n" +
+	"\x15consider_all_branches\x18\a \x01(\bR\x13considerAllBranches\x12\x15\n" +
+	"\x06ref_id\x18\b \x01(\tR\x05refId*D\n" +
 	"\tEventType\x12\x0e\n" +
 	"\n" +
 	"INTRODUCED\x10\x00\x12\t\n" +

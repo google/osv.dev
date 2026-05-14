@@ -97,17 +97,24 @@ func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, err
 		//nolint:nilnil // this is expected for delete requests
 		return nil, nil
 	}
-	if m.Attributes["content_encoding"] != "zstd" {
+	var data []byte
+	switch m.Attributes["content_encoding"] {
+	case "":
+		data = m.Data
+	case "zstd":
+		// TODO: try to extract the actual uncompressed size from the zstd frame.
+		data = make([]byte, 0, len(m.Data)*3)
+		var err error
+		data, err = zstd.DecodeTo(data, m.Data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
+		}
+	default:
 		return nil, fmt.Errorf("unrecognized content encoding: %s", m.Attributes["content_encoding"])
 	}
-	// TODO: try to extract the actual uncompressed size from the zstd frame.
-	buf := make([]byte, 0, len(m.Data)*3)
-	buf, err := zstd.DecodeTo(buf, m.Data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
-	}
+
 	v := &osvschema.Vulnerability{}
-	if err := proto.Unmarshal(buf, v); err != nil {
+	if err := proto.Unmarshal(data, v); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal vulnerability: %w", err)
 	}
 

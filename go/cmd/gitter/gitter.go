@@ -770,7 +770,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	if err := unmarshalRequest(r, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
-		
+
 		return
 	}
 
@@ -932,7 +932,6 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(out); err != nil {
 		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
 	}
-
 }
 
 func makeTagsResponse(tagsMap map[string]SHA1) *pb.TagsResponse {

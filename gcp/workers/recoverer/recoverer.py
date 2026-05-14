@@ -16,13 +16,16 @@
 
 import base64
 import datetime
+import functools
 import logging
 import os
+import requests
 import sys
 import time
 
 from google.cloud import ndb
 from google.cloud import pubsub_v1
+from google.cloud import storage
 
 import osv
 import osv.models
@@ -33,6 +36,7 @@ _FAILED_TASKS_SUBSCRIPTION = 'recovery'
 _TASKS_TOPIC = 'tasks'
 
 _ndb_client = None
+_storage_client = None
 
 
 def ndb_client():
@@ -42,6 +46,15 @@ def ndb_client():
   if _ndb_client is None:
     _ndb_client = ndb.Client()
   return _ndb_client
+
+
+def storage_client():
+  """Get the storage client.
+  Lazily initialized."""
+  global _storage_client
+  if _storage_client is None:
+    _storage_client = storage.Client()
+  return _storage_client
 
 
 def handle_gcs_retry(message: pubsub_v1.types.PubsubMessage) -> bool:
@@ -109,9 +122,14 @@ def handle_gcs_missing(message: pubsub_v1.types.PubsubMessage) -> bool:
     publisher = pubsub_v1.PublisherClient()
     project = os.environ['GOOGLE_CLOUD_PROJECT']
     topic_path = publisher.topic_path(project, _TASKS_TOPIC)
+    # TODO(michaelkedar): duplicating the download logic here is annoying
+    # (especially for git repos) and not very robust.
+    # We should instead force the importer to process these again.
+    data = download_vuln_data(path, source)
     publisher.publish(
         topic_path,
-        data=b'',
+        data=data,
+        content_encoding='',
         type='update',
         source=source,
         path=path,
@@ -121,6 +139,69 @@ def handle_gcs_missing(message: pubsub_v1.types.PubsubMessage) -> bool:
         req_timestamp=str(int(time.time())))
 
     return True
+
+
+@functools.lru_cache
+def _get_default_branch(org: str, repo: str) -> str:
+  """Get the default branch for a GitHub repository."""
+  try:
+    response = requests.get(
+        f'https://api.github.com/repos/{org}/{repo}', timeout=60)
+    if response.status_code == 200:
+      return response.json().get('default_branch', 'main')
+    logging.warning(
+        'Failed to get default branch for %s/%s (HTTP %d). Defaulting to main.',
+        org, repo, response.status_code)
+  except requests.RequestException as e:
+    logging.warning(
+        'Request failed when getting default branch for %s/%s: %s. '
+        'Defaulting to main.', org, repo, e)
+  return 'main'
+
+
+def download_vuln_data(vuln_path: str, source: str) -> bytes:
+  """Download vulnerability data from the source repository."""
+  source_repo: osv.SourceRepository = osv.SourceRepository.get_by_id(source)
+  if not source_repo:
+    raise ValueError(f'Source repository {source} not found in Datastore')
+
+  raw_data = None
+  if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
+    url = f'{source_repo.rest_api_url.rstrip("/")}/{vuln_path.lstrip("/")}'
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+    raw_data = response.content
+  elif source_repo.type == osv.SourceRepositoryType.BUCKET:
+    bucket = storage_client().bucket(source_repo.bucket)
+    blob = bucket.blob(vuln_path)
+    raw_data = blob.download_as_bytes()
+  elif source_repo.type == osv.SourceRepositoryType.GIT:
+    # Cheeky workaround: all of our GIT repos are on GitHub
+    # So download the files directly from the GitHub API
+    # instead of cloning the repos.
+    org, _, repo = source_repo.repo_url.removeprefix(
+        'https://github.com/').removesuffix('.git').partition('/')
+    if source_repo.name == 'oss-fuzz':
+      # oss-fuzz uses ssh
+      org = 'google'
+      repo = 'oss-fuzz-vulns'
+    branch = source_repo.repo_branch
+    if not branch:
+      branch = _get_default_branch(org, repo)
+    url = f'https://raw.githubusercontent.com/{org}/{repo}/{branch}/{vuln_path}'
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+    raw_data = response.content
+  else:
+    raise ValueError(f'unhandled source type {source_repo.type}')
+
+  if raw_data is None:
+    raise ValueError(
+        f'Failed to download vulnerability data for {vuln_path} from {source}')
+
+  vuln = osv.parse_vulnerabilities_from_data(
+      raw_data, source_repo.extension, key_path=source_repo.key_path)[0]
+  return vuln.SerializeToString(deterministic=True)
 
 
 def handle_gcs_gen_mismatch(message: pubsub_v1.types.PubsubMessage) -> bool:

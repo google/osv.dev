@@ -29,7 +29,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis)
+			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis, vuln.GetId())
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}
@@ -52,8 +52,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	}, nil
 }
 
-func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsResponse, error) {
-	req, err := newAffectedCommitsRequest(aRange, gitAnalysis)
+func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsResponse, error) {
+	req, err := newAffectedCommitsRequest(aRange, gitAnalysis, refID)
 	if err != nil {
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
 	}
@@ -156,7 +156,7 @@ func applyAffectedCommitsAndTags(resp *gitterpb.AffectedCommitsResponse, affecte
 	}
 }
 
-func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig) (*gitterpb.AffectedCommitsRequest, error) {
+func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsRequest, error) {
 	gitterReq := &gitterpb.AffectedCommitsRequest{
 		Url:                         affectedRange.GetRepo(),
 		ConsiderAllBranches:         gitAnalysis.ConsiderAllBranches,
@@ -164,6 +164,7 @@ func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *mode
 		DetectCherrypicksFixed:      gitAnalysis.DetectCherrypicks,
 		DetectCherrypicksLimit:      gitAnalysis.DetectCherrypicks,
 		Events:                      make([]*gitterpb.Event, 0, len(affectedRange.GetEvents())),
+		RefId:                       refID,
 	}
 	for _, event := range affectedRange.GetEvents() {
 		var commit string

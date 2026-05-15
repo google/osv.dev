@@ -146,14 +146,31 @@ func TestIsAuthError(t *testing.T) {
 		{errors.New("fatal: Authentication failed for 'https://github.com/google/this-repo-does-not-exist-12345.git/'"), true},
 		{errors.New("remote: Repository not found"), false},
 		{errors.New("fatal: could not read Username for 'https://github.com': terminal prompts disabled"), true},
-		{errors.New("The requested URL returned error: 403"), true},
 		{errors.New("some other error"), false},
 		{errors.New("git clone failed: exit status 128"), false},
+		{nil, false},
 	}
 
 	for _, tt := range tests {
 		if result := isAuthError(tt.err); result != tt.expected {
 			t.Errorf("isAuthError(%v) = %v, expected %v", tt.err, result, tt.expected)
+		}
+	}
+}
+
+func TestIsForbiddenError(t *testing.T) {
+	tests := []struct {
+		err      error
+		expected bool
+	}{
+		{errors.New("fatal: unable to access 'https://github.com/composer/composer/': The requested URL returned error: 403"), true},
+		{errors.New("some other error"), false},
+		{nil, false},
+	}
+
+	for _, tt := range tests {
+		if result := isForbiddenError(tt.err); result != tt.expected {
+			t.Errorf("isForbiddenError(%v) = %v, expected %v", tt.err, result, tt.expected)
 		}
 	}
 }

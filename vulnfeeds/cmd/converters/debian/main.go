@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -57,7 +57,16 @@ func main() {
 		logger.Fatal("Failed to get Debian distro info data", slog.Any("err", err))
 	}
 
-	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
+	targetCVEs := make(map[string]bool)
+	for _, pkg := range debianData {
+		for cveID := range pkg {
+			if strings.HasPrefix(cveID, "CVE") {
+				targetCVEs[cveID] = true
+			}
+		}
+	}
+
+	allCVEs := vulns.LoadTargetCVEs(defaultCvePath, targetCVEs)
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))
@@ -70,7 +79,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
+	writer.UploadVulnsToGCS(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Debian CVE conversion succeeded.")
 }
 

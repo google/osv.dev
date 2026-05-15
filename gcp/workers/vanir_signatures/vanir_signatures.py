@@ -18,6 +18,7 @@ import argparse
 import datetime
 import json
 import logging
+import tempfile
 from concurrent import futures
 
 from google.cloud import ndb
@@ -30,6 +31,7 @@ import osv.gcs
 from osv import vulnerability_pb2
 
 from vanir import vulnerability_manager
+from vanir.code_extractors import code_extractor_base
 
 JOB_NAME = 'vanir_signatures'
 JOB_DATA_LAST_RUN = 'vanir_signatures_last_run'
@@ -37,8 +39,8 @@ JOB_DATA_RETRY_LIST = 'vanir_signatures_retry_list'
 
 
 def _generate_vanir_signatures_batch(
-    vulnerability_pbs: list[vulnerability_pb2.Vulnerability]
-) -> dict[str, list[vulnerability_pb2.Vulnerability]]:
+    vulnerability_pbs: list[vulnerability_pb2.Vulnerability],
+    git_working_dir: str) -> dict[str, list[vulnerability_pb2.Vulnerability]]:
   """Generates Vanir signatures for a batch of vulnerability_pbs."""
   if not vulnerability_pbs:
     return {}
@@ -53,7 +55,10 @@ def _generate_vanir_signatures_batch(
     ]
     vuln_manager = vulnerability_manager.generate_from_json_string(
         content=json.dumps(vuln_dicts))
-    vuln_manager.generate_signatures()
+
+    extractor_config = code_extractor_base.ExtractorConfig(
+        git_working_dir=git_working_dir)
+    vuln_manager.generate_signatures(extractor_config=extractor_config)
 
     if not vuln_manager.vulnerabilities:
       logging.warning('Vanir signature generation resulted in no '
@@ -104,6 +109,7 @@ def has_vanir_signatures(
 
 
 def process_batch(vuln_ids: list[str],
+                  git_working_dir: str,
                   dry_run: bool = False,
                   max_workers: int = 10) -> tuple[int, list[str]]:
   """Process a batch of vulnerabilities."""
@@ -158,7 +164,8 @@ def process_batch(vuln_ids: list[str],
     return 0, []
 
   # Batch signature generation
-  batch_results = _generate_vanir_signatures_batch(vulnerability_pbs_to_process)
+  batch_results = _generate_vanir_signatures_batch(
+      vulnerability_pbs_to_process, git_working_dir=git_working_dir)
 
   # Collect all vulnerabilities to update in GCS/Datastore.
   all_enriched_pbs = []
@@ -279,50 +286,55 @@ def main():
 
   # Note that total threads spawned will be max_workers * max_workers (one pool
   # for batches, one pool within each batch for GCS fetches).
-  with futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+  with tempfile.TemporaryDirectory() as shared_temp_dir:
+    with futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
 
-    def process_with_context(batch):
-      with ndb.Client().context():
-        return process_batch(batch, args.dry_run, args.max_workers)
+      def process_with_context(batch):
+        with ndb.Client().context():
+          return process_batch(
+              batch,
+              shared_temp_dir,
+              dry_run=args.dry_run,
+              max_workers=args.max_workers)
 
-    future_to_batch = {}
-    current_batch = []
+      future_to_batch = {}
+      current_batch = []
 
-    logging.info('Streaming vulnerabilities for processing.')
-    for key in query.iter(keys_only=True):
-      current_batch.append(key.id())
-      if len(current_batch) >= args.batch_size:
+      logging.info('Streaming vulnerabilities for processing.')
+      for key in query.iter(keys_only=True):
+        current_batch.append(key.id())
+        if len(current_batch) >= args.batch_size:
+          f = executor.submit(process_with_context, current_batch)
+          future_to_batch[f] = current_batch
+          current_batch = []
+
+      # Also add IDs from the retry list
+      if retry_list_data and retry_list_data.value:
+        retry_ids = list(set(retry_list_data.value))
+        logging.info('Adding %d IDs from retry list.', len(retry_ids))
+        for i in range(0, len(retry_ids), args.batch_size):
+          batch = retry_ids[i:i + args.batch_size]
+          f = executor.submit(process_with_context, batch)
+          future_to_batch[f] = batch
+
+      if current_batch:
         f = executor.submit(process_with_context, current_batch)
         future_to_batch[f] = current_batch
-        current_batch = []
 
-    # Also add IDs from the retry list
-    if retry_list_data and retry_list_data.value:
-      retry_ids = list(set(retry_list_data.value))
-      logging.info('Adding %d IDs from retry list.', len(retry_ids))
-      for i in range(0, len(retry_ids), args.batch_size):
-        batch = retry_ids[i:i + args.batch_size]
-        f = executor.submit(process_with_context, batch)
-        future_to_batch[f] = batch
-
-    if current_batch:
-      f = executor.submit(process_with_context, current_batch)
-      future_to_batch[f] = current_batch
-
-    if not future_to_batch:
-      logging.info('No modified vulnerabilities found.')
-    else:
-      logging.info('Processing %d batches of vulnerabilities.',
-                   len(future_to_batch))
-      for future in futures.as_completed(future_to_batch):
-        try:
-          generated, failed_ids = future.result()
-          total_generated_count += generated
-          all_failed_ids.extend(failed_ids)
-          total_processed_count += len(future_to_batch[future])
-        except Exception as e:
-          logging.exception('Failed to process a batch of vulnerabilities: %s',
-                            e)
+      if not future_to_batch:
+        logging.info('No modified vulnerabilities found.')
+      else:
+        logging.info('Processing %d batches of vulnerabilities.',
+                     len(future_to_batch))
+        for future in futures.as_completed(future_to_batch):
+          try:
+            generated, failed_ids = future.result()
+            total_generated_count += generated
+            all_failed_ids.extend(failed_ids)
+            total_processed_count += len(future_to_batch[future])
+          except Exception as e:
+            logging.exception(
+                'Failed to process a batch of vulnerabilities: %s', e)
 
   logging.info('Processed %d vulnerabilities, generated %d new signatures.',
                total_processed_count, total_generated_count)

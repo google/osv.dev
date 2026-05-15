@@ -1,0 +1,22 @@
+{{- $url := .Destination -}}
+{{- $isExternal := or (hasPrefix $url "http://") (hasPrefix $url "https://") -}}
+{{- $isTrusted := false -}}
+{{- if $isExternal -}}
+  {{- $isTrusted = or
+    (hasPrefix $url "https://google.github.io/")
+    (hasPrefix $url "https://ossf.github.io/")
+    (hasPrefix $url "https://deps.dev/")
+    (hasPrefix $url "https://security.googleblog.com/")
+    (hasPrefix $url "https://github.com/google/")
+    (hasPrefix $url "https://osv.dev/")
+    (hasPrefix $url "https://api.osv.dev/")
+  -}}
+{{- end -}}
+<a href="{{ .Destination | safeURL }}"
+  {{- with .Title }} title="{{ . }}"{{ end -}}
+  {{- if $isExternal }} target="_blank"
+    {{- if $isTrusted }} rel="noopener noreferrer"
+    {{- else }} rel="nofollow noopener noreferrer"
+    {{- end -}}
+  {{- end -}}
+>{{ .Text | safeHTML }}</a>

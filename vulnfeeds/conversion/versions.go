@@ -26,10 +26,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/knqyf263/go-cpe/naming"
-
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/knqyf263/go-cpe/naming"
 )
 
 // References with these tags have been found to contain completely unrelated
@@ -131,6 +130,24 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
+	r, err := repo(u)
+	if err != nil {
+		return "", err
+	}
+	parsedURL, err := url.Parse(r)
+	if err == nil && isCaseInsensitiveHost(parsedURL.Hostname()) {
+		return strings.ToLower(r), nil
+	}
+
+	return r, nil
+}
+
+func isCaseInsensitiveHost(host string) bool {
+	host = strings.ToLower(host)
+	return host == "github.com" || host == "bitbucket.org" || strings.Contains(host, "gitlab")
+}
+
+func repo(u string) (string, error) {
 	var supportedHosts = []string{
 		"bitbucket.org",
 		"github.com",
@@ -691,7 +708,7 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCache *VPRepoCache, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	versions := []models.RangeWithMetadata{}
 
 	for _, config := range cve.Configurations {
@@ -731,14 +748,14 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
 					}
 				}
-
+				CPE, err := ParseCPE(match.Criteria)
+				if err != nil {
+					continue
+				}
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
-					CPE, err := ParseCPE(match.Criteria)
-					if err != nil {
-						continue
-					}
+
 					if CPE.Part != "a" && CPE.Part != "o" {
 						continue
 					}
@@ -770,16 +787,41 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := BuildVersionRange(introduced, lastaffected, fixed)
-				versions = append(versions,
-					models.RangeWithMetadata{
-						Range: vr,
-						Metadata: models.Metadata{
-							CPE:    match.Criteria,
-							Source: models.VersionSourceCPE,
+
+				// Get the repositories attached to this CPE
+				var associatedRepos []string
+				if vpRepoCache != nil {
+					vp := VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+					if repos, ok := vpRepoCache.Get(vp); ok {
+						associatedRepos = repos
+					}
+				}
+
+				if len(associatedRepos) > 0 {
+					for _, repo := range associatedRepos {
+						vr := BuildGitVersionRange(introduced, lastaffected, fixed, repo)
+						versions = append(versions,
+							models.RangeWithMetadata{
+								Range: vr,
+								Metadata: models.Metadata{
+									CPE:    match.Criteria,
+									Source: models.VersionSourceCPE,
+								},
+							},
+						)
+					}
+				} else {
+					vr := BuildVersionRange(introduced, lastaffected, fixed)
+					versions = append(versions,
+						models.RangeWithMetadata{
+							Range: vr,
+							Metadata: models.Metadata{
+								CPE:    match.Criteria,
+								Source: models.VersionSourceCPE,
+							},
 						},
-					},
-				)
+					)
+				}
 			}
 		}
 	}
@@ -1054,7 +1096,7 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) {
+func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	for _, repo := range repos {
@@ -1146,7 +1188,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // *** Does external calls to verify repos ***
-func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {

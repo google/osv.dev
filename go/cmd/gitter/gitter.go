@@ -35,13 +35,14 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 )
 
 type contextKey string
 
 const (
-	urlKey contextKey = "repoURL"
+	urlKey   contextKey = "repoURL"
+	refIDKey contextKey = "refID"
 )
 
 const defaultGitterWorkDir = "/work/gitter"
@@ -52,6 +53,7 @@ const gitStoreFileName = "git-store"
 var endpointHandlers = map[string]http.HandlerFunc{
 	"GET /git":               gitHandler,
 	"POST /cache":            cacheHandler,
+	"GET /tags":              tagsHandler,
 	"POST /affected-commits": affectedCommitsHandler,
 }
 
@@ -59,6 +61,8 @@ var (
 	gFetch          singleflight.Group
 	gArchive        singleflight.Group
 	gLoad           singleflight.Group
+	gLsRemote       singleflight.Group
+	gLocalTags      singleflight.Group
 	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
 	fetchTimeout    time.Duration
@@ -67,6 +71,18 @@ var (
 	repoCache             *ristretto.Cache[string, *Repository]
 	repoTTL               time.Duration
 	repoCacheMaxCostBytes int64
+	// Cache for invalid (does not exist, or does not have tags) repos
+	// Maps repo URL to the HTTP status code (404 or 204) to return
+	invalidRepoCache           *ristretto.Cache[string, int]
+	invalidRepoTTL             time.Duration
+	invalidRepoCacheMaxEntries int64
+
+	// gitMirrors lists more performant mirrors for large/popular repos.
+	// TODO: Don't hardcode this.
+	gitMirrors = map[string]string{
+		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+	}
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -164,6 +180,28 @@ func CloseRepoCache() {
 	}
 }
 
+// InitInvalidRepoCache initializes the cache for invalid repositories.
+func InitInvalidRepoCache() {
+	var err error
+	invalidRepoCache, err = ristretto.NewCache(&ristretto.Config[string, int]{
+		NumCounters: invalidRepoCacheMaxEntries * 10,
+		MaxCost:     invalidRepoCacheMaxEntries, // Cost for each entry is 1
+		BufferItems: 64,
+		// Check for TTL expiry every 60 seconds
+		TtlTickerDurationInSec: 60,
+	})
+	if err != nil {
+		logger.FatalContext(context.Background(), "Failed to initialize invalid repository cache", slog.Any("err", err))
+	}
+}
+
+// CloseInvalidRepoCache closes the cache for invalid repositories.
+func CloseInvalidRepoCache() {
+	if invalidRepoCache != nil {
+		invalidRepoCache.Close()
+	}
+}
+
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
 func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
@@ -187,9 +225,9 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested.
 func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	logger.DebugContext(ctx, "Running command", slog.String("cmd", name), slog.Any("args", args))
 	cmd := prepareCmd(ctx, dir, env, name, args...)
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		if ctx.Err() != nil {
 			// Log separately if cancelled
@@ -199,7 +237,12 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 
 		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
-	logger.DebugContext(ctx, "Command completed successfully", slog.String("cmd", name), slog.String("out", string(out)))
+
+	logger.DebugContext(ctx, "Git command executed",
+		slog.String("cmd", name),
+		slog.Any("args", args),
+		slog.String("output", string(out)),
+	)
 
 	return nil
 }
@@ -245,6 +288,9 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
+	// Removing trailing slashes
+	u.Path = strings.TrimSuffix(u.Path, "/")
+
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
 	if u.Scheme == "git" && u.Host == "github.com" {
@@ -255,15 +301,33 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 
+	// normalize to https before checking for mirrors.
+	mirrorKey := u.String()
+	if u.Scheme == "http" {
+		mirrorKey = "https" + u.String()[4:]
+	}
+	if mirror, ok := gitMirrors[mirrorKey]; ok {
+		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
+		return mirror, nil
+	}
+
 	if !isLocalRequest(r) {
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
 			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
 		}
 	}
 
-	logger.Info("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
+	logger.Debug("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
 
 	return u.String(), nil
+}
+
+func logRequestCompletion(ctx context.Context, endpoint string, start time.Time, statusCode int) {
+	logger.InfoContext(ctx, "Request completed",
+		slog.String("endpoint", endpoint),
+		slog.Int("status", statusCode),
+		slog.Duration("duration", time.Since(start)),
+	)
 }
 
 func getRepoDirName(repoURL string) string {
@@ -276,19 +340,31 @@ func getRepoDirName(repoURL string) string {
 }
 
 func isAuthError(err error) bool {
-	errString := err.Error()
-	return strings.Contains(errString, "could not read Username") ||
-		strings.Contains(errString, "Authentication failed") ||
-		(strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found"))
-}
-
-func isIndexLockError(err error) bool {
 	if err == nil {
 		return false
 	}
 	errString := err.Error()
 
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
+	return strings.Contains(errString, "could not read Username") ||
+		strings.Contains(errString, "Authentication failed")
+}
+
+func isForbiddenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "The requested URL returned error: 403")
+}
+
+func isNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found")
 }
 
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
@@ -317,7 +393,7 @@ func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
 	return proto.Marshal(m)
 }
 
-func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) error {
+func doFetch(ctx context.Context, repoURL string, forceUpdate bool) error {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
 		return runWithSemaphore(ctx, func() (any, error) {
 			return nil, FetchRepo(ctx, repoURL, forceUpdate)
@@ -325,12 +401,6 @@ func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUp
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
-		if isAuthError(err) {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusForbidden)
-		} else {
-			http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), http.StatusInternalServerError)
-		}
-
 		return err
 	}
 
@@ -340,7 +410,7 @@ func doFetch(ctx context.Context, w http.ResponseWriter, repoURL string, forceUp
 // getFreshRepo handles fetching and loading of a repository
 // If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
 // Otherwise, it will use a cache if available
-func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, forceUpdate bool) (*Repository, error) {
+func getFreshRepo(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
 	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
@@ -352,11 +422,11 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 		}
 	}
 
-	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
+	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
 		return nil, err
 	}
 
-	repoAny, err, _ := gLoad.Do(repoPath, func() (any, error) {
+	repoAny, err, _ := gLoad.Do(repoURL, func() (any, error) {
 		return runWithSemaphore(ctx, func() (any, error) {
 			repoLock := GetRepoLock(repoURL)
 			repoLock.RLock()
@@ -367,8 +437,6 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Failed to load repository: %v", err), http.StatusInternalServerError)
-
 		return nil, err
 	}
 	repo := repoAny.(*Repository)
@@ -377,8 +445,70 @@ func getFreshRepo(ctx context.Context, w http.ResponseWriter, repoURL string, fo
 	return repo, nil
 }
 
+func isIndexLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
+}
+
+func isRefConflictError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "refname conflict") ||
+		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
+}
+
+// Attempt to recover from git fetch + reset errors
+// Returns true if recovery was attempted and we should retry fetch + reset
+func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Refname conflict, likely name conflict between local and remote refs
+	// We can try removing stale remote-tracking branches and retry
+	if isRefConflictError(err) {
+		logger.WarnContext(ctx, "ref conflict detected, running git remote prune origin")
+		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
+			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
+			return false
+		}
+
+		return true
+	}
+
+	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
+	// We want to reclone as fallback but log a separate warning (for stats)
+	if isIndexLockError(err) {
+		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
+	}
+
+	return false
+}
+
+// Helper function to group git fetch and git reset --hard together
+func fetchAndReset(ctx context.Context, repoPath string) error {
+	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+	if err != nil {
+		return fmt.Errorf("git fetch failed: %w", err)
+	}
+
+	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
+	if err != nil {
+		return fmt.Errorf("git reset failed: %w", err)
+	}
+
+	return nil
+}
+
 func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
-	logger.InfoContext(ctx, "Starting fetch repo")
+	logger.DebugContext(ctx, "Starting fetch repo")
 	start := time.Now()
 
 	repoDirName := getRepoDirName(repoURL)
@@ -394,37 +524,46 @@ func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 
 	// Check if we need to fetch
 	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		logger.InfoContext(ctx, "Fetching git blob", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
-			logger.InfoContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+			logger.DebugContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
 			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
 			if err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
 			}
 		} else {
-			// Fetch/Pull - implementing simple git pull for now, might need reset --hard if we want exact mirrors
-			// For a generic "get latest", pull is usually sufficient if we treat it as read-only.
-			// Ideally safely: git fetch origin && git reset --hard origin/HEAD
-			logger.InfoContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+			// Fetch and reset
+			logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+			err := fetchAndReset(ctx, repoPath)
+
+			// Attempt recovery and fallback
 			if err != nil {
-				return fmt.Errorf("git fetch failed: %w", err)
-			}
-			err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-			if err != nil && isIndexLockError(err) {
-				// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
-				// We can remove the file and retry the command
-				logger.WarnContext(ctx, "index.lock exists, attempting to remove and retry")
-				indexLockPath := filepath.Join(repoPath, ".git", "index.lock")
-				if err := os.Remove(indexLockPath); err != nil {
-					return fmt.Errorf("failed to remove index.lock in %s: %w", repoPath, err)
+				logger.WarnContext(ctx, "Initial fetch and reset failed, attempting to recover", slog.Any("err", err))
+
+				// Attempt recovery and retry fetch and reset if successful
+				if attemptGitRecovery(ctx, repoPath, err) {
+					logger.InfoContext(ctx, "Retrying fetch and reset after recovery")
+					err = fetchAndReset(ctx, repoPath)
 				}
-				// One more attempt at git reset
-				err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-			}
-			if err != nil {
-				return fmt.Errorf("git reset failed: %w", err)
+
+				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
+				if err != nil {
+					if isForbiddenError(err) {
+						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
+						return nil
+					}
+
+					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
+					if err := os.RemoveAll(repoPath); err != nil {
+						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
+					}
+
+					logger.InfoContext(ctx, "Cloning git repository after fallback", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+					err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+					if err != nil {
+						return fmt.Errorf("git clone failed after fallback: %w", err)
+					}
+				}
 			}
 		}
 
@@ -463,7 +602,8 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	// We update if archive does not exist OR if it is older than the last fetch
 	stats, err := os.Stat(archivePath)
 	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
-		logger.InfoContext(ctx, "Archiving git blob")
+		logger.DebugContext(ctx, "Archiving git blob")
+		startArchive := time.Now()
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
@@ -471,6 +611,7 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
+		logger.InfoContext(ctx, "Archiving git blob completed", slog.Duration("duration", time.Since(startArchive)))
 	}
 
 	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
@@ -490,6 +631,7 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 func main() {
 	logger.InitGlobalLogger()
 	logger.RegisterContextKey(urlKey, "repoURL")
+	logger.RegisterContextKey(refIDKey, "refID")
 	defer logger.Close()
 
 	port := flag.Int("port", 8888, "Listen port")
@@ -498,7 +640,10 @@ func main() {
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
 	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
 	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
+	flag.DurationVar(&invalidRepoTTL, "invalid-repo-cache-ttl", time.Hour, "Invalid repository cache time-to-live duration")
+	flag.Int64Var(&invalidRepoCacheMaxEntries, "invalid-repo-cache-max-entries", 5000, "Invalid repository cache max entries")
 	flag.Parse()
+
 	semaphore = make(chan struct{}, *concurrentLimit)
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
@@ -519,6 +664,8 @@ func main() {
 	loadLastFetchMap()
 	InitRepoCache()
 	defer CloseRepoCache()
+	InitInvalidRepoCache()
+	defer CloseInvalidRepoCache()
 
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -576,18 +723,37 @@ func main() {
 }
 
 func gitHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/git", start, statusCode) }()
+
 	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
+
 	forceUpdate := r.URL.Query().Get("force-update") == "true"
 
-	ctx := context.WithValue(r.Context(), urlKey, repoURL)
-	logger.InfoContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
+	refID := r.URL.Query().Get("ref_id")
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	ctx = context.WithValue(ctx, refIDKey, refID)
+	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
 	// Fetch repo first
-	if err := doFetch(ctx, w, repoURL, forceUpdate); err != nil {
+	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
+
 		return
 	}
 
@@ -599,7 +765,8 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), http.StatusInternalServerError)
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), statusCode)
 
 		return
 	}
@@ -610,56 +777,83 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.ErrorContext(ctx, "Error copying file", slog.Any("error", err))
-		http.Error(w, "Error copying file", http.StatusInternalServerError)
+		statusCode = http.StatusInternalServerError
+		http.Error(w, "Error copying file", statusCode)
 
 		return
 	}
-
-	logger.InfoContext(ctx, "Request completed successfully: /git")
 }
 
 func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/cache", start, statusCode) }()
+
 	body := &pb.CacheRequest{}
 	if err := unmarshalRequest(r, body); err != nil {
-		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
 		return
 	}
 
 	repoURL, err := prepareURL(r, body.GetUrl())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
-	ctx := context.WithValue(r.Context(), urlKey, repoURL)
-	logger.InfoContext(ctx, "Received request: /cache")
+	refID := body.GetRefId()
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	ctx = context.WithValue(ctx, refIDKey, refID)
+	logger.DebugContext(ctx, "Received request: /cache")
 
-	if _, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate()); err != nil {
+	if _, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate()); err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	logger.InfoContext(ctx, "Request completed successfully: /cache", slog.Duration("duration", time.Since(start)))
 }
 
 func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/affected-commits", start, statusCode) }()
+
 	body := &pb.AffectedCommitsRequest{}
 	if err := unmarshalRequest(r, body); err != nil {
-		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
 		return
 	}
 
 	repoURL, err := prepareURL(r, body.GetUrl())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
 	se, err := separateEvents(body.GetEvents())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
 		return
 	}
 
@@ -673,8 +867,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		considerAllBranches = true
 	}
 
-	ctx := context.WithValue(r.Context(), urlKey, repoURL)
-	logger.InfoContext(ctx, "Received request: /affected-commits",
+	refID := body.GetRefId()
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	ctx = context.WithValue(ctx, refIDKey, refID)
+	logger.DebugContext(ctx, "Received request: /affected-commits",
 		slog.Any("introduced", se.Introduced),
 		slog.Any("fixed", se.Fixed),
 		slog.Any("last_affected", se.LastAffected),
@@ -685,8 +881,17 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
 
-	repo, err := getFreshRepo(ctx, w, repoURL, body.GetForceUpdate())
+	repo, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate())
 	if err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
 		return
 	}
 
@@ -742,7 +947,8 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	out, err := marshalResponse(r, resp)
 	if err != nil {
 		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
-		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), http.StatusInternalServerError)
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), statusCode)
 
 		return
 	}
@@ -752,5 +958,155 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(out); err != nil {
 		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
 	}
-	logger.InfoContext(ctx, "Request completed successfully: /affected-commits", slog.Duration("duration", time.Since(start)))
+}
+
+func makeTagsResponse(tagsMap map[string]SHA1) *pb.TagsResponse {
+	resp := &pb.TagsResponse{
+		Tags: make([]*pb.Ref, 0, len(tagsMap)),
+	}
+	for tag, hash := range tagsMap {
+		resp.Tags = append(resp.Tags, &pb.Ref{
+			Label: tag,
+			Hash:  hash[:],
+		})
+	}
+
+	return resp
+}
+
+func tagsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/tags", start, statusCode) }()
+
+	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	refID := r.URL.Query().Get("ref_id")
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	ctx = context.WithValue(ctx, refIDKey, refID)
+	logger.DebugContext(ctx, "Received request: /tags")
+
+	// Previously cached invalid repo (does not exist or does not have tags)
+	// Get() will not return if the entry is past its TTL, so we can safely return the same http status code as is.
+	if code, found := invalidRepoCache.Get(repoURL); found {
+		logger.DebugContext(ctx, "Invalid repo cache hit", slog.Int("code", code))
+		statusCode = code
+		w.WriteHeader(code)
+
+		return
+	}
+
+	var tagsMap map[string]SHA1
+
+	// If repository is recently loaded, we can return the tags directly from the cached repo
+	if cachedRepo, found := repoCache.Get(repoURL); found {
+		logger.DebugContext(ctx, "Repo cache hit, returning cached tags")
+		tagsMap = make(map[string]SHA1)
+		for tag, idx := range cachedRepo.tagToCommit {
+			tagsMap[tag] = cachedRepo.commits[idx].Hash
+		}
+	} else {
+		repo := NewRepository(repoURL)
+
+		// If repoPath is not empty, it means there is a local git directory for this repo on disk
+		// We want to use show-ref instead of ls-remote because it's faster and we don't have to worry about rate limits
+		if repo.repoPath != "" {
+			logger.DebugContext(ctx, "Local repo found, using show-ref")
+			if _, errFetch, _ := gFetch.Do(repoURL, func() (any, error) {
+				return nil, FetchRepo(ctx, repoURL, false)
+			}); errFetch != nil {
+				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
+				if isAuthError(errFetch) || isForbiddenError(errFetch) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
+					statusCode = http.StatusForbidden
+					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
+
+					return
+				}
+				if isNotFoundError(errFetch) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
+					statusCode = http.StatusNotFound
+					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
+
+					return
+				}
+				statusCode = http.StatusInternalServerError
+				http.Error(w, "Error fetching repository", statusCode)
+
+				return
+			}
+
+			tagsMapAny, errLocal, _ := gLocalTags.Do(repoURL, func() (any, error) {
+				return repo.GetLocalTags(ctx)
+			})
+			if errLocal != nil {
+				logger.ErrorContext(ctx, "Error parsing local tags", slog.Any("error", errLocal))
+				statusCode = http.StatusInternalServerError
+				http.Error(w, "Error parsing local tags", statusCode)
+
+				return
+			}
+			tagsMap = tagsMapAny.(map[string]SHA1)
+		} else {
+			// If repo is not on disk, we use ls-remote to get the tags instead
+			logger.DebugContext(ctx, "Local repo not found, using ls-remote")
+			tagsMapAny, errLsRemote, _ := gLsRemote.Do(repoURL, func() (any, error) {
+				return repo.GetRemoteTags(ctx)
+			})
+			if errLsRemote != nil {
+				if isAuthError(errLsRemote) || isForbiddenError(errLsRemote) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
+					statusCode = http.StatusForbidden
+					http.Error(w, fmt.Sprintf("Repository authentication failed: %v", errLsRemote), statusCode)
+
+					return
+				}
+				if isNotFoundError(errLsRemote) {
+					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
+					statusCode = http.StatusNotFound
+					http.Error(w, "Repository not found", statusCode)
+
+					return
+				}
+				logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", errLsRemote))
+				statusCode = http.StatusInternalServerError
+				http.Error(w, "Error listing remote tags", statusCode)
+
+				return
+			}
+			tagsMap = tagsMapAny.(map[string]SHA1)
+		}
+	}
+
+	if len(tagsMap) == 0 {
+		logger.InfoContext(ctx, "No tags in repository")
+		invalidRepoCache.SetWithTTL(repoURL, http.StatusNoContent, 1, invalidRepoTTL)
+		statusCode = http.StatusNoContent
+		w.WriteHeader(statusCode)
+
+		return
+	}
+
+	resp := makeTagsResponse(tagsMap)
+	out, err := marshalResponse(r, resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling tags response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error marshaling tags response: %v", err), statusCode)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
+	}
 }

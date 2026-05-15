@@ -195,7 +195,8 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 		httpClient = http.DefaultClient
 	}
 	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
+	loggingBackoff := newLoggingBackoff(retry.WithMaxRetries(3, backoff), "ValidateAndCanonicalizeLink")
+	if err := retry.Do(context.Background(), loggingBackoff, func(ctx context.Context) error {
 		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
 		if err != nil {
 			return err
@@ -232,7 +233,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 	return canonicalLink, nil
 }
 
-func FindCanonicalLink(link string, httpClient *http.Client, cache *RepoTagsCache) (canonicalLink string, err error) {
+func FindCanonicalLink(link string, httpClient *http.Client, cache RepoTagsCache) (canonicalLink string, err error) {
 	if canonicalLink, ok := cache.GetCanonicalLink(link); ok {
 		return canonicalLink, nil
 	}

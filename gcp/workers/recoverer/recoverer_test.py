@@ -106,12 +106,15 @@ class RecovererTest(unittest.TestCase):
     self.assertEqual(1, len(cm.output))
     self.assertIn('failed to decode protobuf', cm.output[0])
 
+  @unittest.mock.patch('recoverer.download_vuln_data')
   @unittest.mock.patch('google.cloud.pubsub_v1.PublisherClient')
-  def test_handle_gcs_missing(self, mock_publisher):
+  def test_handle_gcs_missing(self, mock_publisher, mock_download):
     """Test standard handle_gcs_missing"""
+    mock_download.return_value = b'dummy_data'
     message = pubsub_v1.types.PubsubMessage(attributes={'id': 'TEST-123'})
     self.assertTrue(recoverer.handle_gcs_missing(message))
 
+    mock_download.assert_called_once_with('TEST-123.yaml', 'test')
     # Check that the update message was published
     mock_publisher.return_value.publish.assert_called_once()
     call_args = mock_publisher.return_value.publish.call_args
@@ -119,6 +122,8 @@ class RecovererTest(unittest.TestCase):
     self.assertEqual(call_args.kwargs['source'], 'test')
     self.assertEqual(call_args.kwargs['path'], 'TEST-123.yaml')
     self.assertEqual(call_args.kwargs['skip_hash_check'], 'true')
+    self.assertEqual(call_args.kwargs['data'], b'dummy_data')
+    self.assertEqual(call_args.kwargs['content_encoding'], '')
 
   def test_handle_gcs_gen_mismatch_aliases(self):
     """Test handle_gcs_gen_mismatch for aliases."""

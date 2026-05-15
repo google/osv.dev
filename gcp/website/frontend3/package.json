@@ -2,6 +2,7 @@
   "name": "frontend3",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@11.0.8",
   "scripts": {
     "watch": "webpack --config webpack.dev.js --watch",
     "start": "webpack serve --config webpack.dev.js",

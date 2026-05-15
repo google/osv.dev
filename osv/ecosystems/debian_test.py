@@ -112,7 +112,6 @@ class DPKGEcosystemTest(unittest.TestCase):
     """Test dpkg-based ecosystems return a DPKG ecosystem."""
     ecos = [
         'Debian',
-        'Echo',
         'Ubuntu',
     ]
     for ecosystem_name in ecos:

@@ -52,7 +52,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
 	osvconstants.EcosystemDebian:                     debianFactory,
 	osvconstants.EcosystemDockerHardenedImages:       statelessFactory[semverEcosystem],
-	osvconstants.EcosystemEcho:                       statelessFactory[dpkgEcosystem],
+	osvconstants.EcosystemEcho:                       echoFactory,
 	osvconstants.EcosystemGHC:                        func(p *Provider, _ string) Ecosystem { return ghcEcosystem{p: p} },
 	osvconstants.EcosystemGo:                         statelessFactory[semverEcosystem],
 	osvconstants.EcosystemHackage:                    func(p *Provider, _ string) Ecosystem { return hackageEcosystem{p: p} },
@@ -75,6 +75,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemRubyGems:                   func(p *Provider, _ string) Ecosystem { return rubyGemsEcosystem{p: p} },
 	osvconstants.EcosystemSUSE:                       statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemSwiftURL:                   statelessFactory[semverEcosystem],
+	osvconstants.EcosystemTuxCare:                    tuxcareFactory,
 	osvconstants.EcosystemUbuntu:                     statelessFactory[dpkgEcosystem],
 	osvconstants.EcosystemVSCode:                     statelessFactory[semverLikeEcosystem],
 	osvconstants.EcosystemWolfi:                      statelessFactory[apkEcosystem],
@@ -144,4 +145,26 @@ type Enumerable interface {
 	// GetVersions enumerates known versions of a package.
 	// The versions should be sorted in ascending order.
 	GetVersions(_ string) ([]string, error)
+}
+
+// PackageNameNormalizer is an ecosystem that can normalize its package names.
+type PackageNameNormalizer interface {
+	NormalizePackageName(_ string) string
+}
+
+// NormalizePackageName normalizes the package name for the given ecosystem.
+func NormalizePackageName(ecosystem Ecosystem, name string) string {
+	inner := ecosystem
+	switch w := ecosystem.(type) {
+	case *ecosystemWrapper:
+		inner = w.Ecosystem
+	case *enumerableWrapper:
+		inner = w.Enumerable
+	}
+
+	if normalizer, ok := inner.(PackageNameNormalizer); ok {
+		return normalizer.NormalizePackageName(name)
+	}
+
+	return name
 }

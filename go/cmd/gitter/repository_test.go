@@ -13,56 +13,84 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-// A very simple test repository with 3 commits and 2 tags.
-func setupTestRepo(t *testing.T) string {
+func runGit(t *testing.T, repoPath string, args ...string) {
 	t.Helper()
-	repoPath := t.TempDir()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoPath
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v failed: %v\nOutput: %s", args, err, out)
+	}
+}
 
-	runGit := func(args ...string) {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = repoPath
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v failed: %v\nOutput: %s", args, err, out)
-		}
+// A very simple test repository with 3 commits and 2 tags.
+func setupTestRepo(t *testing.T, url string) string {
+	t.Helper()
+	gitStorePath = t.TempDir()
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	if err := os.MkdirAll(repoPath, 0755); err != nil {
+		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit("init")
-	runGit("config", "user.email", "test@test.com")
-	runGit("config", "user.name", "Test Name")
+	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "config", "user.email", "test@test.com")
+	runGit(t, repoPath, "config", "user.name", "Test Name")
 
 	// Commit 1
 	err := os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0600)
 	if err != nil {
 		t.Fatalf("failed to write file1 for git repo setup: %v", err)
 	}
-	runGit("add", "file1")
-	runGit("commit", "-m", "commit 1")
+	runGit(t, repoPath, "add", "file1")
+	runGit(t, repoPath, "commit", "-m", "commit 1")
 
 	// Commit 2 + Tag
 	err = os.WriteFile(filepath.Join(repoPath, "file2"), []byte("2"), 0600)
 	if err != nil {
 		t.Fatalf("failed to write file2 for git repo setup: %v", err)
 	}
-	runGit("add", "file2")
-	runGit("commit", "-m", "commit 2")
-	runGit("tag", "v1.0.0")
+	runGit(t, repoPath, "add", "file2")
+	runGit(t, repoPath, "commit", "-m", "commit 2")
+	runGit(t, repoPath, "tag", "v1.0.0")
 
 	// Commit 3 + Tag
 	err = os.WriteFile(filepath.Join(repoPath, "file3"), []byte("3"), 0600)
 	if err != nil {
 		t.Fatalf("failed to write file3 for git repo setup: %v", err)
 	}
-	runGit("add", "file3")
-	runGit("commit", "-m", "commit 3")
-	runGit("tag", "v1.1.0")
+	runGit(t, repoPath, "add", "file3")
+	runGit(t, repoPath, "commit", "-m", "commit 3")
+	runGit(t, repoPath, "tag", "v1.1.0")
 
-	return repoPath
+	return url
+}
+
+// An extremely simple test repository with 1 commit and no tags.
+func setupEmptyTestRepo(t *testing.T, url string) string {
+	t.Helper()
+	gitStorePath = t.TempDir()
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	if err := os.MkdirAll(repoPath, 0755); err != nil {
+		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
+	}
+
+	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "config", "user.email", "test@test.com")
+	runGit(t, repoPath, "config", "user.name", "Test Name")
+
+	err := os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file1 for git repo setup: %v", err)
+	}
+	runGit(t, repoPath, "add", "file1")
+	runGit(t, repoPath, "commit", "-m", "commit 1")
+
+	return url
 }
 
 func TestBuildCommitGraph(t *testing.T) {
-	repoPath := setupTestRepo(t)
-	r := NewRepository(repoPath)
-	ctx := context.WithValue(t.Context(), urlKey, "test-url")
+	url := setupTestRepo(t, "git://test-repo.git")
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
 
@@ -85,9 +113,9 @@ func TestBuildCommitGraph(t *testing.T) {
 }
 
 func TestCalculatePatchIDs(t *testing.T) {
-	repoPath := setupTestRepo(t)
-	r := NewRepository(repoPath)
-	ctx := context.WithValue(t.Context(), urlKey, "test-url")
+	url := setupTestRepo(t, "git://test-repo.git")
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	newCommits, err := r.buildCommitGraph(ctx, nil)
 	if err != nil {
@@ -109,8 +137,9 @@ func TestCalculatePatchIDs(t *testing.T) {
 }
 
 func TestLoadRepository(t *testing.T) {
-	repoPath := setupTestRepo(t)
-	ctx := context.WithValue(t.Context(), urlKey, "test-url")
+	url := setupTestRepo(t, "git://test-repo.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	ctx := context.WithValue(t.Context(), urlKey, url)
 
 	// First loadRepository with a brand new repo
 	r1, err := LoadRepository(ctx, repoPath)
@@ -191,7 +220,7 @@ var cmpSHA1Opts = []cmp.Option{
 }
 
 func TestExpandByCherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Commit hashes
 	h1 := decodeSHA1("aaaa")
@@ -246,7 +275,7 @@ func TestExpandByCherrypick(t *testing.T) {
 
 // Testing cases with introduced and fixed only.
 func TestAffected_Introduced_Fixed(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -362,7 +391,7 @@ func TestAffected_Introduced_Fixed(t *testing.T) {
 }
 
 func TestAffected_Introduced_LastAffected(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -479,7 +508,7 @@ func TestAffected_Introduced_LastAffected(t *testing.T) {
 
 // Testing with both fixed and lastAffected
 func TestAffected_Combined(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	//            -> F -> G
@@ -583,7 +612,7 @@ func TestAffected_Combined(t *testing.T) {
 }
 
 func TestAffected_Cherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D
@@ -711,7 +740,7 @@ func TestAffected_Cherrypick(t *testing.T) {
 }
 
 func TestLimit(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D -> E
@@ -793,7 +822,7 @@ func TestLimit(t *testing.T) {
 }
 
 func TestLimit_Cherrypick(t *testing.T) {
-	repo := NewRepository("/repo")
+	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
 	// A -> B -> C -> D
@@ -1136,6 +1165,151 @@ func TestAffectedSingleBranch(t *testing.T) {
 
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
 				t.Errorf("TestAffectedSingleBranch() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// Test runAndParseTags() with mock stdout
+func TestRunAndParseTags(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmd     *exec.Cmd
+		want    map[string]SHA1
+		wantErr bool
+	}{
+		{
+			name: "Parse mock data",
+			cmd:  exec.Command("echo", "000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n000000000000000000000000000000000000bbbb refs/tags/v1.1.0\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("aaaa"),
+				"v1.1.0": decodeSHA1("bbbb"),
+			},
+		},
+		{
+			name: "Stdout contains ref/heads and tags, should filter out non-tags",
+			cmd:  exec.Command("printf", "000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n000000000000000000000000000000000000cccc refs/heads/main\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("aaaa"),
+			},
+		},
+		{
+			// git show-ref returns exit code 1 when there are no tags, so make sure we don't throw error in this case
+			name: "Exit code 1 (no tags)",
+			cmd:  exec.Command("bash", "-c", "exit 1"),
+			want: map[string]SHA1{},
+		},
+		{
+			name:    "Exit code 128 (actual error)",
+			cmd:     exec.Command("bash", "-c", "echo 'some error' >&2; exit 128"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Repository{}
+			got, err := r.runAndParseTags(t.Context(), tt.cmd)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("runAndParseTags() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("runAndParseTags() mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestGetLocalTags(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupFunc func(t *testing.T, url string) string
+		wantTags  []string
+		wantCount int
+	}{
+		{
+			name:      "Repo with tags",
+			setupFunc: setupTestRepo,
+			wantTags:  []string{"v1.0.0", "v1.1.0"},
+			wantCount: 2,
+		},
+		{
+			name:      "Empty repo (no tags)",
+			setupFunc: setupEmptyTestRepo,
+			wantTags:  []string{},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := tt.setupFunc(t, "git://test-repo.git")
+			r := NewRepository(url)
+			ctx := context.WithValue(t.Context(), urlKey, url)
+
+			tags, err := r.GetLocalTags(ctx)
+			if err != nil {
+				t.Fatalf("GetLocalTags failed: %v", err)
+			}
+
+			if len(tags) != tt.wantCount {
+				t.Errorf("expected %d tags, got %d", tt.wantCount, len(tags))
+			}
+
+			for _, wantTag := range tt.wantTags {
+				if _, ok := tags[wantTag]; !ok {
+					t.Errorf("expected tag %s to exist", wantTag)
+				}
+			}
+		})
+	}
+}
+
+func TestGetRemoteTags(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupFunc func(t *testing.T, url string) string
+		wantTags  []string
+		wantCount int
+	}{
+		{
+			name:      "Repo with tags",
+			setupFunc: setupTestRepo,
+			wantTags:  []string{"v1.0.0", "v1.1.0"},
+			wantCount: 2,
+		},
+		{
+			name:      "Empty repo (no tags)",
+			setupFunc: setupEmptyTestRepo,
+			wantTags:  []string{},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := tt.setupFunc(t, "git://test-repo.git")
+			repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+			r := NewRepository(url)
+			// Overwriting URL with repoPath to simulate remote repo without needing to query an actual repo url
+			r.URL = r.repoPath
+			ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+			tags, err := r.GetRemoteTags(ctx)
+			if err != nil {
+				t.Fatalf("GetRemoteTags failed: %v", err)
+			}
+
+			if len(tags) != tt.wantCount {
+				t.Errorf("expected %d tags, got %d", tt.wantCount, len(tags))
+			}
+
+			for _, wantTag := range tt.wantTags {
+				if _, ok := tags[wantTag]; !ok {
+					t.Errorf("expected tag %s to exist", wantTag)
+				}
 			}
 		})
 	}

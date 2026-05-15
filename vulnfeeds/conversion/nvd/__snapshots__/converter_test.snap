@@ -1724,3 +1724,1861 @@
   ]
 }
 ---
+
+[TestCVEToOSV_VPRepoCacheSnapshot - 1]
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:a:example:app:1.0:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "1.0"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "example:app"
+      }
+    ]
+  },
+  "details": "Test description for VPRepoCache resolution behavior.",
+  "id": "CVE-2026-99999",
+  "modified": "2026-01-02T00:00:00Z",
+  "published": "2026-01-01T00:00:00Z"
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2026-20912 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:gitea:gitea:*:*:*:*:*:-:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "fixed": "1.25.4"
+              }
+            ],
+            "source": [
+              "CPE_FIELD",
+              "REFERENCES"
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "369830bada2fd8826a5135cb2fc66660a9bef708"
+            }
+          ],
+          "repo": "https://github.com/go-gitea/gitea",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    "GHSA-vfmv-f93v-37mw"
+  ],
+  "database_specific": {},
+  "details": "Gitea does not properly validate repository ownership when linking attachments to releases. An attachment uploaded to a private repository could potentially be linked to a release in a different public repository, making it accessible to unauthorized users.",
+  "id": "CVE-2026-20912",
+  "modified": "2026-01-29T22:03:58.330Z",
+  "published": "2026-01-22T22:16:19.297Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://blog.gitea.com/release-of-1.25.4/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/go-gitea/gitea/releases/tag/v1.25.4"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/go-gitea/gitea/security/advisories/GHSA-vfmv-f93v-37mw"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/go-gitea/gitea/pull/36320"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/go-gitea/gitea/pull/36355"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2023-22466 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:tokio:tokio:*:*:*:*:*:rust:*:*",
+            "extracted_events": [
+              {
+                "introduced": "1.7.0"
+              },
+              {
+                "fixed": "1.18.4"
+              },
+              {
+                "introduced": "1.19.0"
+              },
+              {
+                "fixed": "1.20.3"
+              },
+              {
+                "introduced": "1.21.0"
+              },
+              {
+                "fixed": "1.23.1"
+              }
+            ],
+            "source": [
+              "CPE_FIELD",
+              "REFERENCES"
+            ]
+          },
+          "events": [
+            {
+              "introduced": "f64673580dfc649954eb744eb2734f2f118baa47"
+            },
+            {
+              "fixed": "9241c3eddf4a6a218681b088d71f7191513e2376"
+            },
+            {
+              "introduced": "674d77d4ef42bd99238521546b3b2cd60b26e50d"
+            },
+            {
+              "fixed": "ba81945ffc2695b71f2bbcadbfb5e46ec55aaef3"
+            },
+            {
+              "introduced": "50795e652ecb0747c8d048aeaa38a41dddb2da4b"
+            },
+            {
+              "fixed": "1a997ffbd62334af2553775234e75ede2d7d949f"
+            }
+          ],
+          "repo": "https://github.com/tokio-rs/tokio",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    "GHSA-7rrj-xr53-82p7"
+  ],
+  "database_specific": {},
+  "details": "Tokio is a runtime for writing applications with Rust. Starting with version 1.7.0 and prior to versions 1.18.4, 1.20.3, and 1.23.1, when configuring a Windows named pipe server, setting `pipe_mode` will reset `reject_remote_clients` to `false`. If the application has previously configured `reject_remote_clients` to `true`, this effectively undoes the configuration. Remote clients may only access the named pipe if the named pipe's associated path is accessible via a publicly shared folder (SMB). Versions 1.23.1, 1.20.3, and 1.18.4 have been patched. The fix will also be present in all releases starting from version 1.24.0. Named pipes were introduced to Tokio in version 1.7.0, so releases older than 1.7.0 are not affected. As a workaround, ensure that `pipe_mode` is set first after initializing a `ServerOptions`.",
+  "id": "CVE-2023-22466",
+  "modified": "2024-11-21T07:44:51.683Z",
+  "published": "2023-01-04T22:15:09.267Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/tokio-rs/tokio/releases/tag/tokio-1.23.1"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/tokio-rs/tokio/security/advisories/GHSA-7rrj-xr53-82p7"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea#pipe_reject_remote_clients"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/tokio-rs/tokio/pull/5336"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2026-23522 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "source": "REFERENCES"
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "2c1762b85acb84467ed5e799afe1499cd2f912e6"
+            }
+          ],
+          "repo": "https://github.com/lobehub/lobe-chat",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    "GHSA-j7xp-4mg9-x28r"
+  ],
+  "database_specific": {},
+  "details": "LobeChat is an open source chat application platform. Prior to version 2.0.0-next.193, `knowledgeBase.removeFilesFromKnowledgeBase` tRPC ep allows authenticated users to delete files from any knowledge base without verifying ownership. `userId` filter in the database query is commented out, so it's enabling attackers to delete other users' KB files if they know the knowledge base ID and file ID. While the vulnerability is confirmed, practical exploitation requires knowing target's KB ID and target's file ID. These IDs are random and not easily enumerable. However, IDs may leak through shared links, logs, referrer headers and so on. Missing authorization check is a critical security flaw regardless. Users should upgrade to version 2.0.0-next.193 to receive a patch.",
+  "id": "CVE-2026-23522",
+  "modified": "2026-01-26T15:05:39.840Z",
+  "published": "2026-01-19T17:15:50.590Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/lobehub/lobe-chat/security/advisories/GHSA-j7xp-4mg9-x28r"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/lobehub/lobe-chat/commit/2c1762b85acb84467ed5e799afe1499cd2f912e6"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2025-4565 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:google:protobuf-python:*:*:*:*:*:*:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "fixed": "4.25.8"
+              },
+              {
+                "introduced": "5.26.0"
+              },
+              {
+                "fixed": "5.29.5"
+              },
+              {
+                "introduced": "6.30.0"
+              },
+              {
+                "fixed": "6.31.1"
+              }
+            ],
+            "source": [
+              "CPE_FIELD",
+              "REFERENCES"
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "a4cbdd3ed0042e8f9b9c30e8b0634096d9532809"
+            },
+            {
+              "introduced": "d6511091a0cab1ad13f676a02676ad2a0e5eb9ae"
+            },
+            {
+              "fixed": "f5de0a0495faa63b4186fc767324f8b9a7bf4fc4"
+            },
+            {
+              "introduced": "d295af5c3002c08e1bfd9d7f9e175d0a4d015f1e"
+            },
+            {
+              "fixed": "74211c0dfc2777318ab53c2cd2c317a2ef9012de"
+            },
+            {
+              "fixed": "17838beda2943d08b8a9d4df5b68f5f04f26d901"
+            }
+          ],
+          "repo": "https://github.com/protocolbuffers/protobuf",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {},
+  "details": "Any project that uses Protobuf Pure-Python backend to parse untrusted Protocol Buffers data containing an arbitrary number of recursive groups, recursive messages or a series of SGROUP tags can be corrupted by exceeding the Python recursion limit. This can result in a Denial of service by crashing the application with a RecursionError. We recommend upgrading to version =\u003e6.31.1 or beyond commit 17838beda2943d08b8a9d4df5b68f5f04f26d901",
+  "id": "CVE-2025-4565",
+  "modified": "2025-08-14T17:05:37.770Z",
+  "published": "2025-06-16T15:15:24.990Z",
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://github.com/protocolbuffers/protobuf/commit/17838beda2943d08b8a9d4df5b68f5f04f26d901"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2018-14618 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "fixed": "7.61.1"
+              }
+            ],
+            "source": "CPE_FIELD"
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "432eb5f5c254ee8383b2522ce597c9219877923e"
+            }
+          ],
+          "repo": "https://github.com/curl/curl",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:esm:*:*:*",
+          "cpe:2.3:o:canonical:ubuntu_linux:14.04:*:*:*:lts:*:*:*",
+          "cpe:2.3:o:canonical:ubuntu_linux:16.04:*:*:*:lts:*:*:*",
+          "cpe:2.3:o:canonical:ubuntu_linux:18.04:*:*:*:lts:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "12.04"
+          },
+          {
+            "last_affected": "14.04"
+          },
+          {
+            "last_affected": "16.04"
+          },
+          {
+            "last_affected": "18.04"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "canonical:ubuntu_linux"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:o:debian:debian_linux:9.0:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "9.0"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "debian:debian_linux"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:o:redhat:enterprise_linux:6.0:*:*:*:*:*:*:*",
+          "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+          "cpe:2.3:o:redhat:enterprise_linux:7.4:*:*:*:*:*:*:*",
+          "cpe:2.3:o:redhat:enterprise_linux:7.5:*:*:*:*:*:*:*",
+          "cpe:2.3:o:redhat:enterprise_linux:7.6:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "6.0"
+          },
+          {
+            "last_affected": "7.0"
+          },
+          {
+            "last_affected": "7.4"
+          },
+          {
+            "last_affected": "7.5"
+          },
+          {
+            "last_affected": "7.6"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "redhat:enterprise_linux"
+      }
+    ]
+  },
+  "details": "curl before version 7.61.1 is vulnerable to a buffer overrun in the NTLM authentication code. The internal function Curl_ntlm_core_mk_nt_hash multiplies the length of the password by two (SUM) to figure out how large temporary storage area to allocate from the heap. The length value is then subsequently used to iterate over the password and generate output into the allocated storage buffer. On systems with a 32 bit size_t, the math to calculate SUM triggers an integer overflow when the password length exceeds 2GB (2^31 bytes). This integer overflow usually causes a very small buffer to actually get allocated instead of the intended very huge one, making the use of that buffer end up in a heap buffer overflow. (This bug is almost identical to CVE-2017-8816.)",
+  "id": "CVE-2018-14618",
+  "modified": "2024-11-21T03:49:26.003Z",
+  "published": "2018-09-05T19:29:00.420Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-436177.pdf"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.securitytracker.com/id/1041605"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/errata/RHSA-2018:3558"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/errata/RHSA-2019:1880"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://curl.haxx.se/docs/CVE-2018-14618.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2018-0014"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201903-03"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://usn.ubuntu.com/3765-1/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://usn.ubuntu.com/3765-2/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.debian.org/security/2018/dsa-4286"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2018-14618"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2023-1055 - 1]
+{
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*",
+          "cpe:2.3:o:fedoraproject:fedora:37:*:*:*:*:*:*:*",
+          "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "36"
+          },
+          {
+            "last_affected": "37"
+          },
+          {
+            "last_affected": "38"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "fedoraproject:fedora"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:redhat:directory_server:11.5:*:*:*:*:*:*:*",
+          "cpe:2.3:a:redhat:directory_server:11.6:*:*:*:*:*:*:*",
+          "cpe:2.3:a:redhat:directory_server:12.0:*:*:*:*:*:*:*",
+          "cpe:2.3:a:redhat:directory_server:12.1:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "11.5"
+          },
+          {
+            "last_affected": "11.6"
+          },
+          {
+            "last_affected": "12.0"
+          },
+          {
+            "last_affected": "12.1"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "redhat:directory_server"
+      }
+    ]
+  },
+  "details": "A flaw was found in RHDS 11 and RHDS 12. While browsing entries LDAP tries to decode the userPassword attribute instead of the userCertificate attribute which could lead into sensitive information leaked. An attacker with a local account where the cockpit-389-ds is running can list the processes and display the hashed passwords. The highest threat from this vulnerability is to data confidentiality.",
+  "id": "CVE-2023-1055",
+  "modified": "2024-11-21T07:38:22.297Z",
+  "published": "2023-02-27T22:15:09.990Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MZOYQ5TCV6ZEPMDV4CSLK3KINAAO4SRI/"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2173517#c0"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2024-7264 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "source": "REFERENCES"
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+            }
+          ],
+          "repo": "https://github.com/curl/curl",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "introduced": "7.32.0"
+          },
+          {
+            "fixed": "8.9.1"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "haxx:libcurl"
+      }
+    ]
+  },
+  "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
+  "id": "CVE-2024-7264",
+  "modified": "2025-11-03T23:17:31.647Z",
+  "published": "2024-07-31T08:15:02.657Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://curl.se/docs/CVE-2024-7264.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://curl.se/docs/CVE-2024-7264.json"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20240828-0008/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20241025-0006/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.netapp.com/advisory/ntap-20241025-0010/"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://hackerone.com/reports/2629968"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/curl/curl/commit/27959ecce75cdb2809c0bdb3286e60e08fadb519"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2022-33068 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "last_affected": "4.3.0"
+              }
+            ],
+            "source": [
+              "CPE_FIELD",
+              "REFERENCES"
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
+            },
+            {
+              "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+            }
+          ],
+          "repo": "https://github.com/harfbuzz/harfbuzz",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:fedoraproject:fedora:35:*:*:*:*:*:*:*",
+          "cpe:2.3:o:fedoraproject:fedora:36:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "35"
+          },
+          {
+            "last_affected": "36"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "fedoraproject:fedora"
+      }
+    ]
+  },
+  "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
+  "id": "CVE-2022-33068",
+  "modified": "2024-11-21T07:07:30.140Z",
+  "published": "2022-06-23T17:15:14.350Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/202209-11"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2016-1897 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": [
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.0.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.1.8:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.8:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.9:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.10:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.11:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.12:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.13:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.14:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.15:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.2.16:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.3.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.8:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.9:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.10:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.11:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.4.12:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.8:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.5.9:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.5:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.6.6:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.7:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.7.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.7.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.7.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.7.4:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8:dev:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8.1:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8.2:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8.3:*:*:*:*:*:*:*",
+              "cpe:2.3:a:ffmpeg:ffmpeg:2.8.4:*:*:*:*:*:*:*"
+            ],
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "last_affected": "2.0"
+              },
+              {
+                "last_affected": "2.0.1"
+              },
+              {
+                "last_affected": "2.0.2"
+              },
+              {
+                "last_affected": "2.0.3"
+              },
+              {
+                "last_affected": "2.0.4"
+              },
+              {
+                "last_affected": "2.0.5"
+              },
+              {
+                "last_affected": "2.0.6"
+              },
+              {
+                "last_affected": "2.0.7"
+              },
+              {
+                "last_affected": "2.1"
+              },
+              {
+                "last_affected": "2.1.1"
+              },
+              {
+                "last_affected": "2.1.2"
+              },
+              {
+                "last_affected": "2.1.3"
+              },
+              {
+                "last_affected": "2.1.4"
+              },
+              {
+                "last_affected": "2.1.5"
+              },
+              {
+                "last_affected": "2.1.6"
+              },
+              {
+                "last_affected": "2.1.7"
+              },
+              {
+                "last_affected": "2.1.8"
+              },
+              {
+                "last_affected": "2.2"
+              },
+              {
+                "last_affected": "2.2.1"
+              },
+              {
+                "last_affected": "2.2.2"
+              },
+              {
+                "last_affected": "2.2.3"
+              },
+              {
+                "last_affected": "2.2.4"
+              },
+              {
+                "last_affected": "2.2.5"
+              },
+              {
+                "last_affected": "2.2.6"
+              },
+              {
+                "last_affected": "2.2.7"
+              },
+              {
+                "last_affected": "2.2.8"
+              },
+              {
+                "last_affected": "2.2.9"
+              },
+              {
+                "last_affected": "2.2.10"
+              },
+              {
+                "last_affected": "2.2.11"
+              },
+              {
+                "last_affected": "2.2.12"
+              },
+              {
+                "last_affected": "2.2.13"
+              },
+              {
+                "last_affected": "2.2.14"
+              },
+              {
+                "last_affected": "2.2.15"
+              },
+              {
+                "last_affected": "2.2.16"
+              },
+              {
+                "last_affected": "2.3"
+              },
+              {
+                "last_affected": "2.3.1"
+              },
+              {
+                "last_affected": "2.3.2"
+              },
+              {
+                "last_affected": "2.3.3"
+              },
+              {
+                "last_affected": "2.3.4"
+              },
+              {
+                "last_affected": "2.3.5"
+              },
+              {
+                "last_affected": "2.3.6"
+              },
+              {
+                "last_affected": "2.4"
+              },
+              {
+                "last_affected": "2.4.1"
+              },
+              {
+                "last_affected": "2.4.2"
+              },
+              {
+                "last_affected": "2.4.3"
+              },
+              {
+                "last_affected": "2.4.4"
+              },
+              {
+                "last_affected": "2.4.5"
+              },
+              {
+                "last_affected": "2.4.6"
+              },
+              {
+                "last_affected": "2.4.7"
+              },
+              {
+                "last_affected": "2.4.8"
+              },
+              {
+                "last_affected": "2.4.9"
+              },
+              {
+                "last_affected": "2.4.10"
+              },
+              {
+                "last_affected": "2.4.11"
+              },
+              {
+                "last_affected": "2.4.12"
+              },
+              {
+                "last_affected": "2.5"
+              },
+              {
+                "last_affected": "2.5.1"
+              },
+              {
+                "last_affected": "2.5.2"
+              },
+              {
+                "last_affected": "2.5.3"
+              },
+              {
+                "last_affected": "2.5.4"
+              },
+              {
+                "last_affected": "2.5.5"
+              },
+              {
+                "last_affected": "2.5.6"
+              },
+              {
+                "last_affected": "2.5.7"
+              },
+              {
+                "last_affected": "2.5.8"
+              },
+              {
+                "last_affected": "2.5.9"
+              },
+              {
+                "last_affected": "2.6"
+              },
+              {
+                "last_affected": "2.6.1"
+              },
+              {
+                "last_affected": "2.6.2"
+              },
+              {
+                "last_affected": "2.6.3"
+              },
+              {
+                "last_affected": "2.6.4"
+              },
+              {
+                "last_affected": "2.6.5"
+              },
+              {
+                "last_affected": "2.6.6"
+              },
+              {
+                "last_affected": "2.7"
+              },
+              {
+                "last_affected": "2.7.1"
+              },
+              {
+                "last_affected": "2.7.2"
+              },
+              {
+                "last_affected": "2.7.3"
+              },
+              {
+                "last_affected": "2.7.4"
+              },
+              {
+                "last_affected": "2.8"
+              },
+              {
+                "last_affected": "2.8-dev"
+              },
+              {
+                "last_affected": "2.8.1"
+              },
+              {
+                "last_affected": "2.8.2"
+              },
+              {
+                "last_affected": "2.8.3"
+              },
+              {
+                "last_affected": "2.8.4"
+              }
+            ],
+            "source": "CPE_FIELD"
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "last_affected": "2b8b2ba19fe0ca6594cb09439b9ead2c328a79d8"
+            },
+            {
+              "last_affected": "acf511de34e0b79fff0183e06ed37f1aa8dc3d94"
+            },
+            {
+              "last_affected": "9d0bb7fc3991b030603acfe899e6f001e530c89a"
+            },
+            {
+              "last_affected": "b4552cc9b8c37410f754af5d34d24e7b8a9b4b0e"
+            },
+            {
+              "last_affected": "7de7bd4f563a1431bdac59dae5d8e930e71405e6"
+            },
+            {
+              "last_affected": "205e2264c3d5b1a16a4493b9281b9167d09c3505"
+            },
+            {
+              "last_affected": "3d91569c5e39f4062393fdb40b038e31df38473a"
+            },
+            {
+              "last_affected": "0caff57c42cac0f80152187473b1ee753aca8257"
+            },
+            {
+              "last_affected": "a37e42b3ee4226a4d2c69cd4eebf9c81e6df8ea5"
+            },
+            {
+              "last_affected": "9422cd85a081f6e084731e87eda3e8e4df9f6827"
+            },
+            {
+              "last_affected": "29353dd3f8159089ecf2fa0886f94f4cf32e75f2"
+            },
+            {
+              "last_affected": "eda6effcabcf9c238e4635eb058d72371336e09b"
+            },
+            {
+              "last_affected": "d3139c9733f1994fb86825e0d1fd2a5abf3be7b5"
+            },
+            {
+              "last_affected": "e7873dfccad595e9d8fc65217ebffcf3686e1d34"
+            },
+            {
+              "last_affected": "27172a5ca360e61a07ff16bf22f2ec91208f4e00"
+            },
+            {
+              "last_affected": "41802887eb647bee21238e0a575a7c4bbf954b86"
+            },
+            {
+              "last_affected": "68f89b8264d46d5812e710ca0f903d4d323ec899"
+            },
+            {
+              "last_affected": "6baf9c4406bcdf1015c9ec8bd6b8c4aef77624ac"
+            },
+            {
+              "last_affected": "e72c0a04664a9aab449b63135fe16ade51a99bb6"
+            },
+            {
+              "last_affected": "c2eb668617555cb8b8bcfb9796241ada9471ac65"
+            },
+            {
+              "last_affected": "f406bf3fa933be089bd76a95f75ea57b0942f8c5"
+            },
+            {
+              "last_affected": "e0a03d1f9cb18139ede8c3d0263a21828494c951"
+            },
+            {
+              "last_affected": "0edc79962641dd853cda187ee13b617701346061"
+            },
+            {
+              "last_affected": "1b99667005156cadc8d3ae0099ef5d244e598ac5"
+            },
+            {
+              "last_affected": "49fa398858df1a1e425740672de5fb4819b4d947"
+            },
+            {
+              "last_affected": "5df02760dd2f050b996f931fa7cdf8871bfa5d96"
+            },
+            {
+              "last_affected": "b05d3550407418aea53f2672463a8ebc8f75654e"
+            },
+            {
+              "last_affected": "969aee07e68c5930782bc46f2ac2391db55b8d1b"
+            },
+            {
+              "last_affected": "9f09bfe681259cfed7414f207c88f84c09d5b501"
+            },
+            {
+              "last_affected": "86a01362c0e46d155fbfc1ef19f5ba17af3ee69d"
+            },
+            {
+              "last_affected": "36cfee3adc70c6a78a07df4bb16349c4b0893ef4"
+            },
+            {
+              "last_affected": "bf0d2ee92c33d802907e829f99c26a46578ed679"
+            },
+            {
+              "last_affected": "1c14b09caf903f2e776dcd661085db49511bf531"
+            },
+            {
+              "last_affected": "051cd7dc5f42542753f809109d00ec3cf19eb337"
+            },
+            {
+              "last_affected": "3ec3f70ddb1b97fd6174ab3ca8617d8a1a6516ab"
+            },
+            {
+              "last_affected": "7c2d152f562ab089ecf8262438e2f8e9cb9c546f"
+            },
+            {
+              "last_affected": "b88de7b31a4a5c35d10b1392d2d86d93fc942b4c"
+            },
+            {
+              "last_affected": "bc259185cb69c6532232be4b2ad57a70ef7ed946"
+            },
+            {
+              "last_affected": "d005e2ecce5c8104679b39f2050a9d83e417d275"
+            },
+            {
+              "last_affected": "b44506c393b176dc396502ad262ac18bec52a110"
+            },
+            {
+              "last_affected": "db27f50e0658e91758e8a17fdcf390e6bc93c1d2"
+            },
+            {
+              "last_affected": "13a72d9b08c914c3d3c99be1053e9d5cda8baa88"
+            },
+            {
+              "last_affected": "e1ce4f805f31aecec83fc7c7ecaab623f3b6327f"
+            },
+            {
+              "last_affected": "d61454e7c1de48f6a9059ca98f55e6beb52a618c"
+            },
+            {
+              "last_affected": "043f32606046b1470218511ded151edfa7a126ee"
+            },
+            {
+              "last_affected": "dd2394754d8cee3717b3e198c83cc382674cf126"
+            },
+            {
+              "last_affected": "4afe2684d8f50b28ce6743c7ee999f3157c9857f"
+            },
+            {
+              "last_affected": "1fd7fb9036fcfb1620068014d8a52112067d2d59"
+            },
+            {
+              "last_affected": "3c63503792147a996997023694a3b45f27ab3f78"
+            },
+            {
+              "last_affected": "2c8c55195da97ee45fb0daf6d68c22b942e14ade"
+            },
+            {
+              "last_affected": "de7b74d2544d2cb5ff85db20a9853116ea72ed47"
+            },
+            {
+              "last_affected": "1047c286fa20c79dde8ddd7577a3b87cc1effdb7"
+            },
+            {
+              "last_affected": "0045969e411bcf946b2393e7bcb42032cb71a9a1"
+            },
+            {
+              "last_affected": "5e4ec87720a64cd969120af60e82cbd55454ab8e"
+            },
+            {
+              "last_affected": "da2186be81b5cb2d24da5671e25affbb8f09920d"
+            },
+            {
+              "last_affected": "2c01dd2ea5e39238261945185d2b30e11979cf4b"
+            },
+            {
+              "last_affected": "959ab06c68f8c74a0f31bcaf2692cbbdaf5702f6"
+            },
+            {
+              "last_affected": "07d508e4f55f6045b83df3346448b149faab5d7d"
+            },
+            {
+              "last_affected": "3429714f3d046f4e2235848a60b6f63bd084e01f"
+            },
+            {
+              "last_affected": "d0599a3516c5da31c7009af7574abbff360b9ce6"
+            },
+            {
+              "last_affected": "faac8e43315dae5818816bcebe52d11777b064b2"
+            },
+            {
+              "last_affected": "21d0ae829f72ec327aff31b0cb1af1261b56596c"
+            },
+            {
+              "last_affected": "1eb646ec9f87ed488f52561867e107eaee89e20c"
+            },
+            {
+              "last_affected": "d52b5f85f2837b0de9bdefe2a650d8d1b0e02ec1"
+            },
+            {
+              "last_affected": "f478bdabf2afcd5f709789347f8a3becc4ff17bc"
+            },
+            {
+              "last_affected": "b2c9cd36d34c4157af10342ad3476dd9260bbefe"
+            },
+            {
+              "last_affected": "04fd0250e1fd3fddcd7bc96c8ac95455f910637e"
+            },
+            {
+              "last_affected": "af5917698bd44f136fd0ff00a9e5f8b5f92f2d58"
+            },
+            {
+              "last_affected": "b17cec526214dff9d6ac1d97b70167d15a4e14d7"
+            },
+            {
+              "last_affected": "48d388b03336d01e0db9b729f9f82cbadf3af7bd"
+            },
+            {
+              "last_affected": "d6ce1cb14077891f3f6ac86cfd243835c92eb374"
+            },
+            {
+              "last_affected": "0bcb6ac150690d1b799982efabc11cab3420f3e3"
+            },
+            {
+              "last_affected": "620197d1ffea20e9168372c354438f1c1e926ecd"
+            },
+            {
+              "last_affected": "15466db69e60f486c44e4c3e680d27c951f125d7"
+            },
+            {
+              "last_affected": "93f3752b970cc7c9e1a360037fff1ddb9dcbb86e"
+            },
+            {
+              "last_affected": "26241af6f8b291eed42c597ffa2b32802331f813"
+            },
+            {
+              "last_affected": "58142a27ea96bf9246586a91a82db85e37646933"
+            },
+            {
+              "last_affected": "40934e0e9b632fa6c6ec22ac03b530625a027c79"
+            },
+            {
+              "last_affected": "c9b3451da3cf632424c07c35759c9ffbd537fa9e"
+            },
+            {
+              "last_affected": "644296e736ee219cd02f7b7d7b7b4c7c5a464217"
+            },
+            {
+              "last_affected": "644179e0d4155ae8f5ddd5c3f6bd003e2e13cf94"
+            }
+          ],
+          "repo": "https://github.com/ffmpeg/ffmpeg",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:canonical:ubuntu_linux:12.04:*:*:*:lts:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "12.04"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "canonical:ubuntu_linux"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:o:opensuse:leap:42.1:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "42.1"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "opensuse:leap"
+      }
+    ]
+  },
+  "details": "FFmpeg 2.x allows remote attackers to conduct cross-origin attacks and read arbitrary files by using the concat protocol in an HTTP Live Streaming (HLS) M3U8 file, leading to an external HTTP request in which the URL string contains the first line of a local file.",
+  "id": "CVE-2016-1897",
+  "modified": "2025-04-12T10:46:40.837Z",
+  "published": "2016-01-15T03:59:23.063Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "http://lists.opensuse.org/opensuse-security-announce/2016-01/msg00034.html"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.openwall.com/lists/oss-security/2016/01/14/1"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securityfocus.com/bid/80501"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.securitytracker.com/id/1034932"
+    },
+    {
+      "type": "WEB",
+      "url": "http://www.slackware.com/security/viewer.php?l=slackware-security\u0026y=2016\u0026m=slackware-security.529036"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.kb.cert.org/vuls/id/772447"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.debian.org/security/2016/dsa-3506"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.ubuntu.com/usn/USN-2944-1"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201606-09"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/201705-08"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "http://habrahabr.ru/company/mailru/blog/274855"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "http://security.stackexchange.com/questions/110644"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.0/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2016-15012 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:salesforce:mobile_software_development_kit:*:*:*:*:*:windows:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0"
+              },
+              {
+                "fixed": "5.0.0"
+              }
+            ],
+            "source": [
+              "CPE_FIELD",
+              "REFERENCES"
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"
+            },
+            {
+              "fixed": "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"
+            }
+          ],
+          "repo": "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {},
+  "details": "** UNSUPPORTED WHEN ASSIGNED ** A vulnerability was found in forcedotcom SalesforceMobileSDK-Windows up to 4.x. It has been rated as critical. This issue affects the function ComputeCountSql of the file SalesforceSDK/SmartStore/Store/QuerySpec.cs. The manipulation leads to sql injection. Upgrading to version 5.0.0 is able to address this issue. The patch is named 83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8. It is recommended to upgrade the affected component. The associated identifier of this vulnerability is VDB-217619. NOTE: This vulnerability only affects products that are no longer supported by the maintainer.",
+  "id": "CVE-2016-15012",
+  "modified": "2024-11-21T02:45:29.557Z",
+  "published": "2023-01-07T13:15:09.530Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/releases/tag/v5.0.0"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://vuldb.com/?ctiid.217619"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://vuldb.com/?id.217619"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/forcedotcom/SalesforceMobileSDK-Windows/commit/83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2024-2002 - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "cpe": "cpe:2.3:a:libdwarf_project:libdwarf:*:*:*:*:*:*:*:*",
+            "extracted_events": [
+              {
+                "introduced": "0.1.0"
+              },
+              {
+                "fixed": "0.9.2"
+              }
+            ],
+            "source": "CPE_FIELD"
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "5e43a5ab73cb00c8a46660b361366a8c9c3c93c9"
+            }
+          ],
+          "repo": "https://github.com/davea42/libdwarf-code",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "40"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "fedoraproject:fedora"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:o:redhat:enterprise_linux:7.0:*:*:*:*:*:*:*",
+          "cpe:2.3:o:redhat:enterprise_linux:8.0:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "7.0"
+          },
+          {
+            "last_affected": "8.0"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "redhat:enterprise_linux"
+      }
+    ]
+  },
+  "details": "A double-free vulnerability was found in libdwarf. In a multiply-corrupted DWARF object, libdwarf may try to dealloc(free) an allocation twice, potentially causing unpredictable and various results.",
+  "id": "CVE-2024-2002",
+  "modified": "2025-04-09T15:36:37.840Z",
+  "published": "2024-03-18T13:15:07.657Z",
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://access.redhat.com/security/cve/CVE-2024-2002"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/davea42/libdwarf-code/blob/main/bugxml/data.txt"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2267700"
+    },
+    {
+      "type": "ARTICLE",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ZGPVLSPIXR32J6FOAFTTIMYTUUXJICGW/"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---
+
+[TestCVEToOSV_TestJsonSnapshots/CVE-2024-31497 - 1]
+{
+  "aliases": [
+    "GHSA-6p4c-r453-8743"
+  ],
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "cpes": [
+          "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+          "cpe:2.3:o:fedoraproject:fedora:39:*:*:*:*:*:*:*",
+          "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "last_affected": "38"
+          },
+          {
+            "last_affected": "39"
+          },
+          {
+            "last_affected": "40"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "fedoraproject:fedora"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:filezilla-project:filezilla_client:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "3.67.0"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "filezilla-project:filezilla_client"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:putty:putty:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "introduced": "0.68"
+          },
+          {
+            "fixed": "0.81"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "putty:putty"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:tigris:tortoisesvn:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "1.14.6"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "tigris:tortoisesvn"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:tortoisegit:tortoisegit:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "2.15.0.1"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "tortoisegit:tortoisegit"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:winscp:winscp:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "6.3.3"
+          }
+        ],
+        "source": "CPE_FIELD",
+        "vendor_product": "winscp:winscp"
+      },
+      {
+        "extracted_events": [
+          {
+            "introduced": "0.68"
+          },
+          {
+            "fixed": "0.80"
+          },
+          {
+            "fixed": "0.81"
+          },
+          {
+            "fixed": "3.67.0"
+          },
+          {
+            "fixed": "6.3.3"
+          },
+          {
+            "fixed": "2.15.0.1"
+          },
+          {
+            "fixed": "1.14.6"
+          }
+        ],
+        "source": "DESCRIPTION"
+      }
+    ]
+  },
+  "details": "In PuTTY 0.68 through 0.80 before 0.81, biased ECDSA nonce generation allows an attacker to recover a user's NIST P-521 secret key via a quick attack in approximately 60 signatures. This is especially important in a scenario where an adversary is able to read messages signed by PuTTY or Pageant. The required set of signed messages may be publicly readable because they are stored in a public Git service that supports use of SSH for commit signing, and the signatures were made by Pageant through an agent-forwarding mechanism. In other words, an adversary may already have enough signature information to compromise a victim's private key, even if there is no further use of vulnerable PuTTY versions. After a key compromise, an adversary may be able to conduct supply-chain attacks on software maintained in Git. A second, independent scenario is that the adversary is an operator of an SSH server to which the victim authenticates (for remote login or file copy), even though this server is not fully trusted by the victim, and the victim uses the same private key for SSH connections to other services operated by other entities. Here, the rogue server operator (who would otherwise have no way to determine the victim's private key) can derive the victim's private key, and then use it for unauthorized access to those other services. If the other services include Git services, then again it may be possible to conduct supply-chain attacks on software maintained in Git. This also affects, for example, FileZilla before 3.67.0, WinSCP before 6.3.3, TortoiseGit before 2.15.0.1, and TortoiseSVN through 1.14.6.",
+  "id": "CVE-2024-31497",
+  "modified": "2025-11-04T22:16:00.673Z",
+  "published": "2024-04-15T20:15:11.077Z",
+  "references": [
+    {
+      "type": "WEB",
+      "url": "https://docs.ccv.brown.edu/oscar/connecting-to-oscar/ssh/ssh-agent-forwarding/key-generation-and-agent-forwarding-with-putty"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.debian.org/debian-lts-announce/2024/06/msg00014.html"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://securityonline.info/cve-2024-31497-critical-putty-vulnerability-exposes-private-keys-immediate-action-required/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter9.html#pageant-forward"
+    },
+    {
+      "type": "WEB",
+      "url": "https://twitter.com/CCBalert/status/1780229237569470549"
+    },
+    {
+      "type": "WEB",
+      "url": "https://twitter.com/lambdafu/status/1779969509522133272"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.bleepingcomputer.com/news/security/putty-ssh-client-flaw-allows-recovery-of-cryptographic-private-keys/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.reddit.com/r/sysadmin/comments/1c4wmoj/putty_vulnerability_affecting_v068_to_v08/"
+    },
+    {
+      "type": "WEB",
+      "url": "https://www.vicarius.io/vsociety/posts/understanding-a-critical-vulnerability-in-putty-biased-ecdsa-nonce-generation-revealing-nist-p-521-private-keys-cve-2024-31497"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "http://www.openwall.com/lists/oss-security/2024/04/15/6"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://filezilla-project.org/versions.php"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/advisories/GHSA-6p4c-r453-8743"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://github.com/daedalus/BreakingECDSAwithLLL"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/IZS3B37GNGWOOV7QU7B7JFK76U4TOP4V/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/MMHILY2K7HQGQRHOC375KRRG2M6625RD/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/PUOTQVGC4DISVHQGSPUYGXO6TLDK65LA/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WFDZBV7ZCAZ6AH3VCQ34SSY7L3J7VZXZ/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/WMJH7M663BVO3SY6MFAW2FAZWLLXAPRQ/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security-tracker.debian.org/tracker/CVE-2024-31497"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://tortoisegit.org"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://winscp.net/eng/news.php"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-p521-bias.html"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.openwall.com/lists/oss-security/2024/04/15/6"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2275183"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://bugzilla.suse.com/show_bug.cgi?id=1222864"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://news.ycombinator.com/item?id=40044665"
+    },
+    {
+      "type": "FIX",
+      "url": "https://git.tartarus.org/?h=c193fe9848f50a88a4089aac647fecc31ae96d27\u0026p=simon/putty.git"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+      "type": "CVSS_V3"
+    }
+  ]
+}
+---

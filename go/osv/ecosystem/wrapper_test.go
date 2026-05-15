@@ -53,3 +53,30 @@ func TestZeroVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizePackageName(t *testing.T) {
+	tests := []struct {
+		ecosystem string
+		name      string
+		expected  string
+	}{
+		{"PyPI", "Flask", "flask"},
+		{"PyPI", "flask", "flask"},
+		{"PyPI", "A_B-C.D", "a-b-c-d"},
+		{"PyPI", "A_._B", "a-b"},
+		{"npm", "Flask", "Flask"}, // No normalization
+	}
+
+	p := NewProvider(nil)
+	for _, test := range tests {
+		e, ok := p.Get(test.ecosystem)
+		if !ok {
+			t.Fatalf("%s ecosystem not found", test.ecosystem)
+		}
+
+		actual := NormalizePackageName(e, test.name)
+		if actual != test.expected {
+			t.Errorf("NormalizePackageName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
+		}
+	}
+}

@@ -612,7 +612,7 @@ func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []mo
 	}
 
 	var GHSAs []string
-	var SYNKs []string
+	var SNYKs []string
 	for _, reference := range references {
 		u, err := url.Parse(reference.URL)
 		if err == nil {
@@ -637,7 +637,7 @@ func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []mo
 					if pathParts[1] == "vuln" {
 						a := pathParts[len(pathParts)-1]
 						if string(id) != a && strings.HasPrefix(a, "SNYK-") {
-							SYNKs = append(SYNKs, a)
+							SNYKs = append(SNYKs, a)
 						}
 					}
 				}
@@ -648,15 +648,17 @@ func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []mo
 	// A CVE should have only one GHSA as an alias
 	// If multiple GHSAs are associated with a CVE,
 	// it can potentially cause one CVE to be aliased to other CVEs, which is most likely incorrect.
+	GHSAs = Unique(GHSAs)
 	if len(GHSAs) > 1 {
 		related = append(related, GHSAs...)
 	} else {
 		aliases = append(aliases, GHSAs...)
 	}
-	if len(SYNKs) > 1 {
-		related = append(related, SYNKs...)
+	SNYKs = Unique(SNYKs)
+	if len(SNYKs) > 1 {
+		related = append(related, SNYKs...)
 	} else {
-		aliases = append(aliases, SYNKs...)
+		aliases = append(aliases, SNYKs...)
 	}
 
 	// TODO(jesslowe): Check if references to other CVEs exist in the description and add to related
@@ -767,7 +769,7 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 // FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
 	decoder := yaml.NewDecoder(r)
-	var vuln Vulnerability
+	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
 	err := decoder.Decode(&vuln)
 	if err != nil {
 		return nil, err
@@ -779,7 +781,7 @@ func FromYAML(r io.Reader) (*Vulnerability, error) {
 // FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
 	decoder := json.NewDecoder(r)
-	var vuln Vulnerability
+	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
 	err := decoder.Decode(&vuln)
 	if err != nil {
 		return nil, err
@@ -818,6 +820,12 @@ func CheckQuality(text string) QualityCheck {
 
 // LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.
 func LoadAllCVEs(cvePath string) map[models.CVEID]models.Vulnerability {
+	return LoadTargetCVEs(cvePath, nil)
+}
+
+// LoadTargetCVEs loads the downloaded CVE's from the NVD database into memory,
+// filtering by a set of target CVE IDs if provided.
+func LoadTargetCVEs(cvePath string, targetCVEs map[string]bool) map[models.CVEID]models.Vulnerability {
 	dir, err := os.ReadDir(cvePath)
 	if err != nil {
 		logger.Fatal("Failed to read dir", slog.String("path", cvePath), slog.Any("err", err))
@@ -849,7 +857,9 @@ func LoadAllCVEs(cvePath string) map[models.CVEID]models.Vulnerability {
 			}
 
 			for _, item := range nvdcve.Vulnerabilities {
-				vulnsChan <- item
+				if targetCVEs == nil || targetCVEs[string(item.CVE.ID)] {
+					vulnsChan <- item
+				}
 			}
 			logger.Info("Loaded "+filename, slog.String("cve", filename))
 		}(entry.Name())

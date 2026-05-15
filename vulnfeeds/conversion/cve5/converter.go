@@ -140,9 +140,8 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	return &v
 }
 
-// ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
-// converts it into an OSV record, collects metrics, and writes both to disk.
-func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*models.ConversionMetrics, error) {
+// CVEToOSV converts a models.CVE5 object into an OSV Vulerability record and returns it along with its conversion metrics.
+func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models.ConversionMetrics) {
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
@@ -171,24 +170,32 @@ func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink i
 
 	models.DetermineOutcome(&metrics)
 
+	return v, &metrics
+}
+
+// ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
+// converts it into an OSV record, collects metrics, and writes both to disk.
+func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*models.ConversionMetrics, error) {
+	v, metrics := CVEToOSV(cve, sourceLink)
+
 	err := v.ToJSON(vulnSink)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
-		return &metrics, err
+		return metrics, err
 	}
 
-	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
+	marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
 	if err != nil {
 		logger.Info("Failed to marshal", slog.Any("err", err))
-		return &metrics, err
+		return metrics, err
 	}
 	_, err = metricsSink.Write(marshalledMetrics)
 	if err != nil {
 		logger.Info("Failed to write", slog.Any("err", err))
-		return &metrics, err
+		return metrics, err
 	}
 
-	return &metrics, nil
+	return metrics, nil
 }
 
 // identifyPossibleURLs extracts all URLs from a CVE object.

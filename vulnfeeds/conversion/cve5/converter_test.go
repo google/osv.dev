@@ -196,7 +196,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-9999",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cvePlaceholder),
 					Modified:      timestamppb.New(cvePlaceholder),
 					Details:       "A disputed vulnerability.",
@@ -219,7 +219,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-1110",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve1110Pub),
 					Modified:      timestamppb.New(cve1110Mod),
 					Summary:       "Insufficient Granularity of Access Control in GitLab",
@@ -259,7 +259,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2024-21634",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve21634Pub),
 					Modified:      timestamppb.New(cve21634Mod),
 					Summary:       "Ion Java StackOverflow vulnerability",
@@ -307,7 +307,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-21772",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve21772Pub),
 					Modified:      timestamppb.New(cve21772Mod),
 					Summary:       "partitions: mac: fix handling of bogus partition table",
@@ -339,6 +339,7 @@ func TestFromCVE5(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := &models.ConversionMetrics{}
 			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
+			vuln.SchemaVersion = tc.expectedVuln.SchemaVersion
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {

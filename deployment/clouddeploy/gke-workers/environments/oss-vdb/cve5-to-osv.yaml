@@ -18,3 +18,5 @@ spec:
                 value: "30"
               - name: OUTPUT_BUCKET
                 value: cve-osv-conversion
+              - name: REDISHOST
+                value: "10.102.25.213"

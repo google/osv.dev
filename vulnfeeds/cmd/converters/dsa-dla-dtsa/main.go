@@ -20,7 +20,7 @@ import (
 	"time"
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
-	"github.com/google/osv/vulnfeeds/upload"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/text/encoding/charmap"
@@ -572,7 +572,7 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 	if uploadToGCS {
 		logger.Info("Uploading to GCS", "bucket", outputBucket)
 		ctx := context.Background()
-		upload.Upload(ctx, "debian-osv", uploadToGCS, outputBucket, "", numWorkers, outputDir, allVulnerabilities, doDeletions)
+		writer.UploadVulnsToGCS(ctx, "debian-osv", uploadToGCS, outputBucket, "", numWorkers, outputDir, allVulnerabilities, doDeletions)
 	} else {
 		logger.Info("Skipping GCS upload")
 	}

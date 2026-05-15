@@ -55,6 +55,15 @@ class NormalizeTest(unittest.TestCase):
         '10-0-0-10',
     ], bug.normalize_tags(tags))
 
+  def test_normalize_no_version_components(self):
+    """Tags with no version-like components are returned unmodified rather than
+    collapsing to ''."""
+    self.assertEqual('last-cvs-commit', bug.normalize_tag('last-cvs-commit'))
+    self.assertEqual('deadbeef', bug.normalize_tag('deadbeef'))
+    self.assertEqual('', bug.normalize_tag(''))
+    self.assertNotEqual(
+        bug.normalize_tag('deadbeef'), bug.normalize_tag('last-cvs-commit'))
+
 
 if __name__ == '__main__':
   unittest.main()

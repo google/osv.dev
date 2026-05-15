@@ -18,6 +18,7 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
@@ -536,7 +537,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 		}
 
 		if strict {
-			if err := Validate(data); err != nil {
+			if err := schema.Validate(data); err != nil {
 				logger.ErrorContext(ctx, "JSON schema validation failed",
 					slog.Any("error", err),
 					slog.String("source", sourceRepoName),

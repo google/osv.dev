@@ -1,6 +1,11 @@
 package git
 
 import (
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -51,12 +56,12 @@ func TestRepoName(t *testing.T) {
 }
 
 func TestRepoTags(t *testing.T) {
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
 		description       string
 		inputRepoURL      string
-		cache             *RepoTagsCache
+		cache             RepoTagsCache
 		expectedResult    Tags
 		expectedOk        bool
 		disableExpiryDate time.Time
@@ -181,9 +186,11 @@ func TestRepoTags(t *testing.T) {
 			}
 			var cacheBefore, cacheAfter int
 			if tc.cache != nil {
-				tc.cache.RLock()
-				cacheBefore = len(tc.cache.m) + len(tc.cache.invalid)
-				tc.cache.RUnlock()
+				if inMem, ok := tc.cache.(*InMemoryRepoTagsCache); ok {
+					inMem.RLock()
+					cacheBefore = len(inMem.m) + len(inMem.invalid)
+					inMem.RUnlock()
+				}
 			}
 			got, err := RepoTags(tc.inputRepoURL, tc.cache)
 			if err != nil && tc.expectedOk {
@@ -193,9 +200,11 @@ func TestRepoTags(t *testing.T) {
 				t.Errorf("test %q: RepoTags(%q) incorrect result: %s", tc.description, tc.inputRepoURL, diff)
 			}
 			if tc.cache != nil {
-				tc.cache.RLock()
-				cacheAfter = len(tc.cache.m) + len(tc.cache.invalid)
-				tc.cache.RUnlock()
+				if inMem, ok := tc.cache.(*InMemoryRepoTagsCache); ok {
+					inMem.RLock()
+					cacheAfter = len(inMem.m) + len(inMem.invalid)
+					inMem.RUnlock()
+				}
 			}
 			if tc.cache != nil && (cacheAfter <= cacheBefore) {
 				t.Errorf("test %q: RepoTags(%q) incorrect cache behaviour: size before: %d size after: %d cache: %#v", tc.description, tc.inputRepoURL, cacheBefore, cacheAfter, tc.cache)
@@ -298,7 +307,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 			expectedOk:   false,
 		},
 	}
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
@@ -393,5 +402,147 @@ func TestInvalidRepos(t *testing.T) {
 	}
 	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
+	}
+}
+
+func TestRepoTagsWithGitter(t *testing.T) {
+	mockHashHex := "c8d47c25296ffda9f2083a813ed719b637f86c59"
+	mockHash, _ := hex.DecodeString(mockHashHex)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/tags" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		repoURL := r.URL.Query().Get("url")
+		if repoURL == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		resp := GitterTagsResponse{
+			Tags: []GitterRef{
+				{
+					Label: "1.5.0.1525",
+					Hash:  base64.StdEncoding.EncodeToString(mockHash),
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer ts.Close()
+
+	t.Setenv("GITTER_HOST", ts.URL)
+
+	tags, err := RepoTags("https://github.com/zblogcn/zblogphp", nil)
+	if err != nil {
+		t.Fatalf("RepoTags failed: %v", err)
+	}
+
+	expected := Tags{
+		{Tag: "1.5.0.1525", Commit: mockHashHex},
+	}
+
+	if diff := cmp.Diff(tags, expected); diff != "" {
+		t.Errorf("RepoTags incorrect result: %s", diff)
+	}
+}
+
+func TestValidRepoWithGitter(t *testing.T) {
+	var responseStatus int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if responseStatus == 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if responseStatus == http.StatusOK {
+			mockHash, _ := hex.DecodeString("c8d47c25296ffda9f2083a813ed719b637f86c59")
+			resp := GitterTagsResponse{
+				Tags: []GitterRef{
+					{
+						Label: "1.5.0.1525",
+						Hash:  base64.StdEncoding.EncodeToString(mockHash),
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+
+			return
+		}
+		w.WriteHeader(responseStatus)
+	}))
+	defer ts.Close()
+
+	t.Setenv("GITTER_HOST", ts.URL)
+
+	tests := []struct {
+		name                    string
+		status                  int
+		repo                    string
+		wantValidRepo           bool
+		wantValidRepoAndHasRefs bool
+	}{
+		{
+			name:                    "StatusOK => both ValidRepo and ValidRepoAndHasUsableRefs are true",
+			status:                  http.StatusOK,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           true,
+			wantValidRepoAndHasRefs: true,
+		},
+		{
+			name:                    "StatusNoContent => ValidRepo is true, but ValidRepoAndHasUsableRefs is false",
+			status:                  http.StatusNoContent,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           true,
+			wantValidRepoAndHasRefs: false,
+		},
+		{
+			name:                    "StatusNotFound with Invalid Repo => Does NOT fall back, returns false",
+			status:                  http.StatusNotFound,
+			repo:                    "https://github.com/andrewpollock/mybogusrepo",
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
+		},
+		{
+			name:                    "StatusForbidden with Valid Repo => Does NOT fall back, returns false",
+			status:                  http.StatusForbidden,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
+		},
+		// {
+		// 	name:                    "StatusTooManyRequests with Valid Repo => Does NOT fall back, returns false",
+		// 	status:                  http.StatusTooManyRequests,
+		// 	repo:                    "https://github.com/zblogcn/zblogphp",
+		// 	wantValidRepo:           false,
+		// 	wantValidRepoAndHasRefs: false,
+		// },
+		{
+			name:                    "StatusInternalServerError with Valid Repo => Does not fall back, returns false",
+			status:                  http.StatusInternalServerError,
+			repo:                    "https://github.com/zblogcn/zblogphp",
+			wantValidRepo:           false,
+			wantValidRepoAndHasRefs: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			responseStatus = tc.status
+			if got := ValidRepo(tc.repo); got != tc.wantValidRepo {
+				t.Errorf("ValidRepo(%q) = %v, want %v", tc.repo, got, tc.wantValidRepo)
+			}
+			if got := ValidRepoAndHasUsableRefs(tc.repo); got != tc.wantValidRepoAndHasRefs {
+				t.Errorf("ValidRepoAndHasUsableRefs(%q) = %v, want %v", tc.repo, got, tc.wantValidRepoAndHasRefs)
+			}
+		})
 	}
 }

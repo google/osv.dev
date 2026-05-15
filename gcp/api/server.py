@@ -1032,9 +1032,8 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
     # does cause an error, just match nothing.
     try:
       parsed_version = ecosystem_helper.sort_key(version)
-    except:
-      # TODO(michaelkedar): This log is noisy.
-      logging.error('Ecosystem helper for %s raised an exception',
+    except Exception:
+      logging.debug('Ecosystem helper for %s raised an exception',
                     affected.ecosystem)
       return False
 
@@ -1042,7 +1041,7 @@ def _match_versions(version: str, affected: osv.AffectedVersions) -> bool:
       try:
         if ecosystem_helper.sort_key(v) == parsed_version:
           return True
-      except:
+      except Exception:
         logging.error('Version %s in AffectedVersion %s (%s) does not parse', v,
                       affected.key, affected.vuln_id)
     return False
@@ -1079,9 +1078,8 @@ def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
     return False
   try:
     parsed_version = ecosystem_helper.sort_key(version)
-  except:
-    # TODO(michaelkedar): This log is noisy.
-    logging.error('Ecosystem helper for %s raised an exception',
+  except Exception:
+    logging.debug('Ecosystem helper for %s raised an exception',
                   affected.ecosystem)
     return False
 
@@ -1089,7 +1087,7 @@ def _match_events(version: str, affected: osv.AffectedVersions) -> bool:
   for event in reversed(affected.events):
     try:
       event_ver = ecosystem_helper.sort_key(event.value)
-    except:
+    except Exception:
       # Shouldn't really happen. We use sort_key to sort these before creating
       # the AffectedVersions entity.
       logging.error('Event %s in AffectedVersion %s (%s) does not parse',

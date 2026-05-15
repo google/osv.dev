@@ -75,7 +75,8 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result, failed_ids = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch(
+          [vuln_id], 'fake_git_working_dir')
       self.assertEqual(result, 0)
       self.assertEqual(failed_ids, [])
       self.assertTrue(any('no GIT affected ranges' in log for log in cm.output))
@@ -95,7 +96,8 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result, failed_ids = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch(
+          [vuln_id], 'fake_git_working_dir')
       self.assertEqual(result, 0)
       self.assertEqual(failed_ids, [])
       self.assertTrue(
@@ -114,7 +116,8 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result, failed_ids = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch(
+          [vuln_id], 'fake_git_working_dir')
       self.assertEqual(result, 0)
       self.assertEqual(failed_ids, [])
       self.assertTrue(any('it is withdrawn' in log for log in cm.output))
@@ -132,7 +135,8 @@ class VanirSignaturesTest(unittest.TestCase):
     mock_get_gcs.return_value = (vuln, '123')
 
     with self.assertLogs(level='DEBUG') as cm:
-      result, failed_ids = vanir_signatures.process_batch([vuln_id])
+      result, failed_ids = vanir_signatures.process_batch(
+          [vuln_id], 'fake_git_working_dir')
       self.assertEqual(result, 0)
       self.assertEqual(failed_ids, [])
       self.assertTrue(
@@ -165,12 +169,14 @@ class VanirSignaturesTest(unittest.TestCase):
     vuln_entity = osv.Vulnerability(id=vuln_id)
     vuln_entity.put()
 
-    result, failed_ids = vanir_signatures.process_batch([vuln_id])
+    result, failed_ids = vanir_signatures.process_batch([vuln_id],
+                                                        'fake_git_working_dir')
 
     self.assertEqual(result, 1)
     self.assertEqual(failed_ids, [])
     mock_upload.assert_called_once()
-    mock_gen_signatures.assert_called_once_with([vuln])
+    mock_gen_signatures.assert_called_once_with(
+        [vuln], git_working_dir='fake_git_working_dir')
 
     # Verify Datastore update
     updated_vuln = osv.Vulnerability.get_by_id(vuln_id)
@@ -210,7 +216,8 @@ class VanirSignaturesTest(unittest.TestCase):
     vuln_entity.put()
     initial_modified = vuln_entity.modified
 
-    result, failed_ids = vanir_signatures.process_batch([vuln_id])
+    result, failed_ids = vanir_signatures.process_batch([vuln_id],
+                                                        'fake_git_working_dir')
 
     # Result should be 0 because upload failed
     self.assertEqual(result, 0)
@@ -249,11 +256,13 @@ class VanirSignaturesTest(unittest.TestCase):
 
     # First batch of 100
     expected_batch1 = [f'VULN-{i}' for i in range(100)]
-    mock_process_batch.assert_any_call(expected_batch1, True, 10)
+    mock_process_batch.assert_any_call(
+        expected_batch1, mock.ANY, dry_run=True, max_workers=10)
 
     # Second batch of 50
     expected_batch2 = [f'VULN-{i}' for i in range(100, 150)]
-    mock_process_batch.assert_any_call(expected_batch2, True, 10)
+    mock_process_batch.assert_any_call(
+        expected_batch2, mock.ANY, dry_run=True, max_workers=10)
 
   @mock.patch('osv.models.Vulnerability.query')
   @mock.patch('vanir_signatures.process_batch')

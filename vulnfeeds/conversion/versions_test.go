@@ -214,13 +214,13 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{
 			description:     "Exact Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{
@@ -1298,7 +1298,7 @@ func TestReposFromReferences(t *testing.T) {
 				},
 				tagDenyList: RefTagDenyList,
 			},
-			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
 		},
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
@@ -1365,7 +1365,7 @@ func TestReposFromReferences(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
-			repoTagsCache := &git.RepoTagsCache{}
+			repoTagsCache := &git.InMemoryRepoTagsCache{}
 			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}

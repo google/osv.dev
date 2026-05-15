@@ -92,3 +92,11 @@ func (e pypiEcosystem) GetVersions(pkg string) ([]string, error) {
 
 	return sortVersions(e, versions)
 }
+
+var pypiNormalizeRegex = regexp.MustCompile(`[-_.]+`)
+
+func (e pypiEcosystem) NormalizePackageName(name string) string {
+	return strings.ToLower(pypiNormalizeRegex.ReplaceAllString(name, "-"))
+}
+
+var _ PackageNameNormalizer = pypiEcosystem{}

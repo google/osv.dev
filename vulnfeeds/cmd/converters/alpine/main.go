@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -50,8 +50,16 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	allCVEs := vulns.LoadAllCVEs(defaultCvePath)
 	allAlpineSecDB := getAlpineSecDBData()
+
+	targetCVEs := make(map[string]bool)
+	for cveID := range allAlpineSecDB {
+		if strings.HasPrefix(cveID, "CVE") {
+			targetCVEs[cveID] = true
+		}
+	}
+
+	allCVEs := vulns.LoadTargetCVEs(defaultCvePath, targetCVEs)
 	osvVulnerabilities := generateAlpineOSV(allAlpineSecDB, allCVEs)
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvVulnerabilities))
@@ -64,7 +72,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	upload.Upload(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, *syncDeletions)
+	writer.UploadVulnsToGCS(ctx, "Alpine CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *alpineOutputPath, vulnerabilities, *syncDeletions)
 	logger.Info("Alpine CVE conversion succeeded.")
 }
 

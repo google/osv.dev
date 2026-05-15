@@ -383,7 +383,7 @@ google-auth = ">=2.14.1,<3.0.0"
 googleapis-common-protos = ">=1.63.2,<2.0.0"
 grpcio = [
     {version = ">=1.75.1,<2.0.0", optional = true, markers = "python_version >= \"3.14\" and extra == \"grpc\""},
-    {version = ">=1.49.1,<2.0.0", optional = true, markers = "python_version >= \"3.11\" and extra == \"grpc\" and python_version < \"3.14\""},
+    {version = ">=1.49.1,<2.0.0", optional = true, markers = "python_version >= \"3.11\" and extra == \"grpc\""},
 ]
 grpcio-status = [
     {version = ">=1.75.1,<2.0.0", optional = true, markers = "python_version >= \"3.14\" and extra == \"grpc\""},
@@ -526,7 +526,7 @@ google-cloud-core = ">=2.0.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0"
 grpcio = [
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
-    {version = ">=1.33.2,<2.0.0"},
+    {version = ">=1.33.2,<2.0.0", markers = "python_version < \"3.14\""},
 ]
 opentelemetry-api = ">=1.9.0"
 proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
@@ -534,14 +534,14 @@ protobuf = ">=4.25.8,<8.0.0"
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.4.2"
+version = "2.5.0"
 description = "NDB library for Google Cloud Datastore"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.4.2-py3-none-any.whl", hash = "sha256:3522f271141f718d6ae390e6cb522c7c1805ded52e4743b1aa289cfaf44c2bdd"},
-    {file = "google_cloud_ndb-2.4.2.tar.gz", hash = "sha256:44e64e25a15f168ddff0f8c5a7288f7b0256ec51737948388df58b0ddc22586f"},
+    {file = "google_cloud_ndb-2.5.0-py3-none-any.whl", hash = "sha256:f3a686946c9e945ba6d46ee13e705b5e44d787fa4ebf7d2fd9548466895b5dbd"},
+    {file = "google_cloud_ndb-2.5.0.tar.gz", hash = "sha256:d7a9baa912a9d3c4d76d5084d1ef34dc91613beee1412d5ebdb688f9834d5b69"},
 ]
 
 [package.dependencies]
@@ -549,7 +549,7 @@ google-api-core = {version = ">=2.11.0,<3.0.0", extras = ["grpc"]}
 google-cloud-datastore = ">=2.16.0,<2.20.2 || >2.20.2,<3.0.0"
 protobuf = ">=4.25.8,<8.0.0"
 pymemcache = ">=2.1.0,<5.0.0"
-pytz = ">=2018.3"
+pytz = ">=2022.1"
 redis = ">=3.0.0,<8.0.0"
 
 [[package]]
@@ -1591,4 +1591,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "4383a3e22ff40ee11acb01c9e8851b087a8437ab9d560c652da89025ceccc2e9"
+content-hash = "7ebc694d92b4f71d59da656d57ad47d8c38889709aab3f277887dd7c8a108318"

@@ -40,6 +40,11 @@ func NewImportFindingsStore(dsClient *datastore.Client, storageClient *storage.C
 	}
 }
 
+func (s *ImportFindingsStore) Clear(ctx context.Context, id string) error {
+	key := datastore.NameKey("ImportFinding", id, nil)
+	return s.dsClient.Delete(ctx, key)
+}
+
 func (s *ImportFindingsStore) ListIDs(ctx context.Context) ([]string, error) {
 	query := datastore.NewQuery("ImportFinding").KeysOnly()
 	keys, err := s.dsClient.GetAll(ctx, query, nil)

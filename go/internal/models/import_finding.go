@@ -34,6 +34,9 @@ type ImportFinding struct {
 }
 
 type ImportFindingsStore interface {
+	// Clear deletes all entries from the store for a given vulnerability.
+	Clear(ctx context.Context, id string) error
+
 	// ListIDs returns all existing finding IDs (bug IDs) currently stored.
 	ListIDs(ctx context.Context) ([]string, error)
 

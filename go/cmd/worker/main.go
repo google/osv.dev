@@ -22,6 +22,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/ecosystem"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func main() {
@@ -96,8 +97,11 @@ func run() error {
 		Stores:   stores,
 		Pipeline: registry.List,
 
-		GitterHost:        gitterHost,
-		GitterClient:      &http.Client{Timeout: 1 * time.Hour},
+		GitterHost: gitterHost,
+		GitterClient: &http.Client{
+			Timeout:   1 * time.Hour,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
 		EcosystemProvider: ecosystem.DefaultProvider,
 	}
 

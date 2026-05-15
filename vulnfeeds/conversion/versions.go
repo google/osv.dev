@@ -708,7 +708,7 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCache *VPRepoCache, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	versions := []models.RangeWithMetadata{}
 
 	for _, config := range cve.Configurations {
@@ -748,14 +748,14 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
 					}
 				}
-
+				CPE, err := ParseCPE(match.Criteria)
+				if err != nil {
+					continue
+				}
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
-					CPE, err := ParseCPE(match.Criteria)
-					if err != nil {
-						continue
-					}
+
 					if CPE.Part != "a" && CPE.Part != "o" {
 						continue
 					}
@@ -787,16 +787,41 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := BuildVersionRange(introduced, lastaffected, fixed)
-				versions = append(versions,
-					models.RangeWithMetadata{
-						Range: vr,
-						Metadata: models.Metadata{
-							CPE:    match.Criteria,
-							Source: models.VersionSourceCPE,
+
+				// Get the repositories attached to this CPE
+				var associatedRepos []string
+				if vpRepoCache != nil {
+					vp := VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+					if repos, ok := vpRepoCache.Get(vp); ok {
+						associatedRepos = repos
+					}
+				}
+
+				if len(associatedRepos) > 0 {
+					for _, repo := range associatedRepos {
+						vr := BuildGitVersionRange(introduced, lastaffected, fixed, repo)
+						versions = append(versions,
+							models.RangeWithMetadata{
+								Range: vr,
+								Metadata: models.Metadata{
+									CPE:    match.Criteria,
+									Source: models.VersionSourceCPE,
+								},
+							},
+						)
+					}
+				} else {
+					vr := BuildVersionRange(introduced, lastaffected, fixed)
+					versions = append(versions,
+						models.RangeWithMetadata{
+							Range: vr,
+							Metadata: models.Metadata{
+								CPE:    match.Criteria,
+								Source: models.VersionSourceCPE,
+							},
 						},
-					},
-				)
+					)
+				}
 			}
 		}
 	}

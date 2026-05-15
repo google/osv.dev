@@ -1,14 +1,19 @@
 package nvd
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-cmp/cmp"
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -68,7 +73,7 @@ func TestCVEToOSV_429(t *testing.T) {
 	cache := &git.InMemoryRepoTagsCache{}
 	outDir := t.TempDir()
 
-	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, cache, metrics)
+	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, nil, cache, metrics)
 
 	// It should fail because of the 429 error causing unresolved fixes
 	if outcome != models.Error {
@@ -110,7 +115,7 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 	var firstResult []*osvschema.Reference
 	for i := range 10 {
 		cache := &git.InMemoryRepoTagsCache{}
-		vuln, _, _ := CVEToOSV(cve, nil, cache, metrics)
+		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics)
 		if vuln == nil {
 			t.Fatalf("Iteration %d produced nil vulnerability", i)
 		}
@@ -123,6 +128,164 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 		if diff := cmp.Diff(firstResult, vuln.GetReferences(), protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	customTransport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       http.NoBody,
+			Request:    req,
+		}, nil
+	})
+	http.DefaultTransport = customTransport
+	defer func() { http.DefaultTransport = originalTransport }()
+
+	data, err := os.ReadFile(filepath.Join("testdata", "test.json"))
+	if err != nil {
+		t.Fatalf("Failed to read test.json: %v", err)
+	}
+
+	var parsed models.CVEAPIJSON20Schema
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("Failed to unmarshal test.json: %v", err)
+	}
+
+	vpCache := c.NewVPRepoCache()
+	if err := c.LoadCPEDictionary(vpCache, filepath.Join("testdata", "cpe_testdata.json")); err != nil {
+		t.Fatalf("Failed to load cpe_testdata.json: %v", err)
+	}
+	vpCache.Set(c.VendorProduct{Vendor: "gitea", Product: "gitea"}, []string{"https://github.com/go-gitea/gitea"})
+
+	gitCache := &git.InMemoryRepoTagsCache{}
+
+	setupRepoCache := func(repo string, tagCommits map[string]string) {
+		gitCache.SetCanonicalLink(repo, repo)
+		tagMap := make(map[string]git.Tag)
+		normMap := make(map[string]git.NormalizedTag)
+		var keys []string
+		for k := range tagCommits {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, ver := range keys {
+			commit := tagCommits[ver]
+			tagMap[ver] = git.Tag{Tag: ver, Commit: commit}
+			norm, _ := git.NormalizeVersion(ver)
+			if norm == "" {
+				norm = ver
+			}
+			normMap[norm] = git.NormalizedTag{OriginalTag: ver, Commit: commit, MatchesVersionText: false}
+		}
+		gitCache.Set(repo, git.RepoTagsMap{Tag: tagMap, NormalizedTag: normMap})
+	}
+
+	tagsData, err := os.ReadFile(filepath.Join("testdata", "tags_testdata.json"))
+	if err != nil {
+		t.Fatalf("Failed to read tags_testdata.json: %v", err)
+	}
+	var repoTagsMapData map[string]map[string]string
+	if err := json.Unmarshal(tagsData, &repoTagsMapData); err != nil {
+		t.Fatalf("Failed to unmarshal tags_testdata.json: %v", err)
+	}
+	for repo, tagCommits := range repoTagsMapData {
+		setupRepoCache(repo, tagCommits)
+	}
+	gitCache.SetCanonicalLink("https://github.com/behdad/harfbuzz", "https://github.com/harfbuzz/harfbuzz")
+	gitCache.SetCanonicalLink("https://github.com/forcedotcom/SalesforceMobileSDK-Windows", "https://github.com/forcedotcom/salesforcemobilesdk-windows")
+
+	cveMap := make(map[string]models.NVDCVE)
+	for _, item := range parsed.Vulnerabilities {
+		cveMap[string(item.CVE.ID)] = item.CVE
+	}
+
+	testCases := []struct {
+		cveID           string
+		description     string
+		expectedOutcome models.ConversionOutcome
+	}{
+		{
+			cveID:           "CVE-2026-20912",
+			description:     "Tests repository derivation from pull request references and VPRepoCache resolution for Gitea",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2023-22466",
+			description:     "Tests multiple version ranges across multiple configuration nodes for Tokio",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2026-23522",
+			description:     "Tests record where commit comes from references but canonical link has changed from referenced repo.",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2025-4565",
+			description:     "Multiple ranges, with one introduced = 0, and a commit in the refs. (protobuf-python)",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2018-14618",
+			description:     "Complex multi-ecosystem CPE configurations and vendor/product cache matching (libcurl)",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2023-1055",
+			description:     "No repo exists for project, so should fail",
+			expectedOutcome: models.NoRepos,
+		},
+		{
+			cveID:           "CVE-2022-33068",
+			description:     "Harfbuzz CPE has last_affected version from CPE, fixed from refs. Canonical link has changed.",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2016-1897",
+			description:     "ffmpeg record that enumerates versions",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2024-2002",
+			description:     "Tests deduplication and merging of overlapping git commit ranges across multiple references",
+			expectedOutcome: models.Successful,
+		},
+		{
+			cveID:           "CVE-2024-31497",
+			description:     "Tests handling of linkrot/unresolvable repositories and alternative repository links",
+			expectedOutcome: models.NoCommitRanges, // This could be successful, but is currently not.
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.cveID, func(t *testing.T) {
+			cve, ok := cveMap[tc.cveID]
+			if !ok {
+				t.Fatalf("CVE %s not found in test.json", tc.cveID)
+			}
+			// tc.description explains what this record is testing.
+
+			metrics := &models.ConversionMetrics{
+				CVEID: cve.ID,
+				CNA:   "nvd",
+			}
+			repos := FindRepos(cve, vpCache, gitCache, metrics, http.DefaultClient)
+			metrics.Repos = repos
+
+			vuln, _, outcome := CVEToOSV(cve, repos, vpCache, gitCache, metrics)
+			if outcome != tc.expectedOutcome {
+				t.Fatalf("Expected outcome %v, got %v during CVEToOSV for %s", tc.expectedOutcome, outcome, cve.ID)
+			}
+
+			if vuln != nil {
+				buf := bytes.NewBuffer(nil)
+				if err := vuln.ToJSON(buf); err != nil {
+					t.Fatalf("Failed to marshal vuln to JSON: %v", err)
+				}
+				snaps.MatchSnapshot(t, buf.String())
+			}
+		})
 	}
 }
 

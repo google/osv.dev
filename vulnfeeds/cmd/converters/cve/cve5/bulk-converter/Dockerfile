@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.26.2-alpine@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 AS go_build
+FROM golang:1.26.3-alpine@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS go_build
 
 RUN mkdir /src
 WORKDIR /src
@@ -25,7 +25,7 @@ RUN go mod download && go mod verify
 COPY ./ /src/
 RUN go build -o cve-bulk-converter ./cmd/converters/cve/cve5/bulk-converter/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:30b3a542786ee597ddc866aaf1d5201e794be1a4c328507a0531b97ad469ea64
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:36d52526dfdfc696f4f7e53251c05377e336b81c310c00dd8cfb87b5bf03baeb
 RUN apk --no-cache add jq
 
 WORKDIR /root/

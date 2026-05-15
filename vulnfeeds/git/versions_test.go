@@ -13,12 +13,12 @@ import (
 )
 
 func TestVersionToAffectedCommit(t *testing.T) {
-	cache := &RepoTagsCache{}
+	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
 		description       string
 		inputRepoURL      string
-		cache             *RepoTagsCache
+		cache             RepoTagsCache
 		inputVersion      string
 		expectedResult    string
 		expectedOk        bool

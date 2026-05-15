@@ -63,9 +63,15 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return fmt.Errorf("failed to parse %s: %w", path, err)
 		}
 
-		ids[vuln.GetId()+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
-		for _, alias := range vuln.GetAliases() {
-			ids[alias+"/"+vuln.GetAffected()[0].GetPackage().GetName()] = true
+		for _, affected := range vuln.GetAffected() {
+			pkgName := affected.GetPackage().GetName()
+			if pkgName == "" {
+				continue
+			}
+			ids[vuln.GetId()+"/"+pkgName] = true
+			for _, alias := range vuln.GetAliases() {
+				ids[alias+"/"+pkgName] = true
+			}
 		}
 
 		return nil

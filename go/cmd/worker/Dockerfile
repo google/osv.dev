@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ RUN go mod download && go mod verify
 
 
 COPY ./ /src/
-RUN CGO_ENABLED=0 go build -o exporter ./cmd/exporter
+RUN CGO_ENABLED=0 go build -o worker ./cmd/worker
 
 FROM gcr.io/distroless/static-debian12@sha256:20bc6c0bc4d625a22a8fde3e55f6515709b32055ef8fb9cfbddaa06d1760f838
 
-COPY --from=build /src/exporter /
+COPY --from=build /src/worker /
 
-ENTRYPOINT ["/exporter"]
+ENTRYPOINT ["/worker"]

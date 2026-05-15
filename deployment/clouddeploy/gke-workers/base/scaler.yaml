@@ -28,7 +28,7 @@ spec:
             resource.labels.subscription_id: tasks
       target:
         type: AverageValue
-        averageValue: 1
+        averageValue: 10  # each worker can handle 10 tasks now
     type: External
   scaleTargetRef:
     apiVersion: apps/v1

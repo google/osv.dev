@@ -529,7 +529,6 @@ def add_source_info(response: dict):
   if source_repo.human_link:
     ecosystem_version = ''
     if source.startswith('almalinux'):
-      source_path: str
       splits = source_path.split('/')
       if len(splits) >= 2:
         ecosystem_version = splits[1].removeprefix('almalinux')

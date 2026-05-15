@@ -1776,9 +1776,6 @@
               "introduced": "0"
             },
             {
-              "fixed": "0000000000000000000000000000000000000001"
-            },
-            {
               "fixed": "369830bada2fd8826a5135cb2fc66660a9bef708"
             }
           ],
@@ -1862,22 +1859,19 @@
           },
           "events": [
             {
-              "introduced": "0000000000000000000000000000000000000001"
+              "introduced": "f64673580dfc649954eb744eb2734f2f118baa47"
             },
             {
-              "fixed": "0000000000000000000000000000000000000002"
+              "fixed": "9241c3eddf4a6a218681b088d71f7191513e2376"
             },
             {
-              "introduced": "0000000000000000000000000000000000000003"
+              "introduced": "674d77d4ef42bd99238521546b3b2cd60b26e50d"
             },
             {
-              "fixed": "0000000000000000000000000000000000000004"
+              "fixed": "ba81945ffc2695b71f2bbcadbfb5e46ec55aaef3"
             },
             {
-              "introduced": "0000000000000000000000000000000000000005"
-            },
-            {
-              "fixed": "0000000000000000000000000000000000000006"
+              "introduced": "50795e652ecb0747c8d048aeaa38a41dddb2da4b"
             },
             {
               "fixed": "1a997ffbd62334af2553775234e75ede2d7d949f"
@@ -2012,19 +2006,19 @@
               "introduced": "0"
             },
             {
-              "fixed": "0000000000000000000000000000000000000001"
+              "fixed": "a4cbdd3ed0042e8f9b9c30e8b0634096d9532809"
             },
             {
-              "introduced": "0000000000000000000000000000000000000002"
+              "introduced": "d6511091a0cab1ad13f676a02676ad2a0e5eb9ae"
             },
             {
-              "fixed": "0000000000000000000000000000000000000003"
+              "fixed": "f5de0a0495faa63b4186fc767324f8b9a7bf4fc4"
             },
             {
-              "introduced": "0000000000000000000000000000000000000004"
+              "introduced": "d295af5c3002c08e1bfd9d7f9e175d0a4d015f1e"
             },
             {
-              "fixed": "0000000000000000000000000000000000000005"
+              "fixed": "74211c0dfc2777318ab53c2cd2c317a2ef9012de"
             },
             {
               "fixed": "17838beda2943d08b8a9d4df5b68f5f04f26d901"
@@ -2079,7 +2073,7 @@
               "introduced": "0"
             },
             {
-              "fixed": "0000000000000000000000000000000000000001"
+              "fixed": "432eb5f5c254ee8383b2522ce597c9219877923e"
             }
           ],
           "repo": "https://github.com/curl/curl",
@@ -2380,34 +2374,6 @@
 [TestCVEToOSV_TestJsonSnapshots/CVE-2022-33068 - 1]
 {
   "affected": [
-    {
-      "ranges": [
-        {
-          "database_specific": {
-            "cpe": "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*",
-            "extracted_events": [
-              {
-                "introduced": "0"
-              },
-              {
-                "last_affected": "4.3.0"
-              }
-            ],
-            "source": "CPE_FIELD"
-          },
-          "events": [
-            {
-              "introduced": "0"
-            },
-            {
-              "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
-            }
-          ],
-          "repo": "https://github.com/behdad/harfbuzz",
-          "type": "GIT"
-        }
-      ]
-    },
     {
       "ranges": [
         {

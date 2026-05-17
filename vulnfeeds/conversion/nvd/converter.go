@@ -93,9 +93,13 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// Extract Commits
-	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient)
+	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient, cache)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %#v", err)
+		if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			metrics.SetOutcome(models.Error)
+			return nil, metrics, models.Error
+		}
 	}
 	if len(commits) > 0 {
 		metrics.AddNote("Extracted commits from refs: %v", commits)
@@ -179,7 +183,10 @@ func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache
 	}
 
 	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-	versions := c.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics)
+	versions := c.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics, cache)
+	if metrics.Outcome == models.Error {
+		return models.Error
+	}
 
 	if len(versions.AffectedVersions) != 0 {
 		// There are some AffectedVersions to try and resolve to AffectedCommits.

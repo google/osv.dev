@@ -517,13 +517,16 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
+func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client, cache git.RepoTagsCache) ([]models.AffectedCommit, error) {
 	var commits []models.AffectedCommit //nolint:prealloc
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient)
+		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				return nil, err
+			}
 			continue
 		}
 
@@ -534,9 +537,9 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client, cache git.RepoTagsCache) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
-	c, r, err := ExtractGitCommit(link, httpClient, 0)
+	c, r, err := ExtractGitCommit(link, httpClient, 0, cache)
 	if err != nil {
 		return ac, err
 	}
@@ -548,7 +551,7 @@ func extractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 	return ac, nil
 }
 
-func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
+func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, error) {
 	if depth > 10 {
 		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
@@ -567,7 +570,12 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
-	possiblyDifferentLink, err := git.ValidateAndCanonicalizeLink(link, httpClient)
+	var possiblyDifferentLink string
+	if cache != nil {
+		possiblyDifferentLink, err = git.FindCanonicalLink(link, httpClient, cache)
+	} else {
+		possiblyDifferentLink, err = git.ValidateAndCanonicalizeLink(link, httpClient)
+	}
 	if err != nil {
 		return "", "", err
 	}
@@ -576,7 +584,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1, cache)
 	}
 
 	return commit, r, nil
@@ -835,9 +843,12 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 
 // ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
 // This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters.
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
+	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
+	} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+		metrics.Outcome = models.Error
+		return v
 	}
 
 	if v.AffectedCommits != nil {

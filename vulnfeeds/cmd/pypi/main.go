@@ -177,7 +177,7 @@ func main() {
 			}
 			v := vulns.FromNVDCVE(id, cve.CVE)
 			v.AddPkgInfo(pkgInfo)
-			versions := conversion.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics)
+			versions := conversion.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics, nil)
 
 			vulns.AttachExtractedVersionInfo(v, versions)
 			if len(v.Affected[0].GetRanges()) == 0 {

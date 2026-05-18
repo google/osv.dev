@@ -164,4 +164,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
   });
+
+  // Check if a CVE/vulnerability ID query param is specified in the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlId = urlParams.get("id") || urlParams.get("cve");
+  if (urlId) {
+    vulnIdInput.value = urlId.toUpperCase();
+    
+    columns.forEach((col, idx) => {
+      const colNum = idx + 1;
+      const select = col.querySelector(".source-select");
+      
+      // Check for column-specific source query param
+      const sourceParam = urlParams.get(`s${colNum}`) || 
+                          urlParams.get(`col${colNum}`) || 
+                          urlParams.get(`source${colNum}`);
+                          
+      if (sourceParam && sourceConfigMap[sourceParam]) {
+        select.value = sourceParam;
+      } else if (!select.value) {
+        // Pre-populate reasonable defaults if no selection is set
+        if (colNum === 1) select.value = "test-cve5";
+        else if (colNum === 2) select.value = "test-nvd";
+        else if (colNum === 3) select.value = "test-osv";
+      }
+      
+      updateColumn(col);
+    });
+  }
 });

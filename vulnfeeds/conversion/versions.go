@@ -1293,5 +1293,6 @@ func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache) (bool, er
 			cache.SetInvalid(repo)
 		}
 	}
+
 	return valid, err
 }

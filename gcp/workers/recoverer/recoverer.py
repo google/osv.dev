@@ -137,7 +137,8 @@ def handle_gcs_missing(message: pubsub_v1.types.PubsubMessage) -> bool:
         deleted='false',
         skip_hash_check='true',
         req_timestamp=str(int(time.time())),
-        work_pool='default')  # TODO(michaelkedar): replace with reimport pool when created
+        work_pool='default',
+    )  # TODO(michaelkedar): replace with reimport pool when created
 
     return True
 

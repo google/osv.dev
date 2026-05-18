@@ -14,13 +14,13 @@
 
 
 # Stage 1: Build the Go linter binary
-FROM golang:1.26.2-alpine@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 AS go_builder
+FROM golang:1.26.3-alpine@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS go_builder
 
 RUN apk add --no-cache git
 WORKDIR /src
 
 # Using osv-schema v1.7.3+
-RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 83285ce2a8661d6b30cd45b909e53ad4833802ce
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 447c7315b34e7f565538c667b532586ca76efe10
 
 WORKDIR /src/osv-schema/tools/osv-linter
 
@@ -30,16 +30,20 @@ RUN go generate ./...
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/osv-linter ./cmd/osv
 
-# Stage 2: Run python code
+# Build the worker binary
+WORKDIR /src/osv.dev/go
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/osv-linter-worker ./cmd/osv-linter-worker
+
+# Stage 2: Run worker
 FROM gcr.io/oss-vdb/worker
 
-# Copy the built Go binary from the 'go_builder' stage
+# Copy the built Go binaries from the 'go_builder' stage
 COPY --from=go_builder /usr/local/bin/osv-linter /usr/local/bin/osv-linter
-
-COPY linter.py /usr/local/bin
+COPY --from=go_builder /usr/local/bin/osv-linter-worker /usr/local/bin/osv-linter-worker
 
 WORKDIR /linter
 
-RUN chmod 755 /usr/local/bin/linter.py
-
-ENTRYPOINT ["linter.py"]
+ENTRYPOINT ["osv-linter-worker"]

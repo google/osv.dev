@@ -112,7 +112,8 @@ func TestPipeline_EndToEnd_PortedFromPython(t *testing.T) {
 		Stores: Stores{
 			SourceRepo: mockSourceRepoStore{
 				repo: &models.SourceRepository{
-					Name: "source",
+					Name:               "source",
+					AcceptedEcosystems: []osvconstants.Ecosystem{"*"},
 					GitAnalysis: &models.GitAnalysisConfig{
 						IgnoreGit: false,
 					},

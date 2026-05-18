@@ -1545,6 +1545,9 @@ class SourceRepository(ndb.Model):
   key_path: str = ndb.StringProperty()
   # If true, don't analyze any Git ranges.
   ignore_git: bool = ndb.BooleanProperty(default=False)
+  # List of ecosystems that this source is allowed to import.
+  # A value of '*' means allow all ecosystems.
+  accepted_ecosystems: list[str] = ndb.StringProperty(repeated=True)
   # Whether to detect cherypicks or not (slow for large repos).
   detect_cherrypicks: bool = ndb.BooleanProperty(default=True)
   # Whether to consider all branches when analyzing GIT ranges.

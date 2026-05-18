@@ -1,5 +1,7 @@
 ---
 # Source Repository Default Configuration
+  # List of ecosystems to accept vulnerabilities for. '*' means accept all, empty list means accept none.
+  accepted_ecosystems: []
   # Bucket name for SourceRepositoryType.BUCKET.
   bucket: 
   # Whether to detect cherypicks or not (slow for large repos).

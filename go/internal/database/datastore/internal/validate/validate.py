@@ -132,6 +132,7 @@ def main() -> int:
       extension='.json',
       key_path='vulnerability',
       ignore_git=False,
+      accepted_ecosystems=['Go', 'PyPI'],
       detect_cherrypicks=True,
       consider_all_branches=False,
       versions_from_repo=True,

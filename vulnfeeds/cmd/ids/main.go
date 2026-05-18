@@ -185,7 +185,7 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	logger.Info("Assigning IDs using detected maximums", slog.Any("counters", yearCounters))
 	for _, path := range unassigned {
 		if err := assignID(prefix, path, format, yearCounters, defaultYear); err != nil {
-			return fmt.Errorf("failed to assign ID: %w", err)
+			return fmt.Errorf("failed to assign ID for %s: %w", path, err)
 		}
 	}
 

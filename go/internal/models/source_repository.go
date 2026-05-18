@@ -5,6 +5,8 @@ import (
 	"context"
 	"iter"
 	"time"
+
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
 type SourceRepositoryStore interface {
@@ -52,6 +54,10 @@ type SourceRepository struct {
 
 	// Git Content Analysis (Applied to Git commit ranges found in vulnerabilities)
 	GitAnalysis *GitAnalysisConfig
+
+	// List of ecosystems that this source is allowed to import.
+	// A value of '*' means allow all ecosystems.
+	AcceptedEcosystems []osvconstants.Ecosystem
 
 	// HTTP link prefix to individual OSV source records.
 	Link string

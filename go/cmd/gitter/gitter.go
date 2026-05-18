@@ -346,8 +346,16 @@ func isAuthError(err error) bool {
 	errString := err.Error()
 
 	return strings.Contains(errString, "could not read Username") ||
-		strings.Contains(errString, "Authentication failed") ||
-		strings.Contains(errString, "The requested URL returned error: 403")
+		strings.Contains(errString, "Authentication failed")
+}
+
+func isForbiddenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errString := err.Error()
+
+	return strings.Contains(errString, "The requested URL returned error: 403")
 }
 
 func isNotFoundError(err error) bool {
@@ -540,6 +548,11 @@ func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 
 				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
 				if err != nil {
+					if isForbiddenError(err) {
+						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
+						return nil
+					}
+
 					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
 					if err := os.RemoveAll(repoPath); err != nil {
 						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
@@ -732,7 +745,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch repo first
 	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
-		if isAuthError(err) {
+		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
 			statusCode = http.StatusNotFound
@@ -799,7 +812,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	logger.DebugContext(ctx, "Received request: /cache")
 
 	if _, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate()); err != nil {
-		if isAuthError(err) {
+		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
 			statusCode = http.StatusNotFound
@@ -870,7 +883,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	repo, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate())
 	if err != nil {
-		if isAuthError(err) {
+		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
 			statusCode = http.StatusNotFound
@@ -1010,7 +1023,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 				return nil, FetchRepo(ctx, repoURL, false)
 			}); errFetch != nil {
 				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
-				if isAuthError(errFetch) {
+				if isAuthError(errFetch) || isForbiddenError(errFetch) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
 					statusCode = http.StatusForbidden
 					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
@@ -1048,7 +1061,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 				return repo.GetRemoteTags(ctx)
 			})
 			if errLsRemote != nil {
-				if isAuthError(errLsRemote) {
+				if isAuthError(errLsRemote) || isForbiddenError(errLsRemote) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
 					statusCode = http.StatusForbidden
 					http.Error(w, fmt.Sprintf("Repository authentication failed: %v", errLsRemote), statusCode)

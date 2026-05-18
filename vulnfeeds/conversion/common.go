@@ -145,6 +145,13 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
+	claimedRepos := make(map[string]bool)
+	for _, vr := range versionRanges {
+		if vr.Range.GetRepo() != "" {
+			claimedRepos[vr.Range.GetRepo()] = true
+		}
+	}
+
 	for _, repo := range repos {
 		if len(unresolvedRanges) == 0 {
 			break // All ranges have been resolved.
@@ -177,6 +184,10 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
+			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
+				continue
+			}
 			var introduced, fixed, lastAffected string
 			for _, e := range vr.Range.GetEvents() {
 				if e.GetIntroduced() != "" {
@@ -462,15 +473,23 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 	}
 
 	type key struct {
-		Source string
-		CPE    string
+		Source        string
+		VendorProduct string
 	}
 
 	rangesByKey := make(map[key][]models.RangeWithMetadata)
 	var keys []key
 
 	for _, ur := range unresolvedRanges {
-		k := key{Source: string(ur.Metadata.Source), CPE: ur.Metadata.CPE}
+		vendorProduct := ""
+		if ur.Metadata.CPE != "" {
+			if CPE, err := ParseCPE(ur.Metadata.CPE); err == nil {
+				vendorProduct = CPE.Vendor + ":" + CPE.Product
+			} else {
+				vendorProduct = ur.Metadata.CPE
+			}
+		}
+		k := key{Source: string(ur.Metadata.Source), VendorProduct: vendorProduct}
 		if _, ok := rangesByKey[k]; !ok {
 			keys = append(keys, k)
 		}
@@ -482,7 +501,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 			return strings.Compare(a.Source, b.Source)
 		}
 
-		return strings.Compare(a.CPE, b.CPE)
+		return strings.Compare(a.VendorProduct, b.VendorProduct)
 	})
 
 	listElements := make([]any, 0, len(keys))
@@ -491,8 +510,12 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		ranges := rangesByKey[k]
 		unresolvedRangesMap := make(map[string]any)
 		var events []*osvschema.Event
+		cpesSet := make(map[string]bool)
 
 		for _, ur := range ranges {
+			if ur.Metadata.CPE != "" {
+				cpesSet[ur.Metadata.CPE] = true
+			}
 			urEvents := ur.Range.GetEvents()
 
 			for _, e := range urEvents {
@@ -510,11 +533,20 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 			}
 		}
 
-		if k.CPE != "" {
-			unresolvedRangesMap["cpe"] = k.CPE
+		var cpes []string
+		for cpe := range cpesSet {
+			cpes = append(cpes, cpe)
+		}
+		slices.Sort(cpes)
+
+		if k.VendorProduct != "" {
+			unresolvedRangesMap["vendor_product"] = k.VendorProduct
 		}
 		if k.Source != "" {
 			unresolvedRangesMap["source"] = k.Source
+		}
+		if len(cpes) > 0 {
+			unresolvedRangesMap["cpes"] = cpes
 		}
 
 		unresolvedRangesMap["extracted_events"] = events
@@ -530,6 +562,66 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 	}
 
 	return ds.GetFields()["list"].GetListValue()
+}
+
+// FilterUnresolvedRanges compares resolved and unresolved version ranges by their CPE criteria
+// and raw version boundaries. If an unresolved CPE range has been successfully resolved on at least
+// one repository in the CVE (recorded in resolved), it will filter out/exclude that unresolved range
+// copy from being outputted in database_specific, preventing duplicate unresolved product listings.
+func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []models.RangeWithMetadata) []models.RangeWithMetadata {
+	type rangeKey struct {
+		CPE    string
+		Events string
+	}
+
+	resolvedKeys := make(map[rangeKey]bool)
+	for _, r := range resolved {
+		var eventStrings []string
+		if r.Range.GetDatabaseSpecific() != nil && r.Range.GetDatabaseSpecific().GetFields()["extracted_events"] != nil {
+			listValue := r.Range.GetDatabaseSpecific().GetFields()["extracted_events"].GetListValue()
+			if listValue != nil {
+				for _, val := range listValue.GetValues() {
+					strct := val.GetStructValue()
+					if strct != nil {
+						introduced := strct.GetFields()["introduced"].GetStringValue()
+						fixed := strct.GetFields()["fixed"].GetStringValue()
+						lastAffected := strct.GetFields()["last_affected"].GetStringValue()
+						eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", introduced, fixed, lastAffected))
+					}
+				}
+			}
+		}
+		if len(eventStrings) == 0 {
+			for _, e := range r.Range.GetEvents() {
+				eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
+			}
+		}
+		slices.Sort(eventStrings)
+		k := rangeKey{
+			CPE:    r.Metadata.CPE,
+			Events: strings.Join(eventStrings, ","),
+		}
+		resolvedKeys[k] = true
+	}
+
+	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
+	for _, ur := range unresolved {
+		var eventStrings []string
+		for _, e := range ur.Range.GetEvents() {
+			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
+		}
+		slices.Sort(eventStrings)
+		k := rangeKey{
+			CPE:    ur.Metadata.CPE,
+			Events: strings.Join(eventStrings, ","),
+		}
+		if resolvedKeys[k] {
+			continue
+		}
+		filtered = append(filtered, ur)
+	}
+
+	return filtered
 }
 
 func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) error {

@@ -4,11 +4,13 @@ package filterecosystem
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,13 +21,19 @@ var _ pipeline.Enricher = (*Enricher)(nil)
 
 func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, params *pipeline.EnrichParams) error {
 	newAffected := make([]*osvschema.Affected, 0, len(vuln.GetAffected()))
+	acceptedEcos := params.SourceRepo.AcceptedEcosystems
+	allowAll := slices.Contains(acceptedEcos, "*")
 	for _, affected := range vuln.GetAffected() {
 		pkg := affected.GetPackage()
+		if pkg == nil {
+			// If there is already no affected package, assume this is a GIT vuln and add it anyway.
+			newAffected = append(newAffected, proto.Clone(affected).(*osvschema.Affected))
+			continue
+		}
 		ecosystem := pkg.GetEcosystem()
 		ecoBase, _, _ := strings.Cut(ecosystem, ":")
 		shouldRemove := false
-		if params.SourceRepo.Name == "echo" && ecoBase != "Echo" {
-			// TODO(michaelkedar): Have a list of allowed ecosystems in the SourceRepo #5285
+		if !allowAll && !slices.Contains(acceptedEcos, osvconstants.Ecosystem(ecoBase)) {
 			shouldRemove = true
 		}
 		if !schema.IsKnownEcosystem(ecoBase) {

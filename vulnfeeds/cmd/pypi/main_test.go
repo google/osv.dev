@@ -25,14 +25,13 @@ func TestLoadExisting(t *testing.T) {
 
 	// 1. Write a valid vulnerability YAML
 	validYaml := `
-vulnerability:
-  id: PYSEC-2021-123
-  affected:
-    - package:
-        name: foo-pkg
-        ecosystem: PyPI
-  aliases:
-    - CVE-2021-12345
+id: PYSEC-2021-123
+affected:
+  - package:
+      name: foo-pkg
+      ecosystem: PyPI
+aliases:
+  - CVE-2021-12345
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "valid.yaml"), []byte(validYaml), 0600); err != nil {
 		t.Fatalf("failed to write valid YAML: %v", err)
@@ -40,10 +39,9 @@ vulnerability:
 
 	// 2. Write a vulnerability YAML with empty/missing affected block
 	missingAffectedYaml := `
-vulnerability:
-  id: PYSEC-2021-456
-  aliases:
-    - CVE-2021-67890
+id: PYSEC-2021-456
+aliases:
+  - CVE-2021-67890
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "missing_affected.yaml"), []byte(missingAffectedYaml), 0600); err != nil {
 		t.Fatalf("failed to write YAML with missing affected: %v", err)
@@ -51,10 +49,9 @@ vulnerability:
 
 	// 3. Write a vulnerability YAML with affected block but missing package
 	missingPackageYaml := `
-vulnerability:
-  id: PYSEC-2021-789
-  affected:
-    - {}
+id: PYSEC-2021-789
+affected:
+  - {}
 `
 	if err := os.WriteFile(filepath.Join(tmpDir, "missing_package.yaml"), []byte(missingPackageYaml), 0600); err != nil {
 		t.Fatalf("failed to write YAML with missing package: %v", err)

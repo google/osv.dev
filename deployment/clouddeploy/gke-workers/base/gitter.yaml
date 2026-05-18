@@ -61,7 +61,7 @@ metadata:
 spec:
   storageClassName: ""
   capacity:
-    storage: 4Ti
+    storage: 6Ti
   accessModes:
     - ReadWriteOnce
   csi:
@@ -80,7 +80,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 4Ti
+      storage: 6Ti
 ---
 apiVersion: v1
 kind: Service

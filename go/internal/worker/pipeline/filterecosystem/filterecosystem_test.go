@@ -154,6 +154,38 @@ func TestEnricher_Enrich(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:         "GIT only",
+			acceptedEcos: []osvconstants.Ecosystem{"*"},
+			affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/example/repo",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+							},
+						},
+					},
+				},
+			},
+			expectedAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/example/repo",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {

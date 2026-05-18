@@ -48,11 +48,25 @@ func main() {
 	if project == "" {
 		logger.FatalContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
 	}
+	tasksTopic := os.Getenv("WORKER_TASK_TOPIC")
+	if tasksTopic == "" {
+		tasksTopic = "tasks"
+	}
+	defaultTaskPool := os.Getenv("DEFAULT_TASK_POOL")
+	if defaultTaskPool == "" {
+		defaultTaskPool = "default"
+	}
+	reimportTaskPool := os.Getenv("REIMPORT_TASK_POOL")
+	if reimportTaskPool == "" {
+		reimportTaskPool = defaultTaskPool
+	}
 
 	config := importer.Config{
 		StrictValidation: *strictValidation,
 		DeleteThreshold:  *deleteThresholdPct,
 		NumWorkers:       *numWorkers,
+		DefaultTaskPool:  defaultTaskPool,
+		ReimportTaskPool: reimportTaskPool,
 		GitWorkDir:       filepath.Join(*workDir, "sources"),
 		SampleRate:       vulnerabilitySampleRate(),
 		DryRun:           *dryRun,
@@ -89,7 +103,7 @@ func main() {
 	if err != nil {
 		logger.FatalContext(ctx, "Failed to create pubsub client", slog.Any("error", err))
 	}
-	config.Publisher = &clients.GCPPublisher{Publisher: psClient.Publisher(importer.TasksTopic)}
+	config.Publisher = &clients.GCPPublisher{Publisher: psClient.Publisher(tasksTopic)}
 
 	// We are posssibly reading a lot of vulnerabilities from GCS, so disable telemetry (disables trace spans).
 	storageClient, err := storage.NewClient(ctx, option.WithTelemetryDisabled())

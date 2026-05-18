@@ -229,6 +229,7 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 		HumanLink:               "https://example.com/go-source/human",
 		DBPrefix:                []string{"GO-TEST", "GO-2-TEST"},
 		StrictValidation:        true,
+		WorkPool:                "default",
 	}
 	if _, err := client.Put(ctx, key, &goSourceRepo); err != nil {
 		fmt.Printf("(Go) Failed writing SourceRepository %v: %v\n", key, err)

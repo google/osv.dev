@@ -152,4 +152,5 @@ type SourceRepository struct {
 	HumanLink               string                      `datastore:"human_link"`
 	DBPrefix                []string                    `datastore:"db_prefix"`
 	StrictValidation        bool                        `datastore:"strict_validation"`
+	WorkPool                string                      `datastore:"work_pool"`
 }

@@ -137,6 +137,10 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 			// file was ignored/removed in both commits
 			continue
 		}
+		pool := sourceRepo.WorkPool
+		if isReimport {
+			pool = config.ReimportTaskPool
+		}
 		if to == "" {
 			// Object was deleted / moved to ignored
 			select {
@@ -155,6 +159,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 				Format:           format,
 				KeyPath:          sourceRepo.KeyPath,
 				IsReimport:       isReimport,
+				WorkPool:         pool,
 			}:
 			}
 
@@ -177,6 +182,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 			KeyPath:          sourceRepo.KeyPath,
 			IsReimport:       isReimport,
 			Strict:           sourceRepo.Strictness,
+			WorkPool:         pool,
 		}:
 		}
 	}
@@ -349,7 +355,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 			path: p, // Absolute path on disk
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format, config.ReimportTaskPool)
 
 		return nil
 	})

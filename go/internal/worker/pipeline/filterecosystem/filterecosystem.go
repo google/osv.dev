@@ -26,6 +26,8 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, para
 	for _, affected := range vuln.GetAffected() {
 		pkg := affected.GetPackage()
 		if pkg == nil {
+			// If there is already no affected package, assume this is a GIT vuln and add it anyway.
+			newAffected = append(newAffected, proto.Clone(affected).(*osvschema.Affected))
 			continue
 		}
 		ecosystem := pkg.GetEcosystem()

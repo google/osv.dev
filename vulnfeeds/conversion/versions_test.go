@@ -692,7 +692,7 @@ func TestExtractGitCommit(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: extractGitAffectedCommit(%q, %v) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client, nil)
 			if err != nil && !tc.expectFailure {
 				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
@@ -927,7 +927,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			metrics := &models.ConversionMetrics{}
-			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics, nil)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -963,11 +963,14 @@ func TestExtractVersionInfo_429(t *testing.T) {
 	}
 
 	metrics := &models.ConversionMetrics{}
-	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics)
+	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics, nil)
 
 	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
 	if len(gotVersionInfo.AffectedCommits) != 0 {
 		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
+	}
+	if metrics.Outcome != models.Error {
+		t.Errorf("Expected outcome to be Error, got %v", metrics.Outcome)
 	}
 }
 

@@ -234,14 +234,18 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 }
 
 func FindCanonicalLink(link string, httpClient *http.Client, cache RepoTagsCache) (canonicalLink string, err error) {
-	if canonicalLink, ok := cache.GetCanonicalLink(link); ok {
-		return canonicalLink, nil
+	if cache != nil {
+		if canonicalLink, ok := cache.GetCanonicalLink(link); ok {
+			return canonicalLink, nil
+		}
 	}
 	canonicalLink, err = ValidateAndCanonicalizeLink(link, httpClient)
 	if err != nil {
 		return link, err
 	}
-	cache.SetCanonicalLink(link, canonicalLink)
+	if cache != nil {
+		cache.SetCanonicalLink(link, canonicalLink)
+	}
 
 	return canonicalLink, nil
 }

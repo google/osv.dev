@@ -571,12 +571,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
-	var possiblyDifferentLink string
-	if cache != nil {
-		possiblyDifferentLink, err = git.FindCanonicalLink(link, httpClient, cache)
-	} else {
-		possiblyDifferentLink, err = git.ValidateAndCanonicalizeLink(link, httpClient)
-	}
+	possiblyDifferentLink, err := git.FindCanonicalLink(link, httpClient, cache)
 	if err != nil {
 		return "", "", err
 	}

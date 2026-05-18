@@ -420,7 +420,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
 	}
 	if err != nil {
-		if repoTagsCache != nil {
+		if repoTagsCache != nil && !errors.Is(err, ErrRateLimit) && !strings.Contains(err.Error(), "429") && !strings.Contains(err.Error(), "Too Many Requests") {
 			repoTagsCache.SetInvalid(repoURL)
 		}
 

@@ -196,7 +196,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-9999",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cvePlaceholder),
 					Modified:      timestamppb.New(cvePlaceholder),
 					Details:       "A disputed vulnerability.",
@@ -219,7 +219,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-1110",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve1110Pub),
 					Modified:      timestamppb.New(cve1110Mod),
 					Summary:       "Insufficient Granularity of Access Control in GitLab",
@@ -259,7 +259,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2024-21634",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve21634Pub),
 					Modified:      timestamppb.New(cve21634Mod),
 					Summary:       "Ion Java StackOverflow vulnerability",
@@ -307,7 +307,7 @@ func TestFromCVE5(t *testing.T) {
 			expectedVuln: &vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{
 					Id:            "CVE-2025-21772",
-					SchemaVersion: "1.7.3",
+					SchemaVersion: "1.7.5",
 					Published:     timestamppb.New(cve21772Pub),
 					Modified:      timestamppb.New(cve21772Mod),
 					Summary:       "partitions: mac: fix handling of bogus partition table",
@@ -339,6 +339,7 @@ func TestFromCVE5(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := &models.ConversionMetrics{}
 			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
+			vuln.SchemaVersion = tc.expectedVuln.SchemaVersion
 
 			// Handle non-deterministic time.Now()
 			if strings.Contains(tc.name, "invalid date") {
@@ -586,5 +587,78 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			}
 			snaps.MatchSnapshot(t, vWriter.String())
 		})
+	}
+}
+
+func TestCVE5Snapshot(t *testing.T) {
+	testDir := "../../test_data/cve5"
+	//TODO: split this into individual records.
+	files, err := os.ReadDir(testDir)
+	if err != nil {
+		t.Fatalf("Failed to read test directory %s: %v", testDir, err)
+	}
+
+	results := make([]string, 0, len(files))
+	for _, file := range files {
+		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
+			continue
+		}
+
+		path := filepath.Join(testDir, file.Name())
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("Failed to read %s: %v", path, err)
+		}
+
+		var cve models.CVE5
+		err = json.Unmarshal(content, &cve)
+		if err != nil {
+			t.Fatalf("Failed to unmarshal %s: %v", path, err)
+		}
+
+		vWriter := bytes.NewBuffer(nil)
+		mWriter := bytes.NewBuffer(nil)
+		_, err = ConvertAndExportCVEToOSV(cve, vWriter, mWriter, "")
+		if err != nil {
+			t.Fatalf("Failed to convert %s: %v", path, err)
+		}
+
+		results = append(results, vWriter.String())
+	}
+
+	// Sort results for deterministic snapshot
+	sort.Strings(results)
+
+	keys := make([]any, 0, len(results))
+	for _, r := range results {
+		keys = append(keys, r)
+	}
+
+	snaps.MatchSnapshot(t, keys...)
+}
+
+func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
+	cve := models.CVE5{}
+	metrics := &models.ConversionMetrics{}
+	refData := []models.Reference{
+		{URL: "https://example.com/D"},
+		{URL: "https://example.com/A"},
+		{URL: "https://example.com/C", Tags: []string{"patch"}},
+		{URL: "https://example.com/C"},
+		{URL: "https://example.com/B", Tags: []string{"issue-tracking"}},
+		{URL: "https://example.com/E"},
+	}
+
+	var firstResult []*osvschema.Reference
+	for i := range 10 {
+		vuln := FromCVE5(cve, refData, metrics, "")
+		if i == 0 {
+			firstResult = vuln.References
+			continue
+		}
+
+		if diff := cmp.Diff(firstResult, vuln.References, protocmp.Transform()); diff != "" {
+			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
+		}
 	}
 }

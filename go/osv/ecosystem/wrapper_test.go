@@ -17,6 +17,7 @@ func TestZeroVersion(t *testing.T) {
 		{"Maven", "alpha-alpha-alpha"},
 		{"npm", "0-pre"},
 		{"AlmaLinux:8", "B.02.19.2-6.el8"},                                                 // ALBA-2021:4442
+		{"Azure Linux:2", "5.15.55.1-1"},                                                   // AZL-10003
 		{"Debian:11", "0~20200923.3-2+deb11u1"},                                            // DLA-4116-1
 		{"Go", "0.0.0-20250619215741-6356e984b82a"},                                        // GHSA-24ch-w38v-xmh8
 		{"Mageia:9", "gtk+2.0-2.24.33-5.1.mga9"},                                           // MGASA-2024-0312
@@ -28,8 +29,9 @@ func TestZeroVersion(t *testing.T) {
 		{"openSUSE:Tumbleweed", "0~20240902.c95cc9e-1.1"},                                  // openSUSE-SU-2024:14314-1
 	}
 
+	p := NewProvider(nil)
 	for _, test := range tests {
-		e, ok := Get(test.ecosystem)
+		e, ok := p.Get(test.ecosystem)
 		if !ok {
 			t.Fatalf("%s ecosystem not found", test.ecosystem)
 		}
@@ -48,6 +50,33 @@ func TestZeroVersion(t *testing.T) {
 			t.Errorf("comparison error: %v", err)
 		} else if c >= 0 {
 			t.Errorf("expected 0 < %s, got compare result %d", test.version, c)
+		}
+	}
+}
+
+func TestNormalizePackageName(t *testing.T) {
+	tests := []struct {
+		ecosystem string
+		name      string
+		expected  string
+	}{
+		{"PyPI", "Flask", "flask"},
+		{"PyPI", "flask", "flask"},
+		{"PyPI", "A_B-C.D", "a-b-c-d"},
+		{"PyPI", "A_._B", "a-b"},
+		{"npm", "Flask", "Flask"}, // No normalization
+	}
+
+	p := NewProvider(nil)
+	for _, test := range tests {
+		e, ok := p.Get(test.ecosystem)
+		if !ok {
+			t.Fatalf("%s ecosystem not found", test.ecosystem)
+		}
+
+		actual := NormalizePackageName(e, test.name)
+		if actual != test.expected {
+			t.Errorf("NormalizePackageName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
 		}
 	}
 }

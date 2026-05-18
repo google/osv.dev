@@ -12,20 +12,5 @@ spec:
             value: oss-vdb
           - name: OSV_VULNERABILITIES_BUCKET
             value: osv-vulnerabilities
-        args:
-          - "--ssh_key_public=/secrets/ssh.pub"
-          - "--ssh_key_private=/secrets/ssh"
-          - "--redis_host=10.102.25.213"
-        volumeMounts:
-          - mountPath: "/secrets"
-            name: "secrets"
-      volumes:
-        - name: secrets
-          secret:
-            secretName: secrets
-            items:
-              - key: ssh
-                path: ssh
-                mode: 0600
-              - key: ssh.pub
-                path: ssh.pub
+          - name: NOTIFY_PYPI
+            value: "true"

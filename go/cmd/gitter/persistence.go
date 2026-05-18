@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/google/osv.dev/go/cmd/gitter/pb/repository"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/protobuf/proto"
 )
@@ -53,7 +53,7 @@ func saveLastFetchMap() {
 	lastFetchMu.Lock()
 	defer lastFetchMu.Unlock()
 
-	logger.Info("Saving lastFetch map", slog.String("path", persistencePath))
+	logger.Debug("Saving lastFetch map", slog.String("path", persistencePath))
 
 	data, err := json.Marshal(lastFetch)
 	if err != nil {
@@ -83,14 +83,19 @@ func loadLastFetchMap() {
 		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 	}
 
-	logger.Info("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
+	logger.Debug("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))
 }
 
-func saveRepositoryCache(cachePath string, repo *Repository) error {
-	logger.Info("Saving repository cache", slog.String("path", cachePath))
+func saveRepositoryCache(cachePath string, repo *Repository) (int, error) {
+	logger.Debug("Saving repository cache", slog.String("path", cachePath))
 
 	cache := &pb.RepositoryCache{}
-	for _, commit := range repo.commitDetails {
+	emptyPatchID := SHA1{}
+	for _, commit := range repo.commits {
+		// Only save commits that have a patch ID
+		if commit.PatchID == emptyPatchID {
+			continue
+		}
 		cache.Commits = append(cache.Commits, &pb.CommitDetail{
 			Hash:    commit.Hash[:],
 			PatchId: commit.PatchID[:],
@@ -99,10 +104,14 @@ func saveRepositoryCache(cachePath string, repo *Repository) error {
 
 	data, err := proto.Marshal(cache)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return os.WriteFile(cachePath, data, 0600)
+	if err := os.WriteFile(cachePath, data, 0600); err != nil {
+		return 0, err
+	}
+
+	return len(cache.GetCommits()), nil
 }
 
 func loadRepositoryCache(cachePath string) (*pb.RepositoryCache, error) {

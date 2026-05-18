@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"reflect"
 	"slices"
@@ -215,13 +214,13 @@ func TestRepo(t *testing.T) {
 		{
 			description:     "Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes/commit/?id=c05c6d918b0e2011d4bfa370c321482e34630b17",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{
 			description:     "Exact Freedesktop cGit mirror",
 			inputLink:       "https://cgit.freedesktop.org/xorg/lib/libXRes",
-			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libXRes",
+			expectedRepoURL: "https://gitlab.freedesktop.org/xorg/lib/libxres",
 			expectedOk:      true,
 		},
 		{
@@ -693,7 +692,7 @@ func TestExtractGitCommit(t *testing.T) {
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: extractGitAffectedCommit(%q, %v) has been enabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}
-			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client)
+			got, err := extractGitAffectedCommit(tc.inputLink, tc.inputCommitType, client, nil)
 			if err != nil && !tc.expectFailure {
 				t.Errorf("test %q: extractGitAffectedCommit for %q (%v) errored unexpectedly: %#v", tc.description, tc.inputLink, tc.inputCommitType, err)
 			}
@@ -928,7 +927,7 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			metrics := &models.ConversionMetrics{}
-			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics)
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics, nil)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
@@ -964,11 +963,14 @@ func TestExtractVersionInfo_429(t *testing.T) {
 	}
 
 	metrics := &models.ConversionMetrics{}
-	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics)
+	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics, nil)
 
 	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
 	if len(gotVersionInfo.AffectedCommits) != 0 {
 		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
+	}
+	if metrics.Outcome != models.Error {
+		t.Errorf("Expected outcome to be Error, got %v", metrics.Outcome)
 	}
 }
 
@@ -1203,75 +1205,6 @@ func TestInvalidRangeDetection(t *testing.T) {
 	}
 }
 
-func TestValidateAndCanonicalizeLink(t *testing.T) {
-	type args struct {
-		link string
-	}
-	tests := []struct {
-		name              string
-		args              args
-		wantCanonicalLink string
-		wantErr           bool
-		skipOnCloudBuild  bool
-		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
-	}{
-		{
-			name: "A link that 404's",
-			args: args{
-				link: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
-			},
-			wantCanonicalLink: "https://github.com/WebKit/webkit/commit/6f9b511a115311b13c06eb58038ddc2c78da5531",
-			wantErr:           true,
-		},
-		{
-			name: "A functioning link",
-			args: args{
-				link: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
-			},
-			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
-			wantErr:           false,
-			skipOnCloudBuild:  true, // observing indications of IP denylisting as at 2025-02-13
-
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := testutils.SetupVCR(t)
-			client := r.GetDefaultClient()
-
-			if time.Now().Before(tt.disableExpiryDate) {
-				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
-			}
-			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
-				t.Skipf("test %q: running on Cloud Build", tt.name)
-			}
-			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link, client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateAndCanonicalizeLink() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotCanonicalLink != tt.wantCanonicalLink {
-				t.Errorf("ValidateAndCanonicalizeLink() = %v, want %v", gotCanonicalLink, tt.wantCanonicalLink)
-			}
-		})
-	}
-}
-
-func TestValidateAndCanonicalizeLink_429(t *testing.T) {
-	requests := 0
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		requests++
-		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	defer ts.Close()
-
-	client := ts.Client()
-	_, err := ValidateAndCanonicalizeLink(ts.URL, client)
-	if err == nil {
-		t.Errorf("ValidateAndCanonicalizeLink() expected error, got nil")
-	}
-}
-
 func TestCommit(t *testing.T) {
 	type args struct {
 		u string
@@ -1368,7 +1301,7 @@ func TestReposFromReferences(t *testing.T) {
 				},
 				tagDenyList: RefTagDenyList,
 			},
-			wantRepos: []string{"https://github.com/saemorris/TheRadSystem"},
+			wantRepos: []string{"https://github.com/saemorris/theradsystem"},
 		},
 		{
 			name: "A CVE with a useless (vulnerability researcher) repo",
@@ -1435,7 +1368,7 @@ func TestReposFromReferences(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
-			repoTagsCache := &git.RepoTagsCache{}
+			repoTagsCache := &git.InMemoryRepoTagsCache{}
 			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}

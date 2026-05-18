@@ -14,12 +14,28 @@
 
 package ecosystem
 
+import (
+	"fmt"
+	"net/url"
+)
+
 type hexEcosystem struct {
 	semverEcosystem // note hex currently uses SEMVER version types.
+
+	p *Provider
 }
 
 var _ Enumerable = hexEcosystem{}
 
-func (e hexEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func hexAPIURL(pkg string) string {
+	return "https://hex.pm/api/packages/" + url.PathEscape(pkg)
+}
+
+func (e hexEcosystem) GetVersions(pkg string) ([]string, error) {
+	versions, err := e.p.fetchJSONPaths(hexAPIURL(pkg), "releases.#.version")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Hex versions for %s: %w", pkg, err)
+	}
+
+	return sortVersions(e, versions)
 }

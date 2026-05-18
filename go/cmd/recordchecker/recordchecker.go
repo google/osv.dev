@@ -293,7 +293,9 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.Cl
 	attrs, err := storageCl.ReadObjectAttrs(ctx, fmt.Sprintf("all/pb/%s.pb", id))
 	if err != nil {
 		res.needsRetry = true
-		if !errors.Is(err, clients.ErrNotFound) {
+		if errors.Is(err, clients.ErrNotFound) {
+			logger.InfoContext(ctx, "record not found in gcs", slog.String("id", id))
+		} else {
 			// Log the error if it's not the expected "not found" error.
 			res.err = fmt.Errorf("failed to read object for %s: %w", id, err)
 		}
@@ -301,7 +303,15 @@ func checkRecord(ctx context.Context, cl *datastore.Client, storageCl clients.Cl
 		return res
 	}
 
-	if attrs.CustomTime.Before(vuln.Modified) {
+	// Modified is microsecond precision, CustomTime is supposedly millisecond precision
+	// though seemingly, we have CustomTimes in GCS with second precision.
+	// Add a second to CustomTime to account for the difference.
+	if attrs.CustomTime.Add(time.Second).Before(vuln.Modified) {
+		logger.InfoContext(ctx, "record is stale in gcs",
+			slog.String("id", id),
+			slog.String("custom_time", attrs.CustomTime.String()),
+			slog.String("modified", vuln.Modified.String()),
+		)
 		res.needsRetry = true
 	}
 

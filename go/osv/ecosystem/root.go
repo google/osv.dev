@@ -67,7 +67,7 @@ type rootEcosystem struct {
 
 var _ Ecosystem = rootEcosystem{}
 
-func rootEcosystemFactory(suffix string) Ecosystem {
+func rootEcosystemFactory(_ *Provider, suffix string) Ecosystem {
 	eco, _, _ := strings.Cut(suffix, ":")
 	switch strings.ToLower(eco) {
 	case "alpine":
@@ -136,7 +136,7 @@ func (e rootEcosystem) Parse(version string) (Version, error) {
 
 		return rootVersion{subEcosystem: e.subEcosystem, delegate: ver, patch: rootPatch}, nil
 	case rootSubEcosystemPyPI:
-		ver, err := pyPIEcosystem{}.Parse(upstreamVersion)
+		ver, err := pypiEcosystem{}.Parse(upstreamVersion)
 		if err != nil {
 			return nil, err
 		}

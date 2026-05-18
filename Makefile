@@ -28,6 +28,9 @@ importer-tests:
 recoverer-tests:
 	cd gcp/workers/recoverer && ./run_tests.sh
 
+vanir-signatures-tests:
+	cd gcp/workers/vanir_signatures && ./run_tests.sh
+
 website-tests:
 	cd gcp/website && ./run_tests.sh
 
@@ -52,7 +55,7 @@ update-api-snapshots:
 	cd gcp/api && UPDATE_SNAPS=true ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	GOTOOLCHAIN=go1.26.1 $(run-cmd) tools/lint_and_format.sh
+	GOTOOLCHAIN=go1.26.3 $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
@@ -112,4 +115,4 @@ run-api-server-test:
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests alias-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests

@@ -1,6 +1,7 @@
 import { submitForm } from './index.js';
 
 const MIN_QUERY_LENGTH = 3;
+const NAV_SEARCH_CLOSE_FALLBACK_MS = 450;
 
 export class ExpandableSearch {
   constructor() {
@@ -13,24 +14,13 @@ export class ExpandableSearch {
   }
   
   cleanupExistingInstances() {
-    // If there's a global instance, clean it up
-    if (window.OSVSearchInstance) {
-      if (window.OSVSearchInstance.documentClickHandler) {
-        document.removeEventListener('click', window.OSVSearchInstance.documentClickHandler);
-      }
-      if (window.OSVSearchInstance.documentKeydownHandler) {
-        document.removeEventListener('keydown', window.OSVSearchInstance.documentKeydownHandler);
-      }
-      if (window.OSVSearchInstance.cacheHandler) {
-        document.removeEventListener('turbo:before-cache', window.OSVSearchInstance.cacheHandler);
-      }
-      // Cleanup existing suggestions manager
-      if (window.OSVSearchInstance.suggestionsManager) {
-        window.OSVSearchInstance.suggestionsManager.destroy();
-      }
+    const prev = window.OSVSearchInstance;
+    if (prev) {
+      document.removeEventListener('click', prev.documentClickHandler);
+      document.removeEventListener('keydown', prev.documentKeydownHandler);
+      document.removeEventListener('turbo:before-cache', prev.cacheHandler);
+      prev.suggestionsManager?.destroy();
     }
-
-    // Store this instance globally
     window.OSVSearchInstance = this;
   }
   
@@ -44,36 +34,30 @@ export class ExpandableSearch {
     document.addEventListener('turbo:before-cache', this.cacheHandler);
   }
 
-  detachElementHandlers(searchToggle, searchForm) {
-    if (searchToggle && searchToggle.__osvSearchToggleHandler) {
-      searchToggle.removeEventListener('click', searchToggle.__osvSearchToggleHandler);
-      delete searchToggle.__osvSearchToggleHandler;
-    }
-    if (searchForm && searchForm.__osvSearchSubmitHandler) {
-      searchForm.removeEventListener('submit', searchForm.__osvSearchSubmitHandler);
-      delete searchForm.__osvSearchSubmitHandler;
-    }
+  detachElementHandler(element, event, handlerKey) {
+    if (!element?.[handlerKey]) return;
+    element.removeEventListener(event, element[handlerKey]);
+    delete element[handlerKey];
   }
 
   preCache() {
-    this.detachElementHandlers(this.container?.toggle, this.container?.form);
+    this.detachElementHandler(this.container?.toggle, 'click', '__osvSearchToggleHandler');
+    this.detachElementHandler(this.container?.form, 'submit', '__osvSearchSubmitHandler');
+  }
+
+  isSearchActive() {
+    return this.container?.form?.classList.contains('active') ?? false;
   }
 
   handleDocumentClick(e) {
-    if (this.container && this.container.element && 
-        !this.container.element.contains(e.target) && 
-        this.container.form.classList.contains('active')) {
+    if (this.isSearchActive() && !this.container.element.contains(e.target)) {
       this.closeSearch();
     }
   }
 
   handleDocumentKeydown(e) {
-    // Close any open search on escape key
-    if (e.key === 'Escape') {
-      if (this.container && this.container.form && 
-          this.container.form.classList.contains('active')) {
-        this.closeSearch();
-      }
+    if (e.key === 'Escape' && this.isSearchActive()) {
+      this.closeSearch();
     }
   }
 
@@ -98,13 +82,12 @@ export class ExpandableSearch {
       input: searchInput
     };
 
-    this.detachElementHandlers(searchToggle, searchForm);
+    this.detachElementHandler(searchToggle, 'click', '__osvSearchToggleHandler');
+    this.detachElementHandler(searchForm, 'submit', '__osvSearchSubmitHandler');
 
     const toggleHandler = (e) => {
       e.preventDefault();
-      const isActive = searchForm.classList.contains('active');
-      
-      if (isActive) {
+      if (searchForm.classList.contains('active')) {
         this.closeSearch();
       } else {
         this.openSearch();
@@ -124,37 +107,31 @@ export class ExpandableSearch {
   }
 
   openSearch() {
-    if (!this.container || !this.container.form) return;
-    
-    this.container.form.classList.add('active');
-    this.container.toggle.classList.add('active');
-    this.container.toggle.setAttribute('aria-expanded', 'true');
-    
+    if (!this.container?.form) return;
+    const { form, toggle, input } = this.container;
+
+    form.classList.add('active');
+    toggle.classList.add('active');
+    toggle.setAttribute('aria-expanded', 'true');
+
     setTimeout(() => {
-      if (this.container.input) {
-        this.container.input.focus();
-        // Create suggestions only when search is opened
-        if (!this.suggestionsManager) {
-          this.suggestionsManager = new SearchSuggestionsManager(this.container.input);
-        }
+      input?.focus();
+      if (input && !this.suggestionsManager) {
+        this.suggestionsManager = new SearchSuggestionsManager(input);
       }
     }, 100);
   }
 
   closeSearch() {
-    if (!this.container || !this.container.form) return;
-    
-    this.container.form.classList.remove('active');
-    this.container.toggle.classList.remove('active');
-    this.container.toggle.setAttribute('aria-expanded', 'false');
-    
-    if (this.container.input) {
-      this.container.input.blur();
-      // Hide suggestions when closing search
-      if (this.suggestionsManager) {
-        this.suggestionsManager.hide();
-      }
-    }
+    if (!this.container?.form) return;
+    const { form, toggle, input } = this.container;
+
+    form.classList.remove('active');
+    toggle.classList.remove('active');
+    toggle.setAttribute('aria-expanded', 'false');
+
+    input?.blur();
+    this.suggestionsManager?.hide();
   }
 }
 
@@ -163,18 +140,30 @@ export class ExpandableSearch {
 export class SearchSuggestionsManager {
   constructor(inputElement) {
     this.input = inputElement;
+    this.suggestionsContainer = this.input?.closest('.search-suggestions-container');
+    this.isNavContext = Boolean(this.suggestionsContainer?.closest('.search-container-nav'));
+    this.mountMode = this.isNavContext ? 'inline' : 'portal';
     this.suggestionsElement = null;
     this.selectedIndex = -1;
     this.currentSuggestions = [];
     this.debounceTimer = null;
     this.isDestroyed = false;
-    
-    this.init();
-  }
+    this.inputHandler = null;
+    this.keydownHandler = null;
+    this.blurHandler = null;
+    this.visiblePositionUpdateHandler = () => {
+      if (!this.isSuggestionsVisible()) return;
+      this.updatePosition();
+    };
 
-  init() {
     this.createSuggestionsElement();
     this.setupEventListeners();
+  }
+
+  isSuggestionsVisible() {
+    return !this.isDestroyed
+      && this.suggestionsElement
+      && !this.suggestionsElement.classList.contains('search-suggestions--hidden');
   }
 
   createSuggestionsElement() {
@@ -185,50 +174,49 @@ export class SearchSuggestionsManager {
     this.suggestionsElement = document.createElement('div');
     this.suggestionsElement.classList.add('search-suggestions', 'search-suggestions--hidden');
     
-    // Add a context-specific class based on the input's parent
-    const container = this.input.closest('.search-suggestions-container');
-    if (container) {
-        if (container.closest('.list-page')) {
-            this.suggestionsElement.classList.add('search-suggestions--list-page');
-        } else if (container.closest('.search-container-nav')) {
-            this.suggestionsElement.classList.add('search-suggestions--nav');
-        }
+    if (this.isNavContext) {
+      this.suggestionsElement.classList.add('search-suggestions--nav');
+    } else if (this.suggestionsContainer?.closest('.list-page')) {
+      this.suggestionsElement.classList.add('search-suggestions--list-page');
     }
-    
-    // Add a unique identifier to track this element for cleanup
-    this.managerId = `suggestions-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    this.suggestionsElement.dataset.managerId = this.managerId;
     
     this.appendSuggestionsElement();
   }
   
-  /**
-   * Appends the suggestions element to the document body.
-   * If the body is not yet available, it waits and retries.
-   */
   appendSuggestionsElement() {
     if (this.isDestroyed) return;
 
-    if (document.body) {
-      document.body.appendChild(this.suggestionsElement);
+    const parent = (this.mountMode === 'inline' && this.suggestionsContainer)
+      ? this.suggestionsContainer
+      : document.body;
+
+    if (parent) {
+      parent.appendChild(this.suggestionsElement);
     } else {
-      // If body is not ready, try again shortly.
       setTimeout(() => this.appendSuggestionsElement(), 10);
     }
   }
 
   setupEventListeners() {
     if (!this.input) return;
-    
-    this.input.addEventListener('input', () => {
+
+    this.inputHandler = () => {
       if (this.isDestroyed) return;
       this.selectedIndex = -1;
       clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => this.handleInput(), 300);
-    });
+    };
+    this.keydownHandler = (e) => this.handleKeydown(e);
+    this.blurHandler = () => setTimeout(() => this.hide(), 200);
 
-    this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
-    this.input.addEventListener('blur', () => setTimeout(() => this.hide(), 200)); // Delay to allow click events on suggestions
+    this.input.addEventListener('input', this.inputHandler);
+    this.input.addEventListener('keydown', this.keydownHandler);
+    this.input.addEventListener('blur', this.blurHandler);
+
+    if (this.mountMode === 'portal') {
+      window.addEventListener('resize', this.visiblePositionUpdateHandler);
+      window.addEventListener('scroll', this.visiblePositionUpdateHandler, true);
+    }
   }
 
   async handleInput() {
@@ -255,7 +243,7 @@ export class SearchSuggestionsManager {
   }
 
   handleKeydown(e) {
-    if (this.isDestroyed || !this.suggestionsElement || this.suggestionsElement.classList.contains('search-suggestions--hidden')) return;
+    if (!this.isSuggestionsVisible()) return;
 
     switch (e.key) {
       case 'ArrowDown':
@@ -289,51 +277,42 @@ export class SearchSuggestionsManager {
     this.updatePosition();
     this.render();
     this.suggestionsElement.classList.remove('search-suggestions--hidden');
-    // Add active class to container for styling
-    this.input.closest('.search-suggestions-container')?.classList.add('suggestions-active');
+    this.suggestionsContainer?.classList.add('suggestions-active');
   }
 
   hide() {
     if (this.isDestroyed) return;
-    if (this.suggestionsElement) {
-      this.suggestionsElement.classList.add('search-suggestions--hidden');
-    }
+    this.suggestionsElement?.classList.add('search-suggestions--hidden');
     this.selectedIndex = -1;
-    // Remove active class from container
-    this.input.closest('.search-suggestions-container')?.classList.remove('suggestions-active');
+    this.suggestionsContainer?.classList.remove('suggestions-active');
   }
 
   updatePosition() {
-    const rect = this.input.getBoundingClientRect();
-    
-    // Look for the designated suggestions container
-    const suggestionContainer = this.input.closest('.search-suggestions-container');
-
-    if (suggestionContainer) {
-      // Use the designated suggestions container
-      const containerRect = suggestionContainer.getBoundingClientRect();
-      this.suggestionsElement.style.left = `${containerRect.left + window.scrollX}px`;
-      this.suggestionsElement.style.top = `${containerRect.bottom + window.scrollY}px`;
-      this.suggestionsElement.style.width = `${containerRect.width}px`;
-    } else {
-      console.warn('No .search-suggestions-container found. Add this class to the desired parent element to control suggestions positioning.');
-      // Fallback to input element positioning
-      this.suggestionsElement.style.left = `${rect.left + window.scrollX}px`;
-      this.suggestionsElement.style.top = `${rect.bottom + window.scrollY}px`;
-      this.suggestionsElement.style.width = `${rect.width}px`;
+    if (!this.suggestionsElement) {
+      return;
     }
+
+    if (this.mountMode === 'inline') {
+      this.suggestionsElement.style.left = '';
+      this.suggestionsElement.style.top = '';
+      this.suggestionsElement.style.width = '';
+      return;
+    }
+
+    const anchorRect = (this.suggestionsContainer || this.input).getBoundingClientRect();
+    this.suggestionsElement.style.left = `${anchorRect.left + window.scrollX}px`;
+    this.suggestionsElement.style.top = `${anchorRect.bottom + window.scrollY}px`;
+    this.suggestionsElement.style.width = `${anchorRect.width}px`;
   }
 
   render() {
     this.suggestionsElement.innerHTML = '';
     
-    this.currentSuggestions.forEach((suggestion, index) => {
+    this.currentSuggestions.forEach((suggestion) => {
       const item = document.createElement('div');
       item.classList.add('search-suggestions__item');
       item.textContent = suggestion;
-      
       item.addEventListener('click', () => this.selectSuggestion(suggestion));
-      
       this.suggestionsElement.appendChild(item);
     });
     
@@ -350,20 +329,84 @@ export class SearchSuggestionsManager {
   selectSuggestion(suggestion) {
     this.input.value = suggestion;
     this.hide();
-    submitForm(this.input.closest('form'));
+
+    const form = this.input.closest('form');
+    if (!form) return;
+
+    if (!this.isNavContext) {
+      submitForm(form);
+      return;
+    }
+
+    if (typeof window.OSVSearchInstance?.closeSearch === 'function') {
+      window.OSVSearchInstance.closeSearch();
+    } else {
+      this.closeNavSearchManually(form);
+    }
+
+    this.submitAfterNavClose(form);
+  }
+
+  closeNavSearchManually(form) {
+    form.classList.remove('active');
+    const toggle = form.closest('.search-container-nav')?.querySelector('.search-toggle');
+    toggle?.classList.remove('active');
+    toggle?.setAttribute('aria-expanded', 'false');
+  }
+
+  submitAfterNavClose(form) {
+    let hasSubmitted = false;
+    let fallbackTimer = null;
+
+    const submitOnce = () => {
+      if (hasSubmitted) {
+        return;
+      }
+
+      hasSubmitted = true;
+      form.removeEventListener('transitionend', onTransitionEnd);
+
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
+
+      submitForm(form);
+    };
+
+    const onTransitionEnd = (event) => {
+      if (event.target !== form || event.propertyName !== 'width') {
+        return;
+      }
+
+      submitOnce();
+    };
+
+    form.addEventListener('transitionend', onTransitionEnd);
+    fallbackTimer = setTimeout(submitOnce, NAV_SEARCH_CLOSE_FALLBACK_MS);
   }
 
   destroy() {
     this.isDestroyed = true;
     clearTimeout(this.debounceTimer);
-    
-    if (this.suggestionsElement) {
-      this.suggestionsElement.remove();
-      this.suggestionsElement = null;
+
+    this.removeInputListener('input', this.inputHandler);
+    this.removeInputListener('keydown', this.keydownHandler);
+    this.removeInputListener('blur', this.blurHandler);
+
+    if (this.mountMode === 'portal') {
+      window.removeEventListener('resize', this.visiblePositionUpdateHandler);
+      window.removeEventListener('scroll', this.visiblePositionUpdateHandler, true);
     }
-    
-    // Clear references
+
+    this.suggestionsElement?.remove();
+    this.suggestionsElement = null;
     this.input = null;
     this.currentSuggestions = [];
+  }
+
+  removeInputListener(event, handler) {
+    if (this.input && handler) {
+      this.input.removeEventListener(event, handler);
+    }
   }
 }

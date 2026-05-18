@@ -16,7 +16,6 @@
 package conversion
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,14 +25,10 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/knqyf263/go-cpe/naming"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"github.com/sethvargo/go-retry"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/knqyf263/go-cpe/naming"
 )
 
 // References with these tags have been found to contain completely unrelated
@@ -135,6 +130,24 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
+	r, err := repo(u)
+	if err != nil {
+		return "", err
+	}
+	parsedURL, err := url.Parse(r)
+	if err == nil && isCaseInsensitiveHost(parsedURL.Hostname()) {
+		return strings.ToLower(r), nil
+	}
+
+	return r, nil
+}
+
+func isCaseInsensitiveHost(host string) bool {
+	host = strings.ToLower(host)
+	return host == "github.com" || host == "bitbucket.org" || strings.Contains(host, "gitlab")
+}
+
+func repo(u string) (string, error) {
 	var supportedHosts = []string{
 		"bitbucket.org",
 		"github.com",
@@ -198,7 +211,6 @@ func Repo(u string) (string, error) {
 			return fmt.Sprintf("%s://%s/%s", parsedURL.Scheme, parsedURL.Hostname(), pathParts[2]), nil
 		}
 		if parsedURL.Hostname() == "sourceware.org" {
-			// Call out to models function for GitWeb URLs
 			return repoGitWeb(parsedURL)
 		}
 		if parsedURL.Hostname() == "git.postgresql.org" {
@@ -504,58 +516,18 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 	return "", errors.New("no tag found")
 }
 
-// Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
-func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonicalLink string, err error) {
-	u, err := url.Parse(link)
-	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
-		// Handle what's presumably a git:// URL.
-		return link, err
-	}
-	backoff := retry.NewExponential(1 * time.Second)
-	if err := retry.Do(context.Background(), retry.WithMaxRetries(3, backoff), func(ctx context.Context) error {
-		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)
-		if err != nil {
-			return err
-		}
-
-		// security.alpinelinux.org responds with text/html content.
-		// default HEAD request in Go does not provide any Accept headers, causing a 406 response.
-		req.Header.Set("Accept", "text/html")
-
-		// Send the request
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		switch resp.StatusCode / 100 {
-		// 4xx response codes are an instant fail.
-		case 4:
-			return fmt.Errorf("bad response: %v", resp.StatusCode)
-		// 5xx response codes are retriable.
-		case 5:
-			return retry.RetryableError(fmt.Errorf("bad response: %v", resp.StatusCode))
-		// Anything else is acceptable.
-		default:
-			canonicalLink = resp.Request.URL.String()
-			return nil
-		}
-	}); err != nil {
-		return link, fmt.Errorf("unable to determine validity of %q: %w", link, err)
-	}
-
-	return canonicalLink, nil
-}
-
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client) ([]models.AffectedCommit, error) {
+func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client, cache git.RepoTagsCache) ([]models.AffectedCommit, error) {
 	var commits []models.AffectedCommit //nolint:prealloc
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
-		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient)
+		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient, cache)
 		if err != nil {
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				return nil, err
+			}
+
 			continue
 		}
 
@@ -566,9 +538,9 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
-func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client) (models.AffectedCommit, error) {
+func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client, cache git.RepoTagsCache) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
-	c, r, err := ExtractGitCommit(link, httpClient, 0)
+	c, r, err := ExtractGitCommit(link, httpClient, 0, cache)
 	if err != nil {
 		return ac, err
 	}
@@ -580,7 +552,7 @@ func extractGitAffectedCommit(link string, commitType models.CommitType, httpCli
 	return ac, nil
 }
 
-func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, string, error) {
+func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, error) {
 	if depth > 10 {
 		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
@@ -599,7 +571,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	commit = c
 
 	// If URL doesn't validate, treat it as linkrot.
-	possiblyDifferentLink, err := ValidateAndCanonicalizeLink(link, httpClient)
+	possiblyDifferentLink, err := git.FindCanonicalLink(link, httpClient, cache)
 	if err != nil {
 		return "", "", err
 	}
@@ -608,7 +580,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int) (string, 
 	// redirect to a completely different host, instead of a redirect within
 	// GitHub)
 	if possiblyDifferentLink != link {
-		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1)
+		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1, cache)
 	}
 
 	return commit, r, nil
@@ -656,7 +628,7 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics) []*osvschema.Range {
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
 	// Match:
 	//  - x.x.x before x.x.x
 	//  - x.x.x through x.x.x
@@ -669,14 +641,14 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		return nil
 	}
 
-	versions := make([]*osvschema.Range, 0, len(matches))
+	versions := make([]models.RangeWithMetadata, 0, len(matches))
 
 	for _, match := range matches {
 		// Trim periods that are part of sentences.
 		introduced := processExtractedVersion(match[1])
 		fixed := processExtractedVersion(match[3])
 		lastaffected := ""
-		if match[2] == "through" {
+		if match[2] == "through" && validVersions != nil {
 			// "Through" implies inclusive range, so the fixed version is the one that comes after.
 			var err error
 			fixed, err = nextVersion(validVersions, fixed)
@@ -708,7 +680,13 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		}
 
 		vr := BuildVersionRange(introduced, lastaffected, fixed)
-		versions = append(versions, vr)
+		versions = append(versions, models.RangeWithMetadata{
+			Range: vr,
+			Metadata: models.Metadata{
+				Source: source,
+			},
+		},
+		)
 	}
 
 	return versions
@@ -734,8 +712,8 @@ func DeduplicateAffectedCommits(commits []models.AffectedCommit) []models.Affect
 	return uniqueCommits
 }
 
-func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) []*osvschema.Range {
-	versions := []*osvschema.Range{}
+func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCache *VPRepoCache, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+	versions := []models.RangeWithMetadata{}
 
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
@@ -774,14 +752,14 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 						metrics.AddNote("Using %s as last_affected version instead", cleanVersion(*match.VersionEndIncluding))
 					}
 				}
-
+				CPE, err := ParseCPE(match.Criteria)
+				if err != nil {
+					continue
+				}
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
-					CPE, err := ParseCPE(match.Criteria)
-					if err != nil {
-						continue
-					}
+
 					if CPE.Part != "a" && CPE.Part != "o" {
 						continue
 					}
@@ -813,8 +791,41 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNote("Warning: %s is not a valid fixed version", fixed)
 				}
-				vr := BuildVersionRange(introduced, lastaffected, fixed)
-				versions = append(versions, vr)
+
+				// Get the repositories attached to this CPE
+				var associatedRepos []string
+				if vpRepoCache != nil {
+					vp := VendorProduct{Vendor: CPE.Vendor, Product: CPE.Product}
+					if repos, ok := vpRepoCache.Get(vp); ok {
+						associatedRepos = repos
+					}
+				}
+
+				if len(associatedRepos) > 0 {
+					for _, repo := range associatedRepos {
+						vr := BuildGitVersionRange(introduced, lastaffected, fixed, repo)
+						versions = append(versions,
+							models.RangeWithMetadata{
+								Range: vr,
+								Metadata: models.Metadata{
+									CPE:    match.Criteria,
+									Source: models.VersionSourceCPE,
+								},
+							},
+						)
+					}
+				} else {
+					vr := BuildVersionRange(introduced, lastaffected, fixed)
+					versions = append(versions,
+						models.RangeWithMetadata{
+							Range: vr,
+							Metadata: models.Metadata{
+								CPE:    match.Criteria,
+								Source: models.VersionSourceCPE,
+							},
+						},
+					)
+				}
 			}
 		}
 	}
@@ -828,9 +839,12 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, metrics 
 
 // ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
 // This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters.
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics) (v models.VersionInfo) {
-	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient); err == nil {
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
+	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
+	} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+		metrics.Outcome = models.Error
+		return v
 	}
 
 	if v.AffectedCommits != nil {
@@ -1089,7 +1103,7 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.RepoTagsCache, metrics *models.ConversionMetrics) {
+func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	for _, repo := range repos {
@@ -1181,7 +1195,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache *git.Repo
 
 // Examines the CVE references for a CVE and derives repos for it, optionally caching it.
 // *** Does external calls to verify repos ***
-func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache *git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
+func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Reference, tagDenyList []string, repoTagsCache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (repos []string) {
 	for _, ref := range refs {
 		// If any of the denylist tags are in the ref's tag set, it's out of consideration.
 		if !RefAcceptable(ref, tagDenyList) {
@@ -1196,10 +1210,16 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 
+		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
+			continue
+		}
 		// Check if the repo URL has changed (e.g. via redirect)
-		canonicalRepo, err := ValidateAndCanonicalizeLink(repo, httpClient)
+		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
+		} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			metrics.Outcome = models.Error
+			return nil
 		}
 
 		if slices.Contains(repos, repo) {

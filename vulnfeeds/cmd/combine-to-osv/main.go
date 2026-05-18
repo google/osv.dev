@@ -16,8 +16,8 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/upload"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/api/iterator"
@@ -92,7 +92,7 @@ func main() {
 		vulnerabilities = append(vulnerabilities, v)
 	}
 
-	upload.Upload(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
+	writer.UploadVulnsToGCS(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
 }
 
 // extractCVEName extracts the CVE name from a given filename and prefix.
@@ -260,11 +260,10 @@ func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerab
 	}
 
 	slices.SortFunc(baseOSV.GetReferences(), func(a, b *osvschema.Reference) int {
-		if a.GetUrl() != b.GetUrl() {
-			return cmp.Compare(a.GetUrl(), b.GetUrl())
-		}
-
-		return cmp.Compare(a.GetType(), b.GetType())
+		return cmp.Or(
+			cmp.Compare(a.GetType(), b.GetType()),
+			cmp.Compare(a.GetUrl(), b.GetUrl()),
+		)
 	})
 
 	// Merge timestamps: latest modified, earliest published.
@@ -351,9 +350,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				}
 
 				if c5Intro != "" || c5Fixed != "" {
-					newRange := conversion.BuildVersionRange(c5Intro, "", c5Fixed)
-					newRange.Repo = repo
-					newRange.Type = osvschema.Range_GIT // Preserve the repo
+					newRange := conversion.BuildGitVersionRange(c5Intro, "", c5Fixed, repo)
 					newAffectedRanges = append(newAffectedRanges, newRange)
 				} else {
 					newAffectedRanges = cveRanges

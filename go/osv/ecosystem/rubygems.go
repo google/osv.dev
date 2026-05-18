@@ -14,24 +14,48 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"fmt"
+	"net/url"
+	"regexp"
 
-type rubyGemsEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type rubyGemsEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = rubyGemsEcosystem{}
+
+func rubyGemsAPIURL(pkg string) string {
+	return fmt.Sprintf("https://rubygems.org/api/v1/versions/%s.json", url.PathEscape(pkg))
+}
 
 func (e rubyGemsEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.RubyGemsVersion]{semantic.ParseRubyGemsVersion(version)}, nil
 }
 
-func (e rubyGemsEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+var rubyGemsCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`-`),
+	ImplicitSplit: true,
+	EmptyAs:       &[]string{""}[0],
+}
+
+func (e rubyGemsEcosystem) Coarse(version string) (string, error) {
+	return rubyGemsCoarseVersioner.Format(0, version), nil
 }
 
 func (e rubyGemsEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e rubyGemsEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func (e rubyGemsEcosystem) GetVersions(pkg string) ([]string, error) {
+	versions, err := e.p.fetchJSONPaths(rubyGemsAPIURL(pkg), "#.number")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get RubyGems versions for %s: %w", pkg, err)
+	}
+
+	return sortVersions(e, versions)
 }

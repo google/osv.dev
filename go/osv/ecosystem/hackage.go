@@ -14,9 +14,18 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"strings"
 
-type hackageEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type hackageEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = hackageEcosystem{}
 
@@ -29,13 +38,30 @@ func (e hackageEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.HackageVersion]{ver}, nil
 }
 
-func (e hackageEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+func (e hackageEcosystem) Coarse(version string) (string, error) {
+	version = strings.TrimPrefix(version, "v")
+	// hackage versions are only allowed to be digits and dots
+	idx := strings.IndexFunc(version, func(r rune) bool { return (r < '0' || r > '9') && r != '.' })
+	if idx >= 0 {
+		return "", errors.New("version contains invalid characters")
+	}
+
+	return semverCoarseVersioner.Format(0, version), nil
 }
 
 func (e hackageEcosystem) IsSemver() bool {
 	return false
 }
-func (e hackageEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+
+func hackageAPIURL(pkg string) string {
+	return fmt.Sprintf("https://hackage.haskell.org/package/%s.json", url.PathEscape(pkg))
+}
+
+func (e hackageEcosystem) GetVersions(pkg string) ([]string, error) {
+	versions, err := e.p.fetchJSONPaths(hackageAPIURL(pkg), "@keys")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Hackage versions for %s: %w", pkg, err)
+	}
+
+	return sortVersions(e, versions)
 }

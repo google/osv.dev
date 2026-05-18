@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -21,6 +23,7 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // AddAffected adds an osvschema.Affected to a vulnerability, ensuring that no duplicate ranges are added.
@@ -82,6 +85,11 @@ func ConductAnalysis(year string, dir string) {
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := "nvd-conversion-outcomes-" + year + "-" + currentTime + ".csv"
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
+	}
+
 	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
 	if err != nil {
 		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))
@@ -130,55 +138,19 @@ func ConductAnalysis(year string, dir string) {
 	}
 }
 
-// CreateMetricsFile creates the initial file for the metrics record.
-func CreateMetricsFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	metricsFile := filepath.Join(vulnDir, string(id)+".metrics"+models.Extension)
-	f, err := os.Create(metricsFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+metricsFile, slog.String("cve", string(id)), slog.String("path", metricsFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, nil
-}
-
-// CreateOSVFile creates the initial file for the OSV record.
-func CreateOSVFile(id models.CVEID, vulnDir string) (*os.File, error) {
-	outputFile := filepath.Join(vulnDir, string(id)+models.Extension)
-
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Info("Failed to open for writing "+outputFile, slog.String("cve", string(id)), slog.String("path", outputFile), slog.Any("err", err))
-		return nil, err
-	}
-
-	return f, err
-}
-
-func WriteMetricsFile(metrics *models.ConversionMetrics, metricsFile *os.File) error {
-	marshalledMetrics, err := json.MarshalIndent(&metrics, "", "  ")
-	if err != nil {
-		logger.Info("Failed to marshal", slog.Any("err", err))
-		return err
-	}
-
-	_, err = metricsFile.Write(marshalledMetrics)
-	if err != nil {
-		logger.Warn("Failed to write", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-		return fmt.Errorf("failed to write %s: %w", metricsFile.Name(), err)
-	}
-
-	metricsFile.Close()
-
-	return nil
-}
-
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metrics *models.ConversionMetrics, cache *git.RepoTagsCache) ([]*osvschema.Range, []*osvschema.Range, []string) {
-	var newVersionRanges []*osvschema.Range
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
+
+	claimedRepos := make(map[string]bool)
+	for _, vr := range versionRanges {
+		if vr.Range.GetRepo() != "" {
+			claimedRepos[vr.Range.GetRepo()] = true
+		}
+	}
 
 	for _, repo := range repos {
 		if len(unresolvedRanges) == 0 {
@@ -187,6 +159,18 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 		if cache.IsInvalid(repo) {
 			continue
 		}
+
+		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		if err != nil {
+			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+				metrics.Outcome = models.Error
+				return nil, nil, nil
+			}
+
+			continue
+		}
+
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
 			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
@@ -198,10 +182,14 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 			continue
 		}
 
-		var stillUnresolvedRanges []*osvschema.Range
+		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
+			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
+				continue
+			}
 			var introduced, fixed, lastAffected string
-			for _, e := range vr.GetEvents() {
+			for _, e := range vr.Range.GetEvents() {
 				if e.GetIntroduced() != "" {
 					introduced = e.GetIntroduced()
 				}
@@ -235,15 +223,22 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 				var newVR *osvschema.Range
 
 				if fixedCommit != "" {
-					newVR = BuildVersionRange(introducedCommit, "", fixedCommit)
+					newVR = BuildGitVersionRange(introducedCommit, "", fixedCommit, repo)
 				} else {
-					newVR = BuildVersionRange(introducedCommit, lastAffectedCommit, "")
+					newVR = BuildGitVersionRange(introducedCommit, lastAffectedCommit, "", repo)
 				}
 				successfulRepos = append(successfulRepos, repo)
-				newVR.Repo = repo
-				newVR.Type = osvschema.Range_GIT
-				if len(vr.GetEvents()) > 0 {
-					databaseSpecific, err := utility.NewStructpbFromMap(map[string]any{"versions": vr.GetEvents()})
+				if len(vr.Range.GetEvents()) > 0 {
+					dbSpecificMap := map[string]any{
+						"extracted_events": vr.Range.GetEvents(),
+					}
+					if vr.Metadata.CPE != "" {
+						dbSpecificMap["cpe"] = vr.Metadata.CPE
+					}
+					if string(vr.Metadata.Source) != "" {
+						dbSpecificMap["source"] = string(vr.Metadata.Source)
+					}
+					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
 						metrics.AddNote("failed to make database specific: %v", err)
 					} else {
@@ -251,7 +246,10 @@ func GitVersionsToCommits(versionRanges []*osvschema.Range, repos []string, metr
 					}
 				}
 
-				newVersionRanges = append(newVersionRanges, newVR)
+				newVersionRanges = append(newVersionRanges, models.RangeWithMetadata{
+					Range:    newVR,
+					Metadata: vr.Metadata,
+				})
 			} else {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 			}
@@ -285,6 +283,14 @@ func BuildVersionRange(intro string, lastAff string, fixed string) *osvschema.Ra
 	}
 
 	return &versionRange
+}
+
+func BuildGitVersionRange(intro string, lastAff string, fixed string, repo string) *osvschema.Range {
+	versionRange := BuildVersionRange(intro, lastAff, fixed)
+	versionRange.Repo = repo
+	versionRange.Type = osvschema.Range_GIT
+
+	return versionRange
 }
 
 // MergeTwoRanges combines two osvschema.Range objects into a single range.
@@ -324,7 +330,7 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 		for k, v := range db2.GetFields() {
 			val2 := v.AsInterface()
 			if existing, ok := mergedMap[k]; ok {
-				mergedVal, err := mergeDatabaseSpecificValues(existing, val2)
+				mergedVal, err := MergeDatabaseSpecificValues(existing, val2)
 				if err != nil {
 					logger.Info("Failed to merge database specific key", "key", k, "err", err)
 				}
@@ -346,18 +352,26 @@ func MergeTwoRanges(range1, range2 *osvschema.Range) (*osvschema.Range, error) {
 	return mergedRange, nil
 }
 
-// mergeDatabaseSpecificValues is a helper function that recursively merges two
+// MergeDatabaseSpecificValues is a helper function that recursively merges two
 // values from a DatabaseSpecific field. It handles lists (by appending), maps
 // (by recursively merging keys), and simple strings (by creating a list if they
 // differ). It returns an error if the types of the two values do not match.
-func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
+func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	switch v1 := val1.(type) {
 	case []any:
 		if v2, ok := val2.([]any); ok {
-			return append(v1, v2...), nil
+			return deduplicateList(append(v1, v2...)), nil
 		}
 
-		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
+		// Check if the list contains elements of the same type as val2
+		if len(v1) > 0 {
+			if reflect.TypeOf(v1[0]) != reflect.TypeOf(val2) {
+				return nil, fmt.Errorf("mismatching types: list of %T and %T", v1[0], val2)
+			}
+		}
+
+		// Append single value to list
+		return deduplicateList(append(v1, val2)), nil
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
@@ -366,7 +380,7 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 			}
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
-					mergedVal, err := mergeDatabaseSpecificValues(existing, v)
+					mergedVal, err := MergeDatabaseSpecificValues(existing, v)
 					if err != nil {
 						return nil, err
 					}
@@ -386,11 +400,29 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 				return v1, nil
 			}
 
-			return []any{v1, v2}, nil
+			return deduplicateList([]any{v1, v2}), nil
+		}
+		if v2, ok := val2.([]any); ok {
+			if len(v2) > 0 {
+				if _, isString := v2[0].(string); !isString {
+					return nil, fmt.Errorf("mismatching types: string and list of %T", v2[0])
+				}
+			}
+
+			return deduplicateList(append([]any{v1}, v2...)), nil
 		}
 
 		return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 	default:
+		if v2, ok := val2.([]any); ok {
+			if len(v2) > 0 {
+				if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", v2[0]) {
+					return nil, fmt.Errorf("mismatching types: %T and list of %T", val1, v2[0])
+				}
+			}
+
+			return deduplicateList(append([]any{val1}, v2...)), nil
+		}
 		if fmt.Sprintf("%T", val1) != fmt.Sprintf("%T", val2) {
 			return nil, fmt.Errorf("mismatching types: %T and %T", val1, val2)
 		}
@@ -398,6 +430,264 @@ func mergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 			return val1, nil
 		}
 
-		return []any{val1, val2}, nil
+		return deduplicateList([]any{val1, val2}), nil
 	}
+}
+
+// deduplicateList removes duplicate comparable elements (like strings) from a list.
+func deduplicateList(list []any) []any {
+	var unique []any
+	seen := make(map[any]bool)
+	for _, item := range list {
+		switch item.(type) {
+		case string, int, int32, int64, float32, float64, bool:
+			if !seen[item] {
+				seen[item] = true
+				unique = append(unique, item)
+			}
+		default:
+			unique = append(unique, item)
+		}
+	}
+
+	return unique
+}
+
+func ToRangeWithMetadata(r []*osvschema.Range, s models.VersionSource) []models.RangeWithMetadata {
+	nr := make([]models.RangeWithMetadata, 0, len(r))
+	for _, rng := range r {
+		nr = append(nr, models.RangeWithMetadata{
+			Range: rng,
+			Metadata: models.Metadata{
+				Source: s,
+			},
+		})
+	}
+
+	return nr
+}
+
+func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *structpb.ListValue {
+	if len(unresolvedRanges) == 0 {
+		return nil
+	}
+
+	type key struct {
+		Source        string
+		VendorProduct string
+	}
+
+	rangesByKey := make(map[key][]models.RangeWithMetadata)
+	var keys []key
+
+	for _, ur := range unresolvedRanges {
+		vendorProduct := ""
+		if ur.Metadata.CPE != "" {
+			if CPE, err := ParseCPE(ur.Metadata.CPE); err == nil {
+				vendorProduct = CPE.Vendor + ":" + CPE.Product
+			} else {
+				vendorProduct = ur.Metadata.CPE
+			}
+		}
+		k := key{Source: string(ur.Metadata.Source), VendorProduct: vendorProduct}
+		if _, ok := rangesByKey[k]; !ok {
+			keys = append(keys, k)
+		}
+		rangesByKey[k] = append(rangesByKey[k], ur)
+	}
+
+	slices.SortFunc(keys, func(a, b key) int {
+		if a.Source != b.Source {
+			return strings.Compare(a.Source, b.Source)
+		}
+
+		return strings.Compare(a.VendorProduct, b.VendorProduct)
+	})
+
+	listElements := make([]any, 0, len(keys))
+
+	for _, k := range keys {
+		ranges := rangesByKey[k]
+		unresolvedRangesMap := make(map[string]any)
+		var events []*osvschema.Event
+		cpesSet := make(map[string]bool)
+
+		for _, ur := range ranges {
+			if ur.Metadata.CPE != "" {
+				cpesSet[ur.Metadata.CPE] = true
+			}
+			urEvents := ur.Range.GetEvents()
+
+			for _, e := range urEvents {
+				if e.GetIntroduced() != "0" && e.GetIntroduced() != "" {
+					events = append(events, e)
+					continue
+				}
+				if e.GetLastAffected() != "" {
+					events = append(events, e)
+					continue
+				}
+				if e.GetFixed() != "" {
+					events = append(events, e)
+				}
+			}
+		}
+
+		var cpes []string
+		for cpe := range cpesSet {
+			cpes = append(cpes, cpe)
+		}
+		slices.Sort(cpes)
+
+		if k.VendorProduct != "" {
+			unresolvedRangesMap["vendor_product"] = k.VendorProduct
+		}
+		if k.Source != "" {
+			unresolvedRangesMap["source"] = k.Source
+		}
+		if len(cpes) > 0 {
+			unresolvedRangesMap["cpes"] = cpes
+		}
+
+		unresolvedRangesMap["extracted_events"] = events
+		listElements = append(listElements, unresolvedRangesMap)
+	}
+
+	ds, err := utility.NewStructpbFromMap(map[string]any{
+		"list": listElements,
+	})
+	if err != nil {
+		logger.Warn("failed to convert unresolved ranges to structpb", "err", err)
+		return nil
+	}
+
+	return ds.GetFields()["list"].GetListValue()
+}
+
+// FilterUnresolvedRanges compares resolved and unresolved version ranges by their CPE criteria
+// and raw version boundaries. If an unresolved CPE range has been successfully resolved on at least
+// one repository in the CVE (recorded in resolved), it will filter out/exclude that unresolved range
+// copy from being outputted in database_specific, preventing duplicate unresolved product listings.
+func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []models.RangeWithMetadata) []models.RangeWithMetadata {
+	type rangeKey struct {
+		CPE    string
+		Events string
+	}
+
+	resolvedKeys := make(map[rangeKey]bool)
+	for _, r := range resolved {
+		var eventStrings []string
+		if r.Range.GetDatabaseSpecific() != nil && r.Range.GetDatabaseSpecific().GetFields()["extracted_events"] != nil {
+			listValue := r.Range.GetDatabaseSpecific().GetFields()["extracted_events"].GetListValue()
+			if listValue != nil {
+				for _, val := range listValue.GetValues() {
+					strct := val.GetStructValue()
+					if strct != nil {
+						introduced := strct.GetFields()["introduced"].GetStringValue()
+						fixed := strct.GetFields()["fixed"].GetStringValue()
+						lastAffected := strct.GetFields()["last_affected"].GetStringValue()
+						eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", introduced, fixed, lastAffected))
+					}
+				}
+			}
+		}
+		if len(eventStrings) == 0 {
+			for _, e := range r.Range.GetEvents() {
+				eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
+			}
+		}
+		slices.Sort(eventStrings)
+		k := rangeKey{
+			CPE:    r.Metadata.CPE,
+			Events: strings.Join(eventStrings, ","),
+		}
+		resolvedKeys[k] = true
+	}
+
+	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
+	for _, ur := range unresolved {
+		var eventStrings []string
+		for _, e := range ur.Range.GetEvents() {
+			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
+		}
+		slices.Sort(eventStrings)
+		k := rangeKey{
+			CPE:    ur.Metadata.CPE,
+			Events: strings.Join(eventStrings, ","),
+		}
+		if resolvedKeys[k] {
+			continue
+		}
+		filtered = append(filtered, ur)
+	}
+
+	return filtered
+}
+
+func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) error {
+	if ds == nil {
+		return errors.New("database specific is nil")
+	}
+	if ds.Fields == nil {
+		return errors.New("database specific fields is nil")
+	}
+	if ds.GetFields()[field] != nil {
+		return fmt.Errorf("field %s already exists", field)
+	}
+
+	switch v := value.(type) {
+	case *structpb.Value:
+		ds.Fields[field] = v
+	case *structpb.Struct:
+		ds.Fields[field] = structpb.NewStructValue(v)
+	case *structpb.ListValue:
+		ds.Fields[field] = structpb.NewListValue(v)
+	default:
+		val, err := structpb.NewValue(v)
+		if err != nil {
+			return fmt.Errorf("failed to create structpb value: %w", err)
+		}
+		ds.Fields[field] = val
+	}
+
+	return nil
+}
+
+// ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, source models.VersionSource) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+	if len(ranges) == 0 {
+		return nil, nil, nil
+	}
+
+	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache)
+	if len(r) > 0 {
+		metrics.ResolvedRangesCount += len(r)
+		metrics.SetOutcome(models.Successful)
+	}
+
+	if len(un) > 0 {
+		metrics.UnresolvedRangesCount += len(un)
+		if len(r) == 0 {
+			metrics.SetOutcome(models.NoCommitRanges)
+		}
+	}
+
+	metrics.VersionSources = append(metrics.VersionSources, source)
+
+	return r, un, sR
+}
+
+func LoadCPEDictionary(productToRepo *VPRepoCache, f string) error {
+	data, err := os.ReadFile(f)
+	if err != nil {
+		return err
+	}
+
+	var tempMap VendorProductToRepoMap
+	if err := json.Unmarshal(data, &tempMap); err != nil {
+		return err
+	}
+	productToRepo.Initialize(tempMap)
+
+	return nil
 }

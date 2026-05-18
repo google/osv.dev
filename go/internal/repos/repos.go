@@ -45,12 +45,12 @@ func CloneToDir(ctx context.Context, repoURL string, dir string, forceUpdate boo
 		if err == nil {
 			// It's a git repo, pull the latest changes.
 			if forceUpdate {
-				cmd := exec.CommandContext(ctx, "git", "pull")
+				cmd := exec.CommandContext(ctx, "git", "fetch")
 				cmd.Dir = dir
 				cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0")
 				output, err := cmd.CombinedOutput()
 				if err != nil {
-					return nil, fmt.Errorf("failed to pull repo: %w\n%s", err, string(output))
+					return nil, fmt.Errorf("failed to fetch repo: %w\n%s", err, string(output))
 				}
 				logger.Info("Pulled latest changes", slog.String("repo_url", repoURL), slog.String("dir", dir), slog.String("output", string(output)))
 

@@ -22,14 +22,16 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+Before you start working on a pull request, please
+[create an issue first](https://github.com/google/osv.dev/issues/new/choose)
+to discuss the proposed changes and wait for it to be assigned to you.
+This applies to new features, bug fixes, or other improvements.
+This helps ensure that your contribution is aligned with the project's goals
+and avoids duplicate efforts.
+
 When creating a pull request, please use the provided
 [pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
 sections to ensure a smooth review process.
-
-For any new feature, please [create an issue first](https://github.com/google/osv.dev/issues/new?template=feature_request.md)
-to discuss the proposed changes before proceeding to make a pull request.
-This helps ensure that your contribution is aligned with the project's goals
-and avoids duplicate work.
 
 ## Community Guidelines
 
@@ -48,7 +50,7 @@ You must install:
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
-1.  [Poetry](https://python-poetry.org/) >= 2.2.1
+1.  [Poetry](https://python-poetry.org/) >= 2.3.3
 2.  [Google Cloud SDK](https://cloud.google.com/sdk)
 3.  [Hugo](https://gohugo.io/installation/)
 4.  [Node JS](https://nodejs.org/) >= 18.17.x
@@ -95,6 +97,16 @@ make api-server-tests
 By default, this skips long tests, enable them by setting the `LONG_TESTS` variable
 ```shell
 LONG_TESTS=1 make api-server-tests
+```
+
+There are additional tests for testing coarse version ordering logic for ecosystem version
+parsers. These are tested against the entire OSV database.
+```shell
+# in go/
+# you must generate the list of all versions by running
+./osv/ecosystem/testdata/regen_coarse_test_data.sh
+# then run the tests
+RUN_COARSE_LARGE_TEST=1 go test ./osv/ecosystem -run TestCoarseMonotonicityLarge
 ```
 
 ##### Test result generation

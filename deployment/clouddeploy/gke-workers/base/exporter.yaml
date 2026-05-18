@@ -5,6 +5,7 @@ metadata:
   labels:
     cronLastSuccessfulTimeMins: "30"
 spec:
+  timeZone: "Australia/Sydney"
   schedule: "*/15 * * * *"
   concurrencyPolicy: Forbid
   # If the previous job overruns by more than a minute,

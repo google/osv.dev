@@ -18,7 +18,7 @@ interactions:
                 - github.com
             User-Agent:
                 - go-git/5.x
-        url: https://github.com/saemorris/TheRadSystem/info/refs?service=git-upload-pack
+        url: https://github.com/saemorris/theradsystem/info/refs?service=git-upload-pack
         method: GET
       response:
         proto: HTTP/2.0

@@ -14,9 +14,15 @@
 
 package ecosystem
 
-import "github.com/google/osv-scalibr/semantic"
+import (
+	"regexp"
 
-type mavenEcosystem struct{}
+	"github.com/google/osv-scalibr/semantic"
+)
+
+type mavenEcosystem struct {
+	p *Provider
+}
 
 var _ Enumerable = mavenEcosystem{}
 
@@ -24,14 +30,21 @@ func (e mavenEcosystem) Parse(version string) (Version, error) {
 	return SemanticVersionWrapper[semantic.MavenVersion]{semantic.ParseMavenVersion(version)}, nil
 }
 
-func (e mavenEcosystem) Coarse(_ string) (string, error) {
-	return "", ErrCoarseNotSupported
+var mavenCoarseVersioner = CoarseVersioner{
+	Separators:    regexp.MustCompile(`[.]`),
+	Truncate:      regexp.MustCompile(`-`),
+	ImplicitSplit: true,
+	EmptyAs:       &[]string{"0"}[0],
+}
+
+func (e mavenEcosystem) Coarse(version string) (string, error) {
+	return mavenCoarseVersioner.Format(0, version), nil
 }
 
 func (e mavenEcosystem) IsSemver() bool {
 	return false
 }
 
-func (e mavenEcosystem) GetVersions(_ string) ([]string, error) {
-	panic("not yet implemented")
+func (e mavenEcosystem) GetVersions(pkg string) ([]string, error) {
+	return e.p.getVersionsDepsDev(e, "maven", pkg)
 }

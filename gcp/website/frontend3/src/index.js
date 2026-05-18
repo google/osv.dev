@@ -9,6 +9,16 @@ import { MdFilledTextField } from '@material/web/textfield/filled-text-field.js'
 import { LitElement, html } from 'lit';
 import { ExpandableSearch, SearchSuggestionsManager } from './search.js';
 
+const COPY_ICON_RESET_MS = 1500;
+
+document.addEventListener('clipboard-copy', ({target}) => {
+  const icon = target.querySelector('md-icon');
+  if (!icon) return;
+  clearTimeout(target._copyResetTimer);
+  icon.textContent = 'check';
+  target._copyResetTimer = setTimeout(() => { icon.textContent = 'content_copy'; }, COPY_ICON_RESET_MS);
+});
+
 // Submits a form in a way such that Turbo can intercept the event.
 // Triggering submit on the form directly would still give a correct resulting
 // page, but we want to let Turbo speed up renders as intended.
@@ -56,6 +66,19 @@ function initializeSearch() {
   searchInstance = new ExpandableSearch();
 }
 
+function handleThemeToggle() {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', newTheme);
+  document.documentElement.setAttribute('data-theme', newTheme);
+}
+
+function initializeThemeToggle() {
+  const toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', handleThemeToggle);
+}
+
 // Ensure initialization happens after all dependencies are loaded
 function ensureInitialization() {
   if (!customElements) {
@@ -65,6 +88,7 @@ function ensureInitialization() {
 
   if (customElements.get('md-filled-text-field')) {
     initializeSearch();
+    initializeThemeToggle();
   } else {
     // wait a bit longer for components to load
     setTimeout(ensureInitialization, 50);
@@ -87,6 +111,11 @@ if (document.readyState === 'complete') {
 // Handle Turbo navigation
 document.addEventListener('turbo:load', () => {
   setTimeout(ensureInitialization, 0);
+});
+
+document.addEventListener('turbo:before-cache', () => {
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) toggle.removeEventListener('click', handleThemeToggle);
 });
 
 // Fallback

@@ -3,6 +3,7 @@ resources:
 - scaler.yaml
 - importer.yaml
 - importer-deleter.yaml
+- importer-reconciler.yaml
 - exporter.yaml
 - alpine-cve-convert.yaml
 - debian-cve-convert.yaml
@@ -29,4 +30,5 @@ resources:
 - record-checker.yaml
 - cve5-to-osv.yaml
 - custommetrics.yaml
+- vanir-signatures.yaml
 

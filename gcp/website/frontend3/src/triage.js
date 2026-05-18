@@ -144,13 +144,42 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  function updateUrlParams() {
+    const url = new URL(window.location.href);
+    const vulnId = vulnIdInput.value.trim();
+    
+    if (vulnId) {
+      url.searchParams.set("id", vulnId.toUpperCase());
+      url.searchParams.delete("cve");
+    } else {
+      url.searchParams.delete("id");
+      url.searchParams.delete("cve");
+    }
+    
+    columns.forEach((col, idx) => {
+      const colNum = idx + 1;
+      const select = col.querySelector(".source-select");
+      if (select.value) {
+        url.searchParams.set(`s${colNum}`, select.value);
+      } else {
+        url.searchParams.delete(`s${colNum}`);
+      }
+      url.searchParams.delete(`col${colNum}`);
+      url.searchParams.delete(`source${colNum}`);
+    });
+    
+    window.history.replaceState(null, "", url.toString());
+  }
+
   loadBtn.addEventListener("click", () => {
+    updateUrlParams();
     columns.forEach((col) => updateColumn(col));
   });
 
   // Also handle Enter key on the input field
   vulnIdInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
+          updateUrlParams();
           columns.forEach((col) => updateColumn(col));
       }
   });
@@ -159,9 +188,38 @@ document.addEventListener("DOMContentLoaded", () => {
   columns.forEach((col) => {
     const select = col.querySelector(".source-select");
     select.addEventListener("change", () => {
+        updateUrlParams();
         if (vulnIdInput.value.trim()) {
             updateColumn(col);
         }
     });
   });
+
+  // Check if a CVE/vulnerability ID query param is specified in the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlId = urlParams.get("id") || urlParams.get("cve");
+  if (urlId) {
+    vulnIdInput.value = urlId.toUpperCase();
+    
+    columns.forEach((col, idx) => {
+      const colNum = idx + 1;
+      const select = col.querySelector(".source-select");
+      
+      // Check for column-specific source query param
+      const sourceParam = urlParams.get(`s${colNum}`) || 
+                          urlParams.get(`col${colNum}`) || 
+                          urlParams.get(`source${colNum}`);
+                          
+      if (sourceParam && sourceConfigMap[sourceParam]) {
+        select.value = sourceParam;
+      } else if (!select.value) {
+        // Pre-populate reasonable defaults if no selection is set
+        if (colNum === 1) select.value = "test-cve5";
+        else if (colNum === 2) select.value = "test-nvd";
+        else if (colNum === 3) select.value = "test-osv";
+      }
+      
+      updateColumn(col);
+    });
+  }
 });

@@ -1,6 +1,6 @@
 .triage-container {
   // padding: 40px;
-    padding: 20px 40px;
+  padding: 20px 40px;
   width: 100%;
   box-sizing: border-box;
 
@@ -11,27 +11,28 @@
   --md-filled-button-container-color: #c5221f;
 
   .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 32px;
-    }
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+
   h1 {
     margin: 0;
-    }
+  }
 
-    .input-section {
-      display: flex;
-      align-items: center;
+  .input-section {
+    display: flex;
+    align-items: center;
     gap: 16px;
 
 
     .standard-input {
-        flex: 1;
-        max-width: 400px;
-      }
+      flex: 1;
+      max-width: 400px;
     }
-    }
+  }
+}
 
 .triage-grid {
   display: grid;
@@ -77,7 +78,7 @@
 
 .content-display {
   flex-grow: 1;
-  padding: 16px;
+  padding: 8px 12px;
   overflow: auto;
   position: relative;
   background-color: #1e1e1e;
@@ -91,26 +92,70 @@
   overflow-wrap: anywhere;
   margin: 0;
   color: #d4d4d4;
+}
 
-  .json-key {
-      color: #9cdcfe;
-    }
-  
-    .json-string {
-      color: #ce9178;
-    }
-  
-    .json-number {
-      color: #b5cea8;
-    }
-  
-    .json-boolean {
-      color: #569cd6;
-    }
-  
-    .json-null {
-      color: #569cd6;
-    }
+// Hide top-level root collapsible elements & brackets
+.json-content>.json-formatter-row {
+  >a.json-formatter-toggler-link {
+    display: none !important;
+  }
+
+  >.json-formatter-children {
+    margin-left: 0 !important;
+  }
+}
+
+.json-formatter-row {
+  font-family: "Overpass Mono", monospace !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+
+  // Word wrapping to prevent horizontal scrolling
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-all !important;
+
+  .json-formatter-row {
+    margin-left: 0.8rem !important;
+  }
+
+  .toggler:after {
+    color: #c5221f !important;
+  }
+
+  .json-formatter-constructor-name {
+    display: none !important;
+  }
+
+  // Custom color overrides matching OSV/VS Code scheme
+  .json-formatter-key {
+    color: #9cdcfe !important;
+  }
+
+  .json-formatter-string,
+  .json-formatter-stringifiable {
+    color: #ce9178 !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+  }
+
+  .json-formatter-number {
+    color: #b5cea8 !important;
+  }
+
+  .json-formatter-boolean {
+    color: #569cd6 !important;
+  }
+
+  .json-formatter-null,
+  .json-formatter-undefined {
+    color: #569cd6 !important;
+  }
+
+  .json-formatter-bracket {
+    color: #d4d4d4 !important;
+  }
 }
 
 .loading-spinner {

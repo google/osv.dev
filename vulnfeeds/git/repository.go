@@ -82,7 +82,9 @@ type RepoTagsCache interface {
 	Get(repo string) (RepoTagsMap, bool)
 	Set(repo string, tags RepoTagsMap)
 	SetInvalid(repo string)
+	SetRateLimited(repo string)
 	IsInvalid(repo string) bool
+	ClearRateLimited()
 	SetCanonicalLink(repo string, canonicalLink string)
 	GetCanonicalLink(repo string) (string, bool)
 }
@@ -92,6 +94,7 @@ type InMemoryRepoTagsCache struct {
 
 	m             map[string]RepoTagsMap
 	invalid       map[string]bool
+	rateLimited   map[string]bool
 	canonicalLink map[string]string
 }
 
@@ -124,14 +127,32 @@ func (c *InMemoryRepoTagsCache) SetInvalid(repo string) {
 	c.invalid[repo] = true
 }
 
+func (c *InMemoryRepoTagsCache) SetRateLimited(repo string) {
+	c.Lock()
+	defer c.Unlock()
+	if c.rateLimited == nil {
+		c.rateLimited = make(map[string]bool)
+	}
+	c.rateLimited[repo] = true
+}
+
 func (c *InMemoryRepoTagsCache) IsInvalid(repo string) bool {
 	c.RLock()
 	defer c.RUnlock()
+	if c.rateLimited != nil && c.rateLimited[repo] {
+		return true
+	}
 	if c.invalid == nil {
 		return false
 	}
 
 	return c.invalid[repo]
+}
+
+func (c *InMemoryRepoTagsCache) ClearRateLimited() {
+	c.Lock()
+	defer c.Unlock()
+	c.rateLimited = make(map[string]bool)
 }
 
 func (c *InMemoryRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
@@ -156,6 +177,8 @@ func (c *InMemoryRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 
 type RedisRepoTagsCache struct {
 	redisClient *redis.Client
+	mu          sync.RWMutex
+	rateLimited map[string]bool
 }
 
 func (c *RedisRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
@@ -199,7 +222,23 @@ func (c *RedisRepoTagsCache) SetInvalid(repo string) {
 	c.redisClient.Set(ctx, key, "true", ttl)
 }
 
+func (c *RedisRepoTagsCache) SetRateLimited(repo string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.rateLimited == nil {
+		c.rateLimited = make(map[string]bool)
+	}
+	c.rateLimited[repo] = true
+}
+
 func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
+	c.mu.RLock()
+	if c.rateLimited != nil && c.rateLimited[repo] {
+		c.mu.RUnlock()
+		return true
+	}
+	c.mu.RUnlock()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -210,6 +249,12 @@ func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
 	}
 
 	return val == "true"
+}
+
+func (c *RedisRepoTagsCache) ClearRateLimited() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.rateLimited = make(map[string]bool)
 }
 
 func (c *RedisRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
@@ -246,12 +291,16 @@ func NewRepoTagsCache() RepoTagsCache {
 			Protocol: 2,
 		})
 
-		return &RedisRepoTagsCache{redisClient: client}
+		return &RedisRepoTagsCache{
+			redisClient: client,
+			rateLimited: make(map[string]bool),
+		}
 	}
 
 	return &InMemoryRepoTagsCache{
 		m:             make(map[string]RepoTagsMap),
 		invalid:       make(map[string]bool),
+		rateLimited:   make(map[string]bool),
 		canonicalLink: make(map[string]string),
 	}
 }
@@ -412,16 +461,14 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		}
 	}
 	// Cache miss.
-	var refs []*plumbing.Reference
-	var err error
-	if os.Getenv("GITTER_HOST") != "" {
-		refs, err = gitterRepoRefs(repoURL)
-	} else {
-		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
-	}
+	refs, err := getRepoRefs(repoURL)
 	if err != nil {
-		if repoTagsCache != nil && !errors.Is(err, ErrRateLimit) && !strings.Contains(err.Error(), "429") && !strings.Contains(err.Error(), "Too Many Requests") {
-			repoTagsCache.SetInvalid(repoURL)
+		if repoTagsCache != nil {
+			if errors.Is(err, ErrRateLimit) || strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+				repoTagsCache.SetRateLimited(repoURL)
+			} else {
+				repoTagsCache.SetInvalid(repoURL)
+			}
 		}
 
 		return tags, err
@@ -547,34 +594,28 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 	return branches
 }
 
+func getRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
+	if os.Getenv("GITTER_HOST") != "" {
+		return gitterRepoRefs(repoURL)
+	}
+
+	return RemoteRepoRefsWithRetry(repoURL, 3)
+}
+
 // Validate the repo by attempting to query it's references.
 // *** Does external calls to verify repos ***
-func ValidRepo(repoURL string) bool {
-	if os.Getenv("GITTER_HOST") != "" {
-		_, err := gitterRepoRefs(repoURL)
-		return err == nil
-	}
-	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
-
-	return err == nil
+func ValidRepo(repoURL string) (bool, error) {
+	_, err := getRepoRefs(repoURL)
+	return err == nil, err
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
 // *** Does external calls to verify repos ***
-func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
-	if os.Getenv("GITTER_HOST") != "" {
-		refs, err := gitterRepoRefs(repoURL)
-		if err != nil || len(refs) == 0 {
-			return false
-		}
-
-		return len(RefTags(refs)) > 0
-	}
-	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	// Return false if there's an error, or if the repo has no refs (e.g. is empty)
+func ValidRepoAndHasUsableRefs(repoURL string) (bool, error) {
+	refs, err := getRepoRefs(repoURL)
 	if err != nil || len(refs) == 0 {
-		return false
+		return false, err
 	}
-	// Repos with no tags aren't useful.
-	return len(RefTags(refs)) > 0
+
+	return len(RefTags(refs)) > 0, nil
 }

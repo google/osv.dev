@@ -385,7 +385,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo c.VendorProductToRepoMap, d
 					logger.Info("Disregarding derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product), slog.Any("err", err))
 					continue
 				}
-				if !git.ValidRepoAndHasUsableRefs(repo) {
+				if valid, _ := git.ValidRepoAndHasUsableRefs(repo); !valid {
 					logger.Info("Disregarding derived repo as unusable", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 					continue
 				}
@@ -407,7 +407,7 @@ func validateRepos(prm c.VendorProductToRepoMap) (validated c.VendorProductToRep
 		entryCount++
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
-			if !git.ValidRepoAndHasUsableRefs(r) {
+			if valid, _ := git.ValidRepoAndHasUsableRefs(r); !valid {
 				logger.Info("Invalid repo", slog.Int("count", entryCount), slog.Int("total", len(prm)), slog.String("repo", r), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 				continue
 			}

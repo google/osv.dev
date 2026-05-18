@@ -403,7 +403,7 @@ func (v *Vulnerability) ToJSON(w io.Writer) error {
 // ToYAML serializes the Vulnerability to YAML.
 func (v *Vulnerability) ToYAML(w io.Writer) error {
 	encoder := yaml.NewEncoder(w)
-	return encoder.Encode(v)
+	return encoder.Encode(v.Vulnerability)
 }
 
 // ClassifyReferenceLink infers the OSV schema's reference type for a given URL.
@@ -769,25 +769,25 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 // FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
 	decoder := yaml.NewDecoder(r)
-	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
-	err := decoder.Decode(&vuln)
+	inner := &osvschema.Vulnerability{}
+	err := decoder.Decode(inner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &vuln, nil
+	return &Vulnerability{Vulnerability: inner}, nil
 }
 
 // FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
 	decoder := json.NewDecoder(r)
-	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
-	err := decoder.Decode(&vuln)
+	inner := &osvschema.Vulnerability{}
+	err := decoder.Decode(inner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &vuln, nil
+	return &Vulnerability{Vulnerability: inner}, nil
 }
 
 // CheckQuality will return true if field text is not a filler text or otherwise empty

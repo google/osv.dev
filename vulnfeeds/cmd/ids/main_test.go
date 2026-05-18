@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -99,5 +100,23 @@ func TestAssignIDs(t *testing.T) {
 				t.Errorf("Expected .id-allocator to exist")
 			}
 		})
+	}
+}
+
+func TestAssignIDsError(t *testing.T) {
+	tmpDir := t.TempDir()
+	invalidFile := filepath.Join(tmpDir, "OSV-0000-invalid.yaml")
+	if err := os.WriteFile(invalidFile, []byte("invalid yaml content"), 0600); err != nil {
+		t.Fatalf("failed to setup invalid vuln: %v", err)
+	}
+
+	err := assignIDs("OSV", tmpDir, fileFormatYAML)
+	if err == nil {
+		t.Fatal("expected error but got nil")
+	}
+
+	expectedErr := "failed to assign ID for " + invalidFile
+	if !strings.Contains(err.Error(), expectedErr) {
+		t.Errorf("Expected error message to contain %q, but got %q", expectedErr, err.Error())
 	}
 }

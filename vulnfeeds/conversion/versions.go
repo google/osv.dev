@@ -527,6 +527,7 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
 				return nil, err
 			}
+
 			continue
 		}
 

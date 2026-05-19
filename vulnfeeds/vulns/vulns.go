@@ -291,32 +291,38 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			Type:   osvschema.Range_ECOSYSTEM,
 			Events: []*osvschema.Event{},
 		}
-		hasIntroduced := false
+		seenIntroduced := map[string]bool{}
+		seenFixed := map[string]bool{}
+		seenLastAffected := map[string]bool{}
+
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
-			if av.Introduced != "" {
-				hasIntroduced = true
-				versionRange.Events = append(versionRange.Events, &osvschema.Event{
-					Introduced: av.Introduced,
-				})
+			var introduced string
+			if av.Introduced == "" {
+				introduced = "0"
+			} else {
+				introduced = av.Introduced
 			}
-			if av.Fixed != "" {
+
+			if _, seen := seenIntroduced[introduced]; !seen {
+				versionRange.Events = append(versionRange.Events, &osvschema.Event{
+					Introduced: introduced,
+				})
+				seenIntroduced[introduced] = true
+			}
+
+			if _, seen := seenFixed[av.Fixed]; av.Fixed != "" && !seen {
 				versionRange.Events = append(versionRange.Events, &osvschema.Event{
 					Fixed: av.Fixed,
 				})
+				seenFixed[av.Fixed] = true
 			}
-			if av.LastAffected != "" {
+
+			if _, seen := seenLastAffected[av.LastAffected]; av.LastAffected != "" && !seen {
 				versionRange.Events = append(versionRange.Events, &osvschema.Event{
 					LastAffected: av.LastAffected,
 				})
+				seenLastAffected[av.LastAffected] = true
 			}
-		}
-
-		if !hasIntroduced {
-			// If no introduced entry, add one with special value of 0 to indicate
-			// all versions before fixed is affected
-			versionRange.Events = append([]*osvschema.Event{{
-				Introduced: "0",
-			}}, versionRange.GetEvents()...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
 	}

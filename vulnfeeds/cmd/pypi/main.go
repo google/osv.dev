@@ -165,22 +165,12 @@ func main() {
 			}
 			logger.Info("Got valid versions", slog.Any("versions", validVersions))
 
-			id := "PYSEC-0000-" + cve.CVE.ID // To be assigned later.
 			purl := ecosystem.PackageURL(pkg)
-			pkgInfo := vulns.PackageInfo{
-				PkgName:   pkg,
-				Ecosystem: "PyPI",
-				PURL:      purl,
-			}
 			metrics := &models.ConversionMetrics{
 				CVEID: cve.CVE.ID,
 			}
-			v := vulns.FromNVDCVE(id, cve.CVE)
-			v.AddPkgInfo(pkgInfo)
-			versions := conversion.ExtractVersionInfo(cve.CVE, validVersions, http.DefaultClient, metrics, nil)
-
-			vulns.AttachExtractedVersionInfo(v, versions)
-			if len(v.Affected[0].GetRanges()) == 0 {
+			v := generatePyPIAffected(cve.CVE, pkg, validVersions, purl, metrics)
+			if len(v.Affected) == 0 || len(v.Affected[0].GetRanges()) == 0 {
 				logger.Info("No affected versions detected")
 			}
 
@@ -226,4 +216,20 @@ func main() {
 			}
 		}
 	}
+}
+
+func generatePyPIAffected(cve models.NVDCVE, pkg string, validVersions []string, purl string, metrics *models.ConversionMetrics) *vulns.Vulnerability {
+	id := "PYSEC-0000-" + cve.ID
+	versions := conversion.ExtractVersionInfo(cve, validVersions, http.DefaultClient, metrics, nil)
+
+	pkgInfo := vulns.PackageInfo{
+		PkgName:     pkg,
+		Ecosystem:   "PyPI",
+		PURL:        purl,
+		VersionInfo: versions,
+	}
+	v := vulns.FromNVDCVE(id, cve)
+	v.AddPkgInfo(pkgInfo)
+
+	return v
 }

@@ -82,9 +82,8 @@ type RepoTagsCache interface {
 	Get(repo string) (RepoTagsMap, bool)
 	Set(repo string, tags RepoTagsMap)
 	SetInvalid(repo string)
-	SetRateLimited(repo string)
+	SetInvalidWithTTL(repo string, ttl time.Duration)
 	IsInvalid(repo string) bool
-	ClearRateLimited()
 	SetCanonicalLink(repo string, canonicalLink string)
 	GetCanonicalLink(repo string) (string, bool)
 }
@@ -94,7 +93,6 @@ type InMemoryRepoTagsCache struct {
 
 	m             map[string]RepoTagsMap
 	invalid       map[string]bool
-	rateLimited   map[string]bool
 	canonicalLink map[string]string
 }
 
@@ -127,32 +125,18 @@ func (c *InMemoryRepoTagsCache) SetInvalid(repo string) {
 	c.invalid[repo] = true
 }
 
-func (c *InMemoryRepoTagsCache) SetRateLimited(repo string) {
-	c.Lock()
-	defer c.Unlock()
-	if c.rateLimited == nil {
-		c.rateLimited = make(map[string]bool)
-	}
-	c.rateLimited[repo] = true
+func (c *InMemoryRepoTagsCache) SetInvalidWithTTL(repo string, _ time.Duration) {
+	c.SetInvalid(repo)
 }
 
 func (c *InMemoryRepoTagsCache) IsInvalid(repo string) bool {
 	c.RLock()
 	defer c.RUnlock()
-	if c.rateLimited != nil && c.rateLimited[repo] {
-		return true
-	}
 	if c.invalid == nil {
 		return false
 	}
 
 	return c.invalid[repo]
-}
-
-func (c *InMemoryRepoTagsCache) ClearRateLimited() {
-	c.Lock()
-	defer c.Unlock()
-	c.rateLimited = make(map[string]bool)
 }
 
 func (c *InMemoryRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
@@ -177,8 +161,6 @@ func (c *InMemoryRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 
 type RedisRepoTagsCache struct {
 	redisClient *redis.Client
-	mu          sync.RWMutex
-	rateLimited map[string]bool
 }
 
 func (c *RedisRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
@@ -214,31 +196,18 @@ func (c *RedisRepoTagsCache) Set(repo string, tags RepoTagsMap) {
 }
 
 func (c *RedisRepoTagsCache) SetInvalid(repo string) {
+	c.SetInvalidWithTTL(repo, randomTTL())
+}
+
+func (c *RedisRepoTagsCache) SetInvalidWithTTL(repo string, ttl time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	key := "invalid_repo:" + repo
-	ttl := randomTTL()
 	c.redisClient.Set(ctx, key, "true", ttl)
 }
 
-func (c *RedisRepoTagsCache) SetRateLimited(repo string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.rateLimited == nil {
-		c.rateLimited = make(map[string]bool)
-	}
-	c.rateLimited[repo] = true
-}
-
 func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
-	c.mu.RLock()
-	if c.rateLimited != nil && c.rateLimited[repo] {
-		c.mu.RUnlock()
-		return true
-	}
-	c.mu.RUnlock()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
@@ -249,12 +218,6 @@ func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
 	}
 
 	return val == "true"
-}
-
-func (c *RedisRepoTagsCache) ClearRateLimited() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.rateLimited = make(map[string]bool)
 }
 
 func (c *RedisRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string) {
@@ -293,14 +256,12 @@ func NewRepoTagsCache() RepoTagsCache {
 
 		return &RedisRepoTagsCache{
 			redisClient: client,
-			rateLimited: make(map[string]bool),
 		}
 	}
 
 	return &InMemoryRepoTagsCache{
 		m:             make(map[string]RepoTagsMap),
 		invalid:       make(map[string]bool),
-		rateLimited:   make(map[string]bool),
 		canonicalLink: make(map[string]string),
 	}
 }
@@ -465,7 +426,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	if err != nil {
 		if repoTagsCache != nil {
 			if errors.Is(err, ErrRateLimit) || strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
-				repoTagsCache.SetRateLimited(repoURL)
+				repoTagsCache.SetInvalidWithTTL(repoURL, 1*time.Hour)
 			} else {
 				repoTagsCache.SetInvalid(repoURL)
 			}

@@ -546,3 +546,28 @@ func TestValidRepoWithGitter(t *testing.T) {
 		})
 	}
 }
+
+func TestInMemoryRepoTagsCache(t *testing.T) {
+	cache := &InMemoryRepoTagsCache{}
+	repo := "https://github.com/example/test-repo"
+
+	// Test that it starts as valid
+	if cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be valid initially")
+	}
+
+	// Test SetInvalid
+	cache.SetInvalid(repo)
+	if !cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be invalid after SetInvalid")
+	}
+
+	// Reset the cache
+	cache = &InMemoryRepoTagsCache{}
+
+	// Test SetInvalidWithTTL (which behaves as SetInvalid)
+	cache.SetInvalidWithTTL(repo, 1*time.Hour)
+	if !cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be invalid after SetInvalidWithTTL")
+	}
+}

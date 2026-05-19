@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -1288,7 +1289,7 @@ func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache) (bool, er
 	}
 	if !valid && cache != nil {
 		if err != nil && (errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests")) {
-			cache.SetRateLimited(repo)
+			cache.SetInvalidWithTTL(repo, 1*time.Hour)
 		} else {
 			cache.SetInvalid(repo)
 		}

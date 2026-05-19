@@ -16,6 +16,7 @@
     "@material/layout-grid": "14.0.0",
     "@material/theme": "14.0.0",
     "@material/web": "^2.0.0",
+    "json-formatter-js": "^2.5.23",
     "lit": "3.3.2"
   },
   "devDependencies": {

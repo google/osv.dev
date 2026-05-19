@@ -26,6 +26,9 @@ importers:
       '@material/web':
         specifier: ^2.0.0
         version: 2.4.1
+      json-formatter-js:
+        specifier: ^2.5.23
+        version: 2.5.23
       lit:
         specifier: 3.3.2
         version: 3.3.2
@@ -1220,6 +1223,9 @@ packages:
   jest-worker@27.5.1:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
+
+  json-formatter-js@2.5.23:
+    resolution: {integrity: sha512-Cbm8wHXjo/C56aCePP1VuKvjxoMEmL7g7Ckss1oWFFlCsvOEEbye1kTeaNNaqba1Cl6YpIOYAnK65pUQ8mDIUQ==}
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
@@ -3346,6 +3352,8 @@ snapshots:
       '@types/node': 25.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
+
+  json-formatter-js@2.5.23: {}
 
   json-schema-traverse@0.4.1: {}
 

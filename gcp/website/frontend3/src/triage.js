@@ -2,6 +2,7 @@ import "./triage.scss";
 import "@material/web/textfield/filled-text-field.js";
 import "@material/web/button/filled-button.js";
 import "@material/web/progress/circular-progress.js";
+import JSONFormatter from "json-formatter-js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const vulnIdInput = document.getElementById("vuln-id-input");
@@ -58,38 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   };
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
 
-  function syntaxHighlight(json) { // credit to https://codepen.io/absolutedevelopment/pen/EpwVzN
-    if (typeof json !== 'string') {
-      json = JSON.stringify(json, undefined, 2);
-    }
-
-    const escapedJson = escapeHtml(json);
-
-    return escapedJson.replace(
-      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-      function (match) {
-        let cls = 'json-number';
-        if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-            cls = 'json-key';
-          } else {
-            cls = 'json-string';
-          }
-        } else if (/true|false/.test(match)) {
-          cls = 'json-boolean';
-        } else if (/null/.test(match)) {
-          cls = 'json-null';
-        }
-        return `<span class="${cls}">${match}</span>`;
-      }
-    );
-  }
 
   async function fetchData(sourceKey, vulnId) {
     const config = sourceConfigMap[sourceKey];
@@ -132,10 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
     spinner.classList.remove("hidden");
     contentPre.textContent = "";
 
-    fetchData(sourceKey, vulnId)
-      .then((data) => {
-        contentPre.innerHTML = syntaxHighlight(data);
-      })
+      fetchData(sourceKey, vulnId)
+        .then((data) => {
+          contentPre.textContent = "";
+          const formatter = new JSONFormatter(data, Infinity, { theme: "dark" });
+          contentPre.appendChild(formatter.render());
+        })
       .catch((error) => {
         contentPre.textContent = error.message;
       })

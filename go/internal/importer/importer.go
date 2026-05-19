@@ -35,12 +35,14 @@ import (
 )
 
 const (
-	TasksTopic           = "tasks"
 	maxPubSubMessageSize = 10_000_000
 )
 
 type Config struct {
 	NumWorkers int
+
+	DefaultTaskPool  string
+	ReimportTaskPool string
 
 	SourceRepoStore    models.SourceRepositoryStore
 	VulnerabilityStore models.VulnerabilityStore
@@ -305,6 +307,7 @@ func checkReconcile(
 	parsed *gjson.Result,
 	sourceRecord SourceRecord,
 	format RecordFormat,
+	workPool string,
 ) {
 	recordTemplate := WorkItem{
 		Context:                ctx,
@@ -315,6 +318,7 @@ func checkReconcile(
 		KeyPath:                sourceRepo.KeyPath,
 		Strict:                 sourceRepo.Strictness,
 		CompareAgainstDatabase: true,
+		WorkPool:               workPool,
 		// If this is true it will always import rather than checking to see if it's outdated
 		IsReimport: false,
 	}
@@ -428,6 +432,7 @@ type WorkItem struct {
 	Action                 Action
 	CompareAgainstDatabase bool
 	IsReimport             bool
+	WorkPool               string
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
@@ -631,20 +636,47 @@ func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string
 		srcTimestamp = &modifiedTime
 	}
 
-	return publishUpdate(ctx, config, item.SourceRepository, item.SourcePath, hash, false, srcTimestamp, vuln)
+	args := publishArgs{
+		source:       item.SourceRepository,
+		path:         item.SourcePath,
+		hash:         hash,
+		deleted:      false,
+		srcTimestamp: srcTimestamp,
+		workPool:     item.WorkPool,
+	}
+
+	return publishUpdate(ctx, config, args, vuln)
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
-	return publishUpdate(ctx, config, item.SourceRepository, item.SourcePath, "", true, nil, nil)
+	args := publishArgs{
+		source:       item.SourceRepository,
+		path:         item.SourcePath,
+		hash:         "",
+		deleted:      true,
+		srcTimestamp: nil,
+		workPool:     item.WorkPool,
+	}
+
+	return publishUpdate(ctx, config, args, nil)
 }
 
-func publishUpdate(ctx context.Context, config Config, source, path, hash string, deleted bool, srcTimestamp *time.Time, vuln *osvschema.Vulnerability) error {
+type publishArgs struct {
+	source       string
+	path         string
+	hash         string
+	deleted      bool
+	srcTimestamp *time.Time
+	workPool     string
+}
+
+func publishUpdate(ctx context.Context, config Config, args publishArgs, vuln *osvschema.Vulnerability) error {
 	if config.DryRun {
 		logger.DebugContext(ctx, "Running in dry-run mode, skipping publish",
-			slog.String("source", source),
-			slog.String("path", path),
-			slog.String("hash", hash),
-			slog.Bool("deleted", deleted))
+			slog.String("source", args.source),
+			slog.String("path", args.path),
+			slog.String("hash", args.hash),
+			slog.Bool("deleted", args.deleted))
 
 		return nil
 	}
@@ -665,29 +697,34 @@ func publishUpdate(ctx context.Context, config Config, source, path, hash string
 		contentEncoding = "zstd"
 		if len(data) > maxPubSubMessageSize {
 			logger.WarnContext(ctx, "Vulnerability proto is too large",
-				slog.String("source", source),
-				slog.String("path", path),
+				slog.String("source", args.source),
+				slog.String("path", args.path),
 				slog.Int("size", len(data)))
 
-			// Set data to nil so that the worker will re-download the vulnerability
+			// Set data to nil and let worker decided what to do about it
 			data = nil
 			contentEncoding = ""
 		}
+	}
+	pool := args.workPool
+	if pool == "" {
+		pool = config.DefaultTaskPool
 	}
 	msg := &pubsub.Message{
 		Data: data,
 		Attributes: map[string]string{
 			"type":             "update",
-			"source":           source,
-			"path":             path,
-			"original_sha256":  hash,
-			"deleted":          strconv.FormatBool(deleted),
+			"source":           args.source,
+			"path":             args.path,
+			"original_sha256":  args.hash,
+			"deleted":          strconv.FormatBool(args.deleted),
 			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
 			"content_encoding": contentEncoding,
+			"work_pool":        pool,
 		},
 	}
-	if srcTimestamp != nil {
-		msg.Attributes["src_timestamp"] = strconv.FormatInt(srcTimestamp.Unix(), 10)
+	if args.srcTimestamp != nil {
+		msg.Attributes["src_timestamp"] = strconv.FormatInt(args.srcTimestamp.Unix(), 10)
 	} else {
 		msg.Attributes["src_timestamp"] = ""
 	}

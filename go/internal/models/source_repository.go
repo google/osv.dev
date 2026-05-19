@@ -63,6 +63,9 @@ type SourceRepository struct {
 	Link string
 	// HTTP link prefix to individual vulnerability records for humans.
 	HumanLink string
+
+	// Default worker pool for items from this source. If empty, default worker pool will be used.
+	WorkPool string
 }
 
 type GitAnalysisConfig struct {

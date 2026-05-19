@@ -1567,6 +1567,8 @@ class SourceRepository(ndb.Model):
   db_prefix: list[str] = ndb.StringProperty(repeated=True)
   # Apply strict validation (JSON Schema + linter checks) to this source.
   strict_validation: bool = ndb.BooleanProperty(default=False)
+  # The name of the work pool to use for this source.
+  work_pool: str = ndb.StringProperty()
 
   def ignore_file(self, file_path):
     """Return whether or not we should be ignoring a file."""

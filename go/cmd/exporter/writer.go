@@ -81,10 +81,12 @@ func gcsContentUnchanged(ctx context.Context, client clients.CloudStorage, path 
 		if !errors.Is(err, clients.ErrNotFound) {
 			logger.WarnContext(ctx, "failed to read object attrs, proceeding with upload", slog.String("path", path), slog.Any("err", err))
 		}
+
 		return false
 	}
 	if attrs.CRC32C == crc32.Checksum(data, crc32cTable) {
 		logger.InfoContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
+
 		return true
 	}
 	return false

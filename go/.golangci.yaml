@@ -122,6 +122,7 @@ linters:
       - path: _test\.go
         linters:
           - dupl
+          - unparam
       - path-except: _test\.go
         text: use `testutility.GetCurrentWorkingDirectory`
     paths:

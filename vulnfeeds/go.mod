@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.36.0
-	google.golang.org/api v0.278.0
+	golang.org/x/text v0.37.0
+	google.golang.org/api v0.279.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0

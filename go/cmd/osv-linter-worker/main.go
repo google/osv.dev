@@ -78,6 +78,8 @@ var (
 )
 
 func main() {
+	logger.InitGlobalLogger()
+	defer logger.Close()
 	flag.Parse()
 	if err := run(); err != nil {
 		logger.Fatal("error running linter worker", slog.Any("err", err))

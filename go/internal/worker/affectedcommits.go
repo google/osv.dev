@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/proto"
 )
@@ -34,7 +36,7 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 				return models.AffectedCommitsResult{}, err
 			}
 			if resp == nil {
-				continue // Forbidden
+				continue // Forbidden / Not Found
 			}
 
 			applyAffectedCommitsAndTags(resp, affected, aRange)
@@ -81,6 +83,11 @@ func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost s
 	}
 	defer httpResp.Body.Close()
 	if httpResp.StatusCode == http.StatusForbidden {
+		logger.WarnContext(ctx, "Repository Forbidden, skipping", slog.String("url", aRange.GetRepo()))
+		return nil, nil //nolint:nilnil // repository is inacessible - somewhat expected
+	}
+	if httpResp.StatusCode == http.StatusNotFound {
+		logger.WarnContext(ctx, "Repository not found, skipping", slog.String("url", aRange.GetRepo()))
 		return nil, nil //nolint:nilnil // repository is inacessible - somewhat expected
 	}
 	if httpResp.StatusCode != http.StatusOK {

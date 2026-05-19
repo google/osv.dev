@@ -222,8 +222,8 @@ steps:
 
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/linter'
+  args: ['build', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '-f', 'cmd/osv-linter-worker/Dockerfile', '.']
+  dir: 'go'
   id: 'build-osv-linter'
   waitFor: ['build-worker']
 - name: gcr.io/cloud-builders/docker

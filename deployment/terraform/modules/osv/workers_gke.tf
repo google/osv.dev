@@ -217,7 +217,7 @@ resource "google_compute_disk" "gitter_disk" {
   name    = "gitter-disk"
   type    = "pd-ssd"
   zone    = google_container_cluster.workers.location
-  size    = 4096
+  size    = 6144 # 6TiB
 }
 
 # SSD for Importer Reconciler

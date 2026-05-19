@@ -90,7 +90,7 @@ func run() error {
 			FailedWritePublisher: &clients.GCPPublisher{Publisher: psClient.Publisher(failTasksTopic)},
 		}),
 		Relations:      db.NewRelationsStore(dsClient),
-		ImportFindings: db.NewImportFindingsStore(dsClient),
+		ImportFindings: db.NewImportFindingsStore(dsClient, nil, "", ""),
 	}
 
 	engine := worker.Engine{

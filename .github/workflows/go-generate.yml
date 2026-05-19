@@ -1,0 +1,56 @@
+name: Go Generate
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'go/**'
+      - 'osv/osv-schema'
+  workflow_dispatch:
+
+concurrency:
+  # Pushing new changes to a branch will cancel any in-progress CI runs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
+jobs:
+  go-generate:
+    permissions:
+      contents: write # to fetch and commit code
+      actions: write # to manually dispatch checks on the pull request
+      pull-requests: write # Create pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: 'stable'
+          check-latest: true
+
+      - name: Run go generate
+        run: |
+          cd go
+          go generate ./...
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PR_TOKEN_BOT }}
+          title: "chore: regenerate go files"
+          body: >
+            The schema or other dependencies have been updated. This PR contains the regenerated Go code.
+
+            Please review and merge!
+          branch: "bot/regenerate-go"
+          author: "osv-robot <osv-robot@google.com>"
+          commit-message: "chore: regenerate go files"

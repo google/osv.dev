@@ -25,7 +25,7 @@ spec:
         name: pubsub.googleapis.com|subscription|num_undelivered_messages
         selector:
           matchLabels:
-            resource.labels.subscription_id: tasks
+            resource.labels.subscription_id: default-pool
       target:
         type: AverageValue
         averageValue: 10  # each worker can handle 10 tasks now

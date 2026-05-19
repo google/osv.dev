@@ -20,6 +20,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -133,7 +134,7 @@ func assignID(prefix, path string, format fileFormat, yearCounters map[int]int, 
 	}
 	defer writef.Close()
 
-	if err := writeVulnWithFormat(vuln, writef, format); err != nil {
+	if err := writeVulnWithFormat(vuln.Vulnerability, writef, format); err != nil {
 		return fmt.Errorf("failed to serialize: %w", err)
 	}
 
@@ -197,31 +198,15 @@ func assignIDs(prefix, dir string, format fileFormat) error {
 	return os.WriteFile(filepath.Join(dir, conflictFile), []byte(hex.EncodeToString(b)), 0600)
 }
 
-func readVulnWithFormat(r io.Reader, format fileFormat) (*osvschema.Vulnerability, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	var jsonBytes []byte
+func readVulnWithFormat(r io.Reader, format fileFormat) (*vulns.Vulnerability, error) {
 	switch format {
 	case fileFormatJSON:
-		jsonBytes = data
+		return vulns.FromJSON(r)
 	case fileFormatYAML:
-		jsonBytes, err = yaml.YAMLToJSON(data)
-		if err != nil {
-			return nil, err
-		}
+		return vulns.FromYAML(r)
 	default:
 		return nil, fmt.Errorf("unknown file format: %v", format)
 	}
-
-	var v osvschema.Vulnerability
-	if err := protojson.Unmarshal(jsonBytes, &v); err != nil {
-		return nil, err
-	}
-
-	return &v, nil
 }
 
 func writeVulnWithFormat(v *osvschema.Vulnerability, w io.Writer, format fileFormat) error {

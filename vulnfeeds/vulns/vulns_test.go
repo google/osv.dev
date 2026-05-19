@@ -8,7 +8,9 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
+	"time"
 
 	"slices"
 
@@ -511,5 +513,181 @@ func TestClassifyReferences_Determinism(t *testing.T) {
 		if diff := gocmp.Diff(firstResult, got, protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestUnmarshalVulnerability(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     string
+		isYAML   bool
+		wantID   string
+		wantType osvschema.Range_Type
+		wantTime string // UTC RFC3339 representation
+		verify   func(t *testing.T, v *Vulnerability)
+	}{
+		{
+			name: "Flat JSON Standard",
+			data: `{
+				"id": "CVE-2026-1234",
+				"published": "2026-01-02T00:00:00Z",
+				"affected": [{
+					"package": {"name": "foo", "ecosystem": "PyPI"},
+					"ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}]}]
+				}]
+			}`,
+			isYAML:   false,
+			wantID:   "CVE-2026-1234",
+			wantType: osvschema.Range_ECOSYSTEM,
+			wantTime: "2026-01-02T00:00:00Z",
+		},
+		{
+			name: "Wrapped JSON Standard",
+			data: `{
+				"vulnerability": {
+					"id": "CVE-2026-5678",
+					"published": "2026-05-19T01:46:00Z",
+					"affected": [{
+						"package": {"name": "bar", "ecosystem": "PyPI"},
+						"ranges": [{"type": "GIT", "events": [{"introduced": "0"}]}]
+					}]
+				}
+			}`,
+			isYAML:   false,
+			wantID:   "CVE-2026-5678",
+			wantType: osvschema.Range_GIT,
+			wantTime: "2026-05-19T01:46:00Z",
+		},
+		{
+			name: "Wrapped YAML with Structpb and Timestamppb Go Internal Format",
+			data: `
+vulnerability:
+  id: PYSEC-2022-36124
+  published:
+    seconds: 1660029307
+    nanos: 443000000
+  affected:
+  - package:
+      name: avro
+      ecosystem: PyPI
+    ranges:
+    - type: 1
+      events:
+      - introduced: "0"
+`,
+			isYAML:   true,
+			wantID:   "PYSEC-2022-36124",
+			wantType: osvschema.Range_GIT,
+			wantTime: "2022-08-09T07:15:07.443Z",
+		},
+		{
+			name: "Flat YAML with String Enums and Timestamps",
+			data: `
+id: PYSEC-2022-43066
+published: "2022-06-20T00:00:00Z"
+affected:
+  - package:
+      name: aamiles
+      ecosystem: PyPI
+    ranges:
+      - type: ECOSYSTEM
+        events:
+          - introduced: "0"
+`,
+			isYAML:   true,
+			wantID:   "PYSEC-2022-43066",
+			wantType: osvschema.Range_ECOSYSTEM,
+			wantTime: "2022-06-20T00:00:00Z",
+		},
+		{
+			name: "YAML with Comments (Notes) and Database Specifics",
+			data: `
+id: PYSEC-2022-9999
+published: "2022-06-20T00:00:00Z"
+affected:
+  - package:
+      name: custom-package
+      ecosystem: PyPI
+    ranges:
+      - type: ECOSYSTEM
+        events:
+          - introduced: "0"
+database_specific:
+  custom_field: custom_value
+  another_field: 42
+
+# <Vulnfeeds Notes>
+# This is a note comment at the end of the YAML file
+# that standard parsers must skip without failure.
+`,
+			isYAML:   true,
+			wantID:   "PYSEC-2022-9999",
+			wantType: osvschema.Range_ECOSYSTEM,
+			wantTime: "2022-06-20T00:00:00Z",
+			verify: func(t *testing.T, vuln *Vulnerability) {
+				t.Helper()
+				if vuln.GetDatabaseSpecific() == nil {
+					t.Errorf("expected database_specific to be unmarshaled")
+					return
+				}
+				fields := vuln.GetDatabaseSpecific().GetFields()
+				if val, ok := fields["custom_field"]; !ok || val.GetStringValue() != "custom_value" {
+					t.Errorf("expected custom_field in database_specific to be 'custom_value'")
+				}
+				if val, ok := fields["another_field"]; !ok || val.GetNumberValue() != 42 {
+					t.Errorf("expected another_field in database_specific to be 42")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var vuln *Vulnerability
+			var err error
+			if tt.isYAML {
+				vuln, err = FromYAML(strings.NewReader(tt.data))
+			} else {
+				vuln, err = FromJSON(strings.NewReader(tt.data))
+			}
+
+			if err != nil {
+				t.Fatalf("unmarshal failed: %v", err)
+			}
+
+			if vuln.GetId() != tt.wantID {
+				t.Errorf("expected ID %q, got %q", tt.wantID, vuln.GetId())
+			}
+
+			if len(vuln.GetAffected()) == 0 || len(vuln.GetAffected()[0].GetRanges()) == 0 {
+				t.Fatalf("no affected ranges unmarshaled")
+			}
+
+			gotType := vuln.GetAffected()[0].GetRanges()[0].GetType()
+			if gotType != tt.wantType {
+				t.Errorf("expected range type %v, got %v", tt.wantType, gotType)
+			}
+
+			if vuln.GetPublished() != nil {
+				gotTime := vuln.GetPublished().AsTime().Format(time.RFC3339Nano)
+				wantTime := tt.wantTime
+				// Compare parsed times
+				parsedGot, err1 := time.Parse(time.RFC3339Nano, gotTime)
+				parsedWant, err2 := time.Parse(time.RFC3339Nano, wantTime)
+				if err1 == nil && err2 == nil {
+					if !parsedGot.Equal(parsedWant) {
+						t.Errorf("expected published time %v, got %v", parsedWant, parsedGot)
+					}
+				} else {
+					if gotTime != wantTime {
+						t.Errorf("expected published time %q, got %q", wantTime, gotTime)
+					}
+				}
+			}
+
+			if tt.verify != nil {
+				tt.verify(t, vuln)
+			}
+		})
 	}
 }

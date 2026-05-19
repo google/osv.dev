@@ -16,6 +16,7 @@
 package vulns
 
 import (
+	"bytes"
 	"cmp"
 	"encoding/json"
 	"errors"
@@ -29,6 +30,7 @@ import (
 	"strings"
 	"sync"
 
+	goccyyaml "github.com/goccy/go-yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
@@ -768,26 +770,49 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 
 // FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
-	decoder := yaml.NewDecoder(r)
-	inner := &osvschema.Vulnerability{}
-	err := decoder.Decode(inner)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Vulnerability{Vulnerability: inner}, nil
+	jsonBytes, err := goccyyaml.YAMLToJSON(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return FromJSON(bytes.NewReader(jsonBytes))
 }
 
 // FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
-	decoder := json.NewDecoder(r)
-	inner := &osvschema.Vulnerability{}
-	err := decoder.Decode(inner)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Vulnerability{Vulnerability: inner}, nil
+	// Check if wrapped with top-level "vulnerability" key
+	var wrapper map[string]json.RawMessage
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return nil, err
+	}
+
+	var innerBytes []byte
+	if inner, ok := wrapper["vulnerability"]; ok {
+		innerBytes = inner
+	} else {
+		innerBytes = data
+	}
+
+	var inner osvschema.Vulnerability
+	opts := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := opts.Unmarshal(innerBytes, &inner); err != nil {
+		// Fall back to standard json.Unmarshal for Go internal struct formats (seconds/nanos)
+		if err2 := json.Unmarshal(innerBytes, &inner); err2 != nil {
+			return nil, err
+		}
+	}
+
+	return &Vulnerability{Vulnerability: &inner}, nil
 }
 
 // CheckQuality will return true if field text is not a filler text or otherwise empty

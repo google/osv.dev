@@ -352,7 +352,7 @@
     {
       "id": "CURL-CVE-2024-11053",
       "summary": "netrc and redirect credential leak",
-      "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits just the password or\nomits both login and password.",
+      "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, curl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.\n\nThis flaw only manifests itself if the netrc file has an entry that matches\nthe redirect target hostname but the entry either omits only the password or\nomits both login and password.",
       "aliases": ["CVE-2024-11053"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-12-11T08:00:00Z",
@@ -556,7 +556,7 @@
     {
       "id": "CURL-CVE-2024-7264",
       "summary": "ASN.1 date parser overread",
-      "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
+      "details": "libcurl's ASN1 parser code has the `GTime2str()` function, used for parsing an\nASN.1 Generalized Time field. If given an syntactically incorrect field, the\nparser might end up using -1 for the length of the *time fraction*, leading to\na `strlen()` getting performed on a pointer to a heap buffer area that is not\n(purposely) null-terminated.\n\nThis flaw most likely leads to a crash, but can also lead to heap contents\ngetting returned to the application when\n[CURLINFO_CERTINFO](https://curl.se/libcurl/c/CURLINFO_CERTINFO.html) is used.",
       "aliases": ["CVE-2024-7264"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2024-07-31T08:00:00Z",
@@ -1168,7 +1168,7 @@
     {
       "id": "CURL-CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
-      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
       "aliases": ["CVE-2026-1965"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T08:00:00Z",
@@ -3268,6 +3268,7 @@
         "SUSE-SU-2026:0911-1",
         "SUSE-SU-2026:0921-1",
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:20668-1",
         "SUSE-SU-2026:20722-1",
         "SUSE-SU-2026:20760-1",
@@ -3485,6 +3486,7 @@
       "published": "2026-05-13T08:27:04.538Z",
       "related": [
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10674-1"
       ],
@@ -3553,6 +3555,7 @@
       "published": "2026-05-13T08:27:26.065Z",
       "related": [
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10674-1"
       ],
@@ -3681,6 +3684,7 @@
       "published": "2026-05-13T08:28:03.004Z",
       "related": [
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10674-1"
       ],
@@ -3749,6 +3753,7 @@
       "published": "2026-05-13T08:28:19.273Z",
       "related": [
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10674-1"
       ],
@@ -3817,6 +3822,7 @@
       "published": "2026-05-13T08:28:36.166Z",
       "related": [
         "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
         "openSUSE-SU-2026:10674-1"
       ],

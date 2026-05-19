@@ -187,7 +187,7 @@
         },
         {
           "id": "PYSEC-2024-71",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1865,6 +1865,10 @@
         "version": "2.7"
       },
       "vulns": [
+        {
+          "id": "GHSA-65pc-fj4g-8rjx",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-jjg7-2v4v-x38h",
           "modified": "<RFC3339 date with the year 2026>"

@@ -285,20 +285,27 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 			return nil, err
 		}
 
-		if sourceRepo.Git.Branch != "" {
-			wt, err := repo.Worktree()
-			if err == nil {
-				_ = wt.Checkout(&git.CheckoutOptions{
-					Branch: plumbing.NewRemoteReferenceName("origin", sourceRepo.Git.Branch),
-					Force:  true,
-				})
-			}
+		var branch plumbing.ReferenceName
+		if sourceRepo.Git.Branch == "" {
+			branch = plumbing.NewRemoteHEADReferenceName("origin")
+		} else {
+			branch = plumbing.NewRemoteReferenceName("origin", sourceRepo.Git.Branch)
 		}
+
+		wt, err := repo.Worktree()
+		if err != nil {
+			return nil, err
+		}
+
+		err = wt.Checkout(&git.CheckoutOptions{
+			Branch: branch,
+			Force:  true,
+		})
 
 		return sharedRepo{
 			Repository: repo,
 			mu:         &sync.Mutex{},
-		}, nil
+		}, err
 	})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {

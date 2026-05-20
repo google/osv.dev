@@ -178,7 +178,6 @@ func TestHandleImportGit(t *testing.T) {
 func TestHandleImportGit_Deletion(t *testing.T) {
 	// Setup a temporary git repo acting as the remote source
 	remoteDir := t.TempDir()
-
 	remoteRepo, err := git.PlainInit(remoteDir, false)
 	if err != nil {
 		t.Fatalf("Failed to init remote repo: %v", err)

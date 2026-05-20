@@ -943,7 +943,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 		metrics.AddNote("No versions detected.")
 	}
 
-	if len(validVersions) > 0 {
+	// Valid versions should only be output if there are errors generating the record
+	if len(metrics.Notes) > 0 && len(validVersions) > 0 {
 		metrics.AddNote("Valid versions:")
 		for _, version := range validVersions {
 			metrics.AddNote("  - %v", version)

@@ -691,3 +691,69 @@ database_specific:
 		})
 	}
 }
+
+// TestToYAMLFromYAMLRoundTripLastAffected is a regression test for empty `{}`
+// events being emitted for advisories whose only upper bound is a last_affected
+// version (e.g. a vulnerability with no released fix).
+//
+// ToYAML must emit the OSV schema's snake_case `last_affected` key. Encoding the
+// protobuf-backed struct with a generic YAML encoder instead emits the
+// lowercased Go field name `lastaffected`, which FromYAML (decoding via
+// protojson with DiscardUnknown) silently drops, leaving an all-empty event
+// that serializes to `{}` and violates the OSV schema.
+// See https://github.com/pypa/advisory-database/issues/284.
+func TestToYAMLFromYAMLRoundTripLastAffected(t *testing.T) {
+	vuln := &Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{Id: "PYSEC-0000-TEST"},
+	}
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "pyjwt",
+		Ecosystem: "PyPI",
+		PURL:      "pkg:pypi/pyjwt",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{LastAffected: "2.12.1"},
+			},
+		},
+	})
+
+	var buf strings.Builder
+	if err := vuln.ToYAML(&buf); err != nil {
+		t.Fatalf("ToYAML failed: %v", err)
+	}
+	yamlOut := buf.String()
+
+	// ToYAML must emit the OSV schema key, not the lowercased Go field name.
+	if strings.Contains(yamlOut, "lastaffected") {
+		t.Errorf("ToYAML emitted non-schema key 'lastaffected':\n%s", yamlOut)
+	}
+	if !strings.Contains(yamlOut, "last_affected") {
+		t.Errorf("ToYAML did not emit 'last_affected' key:\n%s", yamlOut)
+	}
+
+	roundTripped, err := FromYAML(strings.NewReader(yamlOut))
+	if err != nil {
+		t.Fatalf("FromYAML failed: %v", err)
+	}
+
+	if len(roundTripped.GetAffected()) == 0 || len(roundTripped.GetAffected()[0].GetRanges()) == 0 {
+		t.Fatalf("no affected ranges survived the round-trip")
+	}
+
+	events := roundTripped.GetAffected()[0].GetRanges()[0].GetEvents()
+	lastAffectedSeen := false
+	for i, ev := range events {
+		// Every OSV event must carry exactly one of introduced/fixed/
+		// last_affected/limit; an all-empty event serializes to `{}`.
+		if ev.GetIntroduced() == "" && ev.GetFixed() == "" &&
+			ev.GetLastAffected() == "" && ev.GetLimit() == "" {
+			t.Errorf("event[%d] is empty after round-trip; would serialize to '{}'", i)
+		}
+		if ev.GetLastAffected() == "2.12.1" {
+			lastAffectedSeen = true
+		}
+	}
+	if !lastAffectedSeen {
+		t.Errorf("last_affected '2.12.1' did not survive the YAML round-trip; events=%v", events)
+	}
+}

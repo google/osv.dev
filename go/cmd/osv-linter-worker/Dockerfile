@@ -31,6 +31,7 @@ RUN go generate ./...
 RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/osv-linter ./cmd/osv
 
 # Build the worker binary
+COPY --from=bindings . /src/osv.dev/bindings/
 WORKDIR /src/osv.dev/go
 COPY go.mod go.sum ./
 RUN go mod download

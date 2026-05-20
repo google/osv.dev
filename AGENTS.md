@@ -160,44 +160,68 @@ Many tests use expected outputs saved directly in the source tree:
   ```
   - Add custom mock testcases inside [`gcp/website/testdata/osv/`](gcp/website/testdata/osv/).
 
+### Local API Server Development (Go-native)
+- To run the public OSV API server locally using the native Go implementation alongside the ESPv2 proxy (which transcodes HTTP/JSON REST requests to gRPC):
+  ```bash
+  make run-go-api
+  ```
+
 ---
 
 ## Go Component Architecture (`go/`)
 The Go component contains the active and migrated services for the OSV database. It is structured with executables in `cmd/` and shared libraries in `internal/`.
+
+### Go Monorepo Docker Builds
+All Go microservices are compiled using a single, unified multi-target Dockerfile (`go/Dockerfile`) which shares the workspace compilation setup.
+- Due to the `replace` directive in `go/go.mod` pointing to the sibling `bindings/` library, Go Docker builds **must** mount the `bindings/` folder into the build context.
+- Since the production Cloud Build steps run inside `dir: 'go'`, they leverage BuildKit's `--build-context` flag to cleanly map the sibling folder without importing other monorepo files:
+  ```bash
+  docker build -t osv/importer --target importer --build-context bindings=../bindings -f Dockerfile .
+  ```
+- For local dev testing, you can use the exact same command inside the `go/` directory.
 
 > [!IMPORTANT]
 > **Python to Go Migration**: We are actively migrating core services from Python to Go. For example, the new Go-based worker (`go/cmd/worker/`) replaces the legacy Python worker (`gcp/workers/worker/`). Always prefer modifying the Go implementation if both exist, unless instructed otherwise.
 
 ### Executables (`go/cmd/`)
 
-1. **`importer`**:
+1. **`api`**:
+   - The public OSV gRPC API server.
+   - Defined in `go/cmd/api` as a thin wrapper calling into the `go/internal/api` library.
+
+2. **`api-devserver`**:
+   - Development orchestrator command for local testing.
+   - Spawns the Go API server natively in a background thread while concurrently running the `osv-esp` (ESPv2) docker container to perform HTTP/JSON to gRPC transcoding.
+
+3. **`importer`**:
    - Run as a cron job.
    - Reads from each vulnerability data source (defined as `SourceRepository` in Datastore or mapped in [`source.yaml`](source.yaml) / [`source_test.yaml`](source_test.yaml)).
    - Detects new or deleted vulnerability records.
    - Dispatches processing tasks via **GCP Pub/Sub** to the worker.
 
-2. **`worker`**:
+4. **`worker`**:
    - Daemon that subscribes to Pub/Sub tasks.
    - Ingests and enriches vulnerability records.
    - Computes affected Git ranges for commit-based querying.
    - Writes the enriched records to the database (GCS/Datastore).
    - Powered by a modular processing pipeline defined in [`go/internal/worker/pipeline/`](go/internal/worker/pipeline/).
 
-3. **`exporter`**:
+5. **`exporter`**:
    - Exports the entire database to a public GCS bucket.
    - Generates a root `all.zip` file containing all records.
    - Generates ecosystem-specific `all.zip` files (e.g., `PyPI/all.zip`).
    - Outputs individual vulnerability JSON files in their respective ecosystem folders (e.g., `PyPI/GHSA-abcd-efgh.json`).
 
-4. **`relations`**:
+6. **`relations`**:
    - Populates relationships between vulnerabilities in the database.
    - Calculates transitive and reflective `aliases`, reflective `related` vulnerabilities, and transitive `upstream` fields.
 
-5. **`gitter`**:
+7. **`gitter`**:
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
 ### Internal Shared Libraries (`go/internal/`)
+- **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
   - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).

@@ -33,7 +33,6 @@ import (
 	goccyyaml "github.com/goccy/go-yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -410,8 +409,23 @@ func (v *Vulnerability) ToJSON(w io.Writer) error {
 
 // ToYAML serializes the Vulnerability to YAML.
 func (v *Vulnerability) ToYAML(w io.Writer) error {
-	encoder := yaml.NewEncoder(w)
-	return encoder.Encode(v.Vulnerability)
+	// Go via protojson so the OSV schema's field names (e.g. last_affected),
+	// string enums and omitempty are honored. Encoding the protobuf-backed
+	// struct directly with a generic YAML encoder emits lowercased Go field
+	// names that FromYAML (which decodes via protojson) then silently drops.
+	jsonBytes, err := protojson.Marshal(v.Vulnerability)
+	if err != nil {
+		return err
+	}
+
+	yamlBytes, err := goccyyaml.JSONToYAML(jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(yamlBytes)
+
+	return err
 }
 
 // ClassifyReferenceLink infers the OSV schema's reference type for a given URL.

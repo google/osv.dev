@@ -901,7 +901,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case len(se.Limit) > 0:
 		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
-	case considerAllBranches:
+	case considerAllBranches || (len(se.Fixed) == 0 && len(se.LastAffected) == 0):
 		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
 	default:
 		affectedCommits = repo.AffectedSingleBranch(ctx, se)

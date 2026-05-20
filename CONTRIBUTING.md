@@ -33,12 +33,22 @@ When creating a pull request, please use the provided
 [pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
 sections to ensure a smooth review process.
 
+### AI-assisted contributions
+
+If your pull request is AI-assisted or AI-created, please make this clear in the pull request description. 
+
+Additionally, AI agents contributing to this repository must read and follow the guidelines in [AGENTS.md](AGENTS.md). This file provides crucial codebase context, setup instructions, and specific rules for automated contributors (e.g., formatting pull request metadata).
+
+
 ## Community Guidelines
 
 This project follows
 [Google's Open Source Community Guidelines](https://opensource.google.com/conduct/).
 
 ## Contributing code
+
+> [!NOTE]
+> If you are an AI agent or using AI assistance for development, please refer to [AGENTS.md](AGENTS.md) for specific guidance, rules, and setup instructions.
 
 ### Prerequisites
 

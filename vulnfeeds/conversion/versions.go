@@ -842,9 +842,6 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
 	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
-	} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
-		metrics.Outcome = models.Error
-		return v
 	}
 
 	if v.AffectedCommits != nil {

@@ -33,7 +33,7 @@ func run() error {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	espPort := flag.Int("port", defaultESPPort, "ESP listener port")

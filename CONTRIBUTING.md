@@ -159,6 +159,16 @@ make update-api-snapshots
 
 and check the git diff to see if the API result changes are expected.
 
+#### Go Monorepo Docker Builds
+
+All Go microservices are compiled using a single, unified multi-target Dockerfile (`go/Dockerfile`).
+- Due to the `replace` directive in `go/go.mod` pointing to the sibling `bindings/` library, Go Docker builds **must** mount the `bindings/` folder into the build context.
+- To build a Go service container (e.g. `importer`) locally, run the `docker build` command inside the `go/` directory using BuildKit's `--build-context` flag to map the sibling directory:
+  ```shell
+  cd go
+  docker build -t osv/importer --target importer --build-context bindings=../bindings -f Dockerfile .
+  ```
+
 ### Frontend development
 
 #### Running a local UI instance (maintainers only)

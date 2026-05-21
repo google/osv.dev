@@ -17,3 +17,5 @@ temp/*
 **/tmp/**
 gcp/api/v1/osv/**
 .hypothesis
+go/api-devserver
+esp.log

@@ -7,6 +7,7 @@ linters:
     - forbidigo
     - paralleltest
     - tparallel
+    - gomoddirectives  # Allow local replace directives since this is a private module
     - cyclop           #
     - depguard         # Too annoying
     - err113           # will re-add later (another-rex)

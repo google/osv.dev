@@ -12,6 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ====================================================================================
+# HOW TO BUILD THIS DOCKERFILE LOCALLY:
+# 
+# Because go/go.mod contains a relative replacement directive for bindings/go, 
+# you must build this Dockerfile from the go/ directory and explicitly map 
+# the sibling bindings/ folder in BuildKit using --build-context:
+# 
+#   cd go
+#   docker build -t osv/importer --target importer --build-context bindings=../bindings -f Dockerfile .
+# 
+# Select which service to build using the --target flag (e.g. importer, worker, exporter, 
+# relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder, api).
+# ====================================================================================
+
 # ========================================================
 # Shared Builder Stage
 # ========================================================

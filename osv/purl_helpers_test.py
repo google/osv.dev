@@ -178,6 +178,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:deb/ubuntu/pygments',
                      purl_helpers.package_to_purl('Ubuntu', 'pygments'))
 
+    self.assertEqual(
+        'pkg:vscode-extension/ms-python/python',
+        purl_helpers.package_to_purl('VSCode', 'ms-python/python'))
+
     self.assertEqual('pkg:apk/wolfi/test-package',
                      purl_helpers.package_to_purl('Wolfi', 'test-package'))
 
@@ -333,6 +337,11 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual(('Ubuntu', 'pygments', '2.11.2+dfsg-2ubuntu0.1'),
                      purl_helpers.parse_purl(
                          'pkg:deb/ubuntu/pygments@2.11.2+dfsg-2ubuntu0.1'))
+
+    self.assertEqual(
+        ('VSCode', 'ms-python/python', '2023.25.10292213'),
+        purl_helpers.parse_purl(
+            'pkg:vscode-extension/ms-python/python@2023.25.10292213'))
 
     self.assertEqual(
         ('Wolfi', 'test-package', '1.2.3'),

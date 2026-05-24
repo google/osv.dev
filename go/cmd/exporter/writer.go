@@ -89,5 +89,6 @@ func gcsContentUnchanged(ctx context.Context, client clients.CloudStorage, path 
 
 		return true
 	}
+
 	return false
 }

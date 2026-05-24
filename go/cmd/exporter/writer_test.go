@@ -11,7 +11,7 @@ import (
 )
 
 // runWriter sends msgs to a writer goroutine and waits for it to finish.
-func runWriter(t *testing.T, storage clients.CloudStorage, pathPrefix string, msgs []writeMsg) {
+func runWriter(t *testing.T, storage clients.CloudStorage, msgs []writeMsg) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -24,7 +24,7 @@ func runWriter(t *testing.T, storage clients.CloudStorage, pathPrefix string, ms
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go writer(ctx, cancel, inCh, storage, pathPrefix, &wg)
+	go writer(ctx, cancel, inCh, storage, "out", &wg)
 	wg.Wait()
 }
 
@@ -39,7 +39,7 @@ func TestWriter_GCS_SkipsUnchangedContent(t *testing.T) {
 	}
 	attrsBefore, _ := storage.ReadObjectAttrs(t.Context(), objPath)
 
-	runWriter(t, storage, "out", []writeMsg{
+	runWriter(t, storage, []writeMsg{
 		{path: "OSV-1.json", mimeType: "application/json", data: data},
 	})
 
@@ -61,7 +61,7 @@ func TestWriter_GCS_UploadsChangedContent(t *testing.T) {
 	}
 	attrsBefore, _ := storage.ReadObjectAttrs(t.Context(), objPath)
 
-	runWriter(t, storage, "out", []writeMsg{
+	runWriter(t, storage, []writeMsg{
 		{path: "OSV-1.json", mimeType: "application/json", data: []byte(`{"id":"OSV-1","old":false}`)},
 	})
 
@@ -77,7 +77,7 @@ func TestWriter_GCS_UploadsChangedContent(t *testing.T) {
 func TestWriter_GCS_UploadsNewObject(t *testing.T) {
 	storage := testutils.NewMockStorage()
 
-	runWriter(t, storage, "out", []writeMsg{
+	runWriter(t, storage, []writeMsg{
 		{path: "OSV-1.json", mimeType: "application/json", data: []byte(`{"id":"OSV-1"}`)},
 	})
 
@@ -120,7 +120,7 @@ func TestWriter_GCS_SkipsMultipleUnchanged(t *testing.T) {
 	for i, e := range entries {
 		msgs[i] = writeMsg{path: e.msgPath, mimeType: "application/json", data: e.data}
 	}
-	runWriter(t, storage, "out", msgs)
+	runWriter(t, storage, msgs)
 
 	for _, e := range entries {
 		attrs, err := storage.ReadObjectAttrs(t.Context(), e.objPath)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/grpc"
 	pb "osv.dev/bindings/go/api"
@@ -13,20 +14,32 @@ import (
 
 type server struct {
 	pb.UnimplementedOSVServer
+
+	vulnStore      models.VulnerabilityStore
+	relationsStore models.RelationsStore
+}
+
+type ServerOptions struct {
+	Port           int
+	VulnStore      models.VulnerabilityStore
+	RelationsStore models.RelationsStore
 }
 
 // RunServer starts the gRPC server and handles graceful shutdown.
-func RunServer(ctx context.Context, port int) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func RunServer(ctx context.Context, opts ServerOptions) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.Port))
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to listen", "error", err)
 		return err
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterOSVServer(s, &server{})
+	pb.RegisterOSVServer(s, &server{
+		vulnStore:      opts.VulnStore,
+		relationsStore: opts.RelationsStore,
+	})
 
-	logger.InfoContext(ctx, "server listening", "port", port)
+	logger.InfoContext(ctx, "server listening", "port", opts.Port)
 
 	serveErr := make(chan error, 1)
 	go func() {

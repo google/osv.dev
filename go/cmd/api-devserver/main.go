@@ -6,14 +6,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
+	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/api"
+	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 )
 
 const (
@@ -65,11 +70,7 @@ func run() error {
 
 	if !*noBackend {
 		logger.InfoContext(ctx, "Starting Go API backend natively", "port", *backendPort)
-		go func() {
-			if err := api.RunServer(ctx, *backendPort); err != nil {
-				logger.ErrorContext(ctx, "Go API server exited", "error", err)
-			}
-		}()
+		go runBackend(ctx, *backendPort)
 	}
 
 	logger.InfoContext(ctx, "Starting ESPv2 container", "port", *espPort, "backendPort", *backendPort)
@@ -148,4 +149,42 @@ func runCmdAsync(cmd *exec.Cmd) <-chan error {
 	}()
 
 	return out
+}
+
+func runBackend(ctx context.Context, port int) {
+	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if project == "" {
+		logger.ErrorContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
+		return
+	}
+	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the (default) database
+	dbClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to create datastore client", "error", err)
+		return
+	}
+	defer dbClient.Close()
+	gcsClient, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to create storage client", slog.Any("error", err))
+		return
+	}
+	defer gcsClient.Close()
+	vulnBucket := os.Getenv("OSV_VULNERABILITIES_BUCKET")
+	if vulnBucket == "" {
+		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
+		return
+	}
+	vulnStore := db.NewVulnerabilityStore(db.VulnStoreConfig{
+		Client: dbClient,
+		GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
+	})
+	relationsStore := db.NewRelationsStore(dbClient)
+	if err := api.RunServer(ctx, api.ServerOptions{
+		Port:           port,
+		VulnStore:      vulnStore,
+		RelationsStore: relationsStore,
+	}); err != nil {
+		logger.ErrorContext(ctx, "Go API server exited", "error", err)
+	}
 }

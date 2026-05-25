@@ -34,7 +34,7 @@ spec:
           - name: GITTER_HOST
             value: http://gitter-service:8888
           - name: PUBSUB_SUBSCRIPTION
-            value: tasks
+            value: default-pool
           - name: DATASTORE_DATABASE_ID
             value: "" # default
           - name: FAILED_TASKS_TOPIC

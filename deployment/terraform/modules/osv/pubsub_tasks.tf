@@ -18,9 +18,9 @@ resource "google_pubsub_topic" "failed_tasks" {
   name    = "failed-tasks"
 }
 
-resource "google_pubsub_subscription" "tasks" {
+resource "google_pubsub_subscription" "default_work" {
   project                    = var.project_id
-  name                       = "tasks"
+  name                       = "default-pool"
   topic                      = google_pubsub_topic.tasks.id
   message_retention_duration = "604800s"
   ack_deadline_seconds       = 600
@@ -37,6 +37,8 @@ resource "google_pubsub_subscription" "tasks" {
   labels = {
     goog-dm = "pubsub"
   }
+
+  filter = "attributes.work_pool = \"default\""
 }
 
 resource "google_pubsub_topic" "pypi_bridge" {
@@ -51,9 +53,9 @@ resource "google_project_service_identity" "pubsub" {
   service  = "pubsub.googleapis.com"
 }
 
-resource "google_pubsub_subscription_iam_member" "tasks_service_subscriber" {
+resource "google_pubsub_subscription_iam_member" "default_work_service_subscriber" {
   project      = var.project_id
-  subscription = google_pubsub_subscription.tasks.name
+  subscription = google_pubsub_subscription.default_work.name
   role         = "roles/pubsub.subscriber"
   member       = "serviceAccount:${google_project_service_identity.pubsub.email}"
 }

@@ -16,6 +16,7 @@
 package vulns
 
 import (
+	"bytes"
 	"cmp"
 	"encoding/json"
 	"errors"
@@ -29,9 +30,9 @@ import (
 	"strings"
 	"sync"
 
+	goccyyaml "github.com/goccy/go-yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"gopkg.in/yaml.v2"
 
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -289,32 +290,38 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			Type:   osvschema.Range_ECOSYSTEM,
 			Events: []*osvschema.Event{},
 		}
-		hasIntroduced := false
+		seenIntroduced := map[string]bool{}
+		seenFixed := map[string]bool{}
+		seenLastAffected := map[string]bool{}
+
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
-			if av.Introduced != "" {
-				hasIntroduced = true
-				versionRange.Events = append(versionRange.Events, &osvschema.Event{
-					Introduced: av.Introduced,
-				})
+			var introduced string
+			if av.Introduced == "" {
+				introduced = "0"
+			} else {
+				introduced = av.Introduced
 			}
-			if av.Fixed != "" {
+
+			if _, seen := seenIntroduced[introduced]; !seen {
+				versionRange.Events = append(versionRange.Events, &osvschema.Event{
+					Introduced: introduced,
+				})
+				seenIntroduced[introduced] = true
+			}
+
+			if _, seen := seenFixed[av.Fixed]; av.Fixed != "" && !seen {
 				versionRange.Events = append(versionRange.Events, &osvschema.Event{
 					Fixed: av.Fixed,
 				})
+				seenFixed[av.Fixed] = true
 			}
-			if av.LastAffected != "" {
+
+			if _, seen := seenLastAffected[av.LastAffected]; av.LastAffected != "" && !seen {
 				versionRange.Events = append(versionRange.Events, &osvschema.Event{
 					LastAffected: av.LastAffected,
 				})
+				seenLastAffected[av.LastAffected] = true
 			}
-		}
-
-		if !hasIntroduced {
-			// If no introduced entry, add one with special value of 0 to indicate
-			// all versions before fixed is affected
-			versionRange.Events = append([]*osvschema.Event{{
-				Introduced: "0",
-			}}, versionRange.GetEvents()...)
 		}
 		affected.Ranges = append(affected.Ranges, versionRange)
 	}
@@ -402,8 +409,23 @@ func (v *Vulnerability) ToJSON(w io.Writer) error {
 
 // ToYAML serializes the Vulnerability to YAML.
 func (v *Vulnerability) ToYAML(w io.Writer) error {
-	encoder := yaml.NewEncoder(w)
-	return encoder.Encode(v)
+	// Go via protojson so the OSV schema's field names (e.g. last_affected),
+	// string enums and omitempty are honored. Encoding the protobuf-backed
+	// struct directly with a generic YAML encoder emits lowercased Go field
+	// names that FromYAML (which decodes via protojson) then silently drops.
+	jsonBytes, err := protojson.Marshal(v.Vulnerability)
+	if err != nil {
+		return err
+	}
+
+	yamlBytes, err := goccyyaml.JSONToYAML(jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(yamlBytes)
+
+	return err
 }
 
 // ClassifyReferenceLink infers the OSV schema's reference type for a given URL.
@@ -768,26 +790,49 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 
 // FromYAML deserializes a Vulnerability from a YAML reader.
 func FromYAML(r io.Reader) (*Vulnerability, error) {
-	decoder := yaml.NewDecoder(r)
-	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
-	err := decoder.Decode(&vuln)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &vuln, nil
+	jsonBytes, err := goccyyaml.YAMLToJSON(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return FromJSON(bytes.NewReader(jsonBytes))
 }
 
 // FromJSON deserializes a Vulnerability from a JSON reader.
 func FromJSON(r io.Reader) (*Vulnerability, error) {
-	decoder := json.NewDecoder(r)
-	vuln := Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
-	err := decoder.Decode(&vuln)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &vuln, nil
+	// Check if wrapped with top-level "vulnerability" key
+	var wrapper map[string]json.RawMessage
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return nil, err
+	}
+
+	var innerBytes []byte
+	if inner, ok := wrapper["vulnerability"]; ok {
+		innerBytes = inner
+	} else {
+		innerBytes = data
+	}
+
+	var inner osvschema.Vulnerability
+	opts := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := opts.Unmarshal(innerBytes, &inner); err != nil {
+		// Fall back to standard json.Unmarshal for Go internal struct formats (seconds/nanos)
+		if err2 := json.Unmarshal(innerBytes, &inner); err2 != nil {
+			return nil, err
+		}
+	}
+
+	return &Vulnerability{Vulnerability: &inner}, nil
 }
 
 // CheckQuality will return true if field text is not a filler text or otherwise empty

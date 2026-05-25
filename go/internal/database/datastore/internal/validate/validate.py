@@ -142,6 +142,7 @@ def main() -> int:
       human_link='https://github.com/google/oss-fuzz/tree/master/',
       db_prefix=['OSS-FUZZ', 'OTHER'],
       strict_validation=True,
+      work_pool='pool',
   ).put()
 
   # Run Go program to read the Python-created entities in Go.

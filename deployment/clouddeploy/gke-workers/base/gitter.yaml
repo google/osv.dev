@@ -54,16 +54,25 @@ spec:
           claimName: gitter-disk-pvc
 
 ---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gitter-disk-sc
+provisioner: pd.csi.storage.gke.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: gitter-disk-pv
 spec:
-  storageClassName: ""
+  storageClassName: "gitter-disk-sc"
   capacity:
     storage: 6Ti
   accessModes:
     - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
   csi:
     driver: pd.csi.storage.gke.io
     volumeHandle: projects/oss-vdb/zones/us-central1-f/disks/gitter-disk
@@ -74,7 +83,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: gitter-disk-pvc
 spec:
-  storageClassName: ""
+  storageClassName: "gitter-disk-sc"
   volumeName: gitter-disk-pv
   accessModes:
     - ReadWriteOnce

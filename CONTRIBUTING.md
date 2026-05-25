@@ -33,12 +33,22 @@ When creating a pull request, please use the provided
 [pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
 sections to ensure a smooth review process.
 
+### AI-assisted contributions
+
+If your pull request is AI-assisted or AI-created, please make this clear in the pull request description. 
+
+Additionally, AI agents contributing to this repository must read and follow the guidelines in [AGENTS.md](AGENTS.md). This file provides crucial codebase context, setup instructions, and specific rules for automated contributors (e.g., formatting pull request metadata).
+
+
 ## Community Guidelines
 
 This project follows
 [Google's Open Source Community Guidelines](https://opensource.google.com/conduct/).
 
 ## Contributing code
+
+> [!NOTE]
+> If you are an AI agent or using AI assistance for development, please refer to [AGENTS.md](AGENTS.md) for specific guidance, rules, and setup instructions.
 
 ### Prerequisites
 
@@ -148,6 +158,16 @@ make update-api-snapshots
 ```
 
 and check the git diff to see if the API result changes are expected.
+
+#### Go Monorepo Docker Builds
+
+All Go microservices are compiled using a single, unified multi-target Dockerfile (`go/Dockerfile`).
+- Due to the `replace` directive in `go/go.mod` pointing to the sibling `bindings/` library, Go Docker builds **must** mount the `bindings/` folder into the build context.
+- To build a Go service container (e.g. `importer`) locally, run the `docker build` command inside the `go/` directory using BuildKit's `--build-context` flag to map the sibling directory:
+  ```shell
+  cd go
+  docker build -t osv/importer --target importer --build-context bindings=../bindings -f Dockerfile .
+  ```
 
 ### Frontend development
 

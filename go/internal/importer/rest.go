@@ -138,6 +138,10 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			return true
 		}
 		path := id.String() + sourceRepo.Extension
+		pool := sourceRepo.WorkPool
+		if !hasUpdateTime {
+			pool = config.ReimportTaskPool
+		}
 		select {
 		case <-ctx.Done():
 			iterErr = ctx.Err()
@@ -156,6 +160,7 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			KeyPath:                sourceRepo.KeyPath,
 			Strict:                 sourceRepo.Strictness,
 			IsReimport:             !hasUpdateTime,
+			WorkPool:               pool,
 		}:
 		}
 
@@ -304,6 +309,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			SourceRepository: entry.Source,
 			SourcePath:       entry.Path,
 			Action:           ActionWithdraw,
+			WorkPool:         sourceRepo.WorkPool,
 		}:
 		}
 	}
@@ -414,7 +420,7 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 			urlPath: pathValue,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON, config.ReimportTaskPool)
 
 		return true
 	})

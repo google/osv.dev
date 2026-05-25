@@ -102,6 +102,7 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 		Link:       sr.Link,
 		HumanLink:  sr.HumanLink,
 		IDPrefixes: sr.DBPrefix,
+		WorkPool:   sr.WorkPool,
 	}
 	switch sr.Type {
 	case models.SourceRepositoryTypeGit:
@@ -147,6 +148,7 @@ func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository 
 		Link:               r.Link,
 		HumanLink:          r.HumanLink,
 		DBPrefix:           r.IDPrefixes,
+		WorkPool:           r.WorkPool,
 	}
 
 	if r.GitAnalysis != nil {

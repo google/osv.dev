@@ -969,8 +969,8 @@ func TestExtractVersionInfo_429(t *testing.T) {
 	if len(gotVersionInfo.AffectedCommits) != 0 {
 		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
 	}
-	if metrics.Outcome != models.Error {
-		t.Errorf("Expected outcome to be Error, got %v", metrics.Outcome)
+	if metrics.Outcome == models.Error {
+		t.Errorf("Did not expected outcome to be Error, got %v", metrics.Outcome)
 	}
 }
 

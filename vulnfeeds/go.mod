@@ -12,7 +12,7 @@ require (
 	github.com/atombender/go-jsonschema v0.23.0
 	github.com/fsouza/fake-gcs-server v1.54.0
 	github.com/gkampitakis/go-snaps v0.5.21
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/text v0.36.0
-	google.golang.org/api v0.278.0
+	golang.org/x/text v0.37.0
+	google.golang.org/api v0.279.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	gopkg.in/yaml.v2 v2.4.0

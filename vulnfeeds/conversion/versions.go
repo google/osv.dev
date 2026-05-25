@@ -842,9 +842,6 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
 	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
 		v.AffectedCommits = append(v.AffectedCommits, commit...)
-	} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
-		metrics.Outcome = models.Error
-		return v
 	}
 
 	if v.AffectedCommits != nil {
@@ -943,7 +940,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *h
 		metrics.AddNote("No versions detected.")
 	}
 
-	if len(validVersions) > 0 {
+	// Valid versions should only be output if there are errors generating the record
+	if len(metrics.Notes) > 0 && len(validVersions) > 0 {
 		metrics.AddNote("Valid versions:")
 		for _, version := range validVersions {
 			metrics.AddNote("  - %v", version)

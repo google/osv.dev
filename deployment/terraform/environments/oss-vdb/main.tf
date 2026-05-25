@@ -46,6 +46,11 @@ module "osv" {
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
   esp_version    = "2.55.1"
+
+  extra_work_pools = [
+    "reimport",
+    "cves",
+  ]
 }
 
 module "oss_fuzz" {

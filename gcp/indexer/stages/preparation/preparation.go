@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -66,7 +66,7 @@ type Checker interface {
 type Stage struct {
 	Checker Checker
 	RepoHdl *storage.BucketHandle
-	Output  *pubsub.Topic
+	Output  *pubsub.Publisher
 }
 
 // Run runs the stage and outputs Result data types to the results channel.

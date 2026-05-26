@@ -20,7 +20,7 @@ import (
 	"flag"
 	"fmt"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/gcp/indexer/config"
 	"github.com/google/osv.dev/gcp/indexer/stages/preparation"
@@ -66,7 +66,8 @@ func main() {
 	defer storer.Close()
 
 	if *worker {
-		if err := runWorker(ctx, storer, repoBucketHdl, psCl.Subscription(*subName), *subMessages); err != nil {
+		sub := psCl.Subscriber(fmt.Sprintf("projects/%s/subscriptions/%s", *projectID, *subName))
+		if err := runWorker(ctx, storer, repoBucketHdl, sub, *subMessages); err != nil {
 			log.Exitf("failed to run worker: %v", err)
 		}
 		return
@@ -77,7 +78,7 @@ func main() {
 	}
 }
 
-func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscription, outstanding int) error {
+func runWorker(ctx context.Context, storer *idxStorage.Store, repoBucketHdl *storage.BucketHandle, sub *pubsub.Subscriber, outstanding int) error {
 	procStage := processing.Stage{
 		Storer:                    storer,
 		RepoHdl:                   repoBucketHdl,
@@ -98,7 +99,7 @@ func runController(ctx context.Context, storer *idxStorage.Store, repoBucketHdl,
 		return fmt.Errorf("failed to load configurations: %v", err)
 	}
 
-	topic := psCl.Topic(*pubsubTopic)
+	topic := psCl.Publisher(fmt.Sprintf("projects/%s/topics/%s", *projectID, *pubsubTopic))
 	defer topic.Stop()
 
 	prepStage := &preparation.Stage{

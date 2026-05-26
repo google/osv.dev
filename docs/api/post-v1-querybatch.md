@@ -8,6 +8,14 @@ nav_order: 3
 # POST /v1/querybatch
 Query for multiple packages (by either package and version or git commit hash) at once. Returns vulnerability ids and modified field only. The response ordering will be guaranteed to match the input.
 
+Each item in `results` corresponds to the query at the same index in `queries`.
+If a query has no matched vulnerabilities, its corresponding result entry may
+be an empty object. The `vulns` entries are intentionally summaries containing
+`id` and `modified`, not full vulnerability records. To retrieve the complete
+OSV record, call [GET /v1/vulns/{id}](get-v1-vulns.md) for the returned IDs;
+clients can use the `id` and `modified` pair to decide whether a cached record
+is still fresh.
+
 {: .no_toc }
 
 <details open markdown="block">

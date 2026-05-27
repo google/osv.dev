@@ -44,7 +44,7 @@ GEM
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
-    faraday-net_http (3.4.2)
+    faraday-net_http (3.4.3)
       net-http (~> 0.5)
     ffi (1.17.4-x86_64-linux-gnu)
     forwardable-extended (2.6.0)

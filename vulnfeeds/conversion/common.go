@@ -673,21 +673,14 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 	}
 
 	// Dynamically record the precise sources from each processed range's metadata.
-	// This ensures that granular version sources (such as CPE-RANGE or CPE-STRING) are tracked in
+	// This ensures that granular version sources (such as CPE_RANGE or CPE_STRING) are tracked in
 	// the final conversion metrics instead of a single generic fallback source.
-	for _, rng := range ranges {
-		if rng.Metadata.Source == "" {
+	for _, ra := range ranges {
+		if ra.Metadata.Source == "" {
 			continue
 		}
-		found := false
-		for _, s := range metrics.VersionSources {
-			if s == rng.Metadata.Source {
-				found = true
-				break
-			}
-		}
-		if !found {
-			metrics.VersionSources = append(metrics.VersionSources, rng.Metadata.Source)
+		if !slices.Contains(metrics.VersionSources, ra.Metadata.Source) {
+			metrics.VersionSources = append(metrics.VersionSources, ra.Metadata.Source)
 		}
 	}
 

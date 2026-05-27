@@ -179,6 +179,13 @@ func repo(u string) (string, error) {
 		}
 	}
 
+	if strings.ToLower(parsedURL.Hostname()) == "github.com" {
+		pathParts := strings.Split(parsedURL.Path, "/")
+		if len(pathParts) >= 2 && strings.ToLower(pathParts[1]) == "advisories" {
+			return "", fmt.Errorf("%q is a GHSA reference link, not a repository", u)
+		}
+	}
+
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
 		pathParts := strings.Split(parsedURL.Path, "/")

@@ -874,14 +874,14 @@ setuptools = ">=77.0.1"
 
 [[package]]
 name = "hypothesis"
-version = "6.152.8"
+version = "6.153.2"
 description = "The property-based testing library for Python"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "hypothesis-6.152.8-py3-none-any.whl", hash = "sha256:61b1e6e14f0623e8afe27a4a1b1fce5a4611beefef015b987a5c7d0359babbda"},
-    {file = "hypothesis-6.152.8.tar.gz", hash = "sha256:9c0dd56c6ce5649ef3289555ae9fec40663401cf7134a99f926acf1b91fb6d9f"},
+    {file = "hypothesis-6.153.2-py3-none-any.whl", hash = "sha256:db489369f89ea7aa724052f4725d3839f0f9d42fed1bb92d279a221a3585e215"},
+    {file = "hypothesis-6.153.2.tar.gz", hash = "sha256:6f53e84b51c1f6c4173d6698880ddc2d05947ca649caa552afa26a01c2d964c1"},
 ]
 
 [package.dependencies]

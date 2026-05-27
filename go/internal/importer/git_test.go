@@ -1,6 +1,8 @@
 package importer
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"os"
 	"path/filepath"
@@ -251,5 +253,157 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 	// Verify the LastSyncedCommit was updated
 	if sourceRepo.Git.LastSyncedCommit != commitB.String() {
 		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB.String(), sourceRepo.Git.LastSyncedCommit)
+	}
+}
+
+func TestHandleReconcileGit_CleanUntracked(t *testing.T) {
+	// Setup a temporary git repo acting as the remote source
+	remoteDir := t.TempDir()
+	remoteRepo, err := git.PlainInit(remoteDir, false)
+	if err != nil {
+		t.Fatalf("Failed to init remote repo: %v", err)
+	}
+	remoteWt, err := remoteRepo.Worktree()
+	if err != nil {
+		t.Fatalf("Failed to get remote worktree: %v", err)
+	}
+
+	// Initial commit: tracked files in root and subdir
+	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file: %v", err)
+	}
+	if err := os.Mkdir(filepath.Join(remoteDir, "tracked_dir"), 0755); err != nil {
+		t.Fatalf("Failed to create tracked dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(remoteDir, "tracked_dir", "CVE-B.json"), []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write file in tracked dir: %v", err)
+	}
+	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
+		t.Fatalf("Failed to add file: %v", err)
+	}
+	if _, err := remoteWt.Add("tracked_dir/CVE-B.json"); err != nil {
+		t.Fatalf("Failed to add file in tracked dir: %v", err)
+	}
+	_, err = remoteWt.Commit("Initial", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
+	})
+	if err != nil {
+		t.Fatalf("Failed to commit: %v", err)
+	}
+
+	mockStore := &mockSourceRepositoryStore{
+		updates: make(map[string]any),
+	}
+	mockVulnStore := &mockVulnerabilityStore{
+		Entries: make(map[string][]*models.VulnSourceRef),
+	}
+	workDir := t.TempDir()
+
+	config := Config{
+		SourceRepoStore:    mockStore,
+		VulnerabilityStore: mockVulnStore,
+		GitWorkDir:         workDir,
+	}
+
+	sourceRepo := &models.SourceRepository{
+		Name:      "test-git-repo",
+		Type:      models.SourceRepositoryTypeGit,
+		Extension: ".json",
+		Git: &models.SourceRepoGit{
+			URL: remoteDir,
+		},
+	}
+
+	// 1. Run reconcile first time to clone the repo
+	ch := make(chan WorkItem, 10)
+	err = handleReconcileGit(t.Context(), ch, config, sourceRepo)
+	if err != nil {
+		t.Fatalf("handleReconcileGit failed: %v", err)
+	}
+	close(ch)
+
+	// Consume channel to avoid blocking
+	for range ch {
+		continue
+	}
+
+	// Calculate local clone path
+	sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
+	localCloneDir := filepath.Join(workDir, hex.EncodeToString(sha[:]))
+
+	// Verify the local clone exists and has the tracked files
+	trackedFilePathA := filepath.Join(localCloneDir, "CVE-A.json")
+	if _, err := os.Stat(trackedFilePathA); err != nil {
+		t.Fatalf("Expected tracked file A to exist at %s, got error: %v", trackedFilePathA, err)
+	}
+	trackedFilePathB := filepath.Join(localCloneDir, "tracked_dir", "CVE-B.json")
+	if _, err := os.Stat(trackedFilePathB); err != nil {
+		t.Fatalf("Expected tracked file B to exist at %s, got error: %v", trackedFilePathB, err)
+	}
+
+	// 2. Create untracked files/dirs in the local clone
+	// 2a. Untracked file in root
+	untrackedRootFile := filepath.Join(localCloneDir, "untracked.json")
+	if err := os.WriteFile(untrackedRootFile, []byte("untracked"), 0600); err != nil {
+		t.Fatalf("Failed to write untracked file in root: %v", err)
+	}
+
+	// 2b. Untracked file in tracked subdir
+	untrackedInTrackedDir := filepath.Join(localCloneDir, "tracked_dir", "untracked_in_tracked.json")
+	if err := os.WriteFile(untrackedInTrackedDir, []byte("untracked"), 0600); err != nil {
+		t.Fatalf("Failed to write untracked file in tracked dir: %v", err)
+	}
+
+	// 2c. Untracked subdir in tracked subdir (with a file)
+	untrackedDirInTrackedDir := filepath.Join(localCloneDir, "tracked_dir", "untracked_dir_in_tracked")
+	if err := os.Mkdir(untrackedDirInTrackedDir, 0755); err != nil {
+		t.Fatalf("Failed to create untracked dir in tracked dir: %v", err)
+	}
+	fileInUntrackedDirInTrackedDir := filepath.Join(untrackedDirInTrackedDir, "file.json")
+	if err := os.WriteFile(fileInUntrackedDirInTrackedDir, []byte("untracked"), 0600); err != nil {
+		t.Fatalf("Failed to write file in untracked dir in tracked dir: %v", err)
+	}
+
+	// 2d. Untracked subdir in root (with a file)
+	untrackedRootDir := filepath.Join(localCloneDir, "untracked_dir")
+	if err := os.Mkdir(untrackedRootDir, 0755); err != nil {
+		t.Fatalf("Failed to create untracked dir in root: %v", err)
+	}
+	fileInUntrackedRootDir := filepath.Join(untrackedRootDir, "file.json")
+	if err := os.WriteFile(fileInUntrackedRootDir, []byte("untracked"), 0600); err != nil {
+		t.Fatalf("Failed to write file in untracked root dir: %v", err)
+	}
+
+	// 3. Run reconcile again. It should clean up untracked files/dirs.
+	ch2 := make(chan WorkItem, 10)
+	err = handleReconcileGit(t.Context(), ch2, config, sourceRepo)
+	if err != nil {
+		t.Fatalf("handleReconcileGit failed second time: %v", err)
+	}
+	close(ch2)
+	for range ch2 {
+		continue
+	}
+
+	// 4. Verify all untracked files and dirs are GONE
+	if _, err := os.Stat(untrackedRootFile); !os.IsNotExist(err) {
+		t.Errorf("Expected untracked root file to be deleted, but it still exists (or got error: %v)", err)
+	}
+	if _, err := os.Stat(untrackedInTrackedDir); !os.IsNotExist(err) {
+		t.Errorf("Expected untracked file in tracked dir to be deleted, but it still exists (or got error: %v)", err)
+	}
+	if _, err := os.Stat(untrackedDirInTrackedDir); !os.IsNotExist(err) {
+		t.Errorf("Expected untracked dir in tracked dir to be deleted, but it still exists (or got error: %v)", err)
+	}
+	if _, err := os.Stat(untrackedRootDir); !os.IsNotExist(err) {
+		t.Errorf("Expected untracked root dir to be deleted, but it still exists (or got error: %v)", err)
+	}
+
+	// Verify tracked files still exist
+	if _, err := os.Stat(trackedFilePathA); err != nil {
+		t.Errorf("Expected tracked file A to still exist, got error: %v", err)
+	}
+	if _, err := os.Stat(trackedFilePathB); err != nil {
+		t.Errorf("Expected tracked file B to still exist, got error: %v", err)
 	}
 }

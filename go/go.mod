@@ -6,10 +6,10 @@ replace osv.dev/bindings/go => ../bindings/go
 
 require (
 	charm.land/lipgloss/v2 v2.0.3
-	cloud.google.com/go/datastore v1.23.0
+	cloud.google.com/go/datastore v1.24.0
 	cloud.google.com/go/monitoring v1.29.0
 	cloud.google.com/go/pubsub/v2 v2.6.0
-	cloud.google.com/go/storage v1.62.1
+	cloud.google.com/go/storage v1.62.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/dustin/go-humanize v1.0.1
@@ -18,7 +18,7 @@ require (
 	github.com/google/osv-scalibr v0.4.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.18.6
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260424063704-83285ce2a866
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260525004216-afe0bddbf893
 	github.com/package-url/packageurl-go v0.1.6
 	github.com/tidwall/gjson v1.19.0
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -28,13 +28,13 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/api v0.279.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9
-	google.golang.org/grpc v1.81.0
+	google.golang.org/api v0.281.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6
 	k8s.io/apimachinery v0.36.1
-	osv.dev/bindings/go v0.0.0-20251029235023-a02c549eeac2
+	osv.dev/bindings/go v0.0.0-20260527044221-c1c72c1b0158
 )
 
 require (
@@ -72,7 +72,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.15 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
@@ -98,13 +98,13 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.3 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260523011958-0a33c5d7ca68 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

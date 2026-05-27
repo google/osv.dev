@@ -654,7 +654,7 @@ func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) er
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, source models.VersionSource) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
@@ -672,7 +672,17 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 		}
 	}
 
-	metrics.VersionSources = append(metrics.VersionSources, source)
+	// Dynamically record the precise sources from each processed range's metadata.
+	// This ensures that granular version sources (such as CPE_RANGE or CPE_STRING) are tracked in
+	// the final conversion metrics instead of a single generic fallback source.
+	for _, ra := range ranges {
+		if ra.Metadata.Source == "" {
+			continue
+		}
+		if !slices.Contains(metrics.VersionSources, ra.Metadata.Source) {
+			metrics.VersionSources = append(metrics.VersionSources, ra.Metadata.Source)
+		}
+	}
 
 	return r, un, sR
 }

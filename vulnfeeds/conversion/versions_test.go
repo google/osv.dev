@@ -469,6 +469,12 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "https://git.savannah.gnu.org/git/wget.git",
 			expectedOk:      true,
 		},
+		{
+			description:     "GitHub advisory database URL (GHSA reference, not a repo)",
+			inputLink:       "https://github.com/advisories/GHSA-fv3m-xhqw-9m79",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

@@ -179,6 +179,13 @@ func repo(u string) (string, error) {
 		}
 	}
 
+	if strings.ToLower(parsedURL.Hostname()) == "github.com" {
+		pathParts := strings.Split(parsedURL.Path, "/")
+		if len(pathParts) >= 2 && strings.ToLower(pathParts[1]) == "advisories" {
+			return "", fmt.Errorf("%q is a GHSA reference link, not a repository", u)
+		}
+	}
+
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
 		pathParts := strings.Split(parsedURL.Path, "/")
@@ -729,6 +736,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				introduced := ""
 				fixed := ""
 				lastaffected := ""
+				source := models.VersionSourceCPERange
+
 				if match.VersionStartIncluding != nil {
 					introduced = cleanVersion(*match.VersionStartIncluding)
 				} else if match.VersionStartExcluding != nil {
@@ -771,6 +780,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 					if CPE.Update != "ANY" {
 						lastaffected += "-" + CPE.Update
 					}
+					source = models.VersionSourceCPEString
 				}
 
 				if introduced == "" {
@@ -809,7 +819,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 								Range: vr,
 								Metadata: models.Metadata{
 									CPE:    match.Criteria,
-									Source: models.VersionSourceCPE,
+									Source: source,
 								},
 							},
 						)
@@ -821,7 +831,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 							Range: vr,
 							Metadata: models.Metadata{
 								CPE:    match.Criteria,
-								Source: models.VersionSourceCPE,
+								Source: source,
 							},
 						},
 					)

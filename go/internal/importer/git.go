@@ -301,6 +301,13 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 			Branch: branch,
 			Force:  true,
 		})
+		if err != nil {
+			return nil, err
+		}
+
+		err = wt.Clean(&git.CleanOptions{
+			Dir: true,
+		})
 
 		return sharedRepo{
 			Repository: repo,

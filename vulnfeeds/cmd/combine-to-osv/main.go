@@ -276,6 +276,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				cleanLastAffectedIfFixedExists(r)
 			}
 		}
+
 		return cve5Affected
 	}
 	if len(cve5Affected) == 0 {
@@ -284,6 +285,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				cleanLastAffectedIfFixedExists(r)
 			}
 		}
+
 		return nvdAffected
 	}
 
@@ -467,7 +469,7 @@ func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
 	if len(rawValues) == 0 {
 		return nil
 	}
-	var events []ExtractedEvent
+	events := make([]ExtractedEvent, 0, len(rawValues))
 	for _, val := range rawValues {
 		events = append(events, parseExtractedEvent(val))
 	}
@@ -494,6 +496,7 @@ func hasFixedEvent(r *osvschema.Range) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -503,6 +506,7 @@ func hasIntroducedZero(r *osvschema.Range) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -528,6 +532,7 @@ func isCPERange(r *osvschema.Range) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -554,40 +559,6 @@ func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 	r.Events = cleanEvents
 }
 
-func pickBestDatabaseSpecific(cve5Range, nvdRange *osvschema.Range) *structpb.Struct {
-	c5HasFixed := hasFixedEvent(cve5Range)
-	nvdHasFixed := hasFixedEvent(nvdRange)
-	if c5HasFixed != nvdHasFixed {
-		if c5HasFixed {
-			return cve5Range.GetDatabaseSpecific()
-		}
-		return nvdRange.GetDatabaseSpecific()
-	}
-
-	c5HasIntroZero := hasIntroducedZero(cve5Range)
-	nvdHasIntroZero := hasIntroducedZero(nvdRange)
-	if c5HasIntroZero != nvdHasIntroZero {
-		if !c5HasIntroZero {
-			return cve5Range.GetDatabaseSpecific()
-		}
-		return nvdRange.GetDatabaseSpecific()
-	}
-
-	c5IsCPERange := isCPERange(cve5Range)
-	nvdIsCPERange := isCPERange(nvdRange)
-	if c5IsCPERange != nvdIsCPERange {
-		if c5IsCPERange {
-			return cve5Range.GetDatabaseSpecific()
-		}
-		return nvdRange.GetDatabaseSpecific()
-	}
-
-	if len(nvdRange.GetEvents()) > len(cve5Range.GetEvents()) {
-		return nvdRange.GetDatabaseSpecific()
-	}
-	return cve5Range.GetDatabaseSpecific()
-}
-
 func isReferencesOnly(r *osvschema.Range) bool {
 	if r.GetDatabaseSpecific() == nil {
 		return false
@@ -609,6 +580,7 @@ func isReferencesOnly(r *osvschema.Range) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -640,6 +612,7 @@ func mergeDatabaseSpecifics(ds1, ds2 *structpb.Struct) *structpb.Struct {
 	if ds, err := utility.NewStructpbFromMap(mergedMap); err == nil {
 		return ds
 	}
+
 	return ds1
 }
 
@@ -668,21 +641,23 @@ func mergeRanges(base, other *osvschema.Range) *osvschema.Range {
 		}
 		if !found {
 			if e.GetIntroduced() != "" {
-				merged.Events = append([]*osvschema.Event{e}, merged.Events...)
+				merged.Events = append([]*osvschema.Event{e}, merged.GetEvents()...)
 			} else {
 				merged.Events = append(merged.Events, e)
 			}
 		}
 	}
-	slices.SortStableFunc(merged.Events, func(a, b *osvschema.Event) int {
+	slices.SortStableFunc(merged.GetEvents(), func(a, b *osvschema.Event) int {
 		if a.GetIntroduced() != "" && b.GetIntroduced() == "" {
 			return -1
 		}
 		if a.GetIntroduced() == "" && b.GetIntroduced() != "" {
 			return 1
 		}
+
 		return 0
 	})
+
 	return merged
 }
 
@@ -700,11 +675,13 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	if isReferencesOnly(nvdRange) {
 		merged := mergeRanges(cve5Range, nvdRange)
 		cleanLastAffectedIfFixedExists(merged)
+
 		return merged
 	}
 	if isReferencesOnly(cve5Range) {
 		merged := mergeRanges(nvdRange, cve5Range)
 		cleanLastAffectedIfFixedExists(merged)
+
 		return merged
 	}
 

@@ -5,7 +5,7 @@ go 1.26.3
 require (
 	github.com/gkampitakis/go-snaps v0.5.21
 	github.com/google/go-cmp v0.7.0
-	github.com/tidwall/gjson v1.18.0
+	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/pretty v1.2.1
 	github.com/tidwall/sjson v1.2.5
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.6

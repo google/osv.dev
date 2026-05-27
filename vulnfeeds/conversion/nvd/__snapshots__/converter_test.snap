@@ -1767,7 +1767,7 @@
               }
             ],
             "source": [
-              "CPE_FIELD",
+              "CPE_RANGE",
               "REFERENCES"
             ]
           },
@@ -1853,7 +1853,7 @@
               }
             ],
             "source": [
-              "CPE_FIELD",
+              "CPE_RANGE",
               "REFERENCES"
             ]
           },
@@ -1997,7 +1997,7 @@
               }
             ],
             "source": [
-              "CPE_FIELD",
+              "CPE_RANGE",
               "REFERENCES"
             ]
           },
@@ -2066,7 +2066,7 @@
                 "fixed": "7.61.1"
               }
             ],
-            "source": "CPE_FIELD"
+            "source": "CPE_RANGE"
           },
           "events": [
             {
@@ -2105,7 +2105,7 @@
             "last_affected": "18.04"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "canonical:ubuntu_linux"
       },
       {
@@ -2117,7 +2117,7 @@
             "last_affected": "9.0"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "debian:debian_linux"
       },
       {
@@ -2145,7 +2145,7 @@
             "last_affected": "7.6"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "redhat:enterprise_linux"
       }
     ]
@@ -2230,7 +2230,7 @@
             "last_affected": "38"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       },
       {
@@ -2254,7 +2254,7 @@
             "last_affected": "12.1"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "redhat:directory_server"
       }
     ]
@@ -2388,7 +2388,7 @@
               }
             ],
             "source": [
-              "CPE_FIELD",
+              "CPE_STRING",
               "REFERENCES"
             ]
           },
@@ -2424,7 +2424,7 @@
             "last_affected": "36"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       }
     ]
@@ -2810,7 +2810,7 @@
                 "last_affected": "2.8.4"
               }
             ],
-            "source": "CPE_FIELD"
+            "source": "CPE_STRING"
           },
           "events": [
             {
@@ -3077,7 +3077,7 @@
             "last_affected": "12.04"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "canonical:ubuntu_linux"
       },
       {
@@ -3089,7 +3089,7 @@
             "last_affected": "42.1"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "opensuse:leap"
       }
     ]
@@ -3243,7 +3243,7 @@
                 "fixed": "0.9.2"
               }
             ],
-            "source": "CPE_FIELD"
+            "source": "CPE_RANGE"
           },
           "events": [
             {
@@ -3270,7 +3270,7 @@
             "last_affected": "40"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       },
       {
@@ -3286,7 +3286,7 @@
             "last_affected": "8.0"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "redhat:enterprise_linux"
       }
     ]
@@ -3331,6 +3331,69 @@
     "unresolved_ranges": [
       {
         "cpes": [
+          "cpe:2.3:a:filezilla-project:filezilla_client:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "3.67.0"
+          }
+        ],
+        "source": "CPE_RANGE",
+        "vendor_product": "filezilla-project:filezilla_client"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:putty:putty:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "introduced": "0.68"
+          },
+          {
+            "fixed": "0.81"
+          }
+        ],
+        "source": "CPE_RANGE",
+        "vendor_product": "putty:putty"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:tigris:tortoisesvn:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "1.14.6"
+          }
+        ],
+        "source": "CPE_RANGE",
+        "vendor_product": "tigris:tortoisesvn"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:tortoisegit:tortoisegit:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "2.15.0.1"
+          }
+        ],
+        "source": "CPE_RANGE",
+        "vendor_product": "tortoisegit:tortoisegit"
+      },
+      {
+        "cpes": [
+          "cpe:2.3:a:winscp:winscp:*:*:*:*:*:*:*:*"
+        ],
+        "extracted_events": [
+          {
+            "fixed": "6.3.3"
+          }
+        ],
+        "source": "CPE_RANGE",
+        "vendor_product": "winscp:winscp"
+      },
+      {
+        "cpes": [
           "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
           "cpe:2.3:o:fedoraproject:fedora:39:*:*:*:*:*:*:*",
           "cpe:2.3:o:fedoraproject:fedora:40:*:*:*:*:*:*:*"
@@ -3346,71 +3409,8 @@
             "last_affected": "40"
           }
         ],
-        "source": "CPE_FIELD",
+        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:filezilla-project:filezilla_client:*:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "fixed": "3.67.0"
-          }
-        ],
-        "source": "CPE_FIELD",
-        "vendor_product": "filezilla-project:filezilla_client"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:putty:putty:*:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "introduced": "0.68"
-          },
-          {
-            "fixed": "0.81"
-          }
-        ],
-        "source": "CPE_FIELD",
-        "vendor_product": "putty:putty"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:tigris:tortoisesvn:*:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "fixed": "1.14.6"
-          }
-        ],
-        "source": "CPE_FIELD",
-        "vendor_product": "tigris:tortoisesvn"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:tortoisegit:tortoisegit:*:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "fixed": "2.15.0.1"
-          }
-        ],
-        "source": "CPE_FIELD",
-        "vendor_product": "tortoisegit:tortoisegit"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:winscp:winscp:*:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "fixed": "6.3.3"
-          }
-        ],
-        "source": "CPE_FIELD",
-        "vendor_product": "winscp:winscp"
       },
       {
         "extracted_events": [

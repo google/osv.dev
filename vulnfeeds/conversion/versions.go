@@ -729,6 +729,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				introduced := ""
 				fixed := ""
 				lastaffected := ""
+				source := models.VersionSourceCPERange
+
 				if match.VersionStartIncluding != nil {
 					introduced = cleanVersion(*match.VersionStartIncluding)
 				} else if match.VersionStartExcluding != nil {
@@ -771,6 +773,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 					if CPE.Update != "ANY" {
 						lastaffected += "-" + CPE.Update
 					}
+					source = models.VersionSourceCPEString
 				}
 
 				if introduced == "" {
@@ -809,7 +812,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 								Range: vr,
 								Metadata: models.Metadata{
 									CPE:    match.Criteria,
-									Source: models.VersionSourceCPE,
+									Source: source,
 								},
 							},
 						)
@@ -821,7 +824,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 							Range: vr,
 							Metadata: models.Metadata{
 								CPE:    match.Criteria,
-								Source: models.VersionSourceCPE,
+								Source: source,
 							},
 						},
 					)

@@ -110,6 +110,8 @@ const (
 	VersionSourceAffected    VersionSource = "AFFECTED_FIELD"
 	VersionSourceGit         VersionSource = "AFFECTED_FIELD_GIT"
 	VersionSourceCPE         VersionSource = "CPE_FIELD"
+	VersionSourceCPERange    VersionSource = "CPE_RANGE"
+	VersionSourceCPEString   VersionSource = "CPE_STRING"
 	VersionSourceDescription VersionSource = "DESCRIPTION"
 	VersionSourceText        VersionSource = "TEXT_EXTRACTION"
 	VersionSourceRefs        VersionSource = "REFERENCES"

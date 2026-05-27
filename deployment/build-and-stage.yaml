@@ -490,7 +490,8 @@ timeout: 7200s
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 logsBucket: gs://oss-vdb-tf/apply-logs
 options:
-  machineType: E2_STANDARD_16
+  pool:
+    name: 'projects/oss-vdb/locations/us-west1/workerPools/build-and-stage-pool'
 
 tags: ['build-and-stage']
 

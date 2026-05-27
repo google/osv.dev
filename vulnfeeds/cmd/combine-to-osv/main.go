@@ -102,7 +102,7 @@ func main() {
 func extractCVEName(filename string, prefix string) string {
 	cleaned := strings.TrimPrefix(filename, prefix)
 	cleaned = strings.TrimSuffix(cleaned, ".json")
-	pre := strings.SplitAfter(cleaned, "-")
+	pre := strings.Split(cleaned, "-")
 	if pre[0] != "CVE" {
 		return ""
 	}
@@ -130,7 +130,7 @@ func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("bucket.Objects: %w", err)
 		}
-		filenames = append(filenames, attrs.Name, prefix)
+		filenames = append(filenames, attrs.Name)
 	}
 
 	return filenames, nil
@@ -279,6 +279,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 		return cve5Affected
 	}
+
 	if len(cve5Affected) == 0 {
 		for _, aff := range nvdAffected {
 			for _, r := range aff.GetRanges() {
@@ -477,6 +478,7 @@ func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
 	return events
 }
 
+// sameVersionRanges checks if two ranges have the same extracted events.
 func sameVersionRanges(evs1, evs2 []ExtractedEvent) bool {
 	if len(evs1) != len(evs2) {
 		return false
@@ -490,6 +492,7 @@ func sameVersionRanges(evs1, evs2 []ExtractedEvent) bool {
 	return true
 }
 
+// hasFixedEvent checks if any event in the range has a fixed field.
 func hasFixedEvent(r *osvschema.Range) bool {
 	for _, e := range r.GetEvents() {
 		if e.GetFixed() != "" {
@@ -500,6 +503,7 @@ func hasFixedEvent(r *osvschema.Range) bool {
 	return false
 }
 
+// hasIntroducedZero checks if any event in the range has an introduced field with "0".
 func hasIntroducedZero(r *osvschema.Range) bool {
 	for _, e := range r.GetEvents() {
 		if e.GetIntroduced() == "0" {
@@ -510,6 +514,7 @@ func hasIntroducedZero(r *osvschema.Range) bool {
 	return false
 }
 
+// isCPERange checks if the range is a CPE range.
 func isCPERange(r *osvschema.Range) bool {
 	if r.GetDatabaseSpecific() == nil {
 		return false
@@ -536,6 +541,8 @@ func isCPERange(r *osvschema.Range) bool {
 	return false
 }
 
+// cleanLastAffectedIfFixedExists removes the last_affected field from all
+// events in the range if any event has a fixed field. This happens in place.
 func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 	if r == nil {
 		return
@@ -559,6 +566,8 @@ func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 	r.Events = cleanEvents
 }
 
+// isReferencesOnly checks if the range 'source' field is only "REFERENCES"
+// or ["REFERENCES"].
 func isReferencesOnly(r *osvschema.Range) bool {
 	if r.GetDatabaseSpecific() == nil {
 		return false
@@ -616,6 +625,8 @@ func mergeDatabaseSpecifics(ds1, ds2 *structpb.Struct) *structpb.Struct {
 	return ds1
 }
 
+// mergeRanges merges two ranges into one. It prefers base over other if
+// both ranges have the same type and repo.
 func mergeRanges(base, other *osvschema.Range) *osvschema.Range {
 	merged := &osvschema.Range{
 		Type:             base.GetType(),
@@ -661,6 +672,10 @@ func mergeRanges(base, other *osvschema.Range) *osvschema.Range {
 	return merged
 }
 
+// pickBestRange picks the best range between two ranges.
+// It prefers cve5Range over nvdRange if both ranges have fixed information.
+// If one range is references-only, it merges them instead of choosing one.
+// More information can be found in the DESIGN.md file in this folder
 func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvschema.Range {
 	if cve5Range == nil {
 		cleanLastAffectedIfFixedExists(nvdRange)

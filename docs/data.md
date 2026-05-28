@@ -62,6 +62,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY-SA 4.0](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
 -   [opam (OCaml package manager)](https://github.com/ocaml/security-advisories)
     ([CC0 1.0](https://github.com/ocaml/security-advisories/blob/main/LICENSE.txt))
+-   [Erlang Ecosystem Foundation CNA](https://cna.erlef.org/)
+    ([CC-BY 4.0](https://cna.erlef.org/data-licensing/))
 
 ## Converted data
 

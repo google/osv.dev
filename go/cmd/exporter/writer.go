@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"hash/crc32"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -10,6 +12,9 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 )
+
+// crc32cTable uses the Castagnoli polynomial, matching GCS's own checksum algorithm.
+var crc32cTable = crc32.MakeTable(crc32.Castagnoli)
 
 // writeMsg holds the data for a file to be written.
 type writeMsg struct {
@@ -31,7 +36,10 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 			}
 			path := filepath.Join(pathPrefix, msg.path)
 			if client != nil {
-				// Write to the bucket.
+				// Skip the upload if the object already has the same content.
+				if gcsContentUnchanged(ctx, client, path, msg.data) {
+					break
+				}
 				err := client.WriteObject(ctx, path, msg.data, &clients.WriteOptions{
 					ContentType: msg.mimeType,
 				})
@@ -61,4 +69,26 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 			return
 		}
 	}
+}
+
+// gcsContentUnchanged returns true if the object at path already has the same
+// CRC32C checksum as data, meaning the upload would be a no-op. Any error
+// reading the object's attributes (other than ErrNotFound) is logged and
+// treated as "content changed" so the upload proceeds.
+func gcsContentUnchanged(ctx context.Context, client clients.CloudStorage, path string, data []byte) bool {
+	attrs, err := client.ReadObjectAttrs(ctx, path)
+	if err != nil {
+		if !errors.Is(err, clients.ErrNotFound) {
+			logger.WarnContext(ctx, "failed to read object attrs, proceeding with upload", slog.String("path", path), slog.Any("err", err))
+		}
+
+		return false
+	}
+	if attrs.CRC32C == crc32.Checksum(data, crc32cTable) {
+		logger.InfoContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
+
+		return true
+	}
+
+	return false
 }

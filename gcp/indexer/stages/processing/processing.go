@@ -30,7 +30,7 @@ import (
 	"sort"
 	"strings"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/osv.dev/gcp/indexer/shared"
@@ -64,7 +64,7 @@ type BucketNode struct {
 type Stage struct {
 	Storer                    Storer
 	RepoHdl                   *storage.BucketHandle
-	Input                     *pubsub.Subscription
+	Input                     *pubsub.Subscriber
 	PubSubOutstandingMessages int
 }
 

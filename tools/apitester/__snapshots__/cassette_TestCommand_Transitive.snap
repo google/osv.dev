@@ -47,7 +47,7 @@
         },
         {
           "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-qw25-v68c-qjf3",
@@ -184,6 +184,14 @@
         {
           "id": "PYSEC-2020-43",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "PYSEC-2024-260",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2024-271",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2024-71",
@@ -873,7 +881,7 @@
         },
         {
           "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-qw25-v68c-qjf3",
@@ -1817,7 +1825,7 @@
         },
         {
           "id": "GHSA-frmv-pr5f-9mcr",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-qw25-v68c-qjf3",
@@ -2009,6 +2017,10 @@
         },
         {
           "id": "PYSEC-2023-212",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-141",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

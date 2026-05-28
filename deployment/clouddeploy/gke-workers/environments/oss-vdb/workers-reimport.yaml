@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers-reimport
+spec:
+  template:
+    spec:
+      containers:
+      - name: workers-reimport
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-vulnerabilities
+          - name: NOTIFY_PYPI
+            value: "true"

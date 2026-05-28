@@ -67,3 +67,9 @@ variable "website_domain" {
   type        = string
   description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."
 }
+
+variable "extra_work_pools" {
+  type        = list(string)
+  description = "Additional Pub/Sub worker pool subscriptions to create"
+  default     = []
+}

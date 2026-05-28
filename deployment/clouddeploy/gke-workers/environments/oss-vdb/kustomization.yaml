@@ -2,6 +2,8 @@ resources:
 - ../../base
 patches:
 - path: workers.yaml
+- path: workers-cves.yaml
+- path: workers-reimport.yaml
 - path: importer.yaml
 - path: importer-deleter.yaml
 - path: importer-reconciler.yaml

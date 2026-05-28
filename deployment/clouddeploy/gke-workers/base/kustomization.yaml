@@ -1,6 +1,8 @@
 resources:
 - workers.yaml
 - scaler.yaml
+- workers-cves.yaml
+- workers-reimport.yaml
 - importer.yaml
 - importer-deleter.yaml
 - importer-reconciler.yaml

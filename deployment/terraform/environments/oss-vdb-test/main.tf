@@ -46,6 +46,11 @@ module "osv_test" {
   website_domain = "test.osv.dev"
   api_url        = "api.test.osv.dev"
   esp_version    = "2.55.3"
+
+  extra_work_pools = [
+    "reimport",
+    "cves",
+  ]
 }
 
 module "k8s_cron_alert" {

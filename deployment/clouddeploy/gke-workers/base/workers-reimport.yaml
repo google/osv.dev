@@ -17,7 +17,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: pubsub-reimport
 spec:
-  minReplicas: 0
+  minReplicas: 1
   maxReplicas: 100
   metrics:
   - external:
@@ -51,7 +51,7 @@ kind: Deployment
 metadata:
   name: workers-reimport
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       name: workers-reimport

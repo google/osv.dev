@@ -41,6 +41,30 @@ resource "google_pubsub_subscription" "default_work" {
   filter = "attributes.work_pool = \"default\""
 }
 
+resource "google_pubsub_subscription" "work_pools" {
+  for_each                   = toset(var.extra_work_pools)
+  project                    = var.project_id
+  name                       = each.value
+  topic                      = google_pubsub_topic.tasks.id
+  message_retention_duration = "604800s"
+  ack_deadline_seconds       = 600
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.failed_tasks.id
+    max_delivery_attempts = 5
+  }
+
+  expiration_policy {
+    ttl = "" # never expires
+  }
+
+  labels = {
+    goog-dm = "pubsub"
+  }
+
+  filter = "attributes.work_pool = \"${each.value}\""
+}
+
 resource "google_pubsub_topic" "pypi_bridge" {
   project = var.project_id
   name    = "pypi-bridge"

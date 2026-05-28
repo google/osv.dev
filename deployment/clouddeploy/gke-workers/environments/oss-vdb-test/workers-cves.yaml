@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers-cves
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: workloadType
+        operator: Equal
+        value: worker-pool
+      nodeSelector:
+        workloadType: worker-pool
+      containers:
+      - name: workers-cves
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb-test
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-test-vulnerabilities

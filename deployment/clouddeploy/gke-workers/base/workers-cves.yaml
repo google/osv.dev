@@ -1,0 +1,84 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pubsub-cves
+spec:
+  minReplicas: 1
+  maxReplicas: 100
+  metrics:
+  - external:
+      metric:
+        name: pubsub.googleapis.com|subscription|num_undelivered_messages
+        selector:
+          matchLabels:
+            resource.labels.subscription_id: cves
+      target:
+        type: AverageValue
+        averageValue: 10  # each worker can handle 10 tasks
+    type: External
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: workers-cves
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 300
+      - type: Pods
+        value: 20
+        periodSeconds: 300
+      selectPolicy: Max
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers-cves
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: workers-cves
+  template:
+    metadata:
+      labels:
+        name: workers-cves
+    spec:
+      containers:
+      - name: workers-cves
+        image: worker
+        imagePullPolicy: Always
+        env:
+          - name: GITTER_HOST
+            value: http://gitter-service:8888
+          - name: PUBSUB_SUBSCRIPTION
+            value: cves
+          - name: DATASTORE_DATABASE_ID
+            value: "" # default
+          - name: FAILED_TASKS_TOPIC
+            value: failed-tasks
+          - name: NOTIFY_PYPI
+            value: "false"
+        resources:
+          requests:
+            cpu: "0.9"
+            memory: "1.2Gi"
+          limits:
+            cpu: "1.5"
+            memory: "1.3Gi"

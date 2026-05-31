@@ -43,14 +43,14 @@ graph TD
 ```
 
 ### 1. References-Only Merging
-If one range's metadata source is **only** `"REFERENCES"` (meaning its commits were directly parsed from fix references), its events are appended and merged into the other CVE range instead of choosing one range wholesale. This preserves precise fix commits extracted from advisory links.
+If one range's metadata source is **only** `"REFERENCES"` (meaning its commits were directly parsed from fix references), its events are appended and merged into the other CVE range instead of choosing one range as-is. This preserves precise fix commits extracted from advisory links.
 
 ### 2. Boundary Version Merging
 For simple version ranges (with two or fewer events), boundary versions are merged to combine the most complete and constrained information:
 * We prefer more constrained introduced boundaries (e.g., a non-zero introduced version over a `"0"` version).
 * We prefer defined fixed version boundaries over undefined ones.
 
-### 3. Preference Rules (Wholesale Fallbacks)
+### 3. Preference Rules (As-is Fallbacks)
 If ranges are not simple enough to merge boundaries, we select the best range using the following hierarchy:
 1. **Fixed Priority**: A range with bounded `fixed` version or commit information is prioritized over a range with open-ended `last_affected` information.
 2. **Constrained Range Priority**: We prefer ranges that define a specific non-zero `introduced` bound over those that start at `"0"`.

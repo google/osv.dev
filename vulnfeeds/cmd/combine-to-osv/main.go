@@ -631,9 +631,24 @@ func mergeDatabaseSpecifics(ds1, ds2 *structpb.Struct) *structpb.Struct {
 	return ds1
 }
 
-// mergeRanges merges two ranges into one. It prefers base over other if
-// both ranges have the same type and repo.
-func mergeRanges(base, other *osvschema.Range) *osvschema.Range {
+// mergeRanges merges two version ranges into one.
+// This function enforces the following invariants (and will return an error if they are violated):
+//  1. The two ranges must share the same Type and Repository URL.
+//  2. At least one of the two ranges must be references-only (meaning its database-specific
+//     source metadata is strictly "REFERENCES" or ["REFERENCES"]). This guarantees that the
+//     operation is limited to appending standalone commit events from advisory links, avoiding
+//     the corruption of paired version boundaries in complex ranges.
+func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
+	if base.GetType() != other.GetType() || base.GetRepo() != other.GetRepo() {
+		return nil, fmt.Errorf("cannot merge ranges with mismatching Type/Repo: (%s, %s) and (%s, %s)",
+			base.GetType(), base.GetRepo(), other.GetType(), other.GetRepo())
+	}
+
+	if !isReferencesOnly(base) && !isReferencesOnly(other) {
+		return nil, fmt.Errorf("invariance violation: mergeRanges can only be called when at least one range is references-only. Base: %v, Other: %v",
+			base.GetDatabaseSpecific(), other.GetDatabaseSpecific())
+	}
+
 	merged := &osvschema.Range{
 		Type:             base.GetType(),
 		Repo:             base.GetRepo(),
@@ -675,7 +690,7 @@ func mergeRanges(base, other *osvschema.Range) *osvschema.Range {
 		return 0
 	})
 
-	return merged
+	return merged, nil
 }
 
 // pickBestRange picks the best range between two ranges.
@@ -694,13 +709,21 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 
 	// 1. If one of the ranges is references-only, merge them instead of choosing one
 	if isReferencesOnly(nvdRange) {
-		merged := mergeRanges(cve5Range, nvdRange)
+		merged, err := mergeRanges(cve5Range, nvdRange)
+		if err != nil {
+			logger.Error("Failed to merge references-only range, falling back to CVE5 range", slog.Any("err", err))
+			return cve5Range
+		}
 		cleanLastAffectedIfFixedExists(merged)
 
 		return merged
 	}
 	if isReferencesOnly(cve5Range) {
-		merged := mergeRanges(nvdRange, cve5Range)
+		merged, err := mergeRanges(nvdRange, cve5Range)
+		if err != nil {
+			logger.Error("Failed to merge references-only range, falling back to NVD range", slog.Any("err", err))
+			return nvdRange
+		}
 		cleanLastAffectedIfFixedExists(merged)
 
 		return merged

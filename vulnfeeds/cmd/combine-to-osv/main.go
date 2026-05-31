@@ -297,7 +297,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				if _, exists := cve5Ranges[repo]; exists {
-					panic(fmt.Sprintf("Duplicate range found for repository %q in CVE5 affected ranges", repo))
+					logger.Error("Duplicate range found for repository in CVE5 affected ranges", slog.String("repo", repo))
 				}
 				cve5Ranges[repo] = r
 			}
@@ -310,7 +310,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			if r.GetRepo() != "" {
 				repo := strings.ToLower(r.GetRepo())
 				if _, exists := nvdRanges[repo]; exists {
-					panic(fmt.Sprintf("Duplicate range found for repository %q in NVD affected ranges", repo))
+					logger.Error("Duplicate range found for repository in NVD affected ranges", slog.String("repo", repo))
 				}
 				nvdRanges[repo] = r
 			}

@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/api"
@@ -36,8 +38,13 @@ func run() error {
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
-		logger.ErrorContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
-		return errors.New("GOOGLE_CLOUD_PROJECT environment variable is not set")
+		// Fallback to metadata server for Cloud Run
+		var err error
+		project, err = metadata.ProjectIDWithContext(ctx)
+		if err != nil {
+			logger.ErrorContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
+			return errors.New("GOOGLE_CLOUD_PROJECT environment variable is not set")
+		}
 	}
 	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the (default) database
 	dbClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
@@ -63,8 +70,11 @@ func run() error {
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
 
+	verboseLogs := strings.ToLower(os.Getenv("OSV_VERBOSE_LOGGING")) == "true"
+
 	return api.RunServer(ctx, api.ServerOptions{
 		Port:           *port,
+		VerboseLogs:    verboseLogs,
 		VulnStore:      vulnStore,
 		RelationsStore: relationsStore,
 	})

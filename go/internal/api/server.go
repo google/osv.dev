@@ -15,12 +15,17 @@ import (
 type server struct {
 	pb.UnimplementedOSVServer
 
+	verboseLogs bool
+
 	vulnStore      models.VulnerabilityStore
 	relationsStore models.RelationsStore
 }
 
 type ServerOptions struct {
-	Port           int
+	Port int
+	// VerboseLogs controls whether to log verbose information,
+	// including per-request data.
+	VerboseLogs    bool
 	VulnStore      models.VulnerabilityStore
 	RelationsStore models.RelationsStore
 }
@@ -37,6 +42,7 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 	pb.RegisterOSVServer(s, &server{
 		vulnStore:      opts.VulnStore,
 		relationsStore: opts.RelationsStore,
+		verboseLogs:    opts.VerboseLogs,
 	})
 
 	logger.InfoContext(ctx, "server listening", "port", opts.Port)

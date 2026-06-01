@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 type mockSourceRepositoryStore struct {
@@ -31,6 +30,8 @@ func (m *mockSourceRepositoryStore) Update(_ context.Context, name string, repo 
 }
 
 type mockVulnerabilityStore struct {
+	models.UnimplementedVulnerabilityStore
+
 	Entries map[string][]*models.VulnSourceRef
 	RawMods map[string]time.Time
 }
@@ -52,18 +53,6 @@ func (m *mockVulnerabilityStore) GetSourceModified(_ context.Context, vuln strin
 	}
 
 	return time.Time{}, models.ErrNotFound
-}
-
-func (m *mockVulnerabilityStore) Get(_ context.Context, _ string) (*osvschema.Vulnerability, error) {
-	panic("not implemented")
-}
-
-func (m *mockVulnerabilityStore) GetWithMetadata(_ context.Context, _ string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
-	panic("not implemented")
-}
-
-func (m *mockVulnerabilityStore) Write(_ context.Context, _ models.WriteRequest) error {
-	panic("not implemented")
 }
 
 type mockSourceRecord struct {

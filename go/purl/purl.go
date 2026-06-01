@@ -2,6 +2,7 @@
 package purl
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,9 @@ func Generate(ecosystem, packageName string) (string, error) {
 	return purl.ToString(), nil
 }
 
+// ErrUnknownPURL is returned when a PURL type is not recognised.
+var ErrUnknownPURL = errors.New("unknown PURL type")
+
 // Parse parses a PURL string and returns the ecosystem, package, and version.
 func Parse(purlStr string) (ecosystem, packageName, version string, err error) {
 	purl, err := packageurl.FromString(purlStr)
@@ -43,7 +47,7 @@ func Parse(purlStr string) (ecosystem, packageName, version string, err error) {
 		// Try fallback without namespace
 		parser, ok = parsers[purl.Type]
 		if !ok {
-			return "", "", "", fmt.Errorf("unknown PURL type: %s", purl.Type)
+			return "", "", "", fmt.Errorf("%w: %s", ErrUnknownPURL, purl.Type)
 		}
 	}
 

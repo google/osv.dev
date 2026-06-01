@@ -3,10 +3,8 @@ package api
 import (
 	"context"
 	"errors"
-	"iter"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
@@ -19,6 +17,8 @@ import (
 )
 
 type mockVulnerabilityStore struct {
+	models.UnimplementedVulnerabilityStore
+
 	vuln *osvschema.Vulnerability
 	err  error
 }
@@ -32,22 +32,6 @@ func (m *mockVulnerabilityStore) Get(_ context.Context, _ string) (*osvschema.Vu
 	}
 
 	return m.vuln, nil
-}
-
-func (m *mockVulnerabilityStore) ListBySource(_ context.Context, _ string, _ bool) iter.Seq2[*models.VulnSourceRef, error] {
-	panic("unimplemented")
-}
-
-func (m *mockVulnerabilityStore) GetSourceModified(_ context.Context, _ string) (time.Time, error) {
-	panic("unimplemented")
-}
-
-func (m *mockVulnerabilityStore) GetWithMetadata(_ context.Context, _ string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
-	panic("unimplemented")
-}
-
-func (m *mockVulnerabilityStore) Write(_ context.Context, _ models.WriteRequest) error {
-	panic("unimplemented")
 }
 
 type mockRelationsStore struct {

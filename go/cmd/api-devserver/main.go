@@ -182,6 +182,7 @@ func runBackend(ctx context.Context, port int) {
 	relationsStore := db.NewRelationsStore(dbClient)
 	if err := api.RunServer(ctx, api.ServerOptions{
 		Port:           port,
+		VerboseLogs:    true,
 		VulnStore:      vulnStore,
 		RelationsStore: relationsStore,
 	}); err != nil {

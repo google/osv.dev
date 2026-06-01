@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
@@ -17,8 +18,11 @@ type server struct {
 
 	verboseLogs bool
 
-	vulnStore      models.VulnerabilityStore
-	relationsStore models.RelationsStore
+	vulnStore          models.VulnerabilityStore
+	relationsStore     models.RelationsStore
+	singleQueryTimeout time.Duration
+	batchQueryTimeout  time.Duration
+	responseSizeLimit  int64
 }
 
 type ServerOptions struct {

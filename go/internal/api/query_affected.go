@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
@@ -16,6 +17,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	pb "osv.dev/bindings/go/api"
 )
 
@@ -26,6 +28,15 @@ const startCursor = "RklSU1RfUEFHRV9UT0tFTg=="
 const (
 	maxSingleQueryTimeout   = 20 * time.Second
 	maxSingleQueryResponses = 3000
+	maxBatchQueries         = 1000
+	maxBatchQueryTimeout    = 35 * time.Second
+	maxBatchQueryResponses  = 1000
+	numParallelHydration    = 20
+
+	// Soft limit on response size - this is just to signal to stop matching,
+	// so it can be exceeded by quite a lot (so we use a relatively conservative number).
+	// ESPv2 has a limit of ~100MiB on response sizes.
+	responseSizeBytesSoftLimit = 10_000_000 // 10MB
 )
 
 func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedParameters) (*pb.VulnerabilityList, error) {
@@ -63,9 +74,15 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	vulns, nextToken, err := s.queryAndHydrate(ctx, queryInfo, maxSingleQueryResponses, maxSingleQueryTimeout, s.vulnStore.Get)
+	estimatedSize := new(atomic.Int64)
+	vulns, nextToken, err := s.queryAndHydrate(ctx, queryInfo, maxSingleQueryResponses, s.getSingleQueryTimeout(), s.vulnStore.Get, estimatedSize)
 	if err != nil {
 		return nil, err
+	}
+	if s.verboseLogs {
+		logger.InfoContext(ctx, "queryAndHydrate completed successfully",
+			slog.Int("count", len(vulns)),
+			slog.Int64("estimated_size", estimatedSize.Load()))
 	}
 
 	return &pb.VulnerabilityList{
@@ -75,8 +92,33 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 }
 
 func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffectedBatchParameters) (*pb.BatchVulnerabilityList, error) {
-	return nil, nil
+	return &pb.BatchVulnerabilityList{}, nil
 }
+
+func (s *server) getSingleQueryTimeout() time.Duration {
+	if s.singleQueryTimeout != 0 {
+		return s.singleQueryTimeout
+	}
+
+	return maxSingleQueryTimeout
+}
+
+func (s *server) getBatchQueryTimeout() time.Duration {
+	if s.batchQueryTimeout != 0 {
+		return s.batchQueryTimeout
+	}
+
+	return maxBatchQueryTimeout
+}
+
+func (s *server) getResponseSizeLimit() int64 {
+	if s.responseSizeLimit != 0 {
+		return s.responseSizeLimit
+	}
+
+	return responseSizeBytesSoftLimit
+}
+
 
 type parsedQueryInfo struct {
 	commit      string
@@ -144,38 +186,78 @@ type hydratedResult struct {
 	err   error
 }
 
-func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit int, timeout time.Duration, hydrate hydrateFunc) ([]*osvschema.Vulnerability, string, error) {
+func (s *server) queryAndHydrate(
+	ctx context.Context,
+	qi parsedQueryInfo,
+	limit int,
+	timeout time.Duration,
+	hydrate hydrateFunc,
+	estimatedSize *atomic.Int64,
+) ([]*osvschema.Vulnerability, string, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
-	resultIDs := make(chan matchVuln)
+	matcher, err := s.resolveMatcher(qi)
+	if err != nil {
+		return nil, "", err
+	}
+
+	matchResult, matchCancel := s.runMatcher(ctx, matcher, qi.pageToken, limit, timeout, cancel)
+	hydrated := s.hydrateParallel(ctx, matchResult.resultIDs, hydrate)
+	vulns, err := s.collectAndSort(ctx, hydrated, limit, cancel, matchCancel, estimatedSize)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return vulns, matchResult.getPageToken(), nil
+}
+
+type matcherFunc func(context.Context) iter.Seq2[models.MatchResult, error]
+
+func (s *server) resolveMatcher(qi parsedQueryInfo) (matcherFunc, error) {
 	startTok := qi.pageToken
 	if startTok == startCursor {
 		startTok = ""
 	}
-	var matcher func(context.Context) iter.Seq2[models.MatchResult, error]
 	if qi.commit != "" {
 		commit, err := hex.DecodeString(qi.commit)
 		if err != nil {
-			return nil, "", status.Error(codes.InvalidArgument, "invalid hash")
+			return nil, status.Error(codes.InvalidArgument, "invalid hash")
 		}
-		matcher = func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
+
+		return func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
 			return s.vulnStore.MatchCommits(ctx, commit, startTok)
-		}
-	} else if qi.packageName != "" {
-		matcher = func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
+		}, nil
+	}
+	if qi.packageName != "" {
+		return func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
 			return s.vulnStore.MatchPackages(ctx, qi.ecosystem, qi.packageName, qi.version, startTok)
-		}
-	} else {
-		return nil, "", status.Error(codes.InvalidArgument, "invalid query")
+		}, nil
 	}
-	pageToken := func() string { return qi.pageToken }
-	if qi.pageToken == "" {
-		pageToken = func() string { return startCursor }
+
+	return nil, status.Error(codes.InvalidArgument, "invalid query")
+}
+
+type matcherResult struct {
+	resultIDs    <-chan matchVuln
+	getPageToken func() string
+}
+
+func (s *server) runMatcher(
+	ctx context.Context,
+	matcher matcherFunc,
+	startTok string,
+	limit int,
+	timeout time.Duration,
+	cancel context.CancelCauseFunc,
+) (matcherResult, context.CancelFunc) {
+	resultIDs := make(chan matchVuln, numParallelHydration)
+	currentCursor := func() string { return startTok }
+	if startTok == "" {
+		currentCursor = func() string { return startCursor }
 	}
-	// Only do the timeout on the matcher, not on the hydrated results
 	matcherCtx, timeoutCancel := context.WithTimeout(ctx, timeout)
-	defer timeoutCancel()
 	go func() {
+		defer timeoutCancel()
 		defer close(resultIDs)
 		idx := 0
 		for match, err := range matcher(matcherCtx) {
@@ -188,7 +270,7 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 
 				return
 			}
-			pageToken = match.Cursor
+			currentCursor = match.Cursor
 			if !match.IsMatch {
 				continue
 			}
@@ -202,12 +284,25 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 				}
 			}
 		}
-		// We finished the entire query
-		pageToken = func() string { return "" }
+		// We finished the entire query only if context was not cancelled
+		if matcherCtx.Err() == nil {
+			currentCursor = func() string { return "" }
+		} else {
+			logger.WarnContext(ctx, "matcher query exited early due to cancellation or timeout, preserving cursor")
+		}
 	}()
-	hydrated := make(chan hydratedResult)
+
+	return matcherResult{
+		resultIDs: resultIDs,
+		// Capturing the function lets us read the last value of the cursor after the goroutine has terminated.
+		getPageToken: func() string { return currentCursor() },
+	}, timeoutCancel
+}
+
+func (s *server) hydrateParallel(ctx context.Context, resultIDs <-chan matchVuln, hydrate hydrateFunc) <-chan hydratedResult {
+	hydrated := make(chan hydratedResult, numParallelHydration)
 	var wg sync.WaitGroup
-	for range 20 {
+	for range numParallelHydration {
 		wg.Go(func() {
 			for mv := range resultIDs {
 				v, err := hydrate(ctx, mv.id)
@@ -224,7 +319,18 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 		close(hydrated)
 	}()
 
+	return hydrated
+}
+
+func (s *server) collectAndSort(ctx context.Context,
+	hydrated <-chan hydratedResult,
+	limit int,
+	cancel context.CancelCauseFunc,
+	matchCancel context.CancelFunc,
+	estimatedSize *atomic.Int64,
+) ([]*osvschema.Vulnerability, error) {
 	unordered := make([]hydratedResult, 0, limit)
+	loggedSize := false
 	for res := range hydrated {
 		if res.err != nil {
 			if errors.Is(res.err, models.ErrNotFound) {
@@ -240,6 +346,14 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 			continue
 		}
 		unordered = append(unordered, res)
+		estimatedSize.Add(int64(proto.Size(res.v)))
+		if sz := estimatedSize.Load(); sz > s.getResponseSizeLimit() {
+			if !loggedSize && s.verboseLogs {
+				logger.InfoContext(ctx, "estimated response size limit reached", slog.Int64("estimatedSize", sz))
+				loggedSize = true
+			}
+			matchCancel()
+		}
 	}
 
 	// If we got a real error, fail the whole query.
@@ -248,10 +362,10 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 			logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))
 		}
 		if errors.Is(err, models.ErrInvalidCursor) {
-			return nil, "", status.Error(codes.InvalidArgument, "invalid cursor")
+			return nil, status.Error(codes.InvalidArgument, "invalid cursor")
 		}
 
-		return nil, "", status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	slices.SortFunc(unordered, func(a, b hydratedResult) int {
@@ -262,5 +376,5 @@ func (s *server) queryAndHydrate(ctx context.Context, qi parsedQueryInfo, limit 
 		vulns = append(vulns, res.v)
 	}
 
-	return vulns, pageToken(), nil
+	return vulns, nil
 }

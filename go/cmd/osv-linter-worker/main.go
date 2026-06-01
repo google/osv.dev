@@ -317,10 +317,10 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 
 	logger.Info("Successfully parsed linter output")
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, groupCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		if err := uploadRecordToStore(ctx, store, results, prefixToSource, dryRun); err != nil {
+		if err := uploadRecordToStore(groupCtx, store, results, prefixToSource, dryRun); err != nil {
 			logger.Error("Failed to upload results to store", slog.Any("err", err))
 			return nil
 		}
@@ -331,7 +331,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 	// 2. Fetch existing findings (Async)
 	existingIDs := make(map[string]bool)
 	g.Go(func() error {
-		ids, err := store.ListIDs(ctx)
+		ids, err := store.ListIDs(groupCtx)
 		if err != nil {
 			return fmt.Errorf("failed to fetch existing findings: %w", err)
 		}
@@ -409,7 +409,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 	for range maxConcurrency {
 		g.Go(func() error {
 			for batch := range batchChan {
-				if err := processBatch(ctx, store, batch, now, &updatedCount, dryRun); err != nil {
+				if err := processBatch(groupCtx, store, batch, now, &updatedCount, dryRun); err != nil {
 					return err
 				}
 			}
@@ -437,7 +437,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 			logger.Info("Dry run: skipping deletion of stale findings", slog.Int("count", len(idsToDelete)))
 		} else {
 			// Delete in batches
-			deleteG, ctx := errgroup.WithContext(ctx)
+			deleteG, deleteCtx := errgroup.WithContext(ctx)
 			deleteBatchChan := make(chan []string, len(idsToDelete)/batchSize+1)
 
 			for i := 0; i < len(idsToDelete); i += batchSize {
@@ -452,7 +452,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 			for range maxConcurrency {
 				deleteG.Go(func() error {
 					for batch := range deleteBatchChan {
-						if err := store.DeleteMulti(ctx, batch); err != nil {
+						if err := store.DeleteMulti(deleteCtx, batch); err != nil {
 							return err
 						}
 					}
@@ -554,7 +554,7 @@ func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFinding
 	}
 
 	// Parallel upload
-	gUpload, ctx := errgroup.WithContext(ctx)
+	gUpload, uploadCtx := errgroup.WithContext(ctx)
 	type uploadTask struct {
 		source string
 		data   []byte
@@ -581,7 +581,7 @@ func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFinding
 					continue
 				}
 
-				if err := store.UploadResult(ctx, task.source, task.data); err != nil {
+				if err := store.UploadResult(uploadCtx, task.source, task.data); err != nil {
 					return err
 				}
 				logger.Info("Uploaded results for "+task.source, slog.String("source", task.source))
@@ -623,7 +623,7 @@ func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFinding
 	}
 
 	// Parallel delete
-	gDelete, ctx := errgroup.WithContext(ctx)
+	gDelete, deleteCtx := errgroup.WithContext(ctx)
 	deleteChan := make(chan string, len(toDelete))
 	for _, name := range toDelete {
 		deleteChan <- name
@@ -633,7 +633,7 @@ func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFinding
 	for range maxConcurrency {
 		gDelete.Go(func() error {
 			for name := range deleteChan {
-				if err := store.DeleteResult(ctx, name); err != nil {
+				if err := store.DeleteResult(deleteCtx, name); err != nil {
 					logger.Error("Failed to delete object", slog.String("name", name), slog.Any("err", err))
 				} else {
 					logger.Info("Deleted old result", slog.String("name", name))

@@ -52,6 +52,21 @@ const (
 
 var ErrRateLimit = errors.New("rate limit exceeded")
 
+// IsRateLimit checks if the error represents an HTTP 429 Rate Limit / Too Many Requests error.
+func IsRateLimit(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, ErrRateLimit) {
+		return true
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "status code 429") ||
+		strings.Contains(errStr, "status 429") ||
+		strings.Contains(errStr, "Too Many Requests") ||
+		strings.Contains(errStr, "rate limit")
+}
+
 // A GitTag holds a Git tag and corresponding commit hash.
 type Tag struct {
 	Tag    string `json:"tag"`    // Git tag
@@ -380,7 +395,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 			if errors.Is(err, context.DeadlineExceeded) {
 				return retry.RetryableError(err)
 			}
-			if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			if strings.Contains(err.Error(), "status code 429") || strings.Contains(err.Error(), "status 429") || strings.Contains(err.Error(), "Too Many Requests") || strings.Contains(err.Error(), "rate limit") {
 				return ErrRateLimit
 			}
 
@@ -425,7 +440,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 	refs, err := getRepoRefs(repoURL)
 	if err != nil {
 		if repoTagsCache != nil {
-			if errors.Is(err, ErrRateLimit) || strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			if IsRateLimit(err) {
 				repoTagsCache.SetInvalidWithTTL(repoURL, 1*time.Hour)
 			} else {
 				repoTagsCache.SetInvalid(repoURL)

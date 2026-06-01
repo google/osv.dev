@@ -532,7 +532,7 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient, cache)
 		if err != nil {
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				return nil, err
 			}
 
@@ -1118,7 +1118,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoT
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return
 			}
@@ -1226,7 +1226,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
-		} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+		} else if git.IsRateLimit(err) {
 			metrics.Outcome = models.Error
 			return nil
 		}
@@ -1296,7 +1296,7 @@ func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache) (bool, er
 		valid, err = git.ValidRepoAndHasUsableRefs(repo)
 	}
 	if !valid && cache != nil {
-		if err != nil && (errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests")) {
+		if err != nil && git.IsRateLimit(err) {
 			cache.SetInvalidWithTTL(repo, 1*time.Hour)
 		} else {
 			cache.SetInvalid(repo)

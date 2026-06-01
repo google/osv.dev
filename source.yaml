@@ -604,6 +604,7 @@
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['CLSA-']
+  accepted_ecosystems: ['TuxCare']
   ignore_git: False
   link: 'https://github.com/cloudlinux/tuxcare-osv/tree/main/'
   editable: False

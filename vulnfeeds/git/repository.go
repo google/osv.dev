@@ -61,6 +61,7 @@ func IsRateLimit(err error) bool {
 		return true
 	}
 	errStr := err.Error()
+
 	return strings.Contains(errStr, "status code 429") ||
 		strings.Contains(errStr, "status 429") ||
 		strings.Contains(errStr, "Too Many Requests") ||

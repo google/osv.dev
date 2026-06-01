@@ -64,7 +64,12 @@ func IsRateLimit(err error) bool {
 	return strings.Contains(errStr, "status code 429") ||
 		strings.Contains(errStr, "status 429") ||
 		strings.Contains(errStr, "Too Many Requests") ||
-		strings.Contains(errStr, "rate limit")
+		strings.Contains(errStr, "rate limit") ||
+		strings.Contains(errStr, "response: 429") ||
+		strings.Contains(errStr, "code: 429") ||
+		strings.Contains(errStr, "status: 429") ||
+		strings.Contains(errStr, "HTTP 429") ||
+		strings.Contains(errStr, "http: 429")
 }
 
 // A GitTag holds a Git tag and corresponding commit hash.

@@ -20,5 +20,8 @@
   ],
   "tokio:tokio": [
     "https://github.com/tokio-rs/tokio"
+  ],
+  "python:urllib3": [
+    "https://github.com/urllib3/urllib3"
   ]
 }

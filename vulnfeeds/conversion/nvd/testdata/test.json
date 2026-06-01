@@ -2959,6 +2959,210 @@
           }
         ]
       }
+    },
+    {
+      "cve": {
+        "id": "CVE-2023-45803",
+        "sourceIdentifier": "security-advisories@github.com",
+        "published": "2023-10-17T20:15:10.070",
+        "lastModified": "2025-11-03T22:16:28.170",
+        "vulnStatus": "Modified",
+        "cveTags": [],
+        "descriptions": [
+          {
+            "lang": "en",
+            "value": "urllib3 is a user-friendly HTTP client library for Python. urllib3 previously wouldn't remove the HTTP request body when an HTTP redirect response using status 301, 302, or 303 after the request had its method changed from one that could accept a request body (like `POST`) to `GET` as is required by HTTP RFCs. Although this behavior is not specified in the section for redirects, it can be inferred by piecing together information from different sections and we have observed the behavior in other major HTTP client implementations like curl and web browsers. Because the vulnerability requires a previously trusted service to become compromised in order to have an impact on confidentiality we believe the exploitability of this vulnerability is low. Additionally, many users aren't putting sensitive data in HTTP request bodies, if this is the case then this vulnerability isn't exploitable. Both of the following conditions must be true to be affected by this vulnerability: 1. Using urllib3 and submitting sensitive information in the HTTP request body (such as form data or JSON) and 2. The origin service is compromised and starts redirecting using 301, 302, or 303 to a malicious peer or the redirected-to service becomes compromised. This issue has been addressed in versions 1.26.18 and 2.0.7 and users are advised to update to resolve this issue. Users unable to update should disable redirects for services that aren't expecting to respond with redirects with `redirects=False` and disable automatic redirects with `redirects=False` and handle 301, 302, and 303 redirects manually by stripping the HTTP request body."
+          },
+          {
+            "lang": "es",
+            "value": "urllib3 es una librería cliente HTTP fácil de usar para Python. Anteriormente, urllib3 no eliminaba el cuerpo de la solicitud HTTP cuando una respuesta de redirección HTTP usaba el estado 301, 302 o 303 después de que la solicitud cambiara su método de uno que pudiera aceptar un cuerpo de solicitud (como `POST`) a `GET` tal como está. requerido por los RFC HTTP. Aunque este comportamiento no se especifica en la sección de redirecciones, se puede inferir reuniendo información de diferentes secciones y hemos observado el comportamiento en otras implementaciones importantes de clientes HTTP como curl y navegadores web. Debido a que la vulnerabilidad requiere que un servicio previamente confiable se vea comprometido para tener un impacto en la confidencialidad, creemos que la explotabilidad de esta vulnerabilidad es baja. Además, muchos usuarios no colocan datos confidenciales en los cuerpos de solicitud HTTP; si este es el caso, entonces esta vulnerabilidad no es explotable. Las dos condiciones siguientes deben ser ciertas para verse afectado por esta vulnerabilidad: 1. Usar urllib3 y enviar información confidencial en el cuerpo de la solicitud HTTP (como datos de formulario o JSON) y 2. El servicio de origen está comprometido y comienza a redireccionar usando 301. 302 o 303 a un par malicioso o el servicio redirigido se ve comprometido. Este problema se solucionó en las versiones 1.26.18 y 2.0.7 y se recomienda a los usuarios que actualicen para resolverlo. Los usuarios que no puedan actualizar deben deshabilitar los redireccionamientos para servicios que no esperan responder con redireccionamientos con `redirects=False` y deshabilitar los redireccionamientos automáticos con `redirects=False` y manejar los redireccionamientos 301, 302 y 303 manualmente eliminando el cuerpo de la solicitud HTTP."
+          }
+        ],
+        "metrics": {
+          "cvssMetricV31": [
+            {
+              "source": "security-advisories@github.com",
+              "type": "Secondary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:A/AC:H/PR:H/UI:N/S:U/C:H/I:N/A:N",
+                "baseScore": 4.2,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "ADJACENT_NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "HIGH",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 0.5,
+              "impactScore": 3.6
+            },
+            {
+              "source": "nvd@nist.gov",
+              "type": "Primary",
+              "cvssData": {
+                "version": "3.1",
+                "vectorString": "CVSS:3.1/AV:A/AC:H/PR:H/UI:N/S:U/C:H/I:N/A:N",
+                "baseScore": 4.2,
+                "baseSeverity": "MEDIUM",
+                "attackVector": "ADJACENT_NETWORK",
+                "attackComplexity": "HIGH",
+                "privilegesRequired": "HIGH",
+                "userInteraction": "NONE",
+                "scope": "UNCHANGED",
+                "confidentialityImpact": "HIGH",
+                "integrityImpact": "NONE",
+                "availabilityImpact": "NONE"
+              },
+              "exploitabilityScore": 0.5,
+              "impactScore": 3.6
+            }
+          ]
+        },
+        "weaknesses": [
+          {
+            "source": "security-advisories@github.com",
+            "type": "Secondary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "CWE-200"
+              }
+            ]
+          },
+          {
+            "source": "nvd@nist.gov",
+            "type": "Primary",
+            "description": [
+              {
+                "lang": "en",
+                "value": "NVD-CWE-noinfo"
+              }
+            ]
+          }
+        ],
+        "configurations": [
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:python:urllib3:*:*:*:*:*:*:*:*",
+                    "versionEndExcluding": "1.26.18",
+                    "matchCriteriaId": "3F2284A6-F467-4419-9AF7-9FFD133B04E5"
+                  },
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:a:python:urllib3:*:*:*:*:*:*:*:*",
+                    "versionStartIncluding": "2.0.0",
+                    "versionEndExcluding": "2.0.7",
+                    "matchCriteriaId": "6A586164-F448-431C-8966-14E145A82BB5"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "nodes": [
+              {
+                "operator": "OR",
+                "negate": false,
+                "cpeMatch": [
+                  {
+                    "vulnerable": true,
+                    "criteria": "cpe:2.3:o:fedoraproject:fedora:38:*:*:*:*:*:*:*",
+                    "matchCriteriaId": "CC559B26-5DFC-4B7A-A27C-B77DE755DFF9"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "references": [
+          {
+            "url": "https://github.com/urllib3/urllib3/commit/4e98d57809dacab1cbe625fddeec1a290c478ea9",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/urllib3/urllib3/security/advisories/GHSA-g4mx-q9vg-27p4",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4R2Y5XK3WALSR3FNAGN7JBYV2B343ZKB/",
+            "source": "security-advisories@github.com"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/5F5CUBAN5XMEBVBZPHFITBLMJV5FIJJ5/",
+            "source": "security-advisories@github.com"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PPDPLM6UUMN55ESPQWJFLLIZY4ZKCNRX/",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Mailing List"
+            ]
+          },
+          {
+            "url": "https://www.rfc-editor.org/rfc/rfc9110.html#name-get",
+            "source": "security-advisories@github.com",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://github.com/urllib3/urllib3/commit/4e98d57809dacab1cbe625fddeec1a290c478ea9",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Patch"
+            ]
+          },
+          {
+            "url": "https://github.com/urllib3/urllib3/security/advisories/GHSA-g4mx-q9vg-27p4",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          },
+          {
+            "url": "https://lists.debian.org/debian-lts-announce/2024/12/msg00020.html",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/4R2Y5XK3WALSR3FNAGN7JBYV2B343ZKB/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/5F5CUBAN5XMEBVBZPHFITBLMJV5FIJJ5/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108"
+          },
+          {
+            "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/PPDPLM6UUMN55ESPQWJFLLIZY4ZKCNRX/",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Mailing List"
+            ]
+          },
+          {
+            "url": "https://www.rfc-editor.org/rfc/rfc9110.html#name-get",
+            "source": "af854a3a-2127-422b-91ae-364da2661108",
+            "tags": [
+              "Third Party Advisory"
+            ]
+          }
+        ]
+      }
     }
   ]
 }

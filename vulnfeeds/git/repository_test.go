@@ -383,7 +383,7 @@ func TestValidRepo(t *testing.T) {
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestValidRepo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.repoURL, tc.disableExpiryDate)
 			}
-			got := ValidRepoAndHasUsableRefs(tc.repoURL)
+			got, _ := ValidRepoAndHasUsableRefs(tc.repoURL)
 			if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 				t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 				t.Logf("Confirm that %s is reachable with `git ls-remote %s`", tc.repoURL, tc.repoURL)
@@ -396,7 +396,7 @@ func TestInvalidRepos(t *testing.T) {
 	testutils.SetupGitVCR(t)
 	redundantRepos := []string{}
 	for _, repo := range models.InvalidRepos {
-		if !ValidRepoAndHasUsableRefs(repo) {
+		if valid, _ := ValidRepoAndHasUsableRefs(repo); !valid {
 			redundantRepos = append(redundantRepos, repo)
 		}
 	}
@@ -537,12 +537,37 @@ func TestValidRepoWithGitter(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			responseStatus = tc.status
-			if got := ValidRepo(tc.repo); got != tc.wantValidRepo {
+			if got, _ := ValidRepo(tc.repo); got != tc.wantValidRepo {
 				t.Errorf("ValidRepo(%q) = %v, want %v", tc.repo, got, tc.wantValidRepo)
 			}
-			if got := ValidRepoAndHasUsableRefs(tc.repo); got != tc.wantValidRepoAndHasRefs {
+			if got, _ := ValidRepoAndHasUsableRefs(tc.repo); got != tc.wantValidRepoAndHasRefs {
 				t.Errorf("ValidRepoAndHasUsableRefs(%q) = %v, want %v", tc.repo, got, tc.wantValidRepoAndHasRefs)
 			}
 		})
+	}
+}
+
+func TestInMemoryRepoTagsCache(t *testing.T) {
+	cache := &InMemoryRepoTagsCache{}
+	repo := "https://github.com/example/test-repo"
+
+	// Test that it starts as valid
+	if cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be valid initially")
+	}
+
+	// Test SetInvalid
+	cache.SetInvalid(repo)
+	if !cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be invalid after SetInvalid")
+	}
+
+	// Reset the cache
+	cache = &InMemoryRepoTagsCache{}
+
+	// Test SetInvalidWithTTL (which behaves as SetInvalid)
+	cache.SetInvalidWithTTL(repo, 1*time.Hour)
+	if !cache.IsInvalid(repo) {
+		t.Errorf("Expected repo to be invalid after SetInvalidWithTTL")
 	}
 }

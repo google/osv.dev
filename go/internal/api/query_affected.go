@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"iter"
 	"log/slog"
 	"slices"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	pb "osv.dev/bindings/go/api"
 )
 
@@ -92,7 +94,143 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 }
 
 func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffectedBatchParameters) (*pb.BatchVulnerabilityList, error) {
-	return &pb.BatchVulnerabilityList{}, nil
+	// collect the queryInfo for each query
+	commitQueries := 0
+	purlQueries := 0
+	invalidQueries := 0
+	ecosystemQueries := make(map[string]int)
+	firstErr := ""
+	queries := params.GetQuery().GetQueries()
+	queryInfos := make([]*parsedQueryInfo, len(queries))
+	for i, query := range queries {
+		info, err := s.parseQuery(query)
+		if errors.Is(err, purl.ErrUnknownPURL) {
+			// All unsupported PURL queries would simply return a 200
+			// status code with an empty response.
+			// To avoid breaking existing behavior,
+			// we return an empty response here with no error.
+			// This needs to be revisited with a more considerate design.
+			queryInfos[i] = nil
+			invalidQueries++
+
+			continue
+		}
+		if err != nil {
+			if firstErr == "" {
+				firstErr = fmt.Sprintf("error in query at index %d: %s", i, err.Error())
+			}
+			queryInfos[i] = nil
+			invalidQueries++
+
+			continue
+		}
+		queryInfos[i] = &info
+		if query.GetCommit() != "" {
+			commitQueries++
+		} else {
+			if query.GetPackage().GetPurl() != "" {
+				purlQueries++
+			} else {
+				ecosystemQueries[query.GetPackage().GetEcosystem()]++
+			}
+		}
+	}
+	ecoGroups := make([]any, 0, len(ecosystemQueries))
+	for ecosystem, count := range ecosystemQueries {
+		ecoGroups = append(ecoGroups, slog.Int(ecosystem, count))
+	}
+	logger.InfoContext(ctx, "QueryAffectedBatch",
+		slog.Int("commit", commitQueries),
+		slog.Group("ecosystem", ecoGroups...),
+		slog.Int("purl", purlQueries),
+		slog.Int("invalid", invalidQueries))
+
+	if s.verboseLogs {
+		logger.InfoContext(ctx, "full batch query", slog.Any("query", params.GetQuery()))
+	}
+	if len(queryInfos) > maxBatchQueries {
+		return nil, status.Error(codes.InvalidArgument, "too many queries")
+	}
+	if firstErr != "" {
+		return nil, status.Error(codes.InvalidArgument, firstErr)
+	}
+
+	estimatedSize := new(atomic.Int64)
+	hydrate := func(ctx context.Context, id string) (*osvschema.Vulnerability, error) {
+		modified, err := s.vulnStore.GetModified(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		return &osvschema.Vulnerability{Id: id, Modified: timestamppb.New(modified)}, nil
+	}
+
+	type queryAndHydrateResult struct {
+		idx       int
+		vulns     []*osvschema.Vulnerability
+		nextToken string
+		err       error
+	}
+
+	// Create a channel to receive the results from the goroutines.
+	resultsChan := make(chan *queryAndHydrateResult)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for i, query := range queryInfos {
+		go func() {
+			if query == nil {
+				// handling unknown PURL types
+				resultsChan <- &queryAndHydrateResult{
+					idx:       i,
+					vulns:     []*osvschema.Vulnerability{},
+					nextToken: "",
+					err:       nil,
+				}
+
+				return
+			}
+			vulns, nextToken, err := s.queryAndHydrate(ctx, *query, maxBatchQueryResponses, s.getBatchQueryTimeout(), hydrate, estimatedSize)
+			resultsChan <- &queryAndHydrateResult{
+				idx:       i,
+				vulns:     vulns,
+				nextToken: nextToken,
+				err:       err,
+			}
+		}()
+	}
+
+	list := &pb.BatchVulnerabilityList{}
+	list.Results = make([]*pb.VulnerabilityList, len(queryInfos))
+
+	var firstHydrateErr error
+	for range queryInfos {
+		result := <-resultsChan
+		if result.err != nil {
+			if firstHydrateErr == nil {
+				firstHydrateErr = fmt.Errorf("error in query at index %d: %w", result.idx, result.err)
+				cancel()
+			}
+			// we need to continue to drain the channel
+			continue
+		}
+		list.Results[result.idx] = &pb.VulnerabilityList{
+			Vulns:         result.vulns,
+			NextPageToken: result.nextToken,
+		}
+	}
+
+	if firstHydrateErr != nil {
+		return nil, firstHydrateErr
+	}
+
+	if s.verboseLogs {
+		logger.InfoContext(ctx, "batch queryAndHydrate completed successfully",
+			slog.Int64("estimated_size", estimatedSize.Load()))
+	}
+
+	return list, nil
 }
 
 func (s *server) getSingleQueryTimeout() time.Duration {
@@ -118,7 +256,6 @@ func (s *server) getResponseSizeLimit() int64 {
 
 	return responseSizeBytesSoftLimit
 }
-
 
 type parsedQueryInfo struct {
 	commit      string

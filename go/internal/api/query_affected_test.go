@@ -298,7 +298,7 @@ func TestQueryAffected_SizeLimitSafety(t *testing.T) {
 
 	params := &pb.QueryAffectedParameters{
 		Query: &pb.Query{
-			Param: &pb.Query_Version{Version: "1.0.0"},
+			Param:   &pb.Query_Version{Version: "1.0.0"},
 			Package: &osvschema.Package{Name: "test-pkg", Ecosystem: "npm"},
 		},
 	}
@@ -318,4 +318,3 @@ func TestQueryAffected_SizeLimitSafety(t *testing.T) {
 		t.Errorf("Expected next page token 'cursor-1', got %q", got.GetNextPageToken())
 	}
 }
-

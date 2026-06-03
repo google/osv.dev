@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
@@ -531,7 +532,7 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.
 		ac, err := extractGitAffectedCommit(ref.URL, models.Fixed, httpClient, cache)
 		if err != nil {
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				return nil, err
 			}
 
@@ -1066,7 +1067,7 @@ func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
 		return
 	}
 	// Avoid polluting the cache with existent-but-useless repos.
-	if git.ValidRepoAndHasUsableRefs(repo) {
+	if valid, _ := git.ValidRepoAndHasUsableRefs(repo); valid {
 		c.m[*vp] = append(c.m[*vp], repo)
 	}
 }
@@ -1117,7 +1118,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoT
 	for _, repo := range repos {
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return
 			}
@@ -1225,7 +1226,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
-		} else if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+		} else if git.IsRateLimit(err) {
 			metrics.Outcome = models.Error
 			return nil
 		}
@@ -1240,11 +1241,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		// If it's any other repo-shaped URL, it's only useful if it has tags.
-		if (err == nil && !git.ValidRepo(repo)) || (err != nil && !git.ValidRepoAndHasUsableRefs(repo)) {
-			if repoTagsCache != nil {
-				repoTagsCache.SetInvalid(repo)
-			}
-
+		if isValid, _ := validateRepo(repo, err == nil, repoTagsCache); !isValid {
 			continue
 		}
 		repos = append(repos, repo)
@@ -1288,4 +1285,23 @@ func ReposFromReferencesCVEList(refs []models.Reference, tagDenyList []string, m
 	}
 
 	return repos
+}
+
+func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache) (bool, error) {
+	var valid bool
+	var err error
+	if isCommit {
+		valid, err = git.ValidRepo(repo)
+	} else {
+		valid, err = git.ValidRepoAndHasUsableRefs(repo)
+	}
+	if !valid && cache != nil {
+		if err != nil && git.IsRateLimit(err) {
+			cache.SetInvalidWithTTL(repo, 1*time.Hour)
+		} else {
+			cache.SetInvalid(repo)
+		}
+	}
+
+	return valid, err
 }

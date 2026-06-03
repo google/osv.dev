@@ -96,7 +96,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient, cache)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %v", err)
-		if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+		if git.IsRateLimit(err) {
 			metrics.SetOutcome(models.Error)
 			return nil, metrics, models.Error
 		}

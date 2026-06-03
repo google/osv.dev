@@ -52,6 +52,27 @@ const (
 
 var ErrRateLimit = errors.New("rate limit exceeded")
 
+// IsRateLimit checks if the error represents an HTTP 429 Rate Limit / Too Many Requests error.
+func IsRateLimit(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, ErrRateLimit) {
+		return true
+	}
+	errStr := err.Error()
+
+	return strings.Contains(errStr, "status code 429") ||
+		strings.Contains(errStr, "status 429") ||
+		strings.Contains(errStr, "Too Many Requests") ||
+		strings.Contains(errStr, "rate limit") ||
+		strings.Contains(errStr, "response: 429") ||
+		strings.Contains(errStr, "code: 429") ||
+		strings.Contains(errStr, "status: 429") ||
+		strings.Contains(errStr, "HTTP 429") ||
+		strings.Contains(errStr, "http: 429")
+}
+
 // A GitTag holds a Git tag and corresponding commit hash.
 type Tag struct {
 	Tag    string `json:"tag"`    // Git tag
@@ -82,6 +103,7 @@ type RepoTagsCache interface {
 	Get(repo string) (RepoTagsMap, bool)
 	Set(repo string, tags RepoTagsMap)
 	SetInvalid(repo string)
+	SetInvalidWithTTL(repo string, ttl time.Duration)
 	IsInvalid(repo string) bool
 	SetCanonicalLink(repo string, canonicalLink string)
 	GetCanonicalLink(repo string) (string, bool)
@@ -122,6 +144,10 @@ func (c *InMemoryRepoTagsCache) SetInvalid(repo string) {
 		c.invalid = make(map[string]bool)
 	}
 	c.invalid[repo] = true
+}
+
+func (c *InMemoryRepoTagsCache) SetInvalidWithTTL(repo string, _ time.Duration) {
+	c.SetInvalid(repo)
 }
 
 func (c *InMemoryRepoTagsCache) IsInvalid(repo string) bool {
@@ -191,11 +217,14 @@ func (c *RedisRepoTagsCache) Set(repo string, tags RepoTagsMap) {
 }
 
 func (c *RedisRepoTagsCache) SetInvalid(repo string) {
+	c.SetInvalidWithTTL(repo, randomTTL())
+}
+
+func (c *RedisRepoTagsCache) SetInvalidWithTTL(repo string, ttl time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	key := "invalid_repo:" + repo
-	ttl := randomTTL()
 	c.redisClient.Set(ctx, key, "true", ttl)
 }
 
@@ -246,7 +275,9 @@ func NewRepoTagsCache() RepoTagsCache {
 			Protocol: 2,
 		})
 
-		return &RedisRepoTagsCache{redisClient: client}
+		return &RedisRepoTagsCache{
+			redisClient: client,
+		}
 	}
 
 	return &InMemoryRepoTagsCache{
@@ -370,7 +401,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 			if errors.Is(err, context.DeadlineExceeded) {
 				return retry.RetryableError(err)
 			}
-			if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "Too Many Requests") {
+			if strings.Contains(err.Error(), "status code 429") || strings.Contains(err.Error(), "status 429") || strings.Contains(err.Error(), "Too Many Requests") || strings.Contains(err.Error(), "rate limit") {
 				return ErrRateLimit
 			}
 
@@ -412,16 +443,14 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		}
 	}
 	// Cache miss.
-	var refs []*plumbing.Reference
-	var err error
-	if os.Getenv("GITTER_HOST") != "" {
-		refs, err = gitterRepoRefs(repoURL)
-	} else {
-		refs, err = RemoteRepoRefsWithRetry(repoURL, 3)
-	}
+	refs, err := getRepoRefs(repoURL)
 	if err != nil {
 		if repoTagsCache != nil {
-			repoTagsCache.SetInvalid(repoURL)
+			if IsRateLimit(err) {
+				repoTagsCache.SetInvalidWithTTL(repoURL, 1*time.Hour)
+			} else {
+				repoTagsCache.SetInvalid(repoURL)
+			}
 		}
 
 		return tags, err
@@ -547,34 +576,28 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 	return branches
 }
 
+func getRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
+	if os.Getenv("GITTER_HOST") != "" {
+		return gitterRepoRefs(repoURL)
+	}
+
+	return RemoteRepoRefsWithRetry(repoURL, 3)
+}
+
 // Validate the repo by attempting to query it's references.
 // *** Does external calls to verify repos ***
-func ValidRepo(repoURL string) bool {
-	if os.Getenv("GITTER_HOST") != "" {
-		_, err := gitterRepoRefs(repoURL)
-		return err == nil
-	}
-	_, err := RemoteRepoRefsWithRetry(repoURL, 3)
-
-	return err == nil
+func ValidRepo(repoURL string) (bool, error) {
+	_, err := getRepoRefs(repoURL)
+	return err == nil, err
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
 // *** Does external calls to verify repos ***
-func ValidRepoAndHasUsableRefs(repoURL string) (valid bool) {
-	if os.Getenv("GITTER_HOST") != "" {
-		refs, err := gitterRepoRefs(repoURL)
-		if err != nil || len(refs) == 0 {
-			return false
-		}
-
-		return len(RefTags(refs)) > 0
-	}
-	refs, err := RemoteRepoRefsWithRetry(repoURL, 3)
-	// Return false if there's an error, or if the repo has no refs (e.g. is empty)
+func ValidRepoAndHasUsableRefs(repoURL string) (bool, error) {
+	refs, err := getRepoRefs(repoURL)
 	if err != nil || len(refs) == 0 {
-		return false
+		return false, err
 	}
-	// Repos with no tags aren't useful.
-	return len(RefTags(refs)) > 0
+
+	return len(RefTags(refs)) > 0, nil
 }

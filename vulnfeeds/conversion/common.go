@@ -163,7 +163,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
 		if err != nil {
 			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}
@@ -173,7 +173,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
 		if err != nil {
-			if errors.Is(err, git.ErrRateLimit) || strings.Contains(err.Error(), "429") {
+			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}

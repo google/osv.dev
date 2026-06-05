@@ -25,6 +25,8 @@ import (
 )
 
 // startCursor is a cursor that is used to indicate the start of the query.
+// It's returned if the server responds before a query has even started to
+// prevent a client assuming an empty page token means "we have no more results".
 // (This is "FIRST_PAGE_TOKEN" encoded in base64, from the Python implementation)
 const startCursor = "RklSU1RfUEFHRV9UT0tFTg=="
 

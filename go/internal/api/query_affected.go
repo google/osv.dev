@@ -61,11 +61,27 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		return &pb.VulnerabilityList{}, nil
 	}
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
+	}
+
+	matcherCtx, matchCancel := context.WithTimeout(ctx, s.getSingleQueryTimeout())
+	defer matchCancel()
+
+	matcherIter, err := s.resolveMatcherIterator(matcherCtx, queryInfo)
+	if err != nil {
+		return nil, err
 	}
 
 	estimatedSizeBytes := new(atomic.Int64)
-	vulns, nextToken, err := s.queryAndHydrate(ctx, queryInfo, maxSingleQueryResponses, s.getSingleQueryTimeout(), s.vulnStore.GetFull, estimatedSizeBytes)
+	vulns, nextToken, err := s.streamAndHydrate(
+		ctx,
+		matcherIter,
+		queryInfo.pageToken,
+		maxSingleQueryResponses,
+		matchCancel,
+		s.vulnStore.GetFull,
+		estimatedSizeBytes,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +104,7 @@ func (s *server) logQueryInfo(ctx context.Context, queryInfo parsedQueryInfo, is
 	var logFields []any
 	queryType := "invalid"
 	if !isInvalid {
-		if queryInfo.commit != "" {
+		if len(queryInfo.commit) > 0 {
 			queryType = "commit"
 		} else {
 			if queryInfo.fromPURL {
@@ -105,7 +121,7 @@ func (s *server) logQueryInfo(ctx context.Context, queryInfo parsedQueryInfo, is
 
 func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffectedBatchParameters) (*pb.BatchVulnerabilityList, error) {
 	// collect the queryInfo for each query
-	firstErr := ""
+	var firstErr error
 	queries := params.GetQuery().GetQueries()
 	queryInfos := make([]*parsedQueryInfo, len(queries))
 	for i, query := range queries {
@@ -122,8 +138,9 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 			continue
 		}
 		if err != nil {
-			if firstErr == "" {
-				firstErr = fmt.Sprintf("error in query at index %d: %s", i, err.Error())
+			if firstErr == nil {
+				// this is wrapping a status.Error, so we don't need to use it here.
+				firstErr = fmt.Errorf("error in query at index %d: %w", i, err)
 			}
 			queryInfos[i] = nil
 
@@ -139,8 +156,8 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	if len(queryInfos) > maxBatchQueries {
 		return nil, status.Error(codes.InvalidArgument, "too many queries")
 	}
-	if firstErr != "" {
-		return nil, status.Error(codes.InvalidArgument, firstErr)
+	if firstErr != nil {
+		return nil, firstErr
 	}
 
 	estimatedSizeBytes := new(atomic.Int64)
@@ -163,12 +180,70 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	// Create a channel to receive the results from the goroutines.
 	resultsChan := make(chan *queryAndHydrateResult)
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	pipelineCtx, cancelPipelines := context.WithCancel(ctx)
+	defer cancelPipelines()
 
-	for i, query := range queryInfos {
+	batchCtx, matchCancel := context.WithTimeout(pipelineCtx, s.getBatchQueryTimeout())
+	defer matchCancel()
+
+	packageQueries := []models.PackageQuery{}
+	packageIndices := []int{}
+	commitMatchQueries := []models.CommitQuery{}
+	commitIndices := []int{}
+
+	for i, qi := range queryInfos {
+		if qi == nil {
+			continue
+		}
+		startTok := qi.pageToken
+		if startTok == startCursor {
+			startTok = ""
+		}
+		if len(qi.commit) > 0 {
+			commitMatchQueries = append(commitMatchQueries, models.CommitQuery{
+				Commit: qi.commit,
+				Cursor: startTok,
+			})
+			commitIndices = append(commitIndices, i)
+		} else if qi.packageName != "" {
+			packageQueries = append(packageQueries, models.PackageQuery{
+				Ecosystem: qi.ecosystem,
+				Name:      qi.packageName,
+				Version:   qi.version,
+				Cursor:    startTok,
+			})
+			packageIndices = append(packageIndices, i)
+		}
+	}
+
+	var packageIters []iter.Seq2[models.MatchResult, error]
+	var commitIters []iter.Seq2[models.MatchResult, error]
+	var err error
+
+	if len(packageQueries) > 0 {
+		packageIters, err = s.vulnStore.MatchPackagesBatch(batchCtx, packageQueries)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(commitMatchQueries) > 0 {
+		commitIters, err = s.vulnStore.MatchCommitsBatch(batchCtx, commitMatchQueries)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	iters := make([]iter.Seq2[models.MatchResult, error], len(queries))
+	for i, it := range packageIters {
+		iters[packageIndices[i]] = it
+	}
+	for i, it := range commitIters {
+		iters[commitIndices[i]] = it
+	}
+
+	for i, matcherIter := range iters {
 		go func() {
-			if query == nil {
+			if queryInfos[i] == nil {
 				// handling unknown PURL types
 				resultsChan <- &queryAndHydrateResult{
 					idx:       i,
@@ -179,7 +254,15 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 
 				return
 			}
-			vulns, nextToken, err := s.queryAndHydrate(ctx, *query, maxBatchQueryResponses, s.getBatchQueryTimeout(), hydrate, estimatedSizeBytes)
+
+			vulns, nextToken, err := s.streamAndHydrate(
+				pipelineCtx,
+				matcherIter,
+				queries[i].GetPageToken(),
+				maxBatchQueryResponses,
+				matchCancel,
+				hydrate,
+				estimatedSizeBytes)
 			resultsChan <- &queryAndHydrateResult{
 				idx:       i,
 				vulns:     vulns,
@@ -198,7 +281,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 		if result.err != nil {
 			if firstHydrateErr == nil {
 				firstHydrateErr = fmt.Errorf("error in query at index %d: %w", result.idx, result.err)
-				cancel()
+				cancelPipelines()
 			}
 			// we need to continue to drain the channel
 			continue
@@ -235,7 +318,7 @@ func (s *server) logBatchQueryInfo(ctx context.Context, queryInfos []*parsedQuer
 
 			continue
 		}
-		if qi.commit != "" {
+		if len(qi.commit) > 0 {
 			commitQueries++
 		} else {
 			if qi.fromPURL {
@@ -282,7 +365,7 @@ func (s *server) getResponseSizeLimit() int64 {
 }
 
 type parsedQueryInfo struct {
-	commit      string
+	commit      []byte
 	ecosystem   string
 	packageName string
 	version     string
@@ -295,18 +378,23 @@ type parsedQueryInfo struct {
 // It returns purl.ErrUnknownPURL if the query is for an unsupported PURL type.
 func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	if query == nil {
-		return parsedQueryInfo{}, errors.New("no query provided")
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "no query provided")
 	}
 	tok := query.GetPageToken()
 	if commitQuery, ok := query.GetParam().(*pb.Query_Commit); ok {
-		return parsedQueryInfo{commit: commitQuery.Commit, pageToken: tok}, nil
+		commit, err := hex.DecodeString(commitQuery.Commit)
+		if err != nil {
+			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid hash")
+		}
+
+		return parsedQueryInfo{commit: commit, pageToken: tok}, nil
 	}
 	var qi parsedQueryInfo
 	if versionQuery, ok := query.GetParam().(*pb.Query_Version); ok {
 		qi.version = versionQuery.Version
 	}
 	if query.GetPackage() == nil {
-		return parsedQueryInfo{}, errors.New("invalid query")
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
 	}
 	qi.ecosystem = query.GetPackage().GetEcosystem()
 	qi.packageName = query.GetPackage().GetName()
@@ -314,27 +402,34 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	if purlStr := query.GetPackage().GetPurl(); purlStr != "" {
 		qi.fromPURL = true
 		if qi.packageName != "" {
-			return parsedQueryInfo{}, errors.New("name specified in a PURL query")
+			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "name specified in a PURL query")
 		}
 		if qi.ecosystem != "" {
-			return parsedQueryInfo{}, errors.New("ecosystem specified in a PURL query")
+			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "ecosystem specified in a PURL query")
 		}
 		pEco, pName, pVer, err := purl.Parse(purlStr)
 		if err != nil {
-			return parsedQueryInfo{}, err
+			if errors.Is(err, purl.ErrUnknownPURL) {
+				return parsedQueryInfo{}, err
+			}
+
+			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, err.Error())
 		}
 		qi.ecosystem = pEco
 		qi.packageName = pName
 		if pVer != "" {
 			if qi.version != "" {
-				return parsedQueryInfo{}, errors.New("version specified in params and PURL query")
+				return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "version specified in params and PURL query")
 			}
 			qi.version = pVer
 		}
 	}
 
 	if qi.ecosystem != "" && !schema.IsKnownEcosystem(qi.ecosystem) && qi.ecosystem != "GIT" {
-		return parsedQueryInfo{}, errors.New("invalid ecosystem")
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid ecosystem")
+	}
+	if qi.packageName == "" {
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
 	}
 
 	return qi, nil
@@ -354,23 +449,19 @@ type hydratedResult struct {
 	err   error
 }
 
-// queryAndHydrate performs the actual query and hydration.
-func (s *server) queryAndHydrate(
+func (s *server) streamAndHydrate(
 	ctx context.Context,
-	qi parsedQueryInfo,
+	matcher iter.Seq2[models.MatchResult, error],
+	initialCursor string,
 	limit int,
-	timeout time.Duration,
+	matchCancel context.CancelFunc,
 	hydrate hydrateFunc,
 	estimatedSizeBytes *atomic.Int64,
 ) ([]*osvschema.Vulnerability, string, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
-	matcher, err := s.resolveMatcher(qi)
-	if err != nil {
-		return nil, "", err
-	}
 
-	matchResult, matchCancel := s.runMatcher(ctx, matcher, qi.pageToken, limit, timeout, cancel)
+	matchResult := s.runMatcher(ctx, matcher, initialCursor, limit, cancel)
 	hydratedCh := s.hydrateParallel(ctx, matchResult.resultIDsCh, hydrate)
 	vulns, err := s.collectAndSort(ctx, hydratedCh, limit, cancel, matchCancel, estimatedSizeBytes)
 	if err != nil {
@@ -380,29 +471,18 @@ func (s *server) queryAndHydrate(
 	return vulns, matchResult.getPageToken(), nil
 }
 
-type matcherFunc func(context.Context) iter.Seq2[models.MatchResult, error]
-
-// resolveMatcher returns a matcher function for the given query info.
+// resolveMatcherIterator returns a matcher iterator for the given query info.
 // This chooses to either query by commit or by package depending on what's in the query.
-func (s *server) resolveMatcher(qi parsedQueryInfo) (matcherFunc, error) {
+func (s *server) resolveMatcherIterator(ctx context.Context, qi parsedQueryInfo) (iter.Seq2[models.MatchResult, error], error) {
 	startTok := qi.pageToken
 	if startTok == startCursor {
 		startTok = ""
 	}
-	if qi.commit != "" {
-		commit, err := hex.DecodeString(qi.commit)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid hash")
-		}
-
-		return func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
-			return s.vulnStore.MatchCommits(ctx, commit, startTok)
-		}, nil
+	if len(qi.commit) > 0 {
+		return s.vulnStore.MatchCommits(ctx, qi.commit, startTok), nil
 	}
 	if qi.packageName != "" {
-		return func(ctx context.Context) iter.Seq2[models.MatchResult, error] {
-			return s.vulnStore.MatchPackages(ctx, qi.ecosystem, qi.packageName, qi.version, startTok)
-		}, nil
+		return s.vulnStore.MatchPackages(ctx, qi.ecosystem, qi.packageName, qi.version, startTok), nil
 	}
 
 	return nil, status.Error(codes.InvalidArgument, "invalid query")
@@ -418,27 +498,24 @@ type matcherResult struct {
 // The getPageToken function will block until the matcher is finished.
 func (s *server) runMatcher(
 	ctx context.Context,
-	matcher matcherFunc,
+	matcher iter.Seq2[models.MatchResult, error],
 	startTok string,
 	limit int,
-	timeout time.Duration,
 	cancel context.CancelCauseFunc,
-) (matcherResult, context.CancelFunc) {
+) matcherResult {
 	resultIDs := make(chan matchVuln, numParallelHydration)
 	done := make(chan struct{})
 	currentCursor := func() string { return startTok }
 	if startTok == "" {
 		currentCursor = func() string { return startCursor }
 	}
-	matcherCtx, timeoutCancel := context.WithTimeout(ctx, timeout)
 	go func() {
-		defer timeoutCancel()
 		defer close(done)
 		defer close(resultIDs)
 		idx := 0
-		for match, err := range matcher(matcherCtx) {
+		for match, err := range matcher {
 			if err != nil {
-				if errors.Is(matcherCtx.Err(), context.DeadlineExceeded) || errors.Is(matcherCtx.Err(), context.Canceled) {
+				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 					// If we timed out or been cancelled, we just return what we have.
 					return
 				}
@@ -460,12 +537,8 @@ func (s *server) runMatcher(
 				}
 			}
 		}
-		// We finished the entire query only if context was not cancelled
-		if matcherCtx.Err() == nil {
-			currentCursor = func() string { return "" }
-		} else {
-			logger.WarnContext(ctx, "matcher query exited early due to cancellation or timeout, preserving cursor")
-		}
+		// We finished the entire query only if context was not cancelled (meaning loop finished naturally)
+		currentCursor = func() string { return "" }
 	}()
 
 	return matcherResult{
@@ -475,7 +548,7 @@ func (s *server) runMatcher(
 			<-done // Block until matcher is finished
 			return currentCursor()
 		},
-	}, timeoutCancel
+	}
 }
 
 // hydrateParallel hydrates the vulnerability IDs in parallel.

@@ -60,6 +60,24 @@ func (m *mockQueryVulnStore) GetModified(ctx context.Context, id string) (time.T
 	return time.Time{}, models.ErrNotFound
 }
 
+func (m *mockQueryVulnStore) MatchPackagesBatch(ctx context.Context, queries []models.PackageQuery) ([]iter.Seq2[models.MatchResult, error], error) {
+	results := make([]iter.Seq2[models.MatchResult, error], len(queries))
+	for i, q := range queries {
+		results[i] = m.MatchPackages(ctx, q.Ecosystem, q.Name, q.Version, q.Cursor)
+	}
+
+	return results, nil
+}
+
+func (m *mockQueryVulnStore) MatchCommitsBatch(ctx context.Context, queries []models.CommitQuery) ([]iter.Seq2[models.MatchResult, error], error) {
+	results := make([]iter.Seq2[models.MatchResult, error], len(queries))
+	for i, q := range queries {
+		results[i] = m.MatchCommits(ctx, q.Commit, q.Cursor)
+	}
+
+	return results, nil
+}
+
 func TestQueryAffected_Validation(t *testing.T) {
 	ctx := context.Background()
 	s := &server{

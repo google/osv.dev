@@ -42,7 +42,8 @@ The step by step instructions are as follows:
 - name: 
   type: 0   # 0: GIT, 1: GCS, 2: REST
   repo_url:    # The repo URL for the source
-  db_prefix: # DB prefix, if the database allocates its own. https://ossf.github.io/osv-schema/#id-modified-fields
+  db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
   human_link: # HTTP link prefix to individual vulnerability records for humans. 
   link: # HTTP link prefix to individual OSV source records. 
   directory_path: # Vulnerability data not under this path is ignored by the importer.
@@ -70,6 +71,7 @@ Advanced and optional fields
   type: 2 # 0: GIT, 1: GCS, 2: REST
   rest_api_url: # URL pointing to a REST endpoint containing at least all of the vulnerabilities' IDs and date modified
   db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
   human_link: # The human readable link
   link:  # The base link
   directory_path: # Vulnerability data not under this path is ignored by the importer
@@ -91,6 +93,7 @@ Advanced and optional fields
   type: 1 # 0: GIT, 1: GCS, 2: REST
   bucket:  # Bucket name
   db_prefix:  # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
+  accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
   human_link:  # The human readable link
   link:  # The base link
   directory_path: # Vulnerability data not under this path is ignored by the importer

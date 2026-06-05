@@ -23,7 +23,7 @@ type mockVulnerabilityStore struct {
 	err  error
 }
 
-func (m *mockVulnerabilityStore) Get(_ context.Context, _ string) (*osvschema.Vulnerability, error) {
+func (m *mockVulnerabilityStore) GetFull(_ context.Context, _ string) (*osvschema.Vulnerability, error) {
 	if m.err != nil {
 		return nil, m.err
 	}

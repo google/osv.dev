@@ -44,7 +44,7 @@ func (m *mockQueryVulnStore) MatchPackages(ctx context.Context, ecosystem, name,
 	return func(_ func(models.MatchResult, error) bool) {}
 }
 
-func (m *mockQueryVulnStore) Get(ctx context.Context, id string) (*osvschema.Vulnerability, error) {
+func (m *mockQueryVulnStore) GetFull(ctx context.Context, id string) (*osvschema.Vulnerability, error) {
 	if m.get != nil {
 		return m.get(ctx, id)
 	}

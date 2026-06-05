@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/purl"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -43,23 +44,7 @@ const (
 
 func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedParameters) (*pb.VulnerabilityList, error) {
 	queryInfo, err := s.parseQuery(params.GetQuery())
-	// Log some info about the query
-	var logFields []any
-	if err != nil {
-		logFields = append(logFields, slog.String("type", "invalid"))
-	} else {
-		if queryInfo.commit != "" {
-			logFields = append(logFields, slog.String("type", "commit"))
-		} else {
-			if queryInfo.fromPURL {
-				logFields = append(logFields, slog.String("type", "purl"))
-			} else {
-				logFields = append(logFields, slog.String("type", "ecosystem"))
-			}
-			logFields = append(logFields, slog.String("ecosystem", queryInfo.ecosystem), slog.Bool("versioned", queryInfo.version != ""))
-		}
-	}
-	logger.InfoContext(ctx, "QueryAffected", logFields...)
+	s.logQueryInfo(ctx, queryInfo, err != nil)
 	if s.verboseLogs {
 		logger.InfoContext(ctx, "full query", slog.Any("query", params.GetQuery()))
 	}
@@ -76,15 +61,15 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	estimatedSize := new(atomic.Int64)
-	vulns, nextToken, err := s.queryAndHydrate(ctx, queryInfo, maxSingleQueryResponses, s.getSingleQueryTimeout(), s.vulnStore.Get, estimatedSize)
+	estimatedSizeBytes := new(atomic.Int64)
+	vulns, nextToken, err := s.queryAndHydrate(ctx, queryInfo, maxSingleQueryResponses, s.getSingleQueryTimeout(), s.vulnStore.GetFull, estimatedSizeBytes)
 	if err != nil {
 		return nil, err
 	}
 	if s.verboseLogs {
 		logger.InfoContext(ctx, "queryAndHydrate completed successfully",
 			slog.Int("count", len(vulns)),
-			slog.Int64("estimated_size", estimatedSize.Load()))
+			slog.Int64("estimated_size", estimatedSizeBytes.Load()))
 	}
 
 	return &pb.VulnerabilityList{
@@ -93,12 +78,30 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 	}, nil
 }
 
+// logQueryInfo logs some basic info about a query.
+// It logs only the ecosystem and not any specific package name or version
+// to avoid logging potentially identifiable information about users.
+func (s *server) logQueryInfo(ctx context.Context, queryInfo parsedQueryInfo, isInvalid bool) {
+	var logFields []any
+	queryType := "invalid"
+	if !isInvalid {
+		if queryInfo.commit != "" {
+			queryType = "commit"
+		} else {
+			if queryInfo.fromPURL {
+				queryType = "purl"
+			} else {
+				queryType = "ecosystem"
+			}
+			logFields = append(logFields, slog.String("ecosystem", queryInfo.ecosystem), slog.Bool("versioned", queryInfo.version != ""))
+		}
+	}
+	logFields = append(logFields, slog.String("type", queryType))
+	logger.InfoContext(ctx, "QueryAffected", logFields...)
+}
+
 func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffectedBatchParameters) (*pb.BatchVulnerabilityList, error) {
 	// collect the queryInfo for each query
-	commitQueries := 0
-	purlQueries := 0
-	invalidQueries := 0
-	ecosystemQueries := make(map[string]int)
 	firstErr := ""
 	queries := params.GetQuery().GetQueries()
 	queryInfos := make([]*parsedQueryInfo, len(queries))
@@ -111,7 +114,6 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 			// we return an empty response here with no error.
 			// This needs to be revisited with a more considerate design.
 			queryInfos[i] = nil
-			invalidQueries++
 
 			continue
 		}
@@ -120,31 +122,13 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 				firstErr = fmt.Sprintf("error in query at index %d: %s", i, err.Error())
 			}
 			queryInfos[i] = nil
-			invalidQueries++
 
 			continue
 		}
 		queryInfos[i] = &info
-		if query.GetCommit() != "" {
-			commitQueries++
-		} else {
-			if query.GetPackage().GetPurl() != "" {
-				purlQueries++
-			} else {
-				ecosystemQueries[query.GetPackage().GetEcosystem()]++
-			}
-		}
 	}
-	ecoGroups := make([]any, 0, len(ecosystemQueries))
-	for ecosystem, count := range ecosystemQueries {
-		ecoGroups = append(ecoGroups, slog.Int(ecosystem, count))
-	}
-	logger.InfoContext(ctx, "QueryAffectedBatch",
-		slog.Int("commit", commitQueries),
-		slog.Group("ecosystem", ecoGroups...),
-		slog.Int("purl", purlQueries),
-		slog.Int("invalid", invalidQueries))
 
+	s.logBatchQueryInfo(ctx, queryInfos)
 	if s.verboseLogs {
 		logger.InfoContext(ctx, "full batch query", slog.Any("query", params.GetQuery()))
 	}
@@ -155,7 +139,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 		return nil, status.Error(codes.InvalidArgument, firstErr)
 	}
 
-	estimatedSize := new(atomic.Int64)
+	estimatedSizeBytes := new(atomic.Int64)
 	hydrate := func(ctx context.Context, id string) (*osvschema.Vulnerability, error) {
 		modified, err := s.vulnStore.GetModified(ctx, id)
 		if err != nil {
@@ -191,7 +175,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 
 				return
 			}
-			vulns, nextToken, err := s.queryAndHydrate(ctx, *query, maxBatchQueryResponses, s.getBatchQueryTimeout(), hydrate, estimatedSize)
+			vulns, nextToken, err := s.queryAndHydrate(ctx, *query, maxBatchQueryResponses, s.getBatchQueryTimeout(), hydrate, estimatedSizeBytes)
 			resultsChan <- &queryAndHydrateResult{
 				idx:       i,
 				vulns:     vulns,
@@ -227,10 +211,46 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 
 	if s.verboseLogs {
 		logger.InfoContext(ctx, "batch queryAndHydrate completed successfully",
-			slog.Int64("estimated_size", estimatedSize.Load()))
+			slog.Int64("estimated_size", estimatedSizeBytes.Load()))
 	}
 
 	return list, nil
+}
+
+// logBatchQueryInfo logs some basic info about a batch query.
+// It logs only the ecosystems and not any specific package names or versions
+// to avoid logging potentially identifiable information about users.
+func (s *server) logBatchQueryInfo(ctx context.Context, queryInfos []*parsedQueryInfo) {
+	commitQueries := 0
+	purlQueries := 0
+	invalidQueries := 0
+	ecosystemQueries := make(map[string]int)
+	for _, qi := range queryInfos {
+		if qi == nil {
+			invalidQueries++
+
+			continue
+		}
+		if qi.commit != "" {
+			commitQueries++
+		} else {
+			if qi.fromPURL {
+				purlQueries++
+			} else {
+				ecosystemQueries[qi.ecosystem]++
+			}
+		}
+	}
+
+	ecoGroups := make([]any, 0, len(ecosystemQueries))
+	for ecosystem, count := range ecosystemQueries {
+		ecoGroups = append(ecoGroups, slog.Int(ecosystem, count))
+	}
+	logger.InfoContext(ctx, "QueryAffectedBatch",
+		slog.Int("commit", commitQueries),
+		slog.Group("ecosystem", ecoGroups...),
+		slog.Int("purl", purlQueries),
+		slog.Int("invalid", invalidQueries))
 }
 
 func (s *server) getSingleQueryTimeout() time.Duration {
@@ -266,6 +286,9 @@ type parsedQueryInfo struct {
 	pageToken   string
 }
 
+// parseQuery parses a query and returns a parsedQueryInfo.
+// It returns an error if the query is invalid.
+// It returns purl.ErrUnknownPURL if the query is for an unsupported PURL type.
 func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	if query == nil {
 		return parsedQueryInfo{}, errors.New("no query provided")
@@ -306,6 +329,10 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 		}
 	}
 
+	if qi.ecosystem != "" && !schema.IsKnownEcosystem(qi.ecosystem) && qi.ecosystem != "GIT" {
+		return parsedQueryInfo{}, errors.New("invalid ecosystem")
+	}
+
 	return qi, nil
 }
 
@@ -323,13 +350,14 @@ type hydratedResult struct {
 	err   error
 }
 
+// queryAndHydrate performs the actual query and hydration.
 func (s *server) queryAndHydrate(
 	ctx context.Context,
 	qi parsedQueryInfo,
 	limit int,
 	timeout time.Duration,
 	hydrate hydrateFunc,
-	estimatedSize *atomic.Int64,
+	estimatedSizeBytes *atomic.Int64,
 ) ([]*osvschema.Vulnerability, string, error) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
@@ -339,8 +367,8 @@ func (s *server) queryAndHydrate(
 	}
 
 	matchResult, matchCancel := s.runMatcher(ctx, matcher, qi.pageToken, limit, timeout, cancel)
-	hydrated := s.hydrateParallel(ctx, matchResult.resultIDs, hydrate)
-	vulns, err := s.collectAndSort(ctx, hydrated, limit, cancel, matchCancel, estimatedSize)
+	hydratedCh := s.hydrateParallel(ctx, matchResult.resultIDsCh, hydrate)
+	vulns, err := s.collectAndSort(ctx, hydratedCh, limit, cancel, matchCancel, estimatedSizeBytes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -350,6 +378,8 @@ func (s *server) queryAndHydrate(
 
 type matcherFunc func(context.Context) iter.Seq2[models.MatchResult, error]
 
+// resolveMatcher returns a matcher function for the given query info.
+// This chooses to either query by commit or by package depending on what's in the query.
 func (s *server) resolveMatcher(qi parsedQueryInfo) (matcherFunc, error) {
 	startTok := qi.pageToken
 	if startTok == startCursor {
@@ -375,10 +405,13 @@ func (s *server) resolveMatcher(qi parsedQueryInfo) (matcherFunc, error) {
 }
 
 type matcherResult struct {
-	resultIDs    <-chan matchVuln
+	resultIDsCh  <-chan matchVuln
 	getPageToken func() string
 }
 
+// runMatcher runs the matcher and returns the results over a channel, along with a function to get the next page token.
+// The returned cancel function can be used to cancel the matcher.
+// The getPageToken function will block until the matcher is finished.
 func (s *server) runMatcher(
 	ctx context.Context,
 	matcher matcherFunc,
@@ -388,6 +421,7 @@ func (s *server) runMatcher(
 	cancel context.CancelCauseFunc,
 ) (matcherResult, context.CancelFunc) {
 	resultIDs := make(chan matchVuln, numParallelHydration)
+	done := make(chan struct{})
 	currentCursor := func() string { return startTok }
 	if startTok == "" {
 		currentCursor = func() string { return startCursor }
@@ -395,6 +429,7 @@ func (s *server) runMatcher(
 	matcherCtx, timeoutCancel := context.WithTimeout(ctx, timeout)
 	go func() {
 		defer timeoutCancel()
+		defer close(done)
 		defer close(resultIDs)
 		idx := 0
 		for match, err := range matcher(matcherCtx) {
@@ -430,12 +465,20 @@ func (s *server) runMatcher(
 	}()
 
 	return matcherResult{
-		resultIDs: resultIDs,
+		resultIDsCh: resultIDs,
 		// Capturing the function lets us read the last value of the cursor after the goroutine has terminated.
-		getPageToken: func() string { return currentCursor() },
+		getPageToken: func() string {
+			<-done // Block until matcher is finished
+			return currentCursor()
+		},
 	}, timeoutCancel
 }
 
+// hydrateParallel hydrates the vulnerability IDs in parallel.
+// It uses numParallelHydration workers to hydrate the vulnerabilities.
+// Each worker pulls a vulnerability ID from the resultIDs channel and hydrates it.
+// If the context is cancelled, the worker will stop.
+// It returns the hydrated vulnerabilities over the hydrated channel.
 func (s *server) hydrateParallel(ctx context.Context, resultIDs <-chan matchVuln, hydrate hydrateFunc) <-chan hydratedResult {
 	hydrated := make(chan hydratedResult, numParallelHydration)
 	var wg sync.WaitGroup
@@ -459,12 +502,16 @@ func (s *server) hydrateParallel(ctx context.Context, resultIDs <-chan matchVuln
 	return hydrated
 }
 
+// collectAndSort collects the hydrated vulnerabilities and sorts them by index.
+// It calls matchCancel if the estimated response size limit is reached.
+// It aborts the query if any of the vulnerabilities fail to hydrate.
+// It returns the sorted vulnerabilities and an error if any.
 func (s *server) collectAndSort(ctx context.Context,
 	hydrated <-chan hydratedResult,
 	limit int,
 	cancel context.CancelCauseFunc,
 	matchCancel context.CancelFunc,
-	estimatedSize *atomic.Int64,
+	estimatedSizeBytes *atomic.Int64,
 ) ([]*osvschema.Vulnerability, error) {
 	unordered := make([]hydratedResult, 0, limit)
 	loggedSize := false
@@ -483,8 +530,8 @@ func (s *server) collectAndSort(ctx context.Context,
 			continue
 		}
 		unordered = append(unordered, res)
-		estimatedSize.Add(int64(proto.Size(res.v)))
-		if sz := estimatedSize.Load(); sz > s.getResponseSizeLimit() {
+		estimatedSizeBytes.Add(int64(proto.Size(res.v)))
+		if sz := estimatedSizeBytes.Load(); sz > s.getResponseSizeLimit() {
 			if !loggedSize && s.verboseLogs {
 				logger.InfoContext(ctx, "estimated response size limit reached", slog.Int64("estimatedSize", sz))
 				loggedSize = true

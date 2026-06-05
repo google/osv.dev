@@ -60,7 +60,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	}
 
 	// Get the current state of the vuln to check against
-	current, err := e.Stores.Vulnerability.Get(ctx, task.Vuln.GetId())
+	current, err := e.Stores.Vulnerability.GetFull(ctx, task.Vuln.GetId())
 	if err == nil {
 		params.ExistingVuln = current
 	} else if !errors.Is(err, models.ErrNotFound) {

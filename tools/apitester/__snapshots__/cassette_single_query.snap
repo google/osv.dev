@@ -2770,6 +2770,10 @@
         },
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-253495.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2025-10966.html"
         },
         {
@@ -3429,6 +3433,10 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-253495.html"
         },
         {
           "type": "WEB",

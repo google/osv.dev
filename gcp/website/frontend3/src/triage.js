@@ -2,12 +2,50 @@ import "./triage.scss";
 import "@material/web/textfield/filled-text-field.js";
 import "@material/web/button/filled-button.js";
 import "@material/web/progress/circular-progress.js";
+import "@github/clipboard-copy-element";
 import JSONFormatter from "json-formatter-js";
+
+const COPY_ICON_RESET_MS = 1500;
 
 document.addEventListener("DOMContentLoaded", () => {
   const vulnIdInput = document.getElementById("vuln-id-input");
   const loadBtn = document.getElementById("load-btn");
   const columns = document.querySelectorAll(".triage-column");
+
+  function showCopyFeedback(copyButton) {
+    const icon = copyButton.querySelector(".material-icons");
+    clearTimeout(copyButton._copyResetTimer);
+    icon.textContent = "check";
+    copyButton.setAttribute("aria-label", "Copied");
+    copyButton.title = "Copied";
+    copyButton._copyResetTimer = setTimeout(() => {
+      icon.textContent = "content_copy";
+      copyButton.setAttribute("aria-label", copyButton.dataset.copyLabel);
+      copyButton.title = copyButton.dataset.copyLabel;
+    }, COPY_ICON_RESET_MS);
+  }
+
+  function setCopyContent(column, content) {
+    const copyButton = column.querySelector(".triage-copy");
+    const copySource = column.querySelector(".copy-json-source");
+    const icon = copyButton.querySelector(".material-icons");
+    const disabled = !content;
+
+    clearTimeout(copyButton._copyResetTimer);
+    icon.textContent = "content_copy";
+    copyButton.setAttribute("aria-label", copyButton.dataset.copyLabel);
+    copyButton.title = copyButton.dataset.copyLabel;
+    copySource.value = content;
+    copyButton.setAttribute("aria-disabled", disabled.toString());
+  }
+
+  columns.forEach((column) => {
+    const copyButton = column.querySelector(".triage-copy");
+    copyButton.dataset.copyLabel = copyButton.getAttribute("aria-label");
+    copyButton.addEventListener("clipboard-copy", () => {
+      showCopyFeedback(copyButton);
+    });
+  });
 
   // Map selection values to their respective endpoints/paths
   const sourceConfigMap = {
@@ -91,25 +129,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!sourceKey) {
         contentPre.textContent = "Select a source to view content";
+        setCopyContent(column, "");
         return;
     }
 
     if (!vulnId) {
       contentPre.textContent = "Please enter a Vulnerability ID";
+      setCopyContent(column, "");
       return;
     }
 
     spinner.classList.remove("hidden");
     contentPre.textContent = "";
+    setCopyContent(column, "");
 
       fetchData(sourceKey, vulnId)
         .then((data) => {
           contentPre.textContent = "";
           const formatter = new JSONFormatter(data, Infinity, { theme: "dark" });
           contentPre.appendChild(formatter.render());
+          setCopyContent(column, JSON.stringify(data, null, 2));
         })
       .catch((error) => {
         contentPre.textContent = error.message;
+        setCopyContent(column, "");
       })
       .finally(() => {
         spinner.classList.add("hidden");

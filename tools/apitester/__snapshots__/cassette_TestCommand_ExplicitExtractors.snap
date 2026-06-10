@@ -209,20 +209,7 @@
         },
         "version": "1.2.3-r4"
       },
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2025-26519",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "ALPINE-CVE-2026-40200",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "ALPINE-CVE-2026-6042",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -272,16 +259,7 @@
         },
         "version": "1.2.13-r0"
       },
-      "vulns": [
-        {
-          "id": "ALPINE-CVE-2026-22184",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "ALPINE-CVE-2026-27171",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     }
   ]
 }

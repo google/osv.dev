@@ -11,6 +11,7 @@ import (
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -177,9 +178,20 @@ func TestPickAffectedInformation(t *testing.T) {
 			nvdAffected: append(append([]*osvschema.Affected(nil), nvdBase...), &osvschema.Affected{
 				Package: &osvschema.Package{Name: "another"},
 			}),
-			wantAffected: append(append([]*osvschema.Affected(nil), nvdBase...), &osvschema.Affected{
-				Package: &osvschema.Package{Name: "another"},
-			}),
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type:   osvschema.Range_GIT,
+							Repo:   repoA,
+							Events: cve5Base[0].GetRanges()[0].GetEvents(),
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{Name: "another"},
+				},
+			},
 		},
 		{
 			name:         "Same repo, same number of ranges, cve5 data is preferred",
@@ -316,13 +328,461 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 			wantAffected: []*osvschema.Affected{
-				cve5Base[0], // From cve5
 				{
 					Ranges: []*osvschema.Range{
+						cve5Base[0].GetRanges()[0],
 						{
 							Type: osvschema.Range_GIT,
 							Repo: repoB,
 							Events: []*osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Fixed overrides LastAffected (CVE5 has Fixed)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{LastAffected: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Fixed overrides LastAffected (NVD has Fixed)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Prefer constrained range (non-zero introduced)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0.9.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0.9.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Prefer CPE_RANGE source over CVE5",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("CPE_RANGE"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("CPE_RANGE"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Prefer CPE_RANGE source over CVE5 when source is array",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("CPE_RANGE"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("CPE_RANGE"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Cleanup last_affected if fixed exists",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Fixed: "1.0.1"},
+								{LastAffected: "1.0.0"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge references-only range with CVE range",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+								},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("REFERENCES"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Introduced: "1.0.0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("AFFECTED_FIELD"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Multiple events, preferred source (CVE5) with more events is chosen",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Multiple events, NVD has more events and is chosen",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "2.0.0"},
+								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
 								{Introduced: "2.0.0"},
 								{Fixed: "2.0.1"},
 							},

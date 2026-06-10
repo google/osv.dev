@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/gcp/indexer
 
-go 1.26.3
+go 1.26.4
 
 require (
 	cloud.google.com/go/datastore v1.24.0
@@ -10,7 +10,7 @@ require (
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/api v0.281.0
+	google.golang.org/api v0.283.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

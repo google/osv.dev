@@ -25,7 +25,7 @@ func (s *server) GetVulnById(ctx context.Context, params *pb.GetVulnByIdParamete
 	if len(id) > 100 {
 		return nil, status.Error(codes.InvalidArgument, "ID is too long")
 	}
-	vulnerability, err := s.vulnStore.Get(ctx, id)
+	vulnerability, err := s.vulnStore.GetFull(ctx, id)
 	if err == nil {
 		return vulnerability, nil
 	}

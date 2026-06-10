@@ -54,7 +54,7 @@ type mockVulnerabilityStore struct {
 	written  *models.WriteRequest
 }
 
-func (m *mockVulnerabilityStore) Get(_ context.Context, _ string) (*osvschema.Vulnerability, error) {
+func (m *mockVulnerabilityStore) GetFull(_ context.Context, _ string) (*osvschema.Vulnerability, error) {
 	if m.existing == nil {
 		return nil, models.ErrNotFound
 	}

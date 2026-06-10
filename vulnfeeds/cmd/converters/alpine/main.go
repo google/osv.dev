@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
@@ -195,10 +196,11 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 		}
 
 		for _, verPkg := range verPkgs {
+			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg)
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,
 				VersionInfo: models.VersionInfo{
-					AffectedVersions: []models.AffectedVersion{{Fixed: verPkg.Ver}},
+					AffectedVersions: []models.AffectedVersion{{Introduced: introduced, Fixed: verPkg.Ver}},
 				},
 				Ecosystem: "Alpine:" + verPkg.AlpineVer,
 				PURL:      "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",
@@ -218,6 +220,60 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 	}
 
 	return osvVulnerabilities
+}
+
+// cpeMatchesAlpinePackage checks if a parsed CPE matches an Alpine package name
+// using the same naming convention rules as the Alpine secfixes-tracker:
+// language-specific prefixes (py3-, ruby-, perl-, lua-, vscode-) derived from
+// the CPE target_sw field, plus direct name match for native packages.
+func cpeMatchesAlpinePackage(parsed *models.CPEString, alpinePkg string) bool {
+	product := strings.ToLower(parsed.Product)
+	if product == alpinePkg {
+		return true
+	}
+	product = strings.ReplaceAll(product, "_", "-")
+	targetSW := strings.ToLower(parsed.TargetSW)
+	var rewritten string
+	switch {
+	case strings.Contains(targetSW, "python"):
+		rewritten = "py3-" + product
+	case strings.Contains(targetSW, "ruby"):
+		rewritten = "ruby-" + product
+	case strings.Contains(targetSW, "perl"):
+		rewritten = "perl-" + strings.ReplaceAll(product, "::", "-")
+	case strings.Contains(targetSW, "lua"):
+		rewritten = "lua-" + product
+	case strings.Contains(targetSW, "visual_studio_code"):
+		rewritten = "vscode-" + product
+	default:
+		return false
+	}
+
+	return rewritten == alpinePkg
+}
+
+// findIntroducedVersion searches NVD CPE configurations for the introduced
+// version corresponding to the given Alpine package. Returns "0" if no
+// VersionStartIncluding match is found.
+func findIntroducedVersion(cve models.NVDCVE, alpinePkg string) string {
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			for _, match := range node.CPEMatch {
+				if !match.Vulnerable || match.VersionStartIncluding == nil {
+					continue
+				}
+				parsed, err := conversion.ParseCPE(match.Criteria)
+				if err != nil {
+					continue
+				}
+				if cpeMatchesAlpinePackage(parsed, alpinePkg) {
+					return *match.VersionStartIncluding
+				}
+			}
+		}
+	}
+
+	return "0"
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

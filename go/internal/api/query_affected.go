@@ -52,6 +52,7 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 	}
 
 	if errors.Is(err, purl.ErrUnknownPURL) {
+		// TODO(michaelkedar): https://github.com/google/osv.dev/issues/5523
 		// All unsupported PURL queries would simply return a 200
 		// status code with an empty response.
 		// To avoid breaking existing behavior,
@@ -110,6 +111,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	for i, query := range queries {
 		info, err := s.parseQuery(query)
 		if errors.Is(err, purl.ErrUnknownPURL) {
+			// TODO(michaelkedar): https://github.com/google/osv.dev/issues/5523
 			// All unsupported PURL queries would simply return a 200
 			// status code with an empty response.
 			// To avoid breaking existing behavior,

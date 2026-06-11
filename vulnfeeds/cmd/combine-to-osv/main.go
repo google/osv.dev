@@ -208,7 +208,37 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 		osvRecords[cveID] = nvd
 	}
 
+	// Clean up last_affected events in ranges that have a fixed event
+	cleanLastAffectedIfFixedExists(osvRecords)
+
 	return osvRecords
+}
+
+// cleanLastAffectedIfFixedExists iterates through the ranges of all records,
+// and if a range contains a 'fixed' event, removes any 'last_affected' events.
+func cleanLastAffectedIfFixedExists(osvRecords map[models.CVEID]*osvschema.Vulnerability) {
+	for _, record := range osvRecords {
+		for _, affected := range record.GetAffected() {
+			for _, r := range affected.GetRanges() {
+				hasFixed := false
+				for _, e := range r.GetEvents() {
+					if e.GetFixed() != "" {
+						hasFixed = true
+						break
+					}
+				}
+				if hasFixed {
+					var newEvents []*osvschema.Event
+					for _, e := range r.GetEvents() {
+						if e.GetLastAffected() == "" {
+							newEvents = append(newEvents, e)
+						}
+					}
+					r.Events = newEvents
+				}
+			}
+		}
+	}
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one

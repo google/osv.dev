@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package osvutil
+package batcher
 
 import (
 	"context"
 	"sync/atomic"
 )
 
-// MergeContexts returns a context that is cancelled ONLY when ALL of the provided
+// mergeContexts returns a context that is cancelled ONLY when ALL of the provided
 // sub-contexts are cancelled.
 //
 // The returned CancelFunc MUST be called to clean up resources once the operation
 // using the merged context completes.
-func MergeContexts(subCtxs []context.Context) (context.Context, context.CancelFunc) {
+func mergeContexts(subCtxs []context.Context) (context.Context, context.CancelFunc) {
 	mergedCtx, cancel := context.WithCancel(context.Background())
 
 	if len(subCtxs) == 0 {

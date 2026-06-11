@@ -177,8 +177,8 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 		err       error
 	}
 
-	// Create a channel to receive the results from the goroutines.
-	resultsChan := make(chan *queryAndHydrateResult)
+	// Create a buffered channel so workers can exit even if we return early on error.
+	resultsChan := make(chan *queryAndHydrateResult, len(queries))
 
 	pipelineCtx, cancelPipelines := context.WithCancel(ctx)
 	defer cancelPipelines()
@@ -275,25 +275,16 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	list := &pb.BatchVulnerabilityList{}
 	list.Results = make([]*pb.VulnerabilityList, len(queryInfos))
 
-	var firstHydrateErr error
 	for range queryInfos {
 		result := <-resultsChan
 		if result.err != nil {
-			if firstHydrateErr == nil {
-				firstHydrateErr = fmt.Errorf("error in query at index %d: %w", result.idx, result.err)
-				cancelPipelines()
-			}
-			// we need to continue to drain the channel
-			continue
+			cancelPipelines() // Abort all other running pipelines in the background
+			return nil, fmt.Errorf("error in query at index %d: %w", result.idx, result.err)
 		}
 		list.Results[result.idx] = &pb.VulnerabilityList{
 			Vulns:         result.vulns,
 			NextPageToken: result.nextToken,
 		}
-	}
-
-	if firstHydrateErr != nil {
-		return nil, firstHydrateErr
 	}
 
 	if s.verboseLogs {

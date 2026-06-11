@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package osvutil
+package batcher
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func TestMergeContexts_AllCancelled(t *testing.T) {
 	ctx1, cancel1 := context.WithCancel(context.Background())
 	ctx2, cancel2 := context.WithCancel(context.Background())
 
-	mergedCtx, cancelMerged := MergeContexts([]context.Context{ctx1, ctx2})
+	mergedCtx, cancelMerged := mergeContexts([]context.Context{ctx1, ctx2})
 	defer cancelMerged()
 
 	cancel1()
@@ -49,7 +49,7 @@ func TestMergeContexts_ManualCancel(t *testing.T) {
 	ctx1, cancel1 := context.WithCancel(context.Background())
 	defer cancel1()
 
-	mergedCtx, cancelMerged := MergeContexts([]context.Context{ctx1})
+	mergedCtx, cancelMerged := mergeContexts([]context.Context{ctx1})
 
 	cancelMerged() // Cancel manually
 	select {
@@ -61,7 +61,7 @@ func TestMergeContexts_ManualCancel(t *testing.T) {
 }
 
 func TestMergeContexts_EmptyList(t *testing.T) {
-	mergedCtx, cancelMerged := MergeContexts([]context.Context{})
+	mergedCtx, cancelMerged := mergeContexts([]context.Context{})
 	defer cancelMerged()
 
 	select {

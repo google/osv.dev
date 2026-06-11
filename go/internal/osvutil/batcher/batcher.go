@@ -95,6 +95,9 @@ type request[K any, R any] struct {
 //
 //   - Their individual `ctx.Done()` to fire (cancellation/timeout). If a caller's context is cancelled,
 //     they return immediately to their user, without waiting for the batch to finish.
+//
+// Note: This batcher does not recover from panics in BatchFunc.
+// If reusing this for complex/input-dependent logic, consider adding recover() in runBatchLoop.
 type Batcher[K any, R any] struct {
 	mu          sync.Mutex
 	pending     []*request[K, R]

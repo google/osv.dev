@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
@@ -586,7 +587,25 @@ func (s *server) collectAndSort(ctx context.Context,
 	for res := range hydrated {
 		if res.err != nil {
 			if errors.Is(res.err, models.ErrNotFound) {
-				// TODO: publish gcs_retry message
+				logger.ErrorContext(ctx, "vulnerability matched but not found in database", slog.String("id", res.id))
+				if s.recovererPublisher != nil {
+					msg := &pubsub.Message{Attributes: map[string]string{
+						"type": "gcs_missing",
+						"id":   res.id,
+					}}
+					// Makes sure the publish is not aborted if the request context is cancelled.
+					pubctx := context.WithoutCancel(ctx)
+					pubRes := s.recovererPublisher.Publish(pubctx, msg)
+					// Wait for the result in the background to log any errors without blocking the request.
+					go func() {
+						if _, err := pubRes.Get(pubctx); err != nil {
+							logger.ErrorContext(pubctx, "Failed to publish gcs_missing message",
+								slog.String("id", res.id),
+								slog.Any("error", err))
+						}
+					}()
+				}
+
 				continue
 			}
 			// This is a real error, fail the whole query.

@@ -13,6 +13,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/api"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
@@ -70,12 +71,25 @@ func run() error {
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
 
-	verboseLogs := strings.ToLower(os.Getenv("OSV_VERBOSE_LOGGING")) == "true"
+	verboseLogs := strings.EqualFold(os.Getenv("OSV_VERBOSE_LOGGING"), "true")
+
+	var recovererPublisher clients.Publisher
+	recovererTopic := os.Getenv("FAILED_TASKS_TOPIC")
+	if recovererTopic != "" {
+		pubsubClient, err := pubsub.NewClient(ctx, project)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to create pubsub client", slog.Any("error", err))
+			return err
+		}
+		defer pubsubClient.Close()
+		recovererPublisher = &clients.GCPPublisher{Publisher: pubsubClient.Publisher(recovererTopic)}
+	}
 
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:           *port,
-		VerboseLogs:    verboseLogs,
-		VulnStore:      vulnStore,
-		RelationsStore: relationsStore,
+		Port:               *port,
+		VerboseLogs:        verboseLogs,
+		VulnStore:          vulnStore,
+		RelationsStore:     relationsStore,
+		RecovererPublisher: recovererPublisher,
 	})
 }

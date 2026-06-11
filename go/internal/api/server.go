@@ -47,9 +47,10 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 
 	s := grpc.NewServer()
 	pb.RegisterOSVServer(s, &server{
-		vulnStore:      opts.VulnStore,
-		relationsStore: opts.RelationsStore,
-		verboseLogs:    opts.VerboseLogs,
+		vulnStore:          opts.VulnStore,
+		relationsStore:     opts.RelationsStore,
+		recovererPublisher: opts.RecovererPublisher,
+		verboseLogs:        opts.VerboseLogs,
 	})
 
 	logger.InfoContext(ctx, "server listening", "port", opts.Port)

@@ -24,6 +24,7 @@ type server struct {
 	vulnStore           models.VulnerabilityStore
 	relationsStore      models.RelationsStore
 	importFindingsStore models.ImportFindingsStore
+	repoIndexStore      models.RepoIndexStore
 	recovererPublisher  clients.Publisher
 
 	singleQueryTimeout time.Duration
@@ -39,6 +40,7 @@ type ServerOptions struct {
 	VulnStore           models.VulnerabilityStore
 	RelationsStore      models.RelationsStore
 	ImportFindingsStore models.ImportFindingsStore
+	RepoIndexStore      models.RepoIndexStore
 	RecovererPublisher  clients.Publisher
 }
 
@@ -55,6 +57,7 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 		vulnStore:           opts.VulnStore,
 		relationsStore:      opts.RelationsStore,
 		importFindingsStore: opts.ImportFindingsStore,
+		repoIndexStore:      opts.RepoIndexStore,
 		recovererPublisher:  opts.RecovererPublisher,
 		verboseLogs:         opts.VerboseLogs,
 	})

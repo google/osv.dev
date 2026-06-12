@@ -22,7 +22,7 @@ import osv.tests
 from osv import Vulnerability, AliasGroup, AliasAllowListEntry, \
     AliasDenyListEntry, ListedVulnerability, Severity, UpstreamGroup, \
     RelatedGroup, SourceRepository, SourceRepositoryType, AffectedCommits, \
-    AffectedVersions, AffectedEvent
+    AffectedVersions, AffectedEvent, RepoIndex, RepoIndexBucket
 
 
 def main() -> int:
@@ -145,6 +145,30 @@ def main() -> int:
       work_pool='pool',
   ).put()
 
+  print('(Python) Putting RepoIndex')
+  repo_index = RepoIndex(
+      id='https://github.com/test/repo-MD5-deadbeef',
+      name='test-repo',
+      base_cpe='cpe:2.3:a:test:repo',
+      commit=b'\xde\xad\xbe\xef',
+      tag='refs/tags/v1.0.0',
+      repo_type='GIT',
+      repo_addr='https://github.com/test/repo',
+      file_exts=['.go', '.txt'],
+      file_hash_type='MD5',
+      empty_bucket_bitmap=b'\x06\x00\x00\x00',
+      file_count=10,
+  )
+  repo_index.put()
+
+  print('(Python) Putting RepoIndexBucket')
+  RepoIndexBucket(
+      id='d0e000-MD5-2',
+      parent=repo_index.key,
+      node_hash=b'\xd0\xe0\x00',
+      files_contained=2,
+  ).put()
+
   # Run Go program to read the Python-created entities in Go.
   # And write Go entities.
   result = subprocess.run(['go', 'run', './validate.go'], check=False, cwd='.')
@@ -178,6 +202,13 @@ def main() -> int:
     return 1
   print('(Python) Getting AffectedVersions')
   if AffectedVersions.get_by_id('2') is None:
+    return 1
+  print('(Python) Getting RepoIndex')
+  if RepoIndex.get_by_id('https://github.com/go/repo-MD5-deadbeef') is None:
+    return 1
+  print('(Python) Getting RepoIndexBucket')
+  go_repo_idx_key = ndb.Key(RepoIndex, 'https://github.com/go/repo-MD5-deadbeef')
+  if RepoIndexBucket.get_by_id('d0e000-MD5-2', parent=go_repo_idx_key) is None:
     return 1
 
   return 0

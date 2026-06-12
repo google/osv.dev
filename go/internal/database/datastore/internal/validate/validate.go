@@ -108,6 +108,22 @@ func readRecords(ctx context.Context, client *datastore.Client) {
 		fmt.Printf("(Go) Failed getting AffectedVersions: %v\n", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("(Go) Getting RepoIndex")
+	repoIdxKey := datastore.NameKey("RepoIndex", "https://github.com/test/repo-MD5-deadbeef", nil)
+	var repoIndex db.RepoIndex
+	if err := client.Get(ctx, repoIdxKey, &repoIndex); err != nil {
+		fmt.Printf("(Go) Failed getting RepoIndex: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Getting RepoIndexBucket")
+	bucketKey := datastore.NameKey("RepoIndexBucket", "d0e000-MD5-2", repoIdxKey)
+	var repoIndexBucket db.RepoIndexBucket
+	if err := client.Get(ctx, bucketKey, &repoIndexBucket); err != nil {
+		fmt.Printf("(Go) Failed getting RepoIndexBucket: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func writeRecords(ctx context.Context, client *datastore.Client) {
@@ -262,6 +278,39 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 	}
 	if _, err := client.Put(ctx, key, &affectedVersions); err != nil {
 		fmt.Printf("(Go) Failed writing AffectedVersions %v: %v\n", key, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing RepoIndex")
+	goRepoIdxKey := datastore.NameKey("RepoIndex", "https://github.com/go/repo-MD5-deadbeef", nil)
+	goRepoIndex := db.RepoIndex{
+		Name:              "go-repo",
+		BaseCPE:           "cpe:2.3:a:go:repo",
+		Commit:            []byte{0xde, 0xad, 0xbe, 0xef},
+		Tag:               "refs/tags/v2.0.0",
+		When:              time.Date(2025, time.December, 31, 23, 59, 59, 0, time.UTC),
+		RepoType:          "GIT",
+		RepoAddr:          "https://github.com/go/repo",
+		FileExts:          []string{".go", ".txt"},
+		FileHashType:      "MD5",
+		EmptyBucketBitmap: []byte{0x06, 0x00, 0x00, 0x00},
+		FileCount:         10,
+		DocumentVersion:   2,
+	}
+	if _, err := client.Put(ctx, goRepoIdxKey, &goRepoIndex); err != nil {
+		fmt.Printf("(Go) Failed writing RepoIndex %v: %v\n", goRepoIdxKey, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("(Go) Writing RepoIndexBucket")
+	goBucketKey := datastore.NameKey("RepoIndexBucket", "d0e000-MD5-2", goRepoIdxKey)
+	goRepoIndexBucket := db.RepoIndexBucket{
+		NodeHash:        []byte{0xd0, 0xe0, 0x00},
+		FilesContained:  2,
+		DocumentVersion: 2,
+	}
+	if _, err := client.Put(ctx, goBucketKey, &goRepoIndexBucket); err != nil {
+		fmt.Printf("(Go) Failed writing RepoIndexBucket %v: %v\n", goBucketKey, err)
 		os.Exit(1)
 	}
 }

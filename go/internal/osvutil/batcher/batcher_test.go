@@ -42,25 +42,18 @@ func TestBatcher_Get(t *testing.T) {
 	b := New(10*time.Millisecond, 100, batchFunc)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
-
 	var res1, res2 string
 	var err1, err2, err3 error
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		res1, err1 = b.Get(ctx, "hello")
-	}()
-
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		res2, err2 = b.Get(ctx, "world")
-	}()
-
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		_, err3 = b.Get(ctx, "error")
-	}()
+	})
 
 	wg.Wait()
 
@@ -105,28 +98,22 @@ func TestBatcher_TriggerEarly(t *testing.T) {
 	start := time.Now()
 
 	var wg sync.WaitGroup
-	wg.Add(3)
-
 	var res1, res2, res3 int
 	var err1, err2, err3 error
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		res1, err1 = b.Get(ctx, 1)
-	}()
-
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		res2, err2 = b.Get(ctx, 2)
-	}()
+	})
 
 	// Give it a tiny bit of time to ensure the first two are registered
 	time.Sleep(10 * time.Millisecond)
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		res3, err3 = b.Get(ctx, 3) // This should trigger the batch of 3 early
-	}()
+	})
 
 	wg.Wait()
 
@@ -175,22 +162,20 @@ func TestBatcher_Cancellation(t *testing.T) {
 	ctx2 := context.Background()
 
 	var wg sync.WaitGroup
-	wg.Add(2)
-
 	var res2 string
 	var err1, err2 error
+	req1Done := make(chan struct{})
 
 	start := time.Now()
 
 	go func() {
-		defer wg.Done()
+		defer close(req1Done)
 		_, err1 = b.Get(ctx1, "cancel-me")
 	}()
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		res2, err2 = b.Get(ctx2, "keep-me")
-	}()
+	})
 
 	// Give it a tiny bit of time to get queued
 	time.Sleep(5 * time.Millisecond)
@@ -199,25 +184,18 @@ func TestBatcher_Cancellation(t *testing.T) {
 	cancel1()
 
 	// Request 1 should return immediately because it was cancelled
-	// We check if the goroutine for req1 finished quickly
-	c1Done := make(chan struct{})
-	go func() {
-		wg.Wait() // This waits for both, but we want to see if we can progress
-		close(c1Done)
-	}()
-
 	select {
-	case <-c1Done:
-		t.Fatalf("Both finished, but batchFunc was blocked, so cancel1 didn't return immediately")
+	case <-req1Done:
+		// Expected: req1 returns immediately
 	case <-time.After(50 * time.Millisecond):
-		// Expected: c1Done is NOT closed yet because req2 is still blocked in batchFunc
+		t.Fatalf("req1 did not return immediately after cancellation")
 	}
 
 	// But req1 itself should have returned. We can't easily check individual goroutine status,
 	// but we can verify that if we now unblock the batch, req1 got the cancel error and req2 got the success.
 	close(sem) // Unblock the batch function
 
-	<-c1Done // Now both should finish
+	wg.Wait() // Now req2 should finish
 
 	if !errors.Is(err1, context.Canceled) {
 		t.Errorf("Expected context.Canceled for req1, got %v", err1)

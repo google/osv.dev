@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/datastore"
@@ -65,9 +67,28 @@ func run() error {
 		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
 		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
 	}
+	var batchTimeout time.Duration
+	if t := os.Getenv("OSV_DB_BATCH_TIMEOUT"); t != "" {
+		if d, err := time.ParseDuration(t); err == nil {
+			batchTimeout = d
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_DB_BATCH_TIMEOUT, using default", slog.Any("error", err))
+		}
+	}
+	var batchMaxElements int
+	if m := os.Getenv("OSV_DB_BATCH_MAX_SIZE"); m != "" {
+		if val, err := strconv.Atoi(m); err == nil {
+			batchMaxElements = val
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_DB_BATCH_MAX_SIZE, using default", slog.Any("error", err))
+		}
+	}
+
 	vulnStore := db.NewVulnerabilityStore(db.VulnStoreConfig{
-		Client: dbClient,
-		GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
+		Client:           dbClient,
+		GCS:              clients.NewGCSClient(gcsClient, vulnBucket),
+		BatchTimeout:     batchTimeout,
+		BatchMaxElements: batchMaxElements,
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
 

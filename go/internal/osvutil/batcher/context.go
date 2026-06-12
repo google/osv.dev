@@ -35,22 +35,23 @@ func mergeContexts(subCtxs []context.Context) (context.Context, context.CancelFu
 	var activeCount atomic.Int64
 	activeCount.Store(int64(len(subCtxs)))
 
-	for _, ctx := range subCtxs {
-		go func(c context.Context) {
-			select {
-			case <-c.Done():
-				// This sub-context was cancelled.
-				// Decrement count; if it reaches 0, cancel the merged context.
-				if activeCount.Add(-1) == 0 {
-					cancel()
-				}
-			case <-mergedCtx.Done():
-				// The merged operation completed (or was cancelled manually).
-				// Exit the goroutine to prevent leaks.
-				return
+	stops := make([]func() bool, len(subCtxs))
+	for i, ctx := range subCtxs {
+		stops[i] = context.AfterFunc(ctx, func() {
+			if activeCount.Add(-1) == 0 {
+				cancel()
 			}
-		}(ctx)
+		})
 	}
 
-	return mergedCtx, cancel
+	// Return a wrapped cancel function that also stops all AfterFuncs
+	// to prevent resource leaks.
+	wrappedCancel := func() {
+		cancel()
+		for _, stop := range stops {
+			stop()
+		}
+	}
+
+	return mergedCtx, wrappedCancel
 }

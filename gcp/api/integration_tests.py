@@ -695,7 +695,19 @@ class IntegrationTests(unittest.TestCase,
         {
             'code': 5,
             'message': 'Bug not found, but the following aliases were: '
-                       'MAL-2024-2291'
+                       'MAL-2024-2291. '
+                       'See https://osv.dev/faq#api-404 for more information.'
+        }, response.json())
+
+  def test_get_vuln_not_found_no_alias(self):
+    """Test that a completely unknown ID returns Bug not found with FAQ link."""
+    response = requests.get(
+        _api() + '/v1/vulns/CVE-0000-00000', timeout=_TIMEOUT)
+    self.assert_results_equal(
+        {
+            'code': 5,
+            'message': 'Bug not found. '
+                       'See https://osv.dev/faq#api-404 for more information.'
         }, response.json())
 
   def test_query_batch(self):

@@ -101,6 +101,22 @@ for the vulnerability will state this.
 
 You should raise this with the home database responsible for the record.
 
+### Why does the API return "Bug not found" for a CVE I can see on the website? {#api-404}
+
+OSV.dev distinguishes between **first-class records** (vulnerabilities with a primary OSV
+entry) and **aliases** (external IDs such as CVEs that are cross-referenced by one or more
+OSV records but do not have their own entry).
+
+The `GET /v1/vulns/{id}` endpoint only returns a full record for a first-class OSV ID. If you
+query a CVE that is listed as an alias on an OSV record, you will receive a 404 response
+containing the IDs of the records that reference it as an alias.
+
+To find vulnerabilities by a CVE alias, use the
+[`POST /v1/query`](/post-v1-query/) endpoint with the `package` field, or look up the
+first-class ID from the alias list in the error response and query that directly.
+
+See also [Querying by first-class IDs vs. aliases](/post-v1-query/#aliases).
+
 ### I've found something wrong with the data
 
 Data quality is very important to us. Please remember that OSV.dev is an

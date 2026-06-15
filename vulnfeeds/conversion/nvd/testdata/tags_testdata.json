@@ -31,6 +31,11 @@
   "https://github.com/forcedotcom/salesforcemobilesdk-windows": {
     "5.0.0": "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"
   },
+  "https://github.com/urllib3/urllib3": {
+    "2.0.0": "6446fef0cf432ca035169602a1447a0d8ef53e80",
+    "2.0.7": "56f01e088dc006c03d4ee6ea9da4ab810f1ed700",
+    "1.26.18": "9c2c2307dd1d6af504e09aac0326d86ee3597a0b"
+  },
   "https://github.com/ffmpeg/ffmpeg": {
     "2.0": "2b8b2ba19fe0ca6594cb09439b9ead2c328a79d8",
     "2.0.1": "acf511de34e0b79fff0183e06ed37f1aa8dc3d94",

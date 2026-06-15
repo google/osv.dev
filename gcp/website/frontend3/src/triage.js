@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     copyButton.title = copyButton.dataset.copyLabel;
     copySource.value = content;
     copyButton.setAttribute("aria-disabled", disabled.toString());
+    copyButton.tabIndex = disabled ? -1 : 0;
   }
 
   columns.forEach((column) => {

@@ -20,8 +20,8 @@ spec:
             value: osv-test-vulnerabilities
         resources:
           requests:
-            cpu: 14
-            memory: "10G"
+            cpu: "0.9"
+            memory: "1.2Gi"
           limits:
-            cpu: 16
-            memory: "13G"
+            cpu: "1.5"
+            memory: "1.3Gi"

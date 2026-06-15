@@ -165,7 +165,6 @@ resource "google_container_node_pool" "worker_pool_temp" {
   name       = "worker-pool-temp"
   cluster    = google_container_cluster.workers.name
   location   = google_container_cluster.workers.location
-  node_count = 1
 
   lifecycle {
     replace_triggered_by = [

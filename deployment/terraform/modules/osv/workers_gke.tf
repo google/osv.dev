@@ -160,12 +160,11 @@ resource "google_container_node_pool" "importer_pool" {
 }
 
 resource "google_container_node_pool" "worker_pool_temp" {
-  count      = var.project_id == "oss-vdb-test" ? 1 : 0
-  project    = var.project_id
-  name       = "worker-pool-temp"
-  cluster    = google_container_cluster.workers.name
-  location   = google_container_cluster.workers.location
-  node_count = 1
+  count    = var.project_id == "oss-vdb-test" ? 1 : 0
+  project  = var.project_id
+  name     = "worker-pool-temp"
+  cluster  = google_container_cluster.workers.name
+  location = google_container_cluster.workers.location
 
   lifecycle {
     replace_triggered_by = [
@@ -180,7 +179,7 @@ resource "google_container_node_pool" "worker_pool_temp" {
   }
 
   node_config {
-    machine_type = "n2-highcpu-16"
+    machine_type = "n4-highcpu-2"
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 

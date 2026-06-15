@@ -180,6 +180,7 @@ resource "google_container_node_pool" "worker_pool_temp" {
 
   node_config {
     machine_type = "n4-highcpu-2"
+    disk_type    = "hyperdisk-balanced"
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 

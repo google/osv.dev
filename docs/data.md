@@ -93,6 +93,7 @@ Between the data served in OSV and the data converted to OSV the following ecosy
 -   Go
 -   Haskell
 -   Hex
+-   Julia
 -   Linux kernel
 -   Maven
 -   npm

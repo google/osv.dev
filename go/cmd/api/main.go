@@ -8,11 +8,14 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/api"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
@@ -64,18 +67,50 @@ func run() error {
 		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
 		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
 	}
+	var batchTimeout time.Duration
+	if t := os.Getenv("OSV_DB_BATCH_TIMEOUT"); t != "" {
+		if d, err := time.ParseDuration(t); err == nil {
+			batchTimeout = d
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_DB_BATCH_TIMEOUT, using default", slog.Any("error", err))
+		}
+	}
+	var batchMaxElements int
+	if m := os.Getenv("OSV_DB_BATCH_MAX_SIZE"); m != "" {
+		if val, err := strconv.Atoi(m); err == nil {
+			batchMaxElements = val
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_DB_BATCH_MAX_SIZE, using default", slog.Any("error", err))
+		}
+	}
+
 	vulnStore := db.NewVulnerabilityStore(db.VulnStoreConfig{
-		Client: dbClient,
-		GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
+		Client:           dbClient,
+		GCS:              clients.NewGCSClient(gcsClient, vulnBucket),
+		BatchTimeout:     batchTimeout,
+		BatchMaxElements: batchMaxElements,
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
 
-	verboseLogs := strings.ToLower(os.Getenv("OSV_VERBOSE_LOGGING")) == "true"
+	verboseLogs := strings.EqualFold(os.Getenv("OSV_VERBOSE_LOGGING"), "true")
+
+	var recovererPublisher clients.Publisher
+	recovererTopic := os.Getenv("FAILED_TASKS_TOPIC")
+	if recovererTopic != "" {
+		pubsubClient, err := pubsub.NewClient(ctx, project)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to create pubsub client", slog.Any("error", err))
+			return err
+		}
+		defer pubsubClient.Close()
+		recovererPublisher = &clients.GCPPublisher{Publisher: pubsubClient.Publisher(recovererTopic)}
+	}
 
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:           *port,
-		VerboseLogs:    verboseLogs,
-		VulnStore:      vulnStore,
-		RelationsStore: relationsStore,
+		Port:               *port,
+		VerboseLogs:        verboseLogs,
+		VulnStore:          vulnStore,
+		RelationsStore:     relationsStore,
+		RecovererPublisher: recovererPublisher,
 	})
 }

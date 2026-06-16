@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 	"google.golang.org/grpc"
 	pb "osv.dev/bindings/go/api"
 )
@@ -20,6 +21,7 @@ type server struct {
 
 	vulnStore          models.VulnerabilityStore
 	relationsStore     models.RelationsStore
+	recovererPublisher clients.Publisher
 	singleQueryTimeout time.Duration
 	batchQueryTimeout  time.Duration
 	responseSizeLimit  int64
@@ -29,9 +31,10 @@ type ServerOptions struct {
 	Port int
 	// VerboseLogs controls whether to log verbose information,
 	// including per-request data.
-	VerboseLogs    bool
-	VulnStore      models.VulnerabilityStore
-	RelationsStore models.RelationsStore
+	VerboseLogs        bool
+	VulnStore          models.VulnerabilityStore
+	RelationsStore     models.RelationsStore
+	RecovererPublisher clients.Publisher
 }
 
 // RunServer starts the gRPC server and handles graceful shutdown.
@@ -44,9 +47,10 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 
 	s := grpc.NewServer()
 	pb.RegisterOSVServer(s, &server{
-		vulnStore:      opts.VulnStore,
-		relationsStore: opts.RelationsStore,
-		verboseLogs:    opts.VerboseLogs,
+		vulnStore:          opts.VulnStore,
+		relationsStore:     opts.RelationsStore,
+		recovererPublisher: opts.RecovererPublisher,
+		verboseLogs:        opts.VerboseLogs,
 	})
 
 	logger.InfoContext(ctx, "server listening", "port", opts.Port)

@@ -207,7 +207,8 @@ def main() -> int:
   if RepoIndex.get_by_id('https://github.com/go/repo-MD5-deadbeef') is None:
     return 1
   print('(Python) Getting RepoIndexBucket')
-  go_repo_idx_key = ndb.Key(RepoIndex, 'https://github.com/go/repo-MD5-deadbeef')
+  go_repo_idx_key = ndb.Key(RepoIndex,
+                            'https://github.com/go/repo-MD5-deadbeef')
   if RepoIndexBucket.get_by_id('d0e000-MD5-2', parent=go_repo_idx_key) is None:
     return 1
 

@@ -91,7 +91,8 @@ func run() error {
 		BatchMaxElements: batchMaxElements,
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
-
+	importFindingsStore := db.NewImportFindingsStore(dbClient, nil, "", "") // The API does not need to talk to GCS, so we can ignore those fields.
+	repoIndexStore := db.NewRepoIndexStore(dbClient)
 	verboseLogs := strings.EqualFold(os.Getenv("OSV_VERBOSE_LOGGING"), "true")
 
 	var recovererPublisher clients.Publisher
@@ -107,10 +108,12 @@ func run() error {
 	}
 
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:               *port,
-		VerboseLogs:        verboseLogs,
-		VulnStore:          vulnStore,
-		RelationsStore:     relationsStore,
-		RecovererPublisher: recovererPublisher,
+		Port:                *port,
+		VerboseLogs:         verboseLogs,
+		VulnStore:           vulnStore,
+		RelationsStore:      relationsStore,
+		ImportFindingsStore: importFindingsStore,
+		RepoIndexStore:      repoIndexStore,
+		RecovererPublisher:  recovererPublisher,
 	})
 }

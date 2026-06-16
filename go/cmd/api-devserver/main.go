@@ -201,11 +201,15 @@ func runBackend(ctx context.Context, port int) {
 		BatchMaxElements: batchMaxElements,
 	})
 	relationsStore := db.NewRelationsStore(dbClient)
+	importFindingsStore := db.NewImportFindingsStore(dbClient, nil, "", "")
+	repoIndexStore := db.NewRepoIndexStore(dbClient)
 	if err := api.RunServer(ctx, api.ServerOptions{
-		Port:           port,
-		VerboseLogs:    true,
-		VulnStore:      vulnStore,
-		RelationsStore: relationsStore,
+		Port:                port,
+		VerboseLogs:         true,
+		VulnStore:           vulnStore,
+		RelationsStore:      relationsStore,
+		ImportFindingsStore: importFindingsStore,
+		RepoIndexStore:      repoIndexStore,
 	}); err != nil {
 		logger.ErrorContext(ctx, "Go API server exited", "error", err)
 	}

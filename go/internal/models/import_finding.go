@@ -58,4 +58,7 @@ type ImportFindingsStore interface {
 
 	// DeleteResult deletes the linter results for a given source in the GCS bucket.
 	DeleteResult(ctx context.Context, source string) error
+
+	// ListAllFromSource lists all import findings for a given source.
+	ListAllFromSource(ctx context.Context, source string) ([]*ImportFinding, error)
 }

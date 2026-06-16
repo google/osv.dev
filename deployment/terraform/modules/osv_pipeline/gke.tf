@@ -158,42 +158,43 @@ resource "google_container_node_pool" "importer_pool" {
   }
 }
 
-resource "google_container_node_pool" "worker_pool_temp" {
-  count    = var.project_id == "oss-vdb-test" ? 1 : 0
-  project  = var.project_id
-  name     = "worker-pool-temp"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
-
-  lifecycle {
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  autoscaling {
-    min_node_count  = 0
-    max_node_count  = 250
-    location_policy = "BALANCED"
-  }
-
-  node_config {
-    service_account = google_service_account.worker_sa.email
-    machine_type    = "n4-highcpu-2"
-    disk_type       = "hyperdisk-balanced"
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "worker-pool"
-    }
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "worker-pool"
-    }
-  }
-}
+# Will deal with this properly when we unify test and prod.
+# resource "google_container_node_pool" "worker_pool_temp" {
+#   count    = var.project_id == "oss-vdb-test" ? 1 : 0
+#   project  = var.project_id
+#   name     = "worker-pool-temp"
+#   cluster  = google_container_cluster.workers.name
+#   location = google_container_cluster.workers.location
+# 
+#   lifecycle {
+#     replace_triggered_by = [
+#       google_container_cluster.workers.id,
+#     ]
+#   }
+# 
+#   autoscaling {
+#     min_node_count  = 0
+#     max_node_count  = 250
+#     location_policy = "BALANCED"
+#   }
+# 
+#   node_config {
+#     service_account = google_service_account.worker_sa.email
+#     machine_type    = "n4-highcpu-2"
+#     disk_type       = "hyperdisk-balanced"
+# 
+#     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+# 
+#     labels = {
+#       workloadType = "worker-pool"
+#     }
+#     taint {
+#       effect = "NO_EXECUTE"
+#       key    = "workloadType"
+#       value  = "worker-pool"
+#     }
+#   }
+# }
 
 # 6TiB SSD disk used by the gitter caching service
 resource "google_compute_disk" "gitter_disk" {

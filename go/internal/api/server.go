@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
 	pb "osv.dev/bindings/go/api"
 )
 
@@ -34,6 +35,8 @@ type server struct {
 
 type ServerOptions struct {
 	Port int
+	// Local controls whether to enable gRPC server reflection.
+	Local bool
 	// VerboseLogs controls whether to log verbose information,
 	// including per-request data.
 	VerboseLogs         bool
@@ -66,10 +69,16 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 	})
 
 	healthServer := health.NewServer()
+	healthServer.SetServingStatus("osv.v1.OSV", healthgrpc.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_SERVING)
 	healthgrpc.RegisterHealthServer(s, healthServer)
 
 	// Start background dependency health monitor
 	go monitorDatabaseHealth(ctx, healthServer, opts.VulnStore, opts.HealthCheckInterval, opts.HealthCheckThreshold)
+
+	if opts.Local {
+		reflection.Register(s)
+	}
 
 	logger.InfoContext(ctx, "server listening", "port", opts.Port)
 

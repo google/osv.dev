@@ -449,6 +449,9 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	if qi.packageName == "" {
 		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
 	}
+	if qi.ecosystem == "" && qi.version == "" {
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
+	}
 
 	return qi, nil
 }

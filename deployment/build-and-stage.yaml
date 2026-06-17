@@ -210,6 +210,20 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/gitter']
   waitFor: ['build-gitter', 'cloud-build-queue']
 
+- name: gcr.io/cloud-builders/docker
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/osv-server:latest || exit 0']
+  id: 'pull-osv-server'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/osv-server:latest', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '--target', 'api', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-server:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-osv-server'
+  waitFor: ['pull-osv-server', 'build-gitter']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-server']
+  waitFor: ['build-osv-server', 'cloud-build-queue']
+
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
@@ -351,16 +365,6 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/run_first_package_finder']
   waitFor: ['build-first-package-finder', 'cloud-build-queue']
-
-
-# Build/push api backend
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/oss-vdb/osv-server:latest', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '-f', 'gcp/api/Dockerfile', '.']
-  id: 'build-osv-server'
-  waitFor: ['setup']
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-server']
-  waitFor: ['build-osv-server', 'cloud-build-queue']
 
 # Build/push Debian copyright mirror image
 - name: gcr.io/cloud-builders/docker

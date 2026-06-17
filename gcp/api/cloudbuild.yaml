@@ -47,3 +47,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
   env:
     - CLOUDBUILD=1
+    - OSV_USE_GO_BACKEND=1

@@ -697,8 +697,9 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 5,
-            'message': 'Vulnerability not found, but the following aliases were: '
-                       'MAL-2024-2291'
+            'message':
+                'Vulnerability not found, but the following aliases were: '
+                'MAL-2024-2291'
         }, response.json())
 
   def test_query_batch(self):

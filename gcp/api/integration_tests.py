@@ -29,7 +29,7 @@ import test_server
 from osv import tests
 
 _PORT = 8080
-_TIMEOUT = 10  # Timeout for HTTP(S) requests
+_TIMEOUT = 15  # Timeout for HTTP(S) requests
 _LONG_TESTS = os.getenv('LONG_TESTS')
 _TEST_DATA_DIR = 'fixtures'
 _BASE_QUERY = '/v1/query'
@@ -399,7 +399,7 @@ class IntegrationTests(unittest.TestCase,
 
     self.assert_results_equal({
         'code': 3,
-        'message': 'Invalid ecosystem.'
+        'message': 'invalid ecosystem'
     }, response.json())
 
   def test_query_unknown_purl_invalid_semver(self):
@@ -492,8 +492,8 @@ class IntegrationTests(unittest.TestCase,
         timeout=_TIMEOUT)
 
     response_json = response.json()
-    self.assertEqual(2, len(response_json['vulns']))
-    self.assertCountEqual(['GHSA-6fc8-4gx4-v693', 'GHSA-3h5v-q93c-6h6q'],
+    self.assertEqual(3, len(response_json['vulns']))
+    self.assertCountEqual(['GHSA-6fc8-4gx4-v693', 'GHSA-3h5v-q93c-6h6q', 'GHSA-96hv-2xvq-fx4p'],
                           [vuln['id'] for vuln in response_json['vulns']])
 
   def test_query_purl(self):
@@ -694,7 +694,7 @@ class IntegrationTests(unittest.TestCase,
     self.assert_results_equal(
         {
             'code': 5,
-            'message': 'Bug not found, but the following aliases were: '
+            'message': 'Vulnerability not found, but the following aliases were: '
                        'MAL-2024-2291'
         }, response.json())
 

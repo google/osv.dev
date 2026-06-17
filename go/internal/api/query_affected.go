@@ -670,6 +670,12 @@ func (s *server) collectAndSort(ctx context.Context,
 		if errors.Is(err, models.ErrInvalidCursor) {
 			return nil, status.Error(codes.InvalidArgument, "invalid cursor")
 		}
+		var panicErr *safe.PanicError
+		if errors.As(err, &panicErr) {
+			// Return the raw PanicError so the caller handlers can detect it,
+			// log the stack trace, and obscure it into a clean "internal server error".
+			return nil, err
+		}
 
 		return nil, status.Error(codes.Internal, err.Error())
 	}

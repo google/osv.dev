@@ -89,6 +89,16 @@ class EcosystemTest(unittest.TestCase):
         echo_maven.sort_key('1.0-alpha1'), echo_maven.sort_key('1.0'))
     self.assertLess(echo_maven.sort_key('1.0-rc1'), echo_maven.sort_key('1.0'))
     self.assertLess(echo_maven.sort_key('1.9'), echo_maven.sort_key('1.10'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1'), echo_maven.sort_key('3.1.1+echo.1'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.1'),
+        echo_maven.sort_key('3.1.1+echo.2'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.2'),
+        echo_maven.sort_key('3.1.1+echo.10'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.1'), echo_maven.sort_key('3.1.2'))
 
   def test_echo_base_ecosystem(self):
     """Test that plain Echo uses Debian version ordering"""

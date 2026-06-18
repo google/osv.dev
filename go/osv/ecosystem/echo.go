@@ -21,6 +21,7 @@ import "strings"
 // Echo provides secured packages across multiple ecosystems:
 //   - Echo        - Debian-based packages (dpkg versioning)
 //   - Echo:PyPI   - Python packages (PyPI/PEP 440 versioning)
+//   - Echo:Maven  - Maven packages (Maven versioning)
 //
 // Versioning is delegated to the underlying ecosystem helper.
 type echoEcosystem struct {
@@ -28,11 +29,14 @@ type echoEcosystem struct {
 }
 
 func echoFactory(p *Provider, suffix string) Ecosystem {
-	if strings.EqualFold(suffix, "pypi") {
+	switch {
+	case strings.EqualFold(suffix, "pypi"):
 		return echoEcosystem{Ecosystem: pypiEcosystem{p: p}}
+	case strings.EqualFold(suffix, "maven"):
+		return echoEcosystem{Ecosystem: mavenEcosystem{p: p}}
+	default:
+		return echoEcosystem{Ecosystem: dpkgEcosystem{}}
 	}
-
-	return echoEcosystem{Ecosystem: dpkgEcosystem{}}
 }
 
 func (e echoEcosystem) NormalizePackageName(name string) string {

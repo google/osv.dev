@@ -32,8 +32,8 @@ import osv.models
 import osv.sources
 from osv.logs import setup_gcp_logging
 
-_FAILED_TASKS_SUBSCRIPTION = 'recovery'
-_TASKS_TOPIC = 'tasks'
+_FAILED_TASKS_SUBSCRIPTION = os.getenv('FAILED_TASKS_SUBSCRIPTION', 'recovery')
+_TASKS_TOPIC = os.getenv('WORKER_TASK_TOPIC', 'tasks')
 
 _ndb_client = None
 _storage_client = None
@@ -43,8 +43,11 @@ def ndb_client():
   """Get the ndb client.
   Lazily initialized to allow testing with datastore emulator."""
   global _ndb_client
+  database_id = os.getenv('DATASTORE_DATABASE_ID')
+  if not database_id:
+    database_id = None
   if _ndb_client is None:
-    _ndb_client = ndb.Client()
+    _ndb_client = ndb.Client(database=database_id)
   return _ndb_client
 
 

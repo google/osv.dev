@@ -33,11 +33,21 @@ func run() error {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	port := flag.Int("port", 8000, "port for the OSV API")
-	flag.Parse()
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	defaultPort := 8000
+	if portStr := os.Getenv("PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			defaultPort = p
+		} else {
+			logger.ErrorContext(ctx, "Invalid PORT environment variable, using default", slog.Any("error", err))
+		}
+	}
+
+	port := flag.Int("port", defaultPort, "port for the OSV API")
+	local := flag.Bool("local", false, "enable gRPC reflection for local debugging")
+	flag.Parse()
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
@@ -109,6 +119,7 @@ func run() error {
 
 	return api.RunServer(ctx, api.ServerOptions{
 		Port:                *port,
+		Local:               *local,
 		VerboseLogs:         verboseLogs,
 		VulnStore:           vulnStore,
 		RelationsStore:      relationsStore,

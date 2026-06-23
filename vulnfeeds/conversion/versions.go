@@ -138,6 +138,7 @@ func IsSameRepo(repo1, repo2 string) bool {
 	if isCaseInsensitiveHost(u1.Hostname()) {
 		return strings.EqualFold(repo1, repo2)
 	}
+
 	return repo1 == repo2
 }
 

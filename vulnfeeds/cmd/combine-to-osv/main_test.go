@@ -791,6 +791,51 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Same repo with different casing (e.g. GitHub case-insensitivity)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/user/repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo", // Should preserve casing of cve5's repo
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"}, // Preferred CVE5 fixed version
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.

@@ -129,6 +129,18 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
 
+// IsSameRepo returns true if repo1 and repo2 are for the same repository.
+func IsSameRepo(repo1, repo2 string) bool {
+	u1, err1 := url.Parse(repo1)
+	if err1 != nil {
+		return false
+	}
+	if isCaseInsensitiveHost(u1.Hostname()) {
+		return strings.EqualFold(repo1, repo2)
+	}
+	return repo1 == repo2
+}
+
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
 	r, err := repo(u)

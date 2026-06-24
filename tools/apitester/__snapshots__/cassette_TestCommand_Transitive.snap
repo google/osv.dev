@@ -1884,6 +1884,10 @@
         {
           "id": "PYSEC-2024-60",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-215",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

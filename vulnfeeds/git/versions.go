@@ -187,6 +187,9 @@ func ParseVersionRange(versionRange string) (models.AffectedVersion, error) {
 // Detect linkrot and handle link decay in HTTP(S) links via HEAD request with exponential backoff.
 func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonicalLink string, err error) {
 	u, err := url.Parse(link)
+	if err != nil {
+		return link, err
+	}
 	if !slices.Contains([]string{"http", "https"}, u.Scheme) {
 		// Handle what's presumably a git:// URL.
 		return link, err

@@ -220,6 +220,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-hgj6-7826-r7m5",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-jjjh-jjxp-wpff",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -691,6 +695,10 @@
         },
         {
           "id": "GHSA-h822-r4r5-v8jg",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgj6-7826-r7m5",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

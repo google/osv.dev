@@ -2708,6 +2708,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-xjvp-4fhw-gc47",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-xr7r-f8xq-vfvv",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -3979,6 +3983,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-6653",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-6732",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4830,6 +4838,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-12087",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-42496",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5264,6 +5276,22 @@
         },
         {
           "id": "DEBIAN-CVE-2026-3184",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-53612",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-53613",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-53614",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-53615",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -7128,6 +7156,10 @@
         {
           "id": "PYSEC-2024-60",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-215",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -7150,6 +7182,10 @@
         },
         {
           "id": "PYSEC-2024-60",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-215",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8092,6 +8128,10 @@
         {
           "id": "PYSEC-2024-60",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-215",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -8114,6 +8154,10 @@
         },
         {
           "id": "PYSEC-2024-60",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-215",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

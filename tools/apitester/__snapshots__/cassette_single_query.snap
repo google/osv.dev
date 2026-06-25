@@ -63,7 +63,7 @@
                   "introduced": "0"
                 },
                 {
-                  "last_affected": "aee123fc83388b8f5acfb301d87bd92eccc5b843"
+                  "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
                 }
               ],
               "database_specific": "<Any value>"
@@ -155,12 +155,13 @@
                   "introduced": "0"
                 },
                 {
-                  "fixed": "afcae83a064843d71d47624bc162e121cc56c08b"
+                  "fixed": "85be877925ddbf34f74a1229f3ca1716bb6170dc"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 159,
+          "versions": 160,
           "database_specific": "<Any value>"
         }
       ],
@@ -225,11 +226,15 @@
                 },
                 {
                   "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
+                },
+                {
+                  "fixed": "1265ff8d990284f04d8768f35b0e20ae5f60daae"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 194,
+          "versions": 195,
           "database_specific": "<Any value>"
         }
       ],
@@ -1166,6 +1171,159 @@
       ]
     },
     {
+      "id": "CURL-CVE-2026-10536",
+      "summary": "HTTP/2 stream-dependency tree UAF",
+      "details": "A use-after-free vulnerability exists in libcurl when an application\nconfigures an HTTP/2 stream-dependency tree via `CURLOPT_STREAM_DEPENDS` or\n`CURLOPT_STREAM_DEPENDS_E`, subsequently invokes `curl_easy_reset()`, and\nfinally terminates the handle with `curl_easy_cleanup()`. During this final\ncleanup phase, libcurl attempts to access and modify an internal structure\nthat was already freed during the reset operation.",
+      "aliases": ["CVE-2026-10536"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.88.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "71b7e0161032927cdfb4e75ea40f65b8898b3956"
+                },
+                {
+                  "fixed": "bfbff7852f050232edd3e5ca5c6bf2021c340f5a"
+                }
+              ]
+            }
+          ],
+          "versions": 76,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-11856",
+      "summary": "cross-origin Digest auth state leak",
+      "details": "Successfully using libcurl to do a transfer to a specific HTTP origin\n(`hostA`) with **Digest** authentication and then changing the origin to a\ndifferent one (`hostB`) for a second transfer, reusing the same handle, makes\nlibcurl wrongly pass on the `Authorization:` header field meant for `hostA`,\nto `hostB`.",
+      "aliases": ["CVE-2026-11856"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "334d78cd18a7310144383929bdcef34ffbf6159b"
+                },
+                {
+                  "fixed": "5c6b4880357ab3e72967c1c45cae0f96ffabc535"
+                }
+              ]
+            }
+          ],
+          "versions": 360,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "jjchuck on hackerone",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-12064",
+      "summary": "proto-default skips SSH verification",
+      "details": "When a user invokes curl using a schemeless URL combined with\n`--proto-default` sftp (or scp), a disconnect occurs between the tool layer\nand libcurl. The tool layer incorrectly infers the URL scheme, which\nerroneously bypasses the initialization of critical SSH security options like\nCURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 and CURLOPT_SSH_KNOWNHOSTS. Conversely, the\nlibcurl runtime successfully honors CURLOPT_DEFAULT_PROTOCOL and establishes\nthe connection via SFTP/SCP as specified. Because the tool layer skipped the\nsecurity configuration, these SSH host verification options are silently\nomitted, causing curl to connect to an unverified SSH remote host without\nthrowing an error.",
+      "aliases": ["CVE-2026-12064"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "18270893abdb19f0ca170c118f8a2847dbd304be"
+                },
+                {
+                  "fixed": "ab3bb8cd8be8f9d4acb97da0418abc279182041e"
+                }
+              ]
+            }
+          ],
+          "versions": 94,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "alienowo on hackerone (AntAISecurityLab)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
       "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
@@ -1678,6 +1836,312 @@
         },
         {
           "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-8286",
+      "summary": "wrong STARTTLS connection reuse",
+      "details": "A vulnerability exists where a new transfer that uses STARTTLS to upgrade the\nconnection might reuse an existing live connection even though the TLS\nconfiguration mismatches so it should not.",
+      "aliases": ["CVE-2026-8286"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.30.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1701eea289fe7ea80651f801cf992838a491dde"
+                },
+                {
+                  "fixed": "a86efdd7ca5433de9231e650f18247de8319ad16"
+                }
+              ]
+            }
+          ],
+          "versions": 237,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Andrew Nesbitt (powered by Mythos)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-8458",
+      "summary": "wrong reuse for different services",
+      "details": "libcurl might in some circumstances reuse the wrong connection when asked to\ndo Negotiate-authenticated ones, even when they are set to use different\n\"services\".\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different services.",
+      "aliases": ["CVE-2026-8458"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.43.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "97c272e5d173ad5f706443e2477f0a84f0044edd"
+                },
+                {
+                  "fixed": "5e99b73cf441d9c369768b9cd48b5389b9a2503d"
+                }
+              ]
+            }
+          ],
+          "versions": 207,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Muhamad Arga Reksapati",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-8924",
+      "summary": "trailing dot domain super cookie",
+      "details": "A flaw in curl’s cookie parsing logic allows a malicious HTTP server to set\n\"super cookies\" that bypass the Public Suffix List check. This enables an\nattacker-controlled origin to inject cookies that curl subsequently scopes and\ntransmits to unrelated third-party domains.",
+      "aliases": ["CVE-2026-8924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                },
+                {
+                  "fixed": "51beed175dbfc37da3113f6acce60c630c070ce8"
+                }
+              ]
+            }
+          ],
+          "versions": 201,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "vegagent on hackerone",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-8927",
+      "summary": "env-set cross-proxy Digest auth state leak",
+      "details": "When reusing a libcurl handle for sequential transfers driven by\nenvironment-variable proxy configuration, libcurl fails to clear the proxy\nauthentication state between requests. Specifically, if the initial transfer\nauthenticates against `proxyA` using Digest auth, a subsequent transfer routed\nthrough `proxyB` erroneously leaks the `Proxy-Authorization:` header intended\nsolely for `proxyA`.",
+      "aliases": ["CVE-2026-8927"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "fc6eff13b5414caf6edf22d73a3239e074a04216"
+                },
+                {
+                  "fixed": "5c225384b8d52c67ce8259c6e4203bc57aacb567"
+                }
+              ]
+            }
+          ],
+          "versions": 346,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Ady Elouej",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-8932",
+      "summary": "incomplete mTLS config matching in conn reuse",
+      "details": "libcurl would reuse a previously created connection even when some mTLS config\nrelated option had been changed that should have prohibited reuse.\n\nlibcurl keeps previously used connections in a connection pool for subsequent\ntransfers to reuse if one of them matches the setup. However, some TLS\nsettings related to client certificates were left out from the configuration\nmatch checks, making them match too easily. In particular options related to\nthe private key.",
+      "aliases": ["CVE-2026-8932"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1d6ad26100bc493c7b04f1301b1634b7f5aa8b4"
+                },
+                {
+                  "fixed": "7541ae569d82fb308a5e2d94916027da4fa3ba3e"
+                }
+              ]
+            }
+          ],
+          "versions": 414,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-9547",
+      "summary": "SSH improper host validation",
+      "details": "When a libcurl-based application performs transfers via `SCP://` or `SFTP://`\nand utilizes the `CURLOPT_SSH_KEYFUNCTION` callback, it may silently accept an\nuntrusted server. This vulnerability occurs when a server presents a host key\ntype that does not match the specific key type already recorded for that host\nin the `known_hosts` file. Instead of rejecting the mismatch, the callback\nmechanism fails to properly enforce the restriction, allowing the connection\nto succeed without warning and risking a potential man-in-the-middle attack.",
+      "aliases": ["CVE-2026-9547"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-24T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.21.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "507cf6a13db0375eadd4655b4c64710db29e9cf2"
+                },
+                {
+                  "fixed": "0b8dbbc63c98777e4584cb9fbd71df3464008ad1"
+                }
+              ]
+            }
+          ],
+          "versions": 125,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Joshua Rogers (Aisle Research)",
           "type": "REMEDIATION_DEVELOPER"
         }
       ]
@@ -2400,9 +2864,13 @@
                   "introduced": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
                 },
                 {
+                  "fixed": "83bedbd730d62b83744cc26fa0433d3f6e2e4cd6"
+                },
+                {
                   "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 94,
@@ -3499,7 +3967,10 @@
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
-        "openSUSE-SU-2026:10674-1"
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -3568,7 +4039,10 @@
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
-        "openSUSE-SU-2026:10674-1"
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -3697,7 +4171,10 @@
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
-        "openSUSE-SU-2026:10674-1"
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -3766,7 +4243,10 @@
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
-        "openSUSE-SU-2026:10674-1"
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -3835,7 +4315,10 @@
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
-        "openSUSE-SU-2026:10674-1"
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -4050,6 +4533,106 @@
       "schema_version": "1.7.3"
     },
     {
+      "id": "GHSA-5prr-v3j2-97mh",
+      "summary": "Nokogiri: Possible Out-of-Bounds Read in `Nokogiri::XML::NodeSet#[]`",
+      "details": "### Summary\n\n`Nokogiri::XML::NodeSet#[]` (and its alias `#slice`) checked the requested index against the node set's bounds using a 32-bit-truncated copy of the index. A large negative index could pass the check and then be used at full width, reading outside the node set's storage. On CRuby this is an out-of-bounds read that typically crashes the process; on JRuby it is not memory-unsafe but returns an incorrect node.\n\nNokogiri 1.19.4 performs the bounds check against the full-width index.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as medium severity.\n\nExploitation requires an application to pass an attacker-controlled integer to `NodeSet#[]`. The primary impact is a controlled crash (denial of service), with potential for memory disclosure on CRuby.\n\nOn JRuby, Nokogiri is not affected by this vulnerability.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround, applications that index a `NodeSet` with externally-supplied integers can validate the index against `node_set.length` before use, or avoid passing untrusted values as an index.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:36:42Z",
+      "related": ["CGA-4938-957r-f3x8"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-5prr-v3j2-97mh"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:N/VA:L/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-5v8h-3h3q-446p",
+      "summary": "Nokogiri: Possible Use-After-Free when `Nokogiri::XML::Document#encoding=` raises an exception",
+      "details": "### Summary\n\nCalling `Document#encoding=` with an invalid encoding (e.g., a non-string, or a string containing a null byte) raises an exception, but only after freeing the document's current encoding string without replacing it. The document is left referencing freed memory, so the next call to `Document#encoding` reads invalid memory, which can cause a segfault or leak freed bytes into a Ruby `String`.\n\nAffects the CRuby (libxml2) implementation only; JRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. Reaching it requires an unusual API-usage pattern that does not arise during normal use. The application must pass an invalid encoding to `Document#encoding=`, rescue the resulting exception, and then continue using the same document. Nokogiri 1.19.4 makes this pattern safe with no change to the public API. The document no longer references freed memory after the exception is raised.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nIf users are unable to upgrade, avoid passing attacker-controlled values to `Document#encoding=`. Applications that only assign developer-authored encodings are not directly exposed.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:35:58Z",
+      "related": ["CGA-7qjr-x2vg-chx3"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-5v8h-3h3q-446p"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:U"
+        }
+      ]
+    },
+    {
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
@@ -4104,6 +4687,106 @@
         }
       ],
       "schema_version": "1.7.3"
+    },
+    {
+      "id": "GHSA-8678-w3jw-xfc2",
+      "summary": "Nokogiri: XML::Schema on JRuby allows network requests when NONET is set, bypassing CVE-2020-26247",
+      "details": "### Summary\n\nThe `NONET` parse option, which Nokogiri turns on by default for `Nokogiri::XML::Schema` (see [CVE-2020-26247](https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-vr8q-g5c7-m54m)), was not correctly enforced on the JRuby implementation. As a result, a schema parsed with default options could still cause external resources to be fetched over the network, potentially enabling SSRF or XXE attacks.\n\nNokogiri 1.19.4 replaces the scheme denylist with an allowlist. When `NONET` is enabled, only local resources (a `file:` scheme, or a relative or absolute path with no scheme) are resolved, and every network scheme is blocked, case-insensitively. This brings the JRuby behavior in line with CRuby.\n\nOnly the JRuby implementation is affected. CRuby is not affected, because libxml2's `xmlNoNetExternalEntityLoader` blocks all network schemes at the I/O layer regardless of scheme or case.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity (CVSS 2.6, `CVSS:3.0/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N`). It is a bypass of CVE-2020-26247, which was scored the same way.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nThere are no known workarounds for affected versions.\n\nThis change properly enforces `NONET` on JRuby, which is a breaking change for any code that (perhaps unknowingly) relied on the previous behavior to load network resources with default parse options. If you trust your input and want to allow external resources to be accessed over the network, you can explicitly disable `NONET`, exactly as documented for CVE-2020-26247:\n\n1. Ensure the input is trusted. Do not enable this option for untrusted input.\n2. Pass a `Nokogiri::XML::ParseOptions` with the `NONET` flag turned off:\n\n``` ruby\n# allows resources to be accessed over the network for trusted input\nschema = Nokogiri::XML::Schema.new(trusted_schema, Nokogiri::XML::ParseOptions.new.nononet)\n```\n\n### References\n\n- Bypass of: https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-vr8q-g5c7-m54m\n\n### Credit\n\nThis issue was responsibly reported by @bilerden.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:36:11Z",
+      "related": ["CGA-m8gw-c22q-pmgh"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-8678-w3jw-xfc2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-9cv2-cfxc-v4v2",
+      "summary": "Nokogiri: Null Pointer Dereference calling methods on uninitialized wrapper classes",
+      "details": "### Summary\n\nNokogiri contains a bug when calling certain methods on allocated-but-uninitialized native wrapper classes that inherit from `Nokogiri::XML::Node`. This caused a NULL pointer dereference that could crash the process.\n\nNokogiri 1.19.4 checks for missing native data pointers and raises a `RuntimeError`.\n\nJRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. This is only triggered by a programming error. It requires application code to call `.allocate` directly on a native-backed class and then invoke methods on the resulting uninitialized object. It cannot be triggered by untrusted input or through normal use of the public API.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAvoid calling `.allocate` directly on Nokogiri native-backed classes. Use the documented constructors and factory methods instead.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:36:23Z",
+      "related": ["CGA-5x4f-fpcq-mc9m"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-9cv2-cfxc-v4v2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:U"
+        }
+      ]
     },
     {
       "id": "GHSA-c4rq-3m3g-8wgx",
@@ -4222,6 +4905,106 @@
       ]
     },
     {
+      "id": "GHSA-p67v-3w7g-wjg7",
+      "summary": "Nokogiri: Possible Use-After-Free when directly using `NokogirI::XML::XPathContext` beyond document lifetime",
+      "details": "### Summary\n\n`Nokogiri::XML::XPathContext` did not keep its source document alive for garbage collection. If an `XPathContext` outlived its document and the document was collected, evaluating an XPath expression could read invalid memory and potentially segfault.\n\nThis is only reachable when application code constructs an `XPathContext` directly and lets the document become unreachable while continuing to use the context. The normal `Document#xpath`, `#css`, and related search methods are not affected, and it is not triggerable by malicious document input.\n\nNokogiri 1.19.4 makes `XPathContext` keep its source document alive for as long as the context exists.\n\nOnly the CRuby implementation is affected. JRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. Reaching it requires an unusual API-usage pattern that does not arise during normal use. The application must construct an `XML::XPathContext` directly and continue using it after allowing its source document to be garbage-collected. Nokogiri 1.19.4 makes this pattern safe with no change to the public API. The context now keeps its source document alive for as long as it exists.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround, ensure the source document remains referenced for as long as any `XPathContext` created from it is in use. The standard `Document#xpath`, `#css`, and related search methods already do this and are unaffected.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:37:13Z",
+      "related": ["CGA-3vg7-jp5m-rvrm"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-p67v-3w7g-wjg7"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:U/U:Clear"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-phwj-rprq-35pp",
+      "summary": "Nokogiri: Possible Use-After-Free when setting an attribute value via `Nokogiri::XML::Attr#value=` or `#content=`",
+      "details": "### Summary\n\nNokogiri’s CRuby native extension could leave a Ruby wrapper pointing to freed memory when replacing the value of an XML attribute. If Ruby code had already accessed an attribute child node, `Nokogiri::XML::Attr#value=` could free the underlying native child node while the wrapper remained reachable through the document node cache. A later use of the freed child node or a Ruby GC mark could dereference an invalid pointer, causing an invalid read and a possible segfault.\n\nNokogiri 1.19.4 preserves any already-wrapped attribute child nodes before replacing the attribute value.\n\nJRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. Reaching it requires an unusual API-usage pattern that does not arise during normal use. The application must directly access an attribute's child node and then replace that same attribute's value via `Attr#value=` or `#content=`. Nokogiri 1.19.4 makes this pattern safe with no change to the public API. Already-wrapped attribute child nodes are preserved before the value is replaced.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround, avoid accessing attribute child nodes directly via `Attr#child` or similar before mutating the same attribute’s value.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:37:46Z",
+      "related": ["CGA-8x3r-xj64-c8g5"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-phwj-rprq-35pp"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:U"
+        }
+      ]
+    },
+    {
       "id": "GHSA-v2fc-qm4h-8hqv",
       "summary": "Nokogiri XSLT transform has a memory leak",
       "details": "## Summary\n\nNokogiri's `Nokogiri::XSLT::Stylesheet#transform` leaks a small heap allocation when passed a Ruby string parameter containing a null byte.\n\nFor applications that pass attacker-controlled input through `XSLT.transform` parameters, this may be a vector for a denial of service attack against long-running processes.\n\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.3`.\n\nUsers may also be able to mitigate this issue without upgrading by validating untrusted transform parameters before passing them to `Nokogiri::XSLT::Stylesheet#transform`.\n\n\n## Severity\n\nThe Nokogiri maintainers have evaluated this as **Moderate Severity**, CVSS 5.3.\n\nEach leaked allocation is approximately 24–32 bytes, so meaningful memory growth requires sustained attacker-controlled traffic at high call rates. The bug does not cause memory corruption, information disclosure, or any change in the behavior of the transform itself, and the string-handling exception is raised as expected.\n\nApplications that do not pass raw attacker-controlled bytes to XSLT parameters are unlikely to be affected in practice.\n\n\n## Resources\n\n- [CWE-401: Missing Release of Memory after Effective Lifetime](https://cwe.mitre.org/data/definitions/401.html)\n\n\n## Credit\n\nThis vulnerability was responsibly reported by @Captainjack-kor.",
@@ -4318,6 +5101,100 @@
         }
       ],
       "schema_version": "1.7.3"
+    },
+    {
+      "id": "GHSA-wfpw-mmfh-qq69",
+      "summary": "Nokogiri: Possible Use-After-Free in XInclude Processing",
+      "details": "### Summary\n\nXInclude substitution performed by `Nokogiri::XML::Node#do_xinclude` replaced each `\u003cxi:include\u003e` in place, freeing the include node along with its children (such as `\u003cxi:fallback\u003e` and its descendants) and any namespaces declared on them. If an application had already exposed one of those nodes or namespaces to Ruby, the corresponding Ruby object was left pointing at freed memory. Using the object could result in invalid reads or writes to memory.\n\nNokogiri 1.19.4 substitutes each `\u003cxi:include\u003e` on a defensive copy by default, so the structures libxml2 frees are never the ones bound to live Ruby objects.\n\nOnly the CRuby implementation is affected; JRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. Reaching it requires an unusual API-usage pattern that does not arise during normal use. The application must parse a document without XInclude, traverse into an `\u003cxi:include\u003e` subtree to expose its nodes or namespaces to Ruby, and only then invoke XInclude processing. The common case, requesting XInclude at parse time, operates on a freshly parsed document whose nodes are not yet exposed to Ruby and is not affected. Nokogiri 1.19.4 makes this pattern safe by default and requires no change to application code.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround for earlier versions, perform XInclude substitution at parse time (with the `xinclude` parse option) rather than calling `#do_xinclude` on a document that has already been traversed. A freshly parsed document has no nodes exposed to Ruby, so the substitution is safe.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:37:25Z",
+      "related": ["CGA-5rf3-f5p3-g7p3"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wfpw-mmfh-qq69"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5"
+    },
+    {
+      "id": "GHSA-wjv4-x9w8-wm3h",
+      "summary": "Nokogiri: Possible Use-After-Free when setting `Document#root=` to an invalid node type",
+      "details": "### Summary\n\n`Nokogiri::XML::Document#root=` validated only that the new root was a `Nokogiri::XML::Node`, allowing a DTD node to be set as the document root. The result is a heap use-after-free during garbage collection or finalization, leading to an invalid memory read or potentially a segfault.\n\nNokogiri 1.19.4 restricts `Document#root=` to element nodes, raising `TypeError` for any other node type.\n\nThis memory-safety issue affects only the CRuby implementation (libxml2). The JRuby implementation was not affected; the same input validation was added there for behavioral parity.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. This is only triggered by a programming error. It requires application code to assign a non-element node such as a DTD as the document root via `Document#root=`. Nokogiri 1.19.4 now raises `TypeError` instead of allowing a use-after-free. It cannot be triggered by untrusted input or through normal use of the public API.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround, applications that cannot upgrade should avoid assigning a DTD (or any non-element node) via `Document#root=`.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-06-19T16:36:59Z",
+      "related": ["CGA-4c9p-8cff-5j35"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wjv4-x9w8-wm3h"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.4"
+                }
+              ]
+            }
+          ],
+          "versions": 194,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.7.5",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N/E:U"
+        }
+      ]
     },
     {
       "id": "GHSA-wx95-c6cv-8532",

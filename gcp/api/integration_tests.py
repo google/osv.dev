@@ -493,8 +493,11 @@ class IntegrationTests(unittest.TestCase,
 
     response_json = response.json()
     self.assertEqual(3, len(response_json['vulns']))
-    self.assertCountEqual(['GHSA-6fc8-4gx4-v693', 'GHSA-3h5v-q93c-6h6q', 'GHSA-96hv-2xvq-fx4p'],
-                          [vuln['id'] for vuln in response_json['vulns']])
+    self.assertCountEqual([
+        'GHSA-6fc8-4gx4-v693',
+        'GHSA-3h5v-q93c-6h6q',
+        'GHSA-96hv-2xvq-fx4p',
+    ], [vuln['id'] for vuln in response_json['vulns']])
 
   def test_query_purl(self):
     """Test querying by PURL."""

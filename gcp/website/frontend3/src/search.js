@@ -58,7 +58,25 @@ export class ExpandableSearch {
   handleDocumentKeydown(e) {
     if (e.key === 'Escape' && this.isSearchActive()) {
       this.closeSearch();
+      return;
     }
+
+    // Press "/" to jump to the search box, unless already typing in a field.
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey &&
+        !this.isTypingContext(e.target)) {
+      e.preventDefault();
+      this.openSearch();
+    }
+  }
+
+  isTypingContext(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    // Native form fields, and Material web text fields whose focus retargets to
+    // the custom element host (e.g. md-filled-text-field, md-textfield-with-*).
+    const tag = target.tagName ? target.tagName.toLowerCase() : '';
+    return tag === 'input' || tag === 'textarea' || tag === 'select' ||
+        tag.includes('textfield') || tag.includes('text-field');
   }
 
   initializeSearch() {

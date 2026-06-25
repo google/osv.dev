@@ -402,8 +402,6 @@ steps:
   args: ['buildx', 'build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
          '-f', 'gcp/website/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
-  env:
-  - BUILDKIT_PROGRESS=plain
   id: 'build-website'
   waitFor: ['pull-website', 'build-first-package-finder']
 - name: 'gcr.io/cloud-builders/docker'
@@ -491,6 +489,9 @@ serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gservic
 logsBucket: gs://oss-vdb-tf/apply-logs
 options:
   machineType: E2_HIGHCPU_32
+  env:
+  - BUILDKIT_PROGRESS=plain
+  - GOMAXPROCS=8
 
 tags: ['build-and-stage']
 

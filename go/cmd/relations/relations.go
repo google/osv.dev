@@ -98,7 +98,8 @@ func setupClients(ctx context.Context) (gClients, error) {
 	}
 
 	// Initialize clients
-	dsClient, err := datastore.NewClient(ctx, projectID, option.WithTelemetryDisabled())
+	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the default database, which is what we want.
+	dsClient, err := datastore.NewClientWithDatabase(ctx, projectID, datastoreID, option.WithTelemetryDisabled())
 	if err != nil {
 		return gClients{}, fmt.Errorf("failed to create datastore client: %w", err)
 	}

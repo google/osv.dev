@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil/safe"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,7 +61,7 @@ func (s *RepoIndexStore) QueryBuckets(ctx context.Context, nodeHashes [][]byte) 
 
 	for _, hash := range nodeHashes {
 		h := hash // capture loop variable
-		g.Go(func() error {
+		g.Go(safe.ErrgroupFunc(func() error {
 			q := datastore.NewQuery(RepoIndexBucketKind).
 				FilterField("node_hash", "=", h).
 				Limit(models.MaxMatchesToCare)
@@ -92,7 +93,7 @@ func (s *RepoIndexStore) QueryBuckets(ctx context.Context, nodeHashes [][]byte) 
 			mu.Unlock()
 
 			return nil
-		})
+		}))
 	}
 
 	if err := g.Wait(); err != nil {

@@ -107,13 +107,32 @@ func run() error {
 		recovererPublisher = &clients.GCPPublisher{Publisher: pubsubClient.Publisher(recovererTopic)}
 	}
 
+	var healthInterval time.Duration
+	if t := os.Getenv("OSV_HEALTH_CHECK_INTERVAL"); t != "" {
+		if d, err := time.ParseDuration(t); err == nil {
+			healthInterval = d
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_HEALTH_CHECK_INTERVAL, using default", slog.Any("error", err))
+		}
+	}
+	var healthThreshold int
+	if m := os.Getenv("OSV_HEALTH_CHECK_THRESHOLD"); m != "" {
+		if val, err := strconv.Atoi(m); err == nil {
+			healthThreshold = val
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_HEALTH_CHECK_THRESHOLD, using default", slog.Any("error", err))
+		}
+	}
+
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:                *port,
-		VerboseLogs:         verboseLogs,
-		VulnStore:           vulnStore,
-		RelationsStore:      relationsStore,
-		ImportFindingsStore: importFindingsStore,
-		RepoIndexStore:      repoIndexStore,
-		RecovererPublisher:  recovererPublisher,
+		Port:                 *port,
+		VerboseLogs:          verboseLogs,
+		VulnStore:            vulnStore,
+		RelationsStore:       relationsStore,
+		ImportFindingsStore:  importFindingsStore,
+		RepoIndexStore:       repoIndexStore,
+		RecovererPublisher:   recovererPublisher,
+		HealthCheckInterval:  healthInterval,
+		HealthCheckThreshold: healthThreshold,
 	})
 }

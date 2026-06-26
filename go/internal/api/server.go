@@ -42,6 +42,9 @@ type ServerOptions struct {
 	ImportFindingsStore models.ImportFindingsStore
 	RepoIndexStore      models.RepoIndexStore
 	RecovererPublisher  clients.Publisher
+
+	HealthCheckInterval  time.Duration
+	HealthCheckThreshold int
 }
 
 // RunServer starts the gRPC server and handles graceful shutdown.
@@ -64,6 +67,9 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 
 	healthServer := health.NewServer()
 	healthgrpc.RegisterHealthServer(s, healthServer)
+
+	// Start background dependency health monitor
+	go monitorDatabaseHealth(ctx, healthServer, opts.VulnStore, opts.HealthCheckInterval, opts.HealthCheckThreshold)
 
 	logger.InfoContext(ctx, "server listening", "port", opts.Port)
 
@@ -89,4 +95,50 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 	}
 
 	return nil
+}
+
+// monitorDatabaseHealth runs a background loop to passively monitor critical backend dependencies (Datastore, GCS, Batcher)
+// and updates the gRPC serving status. It runs at the configured interval and requires a configured number of consecutive
+// failures to mark the server as unhealthy, preventing transient network noise from causing false-positive outages.
+func monitorDatabaseHealth(ctx context.Context, healthServer *health.Server, store models.VulnerabilityStore, interval time.Duration, threshold int) {
+	if interval <= 0 {
+		interval = 10 * time.Second // Sensible default
+	}
+	if threshold <= 0 {
+		threshold = 3 // Sensible default
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Default to SERVING on startup
+	healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_SERVING)
+
+	consecutiveFailures := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			err := store.Ping(pingCtx)
+			cancel()
+
+			if err != nil {
+				consecutiveFailures++
+				logger.ErrorContext(ctx, "Dependency health check failed", "error", err, "failures", consecutiveFailures)
+
+				if consecutiveFailures >= threshold {
+					healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
+				}
+			} else {
+				if consecutiveFailures > 0 {
+					logger.InfoContext(ctx, "Dependency health restored")
+				}
+				consecutiveFailures = 0
+				healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_SERVING)
+			}
+		}
+	}
 }

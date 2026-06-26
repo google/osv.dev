@@ -176,7 +176,7 @@ func (s *server) DetermineVersion(ctx context.Context, req *pb.DetermineVersionP
 	// Filter and prepare file hashes
 	var validHashes []*pb.FileHash
 	for _, fh := range query.GetFileHashes() {
-		if fh.Hash != nil && len(fh.GetHash()) <= 100 {
+		if fh.GetHash() != nil && len(fh.GetHash()) <= 100 {
 			validHashes = append(validHashes, fh)
 		}
 	}

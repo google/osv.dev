@@ -2096,7 +2096,7 @@ div.highlight {
       line-height: 1.6;
     }
 
-    a {
+    a:not(.link-button) {
       color: $osv-cyan-300;
     }
   }

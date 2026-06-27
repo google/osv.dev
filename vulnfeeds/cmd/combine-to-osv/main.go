@@ -639,7 +639,7 @@ func mergeDatabaseSpecifics(ds1, ds2 *structpb.Struct) *structpb.Struct {
 //     operation is limited to appending standalone commit events from advisory links, avoiding
 //     the corruption of paired version boundaries in complex ranges.
 func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
-	if base.GetType() != other.GetType() || base.GetRepo() != other.GetRepo() {
+	if base.GetType() != other.GetType() || !conversion.IsSameRepo(base.GetRepo(), other.GetRepo()) {
 		return nil, fmt.Errorf("cannot merge ranges with mismatching Type/Repo: (%s, %s) and (%s, %s)",
 			base.GetType(), base.GetRepo(), other.GetType(), other.GetRepo())
 	}
@@ -707,7 +707,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		return cve5Range
 	}
 
-	// 1. If one of the ranges is references-only, merge them instead of choosing one
+	// If one of the ranges is references-only, merge them instead of choosing one
 	if isReferencesOnly(nvdRange) {
 		merged, err := mergeRanges(cve5Range, nvdRange)
 		if err != nil {
@@ -729,7 +729,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		return merged
 	}
 
-	// 2. Try to merge boundary versions first for simple 1-event/2-event ranges.
+	//  Try to merge boundary versions first for simple 1-event/2-event ranges.
 	var merged *osvschema.Range
 	if len(cve5Range.GetEvents()) <= 2 && len(nvdRange.GetEvents()) <= 2 {
 		c5Intro, c5Fixed := getRangeBoundaryVersions(cve5Range.GetEvents())
@@ -750,7 +750,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	}
 
 	if merged == nil {
-		// 2. Prioritize range with fixed information over last_affected / open-ended ranges
+		// Prioritize range with fixed information over last_affected / open-ended ranges
 		c5HasFixed := hasFixedEvent(cve5Range)
 		nvdHasFixed := hasFixedEvent(nvdRange)
 
@@ -764,7 +764,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	}
 
 	if merged == nil {
-		// 3. Prefer constrained ranges (no introduced "0")
+		// Prefer constrained ranges (no introduced "0")
 		c5HasIntroZero := hasIntroducedZero(cve5Range)
 		nvdHasIntroZero := hasIntroducedZero(nvdRange)
 
@@ -778,7 +778,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	}
 
 	if merged == nil {
-		// 4. Prefer CPE_RANGE if it exists, otherwise fall back to preferred source (CVE5)
+		// Prefer CPE_RANGE if it exists, otherwise fall back to preferred source (CVE5)
 		c5IsCPERange := isCPERange(cve5Range)
 		nvdIsCPERange := isCPERange(nvdRange)
 
@@ -810,7 +810,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		}
 	}
 
-	// 5. Remove last_affected events if a fixed commit exists
+	// Remove last_affected events if a fixed commit exists
 	cleanLastAffectedIfFixedExists(merged)
 
 	return merged

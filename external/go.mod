@@ -6,7 +6,7 @@ require (
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/osv/vulnfeeds v0.0.0-20260527044221-c1c72c1b0158
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260525004216-afe0bddbf893
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260622122131-543e4f943a70
 	google.golang.org/protobuf v1.36.11
 )
 

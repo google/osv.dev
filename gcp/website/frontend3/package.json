@@ -10,7 +10,7 @@
     "build:prod": "webpack --config webpack.prod.js"
   },
   "dependencies": {
-    "@github/clipboard-copy-element": "1.3.0",
+    "@github/clipboard-copy-element": "1.3.2",
     "@hotwired/turbo": "8.0.23",
     "@material/data-table": "14.0.0",
     "@material/layout-grid": "14.0.0",

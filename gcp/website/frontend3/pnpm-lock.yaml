@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@github/clipboard-copy-element':
-        specifier: 1.3.0
-        version: 1.3.0
+        specifier: 1.3.2
+        version: 1.3.2
       '@hotwired/turbo':
         specifier: 8.0.23
         version: 8.0.23
@@ -50,10 +50,10 @@ importers:
         version: 4.0.2(webpack@5.107.2)
       sass:
         specifier: ^1.97.3
-        version: 1.100.0
+        version: 1.101.0
       sass-loader:
         specifier: ^17.0.0
-        version: 17.0.0(sass@1.100.0)(webpack@5.107.2)
+        version: 17.0.0(sass@1.101.0)(webpack@5.107.2)
       style-loader:
         specifier: ^4.0.0
         version: 4.0.0(webpack@5.107.2)
@@ -80,8 +80,8 @@ packages:
     resolution: {integrity: sha512-Xc3VhU02wqZ1HvHRJUwL09HkZSTvidqY5Ya0NXBSYOxAp+Ln9dcJr9fySI+CkONzP3PekQo9WdzCv0PGER/mOA==}
     engines: {node: '>=14.17.0'}
 
-  '@github/clipboard-copy-element@1.3.0':
-    resolution: {integrity: sha512-wyntkQkwoLbLo+Hqg2LIVMXDIzcvUb9bSDz+clX6nVJItwzh103rHxdXFRZD+DmxVbuEW5xSznYQXkz1jZT+xg==}
+  '@github/clipboard-copy-element@1.3.2':
+    resolution: {integrity: sha512-+rOAp75FeTcAiTxXNWMgigs0doiYifM6868z/aTxTdNmPuQxktr8fytwL2xXj5UJAZBKsca96/afDVoHZncF6Q==}
 
   '@hotwired/turbo@8.0.23':
     resolution: {integrity: sha512-GZ7cijxEZ6Ig71u7rD6LHaRv/wcE/hNsc+nEfiWOkLNqUgLOwo5MNGWOy5ZV9ZUDSiQx1no7YxjTNnT4O6//cQ==}
@@ -1131,8 +1131,8 @@ packages:
     peerDependencies:
       postcss: ^8.1.0
 
-  immutable@5.1.6:
-    resolution: {integrity: sha512-q1swsS8K7L8usSHuOqF2TAoCCkonYz0SG38wLAggaa4Wml70zixIvt2ql4coQ2C2B3hTjltJry4r6bULwgAXLQ==}
+  immutable@5.1.8:
+    resolution: {integrity: sha512-TM5YqrGeTsVIPPpILzeqZ8D2Zc2TvNgSDi88zPF2a4cyqQdWV/wVWBDRDbNzzrLeRWScrFcOX9lW2iX6GOtUDw==}
 
   import-local@3.2.0:
     resolution: {integrity: sha512-2SPlun1JUPWoM6t3F0dw0FkCF/jWY8kttcY4f599GLTSjh2OCuuhdTkJQsEcZzBqbXZGKMK2OqW1oZsjtf/gQA==}
@@ -1606,8 +1606,8 @@ packages:
       webpack:
         optional: true
 
-  sass@1.100.0:
-    resolution: {integrity: sha512-B5j0rYMlinhhOo9tjQebMVVn0TfyXAF+wB3b2ggZUuJ/is/Y+7+JGjirAMxHZ9Z3hIP98NPfamlAkBHa1lAaXQ==}
+  sass@1.101.0:
+    resolution: {integrity: sha512-OL3GoQyoUdDt843DpVmDO6y2k1sc5IhUDSpu8XucEI+35neq5QivZ1iuegnpraEVTJXlQGK1gl27zKcTLEPbQw==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -1975,7 +1975,7 @@ snapshots:
 
   '@discoveryjs/json-ext@1.1.0': {}
 
-  '@github/clipboard-copy-element@1.3.0': {}
+  '@github/clipboard-copy-element@1.3.2': {}
 
   '@hotwired/turbo@8.0.23': {}
 
@@ -3268,7 +3268,7 @@ snapshots:
     dependencies:
       postcss: 8.5.15
 
-  immutable@5.1.6: {}
+  immutable@5.1.8: {}
 
   import-local@3.2.0:
     dependencies:
@@ -3679,15 +3679,15 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sass-loader@17.0.0(sass@1.100.0)(webpack@5.107.2):
+  sass-loader@17.0.0(sass@1.101.0)(webpack@5.107.2):
     optionalDependencies:
-      sass: 1.100.0
+      sass: 1.101.0
       webpack: 5.107.2(postcss@8.5.15)(webpack-cli@7.0.3)
 
-  sass@1.100.0:
+  sass@1.101.0:
     dependencies:
       chokidar: 5.0.0
-      immutable: 5.1.6
+      immutable: 5.1.8
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.6

@@ -100,6 +100,39 @@ class EcosystemTest(unittest.TestCase):
     self.assertLess(
         echo_maven.sort_key('3.1.1+echo.1'), echo_maven.sort_key('3.1.2'))
 
+  def test_echo_npm_ecosystem(self):
+    """Test that Echo:npm uses SemVer ordering and is +echo.N aware"""
+    self.assertTrue(ecosystems.is_known('Echo:npm'))
+
+    echo_npm = ecosystems.get('Echo:npm')
+    self.assertIsNotNone(echo_npm)
+
+    # Base SemVer ordering (including prereleases).
+    self.assertLess(echo_npm.sort_key('1.0.0'), echo_npm.sort_key('1.0.1'))
+    self.assertLess(echo_npm.sort_key('1.9.0'), echo_npm.sort_key('1.10.0'))
+    self.assertLess(echo_npm.sort_key('1.0.0-rc.0'), echo_npm.sort_key('1.0.0'))
+    self.assertLess(
+        echo_npm.sort_key('1.0.0-alpha.1'), echo_npm.sort_key('1.0.0-beta.42'))
+
+    # SemVer excludes build metadata from precedence, but Echo's +echo.N
+    # builds must still order: 2.14.2 < 2.14.2+echo.1 < ... < 2.14.3.
+    self.assertLess(
+        echo_npm.sort_key('2.14.2'), echo_npm.sort_key('2.14.2+echo.1'))
+    self.assertLess(
+        echo_npm.sort_key('2.14.2+echo.1'), echo_npm.sort_key('2.14.2+echo.2'))
+    self.assertLess(
+        echo_npm.sort_key('2.14.2+echo.2'),
+        echo_npm.sort_key('2.14.2+echo.10'))
+    self.assertLess(
+        echo_npm.sort_key('2.14.2+echo.1'), echo_npm.sort_key('2.14.3'))
+
+    # A +echo.N build of a prerelease still sorts before the final release.
+    self.assertLess(
+        echo_npm.sort_key('19.0.0-next.3'),
+        echo_npm.sort_key('19.0.0-next.3+echo.1'))
+    self.assertLess(
+        echo_npm.sort_key('19.0.0-next.3+echo.1'), echo_npm.sort_key('19.0.0'))
+
   def test_echo_base_ecosystem(self):
     """Test that plain Echo uses Debian version ordering"""
     echo = ecosystems.get('Echo')

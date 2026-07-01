@@ -14,6 +14,7 @@
 # limitations under the License.
 """Datastore backup."""
 
+import logging
 import os
 import sys
 from google.cloud import ndb
@@ -27,24 +28,34 @@ import osv.logs
 def main():
   """Create a Datastore backup."""
   client = ds_admin.DatastoreAdminClient()
-  backup_bucket = os.environ['BACKUP_BUCKET']
-  affected_commits_backup_bucket = os.environ['AFFECTED_COMMITS_BACKUP_BUCKET']
   project_id = os.environ['GOOGLE_CLOUD_PROJECT']
-  client.export_entities(
-      project_id=project_id, output_url_prefix=f'gs://{backup_bucket}')
 
-  entity_filter = datastore_admin_v1.EntityFilter()
-  entity_filter.kinds = ['AffectedCommits']
-  client.export_entities(
-      project_id=project_id,
-      output_url_prefix=f'gs://{affected_commits_backup_bucket}',
-      entity_filter=entity_filter)
+  backup_bucket = os.environ.get('BACKUP_BUCKET')
+  if backup_bucket:
+    logging.info('Exporting all entities to gs://%s', backup_bucket)
+    client.export_entities(
+        project_id=project_id, output_url_prefix=f'gs://{backup_bucket}')
+
+  affected_commits_backup_bucket = os.environ.get(
+      'AFFECTED_COMMITS_BACKUP_BUCKET')
+  if affected_commits_backup_bucket:
+    logging.info('Exporting AffectedCommits to gs://%s',
+                 affected_commits_backup_bucket)
+    entity_filter = datastore_admin_v1.EntityFilter()
+    entity_filter.kinds = ['AffectedCommits']
+    client.export_entities(
+        project_id=project_id,
+        output_url_prefix=f'gs://{affected_commits_backup_bucket}',
+        entity_filter=entity_filter)
 
   return 0
 
 
 if __name__ == '__main__':
-  _ndb_client = ndb.Client()
+  database_id = os.getenv('DATASTORE_DATABASE_ID')
+  if not database_id:
+    database_id = None
+  _ndb_client = ndb.Client(database=database_id)
   osv.logs.setup_gcp_logging('backup')
   with _ndb_client.context():
     sys.exit(main())

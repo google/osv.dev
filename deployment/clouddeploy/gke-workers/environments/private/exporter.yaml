@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: exporter
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: exporter
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test
+            args:
+              - "--upload-to-gcs=true"
+              - "--workers=600"
+              - "--bucket=osv-test-vulnerabilities-private"
+              - "--osv-vulns-bucket=osv-test-vulnerabilities-private"
+

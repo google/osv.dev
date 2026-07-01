@@ -13,10 +13,22 @@
 # limitations under the License.
 """Echo ecosystem helper."""
 
+import re
+
 from .debian import DPKG
 from .ecosystems_base import OrderedEcosystem
 from .maven import Maven
 from .pypi import PyPI
+from .semver_ecosystem_helper import SemverLike
+
+# Echo secured builds carry a `+echo.N` local/build suffix (e.g. 1.2.3+echo.1).
+_ECHO_BUILD_RE = re.compile(r'\+echo\.(\d+)')
+
+
+def _echo_build_number(version: str) -> int:
+  """The `+echo.N` build number for a version (0 if there is none)."""
+  match = _ECHO_BUILD_RE.search(version)
+  return int(match.group(1)) if match else 0
 
 
 class Echo(OrderedEcosystem):
@@ -26,6 +38,7 @@ class Echo(OrderedEcosystem):
   - Echo        - Debian-based packages (dpkg versioning)
   - Echo:PyPI   - Python packages (PyPI/PEP 440 versioning)
   - Echo:Maven  - Maven packages (Maven versioning)
+  - Echo:npm    - npm packages (SemVer versioning, +echo.N aware)
   """
 
   def _delegate(self) -> OrderedEcosystem:
@@ -34,10 +47,21 @@ class Echo(OrderedEcosystem):
       return PyPI()
     if suffix == 'maven':
       return Maven()
+    if suffix == 'npm':
+      return SemverLike()
     return DPKG()
 
   def _sort_key(self, version: str):
-    return self._delegate()._sort_key(version)  # pylint: disable=protected-access
+    delegate = self._delegate()
+    key = delegate._sort_key(version)  # pylint: disable=protected-access
+    if isinstance(delegate, SemverLike):
+      # SemVer excludes build metadata from precedence, so `1.2.3`,
+      # `1.2.3+echo.1` and `1.2.3+echo.2` would all compare equal. PyPI and
+      # Maven order `+echo.N` natively (local versions / qualifiers); npm does
+      # not, so tie-break on the build number to keep
+      # `1.2.3 < 1.2.3+echo.1 < 1.2.3+echo.2 < 1.2.4`.
+      return (key, _echo_build_number(version))
+    return key
 
   def coarse_version(self, version: str) -> str:
     return self._delegate().coarse_version(version)

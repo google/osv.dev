@@ -15,6 +15,7 @@
 
 from .debian import DPKG
 from .ecosystems_base import OrderedEcosystem
+from .maven import Maven
 from .pypi import PyPI
 
 
@@ -24,11 +25,15 @@ class Echo(OrderedEcosystem):
   Echo provides secured packages across multiple ecosystems:
   - Echo        - Debian-based packages (dpkg versioning)
   - Echo:PyPI   - Python packages (PyPI/PEP 440 versioning)
+  - Echo:Maven  - Maven packages (Maven versioning)
   """
 
   def _delegate(self) -> OrderedEcosystem:
-    if self.suffix and self.suffix.lower() == 'pypi':
+    suffix = self.suffix.lower() if self.suffix else ''
+    if suffix == 'pypi':
       return PyPI()
+    if suffix == 'maven':
+      return Maven()
     return DPKG()
 
   def _sort_key(self, version: str):

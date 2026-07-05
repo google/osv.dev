@@ -21,6 +21,10 @@ func TestGenerate(t *testing.T) {
 		{"Go", "github.com/gorilla/mux", "pkg:golang/github.com/gorilla/mux", false},
 		{"Go", "stdlib", "pkg:golang/stdlib", false},
 		{"Maven", "org.apache.commons:commons-lang3", "pkg:maven/org.apache.commons/commons-lang3", false},
+		{"Packagist", "drupal/colorbox", "pkg:composer/drupal/colorbox", false},
+		{"npm", "@babel/core", "pkg:npm/%40babel/core", false},
+		{"Hex", "acme/foo", "pkg:hex/acme/foo", false},
+		{"SwiftURL", "github.com/apple/swift-markdown", "pkg:swift/github.com/apple/swift-markdown", false},
 		// Error cases
 		{"UnknownEcosystem", "package", "", true},
 	}
@@ -58,6 +62,10 @@ func TestParse(t *testing.T) {
 		{"pkg:golang/stdlib@1.18", "Go", "stdlib", "1.18", false},
 		{"pkg:maven/org.apache.commons/commons-lang3@3.12.0", "Maven", "org.apache.commons:commons-lang3", "3.12.0", false},
 		{"pkg:gradle/org.apache.commons/commons-lang3@3.12.0", "Maven", "org.apache.commons:commons-lang3", "3.12.0", false}, // alias
+		{"pkg:composer/drupal/colorbox@1.2.3", "Packagist", "drupal/colorbox", "1.2.3", false},
+		{"pkg:npm/%40babel/core@1.2.3", "npm", "@babel/core", "1.2.3", false},
+		{"pkg:hex/acme/foo@1.2.3", "Hex", "acme/foo", "1.2.3", false},
+		{"pkg:swift/github.com/apple/swift-markdown@1.2.3", "SwiftURL", "github.com/apple/swift-markdown", "1.2.3", false},
 		// Error cases
 		{"invalid-purl", "", "", "", true},
 		{"pkg:unknown/package@1.0.0", "", "", "", true},

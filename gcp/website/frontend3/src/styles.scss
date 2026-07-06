@@ -596,7 +596,7 @@ pre {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
-  --md-filled-text-field-container-color: $osv-search-bg;
+  --md-filled-text-field-container-color: #{$osv-search-bg};
   --md-filled-text-field-label-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-weight: 100;

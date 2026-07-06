@@ -694,7 +694,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
   .vuln-table-cell {
     display: table-cell;
-    color: $osv-text-color;
+    color: color-mix(in srgb, #{$osv-text-color} 87%, transparent);
   }
 
   // Table styling.

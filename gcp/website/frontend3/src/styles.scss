@@ -667,7 +667,12 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
   .mdc-data-table__cell {
     border-bottom-style: dashed;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
     font-size: 1rem;
+
+    html[data-theme="light"] & {
+      border-bottom-color: rgba(0, 0, 0, 0.12);
+    }
   }
 
   // Render the divs as a table.

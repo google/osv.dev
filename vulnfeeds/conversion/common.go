@@ -434,19 +434,37 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	}
 }
 
-// deduplicateList removes duplicate comparable elements (like strings) from a list.
+// deduplicateList removes duplicate elements from a list.
 func deduplicateList(list []any) []any {
 	var unique []any
-	seen := make(map[any]bool)
+	seenComparable := make(map[any]bool)
+	var seenUncomparable []any
 	for _, item := range list {
-		switch item.(type) {
-		case string, int, int32, int64, float32, float64, bool:
-			if !seen[item] {
-				seen[item] = true
+		if item == nil {
+			if !seenComparable[nil] {
+				seenComparable[nil] = true
 				unique = append(unique, item)
 			}
-		default:
-			unique = append(unique, item)
+			continue
+		}
+		typ := reflect.TypeOf(item)
+		if typ.Comparable() {
+			if !seenComparable[item] {
+				seenComparable[item] = true
+				unique = append(unique, item)
+			}
+		} else {
+			found := false
+			for _, seen := range seenUncomparable {
+				if reflect.DeepEqual(seen, item) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				seenUncomparable = append(seenUncomparable, item)
+				unique = append(unique, item)
+			}
 		}
 	}
 

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"iter"
 	"strings"
 	"sync"
@@ -781,5 +782,129 @@ func TestQueryAffected_HydrationNotFound_PublishesRecovery(t *testing.T) {
 	}
 	if msg.Attributes["id"] != "VULN-1" {
 		t.Errorf("Expected message id 'VULN-1', got %q", msg.Attributes["id"])
+	}
+}
+
+func TestQueryAffected_NilCursorSafety(t *testing.T) {
+	ctx := context.Background()
+
+	store := &mockQueryVulnStore{
+		matchPackages: func(_ context.Context, _, _, _, _ string) iter.Seq2[models.MatchResult, error] {
+			return func(yield func(models.MatchResult, error) bool) {
+				for i := range 3000 {
+					if !yield(models.MatchResult{
+						IsMatch: true,
+						ID:      fmt.Sprintf("VULN-%d", i),
+						Cursor:  nil, // Explicitly nil
+					}, nil) {
+						return
+					}
+				}
+			}
+		},
+		get: func(_ context.Context, id string) (*osvschema.Vulnerability, error) {
+			return &osvschema.Vulnerability{Id: id}, nil
+		},
+	}
+
+	s := &server{
+		vulnStore: store,
+	}
+
+	params := &pb.QueryAffectedParameters{
+		Query: &pb.Query{
+			Param:   &pb.Query_Version{Version: "1.0.0"},
+			Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+		},
+	}
+
+	got, err := s.QueryAffected(ctx, params)
+	if err != nil {
+		t.Fatalf("QueryAffected() unexpected error: %v", err)
+	}
+
+	// It should succeed and return the next page token as empty string (since cursor was nil)
+	if got.GetNextPageToken() != "" {
+		t.Errorf("Expected empty next page token, got %q", got.GetNextPageToken())
+	}
+}
+
+func TestQueryAffected_MatcherPanicPropagation(t *testing.T) {
+	ctx := context.Background()
+	store := &mockQueryVulnStore{
+		matchPackages: func(_ context.Context, _, _, _, _ string) iter.Seq2[models.MatchResult, error] {
+			return func(_ func(models.MatchResult, error) bool) {
+				// Simulates a panic inside the database iterator loop (runMatcher)
+				panic("matcher database crash")
+			}
+		},
+	}
+
+	s := &server{
+		vulnStore: store,
+	}
+
+	params := &pb.QueryAffectedParameters{
+		Query: &pb.Query{
+			Param:   &pb.Query_Version{Version: "1.0.0"},
+			Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+		},
+	}
+
+	_, err := s.QueryAffected(ctx, params)
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("Expected gRPC status error, got %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("Expected gRPC code Internal, got %v", st.Code())
+	}
+	if !strings.Contains(st.Message(), "internal server error") {
+		t.Errorf("Expected error message to contain 'internal server error', got %q", st.Message())
+	}
+}
+
+func TestQueryAffectedBatch_WorkerPanicPropagation(t *testing.T) {
+	ctx := context.Background()
+	store := &mockQueryVulnStore{
+		matchPackages: func(_ context.Context, _, _, _, _ string) iter.Seq2[models.MatchResult, error] {
+			return func(_ func(models.MatchResult, error) bool) {
+				// Simulates a panic inside the batch worker pipeline (QueryAffectedBatch worker)
+				panic("batch worker crash")
+			}
+		},
+	}
+
+	s := &server{
+		vulnStore: store,
+	}
+
+	params := &pb.QueryAffectedBatchParameters{
+		Query: &pb.BatchQuery{
+			Queries: []*pb.Query{
+				{
+					Param:   &pb.Query_Version{Version: "1.0.0"},
+					Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+				},
+			},
+		},
+	}
+
+	_, err := s.QueryAffectedBatch(ctx, params)
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("Expected gRPC status error, got %v", err)
+	}
+	if st.Code() != codes.Internal {
+		t.Errorf("Expected gRPC code Internal, got %v", st.Code())
+	}
+	if !strings.Contains(st.Message(), "internal server error") {
+		t.Errorf("Expected error message to contain 'internal server error', got %q", st.Message())
 	}
 }

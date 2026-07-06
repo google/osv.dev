@@ -527,41 +527,45 @@ func (s *server) runMatcher(
 	if startTok == "" {
 		currentCursor = func() string { return startCursor }
 	}
-	safe.GoCancel(cancel, func() {
+	go func() {
 		defer close(done)
 		defer close(resultIDs)
-		idx := 0
-		for match, err := range matcher {
-			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-					// If we timed out or been cancelled, we just return what we have.
-					return
-				}
-				cancel(err)
+		safe.Func(func(r any, stack []byte) {
+			cancel(&safe.PanicError{Value: r, Stack: stack})
+		}, func() {
+			idx := 0
+			for match, err := range matcher {
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+						// If we timed out or been cancelled, we just return what we have.
+						return
+					}
+					cancel(err)
 
-				return
-			}
-			if match.Cursor != nil {
-				currentCursor = match.Cursor
-			} else {
-				currentCursor = func() string { return "" }
-			}
-			if !match.IsMatch {
-				continue
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case resultIDs <- matchVuln{id: match.ID, index: idx}:
-				idx++
-				if idx >= limit {
 					return
 				}
+				if match.Cursor != nil {
+					currentCursor = match.Cursor
+				} else {
+					currentCursor = func() string { return "" }
+				}
+				if !match.IsMatch {
+					continue
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case resultIDs <- matchVuln{id: match.ID, index: idx}:
+					idx++
+					if idx >= limit {
+						return
+					}
+				}
 			}
-		}
-		// We finished the entire query only if context was not cancelled (meaning loop finished naturally)
-		currentCursor = func() string { return "" }
-	})
+			// We finished the entire query only if context was not cancelled (meaning loop finished naturally)
+			currentCursor = func() string { return "" }
+		})()
+	}()
 
 	return matcherResult{
 		resultIDsCh: resultIDs,

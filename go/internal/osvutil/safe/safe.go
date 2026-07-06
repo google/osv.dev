@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package safe provides simple utilities to spawn goroutines with panic recovery
-// and propagate those panics back to the main thread as error values.
+// Package safe provides simple utilities for panic recovery in goroutines and worker tasks,
+// propagating recovered panics back to callbacks or as error values.
 package safe
 
 import (
-	"context"
 	"fmt"
 	"runtime/debug"
 )
@@ -32,22 +31,14 @@ func (p *PanicError) Error() string {
 	return fmt.Sprintf("panic recovered: %v", p.Value)
 }
 
-// GoCancel spawns a goroutine. If it panics, it cancels the context with a PanicError.
-func GoCancel(cancel context.CancelCauseFunc, f func()) {
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				cancel(&PanicError{
-					Value: r,
-					Stack: debug.Stack(),
-				})
-			}
-		}()
-		f()
-	}()
-}
-
-// Func wraps any function with panic recovery, propagating it to a callback.
+// Func wraps a function f with panic recovery and returns a new function with the same signature.
+//
+// When the returned function is executed, it runs f. If f panics during execution, the panic
+// is intercepted so it does not terminate the goroutine or crash the program. The recovered
+// panic value r and the runtime stack trace are immediately passed to the onPanic callback.
+//
+// This is useful for safeguarding background tasks, worker callbacks, or goroutines managed
+// by tools like sync.WaitGroup against unexpected crashes.
 func Func(onPanic func(r any, stack []byte), f func()) func() {
 	return func() {
 		defer func() {

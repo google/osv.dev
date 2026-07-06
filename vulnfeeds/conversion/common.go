@@ -445,6 +445,7 @@ func deduplicateList(list []any) []any {
 				seenComparable[nil] = true
 				unique = append(unique, item)
 			}
+
 			continue
 		}
 		typ := reflect.TypeOf(item)

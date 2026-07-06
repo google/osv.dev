@@ -20,6 +20,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/osv.dev/go/internal/osvutil/safe"
 )
 
 func TestBatcher_Get(t *testing.T) {
@@ -206,4 +208,47 @@ func TestBatcher_Cancellation(t *testing.T) {
 	}
 
 	t.Logf("Total time: %v", time.Since(start))
+}
+
+func TestBatcher_PanicPropagation(t *testing.T) {
+	ctx := context.Background()
+
+	// A batch function that panics
+	batchFunc := func(_ context.Context, _ []string) []Result[string] {
+		panic("database connection lost")
+	}
+
+	b := New(10*time.Millisecond, 2, batchFunc)
+
+	var wg sync.WaitGroup
+	var err1, err2 error
+
+	wg.Go(func() {
+		_, err1 = b.Get(ctx, "key1")
+	})
+	wg.Go(func() {
+		_, err2 = b.Get(ctx, "key2")
+	})
+
+	wg.Wait()
+
+	// Both callers should have received the PanicError
+	for i, err := range []error{err1, err2} {
+		if err == nil {
+			t.Errorf("Expected error for caller %d, got nil", i+1)
+			continue
+		}
+		var panicErr *safe.PanicError
+		if !errors.As(err, &panicErr) {
+			t.Errorf("Expected error to be *safe.PanicError, got %T: %v", err, err)
+			continue
+		}
+		if panicErr.Value != "database connection lost" {
+			t.Errorf("Expected panic value 'database connection lost', got %v", panicErr.Value)
+		}
+		if len(panicErr.Stack) == 0 {
+			t.Errorf("Expected stack trace to be populated, got empty")
+		}
+		t.Logf("Caller %d successfully received propagated PanicError: %v", i+1, panicErr)
+	}
 }

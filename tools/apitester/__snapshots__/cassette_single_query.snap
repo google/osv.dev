@@ -3969,6 +3969,7 @@
         "SUSE-SU-2026:21452-1",
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4041,6 +4042,7 @@
         "SUSE-SU-2026:21452-1",
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4103,7 +4105,7 @@
       "aliases": ["CURL-CVE-2026-5773"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:27:42.342Z",
-      "related": ["openSUSE-SU-2026:10674-1"],
+      "related": ["SUSE-SU-2026:2703-1", "openSUSE-SU-2026:10674-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4173,6 +4175,7 @@
         "SUSE-SU-2026:21452-1",
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4245,6 +4248,7 @@
         "SUSE-SU-2026:21452-1",
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4317,6 +4321,7 @@
         "SUSE-SU-2026:21452-1",
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],

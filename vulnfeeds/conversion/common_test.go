@@ -307,6 +307,20 @@ func TestMergeDatabaseSpecificValues(t *testing.T) {
 			val2:    456.0,
 			wantErr: true,
 		},
+		{
+			name: "Merge lists of maps with duplicates",
+			val1: []any{
+				map[string]any{"introduced": "1.0"},
+			},
+			val2: []any{
+				map[string]any{"introduced": "1.0"},
+				map[string]any{"introduced": "2.0"},
+			},
+			want: []any{
+				map[string]any{"introduced": "1.0"},
+				map[string]any{"introduced": "2.0"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

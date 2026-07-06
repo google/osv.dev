@@ -25,8 +25,11 @@ package batcher
 import (
 	"context"
 	"errors"
+	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/google/osv.dev/go/internal/osvutil/safe"
 )
 
 // Result wraps the value and error returned for a single key in the batch.
@@ -167,6 +170,30 @@ func (b *Batcher[K, R]) Get(ctx context.Context, key K) (R, error) {
 }
 
 func (b *Batcher[K, R]) runBatchLoop() {
+	var batch []*request[K, R]
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr := &safe.PanicError{
+				Value: r,
+				Stack: debug.Stack(),
+			}
+			b.mu.Lock()
+			// If we panicked before stealing the pending slice, steal it now
+			if len(batch) == 0 && len(b.pending) > 0 {
+				batch = b.pending
+				b.pending = nil
+			}
+			b.mu.Unlock()
+
+			for _, req := range batch {
+				select {
+				case req.resultChan <- Result[R]{Err: panicErr}:
+				default:
+				}
+			}
+		}
+	}()
+
 	// Wait for the batch to fill up or the timeout to expire.
 	select {
 	case <-time.After(b.timeout):
@@ -174,7 +201,7 @@ func (b *Batcher[K, R]) runBatchLoop() {
 	}
 
 	b.mu.Lock()
-	batch := b.pending
+	batch = b.pending
 	b.pending = nil // Reset pending so the next request starts a new batch.
 	// Drain triggerChan to avoid stale triggers for the next batch.
 	select {

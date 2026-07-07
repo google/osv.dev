@@ -345,11 +345,13 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			return cmp.Compare(strings.ToLower(a.GetRepo()), strings.ToLower(b.GetRepo()))
 		})
 
-		// Find Package and EcosystemSpecific if any were present in the input ranges
+		// Find Package and EcosystemSpecific if any were present in the input ranges, and collect versions.
 		var pkg *osvschema.Package
 		var ecosystemSpecific *structpb.Struct
+		var versions []string
 		for _, aff := range cve5Affected {
 			if len(aff.GetRanges()) > 0 {
+				versions = append(versions, aff.GetVersions()...)
 				if aff.GetPackage() != nil {
 					pkg = aff.GetPackage()
 				}
@@ -358,23 +360,30 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				}
 			}
 		}
-		if pkg == nil || ecosystemSpecific == nil {
-			for _, aff := range nvdAffected {
-				if len(aff.GetRanges()) > 0 {
-					if pkg == nil && aff.GetPackage() != nil {
-						pkg = aff.GetPackage()
-					}
-					if ecosystemSpecific == nil && aff.GetEcosystemSpecific() != nil {
-						ecosystemSpecific = aff.GetEcosystemSpecific()
-					}
+		for _, aff := range nvdAffected {
+			if len(aff.GetRanges()) > 0 {
+				versions = append(versions, aff.GetVersions()...)
+				if pkg == nil && aff.GetPackage() != nil {
+					pkg = aff.GetPackage()
+				}
+				if ecosystemSpecific == nil && aff.GetEcosystemSpecific() != nil {
+					ecosystemSpecific = aff.GetEcosystemSpecific()
 				}
 			}
+		}
+
+		if len(versions) > 0 {
+			slices.Sort(versions)
+			versions = slices.Compact(versions)
+		} else {
+			versions = nil
 		}
 
 		combinedAffected = append(combinedAffected, &osvschema.Affected{
 			Ranges:            finalRanges,
 			Package:           pkg,
 			EcosystemSpecific: ecosystemSpecific,
+			Versions:          versions,
 		})
 	}
 

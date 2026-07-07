@@ -649,10 +649,33 @@ func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
 			base.GetDatabaseSpecific(), other.GetDatabaseSpecific())
 	}
 
+	var baseFixed []*osvschema.Event
+	for _, e := range base.GetEvents() {
+		if e.GetFixed() != "" {
+			baseFixed = append(baseFixed, e)
+		}
+	}
+
+	var otherFixed []*osvschema.Event
+	for _, e := range other.GetEvents() {
+		if e.GetFixed() != "" {
+			otherFixed = append(otherFixed, e)
+		}
+	}
+
+	baseEvents := make([]*osvschema.Event, 0, len(base.GetEvents()))
+	replaceFixed := len(baseFixed) == 1 && len(otherFixed) >= 1
+	for _, e := range base.GetEvents() {
+		if replaceFixed && e.GetFixed() != "" {
+			continue
+		}
+		baseEvents = append(baseEvents, e)
+	}
+
 	merged := &osvschema.Range{
 		Type:             base.GetType(),
 		Repo:             base.GetRepo(),
-		Events:           append([]*osvschema.Event{}, base.GetEvents()...),
+		Events:           baseEvents,
 		DatabaseSpecific: mergeDatabaseSpecifics(base.GetDatabaseSpecific(), other.GetDatabaseSpecific()),
 	}
 	for _, e := range other.GetEvents() {

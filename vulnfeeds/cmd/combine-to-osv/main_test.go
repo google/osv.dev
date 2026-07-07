@@ -694,6 +694,70 @@ func TestPickAffectedInformation(t *testing.T) {
 			},
 		},
 		{
+			name: "Merge references-only range (CVE-2016-15012): single fixed in base, references adds patch fixed, replace base fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+								},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("REFERENCES"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("AFFECTED_FIELD"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Multiple events, preferred source (CVE5) with more events is chosen",
 			cve5Affected: []*osvschema.Affected{
 				{

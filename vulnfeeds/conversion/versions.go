@@ -779,6 +779,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				if err != nil {
 					continue
 				}
+				var metadataVersions []string
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
@@ -795,6 +796,11 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 						lastaffected += "-" + CPE.Update
 					}
 					source = models.VersionSourceCPEString
+					// Set introduced to lastaffected to represent a single standalone version.
+					// Otherwise, an empty introduced would default to "0" and mark all historical
+					// versions as affected.
+					introduced = lastaffected
+					metadataVersions = []string{lastaffected}
 				}
 
 				if introduced == "" {
@@ -832,8 +838,9 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 							models.RangeWithMetadata{
 								Range: vr,
 								Metadata: models.Metadata{
-									CPE:    match.Criteria,
-									Source: source,
+									CPE:      match.Criteria,
+									Source:   source,
+									Versions: metadataVersions,
 								},
 							},
 						)
@@ -844,8 +851,9 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 						models.RangeWithMetadata{
 							Range: vr,
 							Metadata: models.Metadata{
-								CPE:    match.Criteria,
-								Source: source,
+								CPE:      match.Criteria,
+								Source:   source,
+								Versions: metadataVersions,
 							},
 						},
 					)

@@ -74,7 +74,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				conversion.BuildVersionRange("0", "2.0", ""),
+				conversion.BuildVersionRange("2.0", "2.0", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -105,7 +105,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				conversion.BuildVersionRange("", "deadbeef", ""),
+				conversion.BuildVersionRange("deadbeef", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},

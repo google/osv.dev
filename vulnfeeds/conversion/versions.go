@@ -796,6 +796,9 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 						lastaffected += "-" + CPE.Update
 					}
 					source = models.VersionSourceCPEString
+					// Set introduced to lastaffected to represent a single standalone version.
+					// Otherwise, an empty introduced would default to "0" and mark all historical
+					// versions as affected.
 					introduced = lastaffected
 					metadataVersions = []string{lastaffected}
 				}

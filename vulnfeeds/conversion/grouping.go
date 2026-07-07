@@ -302,6 +302,11 @@ func MergeRangesAndCreateAffected(
 				}
 			}
 
+			// Standalone ranges (where introduced == lastAffected) are assumed to represent a
+			// sequence of enumerated ranges. If there are multiple, we attempt to combine
+			// them into a single range spanning from the first introduced commit to the last
+			// affected commit. If both endpoints cannot be determined, we fall back to keeping
+			// them as separate standalone ranges.
 			if len(standaloneRanges) > 0 {
 				var standaloneVersions []string
 				for _, vrwm := range standaloneRanges {

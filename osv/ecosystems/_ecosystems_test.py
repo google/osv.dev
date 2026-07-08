@@ -121,8 +121,7 @@ class EcosystemTest(unittest.TestCase):
     self.assertLess(
         echo_npm.sort_key('2.14.2+echo.1'), echo_npm.sort_key('2.14.2+echo.2'))
     self.assertLess(
-        echo_npm.sort_key('2.14.2+echo.2'),
-        echo_npm.sort_key('2.14.2+echo.10'))
+        echo_npm.sort_key('2.14.2+echo.2'), echo_npm.sort_key('2.14.2+echo.10'))
     self.assertLess(
         echo_npm.sort_key('2.14.2+echo.1'), echo_npm.sort_key('2.14.3'))
 

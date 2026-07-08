@@ -183,9 +183,12 @@ class OSVServicer(osv_service_v1_pb2_grpc.OSVServicer,
         ])
         context.abort(
             grpc.StatusCode.NOT_FOUND,
-            f'Bug not found, but the following aliases were: {alias_string}')
+            f'Bug not found, but the following aliases were: {alias_string}. '
+            'See https://osv.dev/faq#api-404 for more information.')
         return None
-      context.abort(grpc.StatusCode.NOT_FOUND, 'Bug not found.')
+      context.abort(
+          grpc.StatusCode.NOT_FOUND,
+          'Bug not found. See https://osv.dev/faq#api-404 for more information.')
       return None
 
   @ndb_context

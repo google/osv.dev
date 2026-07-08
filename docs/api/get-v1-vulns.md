@@ -79,3 +79,11 @@ curl "https://api.osv.dev/v1/vulns/OSV-2020-111"
   "schema_version": "1.4.0"
 }
 ```
+
+## Error responses
+
+| HTTP status | `code` | `message` | Meaning |
+|---|---|---|---|
+| 404 | 5 | `Bug not found.` | No record exists for this ID and it is not known as an alias. |
+| 404 | 5 | `Bug not found, but the following aliases were: <IDs>` | The ID is an alias; use one of the listed first-class IDs instead. See the [FAQ](/faq#api-404). |
+| 400 | 3 | `ID too long` | The supplied ID exceeds 100 characters. |

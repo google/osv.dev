@@ -117,10 +117,17 @@ func (s *RepoIndexStore) GetRepoIndexes(ctx context.Context, ids []string) ([]*m
 	dbIndexes := make([]*RepoIndex, len(ids))
 	err := s.client.GetMulti(ctx, keys, dbIndexes)
 	if err != nil {
-		// If some entities are not found, GetMulti returns datastore.ErrMultiErr
 		var multiErr datastore.MultiError
-		if !errors.As(err, &multiErr) {
-			return nil, fmt.Errorf("failed to batch get RepoIndexes: %w", err)
+		if errors.As(err, &multiErr) {
+			for i, e := range multiErr {
+				if errors.Is(e, datastore.ErrNoSuchEntity) {
+					dbIndexes[i] = nil
+				} else if e != nil {
+					return nil, fmt.Errorf("failed to get multi: %w", err)
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("failed to get multi: %w", err)
 		}
 	}
 

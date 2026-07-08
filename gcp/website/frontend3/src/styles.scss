@@ -349,8 +349,8 @@ pre {
   }
 
   .logo-link {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
 
     html[data-theme="light"] & {
       filter: invert(1);
@@ -596,7 +596,7 @@ pre {
   margin-top: 22px;
   border: 2px solid $osv-text-color;
   border-radius: 8px;
-  --md-filled-text-field-container-color: $osv-search-bg;
+  --md-filled-text-field-container-color: #{$osv-search-bg};
   --md-filled-text-field-label-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-font: $osv-body-font-family;
   --md-filled-text-field-input-text-weight: 100;
@@ -667,7 +667,12 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
   .mdc-data-table__cell {
     border-bottom-style: dashed;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
     font-size: 1rem;
+
+    html[data-theme="light"] & {
+      border-bottom-color: rgba(0, 0, 0, 0.12);
+    }
   }
 
   // Render the divs as a table.
@@ -689,7 +694,7 @@ md-icon-button.mdc-data-table__sort-icon-button {
 
   .vuln-table-cell {
     display: table-cell;
-    color: $osv-text-color;
+    color: color-mix(in srgb, #{$osv-text-color} 87%, transparent);
   }
 
   // Table styling.
@@ -2096,7 +2101,7 @@ div.highlight {
       line-height: 1.6;
     }
 
-    a {
+    a:not(.link-button) {
       color: $osv-cyan-300;
     }
   }

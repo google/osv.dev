@@ -653,9 +653,28 @@ func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
 			base.GetType(), base.GetRepo(), other.GetType(), other.GetRepo())
 	}
 
-	if !isReferencesOnly(base) && !isReferencesOnly(other) {
+	isBaseRefsOnly := isReferencesOnly(base)
+	isOtherRefsOnly := isReferencesOnly(other)
+
+	if !isBaseRefsOnly && !isOtherRefsOnly {
 		return nil, fmt.Errorf("invariance violation: mergeRanges can only be called when at least one range is references-only. Base: %v, Other: %v",
 			base.GetDatabaseSpecific(), other.GetDatabaseSpecific())
+	}
+
+	hasNonZeroIntroduced := false
+	for _, e := range base.GetEvents() {
+		if e.GetIntroduced() != "" && e.GetIntroduced() != "0" {
+			hasNonZeroIntroduced = true
+			break
+		}
+	}
+	if !hasNonZeroIntroduced {
+		for _, e := range other.GetEvents() {
+			if e.GetIntroduced() != "" && e.GetIntroduced() != "0" {
+				hasNonZeroIntroduced = true
+				break
+			}
+		}
 	}
 
 	var baseFixed []*osvschema.Event
@@ -678,6 +697,9 @@ func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
 		if replaceFixed && e.GetFixed() != "" {
 			continue
 		}
+		if hasNonZeroIntroduced && isBaseRefsOnly && e.GetIntroduced() == "0" {
+			continue
+		}
 		baseEvents = append(baseEvents, e)
 	}
 
@@ -688,6 +710,9 @@ func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
 		DatabaseSpecific: mergeDatabaseSpecifics(base.GetDatabaseSpecific(), other.GetDatabaseSpecific()),
 	}
 	for _, e := range other.GetEvents() {
+		if hasNonZeroIntroduced && isOtherRefsOnly && e.GetIntroduced() == "0" {
+			continue
+		}
 		found := false
 		for _, existing := range merged.GetEvents() {
 			if e.GetIntroduced() != "" && e.GetIntroduced() == existing.GetIntroduced() {

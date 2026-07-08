@@ -900,6 +900,51 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Introduced and LastAffected (no fixed) should preserve LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.

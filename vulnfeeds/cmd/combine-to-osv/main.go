@@ -764,19 +764,22 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	//  Try to merge boundary versions first for simple 1-event/2-event ranges.
 	var merged *osvschema.Range
 	if len(cve5Range.GetEvents()) <= 2 && len(nvdRange.GetEvents()) <= 2 {
-		c5Intro, c5Fixed := getRangeBoundaryVersions(cve5Range.GetEvents())
-		nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRange.GetEvents())
+		c5Intro, c5LastAffected, c5Fixed := getRangeBoundaryVersions(cve5Range.GetEvents())
+		nvdIntro, nvdLastAffected, nvdFixed := getRangeBoundaryVersions(nvdRange.GetEvents())
 
 		// Prefer cve5 bounds, but use nvd if cve5 is missing them
 		if c5Intro == "" {
 			c5Intro = nvdIntro
 		}
+		if c5LastAffected == "" {
+			c5LastAffected = nvdLastAffected
+		}
 		if c5Fixed == "" {
 			c5Fixed = nvdFixed
 		}
 
-		if c5Intro != "" || c5Fixed != "" {
-			merged = conversion.BuildGitVersionRange(c5Intro, "", c5Fixed, cve5Range.GetRepo())
+		if c5Intro != "" || c5LastAffected != "" || c5Fixed != "" {
+			merged = conversion.BuildGitVersionRange(c5Intro, c5LastAffected, c5Fixed, cve5Range.GetRepo())
 			merged.DatabaseSpecific = mergeDatabaseSpecifics(cve5Range.GetDatabaseSpecific(), nvdRange.GetDatabaseSpecific())
 		}
 	}
@@ -858,17 +861,20 @@ func hasRanges(affected []*osvschema.Affected) bool {
 	return false
 }
 
-// getRangeBoundaryVersions extracts the introduced and fixed versions from a slice of OSV events.
-// It iterates through the events and returns the last non-empty "introduced" and "fixed" versions found.
-func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed string) {
+// getRangeBoundaryVersions extracts the introduced, last_affected and fixed versions from a slice of OSV events.
+// It iterates through the events and returns the last non-empty "introduced", "last_affected" and "fixed" versions found.
+func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, lastAffected, fixed string) {
 	for _, e := range events {
 		if e.GetIntroduced() != "0" && e.GetIntroduced() != "" {
 			introduced = e.GetIntroduced()
+		}
+		if e.GetLastAffected() != "" {
+			lastAffected = e.GetLastAffected()
 		}
 		if e.GetFixed() != "" {
 			fixed = e.GetFixed()
 		}
 	}
 
-	return introduced, fixed
+	return introduced, lastAffected, fixed
 }

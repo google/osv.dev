@@ -674,7 +674,6 @@ func TestPickAffectedInformation(t *testing.T) {
 							Type: osvschema.Range_GIT,
 							Repo: repoA,
 							Events: []*osvschema.Event{
-								{Introduced: "0"},
 								{Introduced: "1.0.0"},
 								{Fixed: "2c1762b85acb"},
 							},

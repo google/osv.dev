@@ -2745,6 +2745,10 @@
         {
           "id": "GO-2025-4098",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5761",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -4866,6 +4870,10 @@
         },
         {
           "id": "DEBIAN-CVE-2026-7010",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-7017",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

@@ -134,12 +134,19 @@ func monitorDatabaseHealth(ctx context.Context, healthServer *health.Server, sto
 			err := store.Ping(pingCtx)
 			cancel()
 
+			// If parent context was cancelled (e.g. server shutdown), return quietly
+			// to avoid logging false-positive health check failures during teardown.
+			if ctx.Err() != nil {
+				return
+			}
+
 			if err != nil {
 				consecutiveFailures++
-				logger.ErrorContext(ctx, "Dependency health check failed", "error", err, "failures", consecutiveFailures)
-
 				if consecutiveFailures >= threshold {
+					logger.ErrorContext(ctx, "Dependency health check failed, marking NOT_SERVING", "error", err, "failures", consecutiveFailures, "threshold", threshold)
 					healthServer.SetServingStatus("", healthgrpc.HealthCheckResponse_NOT_SERVING)
+				} else {
+					logger.WarnContext(ctx, "Dependency health check ping failed", "error", err, "failures", consecutiveFailures, "threshold", threshold)
 				}
 			} else {
 				if consecutiveFailures > 0 {

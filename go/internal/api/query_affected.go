@@ -652,7 +652,7 @@ func (s *server) collectAndSort(ctx context.Context,
 			}
 			// This is a real error, fail the whole query.
 			cancel(res.err)
-			if s.verboseLogs {
+			if s.verboseLogs && !logger.IsContextError(res.err) {
 				logger.ErrorContext(ctx, "failed to hydrate", slog.String("id", res.id), slog.String("error", res.err.Error()))
 			}
 			// continue to drain the channel
@@ -672,7 +672,11 @@ func (s *server) collectAndSort(ctx context.Context,
 	// If we got a real error, fail the whole query.
 	if err := context.Cause(ctx); err != nil {
 		if s.verboseLogs {
-			logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))
+			if logger.IsContextError(err) {
+				logger.InfoContext(ctx, "query cancelled or timed out", slog.Any("error", err))
+			} else {
+				logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))
+			}
 		}
 		if errors.Is(err, models.ErrInvalidCursor) {
 			return nil, status.Error(codes.InvalidArgument, "invalid cursor")

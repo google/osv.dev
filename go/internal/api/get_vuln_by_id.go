@@ -30,10 +30,12 @@ func (s *server) GetVulnById(ctx context.Context, params *pb.GetVulnByIdParamete
 		return vulnerability, nil
 	}
 	if !errors.Is(err, models.ErrNotFound) {
-		logger.ErrorContext(ctx, "failed to get vulnerability from store",
-			slog.String("id", id),
-			slog.Any("error", err),
-		)
+		if !logger.IsContextError(err) {
+			logger.ErrorContext(ctx, "failed to get vulnerability from store",
+				slog.String("id", id),
+				slog.Any("error", err),
+			)
+		}
 
 		return nil, status.Errorf(codes.Internal, "error getting vulnerability: %v", err)
 	}
@@ -45,10 +47,12 @@ func (s *server) GetVulnById(ctx context.Context, params *pb.GetVulnByIdParamete
 			return nil, status.Error(codes.NotFound, "Vulnerability not found")
 		}
 
-		logger.ErrorContext(ctx, "failed to check aliases for vulnerability",
-			slog.String("id", id),
-			slog.Any("error", err),
-		)
+		if !logger.IsContextError(err) {
+			logger.ErrorContext(ctx, "failed to check aliases for vulnerability",
+				slog.String("id", id),
+				slog.Any("error", err),
+			)
+		}
 
 		return nil, status.Errorf(codes.Internal, "error getting vulnerability: %v", err)
 	}

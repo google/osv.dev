@@ -40,14 +40,19 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	}
 }
 
+// IsContextError returns true if the error is due to context cancellation or deadline expiration.
+func IsContextError(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+}
+
 func ignoreError(r slog.Record) bool {
 	ignore := false
 	r.Attrs(func(a slog.Attr) bool {
 		if a.Key == "exception" || a.Key == "err" || a.Key == "error" {
 			if err, ok := a.Value.Any().(error); ok {
-				// We want to ignore context cancelled errors, since they're usually caused by something else
+				// We want to ignore context cancelled/deadline errors, since they're usually caused by something else
 				// and we don't want to be alerted about them.
-				if errors.Is(err, context.Canceled) {
+				if IsContextError(err) {
 					ignore = true
 
 					return false

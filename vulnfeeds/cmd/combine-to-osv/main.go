@@ -121,7 +121,7 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 	return &vuln, nil
 }
 
-func combineOneOSVRecord(cveID models.CVEID, cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability, mandatoryCVEIDs []string) *osvschema.Vulnerability {
+func combineIntoOSV(cveID models.CVEID, cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability, mandatoryCVEIDs []string) *osvschema.Vulnerability {
 	var baseOSV *osvschema.Vulnerability
 	if cve5 != nil && nvd != nil {
 		baseOSV = combineTwoOSVRecords(cve5, nvd)
@@ -172,7 +172,7 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 
 		readWg.Wait()
 
-		combined := combineOneOSVRecord(work.ID, cve5, nvd, mandatoryCVEIDs)
+		combined := combineIntoOSV(work.ID, cve5, nvd, mandatoryCVEIDs)
 		if combined != nil {
 			vulnChan <- combined
 		}

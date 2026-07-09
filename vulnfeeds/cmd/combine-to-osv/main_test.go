@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -61,38 +60,26 @@ func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
 	return allVulns
 }
 
-// combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
+// combinePrep creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
+func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
 	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
 
-	// Iterate through CVEs from security advisories (cve5) as the base
-	for cveID, cve5 := range cve5osv {
-		var baseOSV *osvschema.Vulnerability
-		nvd, ok := nvdosv[cveID]
-
-		if ok {
-			baseOSV = combineTwoOSVRecords(cve5, nvd)
-			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
-			delete(nvdosv, cveID)
-		} else {
-			baseOSV = cve5
-		}
-
-		if len(baseOSV.GetAffected()) == 0 || !hasRanges(baseOSV.GetAffected()) {
-			// check if part exists.
-			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
-				continue
-			}
-		}
-		osvRecords[cveID] = baseOSV
+	// Collect all unique CVE IDs
+	allIDs := make(map[models.CVEID]bool)
+	for id := range cve5osv {
+		allIDs[id] = true
+	}
+	for id := range nvdosv {
+		allIDs[id] = true
 	}
 
-	// Add any remaining CVEs from NVD that were not in the advisory data.
-	for cveID, nvd := range nvdosv {
-		if len(nvd.GetAffected()) == 0 || !hasRanges(nvd.GetAffected()) {
-			continue
+	for id := range allIDs {
+		cve5 := cve5osv[id]
+		nvd := nvdosv[id]
+		combined := combineIntoOSV(id, cve5, nvd, mandatoryCVEIDs)
+		if combined != nil {
+			osvRecords[id] = combined
 		}
-		osvRecords[cveID] = nvd
 	}
 
 	return osvRecords
@@ -110,7 +97,7 @@ func TestCombineIntoOSV(t *testing.T) {
 	}
 	noPkgCVEs := []string{"CVE-2023-0003"}
 
-	combined := combineIntoOSV(cve5osv, nvdosvCopy, noPkgCVEs)
+	combined := combinePrep(cve5osv, nvdosvCopy, noPkgCVEs)
 
 	// Expected results
 	// CVE-2023-1234: merged

@@ -334,12 +334,9 @@ func TestHandleDeletion(t *testing.T) {
 	}
 	w2.Close()
 
-	vulnerabilities := []*osvschema.Vulnerability{
-		{Id: "CVE-2023-1111"},
-		{Id: "CVE-2023-3333"},
-	}
+	validIDs := []string{"CVE-2023-1111", "CVE-2023-3333"}
 
-	HandleDeletion(ctx, bkt, "", vulnerabilities)
+	HandleDeletion(ctx, bkt, "", validIDs)
 
 	// CVE-2023-1111.json should still exist
 	if _, err := bkt.Object("CVE-2023-1111.json").Attrs(ctx); err != nil {

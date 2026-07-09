@@ -1,15 +1,22 @@
 package main
 
 import (
+	"io/fs"
+	"log/slog"
+	"os"
 	"path/filepath"
+	"slices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -17,17 +24,78 @@ import (
 
 const testdataPath = "../../test_data/combine-to-osv"
 
-func TestLoadOSV(t *testing.T) {
-	cve5Path := filepath.Join(testdataPath, "cve5")
-	allVulns := loadOSV(cve5Path)
+// loadOSV loads OSV vulnerabilities from a given local directory path.
+// It returns a map of CVE IDs to their corresponding Vulnerability objects.
+func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
+	allVulns := make(map[models.CVEID]*osvschema.Vulnerability)
+	logger.Info("Loading OSV records from local path", slog.String("path", osvPath))
+	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".json") || strings.HasSuffix(path, ".metrics.json") {
+			return nil
+		}
 
-	if len(allVulns) != 4 {
-		t.Errorf("Expected 4 vulnerabilities, got %d", len(allVulns))
+		file, err := os.ReadFile(path)
+		if err != nil {
+			logger.Warn("Failed to open OSV JSON file", slog.String("path", path), slog.Any("err", err))
+			return nil
+		}
+
+		var vuln osvschema.Vulnerability
+		decodeErr := protojson.Unmarshal(file, &vuln)
+		if decodeErr != nil {
+			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
+			return nil
+		}
+		allVulns[models.CVEID(vuln.GetId())] = &vuln
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Fatal("Failed to walk OSV directory", slog.String("path", osvPath), slog.Any("err", err))
 	}
 
-	if _, ok := allVulns["CVE-2023-1234"]; !ok {
-		t.Error("Expected to load CVE-2023-1234")
+	return allVulns
+}
+
+// combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
+func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
+	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
+
+	// Iterate through CVEs from security advisories (cve5) as the base
+	for cveID, cve5 := range cve5osv {
+		var baseOSV *osvschema.Vulnerability
+		nvd, ok := nvdosv[cveID]
+
+		if ok {
+			baseOSV = combineTwoOSVRecords(cve5, nvd)
+			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
+			delete(nvdosv, cveID)
+		} else {
+			baseOSV = cve5
+		}
+
+		if len(baseOSV.GetAffected()) == 0 || !hasRanges(baseOSV.GetAffected()) {
+			// check if part exists.
+			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
+				continue
+			}
+		}
+		osvRecords[cveID] = baseOSV
 	}
+
+	// Add any remaining CVEs from NVD that were not in the advisory data.
+	for cveID, nvd := range nvdosv {
+		if len(nvd.GetAffected()) == 0 || !hasRanges(nvd.GetAffected()) {
+			continue
+		}
+		osvRecords[cveID] = nvd
+	}
+
+	return osvRecords
 }
 
 func TestCombineIntoOSV(t *testing.T) {

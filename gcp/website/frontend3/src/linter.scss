@@ -394,6 +394,7 @@ tr:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
 }
 
 .details-column h2 {

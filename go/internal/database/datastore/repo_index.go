@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil/safe"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,7 +61,7 @@ func (s *RepoIndexStore) QueryBuckets(ctx context.Context, nodeHashes [][]byte) 
 
 	for _, hash := range nodeHashes {
 		h := hash // capture loop variable
-		g.Go(func() error {
+		g.Go(safe.ErrgroupFunc(func() error {
 			q := datastore.NewQuery(RepoIndexBucketKind).
 				FilterField("node_hash", "=", h).
 				Limit(models.MaxMatchesToCare)
@@ -92,7 +93,7 @@ func (s *RepoIndexStore) QueryBuckets(ctx context.Context, nodeHashes [][]byte) 
 			mu.Unlock()
 
 			return nil
-		})
+		}))
 	}
 
 	if err := g.Wait(); err != nil {
@@ -116,10 +117,17 @@ func (s *RepoIndexStore) GetRepoIndexes(ctx context.Context, ids []string) ([]*m
 	dbIndexes := make([]*RepoIndex, len(ids))
 	err := s.client.GetMulti(ctx, keys, dbIndexes)
 	if err != nil {
-		// If some entities are not found, GetMulti returns datastore.ErrMultiErr
 		var multiErr datastore.MultiError
-		if !errors.As(err, &multiErr) {
-			return nil, fmt.Errorf("failed to batch get RepoIndexes: %w", err)
+		if errors.As(err, &multiErr) {
+			for i, e := range multiErr {
+				if errors.Is(e, datastore.ErrNoSuchEntity) {
+					dbIndexes[i] = nil
+				} else if e != nil {
+					return nil, fmt.Errorf("failed to get multi: %w", err)
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("failed to get multi: %w", err)
 		}
 	}
 

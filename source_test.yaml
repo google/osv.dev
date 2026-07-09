@@ -284,7 +284,7 @@
   type: 2
   rest_api_url: 'https://cna.erlef.org/osv/all.json'
   db_prefix: ['EEF-']
-  accepted_ecosystems: ['Hex']
+  accepted_ecosystems: ['Hex','npm']
   human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
   link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'

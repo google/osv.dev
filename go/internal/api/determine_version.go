@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -176,7 +177,7 @@ func (s *server) DetermineVersion(ctx context.Context, req *pb.DetermineVersionP
 	// Filter and prepare file hashes
 	var validHashes []*pb.FileHash
 	for _, fh := range query.GetFileHashes() {
-		if fh.Hash != nil && len(fh.GetHash()) <= 100 {
+		if fh.GetHash() != nil && len(fh.GetHash()) <= 100 {
 			validHashes = append(validHashes, fh)
 		}
 	}
@@ -205,7 +206,10 @@ func (s *server) DetermineVersion(ctx context.Context, req *pb.DetermineVersionP
 	// Query Datastore via repository
 	matchedBucketsByHash, err := s.repoIndexStore.QueryBuckets(ctx, nodeHashes)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to query RepoIndexBuckets", "error", err)
+		if !osvutil.IsContextError(err) {
+			logger.ErrorContext(ctx, "Failed to query RepoIndexBuckets", "error", err)
+		}
+
 		return nil, status.Error(codes.Internal, "failed to query repo index buckets")
 	}
 
@@ -259,7 +263,10 @@ func (s *server) DetermineVersion(ctx context.Context, req *pb.DetermineVersionP
 
 	repoIndexes, err := s.repoIndexStore.GetRepoIndexes(ctx, parentIDs)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to get RepoIndexes", "error", err)
+		if !osvutil.IsContextError(err) {
+			logger.ErrorContext(ctx, "Failed to get RepoIndexes", "error", err)
+		}
+
 		return nil, status.Error(codes.Internal, "failed to get repo indexes")
 	}
 

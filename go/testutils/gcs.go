@@ -30,6 +30,7 @@ type MockStorage struct {
 	objects     map[string]*mockObject // object path -> object data
 	WriteError  error                  // Global error to return on WriteObject
 	WriteErrors map[string]error       // Per-path error to return on WriteObject
+	ReadError   error                  // Global error to return on ReadObject and ReadObjectAttrs
 }
 
 // NewMockStorage creates a new mock storage client.
@@ -43,6 +44,10 @@ func NewMockStorage() *MockStorage {
 func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
+	if c.ReadError != nil {
+		return nil, c.ReadError
+	}
 
 	obj, ok := c.objects[path]
 	if !ok {
@@ -59,6 +64,10 @@ func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error)
 func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.Attrs, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
+	if c.ReadError != nil {
+		return nil, c.ReadError
+	}
 
 	obj, ok := c.objects[path]
 	if !ok {

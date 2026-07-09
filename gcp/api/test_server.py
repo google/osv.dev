@@ -49,11 +49,17 @@ def start_backend(port, log_path):
   log_handle = open(log_path, 'w')
   env = os.environ.copy()
 
+  if os.getenv('OSV_USE_GO_BACKEND') == '1':
+    # Use the Go backend. We assume it has been compiled.
+    # Path is relative to gcp/api/ directory.
+    backend_cmd = ['../../go/api', f'--port={port}']
+    print(f"Starting Go backend: {' '.join(backend_cmd)}")
+  else:
+    backend_cmd = [sys.executable, 'server.py', f'--port={port}']
+    print(f"Starting Python backend: {' '.join(backend_cmd)}")
+
   backend_proc = subprocess.Popen(
-      [sys.executable, 'server.py', f'--port={port}'],
-      env=env,
-      stdout=log_handle,
-      stderr=subprocess.STDOUT)
+      backend_cmd, env=env, stdout=log_handle, stderr=subprocess.STDOUT)
 
   return backend_proc
 

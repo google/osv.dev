@@ -1,6 +1,8 @@
 package purl
 
 import (
+	"strings"
+
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/package-url/packageurl-go"
 )
@@ -14,6 +16,24 @@ type simpleGenerator struct {
 
 func (g simpleGenerator) generate(_, packageName string) (packageurl.PackageURL, error) {
 	return *packageurl.NewPackageURL(g.purlType, g.namespace, packageName, "", g.qualifiers, ""), nil
+}
+
+// slashGenerator handles PURL mappings where the package name contains a slash-separated namespace.
+type slashGenerator struct {
+	purlType   string
+	qualifiers packageurl.Qualifiers
+}
+
+func (g slashGenerator) generate(_, packageName string) (packageurl.PackageURL, error) {
+	namespace := ""
+	name := packageName
+	if strings.Contains(packageName, "/") {
+		parts := strings.Split(packageName, "/")
+		name = parts[len(parts)-1]
+		namespace = strings.Join(parts[:len(parts)-1], "/")
+	}
+
+	return *packageurl.NewPackageURL(g.purlType, namespace, name, "", g.qualifiers, ""), nil
 }
 
 // simpleParser handles standard PURL mappings without special logic.
@@ -36,6 +56,11 @@ func registerSimple(ecosystem osvconstants.Ecosystem, purlType string, namespace
 	registerParser(purlType, namespace, simpleParser{ecosystem: ecosystem})
 }
 
+func registerSlash(ecosystem osvconstants.Ecosystem, purlType string) {
+	registerGenerator(ecosystem, slashGenerator{purlType: purlType})
+	registerParser(purlType, "", simpleParser{ecosystem: ecosystem, joinNamespace: true})
+}
+
 //nolint:gochecknoinits // init is used here to register simple ecosystems with the global PURL registry.
 func init() {
 	// Language Ecosystems (No namespace)
@@ -44,18 +69,17 @@ func init() {
 	registerSimple(osvconstants.EcosystemConanCenter, "conan", "", nil)
 	registerSimple(osvconstants.EcosystemDockerHardenedImages, "dhi", "", nil)
 	registerSimple(osvconstants.EcosystemHackage, "hackage", "", nil)
-	registerSimple(osvconstants.EcosystemHex, "hex", "", nil)
+	registerSlash(osvconstants.EcosystemHex, "hex")
 	registerSimple(osvconstants.EcosystemJulia, "julia", "", nil)
 	registerSimple(osvconstants.EcosystemNuGet, "nuget", "", nil)
 	registerSimple(osvconstants.EcosystemOSSFuzz, "generic", "", nil)
-	registerSimple(osvconstants.EcosystemPackagist, "composer", "", nil)
+	registerSlash(osvconstants.EcosystemPackagist, "composer")
 	registerSimple(osvconstants.EcosystemPub, "pub", "", nil)
 	registerSimple(osvconstants.EcosystemPyPI, "pypi", "", nil)
 	registerSimple(osvconstants.EcosystemRubyGems, "gem", "", nil)
-	registerSimple(osvconstants.EcosystemSwiftURL, "swift", "", nil)
+	registerSlash(osvconstants.EcosystemSwiftURL, "swift")
 	registerSimple(osvconstants.EcosystemCratesIO, "cargo", "", nil)
-	registerGenerator(osvconstants.EcosystemNPM, simpleGenerator{purlType: "npm"})
-	registerParser("npm", "", simpleParser{ecosystem: osvconstants.EcosystemNPM, joinNamespace: true})
+	registerSlash(osvconstants.EcosystemNPM, "npm")
 	registerSimple(osvconstants.EcosystemOpam, "opam", "", nil)
 
 	// OS Ecosystems (With static namespace)

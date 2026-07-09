@@ -3,6 +3,7 @@ package cve5
 import (
 	"maps"
 	"slices"
+	"strings"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/git"
@@ -142,11 +143,21 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 			continue
 		}
 
-		// As a fallback, assume a single version means it's the last affected version.
+		// As a fallback, treat a single version as a standalone version.
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
+			var vr []*osvschema.Range
+			if strings.EqualFold(metrics.CNA, "mitre") && len(affected.Versions) == 1 {
+				vr = []*osvschema.Range{c.BuildVersionRange("", vers.Version, "")}
+				metrics.AddNote("Single version found %v for MITRE - Setting only last_affected", vers.Version)
+			} else {
+				vr = []*osvschema.Range{c.BuildVersionRange(vers.Version, vers.Version, "")}
+				metrics.AddNote("Single version found %v - Treating as standalone version", vers.Version)
+			}
+			rwms := c.ToRangeWithMetadata(vr, models.VersionSourceAffected)
+			for i := range rwms {
+				rwms[i].Metadata.Versions = []string{vers.Version}
+			}
+			versionRanges = append(versionRanges, rwms...)
 		}
 	}
 

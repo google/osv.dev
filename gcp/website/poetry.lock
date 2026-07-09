@@ -1698,6 +1698,25 @@ files = [
 ]
 
 [[package]]
+name = "pyopenssl"
+version = "26.3.0"
+description = "Python wrapper module around the OpenSSL library"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pyopenssl-26.3.0-py3-none-any.whl", hash = "sha256:46367f8f66b92271e6d218da9c87607e1ef5a0bc5c8dea5bb3db82f395c385a3"},
+    {file = "pyopenssl-26.3.0.tar.gz", hash = "sha256:589de7fae1c9ea670d18422ed00fc04da787bbde8e1454aea872aa57b49ad341"},
+]
+
+[package.dependencies]
+cryptography = ">=49.0.0,<50"
+
+[package.extras]
+docs = ["sphinx (!=5.2.0,!=5.2.0.post0,!=7.2.5)", "sphinx_rtd_theme"]
+test = ["pretend", "pytest (>=3.0.1)", "pytest-rerunfailures"]
+
+[[package]]
 name = "pytz"
 version = "2026.2"
 description = "World timezone definitions, modern and historical"
@@ -2092,4 +2111,4 @@ platformdirs = ">=3.5.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "f094f32fbf67e134ec7c62b8204555350cb60f8ed09f5188c682ea9c1aeb8175"
+content-hash = "ff6462e3994399283bd5f9dd58dd6ad9bcdf4eccb0fcdf0b66e20ebe15526f09"

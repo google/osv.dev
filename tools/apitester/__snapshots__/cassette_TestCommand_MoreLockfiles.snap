@@ -572,6 +572,14 @@
         {
           "id": "GHSA-8qvm-5x2c-j2w7",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-1805",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-1806",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

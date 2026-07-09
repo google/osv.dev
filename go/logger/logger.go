@@ -3,13 +3,13 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -40,11 +40,6 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	}
 }
 
-// IsContextError returns true if the error is due to context cancellation or deadline expiration.
-func IsContextError(err error) bool {
-	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
-}
-
 func ignoreError(r slog.Record) bool {
 	ignore := false
 	r.Attrs(func(a slog.Attr) bool {
@@ -52,7 +47,7 @@ func ignoreError(r slog.Record) bool {
 			if err, ok := a.Value.Any().(error); ok {
 				// We want to ignore context cancelled/deadline errors, since they're usually caused by something else
 				// and we don't want to be alerted about them.
-				if IsContextError(err) {
+				if osvutil.IsContextError(err) {
 					ignore = true
 
 					return false

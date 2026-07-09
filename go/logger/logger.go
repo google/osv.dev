@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func log(ctx context.Context, level slog.Level, msg string, a []any) {
@@ -42,7 +44,14 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 
 // IsContextError returns true if the error is due to context cancellation or deadline expiration.
 func IsContextError(err error) bool {
-	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	// Context cancellation during a gRPC call returns a gRPC status error rather than a standard context error.
+	// Check the gRPC status code directly (returns codes.Unknown if err is not a gRPC status error).
+	code := status.Code(err)
+
+	return code == codes.Canceled || code == codes.DeadlineExceeded
 }
 
 func ignoreError(r slog.Record) bool {

@@ -3,16 +3,14 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func log(ctx context.Context, level slog.Level, msg string, a []any) {
@@ -42,18 +40,6 @@ func log(ctx context.Context, level slog.Level, msg string, a []any) {
 	}
 }
 
-// IsContextError returns true if the error is due to context cancellation or deadline expiration.
-func IsContextError(err error) bool {
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-	// Context cancellation during a gRPC call returns a gRPC status error rather than a standard context error.
-	// Check the gRPC status code directly (returns codes.Unknown if err is not a gRPC status error).
-	code := status.Code(err)
-
-	return code == codes.Canceled || code == codes.DeadlineExceeded
-}
-
 func ignoreError(r slog.Record) bool {
 	ignore := false
 	r.Attrs(func(a slog.Attr) bool {
@@ -61,7 +47,7 @@ func ignoreError(r slog.Record) bool {
 			if err, ok := a.Value.Any().(error); ok {
 				// We want to ignore context cancelled/deadline errors, since they're usually caused by something else
 				// and we don't want to be alerted about them.
-				if IsContextError(err) {
+				if osvutil.IsContextError(err) {
 					ignore = true
 
 					return false

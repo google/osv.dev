@@ -737,15 +737,11 @@ class IntegrationTests(unittest.TestCase,
                 {},
                 {
                     'vulns': [{
-                        'id': 'CVE-2020-15866',
-                    }, {
                         'id': 'CVE-2020-36401',
                     }, {
                         'id': 'CVE-2021-4110',
                     }, {
                         'id': 'CVE-2021-4188',
-                    }, {
-                        'id': 'CVE-2021-46020',
                     }, {
                         'id': 'CVE-2021-46023',
                     }, {

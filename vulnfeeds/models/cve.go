@@ -146,7 +146,7 @@ type CVE5 struct {
 
 func EnglishDescription(descriptions []LangString) string {
 	for _, desc := range descriptions {
-		if desc.Lang == "en" {
+		if desc.Lang == "en" || strings.HasPrefix(desc.Lang, "en-") {
 			return desc.Value
 		}
 	}

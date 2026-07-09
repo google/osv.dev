@@ -870,17 +870,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 }
 
 // ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
-// This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters.
+// This is mostly deprecated, but is still used by the PyPi converter.
 func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
-	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
-		v.AffectedCommits = append(v.AffectedCommits, commit...)
-	}
-
-	if v.AffectedCommits != nil {
-		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
-	}
-
 	// Extract versions from CPEs.
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {

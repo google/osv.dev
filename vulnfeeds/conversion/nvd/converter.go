@@ -3,18 +3,13 @@ package nvd
 
 import (
 	"cmp"
-	"encoding/json"
 	"errors"
-	"log/slog"
 	"maps"
 	"net/http"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
@@ -164,117 +159,6 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	return v, metrics, metrics.Outcome
-}
-
-// CVEToPackageInfo takes an NVD CVE record and outputs a PackageInfo struct in a file in the specified directory.
-func CVEToPackageInfo(cve models.NVDCVE, repos []string, cache git.RepoTagsCache, directory string, metrics *models.ConversionMetrics) models.ConversionOutcome {
-	CPEs := c.CPEs(cve)
-	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
-	maybeVendorName := "ENOCPE"
-	maybeProductName := "ENOCPE"
-
-	if len(CPEs) > 0 {
-		CPE, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
-		maybeVendorName = CPE.Vendor
-		maybeProductName = CPE.Product
-		if err != nil {
-			return models.NoRanges
-		}
-	}
-
-	// more often than not, this yields a VersionInfo with AffectedVersions and no AffectedCommits.
-	versions := c.ExtractVersionInfo(cve, nil, http.DefaultClient, metrics, cache)
-	if metrics.Outcome == models.Error {
-		return models.Error
-	}
-
-	if len(versions.AffectedVersions) != 0 {
-		// There are some AffectedVersions to try and resolve to AffectedCommits.
-		if len(repos) == 0 {
-			metrics.AddNote("No affected ranges for %q, and no repos to try and convert %+v to tags with", maybeProductName, versions.AffectedVersions)
-			return models.NoRepos
-		}
-		logger.Info("Trying to convert version tags to commits", slog.String("cve", string(cve.ID)), slog.Any("versions", versions), slog.Any("repos", repos))
-		c.VersionInfoToCommits(&versions, repos, cache, metrics)
-		if metrics.Outcome == models.Error {
-			return models.Error
-		}
-	}
-
-	hasAnyFixedCommits := false
-	for _, repo := range repos {
-		if versions.HasFixedCommits(repo) {
-			hasAnyFixedCommits = true
-		}
-	}
-
-	if versions.HasFixedVersions() && !hasAnyFixedCommits {
-		metrics.AddNote("Failed to convert fixed version tags to commits: %+v", versions)
-		return models.NoCommitRanges
-	}
-
-	hasAnyLastAffectedCommits := false
-	for _, repo := range repos {
-		if versions.HasLastAffectedCommits(repo) {
-			hasAnyLastAffectedCommits = true
-		}
-	}
-
-	if versions.HasLastAffectedVersions() && !hasAnyLastAffectedCommits && !hasAnyFixedCommits {
-		metrics.AddNote("Failed to convert last_affected version tags to commits: %+v", versions)
-		return models.NoCommitRanges
-	}
-
-	if len(versions.AffectedCommits) == 0 {
-		metrics.AddNote("No affected commit ranges determined for %q", maybeProductName)
-		return models.NoCommitRanges
-	}
-
-	versions.AffectedVersions = nil // these have served their purpose and are not required in the resulting output.
-
-	slices.SortStableFunc(versions.AffectedCommits, models.AffectedCommitCompare)
-
-	if metrics.Outcome == models.Error {
-		return metrics.Outcome
-	}
-
-	var pkgInfos []vulns.PackageInfo
-	pi := vulns.PackageInfo{VersionInfo: versions}
-	pkgInfos = append(pkgInfos, pi) // combine-to-osv expects a serialised *array* of PackageInfo
-
-	vulnDir := filepath.Join(directory, maybeVendorName, maybeProductName)
-	err := os.MkdirAll(vulnDir, 0755)
-	if err != nil {
-		logger.Warn("Failed to create dir", slog.Any("err", err))
-	}
-
-	outputFile := filepath.Join(vulnDir, string(cve.ID)+".nvd"+models.Extension)
-	f, err := os.Create(outputFile)
-	if err != nil {
-		logger.Warn("Failed to open for writing", slog.String("path", outputFile), slog.Any("err", err))
-	}
-	defer f.Close()
-
-	encoder := json.NewEncoder(f)
-	encoder.SetIndent("", "  ")
-	err = encoder.Encode(&pkgInfos)
-
-	if err != nil {
-		logger.Warn("Failed to encode PackageInfo", slog.String("path", outputFile), slog.Any("err", err))
-	}
-
-	logger.Info("Generated PackageInfo record", slog.String("cve", string(cve.ID)), slog.String("product", maybeProductName))
-
-	metricsFile, err := writer.CreateMetricsFile(cve.ID, vulnDir)
-	if err != nil {
-		logger.Warn("Failed to create metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-	}
-	err = writer.WriteMetricsFile(metrics, metricsFile)
-	if err != nil {
-		logger.Warn("Failed to write metrics file", slog.String("path", metricsFile.Name()), slog.Any("err", err))
-	}
-
-	return metrics.Outcome
 }
 
 // FindRepos attempts to find the source code repositories for a given CVE.

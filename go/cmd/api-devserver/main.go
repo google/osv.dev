@@ -205,6 +205,7 @@ func runBackend(ctx context.Context, port int) {
 	repoIndexStore := db.NewRepoIndexStore(dbClient)
 	if err := api.RunServer(ctx, api.ServerOptions{
 		Port:                port,
+		Local:               true,
 		VerboseLogs:         true,
 		VulnStore:           vulnStore,
 		RelationsStore:      relationsStore,

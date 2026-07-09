@@ -35,11 +35,17 @@ steps:
   waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
+  id: 'build-go-backend'
+  dir: go
+  args: ['go', 'build', '-o', 'api', './cmd/api']
+  waitFor: ['init']
+
+- name: 'gcr.io/oss-vdb/ci'
   id: 'api-tests'
   dir: gcp/api
   #TODO: Update test scripts to support not supplying a credential.
   args: ['bash', '-ex', 'run_tests.sh', '/workspace/dummy.json']
-  waitFor: ['init', 'sync']
+  waitFor: ['build-go-backend', 'sync']
 
 timeout: 7200s
 serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'
@@ -47,3 +53,4 @@ options:
   logging: CLOUD_LOGGING_ONLY
   env:
     - CLOUDBUILD=1
+    - OSV_USE_GO_BACKEND=1

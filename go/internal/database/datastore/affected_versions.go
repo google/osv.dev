@@ -54,6 +54,9 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 
 		pkgName := affected.GetPackage().GetName()
 		eHelper, exists := ecosystem.DefaultProvider.Get(pkgEcosystem)
+		if exists {
+			pkgName = ecosystem.NormalizePackageName(eHelper, pkgName)
+		}
 
 		// TODO(michaelkedar): Matching the current behavior of the API,
 		// where GIT tags match to the first git repo in the ranges list, even if

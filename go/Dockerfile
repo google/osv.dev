@@ -49,7 +49,7 @@ RUN go mod download && go mod verify
 FROM builder AS importer-build
 RUN CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
 
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS importer
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS importer
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache git zstd tar
 COPY --from=importer-build /app/importer /
@@ -61,7 +61,7 @@ ENTRYPOINT ["/importer"]
 FROM builder AS worker-build
 RUN CGO_ENABLED=0 go build -o /app/worker ./cmd/worker/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS worker
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS worker
 COPY --from=worker-build /app/worker /
 ENTRYPOINT ["/worker"]
 
@@ -71,7 +71,7 @@ ENTRYPOINT ["/worker"]
 FROM builder AS exporter-build
 RUN CGO_ENABLED=0 go build -o /app/exporter ./cmd/exporter/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS exporter
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS exporter
 COPY --from=exporter-build /app/exporter /
 ENTRYPOINT ["/exporter"]
 
@@ -81,7 +81,7 @@ ENTRYPOINT ["/exporter"]
 FROM builder AS recordchecker-build
 RUN CGO_ENABLED=0 go build -o /app/recordchecker ./cmd/recordchecker/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS recordchecker
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS recordchecker
 COPY --from=recordchecker-build /app/recordchecker /
 ENTRYPOINT ["/recordchecker"]
 
@@ -91,7 +91,7 @@ ENTRYPOINT ["/recordchecker"]
 FROM builder AS relations-build
 RUN CGO_ENABLED=0 go build -o /app/relations ./cmd/relations/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS relations
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS relations
 COPY --from=relations-build /app/relations /
 ENTRYPOINT ["/relations"]
 
@@ -101,7 +101,7 @@ ENTRYPOINT ["/relations"]
 FROM builder AS generatesitemap-build
 RUN CGO_ENABLED=0 go build -o /app/generatesitemap ./cmd/generatesitemap/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS generatesitemap
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS generatesitemap
 COPY --from=generatesitemap-build /app/generatesitemap /
 ENTRYPOINT ["/generatesitemap"]
 
@@ -111,7 +111,7 @@ ENTRYPOINT ["/generatesitemap"]
 FROM builder AS custommetrics-build
 RUN CGO_ENABLED=0 go build -o /app/custommetrics ./cmd/custommetrics/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS custommetrics
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS custommetrics
 COPY --from=custommetrics-build /app/custommetrics /
 ENTRYPOINT ["/custommetrics"]
 
@@ -121,7 +121,7 @@ ENTRYPOINT ["/custommetrics"]
 FROM builder AS gitter-build
 RUN CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
 
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS gitter
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS gitter
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache bash git zstd tar
 # Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
@@ -135,7 +135,7 @@ ENTRYPOINT ["/gitter"]
 FROM builder AS first_package_finder-build
 RUN CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
 
-FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS first_package_finder
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS first_package_finder
 COPY --from=first_package_finder-build /app/first_package_finder /
 ENTRYPOINT ["/first_package_finder"]
 
@@ -145,6 +145,6 @@ ENTRYPOINT ["/first_package_finder"]
 FROM builder AS api-build
 RUN CGO_ENABLED=0 go build -o /app/api ./cmd/api/
 
-FROM gcr.io/distroless/static-debian12@sha256:9c346e4be81b5ca7ff31a0d89eaeade58b0f95cfd3baed1f36083ddb47ca3160 AS api
+FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS api
 COPY --from=api-build /app/api /
 ENTRYPOINT ["/api"]

@@ -57,7 +57,7 @@ update-api-snapshots:
 	cd gcp/api && UPDATE_SNAPS=true OSV_USE_GO_BACKEND=1 ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
-	GOTOOLCHAIN=go1.26.3 $(run-cmd) tools/lint_and_format.sh
+	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto

@@ -322,6 +322,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -359,6 +363,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -573,6 +581,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -610,6 +622,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -816,6 +832,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -853,6 +873,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1067,6 +1091,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -1104,6 +1132,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -2744,6 +2776,10 @@
         },
         {
           "id": "GO-2025-4098",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5761",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -4869,6 +4905,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-7017",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-8376",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5563,6 +5603,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5600,6 +5644,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7142,10 +7190,6 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
-          "id": "PYSEC-2024-260",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
           "id": "PYSEC-2024-271",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -8216,10 +8260,6 @@
         {
           "id": "PYSEC-2020-43",
           "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "PYSEC-2024-260",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2024-271",

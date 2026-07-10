@@ -18,7 +18,7 @@ metadata:
   name: pubsub-cves
 spec:
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 20
   metrics:
   - external:
       metric:

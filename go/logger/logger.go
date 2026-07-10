@@ -3,13 +3,13 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -45,9 +45,9 @@ func ignoreError(r slog.Record) bool {
 	r.Attrs(func(a slog.Attr) bool {
 		if a.Key == "exception" || a.Key == "err" || a.Key == "error" {
 			if err, ok := a.Value.Any().(error); ok {
-				// We want to ignore context cancelled errors, since they're usually caused by something else
+				// We want to ignore context cancelled/deadline errors, since they're usually caused by something else
 				// and we don't want to be alerted about them.
-				if errors.Is(err, context.Canceled) {
+				if osvutil.IsContextError(err) {
 					ignore = true
 
 					return false

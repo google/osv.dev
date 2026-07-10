@@ -76,7 +76,7 @@ func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[m
 	for id := range allIDs {
 		cve5 := cve5osv[id]
 		nvd := nvdosv[id]
-		combined := combineIntoOSV(id, cve5, nvd)
+		combined := combineIntoOSV(cve5, nvd)
 		if combined != nil {
 			osvRecords[id] = combined
 		}

@@ -4,7 +4,6 @@ package main
 import (
 	"cmp"
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -26,7 +25,6 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -127,7 +125,7 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 	return &vuln, nil
 }
 
-func combineIntoOSV(cveID models.CVEID, cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
+func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	var baseOSV *osvschema.Vulnerability
 	if cve5 != nil && nvd != nil {
 		baseOSV = combineTwoOSVRecords(cve5, nvd)
@@ -176,7 +174,7 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 			continue
 		}
 
-		combined := combineIntoOSV(work.ID, cve5, nvd)
+		combined := combineIntoOSV(cve5, nvd)
 		if combined != nil {
 			vulnChan <- combined
 		}
@@ -354,39 +352,6 @@ func main() {
 	if *syncDeletions && *uploadToGCS {
 		writer.HandleDeletion(ctx, outBkt, *osvOutputPath, validIDs)
 	}
-}
-
-// extractCVEName extracts the CVE name from a given filename and prefix.
-// It returns an empty string if the filename does not start with "CVE".
-func extractCVEName(filename string, prefix string) string {
-	cleaned := strings.TrimPrefix(filename, prefix)
-	cleaned = strings.TrimSuffix(cleaned, ".json")
-	pre := strings.Split(cleaned, "-")
-	if pre[0] != "CVE" {
-		return ""
-	}
-
-	return cleaned
-}
-
-// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
-// It does not download the file contents.
-func listBucketObjects(ctx context.Context, client *storage.Client, bucketName string, prefix string) ([]string, error) {
-	bucket := client.Bucket(bucketName)
-	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-	var filenames []string
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break // All objects have been listed.
-		}
-		if err != nil {
-			return nil, fmt.Errorf("bucket.Objects: %w", err)
-		}
-		filenames = append(filenames, attrs.Name)
-	}
-
-	return filenames, nil
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one
@@ -1056,16 +1021,6 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	cleanLastAffectedIfFixedExists(merged)
 
 	return merged
-}
-
-func hasRanges(affected []*osvschema.Affected) bool {
-	for _, a := range affected {
-		if len(a.GetRanges()) > 0 {
-			return true
-		}
-	}
-
-	return false
 }
 
 // getRangeBoundaryVersions extracts the introduced, last_affected and fixed versions from a slice of OSV events.

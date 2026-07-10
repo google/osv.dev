@@ -944,6 +944,156 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Keep LastAffected if Introduced is in between Fixed and LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Remove LastAffected if it comes before Fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.5"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keep LastAffected if it introduced between fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "jumbled case",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{LastAffected: "1.2.4"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.

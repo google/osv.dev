@@ -557,9 +557,10 @@ func isCPERange(r *osvschema.Range) bool {
 }
 
 // cleanLastAffectedIfFixedExists removes the last_affected field from all
-// events in the range if any event has a fixed field. This happens in place.
+// events if an introduced value does not appear between it and the nearest fixed value.
+// This happens in place.
 func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
-	if r == nil {
+	if r == nil || len(r.GetEvents()) == 0 {
 		return
 	}
 	hasFixed := false
@@ -572,12 +573,45 @@ func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 	if !hasFixed {
 		return
 	}
+
+	events := r.GetEvents()
 	var cleanEvents []*osvschema.Event
-	for _, e := range r.GetEvents() {
+
+	for i, e := range events {
 		if e.GetLastAffected() == "" {
+			cleanEvents = append(cleanEvents, e)
+			continue
+		}
+
+		// It is a LastAffected event. Check if we should keep it.
+		shouldStrip := false
+		for j, other := range events {
+			if other.GetFixed() == "" {
+				continue
+			}
+
+			// We found a Fixed event. Check if there is an Introduced between i and j.
+			introducedInBetween := false
+			start := min(i, j)
+			end := max(i, j)
+			for k := start + 1; k < end; k++ {
+				if events[k].GetIntroduced() != "" {
+					introducedInBetween = true
+					break
+				}
+			}
+
+			if !introducedInBetween {
+				shouldStrip = true
+				break
+			}
+		}
+
+		if !shouldStrip {
 			cleanEvents = append(cleanEvents, e)
 		}
 	}
+
 	r.Events = cleanEvents
 }
 

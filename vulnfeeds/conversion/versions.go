@@ -871,7 +871,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 
 // ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
 // This is mostly deprecated, but is still used by the PyPi converter.
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	// Extract versions from CPEs.
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {

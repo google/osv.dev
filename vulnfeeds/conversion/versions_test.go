@@ -873,8 +873,6 @@ func TestExtractVersionInfo(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			r := testutils.SetupVCR(t)
-			client := r.GetDefaultClient()
 
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
@@ -883,50 +881,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			metrics := &models.ConversionMetrics{}
-			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics, nil)
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, metrics)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
 		})
-	}
-}
-
-type roundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
-
-func TestExtractVersionInfo_429(t *testing.T) {
-	requests := 0
-	client := &http.Client{
-		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			requests++
-			return &http.Response{
-				StatusCode: http.StatusTooManyRequests,
-				Body:       http.NoBody,
-				Request:    req,
-			}, nil
-		}),
-	}
-
-	cve := models.NVDCVE{
-		References: []models.Reference{
-			{
-				URL: "https://github.com/foo/bar/commit/1234567890abcdef1234567890abcdef12345678",
-			},
-		},
-	}
-
-	metrics := &models.ConversionMetrics{}
-	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics, nil)
-
-	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
-	if len(gotVersionInfo.AffectedCommits) != 0 {
-		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
-	}
-	if metrics.Outcome == models.Error {
-		t.Errorf("Did not expected outcome to be Error, got %v", metrics.Outcome)
 	}
 }
 

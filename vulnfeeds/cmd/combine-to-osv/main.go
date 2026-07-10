@@ -146,12 +146,12 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 	for work := range workChan {
 		var cve5, nvd *osvschema.Vulnerability
 		var cve5Err, nvdErr error
-		var readWg sync.WaitGroup
+		var readVulnsWg sync.WaitGroup
 
 		if work.CVE5Path != "" {
-			readWg.Add(1)
+			readVulnsWg.Add(1)
 			go func() {
-				defer readWg.Done()
+				defer readVulnsWg.Done()
 				cve5, cve5Err = readVulnerability(ctx, client, work.CVE5Path)
 				if cve5Err != nil {
 					logger.Error("Failed to read CVE5", slog.String("id", string(work.ID)), slog.Any("err", cve5Err))
@@ -160,9 +160,9 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 		}
 
 		if work.NVDPath != "" {
-			readWg.Add(1)
+			readVulnsWg.Add(1)
 			go func() {
-				defer readWg.Done()
+				defer readVulnsWg.Done()
 				nvd, nvdErr = readVulnerability(ctx, client, work.NVDPath)
 				if nvdErr != nil {
 					logger.Error("Failed to read NVD", slog.String("id", string(work.ID)), slog.Any("err", nvdErr))
@@ -170,7 +170,7 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 			}()
 		}
 
-		readWg.Wait()
+		readVulnsWg.Wait()
 
 		if cve5Err != nil || nvdErr != nil {
 			continue
@@ -213,11 +213,11 @@ func main() {
 	var cve5Files, nvdFiles []string
 	var cve5ListErr, nvdListErr error
 	logger.Info("Starting to list CVE5 and NVD objects")
-	var listWg sync.WaitGroup
-	listWg.Add(2)
+	var listObjWg sync.WaitGroup
+	listObjWg.Add(2)
 
 	go func() {
-		defer listWg.Done()
+		defer listObjWg.Done()
 		logger.Info("Listing CVE5 objects", slog.String("path", *cve5Path))
 		cve5Files, cve5ListErr = listObjects(ctx, client, *cve5Path)
 		if cve5ListErr != nil {
@@ -226,7 +226,7 @@ func main() {
 	}()
 
 	go func() {
-		defer listWg.Done()
+		defer listObjWg.Done()
 		logger.Info("Listing NVD objects", slog.String("path", *nvdPath))
 		nvdFiles, nvdListErr = listObjects(ctx, client, *nvdPath)
 		if nvdListErr != nil {
@@ -234,7 +234,7 @@ func main() {
 		}
 	}()
 
-	listWg.Wait()
+	listObjWg.Wait()
 
 	// Build work items
 	logger.Info("Starting to build work items")
@@ -288,23 +288,23 @@ func main() {
 	workChan := make(chan *CVEWorkItem, *numWorkers)
 
 	// Start VulnWorkers (Upload side)
-	var uploadWg sync.WaitGroup
+	var uploadVulnsWg sync.WaitGroup
 	var successCount atomic.Uint64
 	for range *numWorkers {
-		uploadWg.Add(1)
+		uploadVulnsWg.Add(1)
 		go func() {
-			defer uploadWg.Done()
+			defer uploadVulnsWg.Done()
 			writer.VulnWorker(ctx, validVulnChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
 		}()
 	}
 
 	// Interpose Collector to gather valid IDs
 	var validIDs []string
-	var idWg sync.WaitGroup
-	idWg.Add(1)
+	var collectValidIDsWg sync.WaitGroup
+	collectValidIDsWg.Add(1)
 	totalWork := len(workItems)
 	go func() {
-		defer idWg.Done()
+		defer collectValidIDsWg.Done()
 		count := 0
 		for v := range vulnChan {
 			count++
@@ -320,11 +320,11 @@ func main() {
 	}()
 
 	// Start ReadAndCombineWorkers (Read side)
-	var readWg sync.WaitGroup
+	var readAndCombineWg sync.WaitGroup
 	for range *numWorkers {
-		readWg.Add(1)
+		readAndCombineWg.Add(1)
 		go func() {
-			defer readWg.Done()
+			defer readAndCombineWg.Done()
 			readAndCombineWorker(ctx, client, workChan, vulnChan)
 		}()
 	}
@@ -338,12 +338,12 @@ func main() {
 	}()
 
 	// Wait for reads to finish
-	readWg.Wait()
+	readAndCombineWg.Wait()
 	close(vulnChan)
 
 	// Wait for collector and uploads to finish
-	idWg.Wait()
-	uploadWg.Wait()
+	collectValidIDsWg.Wait()
+	uploadVulnsWg.Wait()
 
 	logger.Info("Successfully processed OSV files", slog.Int("count", len(validIDs)))
 	if outBkt == nil && gcsHelper == nil {
@@ -393,10 +393,10 @@ func listBucketObjects(ctx context.Context, client *storage.Client, bucketName s
 func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
 	if baseOSV.GetDetails() == "" && nvd.GetDetails() != "" {
-		baseOSV.Details = nvd.Details
+		baseOSV.Details = nvd.GetDetails()
 	}
 	if baseOSV.GetSummary() == "" && nvd.GetSummary() != "" {
-		baseOSV.Summary = nvd.Summary
+		baseOSV.Summary = nvd.GetSummary()
 	}
 	combinedAffected := pickAffectedInformation(cve5.GetAffected(), nvd.GetAffected())
 

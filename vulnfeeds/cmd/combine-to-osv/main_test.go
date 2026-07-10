@@ -61,7 +61,7 @@ func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
 }
 
 // combinePrep creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
+func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability) map[models.CVEID]*osvschema.Vulnerability {
 	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
 
 	// Collect all unique CVE IDs
@@ -76,7 +76,7 @@ func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[m
 	for id := range allIDs {
 		cve5 := cve5osv[id]
 		nvd := nvdosv[id]
-		combined := combineIntoOSV(id, cve5, nvd, mandatoryCVEIDs)
+		combined := combineIntoOSV(id, cve5, nvd)
 		if combined != nil {
 			osvRecords[id] = combined
 		}
@@ -95,18 +95,16 @@ func TestCombineIntoOSV(t *testing.T) {
 	for k, v := range nvdosv {
 		nvdosvCopy[k] = v
 	}
-	noPkgCVEs := []string{"CVE-2023-0003"}
-
-	combined := combinePrep(cve5osv, nvdosvCopy, noPkgCVEs)
+	combined := combinePrep(cve5osv, nvdosvCopy)
 
 	// Expected results
 	// CVE-2023-1234: merged
 	// CVE-2023-0001: from cve5 only
 	// CVE-2023-0002: from nvd only
-	// CVE-2023-0003: from cve5, no affected, but in noPkgCVEs
-	// CVE-2023-0004: from cve5, no affected, not in noPkgCVEs, so skipped
-	if len(combined) != 2 {
-		t.Errorf("Expected 2 combined vulnerabilities, got %d", len(combined))
+	// CVE-2023-0003: from cve5 only
+	// CVE-2023-0004: from cve5 only
+	if len(combined) != 5 {
+		t.Errorf("Expected 5 combined vulnerabilities, got %d", len(combined))
 	}
 
 	// Test case 1: Merged CVE
@@ -165,24 +163,24 @@ func TestCombineIntoOSV(t *testing.T) {
 		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
 	}
 
-	// Test case 2: CVE only in cve5 (has no ranges, so it should be skipped)
-	if _, ok = combined["CVE-2023-0001"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0001 because it has no ranges")
+	// Test case 2: CVE only in cve5 (has no ranges, but should be kept)
+	if _, ok = combined["CVE-2023-0001"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0001")
 	}
 
-	// Test case 3: CVE only in nvd (has no ranges, so it should be skipped)
-	if _, ok = combined["CVE-2023-0002"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0002 because it has no ranges")
+	// Test case 3: CVE only in nvd (has no ranges, but should be kept)
+	if _, ok = combined["CVE-2023-0002"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0002")
 	}
 
-	// Test case 4: No ranges, in noPkgCVEs (should be kept)
+	// Test case 4: No ranges, no affected (should be kept)
 	if _, ok = combined["CVE-2023-0003"]; !ok {
 		t.Error("Expected combined map to contain CVE-2023-0003")
 	}
 
-	// Test case 5: No ranges, not in noPkgCVEs (should be skipped)
-	if _, ok = combined["CVE-2023-0004"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0004")
+	// Test case 5: No ranges, no affected (should be kept)
+	if _, ok = combined["CVE-2023-0004"]; !ok {
+		t.Error("Expected combined map to contain CVE-2023-0004")
 	}
 }
 

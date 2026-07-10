@@ -466,7 +466,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (details?.length) {
       findingsEl.textContent = ''; // Clear "Loading..."
       findingsEl.appendChild(formatFindings(details));
-      findingsEl.classList.remove("json-pre");
     } else {
       findingsEl.textContent =
           "No linter findings available for this vulnerability.";

@@ -196,6 +196,12 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 		}
 
 		for _, verPkg := range verPkgs {
+			// if the fixed version is 0, then it means that the vulnerability does
+			// not affect this package on this alpine version.
+			if verPkg.Ver == "0" {
+				continue
+			}
+
 			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg)
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,

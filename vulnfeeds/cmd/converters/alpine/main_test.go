@@ -290,34 +290,34 @@ func TestGenerateAlpineOSV(t *testing.T) {
 
 	// Verify details of affected packages
 	// Order should be: foo (v3.19), xz (v3.18), xz (v3.19)
-	if vuln.Affected[0].Package.Name != "foo" {
-		t.Errorf("Expected first affected package to be foo, got %s", vuln.Affected[0].Package.Name)
+	if vuln.Affected[0].GetPackage().GetName() != "foo" {
+		t.Errorf("Expected first affected package to be foo, got %s", vuln.Affected[0].GetPackage().GetName())
 	}
-	if vuln.Affected[1].Package.Name != "xz" || vuln.Affected[1].Package.Ecosystem != "Alpine:v3.18" {
-		t.Errorf("Expected second affected package to be xz (v3.18), got %s (%s)", vuln.Affected[1].Package.Name, vuln.Affected[1].Package.Ecosystem)
+	if vuln.Affected[1].GetPackage().GetName() != "xz" || vuln.Affected[1].GetPackage().GetEcosystem() != "Alpine:v3.18" {
+		t.Errorf("Expected second affected package to be xz (v3.18), got %s (%s)", vuln.Affected[1].GetPackage().GetName(), vuln.Affected[1].GetPackage().GetEcosystem())
 	}
-	if vuln.Affected[2].Package.Name != "xz" || vuln.Affected[2].Package.Ecosystem != "Alpine:v3.19" {
-		t.Errorf("Expected third affected package to be xz (v3.19), got %s (%s)", vuln.Affected[2].Package.Name, vuln.Affected[2].Package.Ecosystem)
+	if vuln.Affected[2].GetPackage().GetName() != "xz" || vuln.Affected[2].GetPackage().GetEcosystem() != "Alpine:v3.19" {
+		t.Errorf("Expected third affected package to be xz (v3.19), got %s (%s)", vuln.Affected[2].GetPackage().GetName(), vuln.Affected[2].GetPackage().GetEcosystem())
 	}
 
 	// Verify versions for xz (v3.19)
 	// It should have Introduced: 5.6.0 (from NVDCVE) and Fixed: 5.6.1 (from VersionAndPkg)
-	xz319Ranges := vuln.Affected[2].Ranges
+	xz319Ranges := vuln.Affected[2].GetRanges()
 	if len(xz319Ranges) != 1 {
 		t.Fatalf("Expected 1 range for xz (v3.19), got %d", len(xz319Ranges))
 	}
-	events := xz319Ranges[0].Events
+	events := xz319Ranges[0].GetEvents()
 	if len(events) != 2 {
 		t.Fatalf("Expected 2 events for xz (v3.19), got %d", len(events))
 	}
-	
+
 	var introduced, fixed string
 	for _, e := range events {
-		if e.Introduced != "" {
-			introduced = e.Introduced
+		if e.GetIntroduced() != "" {
+			introduced = e.GetIntroduced()
 		}
-		if e.Fixed != "" {
-			fixed = e.Fixed
+		if e.GetFixed() != "" {
+			fixed = e.GetFixed()
 		}
 	}
 	if introduced != "5.6.0" {
@@ -331,4 +331,3 @@ func TestGenerateAlpineOSV(t *testing.T) {
 func newString(s string) *string {
 	return &s
 }
-

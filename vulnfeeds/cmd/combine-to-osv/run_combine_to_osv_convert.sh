@@ -16,8 +16,8 @@ trap  '__error_handing__ $? $LINENO' ERR
 
 set -eu
 
-INPUT_BUCKET="${INPUT_GCS_BUCKET:=osv-test-cve-osv-conversion}"
-OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=osv-test-cve-osv-conversion}"
+INPUT_BUCKET="${INPUT_GCS_BUCKET:=cve-osv-conversion}"
+OUTPUT_BUCKET="${OUTPUT_GCS_BUCKET:=cve-osv-conversion}"
 NUM_WORKERS="${NUM_WORKERS:=64}"
 
 OSV_OUTPUT="osv-output"

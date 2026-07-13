@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+# - ../../base/backup.yaml  # TODO(michaelkedar): figure out how to backup specific datastore IDs
+- ../../base/exporter.yaml
+- ../../base/gitter.yaml
+- ../../base/importer.yaml
+- ../../base/importer-deleter.yaml
+- ../../base/importer-reconciler.yaml
+- ../../base/record-checker.yaml
+- ../../base/recoverer.yaml
+- ../../base/workers.yaml
+- ../../base/scaler.yaml
+
+patches:
+# - path: backup.yaml
+- path: exporter.yaml
+- path: gitter.yaml
+- path: importer.yaml
+- path: importer-deleter.yaml
+- path: importer-reconciler.yaml
+- path: record-checker.yaml
+- path: recoverer.yaml
+- path: workers.yaml
+- path: scaler.yaml

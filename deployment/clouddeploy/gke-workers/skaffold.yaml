@@ -15,5 +15,11 @@ profiles:
       paths:
       - environments/oss-vdb
 
+- name: private
+  manifests:
+    kustomize:
+      paths:
+      - environments/private
+
 deploy:
   kubectl: {}

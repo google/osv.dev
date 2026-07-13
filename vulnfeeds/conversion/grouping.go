@@ -289,18 +289,75 @@ func MergeRangesAndCreateAffected(
 		slices.Sort(successfulRepos)
 		successfulRepos = slices.Compact(successfulRepos)
 		for _, repo := range successfulRepos {
-			var mergedRange *osvschema.Range
+			var standaloneRanges []models.RangeWithMetadata
+			var otherRanges []models.RangeWithMetadata
 			for _, vrwm := range resolvedRanges {
+				if vrwm.Range.GetRepo() != repo {
+					continue
+				}
+				if isStandaloneRange(vrwm) {
+					standaloneRanges = append(standaloneRanges, vrwm)
+				} else {
+					otherRanges = append(otherRanges, vrwm)
+				}
+			}
+
+			// Standalone ranges (where introduced == lastAffected) are assumed to represent a
+			// sequence of enumerated ranges. If there are multiple, we attempt to combine
+			// them into a single range spanning from the first introduced commit to the last
+			// affected commit. If both endpoints cannot be determined, we fall back to keeping
+			// them as separate standalone ranges.
+			if len(standaloneRanges) > 0 {
+				var standaloneVersions []string
+				for _, vrwm := range standaloneRanges {
+					standaloneVersions = append(standaloneVersions, vrwm.Metadata.Versions...)
+				}
+
+				var firstCommit, lastCommit string
+				// Standalone ranges preserve first appearance order from the record,
+				// so first range represents the earliest version, last range represents the latest version.
+				for _, e := range standaloneRanges[0].Range.GetEvents() {
+					if e.GetIntroduced() != "" {
+						firstCommit = e.GetIntroduced()
+					}
+				}
+				for _, e := range standaloneRanges[len(standaloneRanges)-1].Range.GetEvents() {
+					if e.GetLastAffected() != "" {
+						lastCommit = e.GetLastAffected()
+					}
+				}
+
+				if firstCommit != "" && lastCommit != "" {
+					combinedRange := BuildGitVersionRange(firstCommit, lastCommit, "", repo)
+					for _, vrwm := range standaloneRanges {
+						mergeDatabaseSpecific(combinedRange, vrwm.Range.GetDatabaseSpecific())
+					}
+					combinedRangeWM := models.RangeWithMetadata{
+						Range: combinedRange,
+						Metadata: models.Metadata{
+							CPE:      standaloneRanges[0].Metadata.CPE,
+							Source:   standaloneRanges[0].Metadata.Source,
+							Versions: standaloneVersions,
+						},
+					}
+					otherRanges = append(otherRanges, combinedRangeWM)
+				} else {
+					otherRanges = append(otherRanges, standaloneRanges...)
+				}
+			}
+
+			var mergedRange *osvschema.Range
+			var versions []string
+			for _, vrwm := range otherRanges {
 				vr := vrwm.Range
-				if vr.GetRepo() == repo {
-					if mergedRange == nil {
-						mergedRange = vr
-					} else {
-						var err error
-						mergedRange, err = MergeTwoRanges(mergedRange, vr)
-						if err != nil {
-							metrics.AddNote("Failed to merge ranges: %v", err)
-						}
+				versions = append(versions, vrwm.Metadata.Versions...)
+				if mergedRange == nil {
+					mergedRange = vr
+				} else {
+					var err error
+					mergedRange, err = MergeTwoRanges(mergedRange, vr)
+					if err != nil {
+						metrics.AddNote("Failed to merge ranges: %v", err)
 					}
 				}
 			}
@@ -330,8 +387,11 @@ func MergeRangesAndCreateAffected(
 				}
 			}
 			if mergedRange != nil {
+				slices.Sort(versions)
+				versions = slices.Compact(versions)
 				newAffected = append(newAffected, &osvschema.Affected{
-					Ranges: []*osvschema.Range{mergedRange},
+					Ranges:   []*osvschema.Range{mergedRange},
+					Versions: versions,
 				})
 			}
 		}
@@ -424,4 +484,21 @@ func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
 	}
 
 	return nil
+}
+
+func isStandaloneRange(vrwm models.RangeWithMetadata) bool {
+	if len(vrwm.Metadata.Versions) != 1 {
+		return false
+	}
+	var introduced, lastAffected string
+	for _, e := range vrwm.Range.GetEvents() {
+		if e.GetIntroduced() != "" {
+			introduced = e.GetIntroduced()
+		}
+		if e.GetLastAffected() != "" {
+			lastAffected = e.GetLastAffected()
+		}
+	}
+
+	return introduced != "" && introduced == lastAffected
 }

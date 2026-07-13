@@ -76,6 +76,30 @@ class EcosystemTest(unittest.TestCase):
     self.assertLess(echo_pypi.sort_key('1.0.0rc1'), echo_pypi.sort_key('1.0.0'))
     self.assertLess(echo_pypi.sort_key('1.9'), echo_pypi.sort_key('1.10'))
 
+  def test_echo_maven_ecosystem(self):
+    """Test that Echo:Maven uses Maven version ordering"""
+    self.assertTrue(ecosystems.is_known('Echo:Maven'))
+
+    echo_maven = ecosystems.get('Echo:Maven')
+    self.assertIsNotNone(echo_maven)
+
+    # Maven version ordering
+    self.assertLess(echo_maven.sort_key('1.0.0'), echo_maven.sort_key('1.0.1'))
+    self.assertLess(
+        echo_maven.sort_key('1.0-alpha1'), echo_maven.sort_key('1.0'))
+    self.assertLess(echo_maven.sort_key('1.0-rc1'), echo_maven.sort_key('1.0'))
+    self.assertLess(echo_maven.sort_key('1.9'), echo_maven.sort_key('1.10'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1'), echo_maven.sort_key('3.1.1+echo.1'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.1'),
+        echo_maven.sort_key('3.1.1+echo.2'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.2'),
+        echo_maven.sort_key('3.1.1+echo.10'))
+    self.assertLess(
+        echo_maven.sort_key('3.1.1+echo.1'), echo_maven.sort_key('3.1.2'))
+
   def test_echo_base_ecosystem(self):
     """Test that plain Echo uses Debian version ordering"""
     echo = ecosystems.get('Echo')

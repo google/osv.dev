@@ -68,4 +68,26 @@ Whenever ranges are merged (either via boundary version merging or references-on
 * Duplicate entries inside `extracted_events` are removed.
 
 ### Last-Affected Cleanup
-At the end of the selection or merging process, if the final range contains at least one explicit `fixed` commit or version event, any `last_affected` events are automatically removed from the range to maintain clean, bounded schema compliance.
+In the simplest case, we assume that if there is an `introduced`, `fixed`, and `last_affected` set of events in one range, `last_affected` is redundant as the range from `introduced` to `fixed` would include the `last_affected` value. 
+
+This only works if they are on the same branch. For more complicated cases where it may be reintroduced after a fix in a different version/branch, but no fix is available in that branch yet, `last_affected` is still valuable. As such, the `last_affected` value is only removed from the record if there is no `introduced` between it and the `fixed` commit value. This is a conservative choice that could be refined with further analysis. Assumptions made to allow this include that versions arrive in the correct order.
+
+### Enumerated Versions
+
+#### Standalone Version Handling
+Standalone/ambiguous versions (e.g., `1.2.3` without boundaries) are now treated as **enumerated** versions instead of defaulting to a range starting at `"0"`. They convert to single-commit GIT ranges, and the version strings are added to the flat `versions` array. As the `mitre` CNA does not provide useful ranges and cannot be assumed to be enumerated, mitre vulns are excluded from this enumeration assumption.
+
+#### Range Simplification (Combining)
+To avoid cluttering `Ranges` with disjoint single-commit intervals, standalone versions for a repository are grouped into a single continuous range `[earliest_commit, latest_commit]`.
+
+#### Tradeoffs
+
+##### Pros
+* **Precision**: Eliminates incorrect `"introduced": "0"` assumptions.
+* **Schema Cleanliness**: Consolidated ranges keep OSV JSON files readable.
+* **Version Matching**: Accurate querying via the flat `versions` array is preserved.
+
+##### Cons
+* **Range Approximation**: Assumes all intermediate commits are vulnerable, potentially causing false positives.
+* **Release Commit Bias**: Focuses on release tag commits, potentially missing intermediate state.
+* **Metadata Noise**: `database_specific` metadata retains all original CPEs/versions.

@@ -164,6 +164,20 @@ func (s *ImportFindingsStore) DeleteResult(ctx context.Context, path string) err
 	return nil
 }
 
+func (s *ImportFindingsStore) ListAllFromSource(ctx context.Context, source string) ([]*models.ImportFinding, error) {
+	query := datastore.NewQuery("ImportFinding").FilterField("source", "=", source)
+	var entities []*ImportFinding
+	if _, err := s.dsClient.GetAll(ctx, query, &entities); err != nil {
+		return nil, fmt.Errorf("failed to fetch import findings: %w", err)
+	}
+	findings := make([]*models.ImportFinding, len(entities))
+	for i, entity := range entities {
+		findings[i] = entity.toModel()
+	}
+
+	return findings, nil
+}
+
 func (f *ImportFinding) toModel() *models.ImportFinding {
 	return &models.ImportFinding{
 		BugID:       f.BugID,

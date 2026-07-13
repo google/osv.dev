@@ -154,3 +154,26 @@ type SourceRepository struct {
 	StrictValidation        bool                        `datastore:"strict_validation"`
 	WorkPool                string                      `datastore:"work_pool"`
 }
+
+type RepoIndex struct {
+	Key               *datastore.Key `datastore:"__key__"`
+	Name              string         `datastore:"name"`
+	BaseCPE           string         `datastore:"base_cpe"`
+	Commit            []byte         `datastore:"commit"`
+	Tag               string         `datastore:"tag"`
+	When              time.Time      `datastore:"when,omitempty"`
+	RepoType          string         `datastore:"repo_type"`
+	RepoAddr          string         `datastore:"repo_addr"`
+	FileExts          []string       `datastore:"file_exts"`
+	FileHashType      string         `datastore:"file_hash_type"`
+	EmptyBucketBitmap []byte         `datastore:"empty_bucket_bitmap"`
+	FileCount         int            `datastore:"file_count"`
+	DocumentVersion   int            `datastore:"document_version"`
+}
+
+type RepoIndexBucket struct {
+	Key             *datastore.Key `datastore:"__key__"`
+	NodeHash        []byte         `datastore:"node_hash"`
+	FilesContained  int            `datastore:"files_contained,noindex"`
+	DocumentVersion int            `datastore:"document_version,noindex"`
+}

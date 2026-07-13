@@ -674,9 +674,72 @@ func TestPickAffectedInformation(t *testing.T) {
 							Type: osvschema.Range_GIT,
 							Repo: repoA,
 							Events: []*osvschema.Event{
-								{Introduced: "0"},
 								{Introduced: "1.0.0"},
 								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("AFFECTED_FIELD"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge references-only range (CVE-2016-15012): single fixed in base, references adds patch fixed, replace base fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+								},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("REFERENCES"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
@@ -785,6 +848,246 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Fixed: "1.0.1"},
 								{Introduced: "2.0.0"},
 								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Same repo with different casing (e.g. GitHub case-insensitivity)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/user/repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo", // Should preserve casing of cve5's repo
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"}, // Preferred CVE5 fixed version
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Introduced and LastAffected (no fixed) should preserve LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keep LastAffected if Introduced is in between Fixed and LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Remove LastAffected if it comes before Fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.5"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keep LastAffected if it introduced between fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "jumbled case",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{LastAffected: "1.2.4"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
 							},
 						},
 					},

@@ -78,10 +78,17 @@
 
 .content-display {
   flex-grow: 1;
-  padding: 8px 12px;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
   position: relative;
   background-color: #1e1e1e;
+}
+
+.json-scroll {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: 8px 52px 52px 12px;
 }
 
 .json-content {
@@ -92,6 +99,47 @@
   overflow-wrap: anywhere;
   margin: 0;
   color: #d4d4d4;
+}
+
+.triage-copy {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: #3c4043;
+  color: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 40%);
+  cursor: pointer;
+
+  &:hover:not([aria-disabled="true"]) {
+    background-color: #5f6368;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  &[aria-disabled="true"] {
+    color: #9aa0a6;
+    cursor: default;
+  }
+
+  .material-icons {
+    font-size: 24px;
+  }
+}
+
+.copy-json-source {
+  display: none;
 }
 
 // Hide top-level root collapsible elements & brackets

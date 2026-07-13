@@ -355,6 +355,14 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 			wantCanonicalLink: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			wantErr:           false,
 		},
+		{
+			name: "A malformed link that fails url.Parse",
+			args: args{
+				link: "https://example.com/%",
+			},
+			wantCanonicalLink: "https://example.com/%",
+			wantErr:           true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

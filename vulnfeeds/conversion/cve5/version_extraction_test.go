@@ -74,7 +74,47 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				conversion.BuildVersionRange("0", "2.0", ""),
+				conversion.BuildVersionRange("2.0", "2.0", ""),
+			},
+			wantRangeType: VersionRangeTypeSemver,
+		},
+		{
+			name: "mitre single version fallback",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:      "affected",
+						Version:     "3.0",
+						VersionType: "semver",
+					},
+				},
+			},
+			cnaAssigner: "mitre",
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("", "3.0", ""),
+			},
+			wantRangeType: VersionRangeTypeSemver,
+		},
+		{
+			name: "mitre multiple versions fallback",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:      "affected",
+						Version:     "3.0",
+						VersionType: "semver",
+					},
+					{
+						Status:      "affected",
+						Version:     "3.1",
+						VersionType: "semver",
+					},
+				},
+			},
+			cnaAssigner: "mitre",
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("3.0", "3.0", ""),
+				conversion.BuildVersionRange("3.1", "3.1", ""),
 			},
 			wantRangeType: VersionRangeTypeSemver,
 		},
@@ -105,7 +145,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				conversion.BuildVersionRange("", "deadbeef", ""),
+				conversion.BuildVersionRange("deadbeef", "deadbeef", ""),
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
@@ -114,7 +154,7 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			versionExtractor := &DefaultVersionExtractor{}
-			gotRangesWithMeta, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{})
+			gotRangesWithMeta, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{CNA: tt.cnaAssigner})
 			var gotRanges []*osvschema.Range
 			for _, r := range gotRangesWithMeta {
 				gotRanges = append(gotRanges, r.Range)

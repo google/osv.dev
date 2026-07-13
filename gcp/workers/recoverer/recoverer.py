@@ -169,7 +169,7 @@ def download_vuln_data(vuln_path: str, source: str) -> bytes:
 
   raw_data = None
   if source_repo.type == osv.SourceRepositoryType.REST_ENDPOINT:
-    url = f'{source_repo.rest_api_url.rstrip("/")}/{vuln_path.lstrip("/")}'
+    url = f'{source_repo.link.rstrip("/")}/{vuln_path.lstrip("/")}'
     response = requests.get(url, timeout=60)
     response.raise_for_status()
     raw_data = response.content

@@ -216,6 +216,12 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 // combineTwoOSVRecords takes two osv records and combines them into one
 func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
+	if baseOSV.GetDetails() == "" && nvd.GetDetails() != "" {
+		baseOSV.Details = nvd.GetDetails()
+	}
+	if baseOSV.GetSummary() == "" && nvd.GetSummary() != "" {
+		baseOSV.Summary = nvd.GetSummary()
+	}
 	combinedAffected := pickAffectedInformation(cve5.GetAffected(), nvd.GetAffected())
 
 	baseOSV.Affected = combinedAffected
@@ -345,11 +351,13 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			return cmp.Compare(strings.ToLower(a.GetRepo()), strings.ToLower(b.GetRepo()))
 		})
 
-		// Find Package and EcosystemSpecific if any were present in the input ranges
+		// Find Package and EcosystemSpecific if any were present in the input ranges, and collect versions.
 		var pkg *osvschema.Package
 		var ecosystemSpecific *structpb.Struct
+		var versions []string
 		for _, aff := range cve5Affected {
 			if len(aff.GetRanges()) > 0 {
+				versions = append(versions, aff.GetVersions()...)
 				if aff.GetPackage() != nil {
 					pkg = aff.GetPackage()
 				}
@@ -358,23 +366,30 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				}
 			}
 		}
-		if pkg == nil || ecosystemSpecific == nil {
-			for _, aff := range nvdAffected {
-				if len(aff.GetRanges()) > 0 {
-					if pkg == nil && aff.GetPackage() != nil {
-						pkg = aff.GetPackage()
-					}
-					if ecosystemSpecific == nil && aff.GetEcosystemSpecific() != nil {
-						ecosystemSpecific = aff.GetEcosystemSpecific()
-					}
+		for _, aff := range nvdAffected {
+			if len(aff.GetRanges()) > 0 {
+				versions = append(versions, aff.GetVersions()...)
+				if pkg == nil && aff.GetPackage() != nil {
+					pkg = aff.GetPackage()
+				}
+				if ecosystemSpecific == nil && aff.GetEcosystemSpecific() != nil {
+					ecosystemSpecific = aff.GetEcosystemSpecific()
 				}
 			}
+		}
+
+		if len(versions) > 0 {
+			slices.Sort(versions)
+			versions = slices.Compact(versions)
+		} else {
+			versions = nil
 		}
 
 		combinedAffected = append(combinedAffected, &osvschema.Affected{
 			Ranges:            finalRanges,
 			Package:           pkg,
 			EcosystemSpecific: ecosystemSpecific,
+			Versions:          versions,
 		})
 	}
 
@@ -548,9 +563,10 @@ func isCPERange(r *osvschema.Range) bool {
 }
 
 // cleanLastAffectedIfFixedExists removes the last_affected field from all
-// events in the range if any event has a fixed field. This happens in place.
+// events if an introduced value does not appear between it and the nearest fixed value.
+// This happens in place.
 func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
-	if r == nil {
+	if r == nil || len(r.GetEvents()) == 0 {
 		return
 	}
 	hasFixed := false
@@ -563,12 +579,45 @@ func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 	if !hasFixed {
 		return
 	}
+
+	events := r.GetEvents()
 	var cleanEvents []*osvschema.Event
-	for _, e := range r.GetEvents() {
+
+	for i, e := range events {
 		if e.GetLastAffected() == "" {
+			cleanEvents = append(cleanEvents, e)
+			continue
+		}
+
+		// It is a LastAffected event. Check if we should keep it.
+		shouldStrip := false
+		for j, other := range events {
+			if other.GetFixed() == "" {
+				continue
+			}
+
+			// We found a Fixed event. Check if there is an Introduced between i and j.
+			introducedInBetween := false
+			start := min(i, j)
+			end := max(i, j)
+			for k := start + 1; k < end; k++ {
+				if events[k].GetIntroduced() != "" {
+					introducedInBetween = true
+					break
+				}
+			}
+
+			if !introducedInBetween {
+				shouldStrip = true
+				break
+			}
+		}
+
+		if !shouldStrip {
 			cleanEvents = append(cleanEvents, e)
 		}
 	}
+
 	r.Events = cleanEvents
 }
 
@@ -639,23 +688,71 @@ func mergeDatabaseSpecifics(ds1, ds2 *structpb.Struct) *structpb.Struct {
 //     operation is limited to appending standalone commit events from advisory links, avoiding
 //     the corruption of paired version boundaries in complex ranges.
 func mergeRanges(base, other *osvschema.Range) (*osvschema.Range, error) {
-	if base.GetType() != other.GetType() || base.GetRepo() != other.GetRepo() {
+	if base.GetType() != other.GetType() || !conversion.IsSameRepo(base.GetRepo(), other.GetRepo()) {
 		return nil, fmt.Errorf("cannot merge ranges with mismatching Type/Repo: (%s, %s) and (%s, %s)",
 			base.GetType(), base.GetRepo(), other.GetType(), other.GetRepo())
 	}
 
-	if !isReferencesOnly(base) && !isReferencesOnly(other) {
+	isBaseRefsOnly := isReferencesOnly(base)
+	isOtherRefsOnly := isReferencesOnly(other)
+
+	if !isBaseRefsOnly && !isOtherRefsOnly {
 		return nil, fmt.Errorf("invariance violation: mergeRanges can only be called when at least one range is references-only. Base: %v, Other: %v",
 			base.GetDatabaseSpecific(), other.GetDatabaseSpecific())
+	}
+
+	hasNonZeroIntroduced := false
+	for _, e := range base.GetEvents() {
+		if e.GetIntroduced() != "" && e.GetIntroduced() != "0" {
+			hasNonZeroIntroduced = true
+			break
+		}
+	}
+	if !hasNonZeroIntroduced {
+		for _, e := range other.GetEvents() {
+			if e.GetIntroduced() != "" && e.GetIntroduced() != "0" {
+				hasNonZeroIntroduced = true
+				break
+			}
+		}
+	}
+
+	var baseFixed []*osvschema.Event
+	for _, e := range base.GetEvents() {
+		if e.GetFixed() != "" {
+			baseFixed = append(baseFixed, e)
+		}
+	}
+
+	var otherFixed []*osvschema.Event
+	for _, e := range other.GetEvents() {
+		if e.GetFixed() != "" {
+			otherFixed = append(otherFixed, e)
+		}
+	}
+
+	baseEvents := make([]*osvschema.Event, 0, len(base.GetEvents()))
+	replaceFixed := len(baseFixed) == 1 && len(otherFixed) >= 1
+	for _, e := range base.GetEvents() {
+		if replaceFixed && e.GetFixed() != "" {
+			continue
+		}
+		if hasNonZeroIntroduced && isBaseRefsOnly && e.GetIntroduced() == "0" {
+			continue
+		}
+		baseEvents = append(baseEvents, e)
 	}
 
 	merged := &osvschema.Range{
 		Type:             base.GetType(),
 		Repo:             base.GetRepo(),
-		Events:           append([]*osvschema.Event{}, base.GetEvents()...),
+		Events:           baseEvents,
 		DatabaseSpecific: mergeDatabaseSpecifics(base.GetDatabaseSpecific(), other.GetDatabaseSpecific()),
 	}
 	for _, e := range other.GetEvents() {
+		if hasNonZeroIntroduced && isOtherRefsOnly && e.GetIntroduced() == "0" {
+			continue
+		}
 		found := false
 		for _, existing := range merged.GetEvents() {
 			if e.GetIntroduced() != "" && e.GetIntroduced() == existing.GetIntroduced() {
@@ -707,7 +804,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		return cve5Range
 	}
 
-	// 1. If one of the ranges is references-only, merge them instead of choosing one
+	// If one of the ranges is references-only, merge them instead of choosing one
 	if isReferencesOnly(nvdRange) {
 		merged, err := mergeRanges(cve5Range, nvdRange)
 		if err != nil {
@@ -729,28 +826,31 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		return merged
 	}
 
-	// 2. Try to merge boundary versions first for simple 1-event/2-event ranges.
+	//  Try to merge boundary versions first for simple 1-event/2-event ranges.
 	var merged *osvschema.Range
 	if len(cve5Range.GetEvents()) <= 2 && len(nvdRange.GetEvents()) <= 2 {
-		c5Intro, c5Fixed := getRangeBoundaryVersions(cve5Range.GetEvents())
-		nvdIntro, nvdFixed := getRangeBoundaryVersions(nvdRange.GetEvents())
+		c5Intro, c5LastAffected, c5Fixed := getRangeBoundaryVersions(cve5Range.GetEvents())
+		nvdIntro, nvdLastAffected, nvdFixed := getRangeBoundaryVersions(nvdRange.GetEvents())
 
 		// Prefer cve5 bounds, but use nvd if cve5 is missing them
 		if c5Intro == "" {
 			c5Intro = nvdIntro
 		}
+		if c5LastAffected == "" {
+			c5LastAffected = nvdLastAffected
+		}
 		if c5Fixed == "" {
 			c5Fixed = nvdFixed
 		}
 
-		if c5Intro != "" || c5Fixed != "" {
-			merged = conversion.BuildGitVersionRange(c5Intro, "", c5Fixed, cve5Range.GetRepo())
+		if c5Intro != "" || c5LastAffected != "" || c5Fixed != "" {
+			merged = conversion.BuildGitVersionRange(c5Intro, c5LastAffected, c5Fixed, cve5Range.GetRepo())
 			merged.DatabaseSpecific = mergeDatabaseSpecifics(cve5Range.GetDatabaseSpecific(), nvdRange.GetDatabaseSpecific())
 		}
 	}
 
 	if merged == nil {
-		// 2. Prioritize range with fixed information over last_affected / open-ended ranges
+		// Prioritize range with fixed information over last_affected / open-ended ranges
 		c5HasFixed := hasFixedEvent(cve5Range)
 		nvdHasFixed := hasFixedEvent(nvdRange)
 
@@ -764,7 +864,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	}
 
 	if merged == nil {
-		// 3. Prefer constrained ranges (no introduced "0")
+		// Prefer constrained ranges (no introduced "0")
 		c5HasIntroZero := hasIntroducedZero(cve5Range)
 		nvdHasIntroZero := hasIntroducedZero(nvdRange)
 
@@ -778,7 +878,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	}
 
 	if merged == nil {
-		// 4. Prefer CPE_RANGE if it exists, otherwise fall back to preferred source (CVE5)
+		// Prefer CPE_RANGE if it exists, otherwise fall back to preferred source (CVE5)
 		c5IsCPERange := isCPERange(cve5Range)
 		nvdIsCPERange := isCPERange(nvdRange)
 
@@ -810,7 +910,7 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 		}
 	}
 
-	// 5. Remove last_affected events if a fixed commit exists
+	// Remove last_affected events if a fixed commit exists
 	cleanLastAffectedIfFixedExists(merged)
 
 	return merged
@@ -826,17 +926,20 @@ func hasRanges(affected []*osvschema.Affected) bool {
 	return false
 }
 
-// getRangeBoundaryVersions extracts the introduced and fixed versions from a slice of OSV events.
-// It iterates through the events and returns the last non-empty "introduced" and "fixed" versions found.
-func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, fixed string) {
+// getRangeBoundaryVersions extracts the introduced, last_affected and fixed versions from a slice of OSV events.
+// It iterates through the events and returns the last non-empty "introduced", "last_affected" and "fixed" versions found.
+func getRangeBoundaryVersions(events []*osvschema.Event) (introduced, lastAffected, fixed string) {
 	for _, e := range events {
 		if e.GetIntroduced() != "0" && e.GetIntroduced() != "" {
 			introduced = e.GetIntroduced()
+		}
+		if e.GetLastAffected() != "" {
+			lastAffected = e.GetLastAffected()
 		}
 		if e.GetFixed() != "" {
 			fixed = e.GetFixed()
 		}
 	}
 
-	return introduced, fixed
+	return introduced, lastAffected, fixed
 }

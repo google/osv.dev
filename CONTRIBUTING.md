@@ -61,11 +61,14 @@ You must install:
 1.  [Yapf](https://github.com/google/yapf)
 1.  [Make](https://www.gnu.org/software/make/)
 1.  [Poetry](https://python-poetry.org/) >= 2.3.3
-2.  [Google Cloud SDK](https://cloud.google.com/sdk)
-3.  [Hugo](https://gohugo.io/installation/)
-4.  [Node JS](https://nodejs.org/) >= 18.17.x
-5.  [pnpm](https://pnpm.io/installation) (install via `npm install -g pnpm --prefix ~/.local` or `corepack enable pnpm`)
-6.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
+1.  [Google Cloud SDK](https://cloud.google.com/sdk)
+1.  [Hugo](https://gohugo.io/installation/)
+1.  [Node JS](https://nodejs.org/) >= 18.17.x
+1.  [pnpm](https://pnpm.io/installation) (install via `npm install -g pnpm --prefix ~/.local` or `corepack enable pnpm`)
+1.  [Terraform](https://developer.hashicorp.com/terraform/install) >= 1.5 (for infrastructure changes)
+1.  [Go](https://go.dev/doc/install) >= 1.26
+1.  `protobuf-compiler` (e.g. `protoc` command, install via `sudo apt install protobuf-compiler` on Debian/Ubuntu)
+1.  `protoc-gen-go` and `protoc-gen-go-grpc` (Go proto plugins, install via `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` and `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`. Ensure your Go bin directory, e.g. `~/go/bin`, is in your `PATH`)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.
@@ -93,6 +96,8 @@ gcloud auth login
 gcloud auth application-default login
 gcloud components install cloud-firestore-emulator
 ```
+
+> If your `gcloud` installation has the component manager disabled (common for package manager installs like `apt` or `dnf` on Linux), you may need to install the emulator via your package manager (e.g., `sudo apt install google-cloud-cli-firestore-emulator` if available) or use a [user-space installation of the gcloud CLI](https://cloud.google.com/sdk/docs/install) to manage components.
 
 To run tests:
 ```shell
@@ -241,11 +246,11 @@ Please follow these steps to successfully contribute documentation.
         Sample URL: <!-- markdown-link-check-disable -->
         https://github.com/{your-github-profile}/osv.dev/settings/pages
         <!-- markdown-link-check-enable -->
-    -   Under "Build and deployment" select "Build from branch"
-    -   Set the branch to your working branch
-    -   Set the github page to build from the "/docs" folder
-    -   Hit save and wait for your site to build
-    -   Once it is ready, click the link and preview the docs
+    - Under "Build and deployment" select "Github Actions"
+    - Add your working branch to the on push branches (line 5) in the "docs-deploy.yml" file, this can be found in the ".github/workflows" directory
+    - Push your commit and wait for the pages to build
+    - Once it is ready, click the link and preview the docs
+    - If the pages were built successfully, remove your branch from the "docs-deploy.yml" workflow
 
 ![Image shows the UI settings for building the GitHub page, which is described
 in step 3 of the contributing documentation

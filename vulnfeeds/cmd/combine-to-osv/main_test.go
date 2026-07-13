@@ -1,135 +1,17 @@
 package main
 
 import (
-	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-const testdataPath = "../../test_data/combine-to-osv"
-
-func TestLoadOSV(t *testing.T) {
-	cve5Path := filepath.Join(testdataPath, "cve5")
-	allVulns := loadOSV(cve5Path)
-
-	if len(allVulns) != 4 {
-		t.Errorf("Expected 4 vulnerabilities, got %d", len(allVulns))
-	}
-
-	if _, ok := allVulns["CVE-2023-1234"]; !ok {
-		t.Error("Expected to load CVE-2023-1234")
-	}
-}
-
-func TestCombineIntoOSV(t *testing.T) {
-	cve5Path := filepath.Join(testdataPath, "cve5")
-	nvdPath := filepath.Join(testdataPath, "nvd")
-
-	cve5osv := loadOSV(cve5Path)
-	nvdosv := loadOSV(nvdPath)
-	nvdosvCopy := make(map[models.CVEID]*osvschema.Vulnerability)
-	for k, v := range nvdosv {
-		nvdosvCopy[k] = v
-	}
-	noPkgCVEs := []string{"CVE-2023-0003"}
-
-	combined := combineIntoOSV(cve5osv, nvdosvCopy, noPkgCVEs)
-
-	// Expected results
-	// CVE-2023-1234: merged
-	// CVE-2023-0001: from cve5 only
-	// CVE-2023-0002: from nvd only
-	// CVE-2023-0003: from cve5, no affected, but in noPkgCVEs
-	// CVE-2023-0004: from cve5, no affected, not in noPkgCVEs, so skipped
-	if len(combined) != 2 {
-		t.Errorf("Expected 2 combined vulnerabilities, got %d", len(combined))
-	}
-
-	// Test case 1: Merged CVE
-	cve1234, ok := combined["CVE-2023-1234"]
-	if !ok {
-		t.Fatal("Expected combined map to contain CVE-2023-1234")
-	}
-
-	// Check modified and published dates
-	expectedModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
-	if !cve1234.GetModified().AsTime().Equal(expectedModified) {
-		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.GetModified())
-	}
-	expectedPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z")
-	if !cve1234.GetPublished().AsTime().Equal(expectedPublished) {
-		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.GetPublished())
-	}
-
-	// Check references
-	if len(cve1234.GetReferences()) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 references, got %d", len(cve1234.GetReferences()))
-	}
-
-	// Check aliases
-	if len(cve1234.GetAliases()) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 aliases, got %d", len(cve1234.GetAliases()))
-	}
-
-	// Check affected (based on pickAffectedInformation logic)
-	var affectedForRepoA *osvschema.Affected
-	foundAffected := false
-	for _, a := range cve1234.GetAffected() {
-		if len(a.GetRanges()) > 0 && a.GetRanges()[0].GetRepo() == "https://example.com/repo/a" {
-			affectedForRepoA = a
-			foundAffected = true
-
-			break
-		}
-	}
-	if !foundAffected {
-		t.Fatal("Did not find affected for repo https://example.com/repo/a")
-	}
-
-	expectedRange := &osvschema.Range{
-		Type: osvschema.Range_GIT,
-		Repo: "https://example.com/repo/a",
-		Events: []*osvschema.Event{
-			{Introduced: "1.0.0"},
-			{Fixed: "1.0.1"},
-		},
-	}
-
-	// The current logic for pickAffectedInformation when len(cveRanges) == 1 && len(nvdRanges) == 1
-	// is to prefer cve5 data.
-	if diff := cmp.Diff(expectedRange, affectedForRepoA.GetRanges()[0], protocmp.Transform()); diff != "" {
-		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
-	}
-
-	// Test case 2: CVE only in cve5 (has no ranges, so it should be skipped)
-	if _, ok = combined["CVE-2023-0001"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0001 because it has no ranges")
-	}
-
-	// Test case 3: CVE only in nvd (has no ranges, so it should be skipped)
-	if _, ok = combined["CVE-2023-0002"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0002 because it has no ranges")
-	}
-
-	// Test case 4: No ranges, in noPkgCVEs (should be kept)
-	if _, ok = combined["CVE-2023-0003"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0003")
-	}
-
-	// Test case 5: No ranges, not in noPkgCVEs (should be skipped)
-	if _, ok = combined["CVE-2023-0004"]; ok {
-		t.Error("Expected combined map to NOT contain CVE-2023-0004")
-	}
-}
 
 func TestPickAffectedInformation(t *testing.T) {
 	repoA := "https://example.com/repo/a"
@@ -674,9 +556,72 @@ func TestPickAffectedInformation(t *testing.T) {
 							Type: osvschema.Range_GIT,
 							Repo: repoA,
 							Events: []*osvschema.Event{
-								{Introduced: "0"},
 								{Introduced: "1.0.0"},
 								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStringValue("AFFECTED_FIELD"),
+											structpb.NewStringValue("REFERENCES"),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge references-only range (CVE-2016-15012): single fixed in base, references adds patch fixed, replace base fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+								},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("REFERENCES"),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/forcedotcom/salesforcemobilesdk-windows",
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
 							},
 							DatabaseSpecific: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
@@ -785,6 +730,246 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Fixed: "1.0.1"},
 								{Introduced: "2.0.0"},
 								{Fixed: "2.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Same repo with different casing (e.g. GitHub case-insensitivity)",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/user/repo",
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.2"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: "https://github.com/User/Repo", // Should preserve casing of cve5's repo
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.0.1"}, // Preferred CVE5 fixed version
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Introduced and LastAffected (no fixed) should preserve LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keep LastAffected if Introduced is in between Fixed and LastAffected",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+								{Introduced: "1.1.0"},
+								{LastAffected: "1.1.5"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Remove LastAffected if it comes before Fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.5"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keep LastAffected if it introduced between fixed",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "jumbled case",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{LastAffected: "1.2.4"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "1.1.1"},
+								{LastAffected: "1.1.2"},
+								{Introduced: "1.2.0"},
+								{Fixed: "1.2.1"},
+								{Introduced: "1.2.3"},
+								{LastAffected: "1.2.4"},
+								{LastAffected: "1.2.5"},
 							},
 						},
 					},

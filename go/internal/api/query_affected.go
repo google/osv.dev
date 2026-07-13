@@ -14,6 +14,8 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil"
+	"github.com/google/osv.dev/go/internal/osvutil/safe"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/purl"
@@ -84,6 +86,16 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		estimatedSizeBytes,
 	)
 	if err != nil {
+		var panicErr *safe.PanicError
+		if errors.As(err, &panicErr) {
+			logger.ErrorContext(ctx, "recovered panic in background worker",
+				slog.Any("panic", panicErr.Value),
+				slog.String("stack", string(panicErr.Stack)),
+			)
+
+			return nil, status.Error(codes.Internal, "internal server error")
+		}
+
 		return nil, err
 	}
 	if s.verboseLogs {
@@ -181,8 +193,8 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	// Create a buffered channel so workers can exit even if we return early on error.
 	resultsChan := make(chan *queryAndHydrateResult, len(queries))
 
-	pipelineCtx, cancelPipelines := context.WithCancel(ctx)
-	defer cancelPipelines()
+	pipelineCtx, cancelPipelines := context.WithCancelCause(ctx)
+	defer cancelPipelines(nil)
 
 	batchCtx, matchCancel := context.WithTimeout(pipelineCtx, s.getBatchQueryTimeout())
 	defer matchCancel()
@@ -243,7 +255,12 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	}
 
 	for i, matcherIter := range iters {
-		go func() {
+		go safe.Func(func(r any, stack []byte) {
+			resultsChan <- &queryAndHydrateResult{
+				idx: i,
+				err: &safe.PanicError{Value: r, Stack: stack},
+			}
+		}, func() {
 			if queryInfos[i] == nil {
 				// handling unknown PURL types
 				resultsChan <- &queryAndHydrateResult{
@@ -270,7 +287,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 				nextToken: nextToken,
 				err:       err,
 			}
-		}()
+		})()
 	}
 
 	list := &pb.BatchVulnerabilityList{}
@@ -279,7 +296,17 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 	for range queryInfos {
 		result := <-resultsChan
 		if result.err != nil {
-			cancelPipelines() // Abort all other running pipelines in the background
+			cancelPipelines(result.err) // Abort all other running pipelines in the background
+			var panicErr *safe.PanicError
+			if errors.As(result.err, &panicErr) {
+				logger.ErrorContext(ctx, "recovered panic in batch worker",
+					slog.Any("panic", panicErr.Value),
+					slog.String("stack", string(panicErr.Stack)),
+				)
+
+				return nil, status.Error(codes.Internal, "internal server error")
+			}
+
 			return nil, fmt.Errorf("error in query at index %d: %w", result.idx, result.err)
 		}
 		list.Results[result.idx] = &pb.VulnerabilityList{
@@ -423,6 +450,9 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	if qi.packageName == "" {
 		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
 	}
+	if qi.ecosystem == "" && qi.version == "" {
+		return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid query")
+	}
 
 	return qi, nil
 }
@@ -504,33 +534,41 @@ func (s *server) runMatcher(
 	go func() {
 		defer close(done)
 		defer close(resultIDs)
-		idx := 0
-		for match, err := range matcher {
-			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-					// If we timed out or been cancelled, we just return what we have.
-					return
-				}
-				cancel(err)
+		safe.Func(func(r any, stack []byte) {
+			cancel(&safe.PanicError{Value: r, Stack: stack})
+		}, func() {
+			idx := 0
+			for match, err := range matcher {
+				if err != nil {
+					if osvutil.IsContextError(err) {
+						// If we timed out or been cancelled, we just return what we have.
+						return
+					}
+					cancel(err)
 
-				return
-			}
-			currentCursor = match.Cursor
-			if !match.IsMatch {
-				continue
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case resultIDs <- matchVuln{id: match.ID, index: idx}:
-				idx++
-				if idx >= limit {
 					return
 				}
+				if match.Cursor != nil {
+					currentCursor = match.Cursor
+				} else {
+					currentCursor = func() string { return "" }
+				}
+				if !match.IsMatch {
+					continue
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case resultIDs <- matchVuln{id: match.ID, index: idx}:
+					idx++
+					if idx >= limit {
+						return
+					}
+				}
 			}
-		}
-		// We finished the entire query only if context was not cancelled (meaning loop finished naturally)
-		currentCursor = func() string { return "" }
+			// We finished the entire query only if context was not cancelled (meaning loop finished naturally)
+			currentCursor = func() string { return "" }
+		})()
 	}()
 
 	return matcherResult{
@@ -551,8 +589,13 @@ func (s *server) runMatcher(
 func (s *server) hydrateParallel(ctx context.Context, resultIDs <-chan matchVuln, hydrate hydrateFunc) <-chan hydratedResult {
 	hydrated := make(chan hydratedResult, numParallelHydration)
 	var wg sync.WaitGroup
+	onPanic := func(r any, stack []byte) {
+		hydrated <- hydratedResult{
+			err: &safe.PanicError{Value: r, Stack: stack},
+		}
+	}
 	for range numParallelHydration {
-		wg.Go(func() {
+		wg.Go(safe.Func(onPanic, func() {
 			for mv := range resultIDs {
 				v, err := hydrate(ctx, mv.id)
 				if err != nil {
@@ -561,7 +604,7 @@ func (s *server) hydrateParallel(ctx context.Context, resultIDs <-chan matchVuln
 				}
 				hydrated <- hydratedResult{index: mv.index, v: v, id: mv.id}
 			}
-		})
+		}))
 	}
 	go func() {
 		wg.Wait()
@@ -610,7 +653,7 @@ func (s *server) collectAndSort(ctx context.Context,
 			}
 			// This is a real error, fail the whole query.
 			cancel(res.err)
-			if s.verboseLogs {
+			if s.verboseLogs && !osvutil.IsContextError(res.err) {
 				logger.ErrorContext(ctx, "failed to hydrate", slog.String("id", res.id), slog.String("error", res.err.Error()))
 			}
 			// continue to drain the channel
@@ -630,10 +673,20 @@ func (s *server) collectAndSort(ctx context.Context,
 	// If we got a real error, fail the whole query.
 	if err := context.Cause(ctx); err != nil {
 		if s.verboseLogs {
-			logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))
+			if osvutil.IsContextError(err) {
+				logger.InfoContext(ctx, "query cancelled or timed out", slog.Any("error", err))
+			} else {
+				logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))
+			}
 		}
 		if errors.Is(err, models.ErrInvalidCursor) {
 			return nil, status.Error(codes.InvalidArgument, "invalid cursor")
+		}
+		var panicErr *safe.PanicError
+		if errors.As(err, &panicErr) {
+			// Return the raw PanicError so the caller handlers can detect it,
+			// log the stack trace, and obscure it into a clean "internal server error".
+			return nil, err
 		}
 
 		return nil, status.Error(codes.Internal, err.Error())

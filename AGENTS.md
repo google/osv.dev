@@ -163,7 +163,7 @@ Many tests use expected outputs saved directly in the source tree:
 ### Local API Server Development (Go-native)
 - To run the public OSV API server locally using the native Go implementation alongside the ESPv2 proxy (which transcodes HTTP/JSON REST requests to gRPC):
   ```bash
-  make run-go-api
+  make run-api-server
   ```
 
 ---
@@ -246,11 +246,11 @@ The `osv` folder is a shared Python package. Since the primary API server and so
 ## GCP Component Architecture (`gcp/`)
 Contains deployment setups, workers running in GKE, Cloud Functions, and the user-facing website and API.
 
-### 1. API Server (`gcp/api/`)
-- **Status**: **Active (Python)**.
-- Serves the public HTTP API for querying vulnerabilities by package or version.
-- **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api`).
-- *Note*: Plans exist to migrate this to Go in the near future, but it currently remains in Python.
+### 1. API Server (`go/cmd/api/`)
+- **Status**: **Active (Go)**.
+- Serves the public OSV gRPC API server (transcoded to HTTP/JSON REST via ESPv2).
+- **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
+- *Note*: Fully migrated from Python to Go. The legacy Python implementation remains in `gcp/api/` but is retired.
 
 ### 2. Website (`gcp/website/`)
 - **Status**: **Active**.

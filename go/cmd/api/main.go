@@ -33,11 +33,21 @@ func run() error {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	port := flag.Int("port", 8000, "port for the OSV API")
-	flag.Parse()
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	defaultPort := 8000
+	if portStr := os.Getenv("PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			defaultPort = p
+		} else {
+			logger.ErrorContext(ctx, "Invalid PORT environment variable, using default", slog.Any("error", err))
+		}
+	}
+
+	port := flag.Int("port", defaultPort, "port for the OSV API")
+	local := flag.Bool("local", false, "enable gRPC reflection for local debugging")
+	flag.Parse()
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
@@ -107,13 +117,33 @@ func run() error {
 		recovererPublisher = &clients.GCPPublisher{Publisher: pubsubClient.Publisher(recovererTopic)}
 	}
 
+	var healthInterval time.Duration
+	if t := os.Getenv("OSV_HEALTH_CHECK_INTERVAL"); t != "" {
+		if d, err := time.ParseDuration(t); err == nil {
+			healthInterval = d
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_HEALTH_CHECK_INTERVAL, using default", slog.Any("error", err))
+		}
+	}
+	var healthThreshold int
+	if m := os.Getenv("OSV_HEALTH_CHECK_THRESHOLD"); m != "" {
+		if val, err := strconv.Atoi(m); err == nil {
+			healthThreshold = val
+		} else {
+			logger.ErrorContext(ctx, "Invalid OSV_HEALTH_CHECK_THRESHOLD, using default", slog.Any("error", err))
+		}
+	}
+
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:                *port,
-		VerboseLogs:         verboseLogs,
-		VulnStore:           vulnStore,
-		RelationsStore:      relationsStore,
-		ImportFindingsStore: importFindingsStore,
-		RepoIndexStore:      repoIndexStore,
-		RecovererPublisher:  recovererPublisher,
+		Port:                 *port,
+		Local:                *local,
+		VerboseLogs:          verboseLogs,
+		VulnStore:            vulnStore,
+		RelationsStore:       relationsStore,
+		ImportFindingsStore:  importFindingsStore,
+		RepoIndexStore:       repoIndexStore,
+		RecovererPublisher:   recovererPublisher,
+		HealthCheckInterval:  healthInterval,
+		HealthCheckThreshold: healthThreshold,
 	})
 }

@@ -726,7 +726,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-32746"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "4.3.0",
@@ -752,7 +751,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-0090"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
@@ -778,7 +776,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-1122"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
@@ -794,13 +791,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-25929"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit{
-					{
-						Repo:       "https://github.com/joewalnes/smoothie",
-						Introduced: "0",
-						Fixed:      "8e0920d50da82f4b6e605d56f41b69fbb9606a98",
-					},
-				},
+
 				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "1.31.0",
@@ -816,33 +807,7 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-29194"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit{
-					{
-						Repo:       "https://github.com/tensorflow/tensorflow",
-						Introduced: "0",
-						Fixed:      "0516d4d8bced506cae97dc3cb45dbd2fe4311f26",
-					},
-					{
-						Repo:       "https://github.com/tensorflow/tensorflow",
-						Introduced: "0",
-						Fixed:      "33ed2b11cb8e879d86c371700e6573db1814a69e",
-					},
-					{
-						Repo:       "https://github.com/tensorflow/tensorflow",
-						Introduced: "0",
-						Fixed:      "8a20d54a3c1bfa38c03ea99a2ad3c1b0a45dfa95",
-					},
-					{
-						Repo:       "https://github.com/tensorflow/tensorflow",
-						Introduced: "0",
-						Fixed:      "cff267650c6a1b266e4b4500f69fbc49cdd773c5",
-					},
-					{
-						Repo:       "https://github.com/tensorflow/tensorflow",
-						Introduced: "0",
-						Fixed:      "dd7b8a3c1714d0052ce4b4a2fd8dcef927439a24",
-					},
-				},
+				AffectedCommits: []models.AffectedCommit(nil),
 				AffectedVersions: []models.AffectedVersion{
 					{
 						Introduced:   "",
@@ -878,7 +843,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			inputCVEItem:       loadTestData2("CVE-2022-46285"),
 			inputValidVersions: []string{},
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://gitlab.freedesktop.org/xorg/lib/libxpm", Introduced: "0", Fixed: "a3a7c6dcc3b629d7650148"}},
 				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "3.5.15"}},
 			},
 			expectedNotes: []string{},
@@ -887,7 +851,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:  "A CVE with a different GitWeb reference URL that was not previously being extracted successfully",
 			inputCVEItem: loadTestData2("CVE-2021-28429"),
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits:  []models.AffectedCommit{{Repo: "https://git.ffmpeg.org/ffmpeg.git", Introduced: "0", Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71"}},
 				AffectedVersions: []models.AffectedVersion{{Introduced: "", LastAffected: "4.3.2"}},
 			},
 		},
@@ -902,19 +865,6 @@ func TestExtractVersionInfo(t *testing.T) {
 			description:  "CVE with duplicate hashes",
 			inputCVEItem: loadTestData2("CVE-2022-25761"),
 			expectedVersionInfo: models.VersionInfo{
-				AffectedCommits: []models.AffectedCommit{
-					{
-						Repo:       "https://github.com/open62541/open62541",
-						Introduced: "0",
-						Fixed:      "3010bc67fbfd8de0921fc38c9efa146cd2e02c7f",
-					},
-					{
-						Repo:       "https://github.com/open62541/open62541",
-						Introduced: "0",
-						Fixed:      "b79db1ac78146fc06b0b8435773d3967de2d659c",
-					},
-				},
-
 				AffectedVersions: []models.AffectedVersion{{Introduced: "", Fixed: "1.2.5"}},
 			},
 		},
@@ -923,8 +873,6 @@ func TestExtractVersionInfo(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			t.Parallel()
-			r := testutils.SetupVCR(t)
-			client := r.GetDefaultClient()
 
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionInfo for %#v has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
@@ -933,50 +881,11 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Logf("test %q: VersionInfo for %#v has been enabled on %s.", tc.description, tc.inputCVEItem, tc.disableExpiryDate)
 			}
 			metrics := &models.ConversionMetrics{}
-			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, client, metrics, nil)
+			gotVersionInfo := ExtractVersionInfo(tc.inputCVEItem.CVE, tc.inputValidVersions, metrics)
 			if diff := cmp.Diff(tc.expectedVersionInfo, gotVersionInfo); diff != "" {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
 		})
-	}
-}
-
-type roundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
-
-func TestExtractVersionInfo_429(t *testing.T) {
-	requests := 0
-	client := &http.Client{
-		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			requests++
-			return &http.Response{
-				StatusCode: http.StatusTooManyRequests,
-				Body:       http.NoBody,
-				Request:    req,
-			}, nil
-		}),
-	}
-
-	cve := models.NVDCVE{
-		References: []models.Reference{
-			{
-				URL: "https://github.com/foo/bar/commit/1234567890abcdef1234567890abcdef12345678",
-			},
-		},
-	}
-
-	metrics := &models.ConversionMetrics{}
-	gotVersionInfo := ExtractVersionInfo(cve, nil, client, metrics, nil)
-
-	// Since it's a 429 and we retry, it should eventually fail and return no affected commits.
-	if len(gotVersionInfo.AffectedCommits) != 0 {
-		t.Errorf("Expected 0 affected commits, got %d", len(gotVersionInfo.AffectedCommits))
-	}
-	if metrics.Outcome == models.Error {
-		t.Errorf("Did not expected outcome to be Error, got %v", metrics.Outcome)
 	}
 }
 

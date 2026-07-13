@@ -129,6 +129,19 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 	return "", fmt.Errorf("unsupported GitWeb URL: %s", parsedURL.String())
 }
 
+// IsSameRepo returns true if repo1 and repo2 are for the same repository.
+func IsSameRepo(repo1, repo2 string) bool {
+	u1, err1 := url.Parse(repo1)
+	if err1 != nil {
+		return false
+	}
+	if isCaseInsensitiveHost(u1.Hostname()) {
+		return strings.EqualFold(repo1, repo2)
+	}
+
+	return repo1 == repo2
+}
+
 // Returns the base repository URL for supported repository hosts.
 func Repo(u string) (string, error) {
 	r, err := repo(u)
@@ -766,6 +779,7 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 				if err != nil {
 					continue
 				}
+				var metadataVersions []string
 				if introduced == "" && fixed == "" && lastaffected == "" {
 					// See if a last affected version is inferable from the CPE string.
 					// In this situation there is no known introduced version.
@@ -782,6 +796,11 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 						lastaffected += "-" + CPE.Update
 					}
 					source = models.VersionSourceCPEString
+					// Set introduced to lastaffected to represent a single standalone version.
+					// Otherwise, an empty introduced would default to "0" and mark all historical
+					// versions as affected.
+					introduced = lastaffected
+					metadataVersions = []string{lastaffected}
 				}
 
 				if introduced == "" {
@@ -819,8 +838,9 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 							models.RangeWithMetadata{
 								Range: vr,
 								Metadata: models.Metadata{
-									CPE:    match.Criteria,
-									Source: source,
+									CPE:      match.Criteria,
+									Source:   source,
+									Versions: metadataVersions,
 								},
 							},
 						)
@@ -831,8 +851,9 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 						models.RangeWithMetadata{
 							Range: vr,
 							Metadata: models.Metadata{
-								CPE:    match.Criteria,
-								Source: source,
+								CPE:      match.Criteria,
+								Source:   source,
+								Versions: metadataVersions,
 							},
 						},
 					)
@@ -849,17 +870,8 @@ func ExtractVersionsFromCPEs(cve models.NVDCVE, validVersions []string, vpRepoCa
 }
 
 // ExtractVersionInfo extracts version information from a CVE and saves to a VersionInfo struct.
-// This is mostly deprecated, but is still used by the Alpine, Debian, and PyPi converters.
-func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, httpClient *http.Client, metrics *models.ConversionMetrics, cache git.RepoTagsCache) (v models.VersionInfo) {
-	if commit, err := ExtractCommitsFromRefs(cve.References, httpClient, cache); err == nil {
-		v.AffectedCommits = append(v.AffectedCommits, commit...)
-	}
-
-	if v.AffectedCommits != nil {
-		v.AffectedCommits = DeduplicateAffectedCommits(v.AffectedCommits)
-		metrics.AddNote("Extracted %d commits", len(v.AffectedCommits))
-	}
-
+// This is mostly deprecated, but is still used by the PyPi converter.
+func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, metrics *models.ConversionMetrics) (v models.VersionInfo) {
 	// Extract versions from CPEs.
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {

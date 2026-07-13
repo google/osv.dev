@@ -234,3 +234,101 @@ func TestFindIntroducedVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateAlpineOSV(t *testing.T) {
+	const xzCPE = "cpe:2.3:a:tukaani:xz:*:*:*:*:*:*:*:*"
+	const fooCPE = "cpe:2.3:a:example:foo:*:*:*:*:*:*:*:*"
+
+	allAlpineSecDb := map[string][]VersionAndPkg{
+		"CVE-2024-1": {
+			{Pkg: "xz", Ver: "5.6.1", AlpineVer: "v3.19"},
+			{Pkg: "xz", Ver: "5.4.6", AlpineVer: "v3.18"},
+			{Pkg: "foo", Ver: "1.2.3", AlpineVer: "v3.19"},
+			{Pkg: "bar", Ver: "0", AlpineVer: "v3.19"}, // Should be skipped
+		},
+	}
+
+	allCVEs := map[models.CVEID]models.Vulnerability{
+		"CVE-2024-1": {
+			CVE: models.NVDCVE{
+				ID: "CVE-2024-1",
+				Configurations: []models.Config{{
+					Nodes: []models.Node{{
+						CPEMatch: []models.CPEMatch{
+							{
+								Criteria:              xzCPE,
+								Vulnerable:            true,
+								VersionStartIncluding: newString("5.6.0"),
+							},
+							{
+								Criteria:              fooCPE,
+								Vulnerable:            true,
+								VersionStartIncluding: newString("1.0.0"),
+							},
+						},
+					}},
+				}},
+			},
+		},
+	}
+
+	got := generateAlpineOSV(allAlpineSecDb, allCVEs)
+
+	if len(got) != 1 {
+		t.Fatalf("generateAlpineOSV() returned %d vulnerabilities, want 1", len(got))
+	}
+
+	vuln := got[0]
+	if vuln.Id != "ALPINE-CVE-2024-1" {
+		t.Errorf("Expected ID ALPINE-CVE-2024-1, got %q", vuln.Id)
+	}
+
+	// We expect 3 affected packages: xz (v3.19), xz (v3.18), foo (v3.19)
+	if len(vuln.Affected) != 3 {
+		t.Fatalf("Expected 3 affected packages, got %d", len(vuln.Affected))
+	}
+
+	// Verify details of affected packages
+	// Order should be: foo (v3.19), xz (v3.18), xz (v3.19)
+	if vuln.Affected[0].Package.Name != "foo" {
+		t.Errorf("Expected first affected package to be foo, got %s", vuln.Affected[0].Package.Name)
+	}
+	if vuln.Affected[1].Package.Name != "xz" || vuln.Affected[1].Package.Ecosystem != "Alpine:v3.18" {
+		t.Errorf("Expected second affected package to be xz (v3.18), got %s (%s)", vuln.Affected[1].Package.Name, vuln.Affected[1].Package.Ecosystem)
+	}
+	if vuln.Affected[2].Package.Name != "xz" || vuln.Affected[2].Package.Ecosystem != "Alpine:v3.19" {
+		t.Errorf("Expected third affected package to be xz (v3.19), got %s (%s)", vuln.Affected[2].Package.Name, vuln.Affected[2].Package.Ecosystem)
+	}
+
+	// Verify versions for xz (v3.19)
+	// It should have Introduced: 5.6.0 (from NVDCVE) and Fixed: 5.6.1 (from VersionAndPkg)
+	xz319Ranges := vuln.Affected[2].Ranges
+	if len(xz319Ranges) != 1 {
+		t.Fatalf("Expected 1 range for xz (v3.19), got %d", len(xz319Ranges))
+	}
+	events := xz319Ranges[0].Events
+	if len(events) != 2 {
+		t.Fatalf("Expected 2 events for xz (v3.19), got %d", len(events))
+	}
+	
+	var introduced, fixed string
+	for _, e := range events {
+		if e.Introduced != "" {
+			introduced = e.Introduced
+		}
+		if e.Fixed != "" {
+			fixed = e.Fixed
+		}
+	}
+	if introduced != "5.6.0" {
+		t.Errorf("Expected introduced 5.6.0 for xz (v3.19), got %s", introduced)
+	}
+	if fixed != "5.6.1" {
+		t.Errorf("Expected fixed 5.6.1 for xz (v3.19), got %s", fixed)
+	}
+}
+
+func newString(s string) *string {
+	return &s
+}
+

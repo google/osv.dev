@@ -197,10 +197,14 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 
 		for _, verPkg := range verPkgs {
 			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg)
+			fixed := verPkg.Ver
+			if fixed == "0" {
+				fixed = introduced
+			}
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,
 				VersionInfo: models.VersionInfo{
-					AffectedVersions: []models.AffectedVersion{{Introduced: introduced, Fixed: verPkg.Ver}},
+					AffectedVersions: []models.AffectedVersion{{Introduced: introduced, Fixed: fixed}},
 				},
 				Ecosystem: "Alpine:" + verPkg.AlpineVer,
 				PURL:      "pkg:apk/alpine/" + verPkg.Pkg + "?arch=source",

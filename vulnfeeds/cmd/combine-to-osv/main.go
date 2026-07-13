@@ -277,12 +277,12 @@ func main() {
 	// Start Channels
 	// Channel Flow:
 	//
-	// [workItems] ---workChan---> [readAndCombineWorker] ---vulnChan---> [Collector] ---validVulnChan---> [VulnWorker] ---> [GCS/Disk]
+	// [workItems] ---workChan---> [readAndCombineWorker] ---vulnChan---> [Collector] ---outputVulnChan---> [VulnWorker] ---> [GCS/Disk]
 	//                                                                        |
 	//                                                                        +---> (filters invalid)
 	logger.Info("Starting processing channels and workers")
 	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
-	validVulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
+	outputVulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
 	workChan := make(chan *CVEWorkItem, *numWorkers)
 
 	// Start VulnWorkers (Upload side)
@@ -292,7 +292,7 @@ func main() {
 		uploadVulnsWg.Add(1)
 		go func() {
 			defer uploadVulnsWg.Done()
-			writer.VulnWorker(ctx, validVulnChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
+			writer.VulnWorker(ctx, outputVulnChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
 		}()
 	}
 
@@ -309,12 +309,12 @@ func main() {
 			if len(v.GetAffected()) > 0 {
 				validIDs = append(validIDs, v.GetId())
 			}
-			validVulnChan <- v
+			outputVulnChan <- v
 			if count%1000 == 0 {
 				logger.Info("Processed CVEs", slog.Int("count", count), slog.Int("total", totalWork), slog.Int("percent", (count*100)/totalWork))
 			}
 		}
-		close(validVulnChan)
+		close(outputVulnChan)
 	}()
 
 	// Start ReadAndCombineWorkers (Read side)

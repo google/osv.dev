@@ -13,8 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const testdataPath = "../../test_data/combine-to-osv"
-
 func TestPickAffectedInformation(t *testing.T) {
 	repoA := "https://example.com/repo/a"
 	repoB := "https://example.com/repo/b"

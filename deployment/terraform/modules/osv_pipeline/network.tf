@@ -32,10 +32,15 @@ resource "google_compute_router_nat" "nat_config" {
   project                             = var.project_id
   name                                = var.nat_name
   router                              = google_compute_router.router.name
-  source_subnetwork_ip_ranges_to_nat  = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  source_subnetwork_ip_ranges_to_nat  = "LIST_OF_SUBNETWORKS"
   nat_ip_allocate_option              = "AUTO_ONLY"
   region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
+
+  subnetwork {
+    name                    = google_compute_subnetwork.my_subnet_0.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
 
   log_config {
     enable = false

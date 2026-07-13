@@ -216,6 +216,12 @@ func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv ma
 // combineTwoOSVRecords takes two osv records and combines them into one
 func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
+	if baseOSV.GetDetails() == "" && nvd.GetDetails() != "" {
+		baseOSV.Details = nvd.GetDetails()
+	}
+	if baseOSV.GetSummary() == "" && nvd.GetSummary() != "" {
+		baseOSV.Summary = nvd.GetSummary()
+	}
 	combinedAffected := pickAffectedInformation(cve5.GetAffected(), nvd.GetAffected())
 
 	baseOSV.Affected = combinedAffected

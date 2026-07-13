@@ -1,0 +1,8 @@
+resources:
+- backup.yaml
+- custommetrics.yaml
+- generate-sitemap.yaml
+- relations.yaml
+- vanir-signatures.yaml
+- workers-cves.yaml
+- workers-reimport.yaml

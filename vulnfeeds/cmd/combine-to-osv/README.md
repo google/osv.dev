@@ -18,7 +18,7 @@ See [`run_combine_to_osv_convert.sh`](run_combine_to_osv_convert.sh):
   * What gets written can be overridden by OSV records in [`gs://cve-osv-conversion/osv-output-overrides`](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output-overrides/)
 ## Operational matters
 
-* Runs every hour (on the half hour) as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/combine-to-osv.yaml)
+* Runs every hour (on the half hour) as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/feeds/combine-to-osv.yaml)
 
 ## Usage
 

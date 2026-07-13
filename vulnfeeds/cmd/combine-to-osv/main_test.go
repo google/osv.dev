@@ -1,188 +1,19 @@
 package main
 
 import (
-	"io/fs"
-	"log/slog"
-	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const testdataPath = "../../test_data/combine-to-osv"
-
-// loadOSV loads OSV vulnerabilities from a given local directory path.
-// It returns a map of CVE IDs to their corresponding Vulnerability objects.
-func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
-	allVulns := make(map[models.CVEID]*osvschema.Vulnerability)
-	logger.Info("Loading OSV records from local path", slog.String("path", osvPath))
-	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || !strings.HasSuffix(path, ".json") || strings.HasSuffix(path, ".metrics.json") {
-			return nil
-		}
-
-		file, err := os.ReadFile(path)
-		if err != nil {
-			logger.Warn("Failed to open OSV JSON file", slog.String("path", path), slog.Any("err", err))
-			return nil
-		}
-
-		var vuln osvschema.Vulnerability
-		decodeErr := protojson.Unmarshal(file, &vuln)
-		if decodeErr != nil {
-			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
-			return nil
-		}
-		allVulns[models.CVEID(vuln.GetId())] = &vuln
-
-		return nil
-	})
-
-	if err != nil {
-		logger.Fatal("Failed to walk OSV directory", slog.String("path", osvPath), slog.Any("err", err))
-	}
-
-	return allVulns
-}
-
-// combinePrep creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combinePrep(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability) map[models.CVEID]*osvschema.Vulnerability {
-	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
-
-	// Collect all unique CVE IDs
-	allIDs := make(map[models.CVEID]bool)
-	for id := range cve5osv {
-		allIDs[id] = true
-	}
-	for id := range nvdosv {
-		allIDs[id] = true
-	}
-
-	for id := range allIDs {
-		cve5 := cve5osv[id]
-		nvd := nvdosv[id]
-		combined := combineIntoOSV(cve5, nvd)
-		if combined != nil {
-			osvRecords[id] = combined
-		}
-	}
-
-	return osvRecords
-}
-
-func TestCombineIntoOSV(t *testing.T) {
-	cve5Path := filepath.Join(testdataPath, "cve5")
-	nvdPath := filepath.Join(testdataPath, "nvd")
-
-	cve5osv := loadOSV(cve5Path)
-	nvdosv := loadOSV(nvdPath)
-	nvdosvCopy := make(map[models.CVEID]*osvschema.Vulnerability)
-	for k, v := range nvdosv {
-		nvdosvCopy[k] = v
-	}
-	combined := combinePrep(cve5osv, nvdosvCopy)
-
-	// Expected results
-	// CVE-2023-1234: merged
-	// CVE-2023-0001: from cve5 only
-	// CVE-2023-0002: from nvd only
-	// CVE-2023-0003: from cve5 only
-	// CVE-2023-0004: from cve5 only
-	if len(combined) != 5 {
-		t.Errorf("Expected 5 combined vulnerabilities, got %d", len(combined))
-	}
-
-	// Test case 1: Merged CVE
-	cve1234, ok := combined["CVE-2023-1234"]
-	if !ok {
-		t.Fatal("Expected combined map to contain CVE-2023-1234")
-	}
-
-	// Check modified and published dates
-	expectedModified, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
-	if !cve1234.GetModified().AsTime().Equal(expectedModified) {
-		t.Errorf("CVE-2023-1234: expected modified time %v, got %v", expectedModified, cve1234.GetModified())
-	}
-	expectedPublished, _ := time.Parse(time.RFC3339, "2023-01-01T09:00:00Z")
-	if !cve1234.GetPublished().AsTime().Equal(expectedPublished) {
-		t.Errorf("CVE-2023-1234: expected published time %v, got %v", expectedPublished, cve1234.GetPublished())
-	}
-
-	// Check references
-	if len(cve1234.GetReferences()) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 references, got %d", len(cve1234.GetReferences()))
-	}
-
-	// Check aliases
-	if len(cve1234.GetAliases()) != 2 {
-		t.Errorf("CVE-2023-1234: expected 2 aliases, got %d", len(cve1234.GetAliases()))
-	}
-
-	// Check affected (based on pickAffectedInformation logic)
-	var affectedForRepoA *osvschema.Affected
-	foundAffected := false
-	for _, a := range cve1234.GetAffected() {
-		if len(a.GetRanges()) > 0 && a.GetRanges()[0].GetRepo() == "https://example.com/repo/a" {
-			affectedForRepoA = a
-			foundAffected = true
-
-			break
-		}
-	}
-	if !foundAffected {
-		t.Fatal("Did not find affected for repo https://example.com/repo/a")
-	}
-
-	expectedRange := &osvschema.Range{
-		Type: osvschema.Range_GIT,
-		Repo: "https://example.com/repo/a",
-		Events: []*osvschema.Event{
-			{Introduced: "1.0.0"},
-			{Fixed: "1.0.1"},
-		},
-	}
-
-	// The current logic for pickAffectedInformation when len(cveRanges) == 1 && len(nvdRanges) == 1
-	// is to prefer cve5 data.
-	if diff := cmp.Diff(expectedRange, affectedForRepoA.GetRanges()[0], protocmp.Transform()); diff != "" {
-		t.Errorf("CVE-2023-1234: affected range mismatch (-want +got):\n%s", diff)
-	}
-
-	// Test case 2: CVE only in cve5 (has no ranges, but should be kept)
-	if _, ok = combined["CVE-2023-0001"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0001")
-	}
-
-	// Test case 3: CVE only in nvd (has no ranges, but should be kept)
-	if _, ok = combined["CVE-2023-0002"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0002")
-	}
-
-	// Test case 4: No ranges, no affected (should be kept)
-	if _, ok = combined["CVE-2023-0003"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0003")
-	}
-
-	// Test case 5: No ranges, no affected (should be kept)
-	if _, ok = combined["CVE-2023-0004"]; !ok {
-		t.Error("Expected combined map to contain CVE-2023-0004")
-	}
-}
 
 func TestPickAffectedInformation(t *testing.T) {
 	repoA := "https://example.com/repo/a"

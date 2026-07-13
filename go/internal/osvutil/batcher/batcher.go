@@ -180,8 +180,14 @@ func (b *Batcher[K, R]) runBatchLoop() {
 			b.mu.Lock()
 			// If we panicked before stealing the pending slice, steal it now
 			if len(batch) == 0 && len(b.pending) > 0 {
-				batch = b.pending
-				b.pending = nil
+				if len(b.pending) > b.maxSize {
+					batch = b.pending[:b.maxSize]
+					b.pending = b.pending[b.maxSize:]
+					go b.runBatchLoop()
+				} else {
+					batch = b.pending
+					b.pending = nil
+				}
 			}
 			b.mu.Unlock()
 
@@ -201,12 +207,26 @@ func (b *Batcher[K, R]) runBatchLoop() {
 	}
 
 	b.mu.Lock()
-	batch = b.pending
-	b.pending = nil // Reset pending so the next request starts a new batch.
-	// Drain triggerChan to avoid stale triggers for the next batch.
-	select {
-	case <-b.triggerChan:
-	default:
+	if len(b.pending) > b.maxSize {
+		batch = b.pending[:b.maxSize]
+		b.pending = b.pending[b.maxSize:]
+		// Spawn a worker for the remaining pending items.
+		go b.runBatchLoop()
+		// Ensure triggerChan is set if leftover items reach or exceed maxSize.
+		if len(b.pending) >= b.maxSize {
+			select {
+			case b.triggerChan <- struct{}{}:
+			default:
+			}
+		}
+	} else {
+		batch = b.pending
+		b.pending = nil // Reset pending so the next request starts a new batch.
+		// Drain triggerChan to avoid stale triggers for the next batch.
+		select {
+		case <-b.triggerChan:
+		default:
+		}
 	}
 	b.mu.Unlock()
 

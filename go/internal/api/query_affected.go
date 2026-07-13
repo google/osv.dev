@@ -14,6 +14,7 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/internal/osvutil/safe"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
@@ -539,7 +540,7 @@ func (s *server) runMatcher(
 			idx := 0
 			for match, err := range matcher {
 				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+					if osvutil.IsContextError(err) {
 						// If we timed out or been cancelled, we just return what we have.
 						return
 					}
@@ -652,7 +653,7 @@ func (s *server) collectAndSort(ctx context.Context,
 			}
 			// This is a real error, fail the whole query.
 			cancel(res.err)
-			if s.verboseLogs && !logger.IsContextError(res.err) {
+			if s.verboseLogs && !osvutil.IsContextError(res.err) {
 				logger.ErrorContext(ctx, "failed to hydrate", slog.String("id", res.id), slog.String("error", res.err.Error()))
 			}
 			// continue to drain the channel
@@ -672,7 +673,7 @@ func (s *server) collectAndSort(ctx context.Context,
 	// If we got a real error, fail the whole query.
 	if err := context.Cause(ctx); err != nil {
 		if s.verboseLogs {
-			if logger.IsContextError(err) {
+			if osvutil.IsContextError(err) {
 				logger.InfoContext(ctx, "query cancelled or timed out", slog.Any("error", err))
 			} else {
 				logger.ErrorContext(ctx, "failed to query and hydrate", slog.Any("error", err))

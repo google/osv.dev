@@ -198,10 +198,6 @@
           "modified": "<RFC3339 date with the year 2025>"
         },
         {
-          "id": "PYSEC-2024-260",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
           "id": "PYSEC-2024-271",
           "modified": "<RFC3339 date with the year 2026>"
         },

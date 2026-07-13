@@ -4,24 +4,27 @@ package main
 import (
 	"cmp"
 	"context"
-	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/conversion/writer"
+	"github.com/google/osv/vulnfeeds/gcs-tools"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -31,6 +34,152 @@ const (
 	defaultCVE5Path      = "cve5"
 	defaultNVDOSVPath    = "nvd"
 )
+
+// CVEWorkItem represents a unit of work for a single CVE.
+type CVEWorkItem struct {
+	ID       models.CVEID
+	CVE5Path string
+	NVDPath  string
+}
+
+func cveIDFromPath(p string) models.CVEID {
+	var base string
+	if strings.HasPrefix(p, "gs://") {
+		base = path.Base(p)
+	} else {
+		base = filepath.Base(p)
+	}
+	id := strings.TrimSuffix(base, ".json")
+	if strings.HasPrefix(id, "CVE-") {
+		return models.CVEID(id)
+	}
+
+	return ""
+}
+
+func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([]string, error) {
+	if strings.HasPrefix(pathStr, "gs://") {
+		trimmed := strings.TrimPrefix(pathStr, "gs://")
+		bucketName, prefix, _ := strings.Cut(trimmed, "/")
+		bucket := client.Bucket(bucketName)
+		objs, err := gcs.ListBucketObjects(ctx, bucket, prefix)
+		if err != nil {
+			return nil, err
+		}
+		var fullPaths []string
+		for _, obj := range objs {
+			if strings.HasSuffix(obj, "/") || !strings.HasSuffix(obj, ".json") || strings.HasSuffix(obj, ".metrics.json") {
+				continue
+			}
+			fullPaths = append(fullPaths, fmt.Sprintf("gs://%s/%s", bucketName, obj))
+		}
+
+		return fullPaths, nil
+	}
+
+	var files []string
+	err := filepath.WalkDir(pathStr, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(p, ".json") && !strings.HasSuffix(p, ".metrics.json") {
+			files = append(files, p)
+		}
+
+		return nil
+	})
+
+	return files, err
+}
+
+func readVulnerability(ctx context.Context, client *storage.Client, fullPath string) (*osvschema.Vulnerability, error) {
+	if strings.HasPrefix(fullPath, "gs://") {
+		trimmed := strings.TrimPrefix(fullPath, "gs://")
+		bucketName, objName, _ := strings.Cut(trimmed, "/")
+		rc, err := client.Bucket(bucketName).Object(objName).NewReader(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer rc.Close()
+		file, err := io.ReadAll(rc)
+		if err != nil {
+			return nil, err
+		}
+		var vuln osvschema.Vulnerability
+		if err := protojson.Unmarshal(file, &vuln); err != nil {
+			return nil, err
+		}
+
+		return &vuln, nil
+	}
+
+	file, err := os.ReadFile(fullPath)
+	if err != nil {
+		return nil, err
+	}
+	var vuln osvschema.Vulnerability
+	if err := protojson.Unmarshal(file, &vuln); err != nil {
+		return nil, err
+	}
+
+	return &vuln, nil
+}
+
+func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
+	var baseOSV *osvschema.Vulnerability
+	if cve5 != nil && nvd != nil {
+		baseOSV = combineTwoOSVRecords(cve5, nvd)
+	} else if cve5 != nil {
+		baseOSV = cve5
+	} else if nvd != nil {
+		baseOSV = nvd
+	} else {
+		return nil
+	}
+
+	return baseOSV
+}
+
+func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability) {
+	for work := range workChan {
+		var cve5, nvd *osvschema.Vulnerability
+		var cve5Err, nvdErr error
+		var readVulnsWg sync.WaitGroup
+
+		if work.CVE5Path != "" {
+			readVulnsWg.Add(1)
+			go func() {
+				defer readVulnsWg.Done()
+				cve5, cve5Err = readVulnerability(ctx, client, work.CVE5Path)
+				if cve5Err != nil {
+					logger.Error("Failed to read CVE5", slog.String("id", string(work.ID)), slog.Any("err", cve5Err))
+				}
+			}()
+		}
+
+		if work.NVDPath != "" {
+			readVulnsWg.Add(1)
+			go func() {
+				defer readVulnsWg.Done()
+				nvd, nvdErr = readVulnerability(ctx, client, work.NVDPath)
+				if nvdErr != nil {
+					logger.Error("Failed to read NVD", slog.String("id", string(work.ID)), slog.Any("err", nvdErr))
+				}
+			}()
+		}
+
+		readVulnsWg.Wait()
+
+		if cve5Err != nil || nvdErr != nil {
+			continue
+		}
+
+		combined := combineIntoOSV(cve5, nvd)
+		if combined != nil {
+			vulnChan <- combined
+		}
+	}
+}
 
 func main() {
 	logger.InitGlobalLogger()
@@ -51,166 +200,158 @@ func main() {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
-	// Load CVE5 OSVs
-	allCVE5 := loadOSV(*cve5Path)
-	// Load NVD OSVs
-	allNVD := loadOSV(*nvdPath)
-	debianCVEs, err := listBucketObjects("osv-test-debian-osv", "/debian-cve-osv")
-	if err != nil {
-		logger.Warn("Failed to list debian cves", slog.Any("err", err))
-	} else {
-		for i, filename := range debianCVEs {
-			cve := extractCVEName(filename, "DEBIAN-")
-			if cve != "" {
-				debianCVEs[i] = cve
-			}
-		}
-	}
-
-	// run extract file name on each element in debianCVEs and alpineCVEs.
-	alpineCVEs, err := listBucketObjects("osv-test-cve-osv-conversion", "/alpine")
-	if err != nil {
-		logger.Warn("Failed to list alpine cves", slog.Any("err", err))
-	} else {
-		for i, filename := range alpineCVEs {
-			cve := extractCVEName(filename, "ALPINE-")
-			if cve != "" {
-				alpineCVEs[i] = cve
-			}
-		}
-	}
-
-	// this ensures the creation of CVEs even if they don't have packages
-	// to ensure Alpine and Debian CVEs have an upstream CVE.
-	// linter is compaining that we aren't appending to the same slice, but we
-	// just want to combine these two arrays with a more descriptive name.
-	mandatoryCVEIDs := append(debianCVEs, alpineCVEs...) //nolint:gocritic
-	combinedData := combineIntoOSV(allCVE5, allNVD, mandatoryCVEIDs)
-
-	ctx := context.Background()
-
-	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(combinedData))
-	for _, v := range combinedData {
-		vulnerabilities = append(vulnerabilities, v)
-	}
-
-	writer.UploadVulnsToGCS(ctx, "OSV files", *uploadToGCS, *outputBucketName, *overridesBucketName, *numWorkers, *osvOutputPath, vulnerabilities, *syncDeletions)
-}
-
-// extractCVEName extracts the CVE name from a given filename and prefix.
-// It returns an empty string if the filename does not start with "CVE".
-func extractCVEName(filename string, prefix string) string {
-	cleaned := strings.TrimPrefix(filename, prefix)
-	cleaned = strings.TrimSuffix(cleaned, ".json")
-	pre := strings.Split(cleaned, "-")
-	if pre[0] != "CVE" {
-		return ""
-	}
-
-	return cleaned
-}
-
-// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
-// It does not download the file contents.
-func listBucketObjects(bucketName string, prefix string) ([]string, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("storage.NewClient: %w", err)
+		logger.Fatal("Failed to create storage client", slog.Any("err", err))
 	}
 	defer client.Close()
-	bucket := client.Bucket(bucketName)
-	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
-	var filenames []string
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break // All objects have been listed.
+
+	// List CVE5 and NVD objects
+	var cve5Files, nvdFiles []string
+	var cve5ListErr, nvdListErr error
+	logger.Info("Starting to list CVE5 and NVD objects")
+	var listObjWg sync.WaitGroup
+	listObjWg.Add(2)
+
+	go func() {
+		defer listObjWg.Done()
+		logger.Info("Listing CVE5 objects", slog.String("path", *cve5Path))
+		cve5Files, cve5ListErr = listObjects(ctx, client, *cve5Path)
+		if cve5ListErr != nil {
+			logger.Fatal("Failed to list CVE5 objects", slog.Any("err", cve5ListErr))
 		}
-		if err != nil {
-			return nil, fmt.Errorf("bucket.Objects: %w", err)
+	}()
+
+	go func() {
+		defer listObjWg.Done()
+		logger.Info("Listing NVD objects", slog.String("path", *nvdPath))
+		nvdFiles, nvdListErr = listObjects(ctx, client, *nvdPath)
+		if nvdListErr != nil {
+			logger.Fatal("Failed to list NVD objects", slog.Any("err", nvdListErr))
 		}
-		filenames = append(filenames, attrs.Name)
+	}()
+
+	listObjWg.Wait()
+
+	// Build work items
+	logger.Info("Starting to build work items")
+	workItems := make(map[models.CVEID]*CVEWorkItem)
+	for _, f := range cve5Files {
+		id := cveIDFromPath(f)
+		if id != "" {
+			if _, ok := workItems[id]; !ok {
+				workItems[id] = &CVEWorkItem{ID: id}
+			}
+			workItems[id].CVE5Path = f
+		}
 	}
 
-	return filenames, nil
-}
-
-// loadOSV recursively loads all OSV vulnerabilities from a given directory path.
-// It walks the directory, reads each ".json" file, and decodes it into an osvschema.Vulnerability object.
-// The function returns a map of CVE IDs to their corresponding Vulnerability objects.
-// Files that are not ".json" files, directories, or files ending in ".metrics.json" are skipped.
-// The function will log warnings for files that fail to open or decode, and will terminate if it fails to walk the directory.
-func loadOSV(osvPath string) map[models.CVEID]*osvschema.Vulnerability {
-	allVulns := make(map[models.CVEID]*osvschema.Vulnerability)
-	logger.Info("Loading OSV records", slog.String("path", osvPath))
-	err := filepath.WalkDir(osvPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	for _, f := range nvdFiles {
+		id := cveIDFromPath(f)
+		if id != "" {
+			if _, ok := workItems[id]; !ok {
+				workItems[id] = &CVEWorkItem{ID: id}
+			}
+			workItems[id].NVDPath = f
 		}
-		if d.IsDir() || !strings.HasSuffix(path, ".json") || strings.HasSuffix(path, ".metrics.json") {
-			return nil
-		}
-
-		file, err := os.ReadFile(path)
-		if err != nil {
-			logger.Warn("Failed to open OSV JSON file", slog.String("path", path), slog.Any("err", err))
-			return nil
-		}
-
-		var vuln osvschema.Vulnerability
-		decodeErr := protojson.Unmarshal(file, &vuln)
-		if decodeErr != nil {
-			logger.Error("Failed to decode, skipping", slog.String("file", path), slog.Any("err", decodeErr))
-			return nil
-		}
-		allVulns[models.CVEID(vuln.GetId())] = &vuln
-
-		return nil
-	})
-
-	if err != nil {
-		logger.Fatal("Failed to walk OSV directory", slog.String("path", osvPath), slog.Any("err", err))
 	}
 
-	return allVulns
-}
+	logger.Info("Total CVE Work Items to process", slog.Int("count", len(workItems)))
 
-// combineIntoOSV creates OSV entry by combining loaded CVEs from NVD and PackageInfo information from security advisories.
-func combineIntoOSV(cve5osv map[models.CVEID]*osvschema.Vulnerability, nvdosv map[models.CVEID]*osvschema.Vulnerability, mandatoryCVEIDs []string) map[models.CVEID]*osvschema.Vulnerability {
-	osvRecords := make(map[models.CVEID]*osvschema.Vulnerability)
-
-	// Iterate through CVEs from security advisories (cve5) as the base
-	for cveID, cve5 := range cve5osv {
-		var baseOSV *osvschema.Vulnerability
-		nvd, ok := nvdosv[cveID]
-
-		if ok {
-			baseOSV = combineTwoOSVRecords(cve5, nvd)
-			// The CVE is processed, so remove it from the nvdosv map to avoid re-processing.
-			delete(nvdosv, cveID)
-		} else {
-			baseOSV = cve5
+	// Start Upload Pool
+	var outBkt, overridesBkt *storage.BucketHandle
+	var gcsHelper *gcs.Helper
+	if *uploadToGCS {
+		outBkt = client.Bucket(*outputBucketName)
+		if *overridesBucketName != "" {
+			overridesBkt = client.Bucket(*overridesBucketName)
 		}
+		gcsHelper, err = gcs.InitUploadPool(ctx, *numWorkers, *outputBucketName)
+		if err != nil {
+			logger.Fatal("Failed to initialize GCS upload pool", slog.Any("err", err))
+		}
+		defer gcsHelper.CloseAndWait()
+	}
 
-		if len(baseOSV.GetAffected()) == 0 || !hasRanges(baseOSV.GetAffected()) {
-			// check if part exists.
-			if !slices.Contains(mandatoryCVEIDs, string(cveID)) {
-				continue
+	// Start Channels
+	// Channel Flow:
+	//
+	// [workItems] ---workChan---> [readAndCombineWorker] ---vulnChan---> [Collector] ---outputVulnChan---> [VulnWorker] ---> [GCS/Disk]
+	//                                                                        |
+	//                                                                        +---> (filters invalid)
+	logger.Info("Starting processing channels and workers")
+	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
+	uploadVulnsChan := make(chan *osvschema.Vulnerability, *numWorkers)
+	workChan := make(chan *CVEWorkItem, *numWorkers)
+
+	// Start VulnWorkers (Upload side)
+	var uploadVulnsWg sync.WaitGroup
+	var successCount atomic.Uint64
+	for range *numWorkers {
+		uploadVulnsWg.Add(1)
+		go func() {
+			defer uploadVulnsWg.Done()
+			writer.VulnWorker(ctx, uploadVulnsChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
+		}()
+	}
+
+	// Interpose Collector to gather valid IDs
+	var validIDs []string
+	var collectValidIDsWg sync.WaitGroup
+	collectValidIDsWg.Add(1)
+	totalWork := len(workItems)
+	go func() {
+		defer collectValidIDsWg.Done()
+		count := 0
+		for v := range vulnChan {
+			count++
+			if len(v.GetAffected()) > 0 {
+				validIDs = append(validIDs, v.GetId())
+			}
+			uploadVulnsChan <- v
+			if count%1000 == 0 {
+				logger.Info("Processed CVEs", slog.Int("count", count), slog.Int("total", totalWork), slog.Int("percent", (count*100)/totalWork))
 			}
 		}
-		osvRecords[cveID] = baseOSV
+		close(uploadVulnsChan)
+	}()
+
+	// Start ReadAndCombineWorkers (Read side)
+	var readAndCombineWg sync.WaitGroup
+	for range *numWorkers {
+		readAndCombineWg.Add(1)
+		go func() {
+			defer readAndCombineWg.Done()
+			readAndCombineWorker(ctx, client, workChan, vulnChan)
+		}()
 	}
 
-	// Add any remaining CVEs from NVD that were not in the advisory data.
-	for cveID, nvd := range nvdosv {
-		if len(nvd.GetAffected()) == 0 || !hasRanges(nvd.GetAffected()) {
-			continue
+	// Feed Work
+	go func() {
+		for _, work := range workItems {
+			workChan <- work
 		}
-		osvRecords[cveID] = nvd
+		close(workChan)
+	}()
+
+	// Wait for reads to finish
+	readAndCombineWg.Wait()
+	close(vulnChan)
+
+	// Wait for collector and uploads to finish
+	collectValidIDsWg.Wait()
+	uploadVulnsWg.Wait()
+
+	logger.Info("Successfully processed OSV files", slog.Int("count", len(validIDs)))
+	if outBkt == nil && gcsHelper == nil {
+		logger.Info("Successfully wrote records to disk", slog.Uint64("count", successCount.Load()))
 	}
 
-	return osvRecords
+	// Handle Deletion
+	if *syncDeletions && *uploadToGCS {
+		writer.HandleDeletion(ctx, outBkt, *osvOutputPath, validIDs)
+	}
 }
 
 // combineTwoOSVRecords takes two osv records and combines them into one
@@ -914,16 +1055,6 @@ func pickBestRange(cve5Range *osvschema.Range, nvdRange *osvschema.Range) *osvsc
 	cleanLastAffectedIfFixedExists(merged)
 
 	return merged
-}
-
-func hasRanges(affected []*osvschema.Affected) bool {
-	for _, a := range affected {
-		if len(a.GetRanges()) > 0 {
-			return true
-		}
-	}
-
-	return false
 }
 
 // getRangeBoundaryVersions extracts the introduced, last_affected and fixed versions from a slice of OSV events.

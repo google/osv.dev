@@ -1,0 +1,10 @@
+resources:
+- exporter.yaml
+- gitter.yaml
+- importer.yaml
+- importer-deleter.yaml
+- importer-reconciler.yaml
+- record-checker.yaml
+- recoverer.yaml
+- scaler.yaml
+- workers.yaml

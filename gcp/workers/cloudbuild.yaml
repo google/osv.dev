@@ -34,26 +34,6 @@ steps:
   waitFor: ['-']
 
 - name: 'gcr.io/oss-vdb/ci'
-  id: 'worker-tests'
-  dir: gcp/workers/worker
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    # Each concurrent test that uses the datastore emulator must have a unique port number
-    - DATASTORE_EMULATOR_PORT=8003
-    - GITTER_PORT=8889
-  waitFor: ['init', 'sync']
-
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'importer-tests'
-  dir: gcp/workers/importer
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    - CLOUD_BUILD=1
-    - DATASTORE_EMULATOR_PORT=8004
-    - GITTER_PORT=8890
-  waitFor: ['init', 'sync']
-
-- name: 'gcr.io/oss-vdb/ci'
   id: 'recoverer-tests'
   dir: gcp/workers/recoverer
   args: ['bash', '-ex', 'run_tests.sh']

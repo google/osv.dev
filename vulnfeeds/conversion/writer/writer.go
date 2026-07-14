@@ -256,7 +256,11 @@ func UploadVulnsToGCS(
 		}
 
 		if doDeletions {
-			HandleDeletion(ctx, outBkt, osvOutputPath, vulnerabilities)
+			validIDs := make([]string, len(vulnerabilities))
+			for i, v := range vulnerabilities {
+				validIDs[i] = v.GetId()
+			}
+			HandleDeletion(ctx, outBkt, osvOutputPath, validIDs)
 		}
 
 		gcsHelper, err = gcs.InitUploadPool(ctx, numWorkers, outputBucketName)
@@ -292,7 +296,7 @@ func UploadVulnsToGCS(
 	}
 }
 
-func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, vulnerabilities []*osvschema.Vulnerability) {
+func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, validVulnIDs []string) {
 	// Check if any need to be deleted
 	bucketObjects, err := gcs.ListBucketObjects(ctx, outBkt, osvOutputPath)
 	if err != nil {
@@ -300,8 +304,8 @@ func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutput
 		return
 	}
 	vulnFilenames := make(map[string]bool)
-	for _, v := range vulnerabilities {
-		filename := v.GetId() + ".json"
+	for _, id := range validVulnIDs {
+		filename := id + ".json"
 		filePath := path.Join(osvOutputPath, filename)
 		vulnFilenames[filePath] = true
 	}

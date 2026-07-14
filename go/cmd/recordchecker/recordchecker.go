@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	pubsubTopic = "failed-tasks"
+	defaultPubsubTopic = "failed-tasks"
 	// defaultNumWorkers is the default number of concurrent workers to use.
 	// This can be overridden by setting the NUM_WORKERS environment variable.
 	defaultNumWorkers = 50
@@ -228,7 +228,8 @@ func setup(ctx context.Context) (*appEnv, error) {
 	}
 	gcsClient := clients.NewGCSClient(storageClient, bucketName)
 
-	dsClient, err := datastore.NewClient(ctx, projectID)
+	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the default database, which is what we want.
+	dsClient, err := datastore.NewClientWithDatabase(ctx, projectID, datastoreID)
 	if err != nil {
 		gcsClient.Close()
 		err = fmt.Errorf("failed to create datastore client: %w", err)
@@ -243,6 +244,10 @@ func setup(ctx context.Context) (*appEnv, error) {
 		err = fmt.Errorf("failed to create pubsub client: %w", err)
 
 		return nil, err
+	}
+	pubsubTopic := os.Getenv("FAILED_TASKS_TOPIC")
+	if pubsubTopic == "" {
+		pubsubTopic = defaultPubsubTopic
 	}
 	publisher := pubsubClient.Publisher(pubsubTopic)
 

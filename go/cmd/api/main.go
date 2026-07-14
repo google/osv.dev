@@ -60,7 +60,7 @@ func run() error {
 		}
 	}
 	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the (default) database
-	dbClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
+	dbClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID, datastore.WithIgnoreFieldMismatch())
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 		return err

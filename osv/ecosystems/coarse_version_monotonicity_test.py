@@ -25,6 +25,7 @@ from . import alpine
 from . import cran
 from . import debian
 from . import haskell
+from . import homebrew
 from . import maven
 from . import nuget
 from . import packagist
@@ -58,6 +59,14 @@ dpkg_version_strategy = st.from_regex(
 
 # Matches Haskell versions: dot-separated integers (e.g. 1.2.3).
 hackage_version_strategy = st.from_regex(r'^[0-9]+(\.[0-9]+)*$')
+
+# Matches Homebrew PkgVersions: dot/dash-separated numerics with an optional
+# prerelease (alpha/beta/pre/rc) or patch (p/post) marker or trailing letter,
+# and an optional `_N` revision suffix.
+homebrew_version_strategy = st.from_regex(
+    r'^[0-9]+([.-][0-9]+)*'
+    r'(alpha[0-9]*|beta[0-9]*|pre[0-9]*|rc[0-9]*|-p[0-9]+|\.post[0-9]+|[a-z])?'
+    r'(_[0-9]+)?$')
 
 # Matches Maven versions: flexible sequence of numbers or identifiers
 # separated by dots or dashes.
@@ -133,6 +142,12 @@ class CoarseVersionMonotonicityTest(unittest.TestCase):
   @given(hackage_version_strategy, hackage_version_strategy)
   def test_hackage(self, v1_str, v2_str):
     check_coarse_version_monotonic(self, haskell.Hackage(), v1_str, v2_str)
+
+  @given(homebrew_version_strategy, homebrew_version_strategy)
+  @example('2.1.0-p194', '2.1-p195')
+  @example('1.81.6_5', '1.81.6_6')
+  def test_homebrew(self, v1_str, v2_str):
+    check_coarse_version_monotonic(self, homebrew.Homebrew(), v1_str, v2_str)
 
   @given(maven_version_strategy, maven_version_strategy)
   def test_maven(self, v1_str, v2_str):

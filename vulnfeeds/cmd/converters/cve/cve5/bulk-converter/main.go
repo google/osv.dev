@@ -8,6 +8,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -22,10 +23,12 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
+const defaultStartYear = "2022"
+
 var (
 	repoDir        = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
 	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
-	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
+	startYear      = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
 	workers        = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
 	gcsWorkers     = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
 	cnaDenyList    = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
@@ -42,6 +45,20 @@ func main() {
 	flag.Parse()
 	logger.InitGlobalLogger()
 	defer logger.Close()
+
+	startYearInt, err := strconv.Atoi(*startYear)
+	defaultStartYearInt, _ := strconv.Atoi(defaultStartYear)
+	isPartial := false
+	if err != nil {
+		logger.Error("Invalid start-year, assuming partial", slog.String("start-year", *startYear))
+		isPartial = true
+	} else if startYearInt > defaultStartYearInt {
+		isPartial = true
+	}
+
+	if isPartial {
+		logger.Info("Partial run detected (start-year > " + defaultStartYear + "), will skip files.txt upload")
+	}
 
 	logger.Info("Commencing CVE to OSV conversion run")
 	if err := os.MkdirAll(*localOutputDir, 0755); err != nil {
@@ -70,20 +87,29 @@ func main() {
 		if err != nil {
 			logger.Fatal("Failed to initialize GCS upload pool", slog.Any("err", err))
 		}
-		defer gcsHelper.CloseAndWait()
 		logger.Info("GCS Upload Pool initialized", slog.String("bucket", *outputBucket))
 	}
+
+	outputFilesChan := make(chan string)
+	var collectorWg sync.WaitGroup
+	var outputFiles []string
+	collectorWg.Add(1)
+	go func() {
+		defer collectorWg.Done()
+		for f := range outputFilesChan {
+			outputFiles = append(outputFiles, f)
+		}
+	}()
 
 	// Start the worker pool.
 	for range *workers {
 		wg.Add(1)
-		go worker(&wg, jobs, gcsHelper, *localOutputDir, cnaList, *rejectFailed)
+		go worker(&wg, jobs, gcsHelper, *localOutputDir, cnaList, *rejectFailed, outputFilesChan)
 	}
 
 	// Discover files and send them to the workers.
 	logger.Info("Starting conversion of CVEs...")
 	currentYear := time.Now().Year()
-	startYearInt, _ := strconv.Atoi(*startYear)
 
 	for year := startYearInt; year <= currentYear; year++ {
 		year := strconv.Itoa(year)
@@ -112,22 +138,37 @@ func main() {
 
 	close(jobs)
 	wg.Wait()
+	close(outputFilesChan)
+	collectorWg.Wait()
+
+	if *uploadToGCS && gcsHelper != nil {
+		gcsHelper.CloseAndWait()
+		if !isPartial {
+			logger.Info("Uploading output file list to GCS...")
+			if err := gcs.UploadFileList(ctx, *outputBucket, *gcsPrefix, outputFiles); err != nil {
+				logger.Error("Failed to upload output file list", slog.Any("err", err))
+			}
+		} else {
+			logger.Info("Skipping files.txt upload due to partial run")
+		}
+	}
+
 	logger.Info("CVE5 Conversion run complete")
 }
 
 // worker is a function that processes CVE files from the jobs channel.
-func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, cnas []string, rejectFailed bool) {
+func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, cnas []string, rejectFailed bool, outputFilesChan chan<- string) {
 	defer wg.Done()
-	for path := range jobs {
-		data, err := os.ReadFile(path)
+	for cvePath := range jobs {
+		data, err := os.ReadFile(cvePath)
 		if err != nil {
-			logger.Info("Failed to read file", slog.String("path", path), slog.Any("err", err))
+			logger.Info("Failed to read file", slog.String("path", cvePath), slog.Any("err", err))
 			continue
 		}
 
 		var cve models.CVE5
 		if err := json.Unmarshal(data, &cve); err != nil {
-			logger.Info("Failed to unmarshal JSON", slog.String("path", path), slog.Any("err", err))
+			logger.Info("Failed to unmarshal JSON", slog.String("path", cvePath), slog.Any("err", err))
 			continue
 		}
 
@@ -139,9 +180,9 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 
 		sourceLink := ""
 		baseDirCVEList := "cves/" // The base folder for the CVEListV5 repository.
-		idx := strings.Index(path, baseDirCVEList)
+		idx := strings.Index(cvePath, baseDirCVEList)
 		if idx != -1 {
-			relPath := path[idx:]
+			relPath := cvePath[idx:]
 			sourceLink = "https://github.com/CVEProject/cvelistV5/tree/main/" + relPath
 		}
 
@@ -153,6 +194,8 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 				logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
 				if err := writer.UploadVulnIfChangedAsync(gcsHelper, *gcsPrefix, vuln.Vulnerability); err != nil {
 					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+				} else {
+					outputFilesChan <- path.Join(*gcsPrefix, string(cveID)+".json")
 				}
 
 				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics); err != nil {

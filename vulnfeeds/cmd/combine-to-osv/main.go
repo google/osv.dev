@@ -4,6 +4,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion"
@@ -30,9 +32,10 @@ import (
 )
 
 const (
-	defaultOSVOutputPath = "osv-output"
-	defaultCVE5Path      = "cve5"
-	defaultNVDOSVPath    = "nvd"
+	defaultOSVOutputPath  = "osv-output"
+	defaultCVE5Path       = "cve5"
+	defaultNVDOSVPath     = "nvd"
+	defaultListFileMaxAge = 2 * 24 * time.Hour
 )
 
 // CVEWorkItem represents a unit of work for a single CVE.
@@ -57,11 +60,71 @@ func cveIDFromPath(p string) models.CVEID {
 	return ""
 }
 
-func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([]string, error) {
+// readListFile reads the list file (usually files.txt) from GCS.
+// The list file is expected to contain newline-separated GCS object names
+// relative to the bucket root (e.g. "prefix/CVE-2023-0001.json").
+// It returns a slice of full GCS paths (e.g. "gs://bucket/prefix/CVE-2023-0001.json").
+func readListFile(ctx context.Context, listObj *storage.ObjectHandle, bucketName string) ([]string, error) {
+	rc, err := listObj.NewReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open reader: %w", err)
+	}
+	defer rc.Close()
+
+	content, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read content: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	fullPaths := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		fullPaths = append(fullPaths, fmt.Sprintf("gs://%s/%s", bucketName, line))
+	}
+
+	return fullPaths, nil
+}
+
+func listObjects(ctx context.Context, client *storage.Client, pathStr string, maxAge time.Duration) ([]string, error) {
 	if strings.HasPrefix(pathStr, "gs://") {
 		trimmed := strings.TrimPrefix(pathStr, "gs://")
 		bucketName, prefix, _ := strings.Cut(trimmed, "/")
 		bucket := client.Bucket(bucketName)
+
+		listObjectName := gcs.FileListFilename
+		if prefix != "" {
+			listObjectName = strings.TrimSuffix(prefix, "/") + "/" + gcs.FileListFilename
+		}
+
+		listObj := bucket.Object(listObjectName)
+		attrs, err := listObj.Attrs(ctx)
+		useListFile := false
+		if err == nil {
+			// Check age
+			age := time.Since(attrs.Updated)
+			if age <= maxAge {
+				useListFile = true
+			} else {
+				logger.Error("List file is too old (generators might be failing)", slog.String("bucket", bucketName), slog.String("prefix", prefix), slog.Duration("age", age))
+			}
+		} else if !errors.Is(err, storage.ErrObjectNotExist) {
+			logger.Warn("Failed to get list file attributes", slog.String("bucket", bucketName), slog.String("prefix", prefix), slog.Any("err", err))
+		}
+
+		if useListFile {
+			logger.Info("Using list file", slog.String("bucket", bucketName), slog.String("prefix", prefix))
+			fullPaths, err := readListFile(ctx, listObj, bucketName)
+			if err == nil {
+				return fullPaths, nil
+			}
+			logger.Error("Failed to read list file, falling back to bucket listing", slog.String("bucket", bucketName), slog.String("prefix", prefix), slog.Any("err", err))
+		}
+
+		logger.Info("Falling back to bucket listing", slog.String("bucket", bucketName), slog.String("prefix", prefix))
 		objs, err := gcs.ListBucketObjects(ctx, bucket, prefix)
 		if err != nil {
 			return nil, err
@@ -193,6 +256,7 @@ func main() {
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
 	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
 	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
+	listFileMaxAge := flag.Duration("list-file-max-age", defaultListFileMaxAge, "The maximum age of the list file before falling back to listing the bucket.")
 	flag.Parse()
 
 	err := os.MkdirAll(*osvOutputPath, 0755)
@@ -217,7 +281,7 @@ func main() {
 	go func() {
 		defer listObjWg.Done()
 		logger.Info("Listing CVE5 objects", slog.String("path", *cve5Path))
-		cve5Files, cve5ListErr = listObjects(ctx, client, *cve5Path)
+		cve5Files, cve5ListErr = listObjects(ctx, client, *cve5Path, *listFileMaxAge)
 		if cve5ListErr != nil {
 			logger.Fatal("Failed to list CVE5 objects", slog.Any("err", cve5ListErr))
 		}
@@ -226,7 +290,7 @@ func main() {
 	go func() {
 		defer listObjWg.Done()
 		logger.Info("Listing NVD objects", slog.String("path", *nvdPath))
-		nvdFiles, nvdListErr = listObjects(ctx, client, *nvdPath)
+		nvdFiles, nvdListErr = listObjects(ctx, client, *nvdPath, *listFileMaxAge)
 		if nvdListErr != nil {
 			logger.Fatal("Failed to list NVD objects", slog.Any("err", nvdListErr))
 		}

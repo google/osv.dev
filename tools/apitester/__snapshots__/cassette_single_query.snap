@@ -3425,6 +3425,7 @@
       "aliases": ["CURL-CVE-2026-10536"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:11:15.378Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -3484,6 +3485,7 @@
       "aliases": ["CURL-CVE-2026-11856"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:31.661Z",
+      "related": ["openSUSE-SU-2026:11230-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -3543,6 +3545,7 @@
       "aliases": ["CURL-CVE-2026-12064"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:55.302Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4313,6 +4316,7 @@
       "aliases": ["CURL-CVE-2026-8286"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:17.541Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4372,6 +4376,7 @@
       "aliases": ["CURL-CVE-2026-8458"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:42.258Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4431,6 +4436,7 @@
       "aliases": ["CURL-CVE-2026-8924"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:15:04.646Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4490,6 +4496,7 @@
       "aliases": ["CURL-CVE-2026-8927"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:06.376Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4549,6 +4556,7 @@
       "aliases": ["CURL-CVE-2026-8932"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:30.485Z",
+      "related": ["openSUSE-SU-2026:11230-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4608,6 +4616,7 @@
       "aliases": ["CURL-CVE-2026-9547"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:18:44.499Z",
+      "related": ["openSUSE-SU-2026:11230-1", "openSUSE-SU-2026:21272-1"],
       "database_specific": "<Any value>",
       "references": [
         {

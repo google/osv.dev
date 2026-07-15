@@ -11,6 +11,7 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
@@ -579,6 +580,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
 			vWriter := bytes.NewBuffer(nil)
 			mWriter := bytes.NewBuffer(nil)
 			_, err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter, "")
@@ -591,6 +593,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 }
 
 func TestCVE5Snapshot(t *testing.T) {
+	testutils.SetupGitVCR(t)
 	testDir := "../../test_data/cve5"
 	//TODO: split this into individual records.
 	files, err := os.ReadDir(testDir)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/conversion"
+	"github.com/google/osv/vulnfeeds/internal/testutils"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -597,6 +598,7 @@ func TestExtractVersions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{},

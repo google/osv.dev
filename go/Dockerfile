@@ -61,7 +61,7 @@ ENTRYPOINT ["/importer"]
 FROM builder AS worker-build
 RUN CGO_ENABLED=0 go build -o /app/worker ./cmd/worker/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS worker
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS worker
 COPY --from=worker-build /app/worker /
 ENTRYPOINT ["/worker"]
 
@@ -71,7 +71,7 @@ ENTRYPOINT ["/worker"]
 FROM builder AS exporter-build
 RUN CGO_ENABLED=0 go build -o /app/exporter ./cmd/exporter/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS exporter
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS exporter
 COPY --from=exporter-build /app/exporter /
 ENTRYPOINT ["/exporter"]
 
@@ -81,7 +81,7 @@ ENTRYPOINT ["/exporter"]
 FROM builder AS recordchecker-build
 RUN CGO_ENABLED=0 go build -o /app/recordchecker ./cmd/recordchecker/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS recordchecker
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS recordchecker
 COPY --from=recordchecker-build /app/recordchecker /
 ENTRYPOINT ["/recordchecker"]
 
@@ -91,7 +91,7 @@ ENTRYPOINT ["/recordchecker"]
 FROM builder AS relations-build
 RUN CGO_ENABLED=0 go build -o /app/relations ./cmd/relations/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS relations
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS relations
 COPY --from=relations-build /app/relations /
 ENTRYPOINT ["/relations"]
 
@@ -101,7 +101,7 @@ ENTRYPOINT ["/relations"]
 FROM builder AS generatesitemap-build
 RUN CGO_ENABLED=0 go build -o /app/generatesitemap ./cmd/generatesitemap/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS generatesitemap
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS generatesitemap
 COPY --from=generatesitemap-build /app/generatesitemap /
 ENTRYPOINT ["/generatesitemap"]
 
@@ -111,7 +111,7 @@ ENTRYPOINT ["/generatesitemap"]
 FROM builder AS custommetrics-build
 RUN CGO_ENABLED=0 go build -o /app/custommetrics ./cmd/custommetrics/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS custommetrics
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS custommetrics
 COPY --from=custommetrics-build /app/custommetrics /
 ENTRYPOINT ["/custommetrics"]
 
@@ -145,6 +145,6 @@ ENTRYPOINT ["/first_package_finder"]
 FROM builder AS api-build
 RUN CGO_ENABLED=0 go build -o /app/api ./cmd/api/
 
-FROM gcr.io/distroless/static-debian12@sha256:22fd79fd75eab2372585b44517f8a094349938919dc613aafc37e4bdc9967c82 AS api
+FROM gcr.io/distroless/static-debian12@sha256:61b7ccecebc7c474a531717de80a94709d20547cdcdaf740c25876f2a8e38b44 AS api
 COPY --from=api-build /app/api /
 ENTRYPOINT ["/api"]

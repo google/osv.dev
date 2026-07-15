@@ -53,8 +53,7 @@ def _generate_vanir_signatures_batch(
         json_format.MessageToDict(vuln_pb, preserving_proto_field_name=True)
         for vuln_pb in vulnerability_pbs
     ]
-    vuln_manager = vulnerability_manager.generate_from_json_string(
-        content=json.dumps(vuln_dicts))
+    vuln_manager = vulnerability_manager.VulnerabilityManager(vuln_dicts)
 
     extractor_config = code_extractor_base.ExtractorConfig(
         git_working_dir=git_working_dir)
@@ -239,9 +238,9 @@ def main():
   parser.add_argument(
       '--max-workers',
       type=int,
-      default=10,
+      default=4,
       help=('Maximum number of parallel workers. Note that total threads '
-            'spawned will be max_workers * max_workers (default 100).'))
+            'spawned will be max_workers * max_workers (default 16).'))
   parser.add_argument(
       '--dry-run', action='store_true', help='Perform a dry run.')
   parser.add_argument(

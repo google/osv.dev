@@ -25,17 +25,20 @@ resource "google_project_iam_member" "worker_datastore_roles" {
   }
 }
 
-# Cloud Monitoring roles at the project level
-resource "google_project_iam_member" "worker_monitoring_roles" {
+# GKE Node Service Account and Monitoring roles at the project level
+resource "google_project_iam_member" "worker_node_roles" {
   for_each = toset([
+    "roles/container.defaultNodeServiceAccount",
     "roles/monitoring.metricWriter",
-    "roles/monitoring.viewer"
+    "roles/monitoring.viewer",
+    "roles/cloudtrace.agent"
   ])
 
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.worker_sa.email}"
 }
+
 
 # Bucket-level GCS access to secure vulnerability exports and backups
 resource "google_storage_bucket_iam_member" "worker_export_bucket" {
@@ -50,6 +53,21 @@ resource "google_storage_bucket_iam_member" "worker_backup_bucket" {
   member = "serviceAccount:${google_service_account.worker_sa.email}"
 }
 
+# Topic-level Pub/Sub publisher access for task creation and retry
+resource "google_pubsub_topic_iam_member" "worker_tasks_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.tasks.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+
+resource "google_pubsub_topic_iam_member" "worker_failed_tasks_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.failed_tasks.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+
 # Subscription-level Pub/Sub access to prevent queue cross-talk/task-stealing
 resource "google_pubsub_subscription_iam_member" "worker_subscriber" {
   project      = var.project_id
@@ -62,6 +80,13 @@ resource "google_pubsub_subscription_iam_member" "worker_extra_subscribers" {
   for_each     = toset(var.extra_work_pools)
   project      = var.project_id
   subscription = google_pubsub_subscription.work_pools[each.value].name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+
+resource "google_pubsub_subscription_iam_member" "worker_recovery_subscriber" {
+  project      = var.project_id
+  subscription = google_pubsub_subscription.recovery.name
   role         = "roles/pubsub.subscriber"
   member       = "serviceAccount:${google_service_account.worker_sa.email}"
 }

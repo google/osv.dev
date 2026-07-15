@@ -91,7 +91,6 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash st
 	if err == nil {
 		// Object exists, check hash.
 		if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
-			logger.Info("Skipping GCS upload, hash matches", slog.String("id", vulnID), slog.String("object", objName))
 			return ErrUploadSkipped
 		}
 	} else if !errors.Is(err, storage.ErrObjectNotExist) {
@@ -217,14 +216,26 @@ func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, o
 		}
 
 		if writeErr == nil {
-			logger.Info("Uploaded successfully", slog.String("id", vulnID))
+			if outBkt == nil && gcsHelper == nil {
+				logger.Info("Wrote to disk successfully", slog.String("id", vulnID))
+			} else if gcsHelper != nil {
+				logger.Info("Queued for upload successfully", slog.String("id", vulnID))
+			} else {
+				logger.Info("Uploaded to GCS successfully", slog.String("id", vulnID))
+			}
 			if counter != nil {
 				counter.Add(1)
 			}
 		} else if errors.Is(writeErr, ErrUploadSkipped) {
-			logger.Info("Skipping upload, hash matches", slog.String("id", vulnID))
+			logger.Info("Skipping GCS upload, hash matches", slog.String("id", vulnID))
 		} else {
-			logger.Error("Failed to upload/write", slog.String("id", vulnID), slog.Any("err", writeErr))
+			if outBkt == nil && gcsHelper == nil {
+				logger.Error("Failed to write to disk", slog.String("id", vulnID), slog.Any("err", writeErr))
+			} else if gcsHelper != nil {
+				logger.Error("Failed to queue for upload", slog.String("id", vulnID), slog.Any("err", writeErr))
+			} else {
+				logger.Error("Failed to upload to GCS", slog.String("id", vulnID), slog.Any("err", writeErr))
+			}
 		}
 	}
 }

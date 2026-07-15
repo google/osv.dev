@@ -1,9 +1,9 @@
 module github.com/google/apitester
 
-go 1.26.4
+go 1.26.5
 
 require (
-	github.com/gkampitakis/go-snaps v0.5.22
+	github.com/gkampitakis/go-snaps v0.5.23
 	github.com/google/go-cmp v0.7.0
 	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/pretty v1.2.1

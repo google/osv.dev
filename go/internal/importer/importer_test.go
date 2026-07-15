@@ -268,3 +268,23 @@ func TestImporterWorker(t *testing.T) {
 		t.Errorf("Expected path 4.json, got %s", mockPublisher.Messages[3].Attributes["path"])
 	}
 }
+
+func TestReconcileWarningsAsInfo(t *testing.T) {
+	tests := []struct {
+		source string
+		want   bool
+	}{
+		{"minimos", true},
+		{"git", false},
+		{"cve-osv", false},
+		{"random", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.source, func(t *testing.T) {
+			if got := reconcileWarningsAsInfo(tt.source); got != tt.want {
+				t.Errorf("reconcileWarningsAsInfo(%q) = %v, want %v", tt.source, got, tt.want)
+			}
+		})
+	}
+}

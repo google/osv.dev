@@ -86,6 +86,17 @@ func (w *WordfenceVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vu
 	if len(v.Affected) > 0 {
 		if slug != "" {
 			for _, aff := range v.Affected {
+				isGit := false
+				for _, r := range aff.Ranges {
+					if r.Type == osvschema.Range_GIT {
+						isGit = true
+						break
+					}
+				}
+				if isGit {
+					aff.Package = nil // Do not put package info on GIT ranges
+					continue
+				}
 				if aff.Package == nil {
 					aff.Package = &osvschema.Package{
 						Ecosystem: string(osvconstants.EcosystemWordPress),

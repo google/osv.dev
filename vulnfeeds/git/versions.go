@@ -33,6 +33,7 @@ var (
 	// Keep in sync with the intent of https://github.com/google/osv.dev/blob/26050deb42785bc5a4dc7d802eac8e7f95135509/osv/bug.py#L31
 	validVersion     = regexp.MustCompile(`(?i)(\d+|(?:rc|alpha|beta|preview)\d*)`)
 	validVersionText = regexp.MustCompile(`(?i)(?:rc|alpha|beta|preview)\d*`)
+	BackoffBaseDelay = 1 * time.Second
 )
 
 // findFuzzyCommit takes an already normalized version and the mapping of repo tags to
@@ -197,7 +198,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	backoff := retry.NewExponential(1 * time.Second)
+	backoff := retry.NewExponential(BackoffBaseDelay)
 	loggingBackoff := newLoggingBackoff(retry.WithMaxRetries(3, backoff), "ValidateAndCanonicalizeLink")
 	if err := retry.Do(context.Background(), loggingBackoff, func(ctx context.Context) error {
 		req, err := http.NewRequestWithContext(ctx, http.MethodHead, link, nil)

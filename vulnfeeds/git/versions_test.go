@@ -403,6 +403,10 @@ func TestValidateAndCanonicalizeLink_429(t *testing.T) {
 }
 
 func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
+	oldDelay := BackoffBaseDelay
+	BackoffBaseDelay = 1 * time.Millisecond
+	defer func() { BackoffBaseDelay = oldDelay }()
+
 	requests := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++

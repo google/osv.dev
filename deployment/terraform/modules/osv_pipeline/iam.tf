@@ -30,7 +30,8 @@ resource "google_project_iam_member" "worker_node_roles" {
   for_each = toset([
     "roles/container.defaultNodeServiceAccount",
     "roles/monitoring.metricWriter",
-    "roles/monitoring.viewer"
+    "roles/monitoring.viewer",
+    "roles/cloudtrace.agent"
   ])
 
   project = var.project_id

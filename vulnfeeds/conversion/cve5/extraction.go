@@ -16,6 +16,8 @@ func GetVersionExtractor(cna string) VersionExtractor {
 	switch cna {
 	case "Linux":
 		return &LinuxVersionExtractor{}
+	case "Wordfence":
+		return &WordfenceVersionExtractor{}
 	default:
 		return &DefaultVersionExtractor{}
 	}

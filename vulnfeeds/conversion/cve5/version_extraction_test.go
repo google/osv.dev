@@ -382,6 +382,15 @@ func TestGetVersionExtractor(t *testing.T) {
 			expectedType: reflect.TypeOf(&LinuxVersionExtractor{}),
 		},
 		{
+			name: "Wordfence CVE",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "Wordfence",
+				},
+			},
+			expectedType: reflect.TypeOf(&WordfenceVersionExtractor{}),
+		},
+		{
 			name: "Default CVE",
 			cve: models.CVE5{
 				Metadata: models.CVE5Metadata{
@@ -593,13 +602,34 @@ func TestExtractVersions(t *testing.T) {
 					},
 				}},
 		},
+		{
+			name:        "CVE-2026-1293",
+			cve:         loadTestData(t, "CVE-2026-1293"),
+			cnaAssigner: "Wordfence",
+			repos:       []string{},
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress",
+					Name:      "wordpress-seo",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "26.8"},
+					},
+				}},
+			}},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
-				Vulnerability: &osvschema.Vulnerability{},
+				Vulnerability: &osvschema.Vulnerability{
+					References: vulns.ClassifyReferences(identifyPossibleURLs(tc.cve)),
+				},
 			}
 			extractor := GetVersionExtractor(tc.cnaAssigner)
 			extractor.ExtractVersions(tc.cve, &v, metrics, tc.repos)

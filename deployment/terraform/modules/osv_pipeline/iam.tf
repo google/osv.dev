@@ -25,9 +25,10 @@ resource "google_project_iam_member" "worker_datastore_roles" {
   }
 }
 
-# Cloud Monitoring roles at the project level
-resource "google_project_iam_member" "worker_monitoring_roles" {
+# GKE Node Service Account and Monitoring roles at the project level
+resource "google_project_iam_member" "worker_node_roles" {
   for_each = toset([
+    "roles/container.defaultNodeServiceAccount",
     "roles/monitoring.metricWriter",
     "roles/monitoring.viewer"
   ])
@@ -36,6 +37,7 @@ resource "google_project_iam_member" "worker_monitoring_roles" {
   role    = each.value
   member  = "serviceAccount:${google_service_account.worker_sa.email}"
 }
+
 
 # Bucket-level GCS access to secure vulnerability exports and backups
 resource "google_storage_bucket_iam_member" "worker_export_bucket" {

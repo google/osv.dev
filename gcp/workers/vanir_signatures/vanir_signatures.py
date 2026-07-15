@@ -16,7 +16,6 @@
 
 import argparse
 import datetime
-import json
 import logging
 import tempfile
 from concurrent import futures

@@ -17,12 +17,10 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 )
 
 const (
-	hashMetadataKey  = "sha256-hash" // hashMetadataKey is the key for the sha256 hash in the GCS object metadata.
-	FileListFilename = "files.txt"
+	hashMetadataKey = "sha256-hash" // hashMetadataKey is the key for the sha256 hash in the GCS object metadata.
 )
 
 type Helper struct {
@@ -223,7 +221,7 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 	return nil
 }
 
-// ListBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
+// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
 // It does not download the file contents.
 func ListBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
 	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
@@ -240,30 +238,4 @@ func ListBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix
 	}
 
 	return filenames, nil
-}
-
-// UploadFileList uploads a list of files as a single text file to GCS.
-func UploadFileList(ctx context.Context, bucketName string, prefix string, files []string, opts ...option.ClientOption) error {
-	client, err := storage.NewClient(ctx, opts...)
-	if err != nil {
-		return fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer client.Close()
-
-	bkt := client.Bucket(bucketName)
-
-	var objectName string
-	if prefix == "" {
-		objectName = FileListFilename
-	} else {
-		objectName = strings.TrimSuffix(prefix, "/") + "/" + FileListFilename
-	}
-
-	content := strings.Join(files, "\n")
-	if len(files) > 0 {
-		content += "\n" // Add trailing newline
-	}
-	reader := strings.NewReader(content)
-
-	return UploadToGCS(ctx, bkt, objectName, reader, "text/plain", nil)
 }

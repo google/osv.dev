@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
-	"google.golang.org/api/option"
 )
 
 func TestUploadToGCS(t *testing.T) {
@@ -208,41 +207,4 @@ func TestDownloadBucket(t *testing.T) {
 			t.Errorf("expected content, got %q", content)
 		}
 	})
-}
-
-func TestUploadFileList(t *testing.T) {
-	server := fakestorage.NewServer([]fakestorage.Object{})
-	t.Cleanup(server.Stop)
-
-	t.Log("Server URL:", server.URL())
-
-	bucketName := "test-bucket"
-	prefix := "test-prefix"
-	files := []string{
-		"test-prefix/file1.json",
-		"test-prefix/file2.json",
-	}
-
-	ctx := context.Background()
-	// Create bucket first (fake server needs it)
-	client := server.Client()
-	bkt := client.Bucket(bucketName)
-	if err := bkt.Create(ctx, "project", nil); err != nil {
-		t.Fatalf("failed to create bucket: %v", err)
-	}
-
-	err := UploadFileList(ctx, bucketName, prefix, files, option.WithHTTPClient(server.HTTPClient()))
-	if err != nil {
-		t.Fatalf("UploadFileList failed: %v", err)
-	}
-
-	obj, err := server.GetObject(bucketName, "test-prefix/files.txt")
-	if err != nil {
-		t.Fatalf("failed to get object: %v", err)
-	}
-
-	expectedContent := "test-prefix/file1.json\ntest-prefix/file2.json\n"
-	if string(obj.Content) != expectedContent {
-		t.Errorf("expected content %q, got %q", expectedContent, string(obj.Content))
-	}
 }

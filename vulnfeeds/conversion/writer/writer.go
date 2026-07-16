@@ -30,8 +30,8 @@ import (
 
 const (
 	// hashMetadataKey is the key for the sha256 hash in the GCS object metadata.
-	hashMetadataKey = "sha256-hash"
-	overrideFolder  = "osv-output-overrides" // location of overrides within bucket
+	hashMetadataKey   = "sha256-hash"
+	overrideFolder    = "osv-output-overrides" // location of overrides within bucket
 	parallelStartYear = 2018
 )
 

@@ -276,7 +276,7 @@ func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPr
 	})
 
 	// 2. Intermediate queries: ranges between breakdowns
-	for i := 0; i < len(sortedBreakdowns)-1; i++ {
+	for i := range len(sortedBreakdowns) - 1 {
 		queries = append(queries, &storage.Query{
 			Prefix:      globalPrefixWithSlash,
 			StartOffset: globalPrefixWithSlash + sortedBreakdowns[i],
@@ -300,6 +300,7 @@ func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPr
 				return err
 			}
 			objsChan <- objs
+
 			return nil
 		})
 	}
@@ -314,7 +315,7 @@ func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPr
 		allObjs = append(allObjs, objs...)
 	}
 
-	var filtered []string
+	filtered := make([]string, 0, len(allObjs))
 	for _, obj := range allObjs {
 		if strings.HasSuffix(obj, "/") {
 			continue

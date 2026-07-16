@@ -299,4 +299,3 @@ func TestListObjectsFast(t *testing.T) {
 		t.Errorf("ListObjectsFast returned unexpected list.\ngot:  %v\nwant: %v", got, expected)
 	}
 }
-

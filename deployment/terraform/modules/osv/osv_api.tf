@@ -132,7 +132,7 @@ resource "google_cloud_run_service" "api" {
       containers {
         image = data.google_container_registry_image.api.image_url
         ports {
-          name = "h2c"
+          name           = "h2c"
           container_port = 8080
         }
         env {

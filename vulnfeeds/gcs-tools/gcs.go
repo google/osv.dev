@@ -263,7 +263,7 @@ func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPr
 	copy(sortedBreakdowns, breakdownPrefixes)
 	slices.Sort(sortedBreakdowns)
 
-	var queries []*storage.Query
+	queries := make([]*storage.Query, 0, len(sortedBreakdowns)+1)
 	globalPrefixWithSlash := globalPrefix
 	if globalPrefix != "" {
 		globalPrefixWithSlash = globalPrefix + "/"

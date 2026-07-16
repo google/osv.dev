@@ -24,7 +24,7 @@ require (
 	github.com/tidwall/gjson v1.19.0
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/sdk v1.44.0

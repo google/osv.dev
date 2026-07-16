@@ -221,10 +221,22 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 	return nil
 }
 
-// listBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
+// ListBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
 // It does not download the file contents.
 func ListBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
-	it := bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+	return ListBucketObjectsQuery(ctx, bucket, &storage.Query{Prefix: prefix})
+}
+
+// ListBucketObjectsQuery lists the names of all objects in a Google Cloud Storage bucket matching the query.
+// It optimizes the request by only retrieving the Name attribute.
+func ListBucketObjectsQuery(ctx context.Context, bucket *storage.BucketHandle, query *storage.Query) ([]string, error) {
+	if query == nil {
+		query = &storage.Query{}
+	}
+	if err := query.SetAttrSelection([]string{"Name"}); err != nil {
+		return nil, fmt.Errorf("failed to set attribute selection: %w", err)
+	}
+	it := bucket.Objects(ctx, query)
 	var filenames []string
 	for {
 		attrs, err := it.Next()

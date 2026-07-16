@@ -101,9 +101,6 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /bindings/go", s.handleGoBindingsVanity)
 
 	// Simple redirects & static pages
-	s.mux.HandleFunc("GET /v2/{subpath...}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/"+r.PathValue("subpath"), http.StatusFound)
-	})
 	s.mux.HandleFunc("GET /about", s.handleRedirect("https://google.github.io/osv.dev/faq"))
 	s.mux.HandleFunc("GET /faq", s.handleRedirect("https://google.github.io/osv.dev/faq"))
 	s.mux.HandleFunc("GET /docs", s.handleRedirect("https://google.github.io/osv.dev"))

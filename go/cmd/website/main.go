@@ -91,11 +91,13 @@ func run() error {
 		logger.ErrorContext(ctx, "Server error", slog.Any("error", err))
 		return err
 	case <-ctx.Done():
-		logger.InfoContext(ctx, "Shutting down website server...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 		defer cancel()
+
+		logger.InfoContext(shutdownCtx, "Shutting down website server...")
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			logger.ErrorContext(ctx, "Error during server shutdown", slog.Any("error", err))
+			logger.ErrorContext(shutdownCtx, "Error during server shutdown", slog.Any("error", err))
+
 			return err
 		}
 	}

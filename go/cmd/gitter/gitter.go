@@ -55,6 +55,8 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /cache":            cacheHandler,
 	"GET /tags":              tagsHandler,
 	"POST /affected-commits": affectedCommitsHandler,
+	"POST /diffs":            diffsHandler,
+	"POST /file-content":     fileContentHandler,
 }
 
 var (
@@ -445,6 +447,16 @@ func getFreshRepo(ctx context.Context, repoURL string, forceUpdate bool) (*Repos
 	return repo, nil
 }
 
+// getRepoForDisk fetches/updates the repository on disk and returns a Repository struct with repoPath set,
+// skipping the expensive LoadRepository operation (commit graph building and patch ID calculation).
+func getRepoForDisk(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
+	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
+		return nil, err
+	}
+
+	return NewRepository(repoURL), nil
+}
+
 func isIndexLockError(err error) bool {
 	if err == nil {
 		return false
@@ -497,6 +509,12 @@ func fetchAndReset(ctx context.Context, repoPath string) error {
 	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
+	}
+
+	// Make sure origin/HEAD points to the latest default branch from remotes
+	err = runCmd(ctx, repoPath, nil, "git", "remote", "set-head", "origin", "--auto")
+	if err != nil {
+		logger.WarnContext(ctx, "git remote set-head failed: ", slog.Any("err", err))
 	}
 
 	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
@@ -1108,5 +1126,168 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(out); err != nil {
 		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
+	}
+}
+
+func diffsHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/diffs", start, statusCode) }()
+
+	body := &pb.DiffRequest{}
+	if err := unmarshalRequest(r, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(r, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	lastSyncedCommit := body.GetLastSyncedCommit()
+	branch := body.GetBranch()
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /diffs",
+		slog.String("last_synced_commit", lastSyncedCommit),
+		slog.String("branch", branch),
+	)
+
+	repo, err := getRepoForDisk(ctx, repoURL, true)
+	if err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	latestCommit, changes, err := repo.ListFileDiffs(ctx, lastSyncedCommit, branch)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error listing file diffs", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error listing file diffs: %v", err), statusCode)
+
+		return
+	}
+
+	pbChanges := make([]*pb.FileChange, 0, len(changes))
+	for _, c := range changes {
+		pbChanges = append(pbChanges, &pb.FileChange{
+			FromPath: c.From,
+			ToPath:   c.To,
+		})
+	}
+
+	resp := &pb.DiffResponse{
+		LatestCommit: latestCommit,
+		Changes:      pbChanges,
+	}
+
+	out, err := marshalResponse(r, resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling diff response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error marshaling response: %v", err), statusCode)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing diff response", slog.Any("error", err))
+	}
+}
+
+func fileContentHandler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := r.Context()
+	defer func() { logRequestCompletion(ctx, "/file-content", start, statusCode) }()
+
+	body := &pb.FileContentRequest{}
+	if err := unmarshalRequest(r, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(r, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	commit := body.GetCommit()
+	filePath := body.GetPath()
+	if commit == "" || filePath == "" {
+		statusCode = http.StatusBadRequest
+		http.Error(w, "Missing commit or path", statusCode)
+
+		return
+	}
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /file-content",
+		slog.String("commit", commit),
+		slog.String("path", filePath),
+	)
+
+	repo, err := getRepoForDisk(ctx, repoURL, false)
+	if err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	content, err := repo.GetFileContent(ctx, commit, filePath)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error getting file content", slog.Any("error", err))
+		statusCode = http.StatusNotFound
+		http.Error(w, fmt.Sprintf("Error getting file content: %v", err), statusCode)
+
+		return
+	}
+
+	resp := &pb.FileContentResponse{
+		Content: content,
+	}
+
+	out, err := marshalResponse(r, resp)
+	if err != nil {
+		logger.ErrorContext(ctx, "Error marshaling file content response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error marshaling response: %v", err), statusCode)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(out); err != nil {
+		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 	}
 }

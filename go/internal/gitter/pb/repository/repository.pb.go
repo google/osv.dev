@@ -583,6 +583,274 @@ func (x *AffectedCommitsRequest) GetRefId() string {
 	return ""
 }
 
+type FileChange struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPath      string                 `protobuf:"bytes,1,opt,name=from_path,json=fromPath,proto3" json:"from_path,omitempty"`
+	ToPath        string                 `protobuf:"bytes,2,opt,name=to_path,json=toPath,proto3" json:"to_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileChange) Reset() {
+	*x = FileChange{}
+	mi := &file_repository_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileChange) ProtoMessage() {}
+
+func (x *FileChange) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileChange.ProtoReflect.Descriptor instead.
+func (*FileChange) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *FileChange) GetFromPath() string {
+	if x != nil {
+		return x.FromPath
+	}
+	return ""
+}
+
+func (x *FileChange) GetToPath() string {
+	if x != nil {
+		return x.ToPath
+	}
+	return ""
+}
+
+type DiffRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Url              string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	LastSyncedCommit string                 `protobuf:"bytes,2,opt,name=last_synced_commit,json=lastSyncedCommit,proto3" json:"last_synced_commit,omitempty"`
+	Branch           string                 `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty"` // Optional, defaults to remote HEAD (origin/HEAD) if not specified
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DiffRequest) Reset() {
+	*x = DiffRequest{}
+	mi := &file_repository_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiffRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiffRequest) ProtoMessage() {}
+
+func (x *DiffRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiffRequest.ProtoReflect.Descriptor instead.
+func (*DiffRequest) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DiffRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *DiffRequest) GetLastSyncedCommit() string {
+	if x != nil {
+		return x.LastSyncedCommit
+	}
+	return ""
+}
+
+func (x *DiffRequest) GetBranch() string {
+	if x != nil {
+		return x.Branch
+	}
+	return ""
+}
+
+type DiffResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LatestCommit  string                 `protobuf:"bytes,1,opt,name=latest_commit,json=latestCommit,proto3" json:"latest_commit,omitempty"`
+	Changes       []*FileChange          `protobuf:"bytes,2,rep,name=changes,proto3" json:"changes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiffResponse) Reset() {
+	*x = DiffResponse{}
+	mi := &file_repository_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiffResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiffResponse) ProtoMessage() {}
+
+func (x *DiffResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiffResponse.ProtoReflect.Descriptor instead.
+func (*DiffResponse) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *DiffResponse) GetLatestCommit() string {
+	if x != nil {
+		return x.LatestCommit
+	}
+	return ""
+}
+
+func (x *DiffResponse) GetChanges() []*FileChange {
+	if x != nil {
+		return x.Changes
+	}
+	return nil
+}
+
+type FileContentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Commit        string                 `protobuf:"bytes,2,opt,name=commit,proto3" json:"commit,omitempty"`
+	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileContentRequest) Reset() {
+	*x = FileContentRequest{}
+	mi := &file_repository_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileContentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileContentRequest) ProtoMessage() {}
+
+func (x *FileContentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileContentRequest.ProtoReflect.Descriptor instead.
+func (*FileContentRequest) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *FileContentRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *FileContentRequest) GetCommit() string {
+	if x != nil {
+		return x.Commit
+	}
+	return ""
+}
+
+func (x *FileContentRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type FileContentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Content       []byte                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileContentResponse) Reset() {
+	*x = FileContentResponse{}
+	mi := &file_repository_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileContentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileContentResponse) ProtoMessage() {}
+
+func (x *FileContentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_repository_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileContentResponse.ProtoReflect.Descriptor instead.
+func (*FileContentResponse) Descriptor() ([]byte, []int) {
+	return file_repository_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *FileContentResponse) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
 var File_repository_proto protoreflect.FileDescriptor
 
 const file_repository_proto_rawDesc = "" +
@@ -620,7 +888,24 @@ const file_repository_proto_rawDesc = "" +
 	"\x18detect_cherrypicks_limit\x18\x05 \x01(\bR\x16detectCherrypicksLimit\x12!\n" +
 	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate\x122\n" +
 	"\x15consider_all_branches\x18\a \x01(\bR\x13considerAllBranches\x12\x15\n" +
-	"\x06ref_id\x18\b \x01(\tR\x05refId*D\n" +
+	"\x06ref_id\x18\b \x01(\tR\x05refId\"B\n" +
+	"\n" +
+	"FileChange\x12\x1b\n" +
+	"\tfrom_path\x18\x01 \x01(\tR\bfromPath\x12\x17\n" +
+	"\ato_path\x18\x02 \x01(\tR\x06toPath\"e\n" +
+	"\vDiffRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12,\n" +
+	"\x12last_synced_commit\x18\x02 \x01(\tR\x10lastSyncedCommit\x12\x16\n" +
+	"\x06branch\x18\x03 \x01(\tR\x06branch\"a\n" +
+	"\fDiffResponse\x12#\n" +
+	"\rlatest_commit\x18\x01 \x01(\tR\flatestCommit\x12,\n" +
+	"\achanges\x18\x02 \x03(\v2\x12.gitter.FileChangeR\achanges\"R\n" +
+	"\x12FileContentRequest\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
+	"\x06commit\x18\x02 \x01(\tR\x06commit\x12\x12\n" +
+	"\x04path\x18\x03 \x01(\tR\x04path\"/\n" +
+	"\x13FileContentResponse\x12\x18\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent*D\n" +
 	"\tEventType\x12\x0e\n" +
 	"\n" +
 	"INTRODUCED\x10\x00\x12\t\n" +
@@ -641,7 +926,7 @@ func file_repository_proto_rawDescGZIP() []byte {
 }
 
 var file_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_repository_proto_goTypes = []any{
 	(EventType)(0),                  // 0: gitter.EventType
 	(*CommitDetail)(nil),            // 1: gitter.CommitDetail
@@ -653,20 +938,26 @@ var file_repository_proto_goTypes = []any{
 	(*Event)(nil),                   // 7: gitter.Event
 	(*CacheRequest)(nil),            // 8: gitter.CacheRequest
 	(*AffectedCommitsRequest)(nil),  // 9: gitter.AffectedCommitsRequest
+	(*FileChange)(nil),              // 10: gitter.FileChange
+	(*DiffRequest)(nil),             // 11: gitter.DiffRequest
+	(*DiffResponse)(nil),            // 12: gitter.DiffResponse
+	(*FileContentRequest)(nil),      // 13: gitter.FileContentRequest
+	(*FileContentResponse)(nil),     // 14: gitter.FileContentResponse
 }
 var file_repository_proto_depIdxs = []int32{
-	1, // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
-	3, // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.Commit
-	4, // 2: gitter.AffectedCommitsResponse.tags:type_name -> gitter.Ref
-	7, // 3: gitter.AffectedCommitsResponse.cherry_picked_events:type_name -> gitter.Event
-	4, // 4: gitter.TagsResponse.tags:type_name -> gitter.Ref
-	0, // 5: gitter.Event.event_type:type_name -> gitter.EventType
-	7, // 6: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	1,  // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
+	3,  // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.Commit
+	4,  // 2: gitter.AffectedCommitsResponse.tags:type_name -> gitter.Ref
+	7,  // 3: gitter.AffectedCommitsResponse.cherry_picked_events:type_name -> gitter.Event
+	4,  // 4: gitter.TagsResponse.tags:type_name -> gitter.Ref
+	0,  // 5: gitter.Event.event_type:type_name -> gitter.EventType
+	7,  // 6: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
+	10, // 7: gitter.DiffResponse.changes:type_name -> gitter.FileChange
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_repository_proto_init() }
@@ -680,7 +971,7 @@ func file_repository_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

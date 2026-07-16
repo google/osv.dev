@@ -11,7 +11,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestGetRepoDirName(t *testing.T) {
@@ -554,6 +556,272 @@ func TestTagsHandler(t *testing.T) {
 
 				if diff := cmp.Diff(tt.expectedTags, gotTags); diff != "" {
 					t.Errorf("handler returned wrong tags (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestDiffsHandler(t *testing.T) {
+	setupTest(t)
+
+	tests := []struct {
+		name             string
+		reqBody          *pb.DiffRequest
+		rawBody          []byte
+		contentType      string
+		expectedCode     int
+		expectedResponse *pb.DiffResponse
+	}{
+		{
+			name: "Missing repo URL",
+			reqBody: &pb.DiffRequest{
+				LastSyncedCommit: "1234567890123456789012345678901234567890",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Forbidden or non-existent repo",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/google/this-repo-does-not-exist-12345.git",
+				LastSyncedCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusForbidden,
+		},
+		{
+			name: "Empty last sync for full tree diff",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "",
+				Branch:           "branch_1",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			expectedResponse: &pb.DiffResponse{
+				LatestCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
+				Changes: []*pb.FileChange{
+					{ToPath: "abc"},
+					{ToPath: "branch"},
+					{ToPath: "def"},
+					{ToPath: "regress"},
+				},
+			},
+		},
+		{
+			name: "Empty branch name for remote origin HEAD branch",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				Branch:           "",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			expectedResponse: &pb.DiffResponse{
+				LatestCommit: "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
+				Changes: []*pb.FileChange{
+					{
+						ToPath: "branch",
+					},
+					{
+						FromPath: "regress",
+					},
+				},
+			},
+		},
+		{
+			name: "Specifying non-default branch and last synced commit",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f",
+				Branch:           "oss-fuzz",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			expectedResponse: &pb.DiffResponse{
+				LatestCommit: "25147a74d8aeb27b43665530ee121a2a1b19dc58",
+				Changes: []*pb.FileChange{
+					{
+						ToPath: "oss-fuzz-6",
+					},
+					{
+						ToPath: "oss-fuzz-7",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bodyBytes []byte
+			if tt.rawBody != nil {
+				bodyBytes = tt.rawBody
+			} else if tt.reqBody != nil {
+				var err error
+				if tt.contentType == "application/json" {
+					bodyBytes, err = protojson.Marshal(tt.reqBody)
+				} else {
+					bodyBytes, err = proto.Marshal(tt.reqBody)
+				}
+				if err != nil {
+					t.Fatalf("failed to marshal request: %v", err)
+				}
+			}
+
+			req, err := http.NewRequest(http.MethodPost, "/diffs", bytes.NewReader(bodyBytes))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			rr := httptest.NewRecorder()
+			diffsHandler(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("diffsHandler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.expectedResponse != nil {
+				resp := &pb.DiffResponse{}
+				var err error
+				if tt.contentType == "application/json" {
+					err = protojson.Unmarshal(rr.Body.Bytes(), resp)
+				} else {
+					err = proto.Unmarshal(rr.Body.Bytes(), resp)
+				}
+				if err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if diff := cmp.Diff(tt.expectedResponse, resp, protocmp.Transform()); diff != "" {
+					t.Errorf("diffsHandler returned wrong response: -want +got:\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestFileContentHandler(t *testing.T) {
+	setupTest(t)
+
+	tests := []struct {
+		name             string
+		reqBody          *pb.FileContentRequest
+		rawBody          []byte
+		contentType      string
+		expectedCode     int
+		expectedResponse *pb.FileContentResponse
+	}{
+		{
+			name: "Missing repo URL",
+			reqBody: &pb.FileContentRequest{
+				Commit: "1234567890123456789012345678901234567890",
+				Path:   "foo.txt",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing commit or path",
+			reqBody: &pb.FileContentRequest{
+				Url: "https://github.com/google/osv.dev.git",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Forbidden or non-existent repo",
+			reqBody: &pb.FileContentRequest{
+				Url:    "https://github.com/google/this-repo-does-not-exist-12345.git",
+				Commit: "1234567890123456789012345678901234567890",
+				Path:   "foo.txt",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusForbidden,
+		},
+		{
+			name: "Commit does not exist in repo",
+			reqBody: &pb.FileContentRequest{
+				Url:    "https://github.com/oliverchang/osv-test.git",
+				Commit: "183107f016fc32d8dee4f1a6b2c98b8d7073aab1",
+				Path:   "foo.txt",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name: "File does not exist at commit",
+			reqBody: &pb.FileContentRequest{
+				Url:    "https://github.com/oliverchang/osv-test.git",
+				Commit: "949f182716f037e25394bbb98d39b3295d230a29",
+				Path:   "oss-fuzz-7",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name: "Normal request",
+			reqBody: &pb.FileContentRequest{
+				Url:    "https://github.com/oliverchang/osv-test.git",
+				Commit: "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
+				Path:   "abc",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			expectedResponse: &pb.FileContentResponse{
+				Content: []byte("abcd\n"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bodyBytes []byte
+			if tt.rawBody != nil {
+				bodyBytes = tt.rawBody
+			} else if tt.reqBody != nil {
+				var err error
+				if tt.contentType == "application/json" {
+					bodyBytes, err = protojson.Marshal(tt.reqBody)
+				} else {
+					bodyBytes, err = proto.Marshal(tt.reqBody)
+				}
+				if err != nil {
+					t.Fatalf("failed to marshal request: %v", err)
+				}
+			}
+
+			req, err := http.NewRequest(http.MethodPost, "/file-content", bytes.NewReader(bodyBytes))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			rr := httptest.NewRecorder()
+			fileContentHandler(rr, req)
+
+			if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("fileContentHandler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.expectedResponse != nil {
+				resp := &pb.FileContentResponse{}
+				var err error
+				if tt.contentType == "application/json" {
+					err = protojson.Unmarshal(rr.Body.Bytes(), resp)
+				} else {
+					err = proto.Unmarshal(rr.Body.Bytes(), resp)
+				}
+				if err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if diff := cmp.Diff(tt.expectedResponse, resp, protocmp.Transform()); diff != "" {
+					t.Errorf("fileContentHandler returned wrong response: -want +got:\n%s", diff)
 				}
 			}
 		})

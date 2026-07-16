@@ -104,21 +104,22 @@ run-website-emulator: build-website-frontend
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 
 run-go-website: build-website-frontend
-	cd go && go build -o ./website ./cmd/website && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities ./website -static-dir ../website/dist -docs-dir ../docs
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 run-go-website-staging: build-website-frontend
-	cd go && go build -o ./website ./cmd/website && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./website -static-dir ../website/dist -docs-dir ../docs
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 run-go-website-emulator: build-website-frontend
-	cd go && go build -o ./website ./cmd/website && DATASTORE_EMULATOR_HOST=localhost:5002 ./website -static-dir ../website/dist -docs-dir ../docs
+	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 stage-website-assets: build-website-frontend
 	mkdir -p go/cmd/website/dist go/cmd/website/docs
 	cp -r website/dist/* go/cmd/website/dist/
 	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
 
-build-go-website-prod: stage-website-assets
-	cd go && go build -tags embedstatic -o ./website ./cmd/website
+run-go-website-prod: stage-website-assets
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run -tags embedstatic ./cmd/website
+
 
 
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.

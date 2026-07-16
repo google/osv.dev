@@ -45,15 +45,29 @@ func run() error {
 	docsDir := flag.String("docs-dir", "docs", "directory containing API docs")
 	flag.Parse()
 
-	var staticFS website.Config
-	if *staticDir != "" {
-		staticFS.StaticFS = os.DirFS(*staticDir)
-	}
-	if *docsDir != "" {
-		staticFS.DocsFS = os.DirFS(*docsDir)
+	staticFiles, err := getStaticFS(*staticDir)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to load static filesystem", slog.String("dir", *staticDir), slog.Any("error", err))
+
+		return fmt.Errorf("failed to load static filesystem %q: %w", *staticDir, err)
 	}
 
-	srv := website.NewServer(staticFS)
+	docsFiles, err := getDocsFS(*docsDir)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to load docs filesystem", slog.String("dir", *docsDir), slog.Any("error", err))
+
+		return fmt.Errorf("failed to load docs filesystem %q: %w", *docsDir, err)
+	}
+
+	srv, err := website.NewServer(website.Config{
+		StaticFS: staticFiles,
+		DocsFS:   docsFiles,
+	})
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to create website server", slog.Any("error", err))
+
+		return fmt.Errorf("failed to create website server: %w", err)
+	}
 
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", *port),

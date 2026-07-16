@@ -2,6 +2,7 @@
 package website
 
 import (
+	"errors"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -49,7 +50,15 @@ func (r *responseLogger) Write(b []byte) (int, error) {
 }
 
 // NewServer creates and initializes a new website Server.
-func NewServer(cfg Config) *Server {
+// It returns an error if cfg.StaticFS or cfg.DocsFS is nil.
+func NewServer(cfg Config) (*Server, error) {
+	if cfg.StaticFS == nil {
+		return nil, errors.New("StaticFS is required")
+	}
+	if cfg.DocsFS == nil {
+		return nil, errors.New("DocsFS is required")
+	}
+
 	s := &Server{
 		config: cfg,
 		mux:    http.NewServeMux(),
@@ -66,7 +75,7 @@ func NewServer(cfg Config) *Server {
 
 	s.handler = h
 
-	return s
+	return s, nil
 }
 
 // ServeHTTP implements the http.Handler interface by delegating to the middleware chain.

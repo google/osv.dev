@@ -112,6 +112,14 @@ run-go-website-staging: build-website-frontend
 run-go-website-emulator: build-website-frontend
 	cd go && go build -o ./website ./cmd/website && DATASTORE_EMULATOR_HOST=localhost:5002 ./website -static-dir ../website/dist -docs-dir ../docs
 
+stage-website-assets: build-website-frontend
+	mkdir -p go/cmd/website/dist go/cmd/website/docs
+	cp -r website/dist/* go/cmd/website/dist/
+	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
+
+build-go-website-prod: stage-website-assets
+	cd go && go build -tags embedstatic -o ./website ./cmd/website
+
 
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 # Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).

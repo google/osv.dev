@@ -7,14 +7,45 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/google/osv.dev/go/internal/website"
 )
 
+func newTestServer(t *testing.T, cfg website.Config) *website.Server {
+	t.Helper()
+	if cfg.StaticFS == nil {
+		cfg.StaticFS = fstest.MapFS{}
+	}
+	if cfg.DocsFS == nil {
+		cfg.DocsFS = fstest.MapFS{}
+	}
+	srv, err := website.NewServer(cfg)
+	if err != nil {
+		t.Fatalf("failed creating test server: %v", err)
+	}
+
+	return srv
+}
+
+func TestNewServer_NilFS(t *testing.T) {
+	t.Parallel()
+
+	if _, err := website.NewServer(website.Config{}); err == nil {
+		t.Errorf("expected error when StaticFS and DocsFS are nil, got nil")
+	}
+	if _, err := website.NewServer(website.Config{StaticFS: fstest.MapFS{}}); err == nil {
+		t.Errorf("expected error when DocsFS is nil, got nil")
+	}
+	if _, err := website.NewServer(website.Config{DocsFS: fstest.MapFS{}}); err == nil {
+		t.Errorf("expected error when StaticFS is nil, got nil")
+	}
+}
+
 func TestHealthz(t *testing.T) {
 	t.Parallel()
 
-	srv := website.NewServer(website.Config{})
+	srv := newTestServer(t, website.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()
 
@@ -31,7 +62,7 @@ func TestHealthz(t *testing.T) {
 func TestGoVanityImports(t *testing.T) {
 	t.Parallel()
 
-	srv := website.NewServer(website.Config{})
+	srv := newTestServer(t, website.Config{})
 
 	t.Run("Root go-get=1", func(t *testing.T) {
 		t.Parallel()
@@ -82,7 +113,7 @@ func TestGoVanityImports(t *testing.T) {
 func TestRedirects(t *testing.T) {
 	t.Parallel()
 
-	srv := website.NewServer(website.Config{})
+	srv := newTestServer(t, website.Config{})
 
 	tests := []struct {
 		path        string
@@ -125,7 +156,7 @@ func TestPublicKeys(t *testing.T) {
 		t.Fatalf("failed to write test key file: %v", err)
 	}
 
-	srv := website.NewServer(website.Config{StaticFS: os.DirFS(tmpDir)})
+	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
 
 	t.Run("Existing public key", func(t *testing.T) {
 		t.Parallel()
@@ -180,7 +211,7 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to write favicon: %v", err)
 	}
 
-	srv := website.NewServer(website.Config{StaticFS: os.DirFS(tmpDir)})
+	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
 
 	t.Run("Root serves home.html", func(t *testing.T) {
 		t.Parallel()
@@ -228,7 +259,7 @@ func TestStaticFiles(t *testing.T) {
 func TestEndpointRegistration(t *testing.T) {
 	t.Parallel()
 
-	srv := website.NewServer(website.Config{})
+	srv := newTestServer(t, website.Config{})
 
 	endpoints := []struct {
 		method string

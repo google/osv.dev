@@ -13,14 +13,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	if s.config.StaticFS != nil {
-		if _, err := fs.Stat(s.config.StaticFS, "home.html"); err == nil {
-			http.ServeFileFS(w, r, s.config.StaticFS, "home.html")
-
-			return
-		}
-	}
-	http.NotFound(w, r)
+	http.ServeFileFS(w, r, s.config.StaticFS, "home.html")
 }
 
 func (s *Server) handleGoBindingsVanity(w http.ResponseWriter, r *http.Request) {
@@ -34,15 +27,7 @@ func (s *Server) handleGoBindingsVanity(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) handleSwagger(w http.ResponseWriter, r *http.Request) {
-	if s.config.DocsFS != nil {
-		filename := "osv_service_v1.swagger.json"
-		if _, err := fs.Stat(s.config.DocsFS, filename); err == nil {
-			http.ServeFileFS(w, r, s.config.DocsFS, filename)
-
-			return
-		}
-	}
-	http.NotFound(w, r)
+	http.ServeFileFS(w, r, s.config.DocsFS, "osv_service_v1.swagger.json")
 }
 
 func (s *Server) handlePublicKeys(w http.ResponseWriter, r *http.Request) {
@@ -52,36 +37,19 @@ func (s *Server) handlePublicKeys(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	if s.config.StaticFS != nil {
-		if _, err := fs.Stat(s.config.StaticFS, keyPath); err == nil {
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			http.ServeFileFS(w, r, s.config.StaticFS, keyPath)
-
-			return
-		}
-	}
-	http.NotFound(w, r)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	http.ServeFileFS(w, r, s.config.StaticFS, keyPath)
 }
 
 func (s *Server) handleFavicon(w http.ResponseWriter, r *http.Request) {
-	if s.config.StaticFS != nil {
-		faviconPath := "static/img/favicon-32x32.png"
-		if _, err := fs.Stat(s.config.StaticFS, faviconPath); err == nil {
-			http.ServeFileFS(w, r, s.config.StaticFS, faviconPath)
-
-			return
-		}
-	}
-	http.NotFound(w, r)
+	http.ServeFileFS(w, r, s.config.StaticFS, "static/img/favicon-32x32.png")
 }
 
 func (s *Server) handleRobots(w http.ResponseWriter, r *http.Request) {
-	if s.config.StaticFS != nil {
-		if _, err := fs.Stat(s.config.StaticFS, "robots.txt"); err == nil {
-			http.ServeFileFS(w, r, s.config.StaticFS, "robots.txt")
+	if _, err := fs.Stat(s.config.StaticFS, "robots.txt"); err == nil {
+		http.ServeFileFS(w, r, s.config.StaticFS, "robots.txt")
 
-			return
-		}
+		return
 	}
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {

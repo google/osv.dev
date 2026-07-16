@@ -5,10 +5,10 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
-	"google.golang.org/api/option"
 )
 
 func TestUploadToGCS(t *testing.T) {
@@ -210,39 +210,92 @@ func TestDownloadBucket(t *testing.T) {
 	})
 }
 
-func TestUploadFileList(t *testing.T) {
-	server := fakestorage.NewServer([]fakestorage.Object{})
+func TestListObjectsFast(t *testing.T) {
+	objects := []fakestorage.Object{
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-1999-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2017-9999.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018-9999.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018/nested.json", // in the gap
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2019-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2020-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/non-cve.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "other/file.json", // should not be listed
+			},
+		},
+	}
+
+	server := fakestorage.NewServer(objects)
 	t.Cleanup(server.Stop)
 
-	t.Log("Server URL:", server.URL())
-
-	bucketName := "test-bucket"
-	prefix := "test-prefix"
-	files := []string{
-		"test-prefix/file1.json",
-		"test-prefix/file2.json",
-	}
-
-	ctx := context.Background()
-	// Create bucket first (fake server needs it)
 	client := server.Client()
-	bkt := client.Bucket(bucketName)
-	if err := bkt.Create(ctx, "project", nil); err != nil {
-		t.Fatalf("failed to create bucket: %v", err)
-	}
+	bkt := client.Bucket("test-bucket")
 
-	err := UploadFileList(ctx, bucketName, prefix, files, option.WithHTTPClient(server.HTTPClient()))
+	breakdowns := []string{"CVE-2018-", "CVE-2019-"}
+	got, err := ListObjectsFast(context.Background(), bkt, "cve5", breakdowns)
 	if err != nil {
-		t.Fatalf("UploadFileList failed: %v", err)
+		t.Fatalf("ListObjectsFast failed: %v", err)
 	}
 
-	obj, err := server.GetObject(bucketName, "test-prefix/files.txt")
-	if err != nil {
-		t.Fatalf("failed to get object: %v", err)
+	expected := []string{
+		"cve5/CVE-1999-0001.json",
+		"cve5/CVE-2017-9999.json",
+		"cve5/CVE-2018-0001.json",
+		"cve5/CVE-2018-9999.json",
+		"cve5/CVE-2018/nested.json",
+		"cve5/CVE-2019-0001.json",
+		"cve5/CVE-2020-0001.json",
+		"cve5/non-cve.json",
 	}
 
-	expectedContent := "test-prefix/file1.json\ntest-prefix/file2.json\n"
-	if string(obj.Content) != expectedContent {
-		t.Errorf("expected content %q, got %q", expectedContent, string(obj.Content))
+	// Sort both to compare
+	slices.Sort(got)
+	slices.Sort(expected)
+
+	if !slices.Equal(got, expected) {
+		t.Errorf("ListObjectsFast returned unexpected list.\ngot:  %v\nwant: %v", got, expected)
 	}
 }

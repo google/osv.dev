@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
@@ -208,3 +209,94 @@ func TestDownloadBucket(t *testing.T) {
 		}
 	})
 }
+
+func TestListObjectsFast(t *testing.T) {
+	objects := []fakestorage.Object{
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-1999-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2017-9999.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018-9999.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2018/nested.json", // in the gap
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2019-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/CVE-2020-0001.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "cve5/non-cve.json",
+			},
+		},
+		{
+			ObjectAttrs: fakestorage.ObjectAttrs{
+				BucketName: "test-bucket",
+				Name:       "other/file.json", // should not be listed
+			},
+		},
+	}
+
+	server := fakestorage.NewServer(objects)
+	t.Cleanup(server.Stop)
+
+	client := server.Client()
+	bkt := client.Bucket("test-bucket")
+
+	breakdowns := []string{"CVE-2018-", "CVE-2019-"}
+	got, err := ListObjectsFast(context.Background(), bkt, "cve5", breakdowns)
+	if err != nil {
+		t.Fatalf("ListObjectsFast failed: %v", err)
+	}
+
+	expected := []string{
+		"cve5/CVE-1999-0001.json",
+		"cve5/CVE-2017-9999.json",
+		"cve5/CVE-2018-0001.json",
+		"cve5/CVE-2018-9999.json",
+		"cve5/CVE-2018/nested.json",
+		"cve5/CVE-2019-0001.json",
+		"cve5/CVE-2020-0001.json",
+		"cve5/non-cve.json",
+	}
+
+	// Sort both to compare
+	slices.Sort(got)
+	slices.Sort(expected)
+
+	if !slices.Equal(got, expected) {
+		t.Errorf("ListObjectsFast returned unexpected list.\ngot:  %v\nwant: %v", got, expected)
+	}
+}
+

@@ -26,7 +26,6 @@ import (
 	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -64,62 +63,22 @@ func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([
 	if strings.HasPrefix(pathStr, "gs://") {
 		trimmed := strings.TrimPrefix(pathStr, "gs://")
 		bucketName, prefix, _ := strings.Cut(trimmed, "/")
-		prefix = strings.TrimSuffix(prefix, "/")
 		bucket := client.Bucket(bucketName)
 
 		currentYear := time.Now().Year()
-		var queries []*storage.Query
-
-		// Before 2018 query
-		before2018Query := &storage.Query{}
-		startSeg := "CVE-"
-		endSeg := fmt.Sprintf("CVE-%d-", parallelStartYear)
-		if prefix != "" {
-			before2018Query.Prefix = prefix + "/"
-			before2018Query.StartOffset = prefix + "/" + startSeg
-			before2018Query.EndOffset = prefix + "/" + endSeg
-		} else {
-			before2018Query.StartOffset = startSeg
-			before2018Query.EndOffset = endSeg
-		}
-		queries = append(queries, before2018Query)
-
-		// Parallel queries for each year from 2018 to currentYear
+		var breakdowns []string
 		for year := parallelStartYear; year <= currentYear; year++ {
-			yearPrefix := fmt.Sprintf("CVE-%d-", year)
-			if prefix != "" {
-				yearPrefix = prefix + "/" + yearPrefix
-			}
-			queries = append(queries, &storage.Query{Prefix: yearPrefix})
+			breakdowns = append(breakdowns, fmt.Sprintf("CVE-%d-", year))
 		}
 
-		objsChan := make(chan []string, len(queries))
-		g, ctx := errgroup.WithContext(ctx)
-
-		for _, q := range queries {
-			g.Go(func() error {
-				objs, err := gcs.ListBucketObjectsQuery(ctx, bucket, q)
-				if err != nil {
-					return err
-				}
-				objsChan <- objs
-				return nil
-			})
-		}
-
-		if err := g.Wait(); err != nil {
+		objs, err := gcs.ListObjectsFast(ctx, bucket, prefix, breakdowns)
+		if err != nil {
 			return nil, err
-		}
-		close(objsChan)
-
-		var allObjs []string
-		for objs := range objsChan {
-			allObjs = append(allObjs, objs...)
 		}
 
 		var fullPaths []string
-		for _, obj := range allObjs {
-			if strings.HasSuffix(obj, "/") || !strings.HasSuffix(obj, ".json") || strings.HasSuffix(obj, ".metrics.json") {
+		for _, obj := range objs {
+			if !strings.HasSuffix(obj, ".json") || strings.HasSuffix(obj, ".metrics.json") {
 				continue
 			}
 			fullPaths = append(fullPaths, fmt.Sprintf("gs://%s/%s", bucketName, obj))

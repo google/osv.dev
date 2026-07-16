@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -221,12 +222,6 @@ func DownloadBucket(ctx context.Context, bkt *storage.BucketHandle, prefix strin
 	return nil
 }
 
-// ListBucketObjects lists the names of all objects in a Google Cloud Storage bucket.
-// It does not download the file contents.
-func ListBucketObjects(ctx context.Context, bucket *storage.BucketHandle, prefix string) ([]string, error) {
-	return ListBucketObjectsQuery(ctx, bucket, &storage.Query{Prefix: prefix})
-}
-
 // ListBucketObjectsQuery lists the names of all objects in a Google Cloud Storage bucket matching the query.
 // It optimizes the request by only retrieving the Name attribute.
 func ListBucketObjectsQuery(ctx context.Context, bucket *storage.BucketHandle, query *storage.Query) ([]string, error) {
@@ -250,4 +245,82 @@ func ListBucketObjectsQuery(ctx context.Context, bucket *storage.BucketHandle, q
 	}
 
 	return filenames, nil
+}
+
+// ListObjectsFast lists objects in parallel by splitting the prefix space.
+// It takes a globalPrefix and a list of breakdownPrefixes.
+// It partitions the space using StartOffset and EndOffset based on the breakdowns.
+// breakdownPrefixes should be sorted lexicographically.
+func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPrefix string, breakdownPrefixes []string) ([]string, error) {
+	globalPrefix = strings.TrimSuffix(globalPrefix, "/")
+
+	if len(breakdownPrefixes) == 0 {
+		return ListBucketObjectsQuery(ctx, bucket, &storage.Query{Prefix: globalPrefix})
+	}
+
+	// Ensure breakdownPrefixes are sorted
+	sortedBreakdowns := make([]string, len(breakdownPrefixes))
+	copy(sortedBreakdowns, breakdownPrefixes)
+	slices.Sort(sortedBreakdowns)
+
+	var queries []*storage.Query
+	globalPrefixWithSlash := globalPrefix
+	if globalPrefix != "" {
+		globalPrefixWithSlash = globalPrefix + "/"
+	}
+
+	// 1. First query: everything before the first breakdown
+	queries = append(queries, &storage.Query{
+		Prefix:    globalPrefixWithSlash,
+		EndOffset: globalPrefixWithSlash + sortedBreakdowns[0],
+	})
+
+	// 2. Intermediate queries: ranges between breakdowns
+	for i := 0; i < len(sortedBreakdowns)-1; i++ {
+		queries = append(queries, &storage.Query{
+			Prefix:      globalPrefixWithSlash,
+			StartOffset: globalPrefixWithSlash + sortedBreakdowns[i],
+			EndOffset:   globalPrefixWithSlash + sortedBreakdowns[i+1],
+		})
+	}
+
+	// 3. Last query: everything from the last breakdown onwards
+	queries = append(queries, &storage.Query{
+		Prefix:      globalPrefixWithSlash,
+		StartOffset: globalPrefixWithSlash + sortedBreakdowns[len(sortedBreakdowns)-1],
+	})
+
+	objsChan := make(chan []string, len(queries))
+	g, ctx := errgroup.WithContext(ctx)
+
+	for _, q := range queries {
+		g.Go(func() error {
+			objs, err := ListBucketObjectsQuery(ctx, bucket, q)
+			if err != nil {
+				return err
+			}
+			objsChan <- objs
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	close(objsChan)
+
+	var allObjs []string
+	for objs := range objsChan {
+		allObjs = append(allObjs, objs...)
+	}
+
+	var filtered []string
+	for _, obj := range allObjs {
+		if strings.HasSuffix(obj, "/") {
+			continue
+		}
+		filtered = append(filtered, obj)
+	}
+
+	return filtered, nil
 }

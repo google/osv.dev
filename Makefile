@@ -90,20 +90,37 @@ build-api-protos:
 
 build-protos: build-osv-protos build-api-protos
 
-run-website:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+build-website-frontend:
+	cd website/frontend3 && pnpm install && pnpm run build
+	cd website/blog && hugo --buildFuture -d ../dist/static/blog
+
+run-website: build-website-frontend
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
-run-website-staging:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+run-website-staging: build-website-frontend
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
-run-website-emulator:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+run-website-emulator: build-website-frontend
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
+
+run-go-website: build-website-frontend
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+run-go-website-staging: build-website-frontend
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+run-go-website-emulator: build-website-frontend
+	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+stage-website-assets: build-website-frontend
+	mkdir -p go/cmd/website/dist go/cmd/website/docs
+	cp -r website/dist/* go/cmd/website/dist/
+	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
+
+run-go-website-prod: stage-website-assets
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run -tags embedstatic ./cmd/website
+
+
 
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 # Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).
@@ -132,3 +149,8 @@ run-python-api-server-test:
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+
+reimport-tui:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd go/cmd/tools/reimport-tui && go run .
+

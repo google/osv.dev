@@ -30,14 +30,14 @@ func TestOSVClient_GetVulnsByID(t *testing.T) {
 			name: "Missing ID lookup",
 			id:   "GO-1000-1000",
 			wantErr: testhelper.ErrContainsStr{
-				Str: `client error: status="404 Not Found" body={"code":5,"message":"Bug not found."}`,
+				Str: `client error: status="404 Not Found" body={"code":5,"message":"Vulnerability not found"}`,
 			},
 		},
 		{
 			name: "Invalid ID",
 			id:   "_--_--",
 			wantErr: testhelper.ErrContainsStr{
-				Str: `client error: status="404 Not Found" body={"code":5,"message":"Bug not found."}`,
+				Str: `client error: status="404 Not Found" body={"code":5,"message":"Vulnerability not found"}`,
 			},
 		},
 	}
@@ -134,7 +134,7 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 			},
 			wantIDs: [][]string{},
 			wantErr: testhelper.ErrContainsStr{
-				Str: `client error: status="400 Bad Request" body={"code":3,"message":"Invalid query."}`,
+				Str: `client error: status="400 Bad Request" body={"code":3,"message":"error in query at index 1: rpc error: code = InvalidArgument desc = invalid query"}`,
 			},
 		},
 	}
@@ -306,7 +306,7 @@ func TestOSVClient_Query(t *testing.T) {
 				},
 			},
 			wantErr: testhelper.ErrContainsStr{
-				Str: `client error: status="400 Bad Request" body={"code":3,"message":"Invalid query."}`,
+				Str: `client error: status="400 Bad Request" body={"code":3,"message":"invalid query"}`,
 			},
 		},
 	}

@@ -10,6 +10,9 @@ spec:
     spec:
       containers:
       - image: osv-server
+        ports:
+        - name: h2c
+          containerPort: 8080
         env:
         - name: GOOGLE_CLOUD_PROJECT
           value: oss-vdb

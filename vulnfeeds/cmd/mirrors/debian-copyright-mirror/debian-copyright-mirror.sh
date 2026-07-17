@@ -29,7 +29,7 @@
 
 mkdir -p "${WORK_DIR}" || true
 
-python debian-copyright-mirror.py "${WORK_DIR}/metadata.ftp-master.debian.org/changelogs/"
+python3 debian-copyright-mirror.py "${WORK_DIR}/metadata.ftp-master.debian.org/changelogs/"
 
 tar -C "${WORK_DIR}" -cf "${WORK_DIR}/$(basename ${GCS_PATH})" .
 

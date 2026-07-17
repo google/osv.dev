@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workers
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: workloadType
+        operator: Equal
+        value: worker-pool
+      nodeSelector:
+        workloadType: worker-pool
+      containers:
+      - name: worker-private
+        env:
+          - name: GOOGLE_CLOUD_PROJECT
+            value: oss-vdb-test
+          - name: OSV_VULNERABILITIES_BUCKET
+            value: osv-test-vulnerabilities-private
+          - name: DATASTORE_DATABASE_ID
+            value: "datastore-private"
+          - name: PUBSUB_SUBSCRIPTION
+            value: "private-default-pool"
+          - name: FAILED_TASKS_TOPIC
+            value: "failed-private-tasks"
+        resources:
+          requests:
+            cpu: "0.9"
+            memory: "1.2Gi"
+          limits:
+            cpu: "1.5"
+            memory: "1.3Gi"

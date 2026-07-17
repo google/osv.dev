@@ -6,7 +6,7 @@ locals {
 
   all_resources = concat(
     [for resource in local.env_kustomization.resources : "${local.env_kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
-    [for resource in local.base_kustomization.resources : "${local.base_kustomization_path}/${resource}" if can(regex("\\.yaml$", resource))],
+    [for f in fileset(local.base_kustomization_path, "**/*.yaml") : "${local.base_kustomization_path}/${f}" if !endswith(f, "kustomization.yaml")],
   )
 
   # Iterate of each yaml configuration and create a key based on kind and name in the yaml file.
@@ -82,11 +82,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.35.0"
+      version = "~> 7.39.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.35.0"
+      version = "~> 7.39.0"
     }
     external = {
       source  = "hashicorp/external"

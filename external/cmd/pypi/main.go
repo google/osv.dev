@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -220,7 +219,7 @@ func main() {
 
 func generatePyPIAffected(cve models.NVDCVE, pkg string, validVersions []string, purl string, metrics *models.ConversionMetrics) *vulns.Vulnerability {
 	id := "PYSEC-0000-" + cve.ID
-	versions := conversion.ExtractVersionInfo(cve, validVersions, http.DefaultClient, metrics, nil)
+	versions := conversion.ExtractVersionInfo(cve, validVersions, metrics)
 
 	pkgInfo := vulns.PackageInfo{
 		PkgName:     pkg,

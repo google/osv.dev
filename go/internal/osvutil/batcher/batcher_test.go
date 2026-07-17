@@ -252,3 +252,58 @@ func TestBatcher_PanicPropagation(t *testing.T) {
 		t.Logf("Caller %d successfully received propagated PanicError: %v", i+1, panicErr)
 	}
 }
+
+func TestBatcher_MaxSizeEnforced(t *testing.T) {
+	ctx := context.Background()
+	maxSize := 10
+
+	var maxObservedBatchSize int
+	var mu sync.Mutex
+
+	batchFunc := func(_ context.Context, keys []int) []Result[int] {
+		mu.Lock()
+		if len(keys) > maxObservedBatchSize {
+			maxObservedBatchSize = len(keys)
+		}
+		mu.Unlock()
+
+		results := make([]Result[int], len(keys))
+		for i, key := range keys {
+			results[i] = Result[int]{Val: key * 2}
+		}
+
+		return results
+	}
+
+	b := New(50*time.Millisecond, maxSize, batchFunc)
+
+	const totalRequests = 100
+	results := make([]int, totalRequests)
+	errs := make([]error, totalRequests)
+
+	var wg sync.WaitGroup
+	for i := range totalRequests {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			res, err := b.Get(ctx, idx)
+			results[idx] = res
+			errs[idx] = err
+		}(i)
+	}
+
+	wg.Wait()
+
+	if maxObservedBatchSize > maxSize {
+		t.Errorf("Batch size %d exceeded maxSize %d", maxObservedBatchSize, maxSize)
+	}
+
+	for i := range totalRequests {
+		if errs[i] != nil {
+			t.Errorf("Request %d failed: %v", i, errs[i])
+		}
+		if results[i] != i*2 {
+			t.Errorf("Request %d got wrong result: %d, expected %d", i, results[i], i*2)
+		}
+	}
+}

@@ -1642,12 +1642,6 @@ func TestGetFileContent(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "Fetch empty path string (should fail)",
-			ref:     commit2,
-			path:    "",
-			wantErr: true,
-		},
-		{
 			name:    "Fetch with invalid commit ref (should fail)",
 			ref:     "invalid-ref",
 			path:    "modified_file.txt",

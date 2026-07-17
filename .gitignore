@@ -18,4 +18,5 @@ temp/*
 gcp/api/v1/osv/**
 .hypothesis
 go/api-devserver
+go/api
 esp.log

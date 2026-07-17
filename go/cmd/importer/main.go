@@ -89,7 +89,8 @@ func main() {
 		logger.FatalContext(ctx, "Forced shut down after 30 seconds")
 	}()
 
-	datastoreClient, err := datastore.NewClient(ctx, project)
+	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the default database, which is what we want.
+	datastoreClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
 	if err != nil {
 		logger.FatalContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 	}

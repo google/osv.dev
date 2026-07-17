@@ -18,9 +18,15 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "1"
-                memory: "10G"
+                cpu: "4"
+                memory: "63G"
               limits:
-                cpu: "1"
-                memory: "13G"
+                cpu: "4"
+                memory: "64G"
+          nodeSelector:
+            cloud.google.com/gke-nodepool: highend
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: highend
           restartPolicy: Never

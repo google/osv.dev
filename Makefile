@@ -45,14 +45,16 @@ go-tests:
 
 api-server-tests:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd go && go build -o ./api ./cmd/api
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
-	cd gcp/api && ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
-	cd gcp/api && ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
+	cd gcp/api && OSV_USE_GO_BACKEND=1 ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
+	cd gcp/api && OSV_USE_GO_BACKEND=1 ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 update-api-snapshots:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd go && go build -o ./api ./cmd/api
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
-	cd gcp/api && UPDATE_SNAPS=true ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
+	cd gcp/api && UPDATE_SNAPS=true OSV_USE_GO_BACKEND=1 ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
 lint:
 	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh
@@ -88,38 +90,67 @@ build-api-protos:
 
 build-protos: build-osv-protos build-api-protos
 
-run-website:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+build-website-frontend:
+	cd website/frontend3 && pnpm install && pnpm run build
+	cd website/blog && hugo --buildFuture -d ../dist/static/blog
+
+run-website: build-website-frontend
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
-run-website-staging:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+run-website-staging: build-website-frontend
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
-run-website-emulator:
-	cd gcp/website/frontend3 && pnpm install && pnpm run build
-	cd gcp/website/blog && hugo --buildFuture -d ../dist/static/blog
+run-website-emulator: build-website-frontend
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 
+run-go-website: build-website-frontend
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+run-go-website-staging: build-website-frontend
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+run-go-website-emulator: build-website-frontend
+	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+
+stage-website-assets: build-website-frontend
+	mkdir -p go/cmd/website/dist go/cmd/website/docs
+	cp -r website/dist/* go/cmd/website/dist/
+	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
+
+run-go-website-prod: stage-website-assets
+	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run -tags embedstatic ./cmd/website
+
+
+
+# Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
+# Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 run-api-server:
-	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
-	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
-	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
-
-# Run the native Go developer server orchestrator (launches both ESPv2 and the Go API server).
-# Run with `run-go-api ARGS=--no-backend` to launch esp without backend.
-run-go-api:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	docker inspect osv/esp:latest >/dev/null 2>&1 || (cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .)
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
+# Run the Go developer server orchestrator against the staging/test environment.
 run-api-server-test:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	docker inspect osv/esp:latest >/dev/null 2>&1 || (cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .)
+	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
+
+# Legacy Python API server targets
+run-python-api-server:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
+	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
+
+run-python-api-server-test:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+
+reimport-tui:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd go/cmd/tools/reimport-tui && go run .
+

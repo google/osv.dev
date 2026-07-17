@@ -9,6 +9,8 @@ serialPipeline:
     profiles: [ staging ]
   - targetId: production-workers
     profiles: [ prod ]
+  - targetId: private-workers
+    profiles: [ private ]
 ---
 
 apiVersion: deploy.cloud.google.com/v1
@@ -32,6 +34,20 @@ metadata:
 description: oss-vdb worker cluster
 gke:
   cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+executionConfigs:
+- usages:
+  - RENDER
+  - DEPLOY
+  serviceAccount: deployment@oss-vdb.iam.gserviceaccount.com
+---
+
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: private-workers
+description: Private temporary worker cluster
+gke:
+  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers-private
 executionConfigs:
 - usages:
   - RENDER

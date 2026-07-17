@@ -1,12 +1,12 @@
 # Taken and modified from https://github.com/GoogleCloudPlatform/cloud-builders-community/tree/master/terraform
 
-FROM golang:1.26.4-alpine@sha256:f23e8b227fb4493eabe03bede4d5a32d04092da71962f1fb79b5f7d1e6c2a17f AS GO_BUILD
+FROM golang:1.26.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS GO_BUILD
 
 ARG TERRAFORM_VERSION
 WORKDIR /build/
 RUN GOBIN=$(pwd) go install github.com/hashicorp/terraform@v${TERRAFORM_VERSION}
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:5d433d2e7bba6bb4710f58280681effd190720c57156a582e7ed905e7a57c65c
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:3b058be4e039dd710f42c9e471e43443b632eee3c9111660a85a399c13fa153f
 
 COPY --from=GO_BUILD /build/terraform /usr/bin/terraform
 COPY entrypoint.bash /builder/entrypoint.bash

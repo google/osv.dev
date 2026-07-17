@@ -322,6 +322,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -359,6 +363,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -573,6 +581,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -610,6 +622,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -816,6 +832,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -853,6 +873,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1067,6 +1091,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -1104,6 +1132,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -4849,6 +4881,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-13221",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-42496",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4866,6 +4902,14 @@
         },
         {
           "id": "DEBIAN-CVE-2026-48962",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-57432",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-57433",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -5571,6 +5615,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GO-2026-4970",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GO-2026-4971",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5608,6 +5656,10 @@
         },
         {
           "id": "GO-2026-5039",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-5856",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -6740,6 +6792,14 @@
         {
           "id": "GHSA-3936-cmfr-pm3m",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2120",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2121",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -6791,7 +6851,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -6801,7 +6866,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -6811,7 +6881,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -6821,7 +6896,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -7040,28 +7120,9 @@
         {
           "id": "PYSEC-2023-62",
           "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
-        "version": "1.0"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7085,6 +7146,37 @@
         },
         {
           "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7108,6 +7200,10 @@
         },
         {
           "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7148,10 +7244,6 @@
         {
           "id": "PYSEC-2020-43",
           "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "PYSEC-2024-260",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2024-271",
@@ -7460,6 +7552,10 @@
         {
           "id": "PYSEC-2026-1873",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2275",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -7498,6 +7594,10 @@
         },
         {
           "id": "PYSEC-2026-1873",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2275",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7731,36 +7831,9 @@
         {
           "id": "PYSEC-2026-2046",
           "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
-        "version": "3.1.3"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-29vq-49wr-vm6x",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "GHSA-87hc-h4r5-73f7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2026-2044",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2026-2046",
+          "id": "PYSEC-2026-2320",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7792,6 +7865,45 @@
         },
         {
           "id": "PYSEC-2026-2046",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-29vq-49wr-vm6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2044",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2046",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2320",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -7816,6 +7928,14 @@
         {
           "id": "GHSA-3936-cmfr-pm3m",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2120",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2121",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -7867,7 +7987,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -7877,7 +8002,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -7887,7 +8017,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -7897,7 +8032,12 @@
         },
         "version": "8.3.0"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "PYSEC-2026-2132",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -8116,28 +8256,9 @@
         {
           "id": "PYSEC-2023-62",
           "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
-        "version": "1.0"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-68rp-wp8r-4726",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "GHSA-m2qf-hxjv-5gpq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2023-62",
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8161,6 +8282,37 @@
         },
         {
           "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "flask",
+          "ecosystem": "PyPI"
+        },
+        "version": "1.0"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-68rp-wp8r-4726",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-m2qf-hxjv-5gpq",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8184,6 +8336,10 @@
         },
         {
           "id": "PYSEC-2023-62",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2151",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8224,10 +8380,6 @@
         {
           "id": "PYSEC-2020-43",
           "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "PYSEC-2024-260",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2024-271",
@@ -8536,6 +8688,10 @@
         {
           "id": "PYSEC-2026-1873",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2275",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -8574,6 +8730,10 @@
         },
         {
           "id": "PYSEC-2026-1873",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2275",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8807,36 +8967,9 @@
         {
           "id": "PYSEC-2026-2046",
           "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
-        "version": "3.1.3"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-29vq-49wr-vm6x",
-          "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "GHSA-87hc-h4r5-73f7",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-hgf8-39gv-g3f2",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2026-2044",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "PYSEC-2026-2046",
+          "id": "PYSEC-2026-2320",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -8868,6 +9001,45 @@
         },
         {
           "id": "PYSEC-2026-2046",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
+    },
+    {
+      "query": {
+        "package": {
+          "name": "werkzeug",
+          "ecosystem": "PyPI"
+        },
+        "version": "3.1.3"
+      },
+      "vulns": [
+        {
+          "id": "GHSA-29vq-49wr-vm6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-hgf8-39gv-g3f2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2044",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2046",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-2320",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

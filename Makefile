@@ -149,3 +149,8 @@ run-python-api-server-test:
 
 # TODO: API integration tests.
 all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+
+reimport-tui:
+	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
+	cd go/cmd/tools/reimport-tui && go run .
+

@@ -994,6 +994,9 @@ func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, err
 
 // ListFileDiffs lists the files that changed between lastSyncCommit and targetBranch's latest commit.
 func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBranch string) (string, []*FileChange, error) {
+	logger.DebugContext(ctx, "Starting file diff calculation", slog.String("last_synced_commit", lastSyncCommit), slog.String("branch", targetBranch))
+	start := time.Now()
+
 	ref := strings.TrimSpace(targetBranch)
 	if ref == "" {
 		// Defaults to the default branch of the repository
@@ -1046,6 +1049,8 @@ func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBr
 
 	diffs := parseDiffTree(ctx, out)
 
+	logger.DebugContext(ctx, "File diff calculation completed", slog.Int("changes_count", len(diffs)), slog.Duration("duration", time.Since(start)))
+
 	return latestCommit, diffs, nil
 }
 
@@ -1062,7 +1067,7 @@ func parseDiffTree(ctx context.Context, output []byte) []*FileChange {
 
 		change, err := parseNameStatusLine(line)
 		if err != nil {
-			logger.WarnContext(ctx, "failed to parse diff-tree line", "line", line, "err", err)
+			logger.WarnContext(ctx, "Failed to parse diff-tree line", slog.String("line", line), slog.Any("error", err))
 			continue
 		}
 		changes = append(changes, change)

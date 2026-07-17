@@ -328,6 +328,29 @@ func isNotFoundError(err error) bool {
 	return strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found")
 }
 
+func isRefNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+
+	return strings.Contains(s, "not found or invalid") ||
+		strings.Contains(s, "failed to resolve target ref") ||
+		strings.Contains(s, "failed to run git rev-parse") ||
+		strings.Contains(s, "ref cannot be empty")
+}
+
+func isFileNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+
+	return strings.Contains(s, "git cat-file failed") ||
+		strings.Contains(s, "invalid object name") ||
+		strings.Contains(s, "does not exist in")
+}
+
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
 func unmarshalRequest(r *http.Request, body proto.Message) error {
 	data, err := io.ReadAll(r.Body)
@@ -882,6 +905,12 @@ func diffsHandler(w http.ResponseWriter, r *http.Request) {
 
 	latestCommit, changes, err := repo.ListFileDiffs(ctx, lastSyncedCommit, branch)
 	if err != nil {
+		if isRefNotFoundError(err) {
+			statusCode = http.StatusBadRequest
+			http.Error(w, fmt.Sprintf("Invalid commit or branch reference: %v", err), statusCode)
+
+			return
+		}
 		logger.ErrorContext(ctx, "Error listing file diffs", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error listing file diffs: %v", err), statusCode)
@@ -971,8 +1000,15 @@ func fileContentHandler(w http.ResponseWriter, r *http.Request) {
 
 	content, err := repo.GetFileContent(ctx, commit, filePath)
 	if err != nil {
+		if isRefNotFoundError(err) || isFileNotFoundError(err) {
+			logger.DebugContext(ctx, "File content not found", slog.Any("error", err))
+			statusCode = http.StatusNotFound
+			http.Error(w, fmt.Sprintf("Error getting file content: %v", err), statusCode)
+
+			return
+		}
 		logger.ErrorContext(ctx, "Error getting file content", slog.Any("error", err))
-		statusCode = http.StatusNotFound
+		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error getting file content: %v", err), statusCode)
 
 		return

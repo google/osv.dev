@@ -98,9 +98,9 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	// Refname conflict, likely name conflict between local and remote refs
 	// We can try removing stale remote-tracking branches and retry
 	if isRefConflictError(err) {
-		logger.WarnContext(ctx, "ref conflict detected, running git remote prune origin")
+		logger.WarnContext(ctx, "Ref conflict detected, running git remote prune origin")
 		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
-			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
+			logger.ErrorContext(ctx, "Failed to prune origin", slog.Any("err", err))
 			return false
 		}
 

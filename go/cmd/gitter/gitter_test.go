@@ -616,6 +616,26 @@ func TestDiffsHandler(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Non-existent branch name",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				Branch:           "nonexistent-branch-12345",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Invalid last synced commit",
+			reqBody: &pb.DiffRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "invalidhash123456",
+				Branch:           "branch_1",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {

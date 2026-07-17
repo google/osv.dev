@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -204,53 +203,13 @@ func CloseInvalidRepoCache() {
 	}
 }
 
-// prepareCmd prepares the command with context cancellation handled by sending SIGINT.
-func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, name, args...)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
-	}
-	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
-	cmd.Cancel = func() error {
-		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.Any("args", args))
-		return cmd.Process.Signal(syscall.SIGINT)
-	}
-	// Ensure it eventually dies if it ignores SIGINT
-	cmd.WaitDelay = shutdownTimeout / 2
-
-	return cmd
-}
-
-// runCmd executes a command with context cancellation handled by sending SIGINT.
-// It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	cmd := prepareCmd(ctx, dir, env, name, args...)
-	out, err := cmd.CombinedOutput()
-
-	if err != nil {
-		if ctx.Err() != nil {
-			// Log separately if cancelled
-			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
-		}
-
-		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+// runWithSemaphore runs function f for concurrency control.
+// If skipSemaphore is true, it executes f directly without waiting for a semaphore spot.
+func runWithSemaphore(ctx context.Context, skipSemaphore bool, f func() (any, error)) (any, error) {
+	if skipSemaphore {
+		return f()
 	}
 
-	logger.DebugContext(ctx, "Git command executed",
-		slog.String("cmd", name),
-		slog.Any("args", args),
-		slog.String("output", string(out)),
-	)
-
-	return nil
-}
-
-// runWithSemaphore runs function after waiting at semaphore for concurrency control
-func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
 	select {
 	case semaphore <- struct{}{}:
 		defer func() { <-semaphore }()
@@ -395,257 +354,6 @@ func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
 	return proto.Marshal(m)
 }
 
-func doFetch(ctx context.Context, repoURL string, forceUpdate bool) error {
-	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
-			return nil, FetchRepo(ctx, repoURL, forceUpdate)
-		})
-	})
-	if err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
-		return err
-	}
-
-	return nil
-}
-
-// getFreshRepo handles fetching and loading of a repository
-// If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
-// Otherwise, it will use a cache if available
-func getFreshRepo(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-
-	if !forceUpdate {
-		if repo, ok := repoCache.Get(repoURL); ok {
-			// repoCache.Get() will not return expired items, so we can safely return the repo
-			logger.DebugContext(ctx, "Repository already in cache, skipping fetch and load")
-			return repo, nil
-		}
-	}
-
-	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
-		return nil, err
-	}
-
-	repoAny, err, _ := gLoad.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
-			repoLock := GetRepoLock(repoURL)
-			repoLock.RLock()
-			defer repoLock.RUnlock()
-
-			return LoadRepository(ctx, repoPath)
-		})
-	})
-	if err != nil {
-		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
-		return nil, err
-	}
-	repo := repoAny.(*Repository)
-	repoCache.SetWithTTL(repoURL, repo, 0, repoTTL)
-
-	return repo, nil
-}
-
-// getRepoForDisk fetches/updates the repository on disk and returns a Repository struct with repoPath set,
-// skipping the expensive LoadRepository operation (commit graph building and patch ID calculation).
-func getRepoForDisk(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
-	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
-		return nil, err
-	}
-
-	return NewRepository(repoURL), nil
-}
-
-func isIndexLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
-}
-
-func isRefConflictError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "refname conflict") ||
-		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
-}
-
-// Attempt to recover from git fetch + reset errors
-// Returns true if recovery was attempted and we should retry fetch + reset
-func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// Refname conflict, likely name conflict between local and remote refs
-	// We can try removing stale remote-tracking branches and retry
-	if isRefConflictError(err) {
-		logger.WarnContext(ctx, "ref conflict detected, running git remote prune origin")
-		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
-			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
-			return false
-		}
-
-		return true
-	}
-
-	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
-	// We want to reclone as fallback but log a separate warning (for stats)
-	if isIndexLockError(err) {
-		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
-	}
-
-	return false
-}
-
-// Helper function to group git fetch and git reset --hard together
-func fetchAndReset(ctx context.Context, repoPath string) error {
-	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
-	if err != nil {
-		return fmt.Errorf("git fetch failed: %w", err)
-	}
-
-	// Make sure origin/HEAD points to the latest default branch from remotes
-	err = runCmd(ctx, repoPath, nil, "git", "remote", "set-head", "origin", "--auto")
-	if err != nil {
-		logger.WarnContext(ctx, "git remote set-head failed: ", slog.Any("err", err))
-	}
-
-	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-	if err != nil {
-		return fmt.Errorf("git reset failed: %w", err)
-	}
-
-	return nil
-}
-
-func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
-	logger.DebugContext(ctx, "Starting fetch repo")
-	start := time.Now()
-
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-
-	repoLock := GetRepoLock(repoURL)
-	repoLock.Lock()
-	defer repoLock.Unlock()
-
-	lastFetchMu.Lock()
-	accessTime, ok := lastFetch[repoURL]
-	lastFetchMu.Unlock()
-
-	// Check if we need to fetch
-	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
-			// Clone
-			logger.DebugContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
-			if err != nil {
-				return fmt.Errorf("git clone failed: %w", err)
-			}
-		} else {
-			// Fetch and reset
-			logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := fetchAndReset(ctx, repoPath)
-
-			// Attempt recovery and fallback
-			if err != nil {
-				logger.WarnContext(ctx, "Initial fetch and reset failed, attempting to recover", slog.Any("err", err))
-
-				// Attempt recovery and retry fetch and reset if successful
-				if attemptGitRecovery(ctx, repoPath, err) {
-					logger.InfoContext(ctx, "Retrying fetch and reset after recovery")
-					err = fetchAndReset(ctx, repoPath)
-				}
-
-				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
-				if err != nil {
-					if isForbiddenError(err) {
-						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
-						return nil
-					}
-
-					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
-					if err := os.RemoveAll(repoPath); err != nil {
-						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
-					}
-
-					logger.InfoContext(ctx, "Cloning git repository after fallback", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-					err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
-					if err != nil {
-						return fmt.Errorf("git clone failed after fallback: %w", err)
-					}
-				}
-			}
-		}
-
-		updateLastFetch(repoURL)
-	}
-
-	// Double check if the git directory exist
-	_, err := os.Stat(filepath.Join(repoPath, ".git"))
-	if err != nil {
-		if os.IsNotExist(err) {
-			deleteLastFetch(repoURL)
-		}
-
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	logger.InfoContext(ctx, "Fetch completed", slog.Duration("duration", time.Since(start)))
-
-	return nil
-}
-
-func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-	archivePath := repoPath + ".zst"
-
-	repoLock := GetRepoLock(repoURL)
-	repoLock.RLock()
-	defer repoLock.RUnlock()
-
-	lastFetchMu.Lock()
-	accessTime := lastFetch[repoURL]
-	lastFetchMu.Unlock()
-
-	// Check if archive needs update
-	// We update if archive does not exist OR if it is older than the last fetch
-	stats, err := os.Stat(archivePath)
-	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
-		logger.DebugContext(ctx, "Archiving git blob")
-		startArchive := time.Now()
-		// Archive
-		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
-		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
-		if err != nil {
-			return nil, fmt.Errorf("tar zstd failed: %w", err)
-		}
-		logger.InfoContext(ctx, "Archiving git blob completed", slog.Duration("duration", time.Since(startArchive)))
-	}
-
-	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
-	// As we can still cache the result and reply faster next time.
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
-	fileData, err := os.ReadFile(archivePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-	return fileData, nil
-}
-
 func main() {
 	logger.InitGlobalLogger()
 	logger.RegisterContextKey(urlKey, "repoURL")
@@ -762,7 +470,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
 
 	// Fetch repo first
-	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
+	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipSemaphore: true}); err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -777,7 +485,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Archive repo
 	fileDataAny, err, _ := gArchive.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
+		return runWithSemaphore(ctx, true, func() (any, error) {
 			return ArchiveRepo(ctx, repoURL)
 		})
 	})
@@ -829,7 +537,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /cache")
 
-	if _, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate()); err != nil {
+	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipSemaphore: true}); err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -899,7 +607,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
 
-	repo, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate())
+	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipSemaphore: false})
 	if err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
@@ -1037,9 +745,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 		// We want to use show-ref instead of ls-remote because it's faster and we don't have to worry about rate limits
 		if repo.repoPath != "" {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
-			if _, errFetch, _ := gFetch.Do(repoURL, func() (any, error) {
-				return nil, FetchRepo(ctx, repoURL, false)
-			}); errFetch != nil {
+			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipSemaphore: false}); errFetch != nil {
 				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
 				if isAuthError(errFetch) || isForbiddenError(errFetch) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
@@ -1160,7 +866,7 @@ func diffsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.String("branch", branch),
 	)
 
-	repo, err := getRepoForDisk(ctx, repoURL, true)
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipSemaphore: true})
 	if err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
@@ -1249,7 +955,7 @@ func fileContentHandler(w http.ResponseWriter, r *http.Request) {
 		slog.String("path", filePath),
 	)
 
-	repo, err := getRepoForDisk(ctx, repoURL, false)
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipSemaphore: true})
 	if err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden

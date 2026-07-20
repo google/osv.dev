@@ -37,6 +37,8 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
+        // TODO(michaelkedar): Remove this once the website is fully migrated.
+        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
@@ -55,6 +57,25 @@ module.exports = {
     new HtmlWebpackPlugin({
       filename: 'triage.html',
       template: './src/templates/triage.html',
+      chunks: ['triage'],
+      excludeChunks: ['main', 'linter'],
+    }),
+    // TODO(michaelkedar): Remove this once the website is fully migrated.
+    new HtmlWebpackPlugin({
+      filename: 'go/base.html',
+      template: './src/go/base.html',
+      chunks: ['main'],
+      excludeChunks: ['linter'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'go/linter.html',
+      template: './src/go/templates/linter/index.html',
+      chunks: ['linter'],
+      excludeChunks: ['main'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'go/triage.html',
+      template: './src/go/templates/triage.html',
       chunks: ['triage'],
       excludeChunks: ['main', 'linter'],
     }),

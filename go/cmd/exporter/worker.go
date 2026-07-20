@@ -185,6 +185,10 @@ WorkLoop:
 				ecosystems[e] = struct{}{}
 				csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), e + "/" + v.GetId()})
 			}
+
+			if len(csvData)%10000 == 0 {
+				logger.InfoContext(ctx, "processed N vulnerabilities", slog.Int("n", len(csvData)))
+			}
 		}
 	}
 	writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)

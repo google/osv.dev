@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
@@ -90,23 +89,28 @@ func main() {
 	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
 	routerToWriteCh := make(chan writeMsg, 100)
 
-	statsDone := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(2 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-statsDone:
-				return
-			case <-ticker.C:
-				logger.InfoContext(ctx, "exporter channel stats",
-					slog.Int("gcsPathToDownloaderCh", len(gcsPathToDownloaderCh)),
-					slog.Int("downloaderToRouterCh", len(downloaderToRouterCh)),
-					slog.Int("routerToWriteCh", len(routerToWriteCh)))
-			}
-		}
-	}()
-	defer close(statsDone)
+	// statsDone := make(chan struct{})
+	// go func() {
+	// 	ticker := time.NewTicker(2 * time.Second)
+	// 	defer ticker.Stop()
+	// 	for {
+	// 		select {
+	// 		case <-statsDone:
+	// 			return
+	// 		case <-ticker.C:
+	// 			logger.InfoContext(ctx, "exporter channel stats",
+	// 				slog.Int("gcsPathToDownloaderCh", len(gcsPathToDownloaderCh)),
+	// 				slog.Int("downloaderToRouterCh", len(downloaderToRouterCh)),
+	// 				slog.Int("routerToWriteCh", len(routerToWriteCh)))
+	// 		}
+	// 	}
+	// }()
+	// defer close(statsDone)
+
+	breakdownPrefixes := []string{
+		"ALSA-", "BIT-", "CGA-0", "CGA-a", "CGA-m", "CVE-", "DLA-", "DSA-", "GHSA-", "GO-",
+		"MAL-", "MGASA-", "OSV-", "PYSEC-", "RLSA-", "RUSTSEC-", "SUSE-", "UBUNTU-",
+	}
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
@@ -125,19 +129,19 @@ func main() {
 
 	prevPrefix := ""
 MainLoop:
-	for obj, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
+	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
 		if err != nil {
 			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
 		}
 		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(obj.Name)
+		prefix := filepath.Base(objName)
 		prefix, _, _ = strings.Cut(prefix, "-")
 		if prefix != prevPrefix {
-			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", obj.Name))
+			// logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", obj.Name))
 			prevPrefix = prefix
 		}
 		select {
-		case gcsPathToDownloaderCh <- obj.Name:
+		case gcsPathToDownloaderCh <- objName:
 		case <-ctx.Done():
 			break MainLoop
 		}

@@ -116,7 +116,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	return false
 }
 
-// fetchAndResetRepo fetches remote origin and resets working directory to origin/HEAD.
+// fetchAndResetRepo fetches remote origin and resets origin/HEAD to the remote's default branch
 func fetchAndResetRepo(ctx context.Context, repoPath string) error {
 	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 	if err != nil {
@@ -137,8 +137,10 @@ func fetchAndResetRepo(ctx context.Context, repoPath string) error {
 	return nil
 }
 
-func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
-	logger.DebugContext(ctx, "Starting fetch repo")
+// refreshRepo updates the local repository on disk if it is stale or if forceUpdate is true.
+// It clones the repository if it doesn't exist, or fetches and resets it with error recovery and fallback recloning.
+func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
+	logger.DebugContext(ctx, "Refreshing repository on disk")
 	start := time.Now()
 
 	repoDirName := getRepoDirName(repoURL)
@@ -208,17 +210,17 @@ func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	logger.InfoContext(ctx, "Fetch completed", slog.Duration("duration", time.Since(start)))
+	logger.InfoContext(ctx, "Repository refresh completed", slog.Duration("duration", time.Since(start)))
 
 	return nil
 }
 
-// SyncRepoOnDisk syncs/updates the repository on disk and returns a Repository struct with repoPath set
-// Skips the expensive LoadRepository (commit graph building and patch ID calculation)
+// SyncRepoOnDisk syncs/updates the repository on disk and returns a Repository struct with repoPath set.
+// Skips the expensive LoadRepository (commit graph building and patch ID calculation).
 func SyncRepoOnDisk(ctx context.Context, repoURL string, opts FetchOptions) (*Repository, error) {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
 		return runWithSemaphore(ctx, opts.SkipSemaphore, func() (any, error) {
-			return nil, FetchRepo(ctx, repoURL, opts.ForceUpdate)
+			return nil, refreshRepo(ctx, repoURL, opts.ForceUpdate)
 		})
 	})
 	if err != nil {
@@ -266,6 +268,7 @@ func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Reposito
 	return repo, nil
 }
 
+// ArchiveRepo compresses git repository into a blob
 func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)

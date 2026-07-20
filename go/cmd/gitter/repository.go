@@ -1008,6 +1008,7 @@ func getEmptyTreeHash(ctx context.Context, repoPath string) string {
 			// Fallback to the empty tree SHA1 magic number.
 			logger.ErrorContext(ctx, "Failed to get empty tree SHA from `git mktree`, falling back to well-known empty tree SHA1", slog.Any("err", err))
 			emptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
 			return
 		}
 		emptyTreeHash = strings.TrimSpace(string(out))
@@ -1153,6 +1154,7 @@ func cleanPath(p string) string {
 	if unquoted, err := strconv.Unquote(p); err == nil {
 		return unquoted
 	}
+
 	return p
 }
 

@@ -38,7 +38,7 @@ type ecosystemWorker struct {
 
 // newEcosystemWorker creates and starts a new ecosystemWorker.
 func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writeMsg, wg *sync.WaitGroup) *ecosystemWorker {
-	ch := make(chan *osvschema.Vulnerability)
+	ch := make(chan *osvschema.Vulnerability, 100)
 	worker := &ecosystemWorker{
 		ecosystem: ecosystem,
 		inCh:      ch,
@@ -143,7 +143,7 @@ type allEcosystemWorker struct {
 
 // newAllEcosystemWorker creates and starts a new allEcosystemWorker.
 func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) *allEcosystemWorker {
-	ch := make(chan vulnAndEcos)
+	ch := make(chan vulnAndEcos, 100)
 	worker := &allEcosystemWorker{
 		inCh: ch,
 	}

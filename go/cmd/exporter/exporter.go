@@ -7,9 +7,12 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
@@ -27,7 +30,14 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("exporter").Start(context.Background(), "exporter")
+	ctx, stopSignal := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignal()
+
+	// traceFile, _ := os.Create("exporter.trace")
+	// trace.Start(traceFile)
+	// defer trace.Stop()
+
+	ctx, span := otel.Tracer("exporter").Start(ctx, "exporter")
 	defer span.End()
 
 	outBucketName := flag.String("bucket", "osv-test-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")
@@ -76,9 +86,27 @@ func main() {
 	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
 	//    generate the final files, sending the data to be written to `routerToWriteCh`.
 	// 5. A pool of `writer` workers receive the file data and write it to the output.
-	gcsPathToDownloaderCh := make(chan string)
-	downloaderToRouterCh := make(chan *osvschema.Vulnerability)
-	routerToWriteCh := make(chan writeMsg)
+	gcsPathToDownloaderCh := make(chan string, 100)
+	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
+	routerToWriteCh := make(chan writeMsg, 100)
+
+	statsDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-statsDone:
+				return
+			case <-ticker.C:
+				logger.InfoContext(ctx, "exporter channel stats",
+					slog.Int("gcsPathToDownloaderCh", len(gcsPathToDownloaderCh)),
+					slog.Int("downloaderToRouterCh", len(downloaderToRouterCh)),
+					slog.Int("routerToWriteCh", len(routerToWriteCh)))
+			}
+		}
+	}()
+	defer close(statsDone)
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {

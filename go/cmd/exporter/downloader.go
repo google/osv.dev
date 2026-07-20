@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 
@@ -16,29 +17,22 @@ import (
 // result to outCh.
 func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan string, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for {
-		var path string
-		var ok bool
-
-		// Wait to receive an object path, or be cancelled.
-		select {
-		case path, ok = <-inCh:
-			if !ok {
-				return // Channel closed.
-			}
-		case <-ctx.Done():
-			return
-		}
-
+	for path := range inCh {
 		// Process object.
 		data, err := client.ReadObject(ctx, path)
 		if err != nil {
-			logger.Error("failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
+			logger.ErrorContext(ctx, "failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
 			continue
 		}
 		vuln := &osvschema.Vulnerability{}
 		if err := proto.Unmarshal(data, vuln); err != nil {
-			logger.Error("failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
+			logger.ErrorContext(ctx, "failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))
 			continue
 		}
 

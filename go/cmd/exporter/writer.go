@@ -27,46 +27,37 @@ type writeMsg struct {
 // bucket or a local directory.
 func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg, client clients.CloudStorage, pathPrefix string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for {
-		select {
-		case msg, ok := <-inCh:
-			if !ok {
-				// Channel closed.
-				return
+	for msg := range inCh {
+		path := filepath.Join(pathPrefix, msg.path)
+		if client != nil {
+			// Skip the upload if the object already has the same content.
+			if gcsContentUnchanged(ctx, client, path, msg.data) {
+				continue
 			}
-			path := filepath.Join(pathPrefix, msg.path)
-			if client != nil {
-				// Skip the upload if the object already has the same content.
-				if gcsContentUnchanged(ctx, client, path, msg.data) {
-					break
-				}
-				err := client.WriteObject(ctx, path, msg.data, &clients.WriteOptions{
-					ContentType: msg.mimeType,
-				})
-				if err != nil {
-					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
-					cancel()
+			err := client.WriteObject(ctx, path, msg.data, &clients.WriteOptions{
+				ContentType: msg.mimeType,
+			})
+			if err != nil {
+				logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+				cancel()
 
-					break
-				}
-			} else {
-				// Write locally.
-				dir := filepath.Dir(path)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
-					cancel()
-
-					break
-				}
-				if err := os.WriteFile(path, msg.data, 0600); err != nil {
-					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
-					cancel()
-
-					break
-				}
+				break
 			}
-		case <-ctx.Done():
-			return
+		} else {
+			// Write locally.
+			dir := filepath.Dir(path)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
+				cancel()
+
+				break
+			}
+			if err := os.WriteFile(path, msg.data, 0600); err != nil {
+				logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
+				cancel()
+
+				break
+			}
 		}
 	}
 }

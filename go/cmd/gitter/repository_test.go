@@ -31,7 +31,7 @@ func setupTagsTestRepo(t *testing.T, url string) string {
 		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "init", "-b", "main")
 	runGit(t, repoPath, "config", "user.email", "test@test.com")
 	runGit(t, repoPath, "config", "user.name", "Test Name")
 
@@ -73,7 +73,7 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "init", "-b", "main")
 	runGit(t, repoPath, "config", "user.email", "test@test.com")
 	runGit(t, repoPath, "config", "user.name", "Test Name")
 
@@ -99,7 +99,7 @@ func setupDiffsTestRepo(t *testing.T, url string) string {
 		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "init", "-b", "main")
 	runGit(t, repoPath, "config", "user.email", "test@test.com")
 	runGit(t, repoPath, "config", "user.name", "Test Name")
 

@@ -69,8 +69,8 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 	s.registerRoutes()
 
-	// Middlewares: Logging (if local/dev) -> ServeMux
-	var h http.Handler = s.mux
+	// Middlewares: 404 Fallback -> Logging (if local/dev) -> ServeMux
+	h := s.notFoundMiddleware(s.mux)
 
 	// Skip HTTP access logging in Cloud Run production to avoid duplicating Cloud Run infrastructure logs.
 	if os.Getenv("K_SERVICE") == "" {
@@ -102,6 +102,19 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			slog.Duration("duration", time.Since(start)),
 			slog.Int64("bytes", rw.bytesWritten),
 		)
+	})
+}
+
+// notFoundMiddleware returns an http.Handler that renders 404.html for unmatched routes.
+func (s *Server) notFoundMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, pattern := s.mux.Handler(r)
+		if pattern == "" {
+			s.RenderNotFound(w, r, "")
+
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

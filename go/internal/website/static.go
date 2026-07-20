@@ -10,19 +10,16 @@ import (
 	"strings"
 )
 
-// EcosystemDisplay holds pre-calculated bubble data for ecosystem vulnerability counts on the home page.
-type EcosystemDisplay struct {
-	Name       string
-	Count      int
-	Radius     float64
-	TooltipTop float64
-}
+func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
+	data := NotFoundPageData{
+		BasePageData: BasePageData{
+			ActiveSection:     "",
+			DisableTurboCache: false,
+		},
+		FailedImportVulnID: failedImportVulnID,
+	}
 
-// HomePageData represents the data context passed to home.html template.
-type HomePageData struct {
-	ActiveSection     string
-	DisableTurboCache bool
-	Ecosystems        []EcosystemDisplay
+	s.render(w, r, "404.html", http.StatusNotFound, data)
 }
 
 func computeEcosystemDisplays(counts map[string]int) []EcosystemDisplay {
@@ -76,9 +73,11 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := HomePageData{
-		ActiveSection:     "home",
-		DisableTurboCache: false,
-		Ecosystems:        computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
+		BasePageData: BasePageData{
+			ActiveSection:     "home",
+			DisableTurboCache: false,
+		},
+		Ecosystems: computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
 	}
 
 	s.render(w, r, "home.html", http.StatusOK, data)

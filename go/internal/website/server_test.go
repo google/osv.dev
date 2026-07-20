@@ -214,6 +214,9 @@ func TestStaticFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(goDir, "home.html"), []byte(`{{ define "content" }}Home{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write home.html: %v", err)
 	}
+	if err := os.WriteFile(filepath.Join(goDir, "404.html"), []byte(`{{ define "content" }}404 {{ .FailedImportVulnID }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write 404.html: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(imgDir, "favicon-32x32.png"), []byte("FAVICON"), 0600); err != nil {
 		t.Fatalf("failed to write favicon: %v", err)
 	}
@@ -228,6 +231,28 @@ func TestStaticFiles(t *testing.T) {
 
 		if rec.Code != http.StatusOK {
 			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("renderNotFound", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/404", nil)
+		rec := httptest.NewRecorder()
+		srv.RenderNotFound(rec, req, "GHSA-1234")
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
+
+	t.Run("UnmatchedRoute_returns_404", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
 		}
 	})
 
@@ -300,8 +325,8 @@ func TestEndpointRegistration(t *testing.T) {
 			rec := httptest.NewRecorder()
 			srv.ServeHTTP(rec, req)
 
-			if rec.Code == http.StatusNotFound {
-				t.Errorf("expected route %s %s to be registered, got 404 Not Found", ep.method, ep.path)
+			if rec.Code != http.StatusNotImplemented {
+				t.Errorf("expected status 501 Not Implemented, got %d", rec.Code)
 			}
 		})
 	}

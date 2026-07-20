@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -31,10 +30,6 @@ func main() {
 
 	ctx, stopSignal := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stopSignal()
-
-	// traceFile, _ := os.Create("exporter.trace")
-	// trace.Start(traceFile)
-	// defer trace.Stop()
 
 	ctx, span := otel.Tracer("exporter").Start(ctx, "exporter")
 	defer span.End()
@@ -89,24 +84,6 @@ func main() {
 	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
 	routerToWriteCh := make(chan writeMsg, 100)
 
-	// statsDone := make(chan struct{})
-	// go func() {
-	// 	ticker := time.NewTicker(2 * time.Second)
-	// 	defer ticker.Stop()
-	// 	for {
-	// 		select {
-	// 		case <-statsDone:
-	// 			return
-	// 		case <-ticker.C:
-	// 			logger.InfoContext(ctx, "exporter channel stats",
-	// 				slog.Int("gcsPathToDownloaderCh", len(gcsPathToDownloaderCh)),
-	// 				slog.Int("downloaderToRouterCh", len(downloaderToRouterCh)),
-	// 				slog.Int("routerToWriteCh", len(routerToWriteCh)))
-	// 		}
-	// 	}
-	// }()
-	// defer close(statsDone)
-
 	breakdownPrefixes := []string{
 		"ALSA-", "BIT-", "CGA-0", "CGA-a", "CGA-m", "CVE-", "DLA-", "DSA-", "GHSA-", "GO-",
 		"MAL-", "MGASA-", "OSV-", "PYSEC-", "RLSA-", "RUSTSEC-", "SUSE-", "UBUNTU-",
@@ -127,18 +104,10 @@ func main() {
 	routerWg.Add(1)
 	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, &routerWg)
 
-	prevPrefix := ""
 MainLoop:
 	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
 		if err != nil {
 			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
-		}
-		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(objName)
-		prefix, _, _ = strings.Cut(prefix, "-")
-		if prefix != prevPrefix {
-			// logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", obj.Name))
-			prevPrefix = prefix
 		}
 		select {
 		case gcsPathToDownloaderCh <- objName:

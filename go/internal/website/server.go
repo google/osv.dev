@@ -2,11 +2,14 @@
 package website
 
 import (
+	"bytes"
 	"errors"
+	"html/template"
 	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
@@ -16,8 +19,9 @@ const goVanityMetadata = `<meta name="go-import" content="osv.dev git https://gi
 
 // Config holds configuration options for the website server.
 type Config struct {
-	StaticFS fs.FS
-	DocsFS   fs.FS
+	StaticFS    fs.FS
+	DocsFS      fs.FS
+	TemplateDir string
 }
 
 // Server handles website routing and HTTP requests.
@@ -165,4 +169,36 @@ func (s *Server) registerRoutes() {
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+	templateDir := s.config.TemplateDir
+	if templateDir == "" {
+		templateDir = "go"
+	}
+
+	basePath := path.Join(templateDir, "base.html")
+	pagePath := path.Join(templateDir, pageFile)
+
+	tmpl, err := template.ParseFS(s.config.StaticFS, basePath, pagePath)
+	if err != nil {
+		logger.ErrorContext(r.Context(), "Failed to parse template", slog.String("page", pageFile), slog.Any("error", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "base.html", data); err != nil {
+		logger.ErrorContext(r.Context(), "Failed to execute template", slog.String("page", pageFile), slog.Any("error", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.WriteHeader(status)
+	if _, err := buf.WriteTo(w); err != nil {
+		logger.ErrorContext(r.Context(), "Failed to write rendered template response", slog.String("page", pageFile), slog.Any("error", err))
+	}
 }

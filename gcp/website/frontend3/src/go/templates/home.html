@@ -1,7 +1,4 @@
-{% extends 'base.html' %}
-{% set active_section = 'home' %}
-
-{% block extra_head %}
+{{ define "extra_head" }}
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/background-1.webp" type="image/webp">
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/background-2.webp" type="image/webp">
 <link rel="preload" fetchpriority="high" as="image" href="/static/img/external-link.svg" type="image/webp">
@@ -11,9 +8,9 @@
 <noscript>
   <link rel="stylesheet" href="/static/img/footer-decoration.webp" type="image/webp">
 </noscript>
-{% endblock %}
+{{ end }}
 
-{% block content %}
+{{ define "content" }}
 <div class="mdc-layout-grid home-page">
   <div class="mdc-layout-grid__inner">
     <div class="mdc-layout-grid__cell--span-12 hero">
@@ -25,7 +22,7 @@
         </p>
       </div>
       <div class="cta">
-        <a class="cta-primary link-button" href="{{ url_for('frontend_handlers.list_vulnerabilities') }}">
+        <a class="cta-primary link-button" href="/list">
           <span class="material-icons" style="margin-right: 8px;">search</span>
           Search Vulnerability Database
         </a>
@@ -46,27 +43,21 @@
         <div class="ecosystems-line-2"></div>
         <div class="ecosystems-line-3"></div>
         <dl class="ecosystem-counts">
-          {% if ecosystem_counts %}
-          {% set total = ecosystem_counts.values() | sum %}
-          {% for ecosystem, count in ecosystem_counts.items() %}
-          {% if count > 30 %}
-          <dt class="ecosystem-name">{{ ecosystem }}</dt>
+          {{ range .Ecosystems }}
+          <dt class="ecosystem-name">{{ .Name }}</dt>
           <dd class="ecosystem-count-wrapper">
-            {% set radius = [(count | log) / (total | log) * 100, 30] | max %}
-            <a href="{{ url_for('frontend_handlers.list_vulnerabilities', ecosystem=ecosystem) }}">
+            <a href="/list?ecosystem={{ .Name }}">
               <span class="ecosystem-count" style="
-                      width: {{ radius }}px; height: {{ radius }}px; line-height: {{ radius }}px">
-                {{ count }}
+                      width: {{ .Radius }}px; height: {{ .Radius }}px; line-height: {{ .Radius }}px">
+                {{ .Count }}
                 <span class="tooltip" style="
-                       top: -{{ (radius / 2) + 5}}px;">
-                  View {{ ecosystem }} vulnerabilities
+                       top: {{ .TooltipTop }}px;">
+                  View {{ .Name }} vulnerabilities
                 </span>
               </span>
             </a>
           </dd>
-          {% endif %}
-          {% endfor %}
-          {% endif %}
+          {{ end }}
         </dl>
       </div>
     </div>
@@ -333,9 +324,9 @@ osv-scanner scan image --serve alpine:3.12
 
       <div class="mdc-layout-grid__cell--span-12 open-source-banner">
         <h2 class="heading">Open source</h2>
-        <p class="description"> This project is <a href="https://github.com/google/osv">open source</a>. If you
+        <p class="description"> This project is <a href="https://github.com/google/osv.dev">open source</a>. If you
           have any ideas or questions, please feel free to reach out by <a
-              href="https://github.com/google/osv/issues/new/choose">creating an issue</a>! </p>
+              href="https://github.com/google/osv.dev/issues/new/choose">creating an issue</a>! </p>
 
         <div class="cta">
           <a class="cta-primary link-button" href="https://google.github.io/osv.dev/faq/"
@@ -346,4 +337,5 @@ osv-scanner scan image --serve alpine:3.12
   </div>
   <footer>
   </footer>
-</div> {% endblock %}
+</div>
+{{ end }}

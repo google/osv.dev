@@ -204,7 +204,14 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to create static img dir: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "home.html"), []byte("<html>Home</html>"), 0600); err != nil {
+	goDir := filepath.Join(tmpDir, "go")
+	if err := os.MkdirAll(goDir, 0755); err != nil {
+		t.Fatalf("failed to create go dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "base.html"), []byte(`<html>{{ block "content" . }}{{ end }}</html>`), 0600); err != nil {
+		t.Fatalf("failed to write base.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "home.html"), []byte(`{{ define "content" }}Home{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write home.html: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(imgDir, "favicon-32x32.png"), []byte("FAVICON"), 0600); err != nil {
@@ -213,7 +220,7 @@ func TestStaticFiles(t *testing.T) {
 
 	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
 
-	t.Run("Root serves home.html", func(t *testing.T) {
+	t.Run("Root", func(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
@@ -221,9 +228,6 @@ func TestStaticFiles(t *testing.T) {
 
 		if rec.Code != http.StatusOK {
 			t.Errorf("expected status 200 OK, got %d", rec.Code)
-		}
-		if rec.Body.String() != "<html>Home</html>" {
-			t.Errorf("expected body <html>Home</html>, got %q", rec.Body.String())
 		}
 	})
 

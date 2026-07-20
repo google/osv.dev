@@ -1,5 +1,7 @@
 package website
 
+import "html/template"
+
 // BasePageData contains common fields required by the base.html layout template.
 type BasePageData struct {
 	ActiveSection     string
@@ -26,4 +28,18 @@ type NotFoundPageData struct {
 	BasePageData
 
 	FailedImportVulnID string
+}
+
+// BlogPageData represents the data context passed to blog.html template.
+type BlogPageData struct {
+	BasePageData
+
+	Index template.HTML
+}
+
+// BlogPostPageData represents the data context passed to blog_post.html template.
+type BlogPostPageData struct {
+	BasePageData
+
+	Content template.HTML
 }

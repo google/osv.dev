@@ -221,7 +221,81 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to write favicon: %v", err)
 	}
 
+	blogDir := filepath.Join(tmpDir, "static", "blog")
+	postDir := filepath.Join(blogDir, "posts", "hello-world")
+	if err := os.MkdirAll(postDir, 0755); err != nil {
+		t.Fatalf("failed to create blog post dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "blog.html"), []byte(`{{ define "content" }}Blog Index: {{ .Index }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write blog.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "blog_post.html"), []byte(`{{ define "content" }}Blog Post: {{ .Content }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write blog_post.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blogDir, "index.html"), []byte("<h1>Blog Index</h1>"), 0600); err != nil {
+		t.Fatalf("failed to write blog index: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blogDir, "index.xml"), []byte("<rss>RSS</rss>"), 0600); err != nil {
+		t.Fatalf("failed to write blog rss: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(postDir, "index.html"), []byte("<article>Hello World</article>"), 0600); err != nil {
+		t.Fatalf("failed to write blog post content: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(postDir, "hero.png"), []byte("PNG_DATA"), 0600); err != nil {
+		t.Fatalf("failed to write blog post image asset: %v", err)
+	}
+
 	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
+
+	t.Run("Blog_index", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Blog_rss_serves_xml", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/index.xml", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if contentType := rec.Header().Get("Content-Type"); contentType != "application/xml; charset=utf-8" {
+			t.Errorf("expected content-type 'application/xml; charset=utf-8', got %q", contentType)
+		}
+	})
+
+	t.Run("Blog_post", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/posts/hello-world/", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Blog_post_asset_serves_file", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/posts/hello-world/hero.png", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if rec.Body.String() != "PNG_DATA" {
+			t.Errorf("expected body 'PNG_DATA', got %q", rec.Body.String())
+		}
+	})
 
 	t.Run("Root", func(t *testing.T) {
 		t.Parallel()
@@ -294,12 +368,6 @@ func TestEndpointRegistration(t *testing.T) {
 		method string
 		path   string
 	}{
-		{http.MethodGet, "/blog"},
-		{http.MethodGet, "/blog/"},
-		{http.MethodGet, "/blog/index.xml"},
-		{http.MethodGet, "/blog/posts/test-post"},
-		{http.MethodGet, "/blog/posts/test-post/"},
-		{http.MethodGet, "/blog/posts/test-post/image.png"},
 		{http.MethodGet, "/vulnerability/GHSA-1234"},
 		{http.MethodGet, "/GHSA-1234"},
 		{http.MethodGet, "/vulnerability/GHSA-1234.json"},

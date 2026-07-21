@@ -43,3 +43,8 @@ type BlogPostPageData struct {
 
 	Content template.HTML
 }
+
+// LinterPageData represents the data context passed to linter.html template.
+type LinterPageData struct {
+	BasePageData
+}

@@ -244,11 +244,25 @@ func TestStaticFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(postDir, "hero.png"), []byte("PNG_DATA"), 0600); err != nil {
 		t.Fatalf("failed to write blog post image asset: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte("<html>Linter Report</html>"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(goDir, "triage.html"), []byte(`{{ define "content" }}Triage{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write triage.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte(`{{ define "content" }}Linter Report{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write linter.html: %v", err)
 	}
 
 	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
+
+	t.Run("Triage_page", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
 
 	t.Run("Linter_page", func(t *testing.T) {
 		t.Parallel()
@@ -386,7 +400,6 @@ func TestEndpointRegistration(t *testing.T) {
 		{http.MethodGet, "/GHSA-1234"},
 		{http.MethodGet, "/vulnerability/GHSA-1234.json"},
 		{http.MethodGet, "/GHSA-1234.json"},
-		{http.MethodGet, "/triage"},
 		{http.MethodPost, "/triage/proxy"},
 		{http.MethodGet, "/login"},
 		{http.MethodGet, "/auth/callback"},

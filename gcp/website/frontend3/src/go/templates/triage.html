@@ -1,7 +1,11 @@
-{% extends 'base.html' %}
-{% set active_section = 'triage' %}
+{{ define "extra_head" }}
 
-{% block content %}
+<head>
+  <!-- Allow webpack to insert extra head content -->
+</head>
+{{ end }}
+
+{{ define "content" }}
 <div class="triage-container">
   <div class="header-container">
   <h1>CVE Conversion Triager</h1>
@@ -12,12 +16,12 @@
   </div>
 </div>
   <div class="triage-grid">
-    {% for i in range(1, 4) %}
-    <div class="triage-column" id="column-{{ i }}">
+    {{ range $i := .Columns }}
+    <div class="triage-column" id="column-{{ $i }}">
       <div class="column-header">
-        <label for="source-select-{{ i }}">Source:</label>
+        <label for="source-select-{{ $i }}">Source:</label>
         <div class="select-wrapper">
-          <select id="source-select-{{ i }}" class="source-select">
+          <select id="source-select-{{ $i }}" class="source-select">
             <option value="">Select Source...</option>
             <optgroup label="External APIs">
               <option value="cve-org">CVE.org API</option>
@@ -51,18 +55,18 @@
         <div class="json-scroll">
           <pre class="json-content">Select a source to view content</pre>
         </div>
-        <textarea id="copy-json-{{ i }}" class="copy-json-source"
+        <textarea id="copy-json-{{ $i }}" class="copy-json-source"
           aria-hidden="true" tabindex="-1"></textarea>
-        <clipboard-copy class="triage-copy" for="copy-json-{{ i }}"
+        <clipboard-copy class="triage-copy" for="copy-json-{{ $i }}"
           aria-disabled="true"
           tabindex="-1"
-          aria-label="Copy JSON from column {{ i }}"
-          title="Copy JSON from column {{ i }}">
+          aria-label="Copy JSON from column {{ $i }}"
+          title="Copy JSON from column {{ $i }}">
           <span class="material-icons" aria-hidden="true">content_copy</span>
         </clipboard-copy>
       </div>
     </div>
-    {% endfor %}
+    {{ end }}
   </div>
 </div>
-{% endblock %}
+{{ end }}

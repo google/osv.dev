@@ -48,3 +48,12 @@ type BlogPostPageData struct {
 type LinterPageData struct {
 	BasePageData
 }
+
+// TriagePageData represents the data context passed to triage.html template.
+type TriagePageData struct {
+	BasePageData
+
+	// Columns contains 1-indexed column numbers (e.g., []int{1, 2, 3}) to match
+	// element IDs (e.g. column-1) and URL query parameters (s1, s2, s3) expected by triage.js.
+	Columns []int
+}

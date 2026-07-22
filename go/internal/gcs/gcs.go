@@ -99,39 +99,6 @@ func buildPartitionQueries(globalPrefix string, breakdownPrefixes []string) []*s
 	return queries
 }
 
-// ListObjectsFast lists object names in parallel by partitioning the prefix space.
-// It partitions the space using StartOffset and EndOffset based on breakdownPrefixes.
-func ListObjectsFast(ctx context.Context, bucket *storage.BucketHandle, globalPrefix string, breakdownPrefixes []string) ([]string, error) {
-	queries := buildPartitionQueries(globalPrefix, breakdownPrefixes)
-
-	objsChan := make(chan []string, len(queries))
-	g, ctx := errgroup.WithContext(ctx)
-
-	for _, q := range queries {
-		g.Go(func() error {
-			objs, err := ListBucketObjectsQuery(ctx, bucket, q)
-			if err != nil {
-				return err
-			}
-			objsChan <- objs
-
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	close(objsChan)
-
-	var allObjs []string
-	for objs := range objsChan {
-		allObjs = append(allObjs, objs...)
-	}
-
-	return allObjs, nil
-}
-
 // ObjectsFastStream returns an iterator that streams object names in parallel as they are discovered.
 func ObjectsFastStream(ctx context.Context, bucket *storage.BucketHandle, globalPrefix string, breakdownPrefixes []string) iter.Seq2[string, error] {
 	return func(yield func(string, error) bool) {

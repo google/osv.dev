@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"sync"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -21,7 +21,7 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 		// Process object.
 		data, err := client.ReadObject(ctx, path)
 		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			if osvutil.IsContextError(err) {
 				return
 			}
 			logger.ErrorContext(ctx, "failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
@@ -30,7 +30,7 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 		}
 		vuln := &osvschema.Vulnerability{}
 		if err := proto.Unmarshal(data, vuln); err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			if osvutil.IsContextError(err) {
 				return
 			}
 			logger.ErrorContext(ctx, "failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))

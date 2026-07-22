@@ -384,6 +384,7 @@ func writeResponse(w http.ResponseWriter, req *http.Request, msg proto.Message) 
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(out)
+
 	return err
 }
 

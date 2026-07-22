@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/internal/gcs"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 )
@@ -175,4 +176,12 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 			}
 		}
 	}
+}
+
+func (c *GCSClient) Bucket() *storage.BucketHandle {
+	return c.bucket
+}
+
+func (c *GCSClient) ObjectsFast(ctx context.Context, prefix string, breakdownPrefixes []string) iter.Seq2[string, error] {
+	return gcs.ObjectsFastStream(ctx, c.bucket, prefix, breakdownPrefixes)
 }

@@ -7,9 +7,10 @@ import (
 	"flag"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/logger"
@@ -27,13 +28,17 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("exporter").Start(context.Background(), "exporter")
+	ctx, stopSignal := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignal()
+
+	ctx, span := otel.Tracer("exporter").Start(ctx, "exporter")
 	defer span.End()
 
 	outBucketName := flag.String("bucket", "osv-test-vulnerabilities", "Output bucket or directory name. If -local is true, this is a local path; otherwise, it's a GCS bucket name.")
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from. Can also be set with the OSV_VULNERABILITIES_BUCKET environment variable.")
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If false, writes the output to a local directory specified by -bucket instead of a GCS bucket.")
-	numWorkers := flag.Int("workers", 200, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
+	numWorkers := flag.Int("workers", 1000, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
+	breakdownPrefixesStr := flag.String("breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel GCS object listing. Defaults to A-Z if empty.")
 
 	flag.Parse()
 
@@ -41,7 +46,8 @@ func main() {
 		slog.String("bucket", *outBucketName),
 		slog.String("osv-vulns-bucket", *vulnBucketName),
 		slog.Bool("upload-to-gcs", *uploadToGCS),
-		slog.Int("workers", *numWorkers))
+		slog.Int("workers", *numWorkers),
+		slog.String("breakdown-prefixes", *breakdownPrefixesStr))
 
 	if *vulnBucketName == "" {
 		logger.FatalContext(ctx, "OSV_VULNERABILITIES_BUCKET must be set")
@@ -76,9 +82,25 @@ func main() {
 	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
 	//    generate the final files, sending the data to be written to `routerToWriteCh`.
 	// 5. A pool of `writer` workers receive the file data and write it to the output.
-	gcsPathToDownloaderCh := make(chan string)
-	downloaderToRouterCh := make(chan *osvschema.Vulnerability)
-	routerToWriteCh := make(chan writeMsg)
+	gcsPathToDownloaderCh := make(chan string, 100)
+	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
+	routerToWriteCh := make(chan writeMsg, 100)
+
+	var breakdownPrefixes []string
+	if *breakdownPrefixesStr != "" {
+		for _, p := range strings.Split(*breakdownPrefixesStr, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				breakdownPrefixes = append(breakdownPrefixes, p)
+			}
+		}
+	}
+	// Fall back to simple A-Z prefixes
+	if len(breakdownPrefixes) == 0 {
+		for ch := 'A'; ch <= 'Z'; ch++ {
+			breakdownPrefixes = append(breakdownPrefixes, string(ch))
+		}
+	}
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {
@@ -95,21 +117,13 @@ func main() {
 	routerWg.Add(1)
 	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, &routerWg)
 
-	prevPrefix := ""
 MainLoop:
-	for obj, err := range vulnClient.Objects(ctx, gcsProtoPrefix) {
+	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
 		if err != nil {
 			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
 		}
-		// Only log when we see a new ID prefix (i.e. roughly once per data source)
-		prefix := filepath.Base(obj.Name)
-		prefix, _, _ = strings.Cut(prefix, "-")
-		if prefix != prevPrefix {
-			logger.InfoContext(ctx, "iterating vulnerabilities", slog.String("now_at", obj.Name))
-			prevPrefix = prefix
-		}
 		select {
-		case gcsPathToDownloaderCh <- obj.Name:
+		case gcsPathToDownloaderCh <- objName:
 		case <-ctx.Done():
 			break MainLoop
 		}

@@ -17,7 +17,7 @@ To run the exporter locally, run the exporter from within the `go/cmd/exporter` 
 
 ```sh
 # Example
-go run . -osv_vulns_bucket osv-test-vulnerabilities -uploadToGCS=false -bucket /tmp/osv-export
+go run . -osv-vulns-bucket osv-test-vulnerabilities -upload-to-gcs=false -bucket /tmp/osv-export
 ```
 
 This will write the exported files to the `/tmp/osv-export` directory.

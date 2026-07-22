@@ -49,20 +49,20 @@ func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 
 	url := "https://github.com/oliverchang/osv-test.git"
 
-	// Test SyncRepoOnDisk with SkipSemaphore: true
+	// Test SyncRepoOnDisk with SkipReqConcurrencySemaphore: true
 	// There's no easy way to test the semaphore skipping part, so we just test that it works.
-	repoDisk, err := SyncRepoOnDisk(t.Context(), url, FetchOptions{ForceUpdate: false, SkipSemaphore: true})
+	repoDisk, err := SyncRepoOnDisk(t.Context(), url, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
 	if err != nil {
-		t.Fatalf("SyncRepoOnDisk failed with SkipSemaphore=true: %v", err)
+		t.Fatalf("SyncRepoOnDisk failed with SkipReqConcurrencySemaphore=true: %v", err)
 	}
 	if repoDisk == nil || repoDisk.repoPath == "" {
 		t.Errorf("SyncRepoOnDisk returned invalid repository struct")
 	}
 
-	// Test LoadRepo with SkipSemaphore: false
-	repoLoaded, err := LoadRepo(t.Context(), url, FetchOptions{ForceUpdate: false, SkipSemaphore: false})
+	// Test LoadRepo with SkipReqConcurrencySemaphore: false
+	repoLoaded, err := LoadRepo(t.Context(), url, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false})
 	if err != nil {
-		t.Fatalf("LoadRepo failed with SkipSemaphore=false: %v", err)
+		t.Fatalf("LoadRepo failed with SkipReqConcurrencySemaphore=false: %v", err)
 	}
 	if repoLoaded == nil || len(repoLoaded.commits) == 0 {
 		t.Errorf("LoadRepo returned empty repository commits")

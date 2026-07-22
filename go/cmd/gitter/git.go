@@ -15,8 +15,8 @@ import (
 )
 
 type FetchOptions struct {
-	ForceUpdate   bool
-	SkipSemaphore bool
+	ForceUpdate                 bool
+	SkipReqConcurrencySemaphore bool
 }
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
@@ -219,7 +219,7 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 // Skips the expensive LoadRepository (commit graph building and patch ID calculation).
 func SyncRepoOnDisk(ctx context.Context, repoURL string, opts FetchOptions) (*Repository, error) {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, opts.SkipSemaphore, func() (any, error) {
+		return runWithConcurrencyControl(ctx, opts.SkipReqConcurrencySemaphore, func() (any, error) {
 			return nil, refreshRepo(ctx, repoURL, opts.ForceUpdate)
 		})
 	})
@@ -250,7 +250,7 @@ func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Reposito
 	}
 
 	repoAny, err, _ := gLoad.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, opts.SkipSemaphore, func() (any, error) {
+		return runWithConcurrencyControl(ctx, opts.SkipReqConcurrencySemaphore, func() (any, error) {
 			repoLock := GetRepoLock(repoURL)
 			repoLock.RLock()
 			defer repoLock.RUnlock()

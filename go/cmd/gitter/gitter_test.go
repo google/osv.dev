@@ -249,7 +249,7 @@ func setupTest(t *testing.T) {
 	lastFetchMu.Unlock()
 
 	// Initialize semaphore for tests
-	semaphore = make(chan struct{}, 100)
+	reqConcurrencySemaphore = make(chan struct{}, 100)
 
 	// Initialize caches for tests
 	repoCacheMaxCostBytes = 1024 * 1024 // 1MB for test

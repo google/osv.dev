@@ -527,20 +527,20 @@ func TestTagsHandler(t *testing.T) {
 	}
 }
 
-func TestDiffsHandler(t *testing.T) {
+func TestFileDiffsHandler(t *testing.T) {
 	setupTest(t)
 
 	tests := []struct {
 		name             string
-		reqBody          *pb.DiffRequest
+		reqBody          *pb.FileDiffsRequest
 		rawBody          []byte
 		contentType      string
 		expectedCode     int
-		expectedResponse *pb.DiffResponse
+		expectedResponse *pb.FileDiffsResponse
 	}{
 		{
 			name: "Missing repo URL",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				LastSyncedCommit: "1234567890123456789012345678901234567890",
 			},
 			contentType:  "application/json",
@@ -548,7 +548,7 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Forbidden or non-existent repo",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/google/this-repo-does-not-exist-12345.git",
 				LastSyncedCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
 			},
@@ -557,14 +557,14 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Empty last sync for full tree diff",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/oliverchang/osv-test.git",
 				LastSyncedCommit: "",
 				Branch:           "branch_1",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusOK,
-			expectedResponse: &pb.DiffResponse{
+			expectedResponse: &pb.FileDiffsResponse{
 				LatestCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
 				Changes: []*pb.FileChange{
 					{ToPath: "abc"},
@@ -576,14 +576,14 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Empty branch name for remote origin HEAD branch",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/oliverchang/osv-test.git",
 				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
 				Branch:           "",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusOK,
-			expectedResponse: &pb.DiffResponse{
+			expectedResponse: &pb.FileDiffsResponse{
 				LatestCommit: "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
 				Changes: []*pb.FileChange{
 					{
@@ -597,14 +597,14 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Specifying non-default branch and last synced commit",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/oliverchang/osv-test.git",
 				LastSyncedCommit: "57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f",
 				Branch:           "oss-fuzz",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusOK,
-			expectedResponse: &pb.DiffResponse{
+			expectedResponse: &pb.FileDiffsResponse{
 				LatestCommit: "25147a74d8aeb27b43665530ee121a2a1b19dc58",
 				Changes: []*pb.FileChange{
 					{
@@ -618,7 +618,7 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Non-existent branch name",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/oliverchang/osv-test.git",
 				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
 				Branch:           "nonexistent-branch-12345",
@@ -628,7 +628,7 @@ func TestDiffsHandler(t *testing.T) {
 		},
 		{
 			name: "Invalid last synced commit",
-			reqBody: &pb.DiffRequest{
+			reqBody: &pb.FileDiffsRequest{
 				Url:              "https://github.com/oliverchang/osv-test.git",
 				LastSyncedCommit: "invalidhash123456",
 				Branch:           "branch_1",
@@ -655,7 +655,7 @@ func TestDiffsHandler(t *testing.T) {
 				}
 			}
 
-			req, err := http.NewRequest(http.MethodPost, "/diffs", bytes.NewReader(bodyBytes))
+			req, err := http.NewRequest(http.MethodPost, "/file-diffs", bytes.NewReader(bodyBytes))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -664,14 +664,14 @@ func TestDiffsHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			diffsHandler(rr, req)
+			fileDiffsHandler(rr, req)
 
 			if status := rr.Code; status != tt.expectedCode {
-				t.Errorf("diffsHandler returned wrong status code: got %v want %v", status, tt.expectedCode)
+				t.Errorf("fileDiffsHandler returned wrong status code: got %v want %v", status, tt.expectedCode)
 			}
 
 			if tt.expectedResponse != nil {
-				resp := &pb.DiffResponse{}
+				resp := &pb.FileDiffsResponse{}
 				var err error
 				if tt.contentType == "application/json" {
 					err = protojson.Unmarshal(rr.Body.Bytes(), resp)
@@ -682,7 +682,7 @@ func TestDiffsHandler(t *testing.T) {
 					t.Fatalf("failed to unmarshal response: %v", err)
 				}
 				if diff := cmp.Diff(tt.expectedResponse, resp, protocmp.Transform()); diff != "" {
-					t.Errorf("diffsHandler returned wrong response: -want +got:\n%s", diff)
+					t.Errorf("fileDiffsHandler returned wrong response: -want +got:\n%s", diff)
 				}
 			}
 		})

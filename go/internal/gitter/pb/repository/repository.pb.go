@@ -635,7 +635,7 @@ func (x *FileChange) GetToPath() string {
 	return ""
 }
 
-type DiffRequest struct {
+type FileDiffsRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Url              string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	LastSyncedCommit string                 `protobuf:"bytes,2,opt,name=last_synced_commit,json=lastSyncedCommit,proto3" json:"last_synced_commit,omitempty"`
@@ -644,20 +644,20 @@ type DiffRequest struct {
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *DiffRequest) Reset() {
-	*x = DiffRequest{}
+func (x *FileDiffsRequest) Reset() {
+	*x = FileDiffsRequest{}
 	mi := &file_repository_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DiffRequest) String() string {
+func (x *FileDiffsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DiffRequest) ProtoMessage() {}
+func (*FileDiffsRequest) ProtoMessage() {}
 
-func (x *DiffRequest) ProtoReflect() protoreflect.Message {
+func (x *FileDiffsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_repository_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -669,33 +669,33 @@ func (x *DiffRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiffRequest.ProtoReflect.Descriptor instead.
-func (*DiffRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use FileDiffsRequest.ProtoReflect.Descriptor instead.
+func (*FileDiffsRequest) Descriptor() ([]byte, []int) {
 	return file_repository_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *DiffRequest) GetUrl() string {
+func (x *FileDiffsRequest) GetUrl() string {
 	if x != nil {
 		return x.Url
 	}
 	return ""
 }
 
-func (x *DiffRequest) GetLastSyncedCommit() string {
+func (x *FileDiffsRequest) GetLastSyncedCommit() string {
 	if x != nil {
 		return x.LastSyncedCommit
 	}
 	return ""
 }
 
-func (x *DiffRequest) GetBranch() string {
+func (x *FileDiffsRequest) GetBranch() string {
 	if x != nil {
 		return x.Branch
 	}
 	return ""
 }
 
-type DiffResponse struct {
+type FileDiffsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LatestCommit  string                 `protobuf:"bytes,1,opt,name=latest_commit,json=latestCommit,proto3" json:"latest_commit,omitempty"`
 	Changes       []*FileChange          `protobuf:"bytes,2,rep,name=changes,proto3" json:"changes,omitempty"`
@@ -703,20 +703,20 @@ type DiffResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DiffResponse) Reset() {
-	*x = DiffResponse{}
+func (x *FileDiffsResponse) Reset() {
+	*x = FileDiffsResponse{}
 	mi := &file_repository_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DiffResponse) String() string {
+func (x *FileDiffsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DiffResponse) ProtoMessage() {}
+func (*FileDiffsResponse) ProtoMessage() {}
 
-func (x *DiffResponse) ProtoReflect() protoreflect.Message {
+func (x *FileDiffsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_repository_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -728,19 +728,19 @@ func (x *DiffResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiffResponse.ProtoReflect.Descriptor instead.
-func (*DiffResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use FileDiffsResponse.ProtoReflect.Descriptor instead.
+func (*FileDiffsResponse) Descriptor() ([]byte, []int) {
 	return file_repository_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *DiffResponse) GetLatestCommit() string {
+func (x *FileDiffsResponse) GetLatestCommit() string {
 	if x != nil {
 		return x.LatestCommit
 	}
 	return ""
 }
 
-func (x *DiffResponse) GetChanges() []*FileChange {
+func (x *FileDiffsResponse) GetChanges() []*FileChange {
 	if x != nil {
 		return x.Changes
 	}
@@ -892,12 +892,12 @@ const file_repository_proto_rawDesc = "" +
 	"\n" +
 	"FileChange\x12\x1b\n" +
 	"\tfrom_path\x18\x01 \x01(\tR\bfromPath\x12\x17\n" +
-	"\ato_path\x18\x02 \x01(\tR\x06toPath\"e\n" +
-	"\vDiffRequest\x12\x10\n" +
+	"\ato_path\x18\x02 \x01(\tR\x06toPath\"j\n" +
+	"\x10FileDiffsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12,\n" +
 	"\x12last_synced_commit\x18\x02 \x01(\tR\x10lastSyncedCommit\x12\x16\n" +
-	"\x06branch\x18\x03 \x01(\tR\x06branch\"a\n" +
-	"\fDiffResponse\x12#\n" +
+	"\x06branch\x18\x03 \x01(\tR\x06branch\"f\n" +
+	"\x11FileDiffsResponse\x12#\n" +
 	"\rlatest_commit\x18\x01 \x01(\tR\flatestCommit\x12,\n" +
 	"\achanges\x18\x02 \x03(\v2\x12.gitter.FileChangeR\achanges\"R\n" +
 	"\x12FileContentRequest\x12\x10\n" +
@@ -939,8 +939,8 @@ var file_repository_proto_goTypes = []any{
 	(*CacheRequest)(nil),            // 8: gitter.CacheRequest
 	(*AffectedCommitsRequest)(nil),  // 9: gitter.AffectedCommitsRequest
 	(*FileChange)(nil),              // 10: gitter.FileChange
-	(*DiffRequest)(nil),             // 11: gitter.DiffRequest
-	(*DiffResponse)(nil),            // 12: gitter.DiffResponse
+	(*FileDiffsRequest)(nil),        // 11: gitter.FileDiffsRequest
+	(*FileDiffsResponse)(nil),       // 12: gitter.FileDiffsResponse
 	(*FileContentRequest)(nil),      // 13: gitter.FileContentRequest
 	(*FileContentResponse)(nil),     // 14: gitter.FileContentResponse
 }
@@ -952,7 +952,7 @@ var file_repository_proto_depIdxs = []int32{
 	4,  // 4: gitter.TagsResponse.tags:type_name -> gitter.Ref
 	0,  // 5: gitter.Event.event_type:type_name -> gitter.EventType
 	7,  // 6: gitter.AffectedCommitsRequest.events:type_name -> gitter.Event
-	10, // 7: gitter.DiffResponse.changes:type_name -> gitter.FileChange
+	10, // 7: gitter.FileDiffsResponse.changes:type_name -> gitter.FileChange
 	8,  // [8:8] is the sub-list for method output_type
 	8,  // [8:8] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name

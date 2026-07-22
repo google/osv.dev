@@ -54,7 +54,7 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /cache":            cacheHandler,
 	"GET /tags":              tagsHandler,
 	"POST /affected-commits": affectedCommitsHandler,
-	"POST /diffs":            diffsHandler,
+	"POST /file-diffs":       fileDiffsHandler,
 	"POST /file-content":     fileContentHandler,
 }
 
@@ -858,13 +858,13 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func diffsHandler(w http.ResponseWriter, r *http.Request) {
+func fileDiffsHandler(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
 	ctx := r.Context()
-	defer func() { logRequestCompletion(ctx, "/diffs", start, statusCode) }()
+	defer func() { logRequestCompletion(ctx, "/file-diffs", start, statusCode) }()
 
-	body := &pb.DiffRequest{}
+	body := &pb.FileDiffsRequest{}
 	if err := unmarshalRequest(r, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
@@ -884,7 +884,7 @@ func diffsHandler(w http.ResponseWriter, r *http.Request) {
 	branch := body.GetBranch()
 
 	ctx = context.WithValue(ctx, urlKey, repoURL)
-	logger.DebugContext(ctx, "Received request: /diffs",
+	logger.DebugContext(ctx, "Received request: /file-diffs",
 		slog.String("last_synced_commit", lastSyncedCommit),
 		slog.String("branch", branch),
 	)
@@ -926,7 +926,7 @@ func diffsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	resp := &pb.DiffResponse{
+	resp := &pb.FileDiffsResponse{
 		LatestCommit: latestCommit,
 		Changes:      pbChanges,
 	}

@@ -87,11 +87,11 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 	return url
 }
 
-// setupDiffsTestRepo sets up a comprehensive test git repository containing:
+// setupFileDiffsTestRepo sets up a comprehensive test git repository containing:
 // - Multiple branches (main, feature-branch) and tags (v1.0.0, v2.0.0)
 // - Various git change types: addition (A), deletion (D), modification (M), rename (R), copy (C), type change (T)
 // - Special character pathnames (spaces, quotes, tabs, Unicode/UTF-8 emojis) to test -z NUL handling
-func setupDiffsTestRepo(t *testing.T, url string) string {
+func setupFileDiffsTestRepo(t *testing.T, url string) string {
 	t.Helper()
 	gitStorePath = t.TempDir()
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
@@ -1497,7 +1497,7 @@ func TestParseNameStatusLine(t *testing.T) {
 }
 
 func TestListFileDiffs(t *testing.T) {
-	url := setupDiffsTestRepo(t, "git://test-repo-diffs.git")
+	url := setupFileDiffsTestRepo(t, "git://test-repo-file-diffs.git")
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
 	r := NewRepository(url)
 	ctx := context.WithValue(t.Context(), urlKey, repoPath)
@@ -1573,7 +1573,7 @@ func TestListFileDiffs(t *testing.T) {
 }
 
 func TestGetFileContent(t *testing.T) {
-	url := setupDiffsTestRepo(t, "git://test-repo-content.git")
+	url := setupFileDiffsTestRepo(t, "git://test-repo-content.git")
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
 	r := NewRepository(url)
 	ctx := context.WithValue(t.Context(), urlKey, repoPath)
@@ -1665,7 +1665,7 @@ func TestGetFileContent(t *testing.T) {
 }
 
 func TestResolveCommit(t *testing.T) {
-	url := setupDiffsTestRepo(t, "git://test-repo-resolve.git")
+	url := setupFileDiffsTestRepo(t, "git://test-repo-resolve.git")
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
 	r := NewRepository(url)
 	ctx := context.WithValue(t.Context(), urlKey, repoPath)

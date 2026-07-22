@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -994,31 +993,6 @@ func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, err
 	return strings.TrimSpace(string(out)), nil
 }
 
-var (
-	emptyTreeOnce sync.Once
-	emptyTreeHash string
-)
-
-// getEmptyTreeHash calculates and caches the empty tree hash
-func getEmptyTreeHash(ctx context.Context, repoPath string) string {
-	emptyTreeOnce.Do(func() {
-		// Use `git mktree` with empty stdin for the empty tree hash
-		cmd := prepareCmd(ctx, repoPath, nil, "git", "mktree")
-		cmd.Stdin = bytes.NewReader(nil)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			// Fallback to the empty tree SHA1 magic number.
-			logger.ErrorContext(ctx, "Failed to get empty tree SHA from `git mktree`, falling back to well-known empty tree SHA1", slog.Any("err", err))
-			emptyTreeHash = emptyTreeSHA1
-
-			return
-		}
-		emptyTreeHash = strings.TrimSpace(string(out))
-	})
-
-	return emptyTreeHash
-}
-
 // ListFileDiffs lists the files that changed between lastSyncCommit and targetBranch's latest commit.
 func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBranch string) (string, []*FileChange, error) {
 	logger.DebugContext(ctx, "Starting file diff calculation", slog.String("last_synced_commit", lastSyncCommit), slog.String("branch", targetBranch))
@@ -1047,7 +1021,7 @@ func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBr
 	fromCommit := lastSyncCommit
 	if fromCommit == "" {
 		// If lastSyncCommit is empty, diff against empty tree object.
-		fromCommit = getEmptyTreeHash(ctx, r.repoPath)
+		fromCommit = emptyTreeSHA1
 	} else {
 		resolved, err := r.resolveCommit(ctx, fromCommit)
 		if err != nil {

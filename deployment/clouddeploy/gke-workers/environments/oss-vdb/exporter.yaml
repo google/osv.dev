@@ -17,4 +17,6 @@ spec:
               - "--workers=3000"
               - "--bucket=osv-vulnerabilities"
               - "--osv-vulns-bucket=osv-vulnerabilities"
+              - "--breakdown-prefixes=ALSA-,BIT-,CGA-0,CGA-a,CGA-m,CVE-,DLA-,DSA-,GHSA-,GO-,MAL-,MGASA-,OSV-,PYSEC-,RLSA-,RUSTSEC-,SUSE-,UBUNTU-"
+
 

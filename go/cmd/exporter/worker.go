@@ -65,8 +65,9 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	defer span.End()
 
 	logger.InfoContext(ctx, "new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
-	var allVulns []vulnData
-	var csvData [][]string
+	// 500 size is around the minimum each ecosystem would need, most ecosystems are much bigger.
+	allVulns := make([]vulnData, 0, 500)
+	csvData := make([][]string, 0, 500)
 	var vanirVulns []vulnData
 	for v := range w.inCh {
 		// Process vulnerability.
@@ -151,8 +152,9 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 	defer span.End()
 
 	logger.InfoContext(ctx, "all-ecosystem worker started")
-	var allVulns []vulnData
-	var csvData [][]string
+	// We have currently about 1.8 million entries, so start at 100k
+	allVulns := make([]vulnData, 0, 100000)
+	csvData := make([][]string, 0, 100000)
 	ecosystems := make(map[string]struct{})
 	for v := range w.inCh {
 		b, err := marshalToJSON(v.Vulnerability)

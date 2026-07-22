@@ -17,9 +17,9 @@ package gcs
 import (
 	"testing"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"cloud.google.com/go/storage"
 )
 
 func TestBuildPartitionQueries(t *testing.T) {

@@ -25,6 +25,7 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 				return
 			}
 			logger.ErrorContext(ctx, "failed to read vulnerability", slog.String("obj", path), slog.Any("err", err))
+
 			continue
 		}
 		vuln := &osvschema.Vulnerability{}
@@ -33,6 +34,7 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 				return
 			}
 			logger.ErrorContext(ctx, "failed to unmarshal vulnerability", slog.String("obj", path), slog.Any("err", err))
+
 			continue
 		}
 

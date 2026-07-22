@@ -185,4 +185,3 @@ func (c *GCSClient) Bucket() *storage.BucketHandle {
 func (c *GCSClient) ObjectsFast(ctx context.Context, prefix string, breakdownPrefixes []string) iter.Seq2[string, error] {
 	return gcs.ObjectsFastStream(ctx, c.bucket, prefix, breakdownPrefixes)
 }
-

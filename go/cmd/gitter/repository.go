@@ -961,6 +961,10 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 
 // GetLocalTags uses git show-ref to get tags from local git directory
 func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
 	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags", "--dereference")
 
 	return r.runAndParseTags(ctx, cmd)
@@ -995,6 +999,10 @@ func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, err
 
 // ListFileDiffs lists the files that changed between lastSyncCommit and targetBranch's latest commit.
 func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBranch string) (string, []*FileChange, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
 	logger.DebugContext(ctx, "Starting file diff calculation", slog.String("last_synced_commit", lastSyncCommit), slog.String("branch", targetBranch))
 	start := time.Now()
 
@@ -1089,6 +1097,7 @@ func parseNameStatusLine(line string) (*FileChange, error) {
 	T: change in the type of the file (regular file, symbolic link or submodule)
 	U: file is unmerged (you must complete the merge before it can be committed)
 	X: "unknown" change type (most probably a bug, please report it)
+	(B is not a status in the actual output despite it being referenced in the --diff-filter option)
 
 	Status letters C and R are always followed by a score (denoting the percentage of similarity between the source and target of the move or copy).
 	Status letter M may be followed by a score (denoting the percentage of dissimilarity) for file rewrites.
@@ -1137,6 +1146,10 @@ func cleanPath(p string) string {
 
 // GetFileContent retrieves the raw bytes of a file at a specific commit using git cat-file.
 func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]byte, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
 	path = cleanPath(path)
 
 	// Resolve ref (branch / (abbreviated) commit hash) to full commit hash

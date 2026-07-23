@@ -70,7 +70,7 @@ message FileChange {
 
 message FileDiffsRequest {
     string url = 1;
-    string last_synced_commit = 2;
+    string last_synced_commit = 2; // Empty last_synced_commit will diff against empty tree (return all files)
     string branch = 3;             // Optional, defaults to remote HEAD (origin/HEAD) if not specified
 }
 

@@ -638,8 +638,8 @@ func (x *FileChange) GetToPath() string {
 type FileDiffsRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Url              string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	LastSyncedCommit string                 `protobuf:"bytes,2,opt,name=last_synced_commit,json=lastSyncedCommit,proto3" json:"last_synced_commit,omitempty"`
-	Branch           string                 `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty"` // Optional, defaults to remote HEAD (origin/HEAD) if not specified
+	LastSyncedCommit string                 `protobuf:"bytes,2,opt,name=last_synced_commit,json=lastSyncedCommit,proto3" json:"last_synced_commit,omitempty"` // Empty last_synced_commit will diff against empty tree (return all files)
+	Branch           string                 `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty"`                                               // Optional, defaults to remote HEAD (origin/HEAD) if not specified
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }

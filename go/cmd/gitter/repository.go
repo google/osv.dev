@@ -1137,6 +1137,8 @@ func cleanPath(p string) string {
 
 // GetFileContent retrieves the raw bytes of a file at a specific commit using git cat-file.
 func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]byte, error) {
+	path = cleanPath(path)
+
 	// Resolve ref (branch / (abbreviated) commit hash) to full commit hash
 	commit, err := r.resolveCommit(ctx, ref)
 	if err != nil {

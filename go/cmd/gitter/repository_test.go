@@ -146,7 +146,11 @@ func setupFileDiffsTestRepo(t *testing.T, url string) string {
 	if err != nil {
 		t.Fatalf("failed to write special char file: %v", err)
 	}
-	err = os.WriteFile(filepath.Join(repoPath, "unicode_filename_utf8_🔥.json"), []byte("{\"status\": \"ok\"}"), 0600)
+	err = os.WriteFile(filepath.Join(repoPath, "esacpe\nchar\tin\rname\aAHHHH.txt"), []byte("escape char content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write special char file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json"), []byte("{\"status\": \"ok\"}"), 0600)
 	if err != nil {
 		t.Fatalf("failed to write unicode file: %v", err)
 	}
@@ -1465,6 +1469,31 @@ func TestParseNameStatusLine(t *testing.T) {
 			want: &FileChange{From: "", To: "Spaces &\"quotes\" in name.txt"},
 		},
 		{
+			name: "Quoted path with C-style escape characters",
+			line: "A\t\"esacpe\\nchar\\tin\\rname\\aAHHHH.txt\"",
+			want: &FileChange{From: "", To: "esacpe\nchar\tin\rname\aAHHHH.txt"},
+		},
+		{
+			name: "Quoted path with octal NUL byte escape sequence",
+			line: "A\t\"file_with_\\000_nul.txt\"",
+			want: &FileChange{From: "", To: "file_with_\x00_nul.txt"},
+		},
+		{
+			name: "Quoted path with octal byte escape sequences",
+			line: "A\t\"unicode_filename_utf8_\\360\\237\\224\\245.json\"",
+			want: &FileChange{From: "", To: "unicode_filename_utf8_🔥.json"},
+		},
+		{
+			name: "Quoted path with backslashes",
+			line: "A\t\"path\\\\to\\\\file.txt\"",
+			want: &FileChange{From: "", To: "path\\to\\file.txt"},
+		},
+		{
+			name: "Renamed file with quoted paths and escapes",
+			line: "R100\t\"old_\\n_name.txt\"\t\"new_\\r_name.txt\"",
+			want: &FileChange{From: "old_\n_name.txt", To: "new_\r_name.txt"},
+		},
+		{
 			name:    "Invalid format - missing tab",
 			line:    "A path/to/file",
 			wantErr: true,
@@ -1530,8 +1559,9 @@ func TestListFileDiffs(t *testing.T) {
 	wantChanges := []*FileChange{
 		{From: "", To: "added_file.txt"},
 		{From: "", To: "copied_file.txt"},
+		{From: "", To: "esacpe\nchar\tin\rname\aAHHHH.txt"},
 		{From: "", To: "Spaces &\"quotes\" in name.txt"},
-		{From: "", To: "unicode_filename_utf8_🔥.json"},
+		{From: "", To: "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json"},
 		{From: "", To: "subfolder/nested.txt"},
 		{From: "deleted_file.txt", To: ""},
 		{From: "modified_file.txt", To: "modified_file.txt"},
@@ -1616,9 +1646,30 @@ func TestGetFileContent(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "Fetch file with escape characters in name",
+			ref:         commit2,
+			path:        "esacpe\nchar\tin\rname\aAHHHH.txt",
+			wantContent: "escape char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file when path input is quoted and escaped",
+			ref:         commit2,
+			path:        "\"esacpe\\nchar\\tin\\rname\\aAHHHH.txt\"",
+			wantContent: "escape char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file when path input has quoted spaces and quotes",
+			ref:         commit2,
+			path:        "\"Spaces &\\\"quotes\\\" in name.txt\"",
+			wantContent: "special char content",
+			wantErr:     false,
+		},
+		{
 			name:        "Fetch file with Unicode UTF-8 emoji in name",
 			ref:         commit2,
-			path:        "unicode_filename_utf8_🔥.json",
+			path:        "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json",
 			wantContent: "{\"status\": \"ok\"}",
 			wantErr:     false,
 		},

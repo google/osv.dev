@@ -62,3 +62,29 @@ message AffectedCommitsRequest {
     bool consider_all_branches = 7;
     string ref_id = 8; // Optional reference ID for tracing
 }
+
+message FileChange {
+    string from_path = 1;
+    string to_path = 2;
+}
+
+message FileDiffsRequest {
+    string url = 1;
+    string last_synced_commit = 2; // Empty last_synced_commit will diff against empty tree (return all files)
+    string branch = 3;             // Optional, defaults to remote HEAD (origin/HEAD) if not specified
+}
+
+message FileDiffsResponse {
+    string latest_commit = 1;
+    repeated FileChange changes = 2;
+}
+
+message FileContentRequest {
+    string url = 1;
+    string commit = 2;
+    string path = 3;
+}
+
+message FileContentResponse {
+    bytes content = 1;
+}

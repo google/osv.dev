@@ -23,7 +23,7 @@ func runGit(t *testing.T, repoPath string, args ...string) {
 }
 
 // A very simple test repository with 3 commits and 2 tags.
-func setupTestRepo(t *testing.T, url string) string {
+func setupTagsTestRepo(t *testing.T, url string) string {
 	t.Helper()
 	gitStorePath = t.TempDir()
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
@@ -31,7 +31,7 @@ func setupTestRepo(t *testing.T, url string) string {
 		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "init", "-b", "main")
 	runGit(t, repoPath, "config", "user.email", "test@test.com")
 	runGit(t, repoPath, "config", "user.name", "Test Name")
 
@@ -73,7 +73,7 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
 	}
 
-	runGit(t, repoPath, "init")
+	runGit(t, repoPath, "init", "-b", "main")
 	runGit(t, repoPath, "config", "user.email", "test@test.com")
 	runGit(t, repoPath, "config", "user.name", "Test Name")
 
@@ -87,8 +87,119 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 	return url
 }
 
+// setupFileDiffsTestRepo sets up a comprehensive test git repository containing:
+// - Multiple branches (main, feature-branch) and tags (v1.0.0, v2.0.0)
+// - Various git change types: addition (A), deletion (D), modification (M), rename (R), copy (C), type change (T)
+// - Special character pathnames (spaces, quotes, tabs, Unicode/UTF-8 emojis) to test -z NUL handling
+func setupFileDiffsTestRepo(t *testing.T, url string) string {
+	t.Helper()
+	gitStorePath = t.TempDir()
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	if err := os.MkdirAll(filepath.Join(repoPath, "subfolder"), 0755); err != nil {
+		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
+	}
+
+	runGit(t, repoPath, "init", "-b", "main")
+	runGit(t, repoPath, "config", "user.email", "test@test.com")
+	runGit(t, repoPath, "config", "user.name", "Test Name")
+
+	// -------------------------------------------------------------------------
+	// Commit 1: Baseline setup on main branch
+	// -------------------------------------------------------------------------
+	// Create baseline files that will be modified, deleted, renamed, copied, or type-changed later.
+	err := os.WriteFile(filepath.Join(repoPath, "modified_file.txt"), []byte("initial modified content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write modified_file.txt: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "deleted_file.txt"), []byte("content to be deleted"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write deleted_file.txt: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "old_name.txt"), []byte("content to be renamed"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write old_name.txt: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "source_file.txt"), []byte("content to be copied"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write source_file.txt: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "type_changed.txt"), []byte("regular file to symlink"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write type_changed.txt: %v", err)
+	}
+
+	runGit(t, repoPath, "add", ".")
+	runGit(t, repoPath, "commit", "-m", "commit 1: baseline")
+	runGit(t, repoPath, "tag", "v1.0.0")
+
+	// -------------------------------------------------------------------------
+	// Commit 2: Switch to feature-branch and perform various git file changes
+	// -------------------------------------------------------------------------
+	runGit(t, repoPath, "checkout", "-b", "feature-branch")
+
+	// 1. Addition (A): Add new files, including special characters (spaces, quotes, tabs, Unicode/UTF-8)
+	err = os.WriteFile(filepath.Join(repoPath, "added_file.txt"), []byte("newly added content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write added_file.txt: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "Spaces &\"quotes\" in name.txt"), []byte("special char content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write special char file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "esacpe\nchar\tin\rname\aAHHHH.txt"), []byte("escape char content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write special char file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json"), []byte("{\"status\": \"ok\"}"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write unicode file: %v", err)
+	}
+	err = os.WriteFile(filepath.Join(repoPath, "subfolder", "nested.txt"), []byte("subfolder file content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write subfolder/nested.txt: %v", err)
+	}
+
+	// 2. Modification (M): Change content of modified_file.txt
+	err = os.WriteFile(filepath.Join(repoPath, "modified_file.txt"), []byte("updated modified content"), 0600)
+	if err != nil {
+		t.Fatalf("failed to update modified_file.txt: %v", err)
+	}
+
+	// 3. Deletion (D): Delete deleted_file.txt
+	runGit(t, repoPath, "rm", "deleted_file.txt")
+
+	// 4. Rename (R): Rename old_name.txt -> new_name.txt
+	runGit(t, repoPath, "mv", "old_name.txt", "new_name.txt")
+
+	// 5. Copy (C): Duplicate source_file.txt into copied_file.txt
+	err = os.WriteFile(filepath.Join(repoPath, "copied_file.txt"), []byte("content to be copied"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write copied_file.txt: %v", err)
+	}
+
+	// 6. Type change (T): Convert type_changed.txt into a symlink pointing to modified_file.txt
+	_ = os.Remove(filepath.Join(repoPath, "type_changed.txt"))
+	if err := os.Symlink("modified_file.txt", filepath.Join(repoPath, "type_changed.txt")); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+
+	runGit(t, repoPath, "add", ".")
+	runGit(t, repoPath, "commit", "-m", "commit 2: feature changes")
+	runGit(t, repoPath, "tag", "v2.0.0")
+
+	// -------------------------------------------------------------------------
+	// Switch back to main and set HEAD
+	// -------------------------------------------------------------------------
+	runGit(t, repoPath, "checkout", "main")
+	// Symbolic ref origin/HEAD would have been set to remote's default branch when it is cloned
+	// But in our local test repo, we need to explicitly set this ref
+	runGit(t, repoPath, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/heads/main")
+
+	return url
+}
+
 func TestBuildCommitGraph(t *testing.T) {
-	url := setupTestRepo(t, "git://test-repo.git")
+	url := setupTagsTestRepo(t, "git://test-repo.git")
 	r := NewRepository(url)
 	ctx := context.WithValue(t.Context(), urlKey, url)
 
@@ -113,7 +224,7 @@ func TestBuildCommitGraph(t *testing.T) {
 }
 
 func TestCalculatePatchIDs(t *testing.T) {
-	url := setupTestRepo(t, "git://test-repo.git")
+	url := setupTagsTestRepo(t, "git://test-repo.git")
 	r := NewRepository(url)
 	ctx := context.WithValue(t.Context(), urlKey, url)
 
@@ -137,7 +248,7 @@ func TestCalculatePatchIDs(t *testing.T) {
 }
 
 func TestLoadRepository(t *testing.T) {
-	url := setupTestRepo(t, "git://test-repo.git")
+	url := setupTagsTestRepo(t, "git://test-repo.git")
 	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
 	ctx := context.WithValue(t.Context(), urlKey, url)
 
@@ -1231,7 +1342,7 @@ func TestGetLocalTags(t *testing.T) {
 	}{
 		{
 			name:      "Repo with tags",
-			setupFunc: setupTestRepo,
+			setupFunc: setupTagsTestRepo,
 			wantTags:  []string{"v1.0.0", "v1.1.0"},
 			wantCount: 2,
 		},
@@ -1276,7 +1387,7 @@ func TestGetRemoteTags(t *testing.T) {
 	}{
 		{
 			name:      "Repo with tags",
-			setupFunc: setupTestRepo,
+			setupFunc: setupTagsTestRepo,
 			wantTags:  []string{"v1.0.0", "v1.1.0"},
 			wantCount: 2,
 		},
@@ -1309,6 +1420,376 @@ func TestGetRemoteTags(t *testing.T) {
 			for _, wantTag := range tt.wantTags {
 				if _, ok := tags[wantTag]; !ok {
 					t.Errorf("expected tag %s to exist", wantTag)
+				}
+			}
+		})
+	}
+}
+
+func TestParseNameStatusLine(t *testing.T) {
+	tests := []struct {
+		name    string
+		line    string
+		want    *FileChange
+		wantErr bool
+	}{
+		{
+			name: "Added file",
+			line: "A\tpath/to/added.txt",
+			want: &FileChange{From: "", To: "path/to/added.txt"},
+		},
+		{
+			name: "Deleted file",
+			line: "D\tpath/to/deleted.txt",
+			want: &FileChange{From: "path/to/deleted.txt", To: ""},
+		},
+		{
+			name: "Modified file",
+			line: "M\tpath/to/modified.txt",
+			want: &FileChange{From: "path/to/modified.txt", To: "path/to/modified.txt"},
+		},
+		{
+			name: "Type changed file",
+			line: "T\tpath/to/symlink",
+			want: &FileChange{From: "path/to/symlink", To: "path/to/symlink"},
+		},
+		{
+			name: "Renamed file",
+			line: "R100\told/path.txt\tnew/path.txt",
+			want: &FileChange{From: "old/path.txt", To: "new/path.txt"},
+		},
+		{
+			name: "Copied file",
+			line: "C90\tsrc/path.txt\tdst/path.txt",
+			want: &FileChange{From: "", To: "dst/path.txt"},
+		},
+		{
+			name: "Quoted path with escaped spaces and quotes",
+			line: "A\t\"Spaces &\\\"quotes\\\" in name.txt\"",
+			want: &FileChange{From: "", To: "Spaces &\"quotes\" in name.txt"},
+		},
+		{
+			name: "Quoted path with C-style escape characters",
+			line: "A\t\"esacpe\\nchar\\tin\\rname\\aAHHHH.txt\"",
+			want: &FileChange{From: "", To: "esacpe\nchar\tin\rname\aAHHHH.txt"},
+		},
+		{
+			name: "Quoted path with octal NUL byte escape sequence",
+			line: "A\t\"file_with_\\000_nul.txt\"",
+			want: &FileChange{From: "", To: "file_with_\x00_nul.txt"},
+		},
+		{
+			name: "Quoted path with octal byte escape sequences",
+			line: "A\t\"unicode_filename_utf8_\\360\\237\\224\\245.json\"",
+			want: &FileChange{From: "", To: "unicode_filename_utf8_🔥.json"},
+		},
+		{
+			name: "Quoted path with backslashes",
+			line: "A\t\"path\\\\to\\\\file.txt\"",
+			want: &FileChange{From: "", To: "path\\to\\file.txt"},
+		},
+		{
+			name: "Renamed file with quoted paths and escapes",
+			line: "R100\t\"old_\\n_name.txt\"\t\"new_\\r_name.txt\"",
+			want: &FileChange{From: "old_\n_name.txt", To: "new_\r_name.txt"},
+		},
+		{
+			name:    "Invalid format - missing tab",
+			line:    "A path/to/file",
+			wantErr: true,
+		},
+		{
+			name:    "Rename missing dst",
+			line:    "R100\told/path.txt",
+			wantErr: true,
+		},
+		{
+			name:    "Unknown status letter",
+			line:    "X\tpath/to/file",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseNameStatusLine(tt.line)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseNameStatusLine() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if diff := cmp.Diff(tt.want, got, cmp.AllowUnexported(FileChange{})); diff != "" {
+					t.Errorf("parseNameStatusLine() mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestListFileDiffs(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-file-diffs.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	commit1, err := r.resolveCommit(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v1.0.0: %v", err)
+	}
+	commit2, err := r.resolveCommit(ctx, "v2.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v2.0.0: %v", err)
+	}
+
+	// Test ListFileDiffs between commit1 (v1.0.0) and branch target (feature-branch)
+	latestCommit, changes, err := r.ListFileDiffs(ctx, commit1, "feature-branch")
+	if err != nil {
+		t.Fatalf("ListFileDiffs failed: %v", err)
+	}
+
+	if latestCommit != commit2 {
+		t.Errorf("expected latestCommit %s, got %s", commit2, latestCommit)
+	}
+
+	// Expected changes in feature-branch since v1.0.0:
+	// Added (A): added_file.txt, copied_file.txt, Spaces &"quotes" in name.txt, unicode_filename_utf8_🔥.json, subfolder/nested.txt
+	// Deleted (D): deleted_file.txt
+	// Modified (M): modified_file.txt
+	// Renamed (R): old_name.txt -> new_name.txt
+	// Type changed (T): type_changed.txt -> type_changed.txt
+	wantChanges := []*FileChange{
+		{From: "", To: "added_file.txt"},
+		{From: "", To: "copied_file.txt"},
+		{From: "", To: "esacpe\nchar\tin\rname\aAHHHH.txt"},
+		{From: "", To: "Spaces &\"quotes\" in name.txt"},
+		{From: "", To: "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json"},
+		{From: "", To: "subfolder/nested.txt"},
+		{From: "deleted_file.txt", To: ""},
+		{From: "modified_file.txt", To: "modified_file.txt"},
+		{From: "old_name.txt", To: "new_name.txt"},
+		{From: "type_changed.txt", To: "type_changed.txt"},
+	}
+
+	opts := cmpopts.SortSlices(func(a, b *FileChange) bool {
+		if a.From != b.From {
+			return a.From < b.From
+		}
+
+		return a.To < b.To
+	})
+
+	if diff := cmp.Diff(wantChanges, changes, opts, cmp.AllowUnexported(FileChange{})); diff != "" {
+		t.Errorf("ListFileDiffs changes mismatch (-want +got):\n%s", diff)
+	}
+
+	// Test ListFileDiffs with empty lastSyncCommit (diff against empty tree)
+	_, emptyCommitChanges, err := r.ListFileDiffs(ctx, "", "feature-branch")
+	if err != nil {
+		t.Fatalf("ListFileDiffs with empty lastSyncCommit failed: %v", err)
+	}
+	if len(emptyCommitChanges) == 0 {
+		t.Errorf("expected non-empty changes for empty lastSyncCommit, got 0")
+	}
+	for _, c := range emptyCommitChanges {
+		if c.From != "" {
+			t.Errorf("expected From path to be empty when diffing against empty tree, got %q", c.From)
+		}
+	}
+
+	// Test with invalid lastSyncCommit
+	_, _, err = r.ListFileDiffs(ctx, "invalidhash123", "feature-branch")
+	if err == nil {
+		t.Error("expected error for invalid lastSyncCommit, got nil")
+	}
+}
+
+func TestGetFileContent(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-content.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	commit1, err := r.resolveCommit(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("resolve v1.0.0: %v", err)
+	}
+	commit2, err := r.resolveCommit(ctx, "v2.0.0")
+	if err != nil {
+		t.Fatalf("resolve v2.0.0: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		ref         string
+		path        string
+		wantContent string
+		wantErr     bool
+	}{
+		{
+			name:        "Fetch file content at v1.0.0 baseline",
+			ref:         commit1,
+			path:        "modified_file.txt",
+			wantContent: "initial modified content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch modified file content at v2.0.0",
+			ref:         commit2,
+			path:        "modified_file.txt",
+			wantContent: "updated modified content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file with spaces and quotes in name",
+			ref:         commit2,
+			path:        "Spaces &\"quotes\" in name.txt",
+			wantContent: "special char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file with escape characters in name",
+			ref:         commit2,
+			path:        "esacpe\nchar\tin\rname\aAHHHH.txt",
+			wantContent: "escape char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file when path input is quoted and escaped",
+			ref:         commit2,
+			path:        "\"esacpe\\nchar\\tin\\rname\\aAHHHH.txt\"",
+			wantContent: "escape char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file when path input has quoted spaces and quotes",
+			ref:         commit2,
+			path:        "\"Spaces &\\\"quotes\\\" in name.txt\"",
+			wantContent: "special char content",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch file with Unicode UTF-8 emoji in name",
+			ref:         commit2,
+			path:        "unicode_filenǟme_multibyte_utf8_ˁ˚ᴥ˚ˀ_🔥🏴󠁧󠁢󠁥󠁮󠁧󠁿👩🏻‍✈️.json",
+			wantContent: "{\"status\": \"ok\"}",
+			wantErr:     false,
+		},
+		{
+			name:        "Fetch nested file in subfolder",
+			ref:         commit2,
+			path:        "subfolder/nested.txt",
+			wantContent: "subfolder file content",
+			wantErr:     false,
+		},
+		{
+			name:    "Fetch deleted file at v2.0.0 (should fail)",
+			ref:     commit2,
+			path:    "deleted_file.txt",
+			wantErr: true,
+		},
+		{
+			name:    "Fetch directory instead of file (should fail)",
+			ref:     commit2,
+			path:    "subfolder",
+			wantErr: true,
+		},
+		{
+			name:    "Fetch with invalid commit ref (should fail)",
+			ref:     "invalid-ref",
+			path:    "modified_file.txt",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := r.GetFileContent(ctx, tt.ref, tt.path)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("GetFileContent(%q, %q) error = %v, wantErr %v", tt.ref, tt.path, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if string(got) != tt.wantContent {
+					t.Errorf("GetFileContent(%q, %q) got %q, want %q", tt.ref, tt.path, string(got), tt.wantContent)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveCommit(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-resolve.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	branchSha, err := r.resolveCommit(ctx, "feature-branch")
+	if err != nil || len(branchSha) != 40 {
+		t.Fatalf("setup resolve commit feature-branch failed: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		ref     string
+		wantSha string
+		wantErr bool
+	}{
+		{
+			name:    "Resolve tag",
+			ref:     "v1.0.0",
+			wantErr: false,
+		},
+		{
+			name:    "Resolve full branch ref",
+			ref:     "refs/heads/feature-branch",
+			wantSha: branchSha,
+			wantErr: false,
+		},
+		{
+			name:    "Resolve short branch name",
+			ref:     "feature-branch",
+			wantSha: branchSha,
+			wantErr: false,
+		},
+		{
+			name:    "Resolve full 40-char commit SHA",
+			ref:     branchSha,
+			wantSha: branchSha,
+			wantErr: false,
+		},
+		{
+			name:    "Resolve abbr commit SHA",
+			ref:     branchSha[:7],
+			wantSha: branchSha,
+			wantErr: false,
+		},
+		{
+			name:    "Resolve origin/HEAD",
+			ref:     "origin/HEAD",
+			wantErr: false,
+		},
+		{
+			name:    "Resolve nonexistent branch name",
+			ref:     "nonexistent-branch",
+			wantErr: true,
+		},
+		{
+			name:    "Resolve empty ref string",
+			ref:     "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := r.resolveCommit(ctx, tt.ref)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ResolveCommit(%q) error = %v, wantErr %v", tt.ref, err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if len(got) != 40 {
+					t.Errorf("ResolveCommit(%q) returned SHA length %d, expected 40", tt.ref, len(got))
+				}
+				if tt.wantSha != "" && got != tt.wantSha {
+					t.Errorf("ResolveCommit(%q) got %q, want %q", tt.ref, got, tt.wantSha)
 				}
 			}
 		})

@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -55,18 +54,20 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /cache":            cacheHandler,
 	"GET /tags":              tagsHandler,
 	"POST /affected-commits": affectedCommitsHandler,
+	"POST /file-diffs":       fileDiffsHandler,
+	"POST /file-content":     fileContentHandler,
 }
 
 var (
-	gFetch          singleflight.Group
-	gArchive        singleflight.Group
-	gLoad           singleflight.Group
-	gLsRemote       singleflight.Group
-	gLocalTags      singleflight.Group
-	persistencePath = filepath.Join(defaultGitterWorkDir, persistenceFileName)
-	gitStorePath    = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
-	fetchTimeout    time.Duration
-	semaphore       chan struct{} // Request concurrency control
+	gFetch                  singleflight.Group
+	gArchive                singleflight.Group
+	gLoad                   singleflight.Group
+	gLsRemote               singleflight.Group
+	gLocalTags              singleflight.Group
+	persistencePath         = filepath.Join(defaultGitterWorkDir, persistenceFileName)
+	gitStorePath            = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
+	fetchTimeout            time.Duration
+	reqConcurrencySemaphore chan struct{} // Request concurrency control
 	// LRU cache for recently loaded repositories (key: repo URL)
 	repoCache             *ristretto.Cache[string, *Repository]
 	repoTTL               time.Duration
@@ -202,57 +203,17 @@ func CloseInvalidRepoCache() {
 	}
 }
 
-// prepareCmd prepares the command with context cancellation handled by sending SIGINT.
-func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, name, args...)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
-	}
-	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
-	cmd.Cancel = func() error {
-		logger.DebugContext(ctx, "SIGINT sent to command", slog.String("cmd", name), slog.Any("args", args))
-		return cmd.Process.Signal(syscall.SIGINT)
-	}
-	// Ensure it eventually dies if it ignores SIGINT
-	cmd.WaitDelay = shutdownTimeout / 2
-
-	return cmd
-}
-
-// runCmd executes a command with context cancellation handled by sending SIGINT.
-// It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
-	cmd := prepareCmd(ctx, dir, env, name, args...)
-	out, err := cmd.CombinedOutput()
-
-	if err != nil {
-		if ctx.Err() != nil {
-			// Log separately if cancelled
-			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
-		}
-
-		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+// runWithConcurrencyControl runs function f for request concurrency control.
+// If skipReqConcurrencySemaphore is true, it executes f directly without waiting for a semaphore spot.
+func runWithConcurrencyControl(ctx context.Context, skipReqConcurrencySemaphore bool, f func() (any, error)) (any, error) {
+	if skipReqConcurrencySemaphore {
+		return f()
 	}
 
-	logger.DebugContext(ctx, "Git command executed",
-		slog.String("cmd", name),
-		slog.Any("args", args),
-		slog.String("output", string(out)),
-	)
-
-	return nil
-}
-
-// runWithSemaphore runs function after waiting at semaphore for concurrency control
-func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
 	select {
-	case semaphore <- struct{}{}:
-		defer func() { <-semaphore }()
-		logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(semaphore)))
+	case reqConcurrencySemaphore <- struct{}{}:
+		defer func() { <-reqConcurrencySemaphore }()
+		logger.DebugContext(ctx, "Concurrent requests", slog.Int("count", len(reqConcurrencySemaphore)))
 
 		return f()
 	case <-ctx.Done():
@@ -261,12 +222,12 @@ func runWithSemaphore(ctx context.Context, f func() (any, error)) (any, error) {
 	}
 }
 
-func isLocalRequest(r *http.Request) bool {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+func isLocalRequest(req *http.Request) bool {
+	host, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
 		// If SplitHostPort fails, it might be a raw IP (though rare in RemoteAddr),
 		// or an empty string. Try parsing the whole string as an IP.
-		host = r.RemoteAddr
+		host = req.RemoteAddr
 	}
 
 	ip := net.ParseIP(host)
@@ -278,7 +239,7 @@ func isLocalRequest(r *http.Request) bool {
 	return ip.IsLoopback()
 }
 
-func prepareURL(r *http.Request, repoURL string) (string, error) {
+func prepareURL(req *http.Request, repoURL string) (string, error) {
 	if repoURL == "" {
 		return "", errors.New("missing url parameter")
 	}
@@ -311,7 +272,7 @@ func prepareURL(r *http.Request, repoURL string) (string, error) {
 		return mirror, nil
 	}
 
-	if !isLocalRequest(r) {
+	if !isLocalRequest(req) {
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
 			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
 		}
@@ -367,265 +328,64 @@ func isNotFoundError(err error) bool {
 	return strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found")
 }
 
+func isRefNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+
+	return strings.Contains(s, "not found or invalid") ||
+		strings.Contains(s, "failed to resolve target ref") ||
+		strings.Contains(s, "failed to run git rev-parse") ||
+		strings.Contains(s, "ref cannot be empty")
+}
+
+func isFileNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+
+	return strings.Contains(s, "git cat-file failed") ||
+		strings.Contains(s, "invalid object name") ||
+		strings.Contains(s, "does not exist in")
+}
+
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
-func unmarshalRequest(r *http.Request, body proto.Message) error {
-	data, err := io.ReadAll(r.Body)
+func unmarshalRequest(req *http.Request, msg proto.Message) error {
+	data, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
-	defer r.Body.Close()
+	defer req.Body.Close()
 
-	contentType := r.Header.Get("Content-Type")
+	contentType := req.Header.Get("Content-Type")
 	if contentType == "application/json" {
-		return protojson.Unmarshal(data, body)
+		return protojson.Unmarshal(data, msg)
 	}
 	// Default to protobuf
-	return proto.Unmarshal(data, body)
+	return proto.Unmarshal(data, msg)
 }
 
-// Helper function to marshal response body based on Content-Type (protobuf or JSON)
-func marshalResponse(r *http.Request, m proto.Message) ([]byte, error) {
-	contentType := r.Header.Get("Content-Type")
+// Helper function to marshal and write response body based on Content-Type (protobuf or JSON)
+func writeResponse(w http.ResponseWriter, req *http.Request, msg proto.Message) error {
+	contentType := req.Header.Get("Content-Type")
+	var out []byte
+	var err error
 	if contentType == "application/json" {
-		return protojson.Marshal(m)
+		out, err = protojson.Marshal(msg)
+	} else {
+		out, err = proto.Marshal(msg)
 	}
-	// Default to protobuf
-	return proto.Marshal(m)
-}
-
-func doFetch(ctx context.Context, repoURL string, forceUpdate bool) error {
-	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
-			return nil, FetchRepo(ctx, repoURL, forceUpdate)
-		})
-	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Error fetching blob", slog.Any("error", err))
 		return err
 	}
 
-	return nil
-}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(out)
 
-// getFreshRepo handles fetching and loading of a repository
-// If forceUpdate is true, it will always refetch and rebuild the repository (commit graph, patch ID, etc)
-// Otherwise, it will use a cache if available
-func getFreshRepo(ctx context.Context, repoURL string, forceUpdate bool) (*Repository, error) {
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-
-	if !forceUpdate {
-		if repo, ok := repoCache.Get(repoURL); ok {
-			// repoCache.Get() will not return expired items, so we can safely return the repo
-			logger.DebugContext(ctx, "Repository already in cache, skipping fetch and load")
-			return repo, nil
-		}
-	}
-
-	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
-		return nil, err
-	}
-
-	repoAny, err, _ := gLoad.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
-			repoLock := GetRepoLock(repoURL)
-			repoLock.RLock()
-			defer repoLock.RUnlock()
-
-			return LoadRepository(ctx, repoPath)
-		})
-	})
-	if err != nil {
-		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
-		return nil, err
-	}
-	repo := repoAny.(*Repository)
-	repoCache.SetWithTTL(repoURL, repo, 0, repoTTL)
-
-	return repo, nil
-}
-
-func isIndexLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
-}
-
-func isRefConflictError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "refname conflict") ||
-		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
-}
-
-// Attempt to recover from git fetch + reset errors
-// Returns true if recovery was attempted and we should retry fetch + reset
-func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
-	if err == nil {
-		return false
-	}
-
-	// Refname conflict, likely name conflict between local and remote refs
-	// We can try removing stale remote-tracking branches and retry
-	if isRefConflictError(err) {
-		logger.WarnContext(ctx, "ref conflict detected, running git remote prune origin")
-		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
-			logger.ErrorContext(ctx, "failed to prune origin", slog.Any("err", err))
-			return false
-		}
-
-		return true
-	}
-
-	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
-	// We want to reclone as fallback but log a separate warning (for stats)
-	if isIndexLockError(err) {
-		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
-	}
-
-	return false
-}
-
-// Helper function to group git fetch and git reset --hard together
-func fetchAndReset(ctx context.Context, repoPath string) error {
-	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
-	if err != nil {
-		return fmt.Errorf("git fetch failed: %w", err)
-	}
-
-	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-	if err != nil {
-		return fmt.Errorf("git reset failed: %w", err)
-	}
-
-	return nil
-}
-
-func FetchRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
-	logger.DebugContext(ctx, "Starting fetch repo")
-	start := time.Now()
-
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-
-	repoLock := GetRepoLock(repoURL)
-	repoLock.Lock()
-	defer repoLock.Unlock()
-
-	lastFetchMu.Lock()
-	accessTime, ok := lastFetch[repoURL]
-	lastFetchMu.Unlock()
-
-	// Check if we need to fetch
-	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
-		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
-			// Clone
-			logger.DebugContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
-			if err != nil {
-				return fmt.Errorf("git clone failed: %w", err)
-			}
-		} else {
-			// Fetch and reset
-			logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-			err := fetchAndReset(ctx, repoPath)
-
-			// Attempt recovery and fallback
-			if err != nil {
-				logger.WarnContext(ctx, "Initial fetch and reset failed, attempting to recover", slog.Any("err", err))
-
-				// Attempt recovery and retry fetch and reset if successful
-				if attemptGitRecovery(ctx, repoPath, err) {
-					logger.InfoContext(ctx, "Retrying fetch and reset after recovery")
-					err = fetchAndReset(ctx, repoPath)
-				}
-
-				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
-				if err != nil {
-					if isForbiddenError(err) {
-						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
-						return nil
-					}
-
-					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
-					if err := os.RemoveAll(repoPath); err != nil {
-						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
-					}
-
-					logger.InfoContext(ctx, "Cloning git repository after fallback", slog.Duration("sinceAccessTime", time.Since(accessTime)))
-					err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
-					if err != nil {
-						return fmt.Errorf("git clone failed after fallback: %w", err)
-					}
-				}
-			}
-		}
-
-		updateLastFetch(repoURL)
-	}
-
-	// Double check if the git directory exist
-	_, err := os.Stat(filepath.Join(repoPath, ".git"))
-	if err != nil {
-		if os.IsNotExist(err) {
-			deleteLastFetch(repoURL)
-		}
-
-		return fmt.Errorf("failed to read file: %w", err)
-	}
-
-	logger.InfoContext(ctx, "Fetch completed", slog.Duration("duration", time.Since(start)))
-
-	return nil
-}
-
-func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
-	repoDirName := getRepoDirName(repoURL)
-	repoPath := filepath.Join(gitStorePath, repoDirName)
-	archivePath := repoPath + ".zst"
-
-	repoLock := GetRepoLock(repoURL)
-	repoLock.RLock()
-	defer repoLock.RUnlock()
-
-	lastFetchMu.Lock()
-	accessTime := lastFetch[repoURL]
-	lastFetchMu.Unlock()
-
-	// Check if archive needs update
-	// We update if archive does not exist OR if it is older than the last fetch
-	stats, err := os.Stat(archivePath)
-	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
-		logger.DebugContext(ctx, "Archiving git blob")
-		startArchive := time.Now()
-		// Archive
-		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
-		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
-		if err != nil {
-			return nil, fmt.Errorf("tar zstd failed: %w", err)
-		}
-		logger.InfoContext(ctx, "Archiving git blob completed", slog.Duration("duration", time.Since(startArchive)))
-	}
-
-	// If the context is cancelled, still do the fetching stuff, just don't bother returning the result
-	// As we can still cache the result and reply faster next time.
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
-	fileData, err := os.ReadFile(archivePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-	return fileData, nil
+	return err
 }
 
 func main() {
@@ -644,7 +404,7 @@ func main() {
 	flag.Int64Var(&invalidRepoCacheMaxEntries, "invalid-repo-cache-max-entries", 5000, "Invalid repository cache max entries")
 	flag.Parse()
 
-	semaphore = make(chan struct{}, *concurrentLimit)
+	reqConcurrencySemaphore = make(chan struct{}, *concurrentLimit)
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
 	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
@@ -722,13 +482,13 @@ func main() {
 	logger.Info("Server exiting")
 }
 
-func gitHandler(w http.ResponseWriter, r *http.Request) {
+func gitHandler(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
-	ctx := r.Context()
+	ctx := req.Context()
 	defer func() { logRequestCompletion(ctx, "/git", start, statusCode) }()
 
-	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
+	repoURL, err := prepareURL(req, req.URL.Query().Get("url"))
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
@@ -736,15 +496,15 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forceUpdate := r.URL.Query().Get("force-update") == "true"
+	forceUpdate := req.URL.Query().Get("force-update") == "true"
 
-	refID := r.URL.Query().Get("ref_id")
+	refID := req.URL.Query().Get("ref_id")
 	ctx = context.WithValue(ctx, urlKey, repoURL)
 	ctx = context.WithValue(ctx, refIDKey, refID)
-	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", r.RemoteAddr))
+	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", req.RemoteAddr))
 
 	// Fetch repo first
-	if err := doFetch(ctx, repoURL, forceUpdate); err != nil {
+	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipReqConcurrencySemaphore: true}); err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -759,7 +519,7 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Archive repo
 	fileDataAny, err, _ := gArchive.Do(repoURL, func() (any, error) {
-		return runWithSemaphore(ctx, func() (any, error) {
+		return runWithConcurrencyControl(ctx, true, func() (any, error) {
 			return ArchiveRepo(ctx, repoURL)
 		})
 	})
@@ -784,21 +544,21 @@ func gitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func cacheHandler(w http.ResponseWriter, r *http.Request) {
+func cacheHandler(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
-	ctx := r.Context()
+	ctx := req.Context()
 	defer func() { logRequestCompletion(ctx, "/cache", start, statusCode) }()
 
 	body := &pb.CacheRequest{}
-	if err := unmarshalRequest(r, body); err != nil {
+	if err := unmarshalRequest(req, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
 
 		return
 	}
 
-	repoURL, err := prepareURL(r, body.GetUrl())
+	repoURL, err := prepareURL(req, body.GetUrl())
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
@@ -811,7 +571,7 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /cache")
 
-	if _, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate()); err != nil {
+	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: true}); err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
 		} else if isNotFoundError(err) {
@@ -827,21 +587,21 @@ func cacheHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
+func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
-	ctx := r.Context()
+	ctx := req.Context()
 	defer func() { logRequestCompletion(ctx, "/affected-commits", start, statusCode) }()
 
 	body := &pb.AffectedCommitsRequest{}
-	if err := unmarshalRequest(r, body); err != nil {
+	if err := unmarshalRequest(req, body); err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
 
 		return
 	}
 
-	repoURL, err := prepareURL(r, body.GetUrl())
+	repoURL, err := prepareURL(req, body.GetUrl())
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
@@ -881,7 +641,7 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
 
-	repo, err := getFreshRepo(ctx, repoURL, body.GetForceUpdate())
+	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		if isAuthError(err) || isForbiddenError(err) {
 			statusCode = http.StatusForbidden
@@ -944,19 +704,10 @@ func affectedCommitsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out, err := marshalResponse(r, resp)
-	if err != nil {
-		logger.ErrorContext(ctx, "Error marshaling affected commits", slog.Any("error", err))
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing affected commits response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error marshaling affected commits: %v", err), statusCode)
-
-		return
-	}
-
-	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write(out); err != nil {
-		logger.ErrorContext(ctx, "Error writing response", slog.Any("error", err))
+		http.Error(w, fmt.Sprintf("Error writing affected commits response: %v", err), statusCode)
 	}
 }
 
@@ -974,13 +725,13 @@ func makeTagsResponse(tagsMap map[string]SHA1) *pb.TagsResponse {
 	return resp
 }
 
-func tagsHandler(w http.ResponseWriter, r *http.Request) {
+func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
-	ctx := r.Context()
+	ctx := req.Context()
 	defer func() { logRequestCompletion(ctx, "/tags", start, statusCode) }()
 
-	repoURL, err := prepareURL(r, r.URL.Query().Get("url"))
+	repoURL, err := prepareURL(req, req.URL.Query().Get("url"))
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		http.Error(w, err.Error(), statusCode)
@@ -988,7 +739,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refID := r.URL.Query().Get("ref_id")
+	refID := req.URL.Query().Get("ref_id")
 	ctx = context.WithValue(ctx, urlKey, repoURL)
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /tags")
@@ -1019,9 +770,7 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 		// We want to use show-ref instead of ls-remote because it's faster and we don't have to worry about rate limits
 		if repo.repoPath != "" {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
-			if _, errFetch, _ := gFetch.Do(repoURL, func() (any, error) {
-				return nil, FetchRepo(ctx, repoURL, false)
-			}); errFetch != nil {
+			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
 				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
 				if isAuthError(errFetch) || isForbiddenError(errFetch) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
@@ -1095,18 +844,167 @@ func tagsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := makeTagsResponse(tagsMap)
-	out, err := marshalResponse(r, resp)
-	if err != nil {
-		logger.ErrorContext(ctx, "Error marshaling tags response", slog.Any("error", err))
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error marshaling tags response: %v", err), statusCode)
+		http.Error(w, fmt.Sprintf("Error writing tags response: %v", err), statusCode)
+	}
+}
+
+func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := req.Context()
+	defer func() { logRequestCompletion(ctx, "/file-diffs", start, statusCode) }()
+
+	body := &pb.FileDiffsRequest{}
+	if err := unmarshalRequest(req, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
 
 		return
 	}
 
-	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write(out); err != nil {
-		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
+	repoURL, err := prepareURL(req, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	lastSyncedCommit := body.GetLastSyncedCommit()
+	branch := body.GetBranch()
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /file-diffs",
+		slog.String("last_synced_commit", lastSyncedCommit),
+		slog.String("branch", branch),
+	)
+
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: true})
+	if err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	latestCommit, changes, err := repo.ListFileDiffs(ctx, lastSyncedCommit, branch)
+	if err != nil {
+		if isRefNotFoundError(err) {
+			statusCode = http.StatusBadRequest
+			http.Error(w, fmt.Sprintf("Invalid commit or branch reference: %v", err), statusCode)
+
+			return
+		}
+		logger.ErrorContext(ctx, "Error listing file diffs", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error listing file diffs: %v", err), statusCode)
+
+		return
+	}
+
+	pbChanges := make([]*pb.FileChange, 0, len(changes))
+	for _, c := range changes {
+		pbChanges = append(pbChanges, &pb.FileChange{
+			FromPath: c.From,
+			ToPath:   c.To,
+		})
+	}
+
+	resp := &pb.FileDiffsResponse{
+		LatestCommit: latestCommit,
+		Changes:      pbChanges,
+	}
+
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing diff response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error writing diff response: %v", err), statusCode)
+	}
+}
+
+func fileContentHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := req.Context()
+	defer func() { logRequestCompletion(ctx, "/file-content", start, statusCode) }()
+
+	body := &pb.FileContentRequest{}
+	if err := unmarshalRequest(req, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(req, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	commit := body.GetCommit()
+	filePath := body.GetPath()
+	if commit == "" || filePath == "" {
+		statusCode = http.StatusBadRequest
+		http.Error(w, "Missing commit or path", statusCode)
+
+		return
+	}
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /file-content",
+		slog.String("commit", commit),
+		slog.String("path", filePath),
+	)
+
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
+	if err != nil {
+		if isAuthError(err) || isForbiddenError(err) {
+			statusCode = http.StatusForbidden
+		} else if isNotFoundError(err) {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	content, err := repo.GetFileContent(ctx, commit, filePath)
+	if err != nil {
+		if isRefNotFoundError(err) || isFileNotFoundError(err) {
+			logger.DebugContext(ctx, "File content not found", slog.Any("error", err))
+			statusCode = http.StatusNotFound
+			http.Error(w, fmt.Sprintf("Error getting file content: %v", err), statusCode)
+
+			return
+		}
+		logger.ErrorContext(ctx, "Error getting file content", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error getting file content: %v", err), statusCode)
+
+		return
+	}
+
+	resp := &pb.FileContentResponse{
+		Content: content,
+	}
+
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
 	}
 }

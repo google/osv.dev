@@ -61,6 +61,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('hackage', None),
     'Hex':
         EcosystemPURL('hex', None),
+    'Homebrew':
+        EcosystemPURL('brew', None),
     'Julia':
         EcosystemPURL('julia', None),
     # Linux

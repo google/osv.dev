@@ -15,48 +15,48 @@
 install-cmd := poetry install
 run-cmd := poetry run
 
-lib-tests:
+lib-tests: ## Run core Python library tests
 	./run_tests.sh
 
-worker-tests:
+worker-tests: ## Run legacy Python worker tests
 	git submodule update --init --recursive
 	cd gcp/workers/worker && ./run_tests.sh
 
-importer-tests:
+importer-tests: ## Run legacy Python importer tests
 	cd gcp/workers/importer && ./run_tests.sh
 
-recoverer-tests:
+recoverer-tests: ## Run Python recoverer tests
 	cd gcp/workers/recoverer && ./run_tests.sh
 
-vanir-signatures-tests:
+vanir-signatures-tests: ## Run Vanir signatures tests
 	cd gcp/workers/vanir_signatures && ./run_tests.sh
 
-website-tests:
+website-tests: ## Run legacy Python website tests
 	cd gcp/website && ./run_tests.sh
 
-vulnfeed-tests:
+vulnfeed-tests: ## Run Go vulnfeeds tests
 	cd vulnfeeds && ./run_tests.sh
 
-bindings-tests:
+bindings-tests: ## Run API bindings tests
 	cd bindings && ./run_tests.sh
 
-go-tests:
+go-tests: ## Run Go services tests
 	cd go && ./run_tests.sh
 
-api-server-tests:
+api-server-tests: ## Run Go API server integration tests
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	cd go && go build -o ./api ./cmd/api
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
 	cd gcp/api && OSV_USE_GO_BACKEND=1 ./run_tests.sh $(HOME)/.config/gcloud/application_default_credentials.json
 	cd gcp/api && OSV_USE_GO_BACKEND=1 ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
-update-api-snapshots:
+update-api-snapshots: ## Update API query snapshots
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	cd go && go build -o ./api ./cmd/api
 	cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .
 	cd gcp/api && UPDATE_SNAPS=true OSV_USE_GO_BACKEND=1 ./run_tests_e2e.sh $(HOME)/.config/gcloud/application_default_credentials.json
 
-lint:
+lint: ## Run linters and format checks
 	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh
 
 build-osv-protos:
@@ -88,28 +88,28 @@ build-api-protos:
       --go-grpc_out=paths=source_relative:../../../bindings/go/api \
       osv_service_v1.proto
 
-build-protos: build-osv-protos build-api-protos
+build-protos: build-osv-protos build-api-protos ## Build all protocol buffers
 
 build-website-frontend:
 	cd website/frontend3 && pnpm install && pnpm run build
 	cd website/blog && hugo --buildFuture -d ../dist/static/blog
 
-run-website: build-website-frontend
+run-website: build-website-frontend ## Run local Python website against prod Datastore
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
 
 run-website-staging: build-website-frontend
 	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
 
-run-website-emulator: build-website-frontend
+run-website-emulator: build-website-frontend ## Run local Python website against emulator
 	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
 
-run-go-website: build-website-frontend
+run-go-website: build-website-frontend ## Run local Go website against prod Datastore
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 run-go-website-staging: build-website-frontend
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
-run-go-website-emulator: build-website-frontend
+run-go-website-emulator: build-website-frontend ## Run local Go website against emulator
 	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 stage-website-assets: build-website-frontend
@@ -125,7 +125,7 @@ run-go-website-prod: stage-website-assets
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 # Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
-run-api-server:
+run-api-server: ## Run local Go API server with ESPv2 proxy
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	docker inspect osv/esp:latest >/dev/null 2>&1 || (cd gcp/api && docker build -f Dockerfile.esp -t osv/esp:latest .)
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
@@ -148,9 +148,13 @@ run-python-api-server-test:
 	cd gcp/api && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python test_server.py $(HOME)/.config/gcloud/application_default_credentials.json $(ARGS)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests
+all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 
-reimport-tui:
+reimport-tui: ## Run the reimport TUI tool
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	cd go/cmd/tools/reimport-tui && go run .
 
+.PHONY: help
+help: ## Show this help message
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'

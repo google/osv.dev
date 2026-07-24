@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="description"
+    content="Comprehensive vulnerability database for your open source projects and dependencies.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Disable this for vulnerability list page as the weird Turbo cache bug happens when click on browser's back button -->
+  {{ if .DisableTurboCache }}
+  <meta name="turbo-cache-control" content="no-cache">
+  {{ end }}
+  <script>
+    // Early inline script element here is necessary to prevent the "flash of
+    // unstyled content" problem where the dark default theme is first rendered
+    // followed by a sudden flash to light mode.
+    // See https://en.wikipedia.org/wiki/Flash_of_unstyled_content.
+    const theme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+  </script>
+  <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/blog/index.xml">
+  <link rel="preload" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap">
+  </noscript>
+  <meta charset="utf-8">
+  <title id="title">OSV - Open Source Vulnerabilities</title>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXG9G6HTBR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-ZXG9G6HTBR', { 'anonymize_ip': true });
+  </script>
+  {{ block "extra_head" . }}{{ end }}
+</head>
+
+<body>
+  <div class="wrapper {{ if eq .ActiveSection "home" }}decorated{{ end }}">
+    {{ block "top_bar" . }}
+    <header class="top-bar">
+      <div class="logo">
+        <a href="/" aria-label="Home page">
+          <img alt="OSV logo" class="logo-img-light" src="/static/img/logo.png" srcset="/static/img/logo.png, /static/img/logo@4x.png 4x"
+            width="54" height="20">
+          <img alt="OSV logo" class="logo-img-dark" src="/static/img/logo-dark.png" srcset="/static/img/logo-dark.png, /static/img/logo-dark@4x.png 4x"
+            width="54" height="20">
+        </a>
+      </div>
+
+      <!-- Hidden checkbox for hamburger menu state -->
+      <input type="checkbox" id="hamburger-checkbox" aria-label="Hamburger Menu">
+      <!-- Hamburger menu -->
+      <label class="hamburger" for="hamburger-checkbox">
+        <span></span>
+        <span></span>
+        <span></span>
+      </label>
+
+      <ul class="tabs">
+        <li class="{{ if eq .ActiveSection "vulnerabilities" }}active{{ end }} page-link">
+          <a href="/list">Vulnerability Database</a>
+        </li>
+        <li class="{{ if eq .ActiveSection "blog" }}active{{ end }} page-link">
+          <a href="/blog">Blog</a>
+        </li>
+        <li class="{{ if eq .ActiveSection "faq" }}active{{ end }} page-link external-link">
+          <a href="https://google.github.io/osv.dev/faq/" target="_blank">FAQ</a>
+        </li>
+        <li class="{{ if eq .ActiveSection "docs" }}active{{ end }} page-link external-link">
+          <a href="https://google.github.io/osv.dev/" target="_blank">Docs</a>
+        </li>
+        
+        <ul class="push social-icons">
+          <li class="search-container-nav">
+            <div class="search-toggle-container">
+              <!-- Expandable search form -->
+              <form class="search-form search-suggestions-container" action="/list" method="get">
+                <input type="text" name="q" class="search-input" placeholder="Search vulnerabilities..." maxlength="300" autocomplete="off">
+                <button type="submit" class="search-submit" aria-label="Search">
+                  <span class="material-icons">arrow_forward</span>
+                </button>
+              </form>
+              <!-- Search toggle button -->
+              <button class="search-toggle" aria-label="Toggle search" aria-expanded="false">
+                <span class="material-icons">search</span>
+              </button>
+            </div>
+          </li>
+          {{ if eq .ActiveSection "blog" }}
+            <li>
+              <a class="logo-img" href="/blog/index.xml" target="_blank"
+                aria-label="RRS Feed">
+                <img class="logo-link" src="/static/img/feed.svg" alt="RSS Feed" width="24" height="24">
+              </a>
+            </li>
+          {{ end }}
+          <li class="theme-toggle-container">
+            <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+              <span class="material-icons icon-light-mode">light_mode</span>
+              <span class="material-icons icon-dark-mode">dark_mode</span>
+            </button>
+          </li>
+          <li class="github-container">
+            <a class="logo-img" href="https://github.com/google/osv.dev" target="_blank"
+              aria-label="Go to our github page">
+              <img class="logo-link" src="/static/img/github-mark-white.svg" alt="Github Logo" width="24" height="24">
+            </a>
+          </li>
+        </ul>
+      </ul>
+    </header>
+    {{ end }}
+    {{ block "content" . }}{{ end }}
+  </div>
+</body>
+
+</html>
+

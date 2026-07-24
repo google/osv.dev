@@ -204,16 +204,128 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to create static img dir: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "home.html"), []byte("<html>Home</html>"), 0600); err != nil {
+	goDir := filepath.Join(tmpDir, "go")
+	if err := os.MkdirAll(goDir, 0755); err != nil {
+		t.Fatalf("failed to create go dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "base.html"), []byte(`<html>{{ block "content" . }}{{ end }}</html>`), 0600); err != nil {
+		t.Fatalf("failed to write base.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "home.html"), []byte(`{{ define "content" }}Home{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write home.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "404.html"), []byte(`{{ define "content" }}404 {{ .FailedImportVulnID }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write 404.html: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(imgDir, "favicon-32x32.png"), []byte("FAVICON"), 0600); err != nil {
 		t.Fatalf("failed to write favicon: %v", err)
 	}
 
+	blogDir := filepath.Join(tmpDir, "static", "blog")
+	postDir := filepath.Join(blogDir, "posts", "hello-world")
+	if err := os.MkdirAll(postDir, 0755); err != nil {
+		t.Fatalf("failed to create blog post dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "blog.html"), []byte(`{{ define "content" }}Blog Index: {{ .Index }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write blog.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "blog_post.html"), []byte(`{{ define "content" }}Blog Post: {{ .Content }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write blog_post.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blogDir, "index.html"), []byte("<h1>Blog Index</h1>"), 0600); err != nil {
+		t.Fatalf("failed to write blog index: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(blogDir, "index.xml"), []byte("<rss>RSS</rss>"), 0600); err != nil {
+		t.Fatalf("failed to write blog rss: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(postDir, "index.html"), []byte("<article>Hello World</article>"), 0600); err != nil {
+		t.Fatalf("failed to write blog post content: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(postDir, "hero.png"), []byte("PNG_DATA"), 0600); err != nil {
+		t.Fatalf("failed to write blog post image asset: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "triage.html"), []byte(`{{ define "content" }}Triage{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write triage.html: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte(`{{ define "content" }}Linter Report{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write linter.html: %v", err)
+	}
+
 	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
 
-	t.Run("Root serves home.html", func(t *testing.T) {
+	t.Run("Triage_page", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Linter_page", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Blog_index", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Blog_rss_serves_xml", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/index.xml", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if contentType := rec.Header().Get("Content-Type"); contentType != "application/xml; charset=utf-8" {
+			t.Errorf("expected content-type 'application/xml; charset=utf-8', got %q", contentType)
+		}
+	})
+
+	t.Run("Blog_post", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/posts/hello-world/", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Blog_post_asset_serves_file", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/posts/hello-world/hero.png", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if rec.Body.String() != "PNG_DATA" {
+			t.Errorf("expected body 'PNG_DATA', got %q", rec.Body.String())
+		}
+	})
+
+	t.Run("Root", func(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
@@ -222,8 +334,27 @@ func TestStaticFiles(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("expected status 200 OK, got %d", rec.Code)
 		}
-		if rec.Body.String() != "<html>Home</html>" {
-			t.Errorf("expected body <html>Home</html>, got %q", rec.Body.String())
+	})
+
+	t.Run("renderNotFound", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/404", nil)
+		rec := httptest.NewRecorder()
+		srv.RenderNotFound(rec, req, "GHSA-1234")
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
+
+	t.Run("UnmatchedRoute_returns_404", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/foo/bar", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
 		}
 	})
 
@@ -265,24 +396,10 @@ func TestEndpointRegistration(t *testing.T) {
 		method string
 		path   string
 	}{
-		{http.MethodGet, "/blog"},
-		{http.MethodGet, "/blog/"},
-		{http.MethodGet, "/blog/index.xml"},
-		{http.MethodGet, "/blog/posts/test-post"},
-		{http.MethodGet, "/blog/posts/test-post/"},
-		{http.MethodGet, "/blog/posts/test-post/image.png"},
 		{http.MethodGet, "/vulnerability/GHSA-1234"},
 		{http.MethodGet, "/GHSA-1234"},
 		{http.MethodGet, "/vulnerability/GHSA-1234.json"},
 		{http.MethodGet, "/GHSA-1234.json"},
-		{http.MethodGet, "/list"},
-		{http.MethodGet, "/api/search_suggestions"},
-		{http.MethodGet, "/linter"},
-		{http.MethodGet, "/linter/"},
-		{http.MethodGet, "/linter-findings"},
-		{http.MethodGet, "/linter-findings/"},
-		{http.MethodGet, "/linter-findings/test-source"},
-		{http.MethodGet, "/triage"},
 		{http.MethodPost, "/triage/proxy"},
 		{http.MethodGet, "/login"},
 		{http.MethodGet, "/auth/callback"},
@@ -296,8 +413,8 @@ func TestEndpointRegistration(t *testing.T) {
 			rec := httptest.NewRecorder()
 			srv.ServeHTTP(rec, req)
 
-			if rec.Code == http.StatusNotFound {
-				t.Errorf("expected route %s %s to be registered, got 404 Not Found", ep.method, ep.path)
+			if rec.Code != http.StatusNotImplemented {
+				t.Errorf("expected status 501 Not Implemented, got %d", rec.Code)
 			}
 		})
 	}

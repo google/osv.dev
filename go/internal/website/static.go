@@ -1,10 +1,68 @@
 package website
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
+	"math"
 	"net/http"
+	"sort"
+	"strings"
 )
+
+func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
+	data := NotFoundPageData{
+		BasePageData: BasePageData{
+			ActiveSection:     "",
+			DisableTurboCache: false,
+		},
+		FailedImportVulnID: failedImportVulnID,
+	}
+
+	s.render(w, r, "404.html", http.StatusNotFound, data)
+}
+
+func computeEcosystemDisplays(counts map[string]int) []EcosystemDisplay {
+	var total int
+	for _, c := range counts {
+		total += c
+	}
+	if total == 0 {
+		return nil
+	}
+
+	totalLog := math.Log(float64(total))
+	displays := make([]EcosystemDisplay, 0, len(counts))
+	for eco, count := range counts {
+		if count <= 30 {
+			continue
+		}
+		radius := math.Max((math.Log(float64(count))/totalLog)*100, 30)
+		tooltipTop := -((radius / 2) + 5)
+		displays = append(displays, EcosystemDisplay{
+			Name:       eco,
+			Count:      count,
+			Radius:     radius,
+			TooltipTop: tooltipTop,
+		})
+	}
+	sort.Slice(displays, func(i, j int) bool {
+		return strings.ToLower(displays[i].Name) < strings.ToLower(displays[j].Name)
+	})
+
+	return displays
+}
+
+func (s *Server) getEcosystemCounts(_ context.Context) map[string]int {
+	// Stub for ecosystem count fetch (Datastore or cache integration)
+	return map[string]int{
+		"PyPI": 23174,
+		"npm":  222222,
+		"Go":   8010,
+		"GIT":  943411,
+		"Pub":  11,
+	}
+}
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("go-get") == "1" {
@@ -13,7 +71,16 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	http.ServeFileFS(w, r, s.config.StaticFS, "home.html")
+
+	data := HomePageData{
+		BasePageData: BasePageData{
+			ActiveSection:     "home",
+			DisableTurboCache: false,
+		},
+		Ecosystems: computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
+	}
+
+	s.render(w, r, "home.html", http.StatusOK, data)
 }
 
 func (s *Server) handleGoBindingsVanity(w http.ResponseWriter, r *http.Request) {

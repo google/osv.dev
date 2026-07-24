@@ -2581,7 +2581,12 @@
         },
         "version": "1:3.5-3"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2026-53910",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {

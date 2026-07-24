@@ -1,4 +1,5 @@
 resources:
+- backup.yaml
 - exporter.yaml
 - gitter.yaml
 - importer.yaml

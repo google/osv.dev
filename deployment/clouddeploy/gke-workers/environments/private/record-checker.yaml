@@ -11,10 +11,8 @@ spec:
           - name: record-checker
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
+              value: private-osv
             - name: OSV_VULNERABILITIES_BUCKET
-              value: osv-test-vulnerabilities-private
-            - name: DATASTORE_DATABASE_ID
-              value: "datastore-private"
+              value: private-osv-vulnerabilities
             - name: FAILED_TASKS_TOPIC
-              value: "failed-private-tasks"
+              value: "failed-osv-work"

@@ -17,5 +17,5 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: pubsub
 spec:
-  # oss-vdb-test does not have local SSD quota to support 400 workers
+  # private-osv does not have local SSD quota to support 400 workers
   maxReplicas: 250

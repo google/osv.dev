@@ -3,10 +3,9 @@ kind: Kustomization
 
 resources:
 - ../../base/core
-# TODO(michaelkedar): figure out how to backup specific datastore database IDs
 
 patches:
-# - path: backup.yaml
+- path: backup.yaml
 - path: exporter.yaml
 - path: gitter.yaml
 - path: importer.yaml

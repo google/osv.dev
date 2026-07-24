@@ -11,11 +11,9 @@ spec:
           - name: importer-deleter
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
-            - name: DATASTORE_DATABASE_ID
-              value: "datastore-private"
+              value: private-osv
             - name: WORKER_TASK_TOPIC
-              value: "private-tasks"
+              value: "osv-work"
             image: importer
             args:
               - --delete

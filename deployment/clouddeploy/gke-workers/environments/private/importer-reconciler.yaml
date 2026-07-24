@@ -11,15 +11,13 @@ spec:
           - name: importer
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
-            - name: DATASTORE_DATABASE_ID
-              value: "datastore-private"
+              value: private-osv
             - name: WORKER_TASK_TOPIC
-              value: "private-tasks"
+              value: "osv-work"
             # We don't have a dedicated reimport pool for this private deployment,
             # so route reimports to the default pool.
             - name: REIMPORT_TASK_POOL
-              value: "default"
+              value: "default-pool"
             args: ["--reconcile=true"]
 ---
 apiVersion: v1

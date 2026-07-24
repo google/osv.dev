@@ -38,18 +38,26 @@ func InitGlobalLogger() {
 			return
 		}
 
+		serviceName := os.Getenv("K_SERVICE")
+		if serviceName == "" {
+			serviceName = filepath.Base(os.Args[0])
+		}
+
 		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
 		if projectID != "" {
-			serviceName := os.Getenv("K_SERVICE")
-			if serviceName == "" {
-				// Fallback to binary name for GKE services where K_SERVICE is not set.
-				serviceName = filepath.Base(os.Args[0])
-			}
-
 			initTracing(context.Background(), projectID, serviceName)
 		}
+
 		handler := slog.NewJSONHandler(os.Stdout, cloudHandlerOptions())
-		slogLogger = slog.New(&contextHandler{handler})
+		var wrappedHandler slog.Handler = handler
+		if serviceName != "" {
+			wrappedHandler = handler.WithAttrs([]slog.Attr{
+				slog.Group("serviceContext",
+					slog.String("service", serviceName),
+				),
+			})
+		}
+		slogLogger = slog.New(&contextHandler{wrappedHandler})
 	})
 }
 

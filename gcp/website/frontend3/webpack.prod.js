@@ -78,6 +78,7 @@ module.exports = {
       template: './src/go/templates/triage.html',
       chunks: ['triage'],
       excludeChunks: ['main', 'linter'],
+      inject: false,
     }),
     new MiniCssExtractPlugin({
       filename: 'static/[name].[contenthash].css'

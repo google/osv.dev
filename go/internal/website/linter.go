@@ -13,7 +13,7 @@ func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	s.render(w, r, "linter.html", http.StatusOK, data)
+	s.renderStandalone(w, r, "linter.html", http.StatusOK, data)
 }
 
 // handleLinterSources handles listing sources that have linter findings from GCS.

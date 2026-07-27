@@ -1,8 +1,5 @@
 {{ define "extra_head" }}
-
-<head>
-  <!-- Allow webpack to insert extra head content -->
-</head>
+<%= htmlWebpackPlugin.tags.headTags %>
 {{ end }}
 
 {{ define "content" }}

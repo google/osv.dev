@@ -10,7 +10,13 @@ import (
 	"strings"
 )
 
-func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
+// RenderNotFound renders the standard 404 Not Found page.
+func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request) {
+	s.RenderNotFoundWithVuln(w, r, "")
+}
+
+// RenderNotFoundWithVuln renders the 404 Not Found page with a failed import vulnerability ID.
+func (s *Server) RenderNotFoundWithVuln(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
 	data := NotFoundPageData{
 		BasePageData: BasePageData{
 			ActiveSection:     "",

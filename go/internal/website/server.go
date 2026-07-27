@@ -110,7 +110,7 @@ func (s *Server) notFoundMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, pattern := s.mux.Handler(r)
 		if pattern == "" {
-			s.RenderNotFound(w, r, "")
+			s.RenderNotFound(w, r)
 
 			return
 		}
@@ -172,7 +172,7 @@ func (s *Server) registerRoutes() {
 	// Triage workflow
 	// TODO: auth stuff
 	s.mux.HandleFunc("GET /triage", s.handleTriagePage)
-	s.mux.HandleFunc("POST /triage/proxy", s.handleTriageProxy)
+	s.mux.HandleFunc("/triage/proxy", s.handleTriageProxy)
 
 	// Google OAuth authentication
 	s.mux.HandleFunc("GET /login", s.handleLogin)
@@ -185,18 +185,27 @@ func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("OK"))
 }
 
-func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+// renderTemplates parses the specified template files relative to config.TemplateDir
+// and executes the entry template identified by path.Base(files[0]).
+func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status int, data any, files ...string) {
+	if len(files) == 0 {
+		return
+	}
+
 	templateDir := s.config.TemplateDir
 	if templateDir == "" {
 		templateDir = "go"
 	}
 
-	basePath := path.Join(templateDir, "base.html")
-	pagePath := path.Join(templateDir, pageFile)
+	paths := make([]string, len(files))
+	for i, f := range files {
+		paths[i] = path.Join(templateDir, f)
+	}
 
-	tmpl, err := template.ParseFS(s.config.StaticFS, basePath, pagePath)
+	entryName := path.Base(files[0])
+	tmpl, err := template.ParseFS(s.config.StaticFS, paths...)
 	if err != nil {
-		logger.ErrorContext(r.Context(), "Failed to parse template", slog.String("page", pageFile), slog.Any("error", err))
+		logger.ErrorContext(r.Context(), "Failed to parse template", slog.String("page", entryName), slog.Any("error", err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 
 		return
@@ -204,8 +213,8 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string,
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	var buf bytes.Buffer
-	if err := tmpl.ExecuteTemplate(&buf, "base.html", data); err != nil {
-		logger.ErrorContext(r.Context(), "Failed to execute template", slog.String("page", pageFile), slog.Any("error", err))
+	if err := tmpl.ExecuteTemplate(&buf, entryName, data); err != nil {
+		logger.ErrorContext(r.Context(), "Failed to execute template", slog.String("page", entryName), slog.Any("error", err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 
 		return
@@ -213,6 +222,14 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string,
 
 	w.WriteHeader(status)
 	if _, err := buf.WriteTo(w); err != nil {
-		logger.ErrorContext(r.Context(), "Failed to write rendered template response", slog.String("page", pageFile), slog.Any("error", err))
+		logger.ErrorContext(r.Context(), "Failed to write rendered template response", slog.String("page", entryName), slog.Any("error", err))
 	}
+}
+
+func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+	s.renderTemplates(w, r, status, data, "base.html", pageFile)
+}
+
+func (s *Server) renderStandalone(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+	s.renderTemplates(w, r, status, data, pageFile)
 }

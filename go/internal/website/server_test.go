@@ -247,7 +247,7 @@ func TestStaticFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(goDir, "triage.html"), []byte(`{{ define "content" }}Triage{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write triage.html: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte(`{{ define "content" }}Linter Report{{ end }}`), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte(`Linter Report`), 0600); err != nil {
 		t.Fatalf("failed to write linter.html: %v", err)
 	}
 
@@ -325,6 +325,17 @@ func TestStaticFiles(t *testing.T) {
 		}
 	})
 
+	t.Run("Blog_post_asset_invalid_base", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/blog/posts/hello-world/..", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound && rec.Code != http.StatusBadRequest && rec.Code != http.StatusMovedPermanently && rec.Code != http.StatusTemporaryRedirect {
+			t.Errorf("expected status 404, 400, 301, or 307, got %d", rec.Code)
+		}
+	})
+
 	t.Run("Root", func(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -340,7 +351,18 @@ func TestStaticFiles(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/404", nil)
 		rec := httptest.NewRecorder()
-		srv.RenderNotFound(rec, req, "GHSA-1234")
+		srv.RenderNotFound(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
+
+	t.Run("renderNotFoundWithVuln", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/404", nil)
+		rec := httptest.NewRecorder()
+		srv.RenderNotFoundWithVuln(rec, req, "GHSA-1234")
 
 		if rec.Code != http.StatusNotFound {
 			t.Errorf("expected status 404 Not Found, got %d", rec.Code)

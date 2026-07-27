@@ -28,7 +28,7 @@ func (s *Server) loadBlogContent(filePath string) (template.HTML, error) {
 func (s *Server) handleBlogIndex(w http.ResponseWriter, r *http.Request) {
 	indexHTML, err := s.loadBlogContent("index.html")
 	if err != nil {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
@@ -49,7 +49,7 @@ func (s *Server) handleBlogRSS(w http.ResponseWriter, r *http.Request) {
 	fullPath := path.Join("static", "blog", "index.xml")
 	rssContent, err := fs.ReadFile(s.config.StaticFS, fullPath)
 	if err != nil {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
@@ -65,14 +65,14 @@ func (s *Server) handleBlogRSS(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleBlogPost(w http.ResponseWriter, r *http.Request) {
 	blogName := r.PathValue("blog_name")
 	if blogName == "" || !validBlogName.MatchString(blogName) {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
 
 	postHTML, err := s.loadBlogContent(path.Join("posts", blogName, "index.html"))
 	if err != nil {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
@@ -93,20 +93,33 @@ func (s *Server) handleBlogPostFile(w http.ResponseWriter, r *http.Request) {
 	blogName := r.PathValue("blog_name")
 	fileName := r.PathValue("file_name")
 	if blogName == "" || fileName == "" || !validBlogName.MatchString(blogName) {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
 
-	assetPath := path.Join("static", "blog", "posts", blogName, path.Base(fileName))
+	baseName := path.Base(fileName)
+	if baseName == "." || baseName == ".." {
+		s.RenderNotFound(w, r)
+
+		return
+	}
+
+	assetPath := path.Join("static", "blog", "posts", blogName, baseName)
+	if !fs.ValidPath(assetPath) {
+		s.RenderNotFound(w, r)
+
+		return
+	}
+
 	assetContent, err := fs.ReadFile(s.config.StaticFS, assetPath)
 	if err != nil {
-		s.RenderNotFound(w, r, "")
+		s.RenderNotFound(w, r)
 
 		return
 	}
 
-	contentType := mime.TypeByExtension(path.Ext(fileName))
+	contentType := mime.TypeByExtension(path.Ext(baseName))
 	if contentType != "" {
 		w.Header().Set("Content-Type", contentType)
 	}

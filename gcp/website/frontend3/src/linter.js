@@ -104,7 +104,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const url = `/linter-findings/${sourceName}`;
             return fetch(url)
               .then((res) => (res.ok ? res.json() : {}))
-              .catch(() => ({}));
+              .catch((e) => {
+                  console.warn(`Failed to fetch linter source: ${sourceName}`, e);
+                  return {};
+              });
           });
           const linterResults = await Promise.all(linterPromises);
           linterResults.forEach((data) => {

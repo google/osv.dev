@@ -20,6 +20,7 @@ from .alpine import Alpine, APK
 from .bioconductor import Bioconductor
 from .cran import CRAN
 from .debian import Debian
+from .dhi import DHIEcosystem
 from .echo import Echo
 from .haskell import Hackage, GHC
 from .hex import Hex
@@ -51,7 +52,7 @@ _ecosystems = {
     'CRAN': CRAN,
     'crates.io': SemverEcosystem,
     'Debian': Debian,
-    'Docker Hardened Images': SemverEcosystem,
+    'Docker Hardened Images': DHIEcosystem,
     'Echo': Echo,
     'GHC': GHC,
     'Go': SemverEcosystem,
@@ -148,6 +149,10 @@ def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
     return None
   if ecosys is TuxCareEcosystem:
     return TuxCareEcosystem(suffix, inner=get(suffix))
+  if ecosys is DHIEcosystem:
+    # The suffix is the "<lineage>:<release>" pair (e.g. "Alpine:3.23"), itself
+    # a resolvable ecosystem, so version handling delegates to that lineage.
+    return DHIEcosystem(suffix, inner=get(suffix))
   return ecosys(suffix)
 
 

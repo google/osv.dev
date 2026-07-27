@@ -6,6 +6,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'development',
+  devtool: 'source-map',
   entry: {
     main: './src/index.js',
     linter: './src/linter.js',

@@ -11,10 +11,10 @@ spec:
           - name: exporter
             env:
             - name: GOOGLE_CLOUD_PROJECT
-              value: oss-vdb-test
+              value: private-osv
             args:
               - "--upload-to-gcs=true"
               - "--workers=3000"
-              - "--bucket=osv-test-vulnerabilities-private"
-              - "--osv-vulns-bucket=osv-test-vulnerabilities-private"
+              - "--bucket=private-osv-vulnerabilities"
+              - "--osv-vulns-bucket=private-osv-vulnerabilities"
 

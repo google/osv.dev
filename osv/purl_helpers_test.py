@@ -338,6 +338,21 @@ class PurlHelpersTest(unittest.TestCase):
         ('Wolfi', 'test-package', '1.2.3'),
         purl_helpers.parse_purl('pkg:apk/wolfi/test-package@1.2.3'))
 
+    # Docker Hardened Images: release-lineage PURLs (apk/dhi for the Alpine
+    # lineage, deb/dhi for Debian) resolve to the ecosystem. Qualifiers are
+    # ignored, and versionless (OSV affected) and versioned (VEX product)
+    # forms both parse.
+    self.assertEqual(
+        ('Docker Hardened Images', 'curl', None),
+        purl_helpers.parse_purl(
+            'pkg:apk/dhi/curl?os_distro=alpine&os_name=dhi&os_version=3.23'))
+
+    self.assertEqual(('Docker Hardened Images', 'curl', '8.4.0-r0'),
+                     purl_helpers.parse_purl('pkg:apk/dhi/curl@8.4.0-r0'))
+
+    self.assertEqual(('Docker Hardened Images', 'openssl', '3.0.11-1'),
+                     purl_helpers.parse_purl('pkg:deb/dhi/openssl@3.0.11-1'))
+
     self.assertIsNone(purl_helpers.parse_purl('pkg:bad/ubuntu/pygments'))
 
     with self.assertRaises(ValueError):

@@ -178,6 +178,42 @@ class EcosystemTest(unittest.TestCase):
         root_debian.sort_key('1.0.0.root.io.1'),
         root_debian.sort_key('1.0.0.root.io.2'))
 
+  def test_dhi_ecosystem(self):
+    """Docker Hardened Images delegates to its lineage ecosystem."""
+    # Known when the base name matches; the lineage:release suffix passes
+    # through to the delegated ecosystem.
+    self.assertTrue(ecosystems.is_known('Docker Hardened Images:Alpine:3.23'))
+    self.assertTrue(ecosystems.is_known('Docker Hardened Images:Debian:trixie'))
+
+    # DHI is not semver: it delegates to apk/dpkg version handling.
+    self.assertFalse(ecosystems.is_semver('Docker Hardened Images:Alpine:3.23'))
+
+    # Alpine lineage sorts with apk semantics, matching the plain Alpine parser.
+    dhi_alpine = ecosystems.get('Docker Hardened Images:Alpine:3.23')
+    self.assertIsNotNone(dhi_alpine)
+    alpine = ecosystems.get('Alpine:3.23')
+    self.assertEqual(
+        dhi_alpine.sort_key('8.4.0-r0'), alpine.sort_key('8.4.0-r0'))
+    self.assertLess(
+        dhi_alpine.sort_key('8.4.0-r0'), dhi_alpine.sort_key('8.5.0-r0'))
+    # apk orders the -rN package release numerically (r2 < r10); a semver
+    # comparison would invert this by comparing "r10" and "r2" lexically.
+    self.assertLess(
+        dhi_alpine.sort_key('1.2.3-r2'), dhi_alpine.sort_key('1.2.3-r10'))
+
+    # Debian lineage sorts with dpkg semantics, matching the plain Debian
+    # parser (epoch/revision aware).
+    dhi_debian = ecosystems.get('Docker Hardened Images:Debian:trixie')
+    self.assertIsNotNone(dhi_debian)
+    debian = ecosystems.get('Debian:trixie')
+    self.assertEqual(
+        dhi_debian.sort_key('7.88.1-10+deb13u2'),
+        debian.sort_key('7.88.1-10+deb13u2'))
+
+    # The resolved lineage suffix is exposed on the inner ecosystem.
+    self.assertEqual(dhi_alpine.inner.suffix, '3.23')
+    self.assertEqual(dhi_debian.inner.suffix, 'trixie')
+
   def test_tuxcare_ecosystem(self):
     """Test TuxCare ecosystem delegates to inner ecosystem parsers."""
     # TuxCare:<ecosystem> should be recognized when the inner ecosystem is.

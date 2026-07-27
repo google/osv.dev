@@ -260,6 +260,10 @@
         {
           "id": "GHSA-9m3q-rhmv-5q44",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-x2f5-4prf-w687",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

@@ -10,12 +10,15 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/faulttolerant"
+	gcs "github.com/google/osv/vulnfeeds/gcs-tools"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -28,6 +31,7 @@ const (
 	debianOutputPathDefault  = "debian-cve-osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
+	inputBucketDefault       = "osv-test-cve-osv-conversion"
 	outputBucketDefault      = "debian-osv"
 )
 
@@ -35,26 +39,56 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
+	cvePath := flag.String("cve-path", defaultCvePath, "Path to CVE JSON files.")
+	downloadFromGCS := flag.Bool("download-from-gcs", false, "If true, download NVD CVE data from GCS bucket before processing.")
+	inputBucketName := flag.String("input-bucket", inputBucketDefault, "The GCS bucket to download NVD CVE data from.")
 	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
-	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, do not write to GCS bucket and instead write to local disk.")
+	uploadToGCS := flag.Bool("upload-to-gcs", false, "If true, write to GCS bucket.")
 	syncDeletions := flag.Bool("sync-deletions", false, "If false, do not delete files in bucket that are not local")
 	flag.Parse()
+
+	ctx := context.Background()
+
+	if *downloadFromGCS {
+		logger.Info("Downloading NVD CVE data from GCS bucket", slog.String("bucket", *inputBucketName), slog.String("dest", *cvePath))
+		storageClient, err := storage.NewClient(ctx)
+		if err != nil {
+			logger.Fatal("Failed to create GCS client", slog.Any("err", err))
+		}
+		defer storageClient.Close()
+
+		bkt := storageClient.Bucket(*inputBucketName)
+		if err := gcs.DownloadBucket(ctx, bkt, "nvd/", *cvePath); err != nil {
+			logger.Fatal("Failed to download NVD CVE data from GCS", slog.Any("err", err))
+		}
+		logger.Info("Successfully downloaded NVD CVE data from GCS")
+	}
 
 	err := os.MkdirAll(*debianOutputPath, 0755)
 	if err != nil {
 		logger.Fatal("Can't create output path", slog.Any("err", err))
 	}
 
+	vulnerabilities, err := buildDebianVulnerabilities(*cvePath)
+	if err != nil {
+		logger.Fatal("Failed to build Debian vulnerabilities", slog.Any("err", err))
+	}
+	runtime.GC()
+	writer.UploadVulnsToGCS(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
+	logger.Info("Debian CVE conversion succeeded.")
+}
+
+func buildDebianVulnerabilities(cvePath string) ([]*osvschema.Vulnerability, error) {
 	debianData, err := downloadDebianSecurityTracker()
 	if err != nil {
-		logger.Fatal("Failed to download/parse Debian Security Tracker json file", slog.Any("err", err))
+		return nil, fmt.Errorf("failed to download/parse Debian Security Tracker json file: %w", err)
 	}
 
 	debianReleaseMap, err := getDebianReleaseMap()
 	if err != nil {
-		logger.Fatal("Failed to get Debian distro info data", slog.Any("err", err))
+		return nil, fmt.Errorf("failed to get Debian distro info data: %w", err)
 	}
 
 	targetCVEs := make(map[string]bool)
@@ -66,7 +100,7 @@ func main() {
 		}
 	}
 
-	allCVEs := vulns.LoadTargetCVEs(defaultCvePath, targetCVEs)
+	allCVEs := vulns.LoadTargetCVEMetadata(cvePath, targetCVEs)
 	osvCVEs := generateOSVFromDebianTracker(debianData, debianReleaseMap, allCVEs)
 
 	vulnerabilities := make([]*osvschema.Vulnerability, 0, len(osvCVEs))
@@ -78,13 +112,11 @@ func main() {
 		vulnerabilities = append(vulnerabilities, v.Vulnerability)
 	}
 
-	ctx := context.Background()
-	writer.UploadVulnsToGCS(ctx, "Debian CVEs", *uploadToGCS, *outputBucketName, "", *numWorkers, *debianOutputPath, vulnerabilities, *syncDeletions)
-	logger.Info("Debian CVE conversion succeeded.")
+	return vulnerabilities, nil
 }
 
 // generateOSVFromDebianTracker converts Debian Security Tracker entries to OSV format.
-func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[models.CVEID]models.Vulnerability) map[string]*vulns.Vulnerability {
+func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianReleaseMap map[string]string, allCVEs map[models.CVEID]vulns.VulnerabilityMetadata) map[string]*vulns.Vulnerability {
 	logger.Info("Converting Debian Security Tracker data to OSV.")
 	osvCves := make(map[string]*vulns.Vulnerability)
 
@@ -132,12 +164,18 @@ func generateOSVFromDebianTracker(debianData DebianSecurityTrackerData, debianRe
 					},
 				}
 
-				if !currentNVDCVE.CVE.Published.IsZero() {
-					v.Published = timestamppb.New(currentNVDCVE.CVE.Published.Time)
+				if !currentNVDCVE.Published.IsZero() {
+					v.Published = timestamppb.New(currentNVDCVE.Published)
 				}
 
-				if currentNVDCVE.CVE.Metrics != nil {
-					v.AddSeverity(currentNVDCVE.CVE.Metrics)
+				if !currentNVDCVE.Modified.IsZero() {
+					v.Modified = timestamppb.New(currentNVDCVE.Modified)
+				} else if !currentNVDCVE.Published.IsZero() {
+					v.Modified = timestamppb.New(currentNVDCVE.Published)
+				}
+
+				if currentNVDCVE.Metrics != nil {
+					v.AddSeverity(currentNVDCVE.Metrics)
 				}
 
 				osvCves[cveID] = v

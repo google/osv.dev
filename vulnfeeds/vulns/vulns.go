@@ -21,14 +21,17 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	goccyyaml "github.com/goccy/go-yaml"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -861,6 +864,96 @@ func CheckQuality(text string) QualityCheck {
 	}
 
 	return Success
+}
+
+// VulnerabilityMetadata contains lightweight metadata (publication time, last modified time, and severity metrics) for a CVE.
+type VulnerabilityMetadata struct {
+	Published time.Time
+	Modified  time.Time
+	Metrics   *models.CVEItemMetrics
+}
+
+type lightNVDItem struct {
+	CVE struct {
+		ID           models.CVEID           `json:"id"`
+		Published    models.NVDTime         `json:"published"`
+		LastModified models.NVDTime         `json:"lastModified"`
+		Metrics      *models.CVEItemMetrics `json:"metrics"`
+	} `json:"cve"`
+}
+
+type lightNVDSchema struct {
+	Vulnerabilities []lightNVDItem `json:"vulnerabilities"`
+}
+
+// LoadTargetCVEMetadata loads publication dates, last modified dates, and severity metrics for target CVE IDs,
+// avoiding memory-heavy decoding of CPE match configurations, descriptions, and references.
+func LoadTargetCVEMetadata(cvePath string, targetCVEs map[string]bool) map[models.CVEID]VulnerabilityMetadata {
+	type cveMeta struct {
+		id   models.CVEID
+		meta VulnerabilityMetadata
+	}
+
+	metaChan := make(chan cveMeta)
+	var wg sync.WaitGroup
+
+	err := filepath.WalkDir(cvePath, func(filePath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
+			return nil
+		}
+
+		wg.Add(1)
+		go func(p string) {
+			defer wg.Done()
+			file, err := os.Open(p)
+			if err != nil {
+				logger.Error("Failed to open CVE JSON", slog.String("path", p), slog.Any("err", err))
+				return
+			}
+			defer file.Close()
+
+			var nvdcve lightNVDSchema
+			if err := json.NewDecoder(file).Decode(&nvdcve); err != nil {
+				logger.Error("Failed to decode JSON", slog.String("file", p), slog.Any("err", err))
+				return
+			}
+
+			for _, item := range nvdcve.Vulnerabilities {
+				if targetCVEs == nil || targetCVEs[string(item.CVE.ID)] {
+					metaChan <- cveMeta{
+						id: item.CVE.ID,
+						meta: VulnerabilityMetadata{
+							Published: item.CVE.Published.Time,
+							Modified:  item.CVE.LastModified.Time,
+							Metrics:   item.CVE.Metrics,
+						},
+					}
+				}
+			}
+			logger.Info("Loaded "+filepath.Base(p), slog.String("cve", filepath.Base(p)))
+		}(filePath)
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Fatal("Failed to walk CVE path", slog.String("path", cvePath), slog.Any("err", err))
+	}
+
+	go func() {
+		wg.Wait()
+		close(metaChan)
+	}()
+
+	result := make(map[models.CVEID]VulnerabilityMetadata)
+	for item := range metaChan {
+		result[item.id] = item.meta
+	}
+
+	return result
 }
 
 // LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.

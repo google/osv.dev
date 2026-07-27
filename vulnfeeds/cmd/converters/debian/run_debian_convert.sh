@@ -18,9 +18,5 @@ echo "Setup initial directories ${OSV_OUTPUT_PATH}"
 rm -rf $OSV_OUTPUT_PATH && mkdir -p $OSV_OUTPUT_PATH
 rm -rf $CVE_OUTPUT && mkdir -p $CVE_OUTPUT
 
-echo "Begin syncing NVD data from GCS bucket ${INPUT_BUCKET}"
-gcloud --no-user-output-enabled storage -q cp "gs://${INPUT_BUCKET}/nvd/*-????.json" "${CVE_OUTPUT}"
-echo "Successfully synced from GCS bucket"
-
-./debian -output-bucket "$OUTPUT_BUCKET" -output-path "$OSV_OUTPUT_PATH" -workers "$WORKERS" -upload-to-gcs -sync-deletions
+./debian -input-bucket "$INPUT_BUCKET" -output-bucket "$OUTPUT_BUCKET" -output-path "$OSV_OUTPUT_PATH" -cve-path "$CVE_OUTPUT" -workers "$WORKERS" -download-from-gcs -upload-to-gcs -sync-deletions
 echo "Successfully converted and uploaded to cloud"

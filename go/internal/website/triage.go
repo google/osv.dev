@@ -5,9 +5,15 @@ import (
 )
 
 // handleTriagePage handles serving the vulnerability triage UI page.
-func (s *Server) handleTriagePage(w http.ResponseWriter, _ *http.Request) {
-	// TODO: Serve triage page / template
-	http.Error(w, "Triage UI page stub", http.StatusNotImplemented)
+func (s *Server) handleTriagePage(w http.ResponseWriter, r *http.Request) {
+	data := TriagePageData{
+		BasePageData: BasePageData{
+			ActiveSection: "triage",
+		},
+		Columns: []int{1, 2, 3},
+	}
+
+	s.render(w, r, "triage.html", http.StatusOK, data)
 }
 
 // handleTriageProxy handles proxying triage workflow actions.

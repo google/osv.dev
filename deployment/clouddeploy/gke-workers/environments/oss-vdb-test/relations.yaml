@@ -17,4 +17,4 @@ spec:
             - name: OSV_FAILED_TASKS_TOPIC
               value: failed-tasks
             args:
-            - --breakdown-prefixes=ALSA-,BIT-,CGA-0,CGA-a,CGA-m,CVE-,DLA-,DSA-,GHSA-,GO-,MAL-,MGASA-,OSV-,PYSEC-,RLSA-,RUSTSEC-,SUSE-,UBUNTU-
+            - --breakdown-prefixes=ALSA-,BIT-,CGA-{0..9},CGA-{a..z},CVE-,DLA-,DSA-,GHSA-,GO-,MAL-,MGASA-,OSV-,PYSEC-,RLSA-,RUSTSEC-,SUSE-,UBUNTU-

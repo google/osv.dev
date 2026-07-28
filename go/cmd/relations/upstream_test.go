@@ -253,5 +253,17 @@ func TestComputeUpstreamGroups(t *testing.T) {
 		if !slices.Equal(emptyShards, expectedEmpty) {
 			t.Errorf("expected %v, got %v", expectedEmpty, emptyShards)
 		}
+
+		braceShards := ParseBreakdownPrefixes("ALSA-,CGA-{a..c}")
+		expectedBraceShards := []KeyShard{
+			{Start: "", End: "ALSA-"},
+			{Start: "ALSA-", End: "CGA-a"},
+			{Start: "CGA-a", End: "CGA-b"},
+			{Start: "CGA-b", End: "CGA-c"},
+			{Start: "CGA-c", End: ""},
+		}
+		if !slices.Equal(braceShards, expectedBraceShards) {
+			t.Errorf("expected brace shards %v, got %v", expectedBraceShards, braceShards)
+		}
 	})
 }

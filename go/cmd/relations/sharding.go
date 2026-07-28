@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,6 +25,8 @@ import (
 	"cloud.google.com/go/datastore"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
+	"mvdan.cc/sh/v3/expand"
+	"mvdan.cc/sh/v3/syntax"
 )
 
 // KeyShard represents a Datastore key range [Start, End) for sharded queries.
@@ -32,17 +35,74 @@ type KeyShard struct {
 	End   string
 }
 
+// expandBraceToken expands bash-style brace expressions (e.g. "CGA-{a..z}", "CGA-{0..9}")
+// into individual prefix strings using mvdan.cc/sh/v3/expand.
+func expandBraceToken(token string) []string {
+	parser := syntax.NewParser(syntax.Variant(syntax.LangBash))
+	word, err := parser.Document(strings.NewReader(token))
+	if err != nil {
+		return []string{token}
+	}
+
+	syntax.SplitBraces(word)
+	words := expand.Braces(word)
+	results := make([]string, 0, len(words))
+	printer := syntax.NewPrinter()
+	for _, w := range words {
+		var buf bytes.Buffer
+		_ = printer.Print(&buf, w)
+		results = append(results, buf.String())
+	}
+
+	return results
+}
+
+// splitTokens splits a string by comma while respecting nested brace expressions like "{a,b,c}".
+func splitTokens(str string) []string {
+	var tokens []string
+	var current strings.Builder
+	depth := 0
+	for _, r := range str {
+		switch r {
+		case '{':
+			depth++
+			current.WriteRune(r)
+		case '}':
+			if depth > 0 {
+				depth--
+			}
+			current.WriteRune(r)
+		case ',':
+			if depth == 0 {
+				tokens = append(tokens, current.String())
+				current.Reset()
+			} else {
+				current.WriteRune(r)
+			}
+		default:
+			current.WriteRune(r)
+		}
+	}
+	if current.Len() > 0 {
+		tokens = append(tokens, current.String())
+	}
+
+	return tokens
+}
+
 // ParseBreakdownPrefixes parses a comma-separated string of key prefix breakdowns into KeyShards.
+// Tokens containing brace expressions like "CGA-{a,b,c}" are expanded using mvdan.cc/sh/v3/expand.
 func ParseBreakdownPrefixes(str string) []KeyShard {
 	if str == "" {
 		return []KeyShard{{Start: "", End: ""}}
 	}
-	raw := strings.Split(str, ",")
+	raw := splitTokens(str)
 	var prefixes []string
 	for _, p := range raw {
 		p = strings.TrimSpace(p)
 		if p != "" {
-			prefixes = append(prefixes, p)
+			expanded := expandBraceToken(p)
+			prefixes = append(prefixes, expanded...)
 		}
 	}
 	if len(prefixes) == 0 {

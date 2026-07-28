@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -86,15 +87,7 @@ func main() {
 	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
 	routerToWriteCh := make(chan writeMsg, 100)
 
-	var breakdownPrefixes []string
-	if *breakdownPrefixesStr != "" {
-		for _, p := range strings.Split(*breakdownPrefixesStr, ",") {
-			p = strings.TrimSpace(p)
-			if p != "" {
-				breakdownPrefixes = append(breakdownPrefixes, p)
-			}
-		}
-	}
+	breakdownPrefixes := sharding.ExpandBreakdownPrefixes(*breakdownPrefixesStr)
 	// Fall back to simple A-Z prefixes
 	if len(breakdownPrefixes) == 0 {
 		for ch := 'A'; ch <= 'Z'; ch++ {

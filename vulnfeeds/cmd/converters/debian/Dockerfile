@@ -29,8 +29,5 @@ FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:3b058be4e039d
 
 WORKDIR /root/
 COPY --from=GO_BUILD /src/debian ./
-COPY ./cmd/converters/debian/run_debian_convert.sh ./
+ENTRYPOINT ["/root/debian"]
 
-RUN chmod 755 ./run_debian_convert.sh
-
-ENTRYPOINT ["/root/run_debian_convert.sh"]

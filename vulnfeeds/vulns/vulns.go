@@ -905,8 +905,11 @@ func LoadTargetCVEMetadata(cvePath string, targetCVEs map[string]bool) map[model
 			return nil
 		}
 
+		// Spawning one goroutine per file is acceptable here because the number of files
+		// is small (typically one per year of CVE data).
 		wg.Add(1)
 		go func(p string) {
+
 			defer wg.Done()
 			file, err := os.Open(p)
 			if err != nil {

@@ -31,7 +31,6 @@ const (
 	debianOutputPathDefault  = "debian-cve-osv"
 	debianDistroInfoURL      = "https://debian.pages.debian.net/distro-info-data/debian.csv"
 	debianSecurityTrackerURL = "https://security-tracker.debian.org/tracker/data/json"
-	inputBucketDefault       = "osv-test-cve-osv-conversion"
 	outputBucketDefault      = "debian-osv"
 )
 
@@ -40,8 +39,8 @@ func main() {
 	defer logger.Close()
 
 	cvePath := flag.String("cve-path", defaultCvePath, "Path to CVE JSON files.")
-	downloadFromGCS := flag.Bool("download-from-gcs", false, "If true, download NVD CVE data from GCS bucket before processing.")
-	inputBucketName := flag.String("input-bucket", inputBucketDefault, "The GCS bucket to download NVD CVE data from.")
+	inputBucketName := flag.String("input-bucket", "", "The GCS bucket to download NVD CVE data from. If set, downloads data before processing.")
+
 	debianOutputPath := flag.String("output-path", debianOutputPathDefault, "Path to output OSV files.")
 	outputBucketName := flag.String("output-bucket", outputBucketDefault, "The GCS bucket to write to.")
 	numWorkers := flag.Int("workers", 64, "Number of workers to process records")
@@ -51,7 +50,7 @@ func main() {
 
 	ctx := context.Background()
 
-	if *downloadFromGCS {
+	if *inputBucketName != "" {
 		logger.Info("Downloading NVD CVE data from GCS bucket", slog.String("bucket", *inputBucketName), slog.String("dest", *cvePath))
 		storageClient, err := storage.NewClient(ctx)
 		if err != nil {
@@ -60,9 +59,12 @@ func main() {
 		defer storageClient.Close()
 
 		bkt := storageClient.Bucket(*inputBucketName)
+		// TODO: It's inefficient to write all of this to a folder and then read it from the folder again.
+		// It can just be 1 operation, and nothing should need to touch disk.
 		if err := gcs.DownloadBucket(ctx, bkt, "nvd/", *cvePath); err != nil {
 			logger.Fatal("Failed to download NVD CVE data from GCS", slog.Any("err", err))
 		}
+
 		logger.Info("Successfully downloaded NVD CVE data from GCS")
 	}
 

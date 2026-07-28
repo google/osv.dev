@@ -117,16 +117,6 @@ PURL_ECOSYSTEM_MAP = {
 # Add Gradle PURL support - Gradle packages should map to Maven ecosystem
 PURL_ECOSYSTEM_MAP[EcosystemPURL('gradle', None)] = 'Maven'
 
-# Docker Hardened Images publishes release-lineage PURLs -- pkg:apk/dhi/<name>
-# for the Alpine lineage and pkg:deb/dhi/<name> for the Debian lineage -- so map
-# both back to the ecosystem for PURL queries. The forward direction stays
-# pkg:dhi/<name> (see ECOSYSTEM_PURL_DATA): package_to_purl receives the
-# ecosystem name after ecosystems.normalize() has stripped the :Alpine:/:Debian:
-# lineage, so it cannot choose apk vs deb, and DHI feed records always carry
-# their own PURL, so the generation path is not exercised for DHI in practice.
-PURL_ECOSYSTEM_MAP[EcosystemPURL('apk', 'dhi')] = 'Docker Hardened Images'
-PURL_ECOSYSTEM_MAP[EcosystemPURL('deb', 'dhi')] = 'Docker Hardened Images'
-
 
 def _url_encode(package_name):
   """URL encode a PURL `namespace/name` or `name`."""

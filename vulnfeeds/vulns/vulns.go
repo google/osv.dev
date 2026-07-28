@@ -909,7 +909,6 @@ func LoadTargetCVEMetadata(cvePath string, targetCVEs map[string]bool) map[model
 		// is small (typically one per year of CVE data).
 		wg.Add(1)
 		go func(p string) {
-
 			defer wg.Done()
 			file, err := os.Open(p)
 			if err != nil {

@@ -125,7 +125,7 @@ func TestComputeUpstreamGroups(t *testing.T) {
 	}
 
 	ch := make(chan Update, 100)
-	if err := ComputeUpstreamGroups(ctx, dsClient, ch); err != nil {
+	if err := ComputeUpstreamGroups(ctx, dsClient, ch, nil); err != nil {
 		t.Fatalf("ComputeUpstreamGroups failed: %v", err)
 	}
 	close(ch)
@@ -233,6 +233,25 @@ func TestComputeUpstreamGroups(t *testing.T) {
 			if !slices.Equal(hierarchy[k], v) {
 				t.Errorf("for key %s, expected %v, got %v", k, v, hierarchy[k])
 			}
+		}
+	})
+
+	t.Run("test_parse_breakdown_prefixes", func(t *testing.T) {
+		shards := ParseBreakdownPrefixes("ALSA-,BIT-,CVE-")
+		expectedShards := []KeyShard{
+			{Start: "", End: "ALSA-"},
+			{Start: "ALSA-", End: "BIT-"},
+			{Start: "BIT-", End: "CVE-"},
+			{Start: "CVE-", End: ""},
+		}
+		if !slices.Equal(shards, expectedShards) {
+			t.Errorf("expected %v, got %v", expectedShards, shards)
+		}
+
+		emptyShards := ParseBreakdownPrefixes("")
+		expectedEmpty := []KeyShard{{Start: "", End: ""}}
+		if !slices.Equal(emptyShards, expectedEmpty) {
+			t.Errorf("expected %v, got %v", expectedEmpty, emptyShards)
 		}
 	})
 }

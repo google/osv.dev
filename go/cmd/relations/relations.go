@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -40,6 +41,12 @@ type gClients struct {
 }
 
 func main() {
+	var breakdownPrefixesStr string
+	flag.StringVar(&breakdownPrefixesStr, "breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel Datastore key sharding.")
+	flag.Parse()
+
+	keyShards := ParseBreakdownPrefixes(breakdownPrefixesStr)
+
 	// Set up logging / other clients
 	logger.InitGlobalLogger()
 	defer logger.Close()
@@ -67,7 +74,7 @@ func main() {
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "upstream")
 		defer span.End()
-		if err := ComputeUpstreamGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
+		if err := ComputeUpstreamGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
 			logger.ErrorContext(ctx, "failed to compute upstream groups", slog.Any("err", err))
 		}
 	})

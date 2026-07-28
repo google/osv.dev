@@ -22,7 +22,10 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/logger"
@@ -205,44 +208,184 @@ func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetU
 	return err
 }
 
-func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update) error {
-	// Query for all vulns that have upstreams.
-	var updatedGroups []*models.UpstreamGroup
-	logger.Info("Retrieving vulns for upstream computation...")
-	query := datastore.NewQuery("Vulnerability").FilterField("upstream_raw", ">", "")
-	it := cl.Run(ctx, query)
+// KeyShard represents a Datastore key range [Start, End) for sharded queries.
+type KeyShard struct {
+	Start string
+	End   string
+}
 
+// ParseBreakdownPrefixes parses a comma-separated string of key prefix breakdowns into KeyShards.
+func ParseBreakdownPrefixes(str string) []KeyShard {
+	if str == "" {
+		return []KeyShard{{Start: "", End: ""}}
+	}
+	raw := strings.Split(str, ",")
+	var prefixes []string
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			prefixes = append(prefixes, p)
+		}
+	}
+	if len(prefixes) == 0 {
+		return []KeyShard{{Start: "", End: ""}}
+	}
+
+	slices.Sort(prefixes)
+	prefixes = slices.Compact(prefixes)
+
+	shards := make([]KeyShard, 0, len(prefixes)+1)
+	shards = append(shards, KeyShard{Start: "", End: prefixes[0]})
+	for i := range len(prefixes) - 1 {
+		shards = append(shards, KeyShard{Start: prefixes[i], End: prefixes[i+1]})
+	}
+	shards = append(shards, KeyShard{Start: prefixes[len(prefixes)-1], End: ""})
+
+	return shards
+}
+
+type rawUpstreamItem struct {
+	vulnID    string
+	upstreams []string
+}
+
+// fetchShardedRawUpstreams queries vulnerabilities with upstreams across key shards concurrently.
+// Uses an errgroup to run worker goroutines per shard and streams results via a channel
+// to populate the rawUpstreams map sequentially without mutexes.
+func fetchShardedRawUpstreams(ctx context.Context, cl *datastore.Client, keyShards []KeyShard) (map[string][]string, error) {
+	g, ctx := errgroup.WithContext(ctx)
+	resultsChan := make(chan rawUpstreamItem, 1000)
+
+	for _, shard := range keyShards {
+		g.Go(func() error {
+			query := datastore.NewQuery("Vulnerability").FilterField("upstream_raw", ">", "")
+			if shard.Start != "" {
+				query = query.FilterField("__key__", ">=", datastore.NameKey("Vulnerability", shard.Start, nil))
+			}
+			if shard.End != "" {
+				query = query.FilterField("__key__", "<", datastore.NameKey("Vulnerability", shard.End, nil))
+			}
+
+			it := cl.Run(ctx, query)
+			for {
+				var vuln models.Vulnerability
+				key, err := it.Next(&vuln)
+				if errors.Is(err, iterator.Done) {
+					break
+				}
+				if err != nil {
+					return fmt.Errorf("failed to iterate vulnerabilities in shard [%s, %s): %w", shard.Start, shard.End, err)
+				}
+				upstream := slices.Clone(vuln.UpstreamRaw)
+				slices.Sort(upstream)
+				upstream = slices.Compact(upstream)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case resultsChan <- rawUpstreamItem{vulnID: key.Name, upstreams: upstream}:
+				}
+			}
+
+			return nil
+		})
+	}
+
+	// Close results channel after all worker goroutines complete.
+	go func() {
+		_ = g.Wait()
+		close(resultsChan)
+	}()
+
+	// Sequentially collect items from channel into the map.
 	rawUpstreams := make(map[string][]string)
-	for {
-		var vuln models.Vulnerability
-		_, err := it.Next(&vuln)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to iterate vulnerabilities: %w", err)
-		}
-		upstream := slices.Clone(vuln.UpstreamRaw)
-		slices.Sort(upstream)
-		upstream = slices.Compact(upstream)
-		rawUpstreams[vuln.Key.Name] = upstream
+	for item := range resultsChan {
+		rawUpstreams[item.vulnID] = item.upstreams
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return rawUpstreams, nil
+}
+
+// fetchShardedUpstreamGroups queries existing UpstreamGroup entities across key shards concurrently.
+// Uses an errgroup to run worker goroutines per shard and streams results via a channel
+// to populate the upstreamGroups map sequentially without mutexes.
+func fetchShardedUpstreamGroups(ctx context.Context, cl *datastore.Client, keyShards []KeyShard) (map[string]*models.UpstreamGroup, error) {
+	g, ctx := errgroup.WithContext(ctx)
+	resultsChan := make(chan *models.UpstreamGroup, 1000)
+
+	for _, shard := range keyShards {
+		g.Go(func() error {
+			query := datastore.NewQuery("UpstreamGroup")
+			if shard.Start != "" {
+				query = query.FilterField("db_id", ">=", shard.Start)
+			}
+			if shard.End != "" {
+				query = query.FilterField("db_id", "<", shard.End)
+			}
+
+			it := cl.Run(ctx, query)
+			for {
+				var group models.UpstreamGroup
+				key, err := it.Next(&group)
+				if errors.Is(err, iterator.Done) {
+					break
+				}
+				if err != nil {
+					return fmt.Errorf("failed to iterate upstream groups in shard [%s, %s): %w", shard.Start, shard.End, err)
+				}
+				group.Key = key
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case resultsChan <- &group:
+				}
+			}
+
+			return nil
+		})
+	}
+
+	// Close results channel after all worker goroutines complete.
+	go func() {
+		_ = g.Wait()
+		close(resultsChan)
+	}()
+
+	// Sequentially collect items from channel into the map.
+	upstreamGroups := make(map[string]*models.UpstreamGroup)
+	for group := range resultsChan {
+		upstreamGroups[group.VulnID] = group
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return upstreamGroups, nil
+}
+
+// ComputeUpstreamGroups updates all upstream groups in the datastore by re-computing existing UpstreamGroups
+// and creating new UpstreamGroups across key shards.
+func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []KeyShard) error {
+	if len(keyShards) == 0 {
+		keyShards = []KeyShard{{Start: "", End: ""}}
+	}
+
+	var updatedGroups []*models.UpstreamGroup
+	logger.Info("Retrieving vulns for upstream computation across key shards...")
+	rawUpstreams, err := fetchShardedRawUpstreams(ctx, cl, keyShards)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve raw upstreams: %w", err)
 	}
 	logger.Info("Vulns successfully retrieved", slog.Int("count", len(rawUpstreams)))
 
-	logger.Info("Retrieving upstream groups...")
-	query = datastore.NewQuery("UpstreamGroup")
-	it = cl.Run(ctx, query)
-	upstreamGroups := make(map[string]*models.UpstreamGroup)
-	for {
-		var group models.UpstreamGroup
-		_, err := it.Next(&group)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to iterate upstream groups: %w", err)
-		}
-		upstreamGroups[group.VulnID] = &group
+	logger.Info("Retrieving upstream groups across key shards...")
+	upstreamGroups, err := fetchShardedUpstreamGroups(ctx, cl, keyShards)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve upstream groups: %w", err)
 	}
 	logger.Info("Upstream groups successfully retrieved", slog.Int("count", len(upstreamGroups)))
 
@@ -270,8 +413,12 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 			if err != nil {
 				return fmt.Errorf("failed to create upstream group: %w", err)
 			}
+			if newGroup == nil {
+				continue
+			}
 			updatedGroups = append(updatedGroups, newGroup)
 			upstreamGroups[vulnID] = newGroup
+			logger.Info("Upstream group created", slog.String("id", vulnID))
 		}
 	}
 

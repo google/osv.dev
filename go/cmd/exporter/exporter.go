@@ -39,7 +39,7 @@ func main() {
 	vulnBucketName := flag.String("osv-vulns-bucket", os.Getenv("OSV_VULNERABILITIES_BUCKET"), "GCS bucket to read vulnerability protobufs from. Can also be set with the OSV_VULNERABILITIES_BUCKET environment variable.")
 	uploadToGCS := flag.Bool("upload-to-gcs", false, "If false, writes the output to a local directory specified by -bucket instead of a GCS bucket.")
 	numWorkers := flag.Int("workers", 1000, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
-	breakdownPrefixesStr := flag.String("breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel GCS object listing. Defaults to A-Z if empty.")
+	breakdownPrefixesStr := flag.String("breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel GCS object listing.")
 
 	flag.Parse()
 
@@ -88,12 +88,6 @@ func main() {
 	routerToWriteCh := make(chan writeMsg, 100)
 
 	breakdownPrefixes := sharding.ExpandBreakdownPrefixes(*breakdownPrefixesStr)
-	// Fall back to simple A-Z prefixes
-	if len(breakdownPrefixes) == 0 {
-		for ch := 'A'; ch <= 'Z'; ch++ {
-			breakdownPrefixes = append(breakdownPrefixes, string(ch))
-		}
-	}
 
 	var downloaderWg sync.WaitGroup
 	for range *numWorkers / 2 {

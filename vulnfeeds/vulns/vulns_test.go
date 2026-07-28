@@ -850,5 +850,4 @@ func TestAddPkgInfo_MergeAffected(t *testing.T) {
 			t.Errorf("Event at index %d mismatch: got %+v, want %+v", i, e, expectedEvents[i])
 		}
 	}
-
 }

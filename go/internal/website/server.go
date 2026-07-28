@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
@@ -201,9 +202,12 @@ func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status 
 	for i, f := range files {
 		paths[i] = path.Join(templateDir, f)
 	}
+	funcMap := template.FuncMap{
+		"hasPrefix": strings.HasPrefix,
+	}
 
 	entryName := path.Base(files[0])
-	tmpl, err := template.ParseFS(s.config.StaticFS, paths...)
+	tmpl, err := template.New(entryName).Funcs(funcMap).ParseFS(s.config.StaticFS, paths...)
 	if err != nil {
 		logger.ErrorContext(r.Context(), "Failed to parse template", slog.String("page", entryName), slog.Any("error", err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

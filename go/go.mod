@@ -19,10 +19,13 @@ require (
 	github.com/google/osv-scalibr v0.4.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.19.0
+	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260525004216-afe0bddbf893
 	github.com/package-url/packageurl-go v0.1.6
+	github.com/pandatix/go-cvss v0.6.2
 	github.com/tidwall/gjson v1.19.0
 	github.com/xeipuuv/gojsonschema v1.2.0
+	github.com/yuin/goldmark v1.8.4
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.69.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
@@ -30,6 +33,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/sync v0.22.0
+	golang.org/x/text v0.39.0
 	google.golang.org/api v0.287.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20260615183401-62b3387ff324
 	google.golang.org/grpc v1.82.1
@@ -51,6 +55,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20251205161215-1948445e3318 // indirect
@@ -75,6 +80,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
+	github.com/gorilla/css v1.0.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -101,7 +107,6 @@ require (
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect

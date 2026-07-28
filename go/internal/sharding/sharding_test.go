@@ -55,8 +55,8 @@ func TestExpandBreakdownPrefixes(t *testing.T) {
 			expected: []string{"ALSA-", "CGA-a", "CGA-b", "CGA-c"},
 		},
 		{
-			name:     "combined_numeric_and_alpha_ranges",
-			input:    "CGA-{0..9},CGA-{a..z}",
+			name:     "nested_brace_expansion",
+			input:    "CGA-{{0..9},{a..z}}",
 			expected: []string{"CGA-0", "CGA-1", "CGA-2", "CGA-3", "CGA-4", "CGA-5", "CGA-6", "CGA-7", "CGA-8", "CGA-9", "CGA-a", "CGA-b", "CGA-c", "CGA-d", "CGA-e", "CGA-f", "CGA-g", "CGA-h", "CGA-i", "CGA-j", "CGA-k", "CGA-l", "CGA-m", "CGA-n", "CGA-o", "CGA-p", "CGA-q", "CGA-r", "CGA-s", "CGA-t", "CGA-u", "CGA-v", "CGA-w", "CGA-x", "CGA-y", "CGA-z"},
 		},
 	}

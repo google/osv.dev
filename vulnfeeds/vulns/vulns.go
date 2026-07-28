@@ -228,21 +228,46 @@ type Vulnerability struct {
 
 // AddPkgInfo converts a PackageInfo struct to the corresponding Affected and adds it to the OSV vulnerability object.
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
-	affected := &osvschema.Affected{}
-
+	var affected *osvschema.Affected
 	if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
-		affected.Package = &osvschema.Package{
-			Name:      pkgInfo.PkgName,
-			Ecosystem: pkgInfo.Ecosystem,
-			Purl:      pkgInfo.PURL,
+		for _, a := range v.Affected {
+			if a.GetPackage().GetName() == pkgInfo.PkgName && a.GetPackage().GetEcosystem() == pkgInfo.Ecosystem {
+				affected = a
+				break
+			}
 		}
+	}
+
+	if affected == nil {
+		affected = &osvschema.Affected{}
+		if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
+			affected.Package = &osvschema.Package{
+				Name:      pkgInfo.PkgName,
+				Ecosystem: pkgInfo.Ecosystem,
+				Purl:      pkgInfo.PURL,
+			}
+		}
+		v.Affected = append(v.Affected, affected)
 	}
 
 	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
 	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
 		gitCommitRangesByRepo := make(map[string]*osvschema.Range)
+		for _, r := range affected.GetRanges() {
+			if r.GetType() == osvschema.Range_GIT {
+				gitCommitRangesByRepo[r.GetRepo()] = r
+			}
+		}
 
 		hasAddedZeroIntroduced := make(map[string]bool)
+		for repo, r := range gitCommitRangesByRepo {
+			for _, e := range r.GetEvents() {
+				if e.GetIntroduced() == "0" {
+					hasAddedZeroIntroduced[repo] = true
+					break
+				}
+			}
+		}
 
 		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
 			entry, ok := gitCommitRangesByRepo[ac.Repo]
@@ -253,16 +278,18 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 					Events: []*osvschema.Event{},
 					Repo:   ac.Repo,
 				}
+				gitCommitRangesByRepo[ac.Repo] = entry
+				affected.Ranges = append(affected.Ranges, entry)
+			}
 
-				if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
-					// There was no explicitly defined introduced commit, so create one at 0.
-					entry.Events = append(entry.Events,
-						&osvschema.Event{
-							Introduced: "0",
-						},
-					)
-					hasAddedZeroIntroduced[ac.Repo] = true
-				}
+			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
+				// There was no explicitly defined introduced commit, so create one at 0.
+				entry.Events = append(entry.Events,
+					&osvschema.Event{
+						Introduced: "0",
+					},
+				)
+				hasAddedZeroIntroduced[ac.Repo] = true
 			}
 
 			if ac.Introduced != "" {
@@ -277,22 +304,42 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 			if ac.Limit != "" {
 				entry.Events = append(entry.Events, &osvschema.Event{Limit: ac.Limit})
 			}
-			gitCommitRangesByRepo[ac.Repo] = entry
-		}
-
-		for repo := range gitCommitRangesByRepo {
-			affected.Ranges = append(affected.Ranges, gitCommitRangesByRepo[repo])
 		}
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
-		versionRange := &osvschema.Range{
-			Type:   osvschema.Range_ECOSYSTEM,
-			Events: []*osvschema.Event{},
+		var versionRange *osvschema.Range
+		for _, r := range affected.GetRanges() {
+			if r.GetType() == osvschema.Range_ECOSYSTEM {
+				versionRange = r
+				break
+			}
 		}
+
+		isNewRange := false
+		if versionRange == nil {
+			versionRange = &osvschema.Range{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{},
+			}
+			isNewRange = true
+		}
+
 		seenIntroduced := map[string]bool{}
 		seenFixed := map[string]bool{}
 		seenLastAffected := map[string]bool{}
+
+		for _, e := range versionRange.GetEvents() {
+			if e.GetIntroduced() != "" {
+				seenIntroduced[e.GetIntroduced()] = true
+			}
+			if e.GetFixed() != "" {
+				seenFixed[e.GetFixed()] = true
+			}
+			if e.GetLastAffected() != "" {
+				seenLastAffected[e.GetLastAffected()] = true
+			}
+		}
 
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			var introduced string
@@ -323,7 +370,10 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				seenLastAffected[av.LastAffected] = true
 			}
 		}
-		affected.Ranges = append(affected.Ranges, versionRange)
+
+		if isNewRange {
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
 	}
 
 	// Sort affected[].ranges (by type) for stability.
@@ -342,7 +392,6 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	} else {
 		affected.EcosystemSpecific = spec
 	}
-	v.Affected = append(v.Affected, affected)
 }
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.

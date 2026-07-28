@@ -757,3 +757,98 @@ func TestToYAMLFromYAMLRoundTripLastAffected(t *testing.T) {
 		t.Errorf("last_affected '2.12.1' did not survive the YAML round-trip; events=%v", events)
 	}
 }
+
+func TestAddPkgInfo_MergeAffected(t *testing.T) {
+	vuln := &Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: "TEST-VULN",
+		},
+	}
+
+	// 1. Add PackageA in EcosystemA
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageA",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "1.1.0"},
+			},
+		},
+	})
+
+	// 2. Add PackageA in EcosystemA again with different version
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageA",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "2.1.0"},
+			},
+		},
+	})
+
+	// 3. Add PackageB in EcosystemA
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageB",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "1.1.0"},
+			},
+		},
+	})
+
+	if len(vuln.Affected) != 2 {
+		t.Fatalf("Expected 2 affected entries, got %d", len(vuln.Affected))
+	}
+
+	// Find PackageA
+	var pkgA *osvschema.Affected
+	for _, a := range vuln.Affected {
+		if a.GetPackage().GetName() == "PackageA" && a.GetPackage().GetEcosystem() == "EcosystemA" {
+			pkgA = a
+			break
+		}
+	}
+
+	if pkgA == nil {
+		t.Fatalf("Could not find PackageA in EcosystemA")
+	}
+
+	// Check ranges for PackageA
+	// It should be a single range of type ECOSYSTEM
+	if len(pkgA.GetRanges()) != 1 {
+		t.Fatalf("Expected 1 range for PackageA, got %d", len(pkgA.GetRanges()))
+	}
+
+	r := pkgA.GetRanges()[0]
+	if r.GetType() != osvschema.Range_ECOSYSTEM {
+		t.Errorf("Expected range type ECOSYSTEM, got %v", r.GetType())
+	}
+
+	// It should have merged events
+	// Expected: Introduced "1.0.0", Fixed "1.1.0", Fixed "2.1.0"
+	if len(r.GetEvents()) != 3 {
+		t.Errorf("Expected 3 events for PackageA, got %d", len(r.GetEvents()))
+	}
+
+	expectedEvents := []struct {
+		Introduced string
+		Fixed      string
+	}{
+		{Introduced: "1.0.0"},
+		{Fixed: "1.1.0"},
+		{Fixed: "2.1.0"},
+	}
+
+	for i, e := range r.GetEvents() {
+		if i >= len(expectedEvents) {
+			t.Errorf("Unexpected event at index %d: %+v", i, e)
+			continue
+		}
+		if expectedEvents[i].Introduced != e.GetIntroduced() || expectedEvents[i].Fixed != e.GetFixed() {
+			t.Errorf("Event at index %d mismatch: got %+v, want %+v", i, e, expectedEvents[i])
+		}
+	}
+
+}

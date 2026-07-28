@@ -4,13 +4,13 @@ go 1.26.5
 
 require (
 	charm.land/lipgloss/v2 v2.0.5
-	cloud.google.com/go/secretmanager v1.20.0
-	cloud.google.com/go/storage v1.63.1
+	cloud.google.com/go/secretmanager v1.21.0
+	cloud.google.com/go/storage v1.64.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.34.0
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
 	github.com/aquasecurity/go-pep440-version v0.0.1
-	github.com/atombender/go-jsonschema v0.23.0
-	github.com/fsouza/fake-gcs-server v1.55.0
+	github.com/atombender/go-jsonschema v0.23.1
+	github.com/fsouza/fake-gcs-server v1.55.1
 	github.com/gkampitakis/go-snaps v0.5.23
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
@@ -18,7 +18,7 @@ require (
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260709040909-a9f2a884fb02
 	github.com/redis/go-redis/v9 v9.21.0
-	github.com/sethvargo/go-retry v0.3.0
+	github.com/sethvargo/go-retry v0.4.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/sdk v1.44.0

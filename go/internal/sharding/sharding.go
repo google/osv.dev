@@ -30,76 +30,29 @@ type KeyShard struct {
 	End   string
 }
 
-// ExpandBraceToken expands bash-style brace expressions (e.g. "CGA-{a..z}", "CGA-{0..9}")
-// into individual prefix strings using mvdan.cc/sh/v3/expand.
-func ExpandBraceToken(token string) []string {
-	parser := syntax.NewParser(syntax.Variant(syntax.LangBash))
-	word, err := parser.Document(strings.NewReader(token))
-	if err != nil {
-		return []string{token}
-	}
-
-	syntax.SplitBraces(word)
-	words := expand.Braces(word)
-	results := make([]string, 0, len(words))
-	printer := syntax.NewPrinter()
-	for _, w := range words {
-		var buf bytes.Buffer
-		_ = printer.Print(&buf, w)
-		results = append(results, buf.String())
-	}
-
-	return results
-}
-
-// SplitTokens splits a string by comma while respecting nested brace expressions like "{a,b,c}".
-func SplitTokens(str string) []string {
-	var tokens []string
-	var current strings.Builder
-	depth := 0
-	for _, r := range str {
-		switch r {
-		case '{':
-			depth++
-			current.WriteRune(r)
-		case '}':
-			if depth > 0 {
-				depth--
-			}
-			current.WriteRune(r)
-		case ',':
-			if depth == 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-			} else {
-				current.WriteRune(r)
-			}
-		default:
-			current.WriteRune(r)
-		}
-	}
-	if current.Len() > 0 {
-		tokens = append(tokens, current.String())
-	}
-
-	return tokens
-}
-
 // ExpandBreakdownPrefixes parses a comma-separated string of prefix breakdowns, expanding brace expressions
-// (e.g. "CGA-{a..c}") into individual sorted, deduplicated prefix strings.
+// (e.g. "CGA-{{0..9},{a..z}}") into individual sorted, deduplicated prefix strings.
 func ExpandBreakdownPrefixes(str string) []string {
 	if str == "" {
 		return nil
 	}
-	raw := SplitTokens(str)
+
+	w := &syntax.Word{Parts: []syntax.WordPart{&syntax.Lit{Value: str}}}
+	syntax.SplitBraces(w)
+
 	var prefixes []string
-	for _, p := range raw {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			expanded := ExpandBraceToken(p)
-			prefixes = append(prefixes, expanded...)
+	printer := syntax.NewPrinter()
+	for _, word := range expand.Braces(w) {
+		var buf bytes.Buffer
+		_ = printer.Print(&buf, word)
+		for _, p := range strings.Split(buf.String(), ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				prefixes = append(prefixes, p)
+			}
 		}
 	}
+
 	if len(prefixes) == 0 {
 		return nil
 	}

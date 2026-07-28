@@ -67,7 +67,7 @@ func main() {
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "alias")
 		defer span.End()
-		if err := ComputeAliasGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
+		if err := ComputeAliasGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
 			logger.ErrorContext(ctx, "failed to compute alias groups", slog.Any("err", err))
 		}
 	})
@@ -81,7 +81,7 @@ func main() {
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "related")
 		defer span.End()
-		if err := ComputeRelatedGroups(ctx, gc.datastoreClient, updater.Ch); err != nil {
+		if err := ComputeRelatedGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
 			logger.ErrorContext(ctx, "failed to compute related groups", slog.Any("err", err))
 		}
 	})

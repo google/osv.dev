@@ -147,8 +147,11 @@ func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *model
 }
 
 // ComputeAliasGroups updates all alias groups in the datastore by re-computing existing AliasGroups
-// and creating new AliasGroups for un-computed vulns.
-func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update) error {
+// and creating new AliasGroups for un-computed vulns across key shards.
+func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []KeyShard) error {
+	if len(keyShards) == 0 {
+		keyShards = []KeyShard{{Start: "", End: ""}}
+	}
 	query := datastore.NewQuery("AliasAllowListEntry")
 	var allowListEntries []models.AliasAllowListEntry
 	if _, err := cl.GetAll(ctx, query, &allowListEntries); err != nil {
@@ -168,40 +171,40 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 		denyList[dle.VulnID] = struct{}{}
 	}
 
-	// Mapping of ID to a set of all aliases for that vuln,
-	// including its raw aliases and vulns that it is referenced in as an alias.
+	logger.Info("Retrieving vulns for alias computation across key shards...")
 	vulnAliases := make(map[string]map[string]struct{})
-	// For each vuln, add its aliases to the maps and ignore invalid vulns.
-	query = datastore.NewQuery("Vulnerability").FilterField("alias_raw", ">", "")
-	it := cl.Run(ctx, query)
-	for {
-		var vuln models.Vulnerability
-		_, err := it.Next(&vuln)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			logger.Error("failed iterating vulnerabilities", slog.Any("err", err))
-			return err
-		}
-		vulnID := vuln.Key.Name
-		if vuln.IsWithdrawn {
-			continue
-		}
-		if _, ok := denyList[vulnID]; ok {
-			continue
-		}
-		if _, ok := allowList[vulnID]; len(vuln.AliasRaw) > vulnAliasesLimit && !ok {
-			logger.Warn("Skipping computation of vuln with too many aliases",
-				slog.String("id", vulnID), slog.Any("aliases", vuln.AliasRaw))
+	err := runShardedQuery(
+		ctx, cl, keyShards,
+		func(shard KeyShard) *datastore.Query {
+			query := datastore.NewQuery("Vulnerability").FilterField("alias_raw", ">", "")
 
-			continue
-		}
-		for _, alias := range vuln.AliasRaw {
-			addToSet(vulnAliases, vulnID, alias)
-			addToSet(vulnAliases, alias, vulnID)
-		}
+			return applyNameKeyFilter(query, "Vulnerability", shard)
+		},
+		func(key *datastore.Key, vuln *models.Vulnerability) {
+			vulnID := key.Name
+			if vuln.IsWithdrawn {
+				return
+			}
+			if _, ok := denyList[vulnID]; ok {
+				return
+			}
+			if _, ok := allowList[vulnID]; len(vuln.AliasRaw) > vulnAliasesLimit && !ok {
+				logger.Warn("Skipping computation of vuln with too many aliases",
+					slog.String("id", vulnID), slog.Any("aliases", vuln.AliasRaw))
+
+				return
+			}
+
+			for _, alias := range vuln.AliasRaw {
+				addToSet(vulnAliases, vulnID, alias)
+				addToSet(vulnAliases, alias, vulnID)
+			}
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve raw aliases: %w", err)
 	}
+	logger.Info("Vulns successfully retrieved", slog.Int("count", len(vulnAliases)))
 
 	visited := make(map[string]struct{})
 
@@ -212,7 +215,7 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 	// For each alias group, re-compute the vuln IDs in the group and update the group
 	// with the computed vuln IDs.
 	query = datastore.NewQuery("AliasGroup")
-	it = cl.Run(ctx, query)
+	it := cl.Run(ctx, query)
 	for {
 		var aliasGroup models.AliasGroup
 		key, err := it.Next(&aliasGroup)

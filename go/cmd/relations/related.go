@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -11,7 +10,6 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/models"
-	"google.golang.org/api/iterator"
 )
 
 // computeRelated computes all related groups for the given vulns.
@@ -75,49 +73,53 @@ func updateRelated(ctx context.Context, cl *datastore.Client, id string, related
 	return nil
 }
 
-func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update) error {
-	// Query for all vulns that have related.
-	// It's easier to recompute all groups than to try and figure out which ones
-	// need to be recomputed.
-	logger.Info("Retrieving vulns for related computation...")
-	q := datastore.NewQuery("Vulnerability").FilterField("related_raw", ">", "")
+// ComputeRelatedGroups updates all related groups in the datastore by re-computing existing RelatedGroups
+// across key shards.
+func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []KeyShard) error {
+	if len(keyShards) == 0 {
+		keyShards = []KeyShard{{Start: "", End: ""}}
+	}
 
+	logger.Info("Retrieving vulns for related computation across key shards...")
 	rawRelated := make(map[string][]string)
 	withdrawnVulns := make(map[string]struct{})
-	it := cl.Run(ctx, q)
-	for {
-		var v models.Vulnerability
-		_, err := it.Next(&v)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to iterate vulnerabilities: %w", err)
-		}
-		if v.IsWithdrawn {
-			withdrawnVulns[v.Key.Name] = struct{}{}
-		}
-		related := slices.Clone(v.RelatedRaw)
-		slices.Sort(related)
-		related = slices.Compact(related)
-		rawRelated[v.Key.Name] = related
+	err := runShardedQuery(
+		ctx, cl, keyShards,
+		func(shard KeyShard) *datastore.Query {
+			query := datastore.NewQuery("Vulnerability").FilterField("related_raw", ">", "")
+
+			return applyNameKeyFilter(query, "Vulnerability", shard)
+		},
+		func(key *datastore.Key, v *models.Vulnerability) {
+			if v.IsWithdrawn {
+				withdrawnVulns[key.Name] = struct{}{}
+			}
+			related := slices.Clone(v.RelatedRaw)
+			slices.Sort(related)
+			rawRelated[key.Name] = slices.Compact(related)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve raw related vulnerabilities: %w", err)
 	}
 	logger.Info("Retrieved vulns with related ids", slog.Int("count", len(rawRelated)))
 
-	logger.Info("Retrieving related groups...")
-	q = datastore.NewQuery("RelatedGroup")
-	it = cl.Run(ctx, q)
+	logger.Info("Retrieving related groups across key shards...")
 	relatedGroups := make(map[string]models.RelatedGroup)
-	for {
-		var group models.RelatedGroup
-		_, err := it.Next(&group)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to iterate related groups: %w", err)
-		}
-		relatedGroups[group.Key.Name] = group
+	err = runShardedQuery(
+		ctx, cl, keyShards,
+		func(shard KeyShard) *datastore.Query {
+			query := datastore.NewQuery("RelatedGroup")
+
+			return applyNameKeyFilter(query, "RelatedGroup", shard)
+		},
+		func(key *datastore.Key, group *models.RelatedGroup) {
+			group.Key = key
+			relatedGroups[key.Name] = *group
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve related groups: %w", err)
 	}
 	logger.Info("Related groups successfully retrieved", slog.Int("count", len(relatedGroups)))
 

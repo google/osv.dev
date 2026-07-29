@@ -354,10 +354,6 @@ class PurlHelpersTest(unittest.TestCase):
         '2.11.2',
         purl_helpers.parse_purl('pkg:deb/ubuntu/pygments@2.11.2').version)
 
-
-if __name__ == '__main__':
-  unittest.main()
-
   def test_package_to_purl_repository_url(self):
     """A non-default package repository becomes a repository_url qualifier."""
     self.assertEqual(
@@ -393,3 +389,7 @@ if __name__ == '__main__':
     self.assertEqual(
         purl_helpers.ParsedPURL('Packagist', 'symfony/http-kernel', '6.0.0'),
         purl_helpers.parse_purl('pkg:composer/symfony/http-kernel@6.0.0'))
+
+
+if __name__ == '__main__':
+  unittest.main()

@@ -1075,6 +1075,58 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	}
 }
 
+func TestCombineIntoOSV_Withdrawn(t *testing.T) {
+	cve5WithdrawnTime, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
+	nvdWithdrawnTime, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
+
+	tests := []struct {
+		name string
+		cve5 *osvschema.Vulnerability
+		nvd  *osvschema.Vulnerability
+	}{
+		{
+			name: "CVE5 withdrawn, NVD not",
+			cve5: &osvschema.Vulnerability{
+				Id:        "CVE-2023-1234",
+				Withdrawn: timestamppb.New(cve5WithdrawnTime),
+			},
+			nvd: &osvschema.Vulnerability{
+				Id: "CVE-2023-1234",
+			},
+		},
+		{
+			name: "CVE5 not withdrawn, NVD withdrawn",
+			cve5: &osvschema.Vulnerability{
+				Id: "CVE-2023-1234",
+			},
+			nvd: &osvschema.Vulnerability{
+				Id:        "CVE-2023-1234",
+				Withdrawn: timestamppb.New(nvdWithdrawnTime),
+			},
+		},
+		{
+			name: "Both withdrawn",
+			cve5: &osvschema.Vulnerability{
+				Id:        "CVE-2023-1234",
+				Withdrawn: timestamppb.New(cve5WithdrawnTime),
+			},
+			nvd: &osvschema.Vulnerability{
+				Id:        "CVE-2023-1234",
+				Withdrawn: timestamppb.New(nvdWithdrawnTime),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := combineIntoOSV(tc.cve5, tc.nvd)
+			if got != nil {
+				t.Errorf("combineIntoOSV() expected nil for withdrawn records, got %v", got)
+			}
+		})
+	}
+}
+
 func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 	cve5 := &osvschema.Vulnerability{
 		Id: "CVE-2023-1234",

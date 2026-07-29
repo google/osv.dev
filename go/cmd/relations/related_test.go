@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/go-cmp/cmp"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/osv/models"
 	"github.com/google/osv.dev/go/testutils"
 )
@@ -93,7 +94,8 @@ func TestComputeRelatedGroups(t *testing.T) {
 	}
 
 	ch := make(chan Update, 100)
-	if err := ComputeRelatedGroups(ctx, dsClient, ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeRelatedGroups(ctx, store, ch); err != nil {
 		t.Fatalf("ComputeRelatedGroups failed: %v", err)
 	}
 	close(ch)

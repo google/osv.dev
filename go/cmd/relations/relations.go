@@ -27,7 +27,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
-	"github.com/google/osv.dev/go/internal/sharding"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"go.opentelemetry.io/otel"
@@ -46,8 +46,6 @@ func main() {
 	flag.StringVar(&breakdownPrefixesStr, "breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel Datastore key sharding.")
 	flag.Parse()
 
-	keyShards := sharding.ParseBreakdownPrefixes(breakdownPrefixesStr)
-
 	// Set up logging / other clients
 	logger.InitGlobalLogger()
 	defer logger.Close()
@@ -61,6 +59,7 @@ func main() {
 	}
 	defer gc.closeAll()
 
+	store := osvdatastore.NewRelationsComputationStore(gc.datastoreClient, breakdownPrefixesStr)
 	updater := NewUpdater(ctx, gc.datastoreClient, gc.gcsClient, gc.publisher)
 
 	tr := otel.Tracer("relations")
@@ -68,21 +67,21 @@ func main() {
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "alias")
 		defer span.End()
-		if err := ComputeAliasGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
+		if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 			logger.ErrorContext(ctx, "failed to compute alias groups", slog.Any("err", err))
 		}
 	})
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "upstream")
 		defer span.End()
-		if err := ComputeUpstreamGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
+		if err := ComputeUpstreamGroups(ctx, store, updater.Ch); err != nil {
 			logger.ErrorContext(ctx, "failed to compute upstream groups", slog.Any("err", err))
 		}
 	})
 	wg.Go(func() {
 		ctx, span := tr.Start(ctx, "related")
 		defer span.End()
-		if err := ComputeRelatedGroups(ctx, gc.datastoreClient, updater.Ch, keyShards); err != nil {
+		if err := ComputeRelatedGroups(ctx, store, updater.Ch); err != nil {
 			logger.ErrorContext(ctx, "failed to compute related groups", slog.Any("err", err))
 		}
 	})

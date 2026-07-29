@@ -16,17 +16,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
 	"time"
 
-	"cloud.google.com/go/datastore"
-	"github.com/google/osv.dev/go/internal/sharding"
+	internalmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
-	"github.com/google/osv.dev/go/osv/models"
-	"google.golang.org/api/iterator"
 )
 
 const (
@@ -34,30 +30,15 @@ const (
 	vulnAliasesLimit    = 5
 )
 
-// updateAliasGroup updates the alias group in the datastore.
-func updateAliasGroup(
-	ctx context.Context,
-	cl *datastore.Client,
-	vulnIDs []string,
-	key *datastore.Key,
-	group models.AliasGroup,
-	changedVulns map[string]*models.AliasGroup,
-) error {
+// updateAliasGroup updates an existing alias group in the store.
+func updateAliasGroup(ctx context.Context, store internalmodels.RelationsComputationStore, vulnIDs []string, key string, group internalmodels.AliasGroup, changedVulns map[string]*internalmodels.AliasGroup) error {
 	if len(vulnIDs) <= 1 {
-		logger.Info("Deleting alias group due to too few vulns", slog.Any("ids", vulnIDs))
-		for _, vID := range vulnIDs {
+		logger.Info("Deleting alias group due to too few vulns", slog.Any("vulnIDs", vulnIDs))
+		for _, vID := range group.VulnIDs {
 			changedVulns[vID] = nil
 		}
 
-		return cl.Delete(ctx, key)
-	}
-	if len(vulnIDs) > aliasGroupVulnLimit {
-		logger.Warn("Deleting alias group due to too many vulns", slog.Any("ids", vulnIDs))
-		for _, vID := range vulnIDs {
-			changedVulns[vID] = nil
-		}
-
-		return cl.Delete(ctx, key)
+		return store.DeleteAliasGroup(ctx, key)
 	}
 
 	if slices.Equal(vulnIDs, group.VulnIDs) {
@@ -66,7 +47,7 @@ func updateAliasGroup(
 
 	group.VulnIDs = vulnIDs
 	group.Modified = time.Now().UTC()
-	if _, err := cl.Put(ctx, key, &group); err != nil {
+	if err := store.SaveAliasGroup(ctx, &group); err != nil {
 		return err
 	}
 	for _, vID := range vulnIDs {
@@ -76,8 +57,8 @@ func updateAliasGroup(
 	return nil
 }
 
-// createAliasGroup creates a new alias group in the datastore.
-func createAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []string, changedVulns map[string]*models.AliasGroup) error {
+// createAliasGroup creates a new alias group in the store.
+func createAliasGroup(ctx context.Context, store internalmodels.RelationsComputationStore, vulnIDs []string, changedVulns map[string]*internalmodels.AliasGroup) error {
 	if len(vulnIDs) <= 1 {
 		logger.Info("Skipping alias group creation due to too few vulns", slog.Any("vulnIDs", vulnIDs))
 		return nil
@@ -87,12 +68,12 @@ func createAliasGroup(ctx context.Context, cl *datastore.Client, vulnIDs []strin
 		return nil
 	}
 
-	newGroup := &models.AliasGroup{
+	newGroup := &internalmodels.AliasGroup{
 		VulnIDs:  vulnIDs,
 		Modified: time.Now().UTC(),
 	}
 
-	if _, err := cl.Put(ctx, datastore.IncompleteKey("AliasGroup", nil), newGroup); err != nil {
+	if err := store.SaveAliasGroup(ctx, newGroup); err != nil {
 		return err
 	}
 
@@ -132,7 +113,7 @@ func computeAliases(vulnID string, visited map[string]struct{}, vulnAliases map[
 
 // updateVulnWithAliasGroup sends an update for the vuln in Datastore and GCS with the new alias group.
 // if aliasGroup is nil, assumes a preexisting AliasGroup was just deleted.
-func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *models.AliasGroup) {
+func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *internalmodels.AliasGroup) {
 	update := Update{ID: vulnID, Field: updateFieldAlias}
 	if aliasGroup == nil {
 		update.Timestamp = time.Now().UTC()
@@ -149,61 +130,39 @@ func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *model
 
 // ComputeAliasGroups updates all alias groups in the datastore by re-computing existing AliasGroups
 // and creating new AliasGroups for un-computed vulns across key shards.
-func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []sharding.KeyShard) error {
-	if len(keyShards) == 0 {
-		keyShards = []sharding.KeyShard{{Start: "", End: ""}}
-	}
-	query := datastore.NewQuery("AliasAllowListEntry")
-	var allowListEntries []models.AliasAllowListEntry
-	if _, err := cl.GetAll(ctx, query, &allowListEntries); err != nil {
-		return fmt.Errorf("failed querying AliasAllowListEntries: %w", err)
-	}
-	allowList := make(map[string]struct{})
-	for _, ale := range allowListEntries {
-		allowList[ale.VulnID] = struct{}{}
-	}
-	query = datastore.NewQuery("AliasDenyListEntry")
-	var denyListEntries []models.AliasDenyListEntry
-	if _, err := cl.GetAll(ctx, query, &denyListEntries); err != nil {
-		return fmt.Errorf("failed querying AliasDenyListEntries: %w", err)
-	}
-	denyList := make(map[string]struct{})
-	for _, dle := range denyListEntries {
-		denyList[dle.VulnID] = struct{}{}
-	}
-
-	logger.Info("Retrieving vulns for alias computation across key shards...")
-	vulnAliases := make(map[string]map[string]struct{})
-	err := sharding.RunShardedQuery(
-		ctx, cl, keyShards,
-		func(shard sharding.KeyShard) *datastore.Query {
-			query := datastore.NewQuery("Vulnerability").FilterField("alias_raw", ">", "")
-
-			return sharding.ApplyNameKeyFilter(query, "Vulnerability", shard)
-		},
-		func(key *datastore.Key, vuln *models.Vulnerability) {
-			vulnID := key.Name
-			if vuln.IsWithdrawn {
-				return
-			}
-			if _, ok := denyList[vulnID]; ok {
-				return
-			}
-			if _, ok := allowList[vulnID]; len(vuln.AliasRaw) > vulnAliasesLimit && !ok {
-				logger.Warn("Skipping computation of vuln with too many aliases",
-					slog.String("id", vulnID), slog.Any("aliases", vuln.AliasRaw))
-
-				return
-			}
-
-			for _, alias := range vuln.AliasRaw {
-				addToSet(vulnAliases, vulnID, alias)
-				addToSet(vulnAliases, alias, vulnID)
-			}
-		},
-	)
+func ComputeAliasGroups(ctx context.Context, store internalmodels.RelationsComputationStore, ch chan<- Update) error {
+	allowList, denyList, err := store.GetAliasAllowAndDenyLists(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve raw aliases: %w", err)
+		return err
+	}
+
+	logger.Info("Retrieving vulns for alias computation...")
+	vulnAliases := make(map[string]map[string]struct{})
+	err = store.ListRawAliases(ctx, func(ref internalmodels.RawAliasRef) {
+		vulnID := ref.ID
+		if ref.IsWithdrawn {
+			return
+		}
+		if _, ok := denyList[vulnID]; ok {
+			return
+		}
+		if _, ok := allowList[vulnID]; len(ref.Aliases) > vulnAliasesLimit && !ok {
+			logger.Warn("Skipping computation of vuln with too many aliases",
+				slog.String("id", vulnID), slog.Any("aliases", ref.Aliases))
+
+			return
+		}
+
+		for _, alias := range ref.Aliases {
+			if _, ok := denyList[alias]; ok {
+				continue
+			}
+			addToSet(vulnAliases, vulnID, alias)
+			addToSet(vulnAliases, alias, vulnID)
+		}
+	})
+	if err != nil {
+		return fmt.Errorf("failed retrieving raw aliases: %w", err)
 	}
 	logger.Info("Vulns successfully retrieved", slog.Int("count", len(vulnAliases)))
 
@@ -211,21 +170,11 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 
 	// Keep track of vulnerabilities that have been modified, to update GCS later.
 	// nil means the AliasGroup has been removed
-	changedVulns := make(map[string]*models.AliasGroup)
+	changedVulns := make(map[string]*internalmodels.AliasGroup)
 
 	// For each alias group, re-compute the vuln IDs in the group and update the group
 	// with the computed vuln IDs.
-	query = datastore.NewQuery("AliasGroup")
-	it := cl.Run(ctx, query)
-	for {
-		var aliasGroup models.AliasGroup
-		key, err := it.Next(&aliasGroup)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to query AliasGroups: %w", err)
-		}
+	err = store.FetchAliasGroups(ctx, func(key string, aliasGroup internalmodels.AliasGroup) {
 		vulnID := aliasGroup.VulnIDs[0] // AliasGroups always contain more than one vuln
 		// If the vuln has already been counted in a different alias group,
 		// we delete the original one to merge the two alias groups.
@@ -235,23 +184,26 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 					changedVulns[vID] = nil
 				}
 			}
-			if err := cl.Delete(ctx, key); err != nil {
-				return err
+			if err := store.DeleteAliasGroup(ctx, key); err != nil {
+				logger.ErrorContext(ctx, "failed to delete AliasGroup", slog.String("key", key), slog.Any("err", err))
 			}
 
-			continue
+			return
 		}
 		vulnIDs := computeAliases(vulnID, visited, vulnAliases)
-		if err := updateAliasGroup(ctx, cl, vulnIDs, key, aliasGroup, changedVulns); err != nil {
-			return fmt.Errorf("failed to update AliasGroup: %w", err)
+		if err := updateAliasGroup(ctx, store, vulnIDs, key, aliasGroup, changedVulns); err != nil {
+			logger.ErrorContext(ctx, "failed to update AliasGroup", slog.String("key", key), slog.Any("err", err))
 		}
+	})
+	if err != nil {
+		return fmt.Errorf("failed fetching alias groups: %w", err)
 	}
 
 	// For each vuln ID that has not been visited, create new alias groups.
 	for vulnID := range vulnAliases {
 		if _, ok := visited[vulnID]; !ok {
 			vulnIDs := computeAliases(vulnID, visited, vulnAliases)
-			if err := createAliasGroup(ctx, cl, vulnIDs, changedVulns); err != nil {
+			if err := createAliasGroup(ctx, store, vulnIDs, changedVulns); err != nil {
 				return fmt.Errorf("failed to create AliasGroup: %w", err)
 			}
 		}

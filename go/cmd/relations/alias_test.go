@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
 	"github.com/google/osv.dev/go/testutils"
@@ -69,7 +70,8 @@ func TestBasic(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -125,7 +127,8 @@ func TestMissingVuln(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -194,7 +197,8 @@ func TestMissingGCSButInDatastore(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -263,7 +267,8 @@ func TestGenerationMismatch(t *testing.T) {
 	gcsClient.WriteErrors["all/pb/aaa-123.pb"] = clients.ErrPreconditionFailed
 
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -307,7 +312,8 @@ func TestBugReachesLimit(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -380,7 +386,8 @@ func TestUpdateAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -471,7 +478,8 @@ func TestCreateAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -561,7 +569,8 @@ func TestDeleteAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -638,7 +647,8 @@ func TestSplitAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -711,7 +721,8 @@ func TestAllowList(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -783,7 +794,8 @@ func TestDenyList(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -846,7 +858,8 @@ func TestMergeAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -917,7 +930,8 @@ func TestPartialMergeAliasGroup(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()
@@ -992,7 +1006,8 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 
 	// Run computation
 	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
-	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeAliasGroups(ctx, store, updater.Ch); err != nil {
 		t.Fatalf("ComputeAliasGroups failed: %v", err)
 	}
 	updater.Finish()

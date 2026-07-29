@@ -23,10 +23,8 @@ import (
 	"slices"
 	"time"
 
-	"cloud.google.com/go/datastore"
-	"github.com/google/osv.dev/go/internal/sharding"
+	internalmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
-	"github.com/google/osv.dev/go/osv/models"
 )
 
 // computeUpstream computes all upstream vulnerabilities for the given vuln ID.
@@ -60,29 +58,26 @@ func computeUpstream(vulnID string, rawUpstreams map[string][]string) []string {
 	return result
 }
 
-// createUpstreamGroup creates a new upstream group in the datastore and sends it to the updater.
-func createUpstreamGroup(ctx context.Context, cl *datastore.Client, vulnID string, upstreamIDs []string, ch chan<- Update) (*models.UpstreamGroup, error) {
-	key := datastore.IncompleteKey("UpstreamGroup", nil)
-	group := &models.UpstreamGroup{
+// createUpstreamGroup creates a new upstream group in the store and sends it to the updater.
+func createUpstreamGroup(ctx context.Context, store internalmodels.RelationsComputationStore, vulnID string, upstreamIDs []string, ch chan<- Update) (*internalmodels.UpstreamGroup, error) {
+	group := &internalmodels.UpstreamGroup{
 		VulnID:      vulnID,
 		UpstreamIDs: upstreamIDs,
 		Modified:    time.Now().UTC(),
 	}
-	var err error
-	if key, err = cl.Put(ctx, key, group); err != nil {
+	if err := store.SaveUpstreamGroup(ctx, group); err != nil {
 		return nil, err
 	}
-	group.Key = key
 	updateVulnWithUpstream(ch, vulnID, group)
 
 	return group, nil
 }
 
-// updateUpstreamGroup updates the upstream group in the datastore, and sends it to the updater.
-func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *models.UpstreamGroup, upstreamIDs []string, ch chan<- Update) (*models.UpstreamGroup, error) {
+// updateUpstreamGroup updates the upstream group in the store, and sends it to the updater.
+func updateUpstreamGroup(ctx context.Context, store internalmodels.RelationsComputationStore, group *internalmodels.UpstreamGroup, upstreamIDs []string, ch chan<- Update) (*internalmodels.UpstreamGroup, error) {
 	if len(upstreamIDs) == 0 {
 		logger.Info("Deleting upstream group due to no upstream vulns", slog.String("id", group.VulnID))
-		if err := cl.Delete(ctx, group.Key); err != nil {
+		if err := store.DeleteUpstreamGroup(ctx, group.VulnID); err != nil {
 			return nil, err
 		}
 		updateVulnWithUpstream(ch, group.VulnID, nil)
@@ -96,7 +91,7 @@ func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *model
 
 	group.UpstreamIDs = upstreamIDs
 	group.Modified = time.Now().UTC()
-	if _, err := cl.Put(ctx, group.Key, group); err != nil {
+	if err := store.SaveUpstreamGroup(ctx, group); err != nil {
 		return nil, err
 	}
 	updateVulnWithUpstream(ch, group.VulnID, group)
@@ -106,7 +101,7 @@ func updateUpstreamGroup(ctx context.Context, cl *datastore.Client, group *model
 
 // updateVulnWithUpstream sends an update for the vuln in Datastore & GCS with the new upstream group.
 // If group is nil, assumes a preexisting UpstreamGroup was just deleted.
-func updateVulnWithUpstream(ch chan<- Update, vulnID string, group *models.UpstreamGroup) {
+func updateVulnWithUpstream(ch chan<- Update, vulnID string, group *internalmodels.UpstreamGroup) {
 	update := Update{ID: vulnID, Field: updateFieldUpstream}
 	if group == nil { // group was deleted
 		update.Timestamp = time.Now().UTC()
@@ -129,7 +124,7 @@ func updateVulnWithUpstream(ch chan<- Update, vulnID string, group *models.Upstr
 //	   last_modified_date: date
 //	   upstream_hierarchy: JSON string of upstream hierarchy
 //	}
-func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetUpstreamGroup *models.UpstreamGroup, allUpstreamGroups map[string]*models.UpstreamGroup) error {
+func computeUpstreamHierarchy(ctx context.Context, store internalmodels.RelationsComputationStore, targetUpstreamGroup *internalmodels.UpstreamGroup, allUpstreamGroups map[string]*internalmodels.UpstreamGroup) error {
 	visited := make(map[string]struct{})
 	upstreamMap := make(map[string][]string)
 	toVisit := []string{targetUpstreamGroup.VulnID}
@@ -199,59 +194,32 @@ func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetU
 		return nil
 	}
 	targetUpstreamGroup.UpstreamHierarchy = upstreamJSON
-	_, err = cl.Put(ctx, targetUpstreamGroup.Key, targetUpstreamGroup)
 
-	return err
+	return store.SaveUpstreamGroup(ctx, targetUpstreamGroup)
 }
 
 // ComputeUpstreamGroups updates all upstream groups in the datastore by re-computing existing UpstreamGroups
 // and creating new UpstreamGroups across key shards.
-func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []sharding.KeyShard) error {
-	if len(keyShards) == 0 {
-		keyShards = []sharding.KeyShard{{Start: "", End: ""}}
-	}
-
-	var updatedGroups []*models.UpstreamGroup
-	logger.Info("Retrieving vulns for upstream computation across key shards...")
+func ComputeUpstreamGroups(ctx context.Context, store internalmodels.RelationsComputationStore, ch chan<- Update) error {
+	var updatedGroups []*internalmodels.UpstreamGroup
+	logger.Info("Retrieving vulns for upstream computation...")
 	rawUpstreams := make(map[string][]string)
-	err := sharding.RunShardedQuery(
-		ctx, cl, keyShards,
-		func(shard sharding.KeyShard) *datastore.Query {
-			query := datastore.NewQuery("Vulnerability").FilterField("upstream_raw", ">", "")
-
-			return sharding.ApplyNameKeyFilter(query, "Vulnerability", shard)
-		},
-		func(key *datastore.Key, vuln *models.Vulnerability) {
-			upstream := slices.Clone(vuln.UpstreamRaw)
-			slices.Sort(upstream)
-			rawUpstreams[key.Name] = slices.Compact(upstream)
-		},
-	)
+	err := store.ListRawUpstreams(ctx, func(ref internalmodels.RawUpstreamRef) {
+		upstream := slices.Clone(ref.Upstreams)
+		slices.Sort(upstream)
+		rawUpstreams[ref.ID] = slices.Compact(upstream)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to retrieve raw upstreams: %w", err)
 	}
 	logger.Info("Vulns successfully retrieved", slog.Int("count", len(rawUpstreams)))
 
-	logger.Info("Retrieving upstream groups across key shards...")
-	upstreamGroups := make(map[string]*models.UpstreamGroup)
-	err = sharding.RunShardedQuery(
-		ctx, cl, keyShards,
-		func(shard sharding.KeyShard) *datastore.Query {
-			query := datastore.NewQuery("UpstreamGroup")
-			if shard.Start != "" {
-				query = query.FilterField("db_id", ">=", shard.Start)
-			}
-			if shard.End != "" {
-				query = query.FilterField("db_id", "<", shard.End)
-			}
-
-			return query
-		},
-		func(key *datastore.Key, group *models.UpstreamGroup) {
-			group.Key = key
-			upstreamGroups[group.VulnID] = group
-		},
-	)
+	logger.Info("Retrieving upstream groups...")
+	upstreamGroups := make(map[string]*internalmodels.UpstreamGroup)
+	err = store.FetchUpstreamGroups(ctx, func(id string, group internalmodels.UpstreamGroup) {
+		g := group
+		upstreamGroups[id] = &g
+	})
 	if err != nil {
 		return fmt.Errorf("failed to retrieve upstream groups: %w", err)
 	}
@@ -265,7 +233,7 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 		if exists {
 			// Update the existing UpstreamGroup
 			var err error
-			existingUpstreamGroup, err = updateUpstreamGroup(ctx, cl, existingUpstreamGroup, newUpstreamIDs, ch)
+			existingUpstreamGroup, err = updateUpstreamGroup(ctx, store, existingUpstreamGroup, newUpstreamIDs, ch)
 			if err != nil {
 				return fmt.Errorf("failed to update upstream group: %w", err)
 			}
@@ -277,7 +245,7 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 			logger.Info("Upstream group updated", slog.String("id", vulnID))
 		} else {
 			// Create a new UpstreamGroup
-			newGroup, err := createUpstreamGroup(ctx, cl, vulnID, newUpstreamIDs, ch)
+			newGroup, err := createUpstreamGroup(ctx, store, vulnID, newUpstreamIDs, ch)
 			if err != nil {
 				return fmt.Errorf("failed to create upstream group: %w", err)
 			}
@@ -292,7 +260,7 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 
 	for _, group := range updatedGroups {
 		// Recompute the upstream hierarchies
-		if err := computeUpstreamHierarchy(ctx, cl, group, upstreamGroups); err != nil {
+		if err := computeUpstreamHierarchy(ctx, store, group, upstreamGroups); err != nil {
 			return fmt.Errorf("failed to compute upstream hierarchy: %w", err)
 		}
 		logger.Info("Upstream hierarchy updated", slog.String("id", group.VulnID))

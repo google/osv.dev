@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/datastore"
-	"github.com/google/osv.dev/go/internal/sharding"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/osv/models"
 	"github.com/google/osv.dev/go/testutils"
 )
@@ -126,7 +126,8 @@ func TestComputeUpstreamGroups(t *testing.T) {
 	}
 
 	ch := make(chan Update, 100)
-	if err := ComputeUpstreamGroups(ctx, dsClient, ch, nil); err != nil {
+	store := osvdatastore.NewRelationsComputationStore(dsClient, "")
+	if err := ComputeUpstreamGroups(ctx, store, ch); err != nil {
 		t.Fatalf("ComputeUpstreamGroups failed: %v", err)
 	}
 	close(ch)
@@ -234,37 +235,6 @@ func TestComputeUpstreamGroups(t *testing.T) {
 			if !slices.Equal(hierarchy[k], v) {
 				t.Errorf("for key %s, expected %v, got %v", k, v, hierarchy[k])
 			}
-		}
-	})
-
-	t.Run("test_parse_breakdown_prefixes", func(t *testing.T) {
-		shards := sharding.ParseBreakdownPrefixes("ALSA-,BIT-,CVE-")
-		expectedShards := []sharding.KeyShard{
-			{Start: "", End: "ALSA-"},
-			{Start: "ALSA-", End: "BIT-"},
-			{Start: "BIT-", End: "CVE-"},
-			{Start: "CVE-", End: ""},
-		}
-		if !slices.Equal(shards, expectedShards) {
-			t.Errorf("expected %v, got %v", expectedShards, shards)
-		}
-
-		emptyShards := sharding.ParseBreakdownPrefixes("")
-		expectedEmpty := []sharding.KeyShard{{Start: "", End: ""}}
-		if !slices.Equal(emptyShards, expectedEmpty) {
-			t.Errorf("expected %v, got %v", expectedEmpty, emptyShards)
-		}
-
-		braceShards := sharding.ParseBreakdownPrefixes("ALSA-,CGA-{a..c}")
-		expectedBraceShards := []sharding.KeyShard{
-			{Start: "", End: "ALSA-"},
-			{Start: "ALSA-", End: "CGA-a"},
-			{Start: "CGA-a", End: "CGA-b"},
-			{Start: "CGA-b", End: "CGA-c"},
-			{Start: "CGA-c", End: ""},
-		}
-		if !slices.Equal(braceShards, expectedBraceShards) {
-			t.Errorf("expected brace shards %v, got %v", expectedBraceShards, braceShards)
 		}
 	})
 }

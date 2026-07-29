@@ -3,113 +3,49 @@ package importer
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"io"
-	"io/fs"
 	"log/slog"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
-	"sync"
 
-	"github.com/go-git/go-git/v6"
-	"github.com/go-git/go-git/v6/plumbing"
-	"github.com/go-git/go-git/v6/plumbing/object"
+	"github.com/google/osv.dev/go/internal/gitter"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
-	"github.com/google/osv.dev/go/internal/repos"
 	"github.com/google/osv.dev/go/logger"
-	"golang.org/x/sync/singleflight"
 )
 
 type gitSourceRecord struct {
-	repo   sharedRepo
-	commit *object.Commit
-	path   string
+	client  gitter.Client
+	repoURL string
+	commit  string
+	path    string
 }
 
 var _ SourceRecord = gitSourceRecord{}
 
-func (g gitSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
-	g.repo.mu.Lock()
-	defer g.repo.mu.Unlock()
-	f, err := g.commit.File(g.path)
-	if err != nil {
-		return nil, err
-	}
-	// read out the whole file so that the mutex is not held for too long
-	reader, err := f.Reader()
-	if err != nil {
-		return nil, err
-	}
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.NopCloser(bytes.NewReader(content)), nil
-}
-
-// Some sourceRepository entries share the same git repository (e.g. ubuntu).
-// We use singleflight.Group to share the repository between them.
-var repoGroup singleflight.Group
-
-type sharedRepo struct {
-	*git.Repository
-
-	mu *sync.Mutex
-}
-
-func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
-	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
-		return errors.New("invalid SourceRepository for git import")
-	}
-	logger.InfoContext(ctx, "Importing git source repository",
-		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
-
-	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
-	repoInterface, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (any, error) {
-		// Temporary migration from Python to Go
-		// TODO(michaelkedar): Remove when python is gone
-		// If the sha name of the repo doesn't exist, check if the source repo name exists from python.
-		// If it does, move it and use it.
-		sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
-		path := hex.EncodeToString(sha[:])
-		path = filepath.Join(config.GitWorkDir, path)
-		if _, err := os.Stat(path); err != nil {
-			pythonPath := filepath.Join(config.GitWorkDir, sourceRepo.Name)
-			if _, err := os.Stat(pythonPath); err == nil {
-				// try rename it, but don't error if it fails
-				_ = os.Rename(pythonPath, path)
-			}
-		}
-		repo, err := repos.CloneToDir(ctx, sourceRepo.Git.URL, path, true)
-		if err != nil {
-			return nil, err
-		}
-
-		return sharedRepo{
-			Repository: repo,
-			mu:         &sync.Mutex{},
-		}, nil
+// Open retrieves uncompressed file content from Gitter for the target commit and path.
+func (g gitSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
+	resp, err := g.client.GetFileContent(ctx, &pb.FileContentRequest{
+		Url:    g.repoURL,
+		Commit: g.commit,
+		Path:   g.path,
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to clone git source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
-		return err
+		return nil, err
 	}
-	repo := repoInterface.(sharedRepo)
 
-	format := extensionToFormat(sourceRepo.Extension)
-	isReimport := sourceRepo.Git.LastSyncedCommit == ""
+	return io.NopCloser(bytes.NewReader(resp.GetContent())), nil
+}
 
-	changedFiles, commit, err := changedFiles(ctx, repo, sourceRepo)
-	if err != nil {
-		logger.ErrorContext(ctx, "Failed to get changed files", slog.Any("error", err), slog.String("source", sourceRepo.Name))
-		return err
-	}
-	filterPath := func(p string) string {
+// makeGitPathFilter path filtering function based on the SourceRepository rules.
+func makeGitPathFilter(sourceRepo *models.SourceRepository) func(string) string {
+	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
+
+	return func(p string) string {
+		if p == "" {
+			return ""
+		}
 		if !strings.HasSuffix(p, sourceRepo.Extension) {
 			return ""
 		}
@@ -127,12 +63,49 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 
 		return p
 	}
-	for _, fileChange := range changedFiles {
+}
+
+// fetchGitterFileDiffs requests file diffs from Gitter for a repo.
+// When lastSyncedCommit is empty, Gitter diffs against an empty tree to return all files in the repo as "add"
+func fetchGitterFileDiffs(ctx context.Context, client gitter.Client, sourceRepo *models.SourceRepository, lastSyncedCommit string) (*pb.FileDiffsResponse, error) {
+	req := &pb.FileDiffsRequest{
+		Url:              sourceRepo.Git.URL,
+		LastSyncedCommit: lastSyncedCommit,
+		Branch:           sourceRepo.Git.Branch,
+	}
+
+	return client.GetFileDiffs(ctx, req)
+}
+
+func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
+		return errors.New("invalid SourceRepository for git import")
+	}
+	if config.GitterClient == nil {
+		return errors.New("gitter client is required for git import")
+	}
+	logger.InfoContext(ctx, "Importing git source repository",
+		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
+
+	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, sourceRepo.Git.LastSyncedCommit)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get file diffs from gitter",
+			slog.Any("error", err), slog.String("source", sourceRepo.Name))
+
+		return err
+	}
+
+	format := extensionToFormat(sourceRepo.Extension)
+	isReimport := sourceRepo.Git.LastSyncedCommit == ""
+	filterPath := makeGitPathFilter(sourceRepo)
+	latestCommit := resp.GetLatestCommit()
+
+	for _, fileChange := range resp.GetChanges() {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		from := filterPath(fileChange.from)
-		to := filterPath(fileChange.to)
+		from := filterPath(fileChange.GetFromPath())
+		to := filterPath(fileChange.GetToPath())
 		if from == "" && to == "" {
 			// file was ignored/removed in both commits
 			continue
@@ -149,8 +122,10 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 			case ch <- WorkItem{
 				Context: ctx,
 				SourceRecord: gitSourceRecord{
-					path: from,
-					repo: repo,
+					client:  config.GitterClient,
+					repoURL: sourceRepo.Git.URL,
+					commit:  latestCommit,
+					path:    from,
 				},
 				SourceRepository: sourceRepo.Name,
 				SourcePath:       from,
@@ -172,9 +147,10 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: gitSourceRecord{
-				repo:   repo,
-				commit: commit,
-				path:   to,
+				client:  config.GitterClient,
+				repoURL: sourceRepo.Git.URL,
+				commit:  latestCommit,
+				path:    to,
 			},
 			SourceRepository: sourceRepo.Name,
 			SourcePath:       to,
@@ -187,9 +163,10 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 		}
 	}
 
-	sourceRepo.Git.LastSyncedCommit = commit.Hash.String()
+	sourceRepo.Git.LastSyncedCommit = latestCommit
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
 		logger.ErrorContext(ctx, "Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+
 		return err
 	}
 	logger.InfoContext(ctx, "Finished importing git source repository",
@@ -199,128 +176,15 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	return nil
 }
 
-type fileChange struct {
-	from string
-	to   string
-}
-
-func changedFiles(ctx context.Context, repo sharedRepo, sourceRepo *models.SourceRepository) ([]fileChange, *object.Commit, error) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	var current plumbing.Hash
-	if sourceRepo.Git.Branch != "" {
-		ref, err := repo.Reference(plumbing.NewRemoteReferenceName("origin", sourceRepo.Git.Branch), true)
-		if err != nil {
-			return nil, nil, err
-		}
-		current = ref.Hash()
-	} else {
-		ref, err := repo.Reference(plumbing.NewRemoteHEADReferenceName("origin"), true)
-		if err != nil {
-			return nil, nil, err
-		}
-		current = ref.Hash()
-	}
-	currentCommit, err := repo.CommitObject(current)
-	if err != nil {
-		return nil, nil, err
-	}
-	currentTree, err := currentCommit.Tree()
-	if err != nil {
-		return nil, nil, err
-	}
-	var prevSyncTree *object.Tree
-	if sourceRepo.Git.LastSyncedCommit != "" {
-		prevSyncCommit, err := repo.CommitObject(plumbing.NewHash(sourceRepo.Git.LastSyncedCommit))
-		if err != nil {
-			return nil, nil, err
-		}
-		prevSyncTree, err = prevSyncCommit.Tree()
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	// tree.Diff(nil) returns all files, which is what we want.
-	diff, err := currentTree.DiffContext(ctx, prevSyncTree)
-	if err != nil {
-		return nil, nil, err
-	}
-	changedFiles := make([]fileChange, 0, len(diff))
-	for _, d := range diff {
-		// Note: since we're doing child.Diff(parent), to/from are reversed from what you might expect.
-		changedFiles = append(changedFiles, fileChange{
-			from: d.To.Name,
-			to:   d.From.Name,
-		})
-	}
-
-	return changedFiles, currentCommit, nil
-}
-
-type localFileSourceRecord struct {
-	path string
-}
-
-func (r localFileSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
-	return os.Open(r.path)
-}
-
 func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git reconcile")
 	}
+	if config.GitterClient == nil {
+		return errors.New("gitter client is required for git reconcile")
+	}
 	logger.InfoContext(ctx, "Processing git reconcile",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
-
-	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
-
-	sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
-	pathStr := hex.EncodeToString(sha[:])
-	pathStr = filepath.Join(config.GitWorkDir, pathStr)
-
-	// TODO: We don't support multiple sources with the same repo but different branches.
-	_, err, _ := repoGroup.Do(sourceRepo.Git.URL, func() (any, error) {
-		repo, err := repos.CloneToDir(ctx, sourceRepo.Git.URL, pathStr, true)
-		if err != nil {
-			return nil, err
-		}
-
-		var branch plumbing.ReferenceName
-		if sourceRepo.Git.Branch == "" {
-			branch = plumbing.NewRemoteHEADReferenceName("origin")
-		} else {
-			branch = plumbing.NewRemoteReferenceName("origin", sourceRepo.Git.Branch)
-		}
-
-		wt, err := repo.Worktree()
-		if err != nil {
-			return nil, err
-		}
-
-		err = wt.Checkout(&git.CheckoutOptions{
-			Branch: branch,
-			Force:  true,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		err = wt.Clean(&git.CleanOptions{
-			Dir: true,
-		})
-
-		return sharedRepo{
-			Repository: repo,
-			mu:         &sync.Mutex{},
-		}, err
-	})
-	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			logger.ErrorContext(ctx, "Failed to clone git source repository for reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
-		}
-
-		return err
-	}
 
 	// Fetch datastore records for the source
 	dbRecords, err := fetchDBRecords(ctx, config, sourceRepo)
@@ -330,52 +194,37 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 	format := extensionToFormat(sourceRepo.Extension)
 
-	searchDir := pathStr
-	if sourceRepo.Git.Path != "" {
-		searchDir = filepath.Join(pathStr, sourceRepo.Git.Path)
+	// Query Gitter with empty lastSyncedCommit to get all files in the repository
+	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, "")
+	if err != nil {
+		if !errors.Is(err, context.Canceled) {
+			logger.ErrorContext(ctx, "Failed to get file diffs for git reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
+		}
+
+		return err
 	}
 
-	err = filepath.WalkDir(searchDir, func(p string, d fs.DirEntry, err error) error {
+	filterPath := makeGitPathFilter(sourceRepo)
+	latestCommit := resp.GetLatestCommit()
+
+	for _, fileChange := range resp.GetChanges() {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if d.Name() == ".git" {
-				return filepath.SkipDir
-			}
 
-			return nil
+		relPath := filterPath(fileChange.GetToPath())
+		if relPath == "" {
+			continue
 		}
 
-		if !strings.HasSuffix(p, sourceRepo.Extension) {
-			return nil
-		}
-
-		relPath, err := filepath.Rel(pathStr, p)
-		if err != nil {
-			return err
-		}
-		// Always use forward slashes for relative paths inside git repositories
-		relPath = filepath.ToSlash(relPath)
-
-		if shouldIgnore(path.Base(p), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
-			return nil
-		}
-
-		sourceRecord := localFileSourceRecord{
-			path: p, // Absolute path on disk
+		sourceRecord := gitSourceRecord{
+			client:  config.GitterClient,
+			repoURL: sourceRepo.Git.URL,
+			commit:  latestCommit,
+			path:    relPath,
 		}
 
 		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format, config.ReimportTaskPool)
-
-		return nil
-	})
-
-	if err != nil {
-		return err
 	}
 
 	logger.InfoContext(ctx, "Finished reconciling git source repository",

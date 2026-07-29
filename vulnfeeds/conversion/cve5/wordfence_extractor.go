@@ -1,13 +1,11 @@
 package cve5
 
 import (
-	"regexp"
 	"strings"
 
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -17,49 +15,6 @@ type WordfenceVersionExtractor struct {
 }
 
 var _ VersionExtractor = &WordfenceVersionExtractor{}
-
-var (
-	tracRegex      = regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/]+)`)
-	svnRegex       = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/]+)`)
-	wordfenceRegex = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/]+)`)
-	wpOrgRegex     = regexp.MustCompile(`wordpress\.org/plugins/([^/]+)`)
-)
-
-func extractSlugFromOSVRefs(refs []*osvschema.Reference) string {
-	var tracSlug, svnSlug, wordfenceSlug, wpOrgSlug string
-
-	for _, ref := range refs {
-		url := ref.GetUrl()
-		if match := tracRegex.FindStringSubmatch(url); match != nil {
-			tracSlug = match[1]
-		}
-		if match := svnRegex.FindStringSubmatch(url); match != nil {
-			svnSlug = match[1]
-		}
-		if match := wordfenceRegex.FindStringSubmatch(url); match != nil {
-			wordfenceSlug = match[1]
-		}
-		if match := wpOrgRegex.FindStringSubmatch(url); match != nil {
-			wpOrgSlug = match[1]
-		}
-	}
-
-	// Prioritize trac slug
-	if tracSlug != "" {
-		return tracSlug
-	}
-	if svnSlug != "" {
-		return svnSlug
-	}
-	if wordfenceSlug != "" {
-		return wordfenceSlug
-	}
-	if wpOrgSlug != "" {
-		return wpOrgSlug
-	}
-
-	return ""
-}
 
 func normalizeVersion(v string) string {
 	return strings.TrimPrefix(v, "v")
@@ -80,7 +35,7 @@ func (w *WordfenceVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vu
 	// 1. Try standard extraction (which prefers GIT ranges)
 	w.DefaultVersionExtractor.ExtractVersions(cve, v, metrics, repos)
 
-	slug := extractSlugFromOSVRefs(v.References)
+	slug, ecosystem := extractWordPressSlugAndEcosystem(cve, v)
 
 	// 2. If we have Affected entries, update them with slug/ecosystem if missing.
 	if len(v.Affected) > 0 {
@@ -99,7 +54,7 @@ func (w *WordfenceVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vu
 				}
 				if aff.Package == nil {
 					aff.Package = &osvschema.Package{
-						Ecosystem: string(osvconstants.EcosystemWordPress),
+						Ecosystem: ecosystem,
 						Name:      slug,
 					}
 				}
@@ -163,7 +118,7 @@ func (w *WordfenceVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vu
 	if gotVersions {
 		aff := &osvschema.Affected{
 			Package: &osvschema.Package{
-				Ecosystem: string(osvconstants.EcosystemWordPress),
+				Ecosystem: ecosystem,
 				Name:      slug,
 			},
 			Ranges: allRanges,

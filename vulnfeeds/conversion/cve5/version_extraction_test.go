@@ -629,7 +629,7 @@ func TestExtractVersions(t *testing.T) {
 			repos:       []string{},
 			expectedAffected: []*osvschema.Affected{{
 				Package: &osvschema.Package{
-					Ecosystem: "WordPress",
+					Ecosystem: "WordPress:Plugin",
 					Name:      "wordpress-seo",
 				},
 				Ranges: []*osvschema.Range{{
@@ -656,6 +656,25 @@ func TestExtractVersions(t *testing.T) {
 					Events: []*osvschema.Event{
 						{Introduced: "0"},
 						{Fixed: "1.0.77.33"},
+					},
+				}},
+			}},
+		},
+		{
+			name:        "CVE-2015-10001",
+			cve:         loadTestData(t, "CVE-2015-10001"),
+			cnaAssigner: "WPScan",
+			repos:       []string{},
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "wp-stats",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "2.52"},
+						{LastAffected: "2.52"},
 					},
 				}},
 			}},

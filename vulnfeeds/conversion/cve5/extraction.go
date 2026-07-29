@@ -20,6 +20,8 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &WordfenceVersionExtractor{}
 	case "Patchstack":
 		return &PatchstackVersionExtractor{}
+	case "WPScan":
+		return &WPScanVersionExtractor{}
 	default:
 		return &DefaultVersionExtractor{}
 	}

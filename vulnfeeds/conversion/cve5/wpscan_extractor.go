@@ -7,25 +7,24 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-// PatchstackVersionExtractor provides version extraction logic for Patchstack CVEs.
-type PatchstackVersionExtractor struct {
+// WPScanVersionExtractor provides version extraction logic for WPScan CVEs.
+type WPScanVersionExtractor struct {
 	DefaultVersionExtractor
 }
 
-var _ VersionExtractor = &PatchstackVersionExtractor{}
+var _ VersionExtractor = &WPScanVersionExtractor{}
 
-
-// ExtractVersions for PatchstackVersionExtractor.
-func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
+// ExtractVersions for WPScanVersionExtractor.
+func (w *WPScanVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	// 1. Run default extraction first
-	p.DefaultVersionExtractor.ExtractVersions(cve, v, metrics, repos)
+	w.DefaultVersionExtractor.ExtractVersions(cve, v, metrics, repos)
 
 	// 2. Extract slug and determine ecosystem using shared helper
 	slug, ecosystem := extractWordPressSlugAndEcosystem(cve, v)
 
 	if slug == "" {
-		metrics.AddNote("Could not extract slug for Patchstack record")
-		return
+		metrics.AddNote("Could not extract slug for WPScan record")
+		// We might still want to assign the ecosystem if we can determine it
 	}
 
 	// 3. Update affected packages with correct ecosystem and slug
@@ -47,21 +46,27 @@ func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.V
 					Ecosystem: ecosystem,
 					Name:      slug,
 				}
+			} else {
+				// Update ecosystem if it was generic
+				if aff.Package.Ecosystem == "WordPress" || aff.Package.Ecosystem == "" {
+					aff.Package.Ecosystem = ecosystem
+				}
+				if aff.Package.Name == "" {
+					aff.Package.Name = slug
+				}
 			}
 		}
 	}
 
-	// 4. If default extraction didn't produce anything (e.g. no git ranges found),
-	// we still want to produce ECOSYSTEM ranges for WordPress.
-	// This mirrors Wordfence extractor logic.
+	// 4. If default extraction didn't produce anything, try to generate ECOSYSTEM ranges.
 	if len(v.Affected) == 0 {
-		metrics.AddNote("Attempting to generate ECOSYSTEM ranges for Patchstack")
+		metrics.AddNote("Attempting to generate ECOSYSTEM ranges for WPScan")
 
 		gotVersions := false
 		var allRanges []*osvschema.Range
 
 		for _, cveAff := range cve.Containers.CNA.Affected {
-			versionRanges, _ := p.FindNormalAffectedRanges(cveAff, metrics)
+			versionRanges, _ := w.FindNormalAffectedRanges(cveAff, metrics)
 			for _, r := range versionRanges {
 				r.Range.Type = osvschema.Range_ECOSYSTEM
 				allRanges = append(allRanges, r.Range)
@@ -73,7 +78,7 @@ func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.V
 			metrics.AddSource(models.VersionSourceAffected)
 		}
 
-		// Description Fallback (if still no versions)
+		// Description Fallback
 		if !gotVersions {
 			textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics, models.VersionSourceDescription)
 			for _, r := range textRanges {
@@ -94,7 +99,7 @@ func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.V
 				Ranges: allRanges,
 			}
 			c.AddAffected(v, aff, metrics)
-			metrics.Outcome = models.Successful // Override outcome directly
+			metrics.Outcome = models.Successful
 		}
 	}
 }

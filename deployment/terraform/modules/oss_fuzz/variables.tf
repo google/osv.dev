@@ -28,3 +28,9 @@ variable "pubsub_service_account_email" {
   type        = string
   description = "The email of the Pub/Sub service account."
 }
+
+variable "subnetwork" {
+  type        = string
+  description = "The self link of the subnetwork for oss-fuzz workers."
+}
+

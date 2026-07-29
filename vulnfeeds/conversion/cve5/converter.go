@@ -70,7 +70,18 @@ func getCWEs(cna models.CNA, metrics *models.ConversionMetrics) []string {
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
 func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.ConversionMetrics, sourceLink string) *vulns.Vulnerability {
+	var withdrawnTime *timestamppb.Timestamp
+	if cve.Metadata.State == "REJECTED" {
+		withdrawn, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
+		if err != nil {
+			metrics.AddNote("[%s]: Withdrawn date failed to parse, setting time to now", cve.Metadata.CVEID)
+			withdrawn = time.Now()
+		}
+		withdrawnTime = timestamppb.New(withdrawn)
+	}
+
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
+
 	v := vulns.Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			SchemaVersion: osvconstants.SchemaVersion,
@@ -80,6 +91,7 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 			Aliases:       aliases,
 			Related:       related,
 			References:    vulns.ClassifyReferences(refs),
+			Withdrawn:     withdrawnTime,
 		}}
 
 	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
@@ -169,6 +181,10 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 	conversion.GroupAffectedRanges(v.Affected)
 
 	models.DetermineOutcome(&metrics)
+
+	if cve.Metadata.State == "REJECTED" {
+		metrics.Outcome = models.Rejected
+	}
 
 	return v, &metrics
 }

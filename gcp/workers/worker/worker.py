@@ -552,9 +552,8 @@ class TaskRunner:
         source_link = source_repo.link + relative_path
       for affected in vulnerability.affected:
         if not affected.package.purl:
-          if purl := purl_helpers.package_to_purl(
-              osv.ecosystems.normalize(affected.package.ecosystem),
-              affected.package.name):
+          if purl := purl_helpers.package_to_purl(affected.package.ecosystem,
+                                                  affected.package.name):
             affected.package.purl = purl
         if source_link:
           affected.database_specific.update({'source': source_link})

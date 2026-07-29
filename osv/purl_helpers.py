@@ -126,7 +126,11 @@ def _url_encode(package_name):
 
 def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   """Convert a ecosystem and package name to PURL."""
-  purl_data = ECOSYSTEM_PURL_DATA.get(ecosystem)
+  # Some ecosystems name a non-default package repository after a colon, e.g.
+  # `Packagist:https://packages.drupal.org/8`. Other suffixes (release numbers
+  # such as `Debian:11`) carry no repository information.
+  base_ecosystem, _, ecosystem_suffix = ecosystem.partition(':')
+  purl_data = ECOSYSTEM_PURL_DATA.get(base_ecosystem)
   if not purl_data:
     return None
 
@@ -136,18 +140,26 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   else:
     purl_ecosystem = purl_type
 
-  suffix = ''
+  qualifiers = {}
 
   if purl_type == 'maven':
     # PURLs use / to separate the group ID and the artifact ID.
     package_name = package_name.replace(':', '/', 1)
 
-  if purl_type == 'deb' and ecosystem == 'Debian':
-    suffix = '?arch=source'
+  if purl_type == 'deb' and base_ecosystem == 'Debian':
+    qualifiers['arch'] = 'source'
 
-  if purl_type == 'apk' and ecosystem in ('Alpine', 'Alpaquita',
-                                          'BellSoft Hardened Containers'):
-    suffix = '?arch=source'
+  if purl_type == 'apk' and base_ecosystem in ('Alpine', 'Alpaquita',
+                                               'BellSoft Hardened Containers'):
+    qualifiers['arch'] = 'source'
+
+  if ecosystem_suffix.startswith(('http://', 'https://')):
+    qualifiers['repository_url'] = ecosystem_suffix
+
+  # PURL qualifiers are sorted by key.
+  suffix = ''
+  if qualifiers:
+    suffix = '?' + '&'.join(f'{key}={qualifiers[key]}' for key in sorted(qualifiers))
 
   # Encode package name: preserve '/' in specific cases
   # - When no namespace is defined
@@ -156,6 +168,13 @@ def package_to_purl(ecosystem: str, package_name: str) -> str | None:
   encoded_name = quote(package_name, safe=safe_chars)
 
   return f'pkg:{purl_ecosystem}/{encoded_name}{suffix}'
+
+
+def _with_repository(ecosystem: str, repository_url: str) -> str:
+  """Append a non-default package repository to the ecosystem name."""
+  if not repository_url:
+    return ecosystem
+  return f'{ecosystem}:{repository_url}'
 
 
 def parse_purl(purl_str: str) -> ParsedPURL | None:
@@ -175,11 +194,17 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
 
   package = purl.name
   version = purl.version
+  # A repository_url qualifier names a non-default package repository, which OSV
+  # records after a colon in the ecosystem (e.g. Packagist:https://...).
+  repository_url = (purl.qualifiers or {}).get('repository_url', '')
+  if not repository_url.startswith(('http://', 'https://')):
+    repository_url = ''
 
   # Find a matching ecosystem using both type and namespace.
   ecosystem = PURL_ECOSYSTEM_MAP.get(EcosystemPURL(purl.type, purl.namespace))
   if ecosystem:
-    return ParsedPURL(ecosystem, package, version)
+    return ParsedPURL(_with_repository(ecosystem, repository_url), package,
+                      version)
 
   # If no match is found, try again using only the type.
   # Some ecosystems may use the namespace to represent additional
@@ -206,4 +231,5 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
     # Handle the case where the namespace is not supported.
     return None
 
-  return ParsedPURL(ecosystem, package, version)
+  return ParsedPURL(_with_repository(ecosystem, repository_url), package,
+                    version)

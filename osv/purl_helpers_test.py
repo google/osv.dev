@@ -357,3 +357,39 @@ class PurlHelpersTest(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
+  def test_package_to_purl_repository_url(self):
+    """A non-default package repository becomes a repository_url qualifier."""
+    self.assertEqual(
+        'pkg:composer/drupal/commerce_guest_registration'
+        '?repository_url=https://packages.drupal.org/8',
+        purl_helpers.package_to_purl('Packagist:https://packages.drupal.org/8',
+                                     'drupal/commerce_guest_registration'))
+
+    # The default repository is left implicit.
+    self.assertEqual('pkg:composer/symfony/http-kernel',
+                     purl_helpers.package_to_purl('Packagist',
+                                                  'symfony/http-kernel'))
+
+    # A release suffix is not a repository and must not leak into the PURL.
+    self.assertEqual('pkg:deb/debian/nginx?arch=source',
+                     purl_helpers.package_to_purl('Debian:11', 'nginx'))
+
+    # Qualifiers stay sorted by key.
+    self.assertEqual(
+        'pkg:deb/debian/nginx?arch=source&repository_url=https://example.com/deb',
+        purl_helpers.package_to_purl('Debian:https://example.com/deb', 'nginx'))
+
+  def test_parse_purl_repository_url(self):
+    """The repository_url qualifier is carried back into the ecosystem."""
+    self.assertEqual(
+        purl_helpers.ParsedPURL('Packagist:https://packages.drupal.org/8',
+                                'drupal/commerce_guest_registration', None),
+        purl_helpers.parse_purl(
+            'pkg:composer/drupal/commerce_guest_registration'
+            '?repository_url=https://packages.drupal.org/8'))
+
+    # Without the qualifier the ecosystem is unchanged.
+    self.assertEqual(
+        purl_helpers.ParsedPURL('Packagist', 'symfony/http-kernel', '6.0.0'),
+        purl_helpers.parse_purl('pkg:composer/symfony/http-kernel@6.0.0'))

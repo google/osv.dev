@@ -149,6 +149,26 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
+		{
+			name: "changes preferred over lessThanOrEqual with filler version",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:          "affected",
+						Version:         "n/a",
+						LessThanOrEqual: "1.0.32",
+						Changes: []models.Change{
+							{At: "1.0.33", Status: "unaffected"},
+						},
+						VersionType: "custom",
+					},
+				},
+			},
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "1.0.33"),
+			},
+			wantRangeType: VersionRangeTypeEcosystem,
+		},
 	}
 
 	for _, tt := range tests {
@@ -617,6 +637,25 @@ func TestExtractVersions(t *testing.T) {
 					Events: []*osvschema.Event{
 						{Introduced: "0"},
 						{LastAffected: "26.8"},
+					},
+				}},
+			}},
+		},
+		{
+			name:        "CVE-2021-23209",
+			cve:         loadTestData(t, "CVE-2021-23209"),
+			cnaAssigner: "Patchstack",
+			repos:       []string{},
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "accelerated-mobile-pages",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{Fixed: "1.0.77.33"},
 					},
 				}},
 			}},

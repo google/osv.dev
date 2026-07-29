@@ -18,6 +18,8 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &LinuxVersionExtractor{}
 	case "Wordfence":
 		return &WordfenceVersionExtractor{}
+	case "Patchstack":
+		return &PatchstackVersionExtractor{}
 	default:
 		return &DefaultVersionExtractor{}
 	}

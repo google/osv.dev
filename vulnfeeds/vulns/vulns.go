@@ -756,6 +756,11 @@ func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
 func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
+	var withdrawnTime *timestamppb.Timestamp
+	if cve.VulnStatus != nil && *cve.VulnStatus == "Rejected" {
+		withdrawnTime = timestamppb.New(cve.LastModified.Time)
+	}
+
 	v := &Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			Id:         string(id),
@@ -765,6 +770,7 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 			Published:  timestamppb.New(cve.Published.Time),
 			Modified:   timestamppb.New(cve.LastModified.Time),
 			References: ClassifyReferences(cve.References),
+			Withdrawn:  withdrawnTime,
 		},
 	}
 	v.AddSeverity(cve.Metrics)

@@ -29,43 +29,49 @@ func computeRelated(groups map[string][]string, withdrawnVulns map[string]struct
 			// - If A (valid) relates to B (withdrawn), B SHOULD list A.
 			continue
 		}
-		for _, relatedID := range group {
-			if _, ok := groups[relatedID]; !ok {
-				groups[relatedID] = []string{id}
-			} else if !slices.Contains(groups[relatedID], id) {
-				groups[relatedID] = append(groups[relatedID], id)
+		for _, related := range group {
+			if slices.Contains(groups[related], id) {
+				continue
 			}
+			groups[related] = append(groups[related], id)
+			slices.Sort(groups[related])
 		}
-	}
-
-	for _, group := range groups {
-		slices.Sort(group)
 	}
 
 	return groups
 }
 
-func updateVulnWithRelatedGroup(ch chan<- Update, vulnID string, group *models.RelatedGroup, relatedIDs []string) {
-	var update Update
-	if group == nil {
-		update = Update{
-			ID:        vulnID,
-			Timestamp: time.Now(),
-			Field:     updateFieldRelated,
-			Value:     relatedIDs,
+func updateRelated(ctx context.Context, cl *datastore.Client, id string, relatedIDs []string, ch chan<- Update) error {
+	if len(relatedIDs) == 0 {
+		logger.Info("Deleting related group due to no related vulns", slog.String("id", id))
+		if err := cl.Delete(ctx, datastore.NameKey("RelatedGroup", id, nil)); err != nil {
+			return err
 		}
-	} else if !slices.Equal(group.RelatedIDs, relatedIDs) {
-		update = Update{
-			ID:        vulnID,
-			Timestamp: group.Modified,
+		ch <- Update{
+			ID:        id,
+			Timestamp: time.Now().UTC(),
 			Field:     updateFieldRelated,
-			Value:     relatedIDs,
+			Value:     nil,
 		}
+
+		return nil
 	}
 
-	if update.ID != "" {
-		ch <- update
+	group := models.RelatedGroup{
+		RelatedIDs: relatedIDs,
+		Modified:   time.Now().UTC(),
 	}
+	if _, err := cl.Put(ctx, datastore.NameKey("RelatedGroup", id, nil), &group); err != nil {
+		return err
+	}
+	ch <- Update{
+		ID:        id,
+		Timestamp: group.Modified,
+		Field:     updateFieldRelated,
+		Value:     relatedIDs,
+	}
+
+	return nil
 }
 
 // ComputeRelatedGroups updates all related groups in the datastore by re-computing existing RelatedGroups
@@ -123,17 +129,19 @@ func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- U
 	for id, relatedIDs := range related {
 		g, ok := relatedGroups[id]
 		delete(relatedGroups, id)
-		var group *models.RelatedGroup
-		if ok {
-			group = &g
+		if !ok || !slices.Equal(g.RelatedIDs, relatedIDs) {
+			if err := updateRelated(ctx, cl, id, relatedIDs, ch); err != nil {
+				return fmt.Errorf("failed to update related group: %w", err)
+			}
 		}
-		updateVulnWithRelatedGroup(ch, id, group, relatedIDs)
 	}
 
 	// The remaining groups in relatedGroups are the ones that are no longer
 	// present in the vulns, so we delete them.
-	for id, group := range relatedGroups {
-		updateVulnWithRelatedGroup(ch, id, &group, nil)
+	for id := range relatedGroups {
+		if err := updateRelated(ctx, cl, id, nil, ch); err != nil {
+			return fmt.Errorf("failed to delete related group: %w", err)
+		}
 	}
 
 	return nil

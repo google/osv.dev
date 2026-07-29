@@ -16,3 +16,9 @@ output "pubsub_service_account_email" {
   value       = google_project_service_identity.pubsub.email
   description = "The email of the Pub/Sub service account"
 }
+
+output "oss_fuzz_subnet_self_link" {
+  value       = one(google_compute_subnetwork.oss_fuzz_subnet[*].self_link)
+  description = "The self link of the OSS-Fuzz subnetwork"
+}
+

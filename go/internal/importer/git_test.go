@@ -1,62 +1,35 @@
 package importer
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
+	"errors"
 	"io"
-	"os"
-	"path/filepath"
-	"sync"
 	"testing"
-	"time"
 
-	"github.com/go-git/go-git/v6"
-	"github.com/go-git/go-git/v6/plumbing/object"
+	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
 )
 
-func TestGitSourceRecord_Open(t *testing.T) {
-	// Setup a temporary git repo
-	dir := t.TempDir()
-	repo, err := git.PlainInit(dir, false)
-	if err != nil {
-		t.Fatalf("Failed to init git repo: %v", err)
-	}
-	wt, err := repo.Worktree()
-	if err != nil {
-		t.Fatalf("Failed to get worktree: %v", err)
-	}
+// Just some randomly SHA1 strings as commit hash
+const (
+	commitA = "aba9cc47a746783b86f16425e27afb1c044d47df"
+	commitB = "3eff134ce2a70d0af05040691ffb4c9cb763c980"
+)
 
-	// Create a file
-	filePath := filepath.Join(dir, "test.json")
-	if err := os.WriteFile(filePath, []byte("data"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if _, err := wt.Add("test.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	hash, err := wt.Commit("Init", &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  "Test",
-			Email: "test@example.com",
-			When:  time.Now(),
+func TestGitSourceRecord_Open(t *testing.T) {
+	mockClient := &mockGitterClient{
+		fileContentFunc: func(_ context.Context, _ *pb.FileContentRequest) (*pb.FileContentResponse, error) {
+			return &pb.FileContentResponse{
+				Content: []byte("data"),
+			}, nil
 		},
-	})
-	if err != nil {
-		t.Fatalf("Failed to commit: %v", err)
-	}
-	commit, err := repo.CommitObject(hash)
-	if err != nil {
-		t.Fatalf("Failed to get commit: %v", err)
 	}
 
 	record := gitSourceRecord{
-		repo: sharedRepo{
-			Repository: repo,
-			mu:         &sync.Mutex{},
-		},
-		commit: commit,
-		path:   "test.json",
+		client:  mockClient,
+		repoURL: "https://github.com/mock/test-repo.git",
+		commit:  commitA,
+		path:    "test.go",
 	}
 
 	reader, err := record.Open(t.Context())
@@ -74,60 +47,47 @@ func TestGitSourceRecord_Open(t *testing.T) {
 	}
 }
 
+func TestGitSourceRecord_Open_Error(t *testing.T) {
+	mockClient := &mockGitterClient{
+		fileContentFunc: func(_ context.Context, _ *pb.FileContentRequest) (*pb.FileContentResponse, error) {
+			return nil, errors.New("gitter fetch content error")
+		},
+	}
+
+	record := gitSourceRecord{
+		client:  mockClient,
+		repoURL: "https://github.com/mock/test-repo.git",
+		commit:  commitA,
+		path:    "test.go",
+	}
+
+	_, err := record.Open(t.Context())
+	if err == nil {
+		t.Fatalf("Expected error from Open, got nil")
+	}
+}
+
 func TestHandleImportGit(t *testing.T) {
-	// Setup a temporary git repo acting as the remote source
-	remoteDir := t.TempDir()
-	remoteRepo, err := git.PlainInit(remoteDir, false)
-	if err != nil {
-		t.Fatalf("Failed to init remote repo: %v", err)
+	mockClient := &mockGitterClient{
+		fileDiffsFunc: func(_ context.Context, _ *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
+			return &pb.FileDiffsResponse{
+				LatestCommit: commitB,
+				Changes: []*pb.FileChange{
+					{FromPath: "ignore-1.json", ToPath: "ignore-1.json"}, // should be ignored
+					{FromPath: "CVE-A.json", ToPath: "CVE-A.json"},       // modified
+					{FromPath: "", ToPath: "CVE-B.json"},                 // added
+				},
+			}, nil
+		},
 	}
-	remoteWt, err := remoteRepo.Worktree()
-	if err != nil {
-		t.Fatalf("Failed to get remote worktree: %v", err)
-	}
-
-	// Initial commit: ignored file and old file
-	if err := os.WriteFile(filepath.Join(remoteDir, "ignore.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if _, err := remoteWt.Add("ignore.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	commitA, _ := remoteWt.Commit("Initial", &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
-	})
-
-	// Second commit: Modify old file, add new file
-	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte(`{"modified": true}`), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-B.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	if _, err := remoteWt.Add("CVE-B.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	commitB, _ := remoteWt.Commit("Second", &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
-	})
 
 	mockStore := &mockSourceRepositoryStore{
 		updates: make(map[string]any),
 	}
-	workDir := t.TempDir()
 
 	config := Config{
 		SourceRepoStore: mockStore,
-		GitWorkDir:      workDir,
+		GitterClient:    mockClient,
 	}
 
 	sourceRepo := &models.SourceRepository{
@@ -136,13 +96,13 @@ func TestHandleImportGit(t *testing.T) {
 		Extension:      ".json",
 		IgnorePatterns: []string{"ignore.*"},
 		Git: &models.SourceRepoGit{
-			URL:              remoteDir,
-			LastSyncedCommit: commitA.String(),
+			URL:              "https://github.com/mock/test-repo.git",
+			LastSyncedCommit: commitA,
 		},
 	}
 
 	ch := make(chan WorkItem, 10)
-	err = handleImportGit(t.Context(), ch, config, sourceRepo)
+	err := handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}
@@ -153,8 +113,6 @@ func TestHandleImportGit(t *testing.T) {
 		items = append(items, r)
 	}
 
-	// We expect 2 records based on diff from commitA to commitB
-	// CVE-A.json was modified, CVE-B.json was added.
 	if len(items) != 2 {
 		t.Fatalf("Expected 2 records, got %d", len(items))
 	}
@@ -171,49 +129,30 @@ func TestHandleImportGit(t *testing.T) {
 		t.Errorf("Expected CVE-B.json to be processed")
 	}
 
-	// Verify the LastSyncedCommit was updated
-	if sourceRepo.Git.LastSyncedCommit != commitB.String() {
-		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB.String(), sourceRepo.Git.LastSyncedCommit)
+	if sourceRepo.Git.LastSyncedCommit != commitB {
+		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB, sourceRepo.Git.LastSyncedCommit)
 	}
 }
 
 func TestHandleImportGit_Deletion(t *testing.T) {
-	// Setup a temporary git repo acting as the remote source
-	remoteDir := t.TempDir()
-	remoteRepo, err := git.PlainInit(remoteDir, false)
-	if err != nil {
-		t.Fatalf("Failed to init remote repo: %v", err)
+	mockClient := &mockGitterClient{
+		fileDiffsFunc: func(_ context.Context, _ *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
+			return &pb.FileDiffsResponse{
+				LatestCommit: commitB,
+				Changes: []*pb.FileChange{
+					{FromPath: "CVE-A.json", ToPath: ""}, // deleted
+				},
+			}, nil
+		},
 	}
-	remoteWt, err := remoteRepo.Worktree()
-	if err != nil {
-		t.Fatalf("Failed to get remote worktree: %v", err)
-	}
-
-	// Initial commit: one file
-	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
-	}
-	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	commitA, _ := remoteWt.Commit("Initial", &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
-	})
-
-	// Second commit: Delete the file
-	_, _ = remoteWt.Remove("CVE-A.json")
-	commitB, _ := remoteWt.Commit("Second (Delete)", &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
-	})
 
 	mockStore := &mockSourceRepositoryStore{
 		updates: make(map[string]any),
 	}
-	workDir := t.TempDir()
 
 	config := Config{
 		SourceRepoStore: mockStore,
-		GitWorkDir:      workDir,
+		GitterClient:    mockClient,
 	}
 
 	sourceRepo := &models.SourceRepository{
@@ -221,13 +160,13 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 		Type:      models.SourceRepositoryTypeGit,
 		Extension: ".json",
 		Git: &models.SourceRepoGit{
-			URL:              remoteDir,
-			LastSyncedCommit: commitA.String(),
+			URL:              "https://github.com/mock/test-repo.git",
+			LastSyncedCommit: commitA,
 		},
 	}
 
 	ch := make(chan WorkItem, 10)
-	err = handleImportGit(t.Context(), ch, config, sourceRepo)
+	err := handleImportGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportGit failed: %v", err)
 	}
@@ -238,7 +177,6 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 		items = append(items, r)
 	}
 
-	// We expect 1 record: the deletion of CVE-A.json
 	if len(items) != 1 {
 		t.Fatalf("Expected 1 record, got %d", len(items))
 	}
@@ -250,45 +188,51 @@ func TestHandleImportGit_Deletion(t *testing.T) {
 		t.Errorf("Expected record to be marked as Action=Withdraw")
 	}
 
-	// Verify the LastSyncedCommit was updated
-	if sourceRepo.Git.LastSyncedCommit != commitB.String() {
-		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB.String(), sourceRepo.Git.LastSyncedCommit)
+	if sourceRepo.Git.LastSyncedCommit != commitB {
+		t.Errorf("Expected LastSyncedCommit %s, got %s", commitB, sourceRepo.Git.LastSyncedCommit)
 	}
 }
 
-func TestHandleReconcileGit_CleanUntracked(t *testing.T) {
-	// Setup a temporary git repo acting as the remote source
-	remoteDir := t.TempDir()
-	remoteRepo, err := git.PlainInit(remoteDir, false)
-	if err != nil {
-		t.Fatalf("Failed to init remote repo: %v", err)
-	}
-	remoteWt, err := remoteRepo.Worktree()
-	if err != nil {
-		t.Fatalf("Failed to get remote worktree: %v", err)
+func TestHandleImportGit_GitterError(t *testing.T) {
+	mockClient := &mockGitterClient{
+		fileDiffsFunc: func(_ context.Context, _ *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
+			return nil, errors.New("gitter diff error")
+		},
 	}
 
-	// Initial commit: tracked files in root and subdir
-	if err := os.WriteFile(filepath.Join(remoteDir, "CVE-A.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	config := Config{
+		SourceRepoStore: &mockSourceRepositoryStore{},
+		GitterClient:    mockClient,
 	}
-	if err := os.Mkdir(filepath.Join(remoteDir, "tracked_dir"), 0755); err != nil {
-		t.Fatalf("Failed to create tracked dir: %v", err)
+
+	sourceRepo := &models.SourceRepository{
+		Name:      "test-git-repo",
+		Type:      models.SourceRepositoryTypeGit,
+		Extension: ".json",
+		Git: &models.SourceRepoGit{
+			URL: "https://github.com/mock/test-repo.git",
+		},
 	}
-	if err := os.WriteFile(filepath.Join(remoteDir, "tracked_dir", "CVE-B.json"), []byte("{}"), 0600); err != nil {
-		t.Fatalf("Failed to write file in tracked dir: %v", err)
+
+	ch := make(chan WorkItem, 10)
+	err := handleImportGit(t.Context(), ch, config, sourceRepo)
+	if err == nil {
+		t.Fatalf("Expected error from handleImportGit, got nil")
 	}
-	if _, err := remoteWt.Add("CVE-A.json"); err != nil {
-		t.Fatalf("Failed to add file: %v", err)
-	}
-	if _, err := remoteWt.Add("tracked_dir/CVE-B.json"); err != nil {
-		t.Fatalf("Failed to add file in tracked dir: %v", err)
-	}
-	_, err = remoteWt.Commit("Initial", &git.CommitOptions{
-		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Now()},
-	})
-	if err != nil {
-		t.Fatalf("Failed to commit: %v", err)
+}
+
+func TestHandleReconcileGit(t *testing.T) {
+	mockClient := &mockGitterClient{
+		fileDiffsFunc: func(_ context.Context, _ *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
+			return &pb.FileDiffsResponse{
+				LatestCommit: commitB,
+				Changes: []*pb.FileChange{
+					{FromPath: "", ToPath: "CVE-A.json"},
+					{FromPath: "", ToPath: "tracked_dir/CVE-B.json"},
+					{FromPath: "", ToPath: "ignored.txt"},
+				},
+			}, nil
+		},
 	}
 
 	mockStore := &mockSourceRepositoryStore{
@@ -297,12 +241,11 @@ func TestHandleReconcileGit_CleanUntracked(t *testing.T) {
 	mockVulnStore := &mockVulnerabilityStore{
 		Entries: make(map[string][]*models.VulnSourceRef),
 	}
-	workDir := t.TempDir()
 
 	config := Config{
 		SourceRepoStore:    mockStore,
 		VulnerabilityStore: mockVulnStore,
-		GitWorkDir:         workDir,
+		GitterClient:       mockClient,
 	}
 
 	sourceRepo := &models.SourceRepository{
@@ -310,100 +253,64 @@ func TestHandleReconcileGit_CleanUntracked(t *testing.T) {
 		Type:      models.SourceRepositoryTypeGit,
 		Extension: ".json",
 		Git: &models.SourceRepoGit{
-			URL: remoteDir,
+			URL: "https://github.com/mock/test-repo.git",
 		},
 	}
 
-	// 1. Run reconcile first time to clone the repo
 	ch := make(chan WorkItem, 10)
-	err = handleReconcileGit(t.Context(), ch, config, sourceRepo)
+	err := handleReconcileGit(t.Context(), ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleReconcileGit failed: %v", err)
 	}
 	close(ch)
 
-	// Consume channel to avoid blocking
-	for range ch {
-		continue
+	items := make([]WorkItem, 0, 10)
+	for r := range ch {
+		items = append(items, r)
 	}
 
-	// Calculate local clone path
-	sha := sha256.Sum256([]byte(sourceRepo.Git.URL))
-	localCloneDir := filepath.Join(workDir, hex.EncodeToString(sha[:]))
-
-	// Verify the local clone exists and has the tracked files
-	trackedFilePathA := filepath.Join(localCloneDir, "CVE-A.json")
-	if _, err := os.Stat(trackedFilePathA); err != nil {
-		t.Fatalf("Expected tracked file A to exist at %s, got error: %v", trackedFilePathA, err)
-	}
-	trackedFilePathB := filepath.Join(localCloneDir, "tracked_dir", "CVE-B.json")
-	if _, err := os.Stat(trackedFilePathB); err != nil {
-		t.Fatalf("Expected tracked file B to exist at %s, got error: %v", trackedFilePathB, err)
+	if len(items) != 2 {
+		t.Fatalf("Expected 2 records to be reconciled, got %d", len(items))
 	}
 
-	// 2. Create untracked files/dirs in the local clone
-	// 2a. Untracked file in root
-	untrackedRootFile := filepath.Join(localCloneDir, "untracked.json")
-	if err := os.WriteFile(untrackedRootFile, []byte("untracked"), 0600); err != nil {
-		t.Fatalf("Failed to write untracked file in root: %v", err)
+	paths := make(map[string]bool)
+	for _, it := range items {
+		paths[it.SourcePath] = true
 	}
 
-	// 2b. Untracked file in tracked subdir
-	untrackedInTrackedDir := filepath.Join(localCloneDir, "tracked_dir", "untracked_in_tracked.json")
-	if err := os.WriteFile(untrackedInTrackedDir, []byte("untracked"), 0600); err != nil {
-		t.Fatalf("Failed to write untracked file in tracked dir: %v", err)
+	if !paths["CVE-A.json"] {
+		t.Errorf("Expected CVE-A.json to be reconciled")
+	}
+	if !paths["tracked_dir/CVE-B.json"] {
+		t.Errorf("Expected tracked_dir/CVE-B.json to be reconciled")
+	}
+}
+
+func TestHandleReconcileGit_GitterError(t *testing.T) {
+	mockClient := &mockGitterClient{
+		fileDiffsFunc: func(_ context.Context, _ *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
+			return nil, errors.New("gitter reconcile error")
+		},
 	}
 
-	// 2c. Untracked subdir in tracked subdir (with a file)
-	untrackedDirInTrackedDir := filepath.Join(localCloneDir, "tracked_dir", "untracked_dir_in_tracked")
-	if err := os.Mkdir(untrackedDirInTrackedDir, 0755); err != nil {
-		t.Fatalf("Failed to create untracked dir in tracked dir: %v", err)
-	}
-	fileInUntrackedDirInTrackedDir := filepath.Join(untrackedDirInTrackedDir, "file.json")
-	if err := os.WriteFile(fileInUntrackedDirInTrackedDir, []byte("untracked"), 0600); err != nil {
-		t.Fatalf("Failed to write file in untracked dir in tracked dir: %v", err)
+	config := Config{
+		SourceRepoStore:    &mockSourceRepositoryStore{},
+		VulnerabilityStore: &mockVulnerabilityStore{},
+		GitterClient:       mockClient,
 	}
 
-	// 2d. Untracked subdir in root (with a file)
-	untrackedRootDir := filepath.Join(localCloneDir, "untracked_dir")
-	if err := os.Mkdir(untrackedRootDir, 0755); err != nil {
-		t.Fatalf("Failed to create untracked dir in root: %v", err)
-	}
-	fileInUntrackedRootDir := filepath.Join(untrackedRootDir, "file.json")
-	if err := os.WriteFile(fileInUntrackedRootDir, []byte("untracked"), 0600); err != nil {
-		t.Fatalf("Failed to write file in untracked root dir: %v", err)
-	}
-
-	// 3. Run reconcile again. It should clean up untracked files/dirs.
-	ch2 := make(chan WorkItem, 10)
-	err = handleReconcileGit(t.Context(), ch2, config, sourceRepo)
-	if err != nil {
-		t.Fatalf("handleReconcileGit failed second time: %v", err)
-	}
-	close(ch2)
-	for range ch2 {
-		continue
+	sourceRepo := &models.SourceRepository{
+		Name:      "test-git-repo",
+		Type:      models.SourceRepositoryTypeGit,
+		Extension: ".json",
+		Git: &models.SourceRepoGit{
+			URL: "https://github.com/mock/test-repo.git",
+		},
 	}
 
-	// 4. Verify all untracked files and dirs are GONE
-	if _, err := os.Stat(untrackedRootFile); !os.IsNotExist(err) {
-		t.Errorf("Expected untracked root file to be deleted, but it still exists (or got error: %v)", err)
-	}
-	if _, err := os.Stat(untrackedInTrackedDir); !os.IsNotExist(err) {
-		t.Errorf("Expected untracked file in tracked dir to be deleted, but it still exists (or got error: %v)", err)
-	}
-	if _, err := os.Stat(untrackedDirInTrackedDir); !os.IsNotExist(err) {
-		t.Errorf("Expected untracked dir in tracked dir to be deleted, but it still exists (or got error: %v)", err)
-	}
-	if _, err := os.Stat(untrackedRootDir); !os.IsNotExist(err) {
-		t.Errorf("Expected untracked root dir to be deleted, but it still exists (or got error: %v)", err)
-	}
-
-	// Verify tracked files still exist
-	if _, err := os.Stat(trackedFilePathA); err != nil {
-		t.Errorf("Expected tracked file A to still exist, got error: %v", err)
-	}
-	if _, err := os.Stat(trackedFilePathB); err != nil {
-		t.Errorf("Expected tracked file B to still exist, got error: %v", err)
+	ch := make(chan WorkItem, 10)
+	err := handleReconcileGit(t.Context(), ch, config, sourceRepo)
+	if err == nil {
+		t.Fatalf("Expected error from handleReconcileGit, got nil")
 	}
 }

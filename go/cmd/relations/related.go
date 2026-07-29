@@ -45,7 +45,7 @@ func computeRelated(groups map[string][]string, withdrawnVulns map[string]struct
 	return groups
 }
 
-func updateVulnWithRelatedGroup(ch chan<- Update, vulnID string, group *models.RelatedGroup, relatedIDs []string) error {
+func updateVulnWithRelatedGroup(ch chan<- Update, vulnID string, group *models.RelatedGroup, relatedIDs []string) {
 	var update Update
 	if group == nil {
 		update = Update{
@@ -66,8 +66,6 @@ func updateVulnWithRelatedGroup(ch chan<- Update, vulnID string, group *models.R
 	if update.ID != "" {
 		ch <- update
 	}
-
-	return nil
 }
 
 // ComputeRelatedGroups updates all related groups in the datastore by re-computing existing RelatedGroups
@@ -129,17 +127,13 @@ func ComputeRelatedGroups(ctx context.Context, cl *datastore.Client, ch chan<- U
 		if ok {
 			group = &g
 		}
-		if err := updateVulnWithRelatedGroup(ch, id, group, relatedIDs); err != nil {
-			return fmt.Errorf("failed to update related group: %w", err)
-		}
+		updateVulnWithRelatedGroup(ch, id, group, relatedIDs)
 	}
 
 	// The remaining groups in relatedGroups are the ones that are no longer
 	// present in the vulns, so we delete them.
 	for id, group := range relatedGroups {
-		if err := updateVulnWithRelatedGroup(ch, id, &group, nil); err != nil {
-			return fmt.Errorf("failed to delete related group: %w", err)
-		}
+		updateVulnWithRelatedGroup(ch, id, &group, nil)
 	}
 
 	return nil

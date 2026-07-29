@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/models"
 )
@@ -205,20 +206,20 @@ func computeUpstreamHierarchy(ctx context.Context, cl *datastore.Client, targetU
 
 // ComputeUpstreamGroups updates all upstream groups in the datastore by re-computing existing UpstreamGroups
 // and creating new UpstreamGroups across key shards.
-func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []KeyShard) error {
+func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []sharding.KeyShard) error {
 	if len(keyShards) == 0 {
-		keyShards = []KeyShard{{Start: "", End: ""}}
+		keyShards = []sharding.KeyShard{{Start: "", End: ""}}
 	}
 
 	var updatedGroups []*models.UpstreamGroup
 	logger.Info("Retrieving vulns for upstream computation across key shards...")
 	rawUpstreams := make(map[string][]string)
-	err := runShardedQuery(
+	err := sharding.RunShardedQuery(
 		ctx, cl, keyShards,
-		func(shard KeyShard) *datastore.Query {
+		func(shard sharding.KeyShard) *datastore.Query {
 			query := datastore.NewQuery("Vulnerability").FilterField("upstream_raw", ">", "")
 
-			return applyNameKeyFilter(query, "Vulnerability", shard)
+			return sharding.ApplyNameKeyFilter(query, "Vulnerability", shard)
 		},
 		func(key *datastore.Key, vuln *models.Vulnerability) {
 			upstream := slices.Clone(vuln.UpstreamRaw)
@@ -233,9 +234,9 @@ func ComputeUpstreamGroups(ctx context.Context, cl *datastore.Client, ch chan<- 
 
 	logger.Info("Retrieving upstream groups across key shards...")
 	upstreamGroups := make(map[string]*models.UpstreamGroup)
-	err = runShardedQuery(
+	err = sharding.RunShardedQuery(
 		ctx, cl, keyShards,
-		func(shard KeyShard) *datastore.Query {
+		func(shard sharding.KeyShard) *datastore.Query {
 			query := datastore.NewQuery("UpstreamGroup")
 			if shard.Start != "" {
 				query = query.FilterField("db_id", ">=", shard.Start)

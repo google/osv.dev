@@ -27,6 +27,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"go.opentelemetry.io/otel"
@@ -45,7 +46,7 @@ func main() {
 	flag.StringVar(&breakdownPrefixesStr, "breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel Datastore key sharding.")
 	flag.Parse()
 
-	keyShards := ParseBreakdownPrefixes(breakdownPrefixesStr)
+	keyShards := sharding.ParseBreakdownPrefixes(breakdownPrefixesStr)
 
 	// Set up logging / other clients
 	logger.InitGlobalLogger()

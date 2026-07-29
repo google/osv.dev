@@ -17,9 +17,15 @@ package sharding
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
+	"cloud.google.com/go/datastore"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/api/iterator"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/syntax"
 )
@@ -78,4 +84,75 @@ func ParseBreakdownPrefixes(str string) []KeyShard {
 	shards = append(shards, KeyShard{Start: prefixes[len(prefixes)-1], End: ""})
 
 	return shards
+}
+
+// QueryFactory constructs a Datastore query scoped to a specific KeyShard.
+type QueryFactory func(shard KeyShard) *datastore.Query
+
+// ItemHandler processes each retrieved Datastore entity E and its key sequentially.
+type ItemHandler[E any] func(key *datastore.Key, entity *E)
+
+type entityKeyPair[E any] struct {
+	key    *datastore.Key
+	entity E
+}
+
+// RunShardedQuery executes a Datastore query concurrently across a set of key shards using an errgroup,
+// streaming retrieved entities over a channel and passing them to the handle callback function sequentially.
+func RunShardedQuery[E any](
+	ctx context.Context,
+	cl *datastore.Client,
+	keyShards []KeyShard,
+	buildQuery QueryFactory,
+	handle ItemHandler[E],
+) error {
+	g, ctx := errgroup.WithContext(ctx)
+	resultsChan := make(chan entityKeyPair[E], 1000)
+
+	for _, shard := range keyShards {
+		g.Go(func() error {
+			query := buildQuery(shard)
+			it := cl.Run(ctx, query)
+			for {
+				var entity E
+				key, err := it.Next(&entity)
+				if errors.Is(err, iterator.Done) {
+					break
+				}
+				if err != nil {
+					return fmt.Errorf("failed to iterate shard [%s, %s): %w", shard.Start, shard.End, err)
+				}
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case resultsChan <- entityKeyPair[E]{key: key, entity: entity}:
+				}
+			}
+
+			return nil
+		})
+	}
+
+	go func() {
+		_ = g.Wait()
+		close(resultsChan)
+	}()
+
+	for pair := range resultsChan {
+		handle(pair.key, &pair.entity)
+	}
+
+	return g.Wait()
+}
+
+// ApplyNameKeyFilter applies a key range filter [shard.Start, shard.End) to a Datastore query using __key__.
+func ApplyNameKeyFilter(query *datastore.Query, kind string, shard KeyShard) *datastore.Query {
+	if shard.Start != "" {
+		query = query.FilterField("__key__", ">=", datastore.NameKey(kind, shard.Start, nil))
+	}
+	if shard.End != "" {
+		query = query.FilterField("__key__", "<", datastore.NameKey(kind, shard.End, nil))
+	}
+
+	return query
 }

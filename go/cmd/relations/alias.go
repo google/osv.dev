@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/models"
 	"google.golang.org/api/iterator"
@@ -148,9 +149,9 @@ func updateVulnWithAliasGroup(ch chan<- Update, vulnID string, aliasGroup *model
 
 // ComputeAliasGroups updates all alias groups in the datastore by re-computing existing AliasGroups
 // and creating new AliasGroups for un-computed vulns across key shards.
-func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []KeyShard) error {
+func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Update, keyShards []sharding.KeyShard) error {
 	if len(keyShards) == 0 {
-		keyShards = []KeyShard{{Start: "", End: ""}}
+		keyShards = []sharding.KeyShard{{Start: "", End: ""}}
 	}
 	query := datastore.NewQuery("AliasAllowListEntry")
 	var allowListEntries []models.AliasAllowListEntry
@@ -173,12 +174,12 @@ func ComputeAliasGroups(ctx context.Context, cl *datastore.Client, ch chan<- Upd
 
 	logger.Info("Retrieving vulns for alias computation across key shards...")
 	vulnAliases := make(map[string]map[string]struct{})
-	err := runShardedQuery(
+	err := sharding.RunShardedQuery(
 		ctx, cl, keyShards,
-		func(shard KeyShard) *datastore.Query {
+		func(shard sharding.KeyShard) *datastore.Query {
 			query := datastore.NewQuery("Vulnerability").FilterField("alias_raw", ">", "")
 
-			return applyNameKeyFilter(query, "Vulnerability", shard)
+			return sharding.ApplyNameKeyFilter(query, "Vulnerability", shard)
 		},
 		func(key *datastore.Key, vuln *models.Vulnerability) {
 			vulnID := key.Name

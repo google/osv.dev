@@ -14,6 +14,8 @@ spec:
               value: private-osv
             - name: WORKER_TASK_TOPIC
               value: "osv-work"
+            - name: DEFAULT_TASK_POOL
+              value: "default"
             image: importer
             args:
               - --delete

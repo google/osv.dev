@@ -20,7 +20,7 @@ resource "google_pubsub_topic" "failed_tasks" {
 
 resource "google_pubsub_subscription" "default_work" {
   project                    = var.project_id
-  name                       = "default-pool"
+  name                       = "default"
   topic                      = google_pubsub_topic.tasks.id
   message_retention_duration = "604800s"
   ack_deadline_seconds       = 600

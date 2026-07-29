@@ -9,11 +9,12 @@ import (
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 )
 
+// Map the HTTP status codes into Gitter-specific errors
 var (
 	ErrRepoInaccessible = errors.New("repository is inaccessible (forbidden)")
-	ErrRepoNotFound     = errors.New("repository could not be found")
+	ErrRepoNotFound     = errors.New("repository not found")
 	ErrInvalidInput     = errors.New("invalid request payload or query parameters")
-	ErrInternalService  = errors.New("gitter service encountered an internal failure")
+	ErrInternalService  = errors.New("gitter internal server error")
 )
 
 // Client exposes the capability contract of Gitter.
@@ -27,10 +28,10 @@ type Client interface {
 	// GetTags returns the full list of tags/refs mapped to their commit hashes.
 	GetTags(ctx context.Context, repoURL string) (*pb.TagsResponse, error)
 
-	// GetAffectedCommits resolves equivalent/affected scope ranges (cherry-picks).
+	// GetAffectedCommits resolves and lists affected commits based on introduced/fixed/last_affected commit ranges.
 	GetAffectedCommits(ctx context.Context, req *pb.AffectedCommitsRequest) (*pb.AffectedCommitsResponse, error)
 
-	// GetFileDiffs retrieves the tree changes since the last synced commit.
+	// GetFileDiffs retrieves the file changes since given last synced commit.
 	GetFileDiffs(ctx context.Context, req *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error)
 
 	// GetFileContent retrieves the raw, uncompressed content of a single file path.

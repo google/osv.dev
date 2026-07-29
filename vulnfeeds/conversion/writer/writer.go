@@ -39,8 +39,13 @@ const (
 // the vulnerability payload is unchanged.
 var ErrUploadSkipped = errors.New("upload skipped")
 
+// ErrWithdrawnSkipped indicates that an upload/write was skipped because
+// the vulnerability is withdrawn and does not already exist.
+var ErrWithdrawnSkipped = errors.New("withdrawn skipped")
+
 // writeToDisk writes the vulnerability to a local file.
 // It returns an error if the file could not be written.
+// Writes out withdrawn records regardless of whether they don't already exist.
 func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) error {
 	filename := v.GetId() + ".json"
 	filePath := path.Join(outputPrefix, filename)
@@ -94,7 +99,11 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash st
 		if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
 			return ErrUploadSkipped
 		}
-	} else if !errors.Is(err, storage.ErrObjectNotExist) {
+	} else if errors.Is(err, storage.ErrObjectNotExist) {
+		if v.Withdrawn != nil {
+			return ErrWithdrawnSkipped
+		}
+	} else {
 		return fmt.Errorf("failed to get object attributes for %s: %w", vulnID, err)
 	}
 
@@ -173,7 +182,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, gcsHelper *gcs.Helper, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
-		if len(v.GetAffected()) == 0 {
+		if len(v.GetAffected()) == 0 && v.Withdrawn == nil {
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue
 		}
@@ -229,6 +238,8 @@ func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, o
 			}
 		} else if errors.Is(writeErr, ErrUploadSkipped) {
 			logger.Info("Skipping GCS upload, hash matches", slog.String("id", vulnID))
+		} else if errors.Is(writeErr, ErrWithdrawnSkipped) {
+			logger.Info("Skipping withdrawn record, does not exist", slog.String("id", vulnID))
 		} else {
 			if outBkt == nil && gcsHelper == nil {
 				logger.Error("Failed to write to disk", slog.String("id", vulnID), slog.Any("err", writeErr))
@@ -396,13 +407,14 @@ func UploadVulnIfChangedAsync(gcsHelper *gcs.Helper, prefix string, vuln *osvsch
 	}
 
 	objectName := path.Join(prefix, vuln.GetId()+".json")
-	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json")
+	skipIfNotExist := vuln.Withdrawn != nil
+	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json", skipIfNotExist)
 
 	return nil
 }
 
 // UploadMetricsToGCSAsync marshals ConversionMetrics to JSON and schedules it for upload via the Helper pool.
-func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
+func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics, skipIfNotExist bool) error {
 	if metrics == nil || cveID == "" {
 		return errors.New("invalid metrics or CVE ID provided")
 	}
@@ -415,7 +427,7 @@ func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.
 	objectName := path.Join(prefix, string(cveID)+".metrics.json")
 	reader := bytes.NewReader(data)
 
-	gcsHelper.Upload(objectName, reader, "", "application/json")
+	gcsHelper.Upload(objectName, reader, "", "application/json", skipIfNotExist)
 
 	return nil
 }

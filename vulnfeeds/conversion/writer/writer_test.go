@@ -424,7 +424,7 @@ func TestUploadMetricsToGCSAsync(t *testing.T) {
 		CNA:   "nvd",
 	}
 
-	err = UploadMetricsToGCSAsync(gcsHelper, "nvd-prefix", "CVE-2023-9999", metrics)
+	err = UploadMetricsToGCSAsync(gcsHelper, "nvd-prefix", "CVE-2023-9999", metrics, false)
 	if err != nil {
 		t.Fatalf("Expected UploadMetricsToGCSAsync to succeed, got %v", err)
 	}

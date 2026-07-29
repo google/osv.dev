@@ -131,7 +131,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			continue
 		}
 
-		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || cve.Metadata.State != "PUBLISHED" {
+		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || (cve.Metadata.State != "PUBLISHED" && cve.Metadata.State != "REJECTED") {
 			continue
 		}
 		cveID := cve.Metadata.CVEID
@@ -155,7 +155,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 
-				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics); err != nil {
+				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics, vuln.Withdrawn != nil); err != nil {
 					logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 			}

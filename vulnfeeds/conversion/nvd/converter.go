@@ -29,6 +29,16 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	refs := c.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
 
+	if cve.VulnStatus != nil && *cve.VulnStatus == "Rejected" {
+		metrics.SetOutcome(models.Rejected)
+		v := vulns.FromNVDCVE(cve.ID, cve)
+		databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
+		if err == nil {
+			v.DatabaseSpecific = databaseSpecific
+		}
+		return v, metrics, models.Rejected
+	}
+
 	if len(CPEs) > 0 {
 		_, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		if err != nil {

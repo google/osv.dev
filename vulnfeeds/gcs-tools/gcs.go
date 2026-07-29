@@ -34,10 +34,11 @@ type Helper struct {
 }
 
 type uploadMsg struct {
-	objectName  string
-	data        io.Reader
-	contentType string
-	hash        string // if hash is empty, always upload
+	objectName     string
+	data           io.Reader
+	contentType    string
+	hash           string // if hash is empty, always upload
+	skipIfNotExist bool
 }
 
 func InitUploadPool(ctx context.Context, workers int, bktName string) (*Helper, error) {
@@ -67,14 +68,19 @@ func bucketWorker(ctx context.Context, gcsHelper *Helper) {
 			if closer, ok := msg.data.(io.Closer); ok {
 				defer closer.Close()
 			}
-			if msg.hash != "" {
+			if msg.hash != "" || msg.skipIfNotExist {
 				attrs, err := gcsHelper.bkt.Object(msg.objectName).Attrs(ctx)
 				if err == nil {
-					if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == msg.hash {
+					if msg.hash != "" && attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == msg.hash {
 						logger.Info("Skipping GCS upload, hash matches", slog.String("id", msg.objectName))
 						return
 					}
-				} else if !errors.Is(err, storage.ErrObjectNotExist) {
+				} else if errors.Is(err, storage.ErrObjectNotExist) {
+					if msg.skipIfNotExist {
+						logger.Info("Skipping GCS upload, object does not exist and skipIfNotExist is true", slog.String("id", msg.objectName))
+						return
+					}
+				} else {
 					logger.Info("Failed to get object attributes", slog.String("object", msg.objectName), slog.String("error", err.Error()))
 					return
 				}
@@ -93,15 +99,16 @@ func bucketWorker(ctx context.Context, gcsHelper *Helper) {
 	}
 }
 
-func (g *Helper) Upload(objectName string, data io.Reader, hash string, contentType string) {
+func (g *Helper) Upload(objectName string, data io.Reader, hash string, contentType string, skipIfNotExist bool) {
 	if len(g.bus) == cap(g.bus) {
 		g.timesBlocked.Add(1)
 	}
 	g.bus <- &uploadMsg{
-		objectName:  objectName,
-		data:        data,
-		hash:        hash,
-		contentType: contentType,
+		objectName:     objectName,
+		data:           data,
+		hash:           hash,
+		contentType:    contentType,
+		skipIfNotExist: skipIfNotExist,
 	}
 }
 

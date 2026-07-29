@@ -73,3 +73,10 @@ variable "extra_work_pools" {
   description = "Additional Pub/Sub worker pool subscriptions to create"
   default     = []
 }
+
+variable "create_oss_fuzz_subnet" {
+  type        = bool
+  description = "Whether to create the OSS-Fuzz subnetwork and add it to NAT."
+  default     = false
+}
+

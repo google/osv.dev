@@ -9,12 +9,10 @@ spec:
       - name: recoverer
         env:
           - name: GOOGLE_CLOUD_PROJECT
-            value: oss-vdb-test
+            value: private-osv
           - name: OSV_VULNERABILITIES_BUCKET
-            value: osv-test-vulnerabilities-private
-          - name: DATASTORE_DATABASE_ID
-            value: "datastore-private"
+            value: private-osv-vulnerabilities
           - name: FAILED_TASKS_SUBSCRIPTION
-            value: "private-recovery"
+            value: "recovery"
           - name: WORKER_TASK_TOPIC
-            value: "private-tasks"
+            value: "osv-work"

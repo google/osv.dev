@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "go"
+		},
+		{
+			"path": "vulnfeeds"
+		},
+		{
+			"path": "go/cmd/tools/reimport-tui"
+		},
+	    {
+	      "path": "gcp/api"
+	    },
+	    {
+	      "path": "gcp/website"
+	    },
+	    {
+	      "path": "gcp/workers"
+	    }
+	],
+	"settings": {}
+}

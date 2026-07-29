@@ -131,6 +131,10 @@ resource "google_cloud_run_service" "api" {
     spec {
       containers {
         image = data.google_container_registry_image.api.image_url
+        ports {
+          name           = "h2c"
+          container_port = 8080
+        }
         env {
           name  = "ESPv2_ARGS"
           value = "^++^--transcoding_preserve_proto_field_names++--envoy_connection_buffer_limit_bytes=104857600++--underscores_in_headers++--cors_preset=basic++--cors_allow_methods=GET,POST,OPTIONS"

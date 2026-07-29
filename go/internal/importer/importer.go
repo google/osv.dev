@@ -179,6 +179,15 @@ var reconcileSkipSources = []string{
 	"cve-osv",
 }
 
+// reconcileWarningAsInfoSources is a list of source names to log as INFO instead of WARNING during reconciliation.
+var reconcileWarningAsInfoSources = []string{
+	"minimos",
+}
+
+func reconcileWarningsAsInfo(source string) bool {
+	return slices.Contains(reconcileWarningAsInfoSources, source)
+}
+
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
 // This needs to be some time as importer detecting the change to worker importing it is not instant.
 const ReconcileLeniencyDuration = time.Hour * 6
@@ -325,9 +334,15 @@ func checkReconcile(
 
 	dbMod, exists := dbRecords[path]
 	if !exists {
-		logger.WarnContext(ctx, "Found missing vulnerability in database during reconcile",
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path))
+		if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
+			logger.InfoContext(ctx, "Found missing vulnerability in database during reconcile",
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+		} else {
+			logger.WarnContext(ctx, "Found missing vulnerability in database during reconcile",
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+		}
 		// Trigger a standard import
 		recordTemplate.Action = ActionImport
 		select {
@@ -351,11 +366,19 @@ func checkReconcile(
 		}
 
 		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
-			logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
-				slog.String("source", recordTemplate.SourceRepository),
-				slog.String("path", path),
-				slog.Time("database_modified", dbMod),
-				slog.Time("upstream_modified", modified))
+			if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
+				logger.InfoContext(ctx, "Found outdated vulnerability in database during reconcile",
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path),
+					slog.Time("database_modified", dbMod),
+					slog.Time("upstream_modified", modified))
+			} else {
+				logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path),
+					slog.Time("database_modified", dbMod),
+					slog.Time("upstream_modified", modified))
+			}
 
 			// We found that it is outdated, trigger a standard import
 			recordTemplate.Action = ActionImport
@@ -600,11 +623,19 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 					return
 				}
 
-				logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
-					slog.String("source", sourceRepoName),
-					slog.String("path", sourcePath),
-					slog.Time("database_modified", dbModified),
-					slog.Time("upstream_modified", modified))
+				if reconcileWarningsAsInfo(sourceRepoName) {
+					logger.InfoContext(ctx, "Found outdated vulnerability in database during reconcile",
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourcePath),
+						slog.Time("database_modified", dbModified),
+						slog.Time("upstream_modified", modified))
+				} else {
+					logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourcePath),
+						slog.Time("database_modified", dbModified),
+						slog.Time("upstream_modified", modified))
+				}
 			default:
 			}
 		}

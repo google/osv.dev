@@ -1,6 +1,8 @@
 package cve5
 
 import (
+	"slices"
+
 	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
@@ -14,7 +16,6 @@ type PatchstackVersionExtractor struct {
 
 var _ VersionExtractor = &PatchstackVersionExtractor{}
 
-
 // ExtractVersions for PatchstackVersionExtractor.
 func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
 	// 1. Run default extraction first
@@ -23,7 +24,30 @@ func (p *PatchstackVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.V
 	// 2. Extract slug and determine ecosystem using shared helper
 	slug, ecosystem := extractWordPressSlugAndEcosystem(cve, v)
 
-	if slug == "" {
+	if slug != "" {
+		var baseURL string
+		switch ecosystem {
+		case "WordPress:Plugin":
+			baseURL = "https://wordpress.org/plugins/"
+		case "WordPress:Theme":
+			baseURL = "https://wordpress.org/themes/"
+		}
+
+		if baseURL != "" {
+			wpURL := baseURL + slug + "/"
+			// Check if already exists to avoid duplicates
+			exists := slices.ContainsFunc(v.References, func(ref *osvschema.Reference) bool {
+				return ref.GetUrl() == wpURL
+			})
+			if !exists {
+				v.References = append(v.References, &osvschema.Reference{
+					Type: osvschema.Reference_WEB,
+					Url:  wpURL,
+				})
+				metrics.AddNote("Added wordpress.org reference link: %s", wpURL)
+			}
+		}
+	} else {
 		metrics.AddNote("Could not extract slug for Patchstack record")
 		return
 	}

@@ -45,9 +45,10 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 	// 3. Ecosystem Extraction from CollectionURL
 	if len(cve.Containers.CNA.Affected) > 0 {
 		aff := cve.Containers.CNA.Affected[0]
-		if aff.CollectionURL == "https://wordpress.org/themes" {
+		switch aff.CollectionURL {
+		case "https://wordpress.org/themes":
 			ecosystem = "WordPress:Theme"
-		} else if aff.CollectionURL == "https://wordpress.org/plugins" {
+		case "https://wordpress.org/plugins":
 			ecosystem = "WordPress:Plugin"
 		}
 	}

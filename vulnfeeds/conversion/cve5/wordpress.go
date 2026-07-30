@@ -2,10 +2,13 @@ package cve5
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 
+	c "github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 var (
@@ -96,22 +99,22 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 	}
 
 	var urlSlug string
-	if tracSlug != "" {
-		urlSlug = tracSlug
-	} else if svnSlug != "" {
-		urlSlug = svnSlug
-	} else if wordfenceSlug != "" {
-		urlSlug = wordfenceSlug
-	} else if wpOrgPluginSlug != "" {
-		urlSlug = wpOrgPluginSlug
-	} else if wpOrgThemeSlug != "" {
-		urlSlug = wpOrgThemeSlug
-	} else if patchstackPluginSlug != "" {
-		urlSlug = patchstackPluginSlug
-	} else if patchstackThemeSlug != "" {
-		urlSlug = patchstackThemeSlug
-	} else if patchstackVulnSlug != "" {
-		urlSlug = patchstackVulnSlug
+	slugsToTry := []string{
+		tracSlug,
+		svnSlug,
+		wordfenceSlug,
+		wpOrgPluginSlug,
+		wpOrgThemeSlug,
+		patchstackPluginSlug,
+		patchstackThemeSlug,
+		patchstackVulnSlug,
+	}
+
+	for _, s := range slugsToTry {
+		if s != "" {
+			urlSlug = s
+			break
+		}
 	}
 
 	if slug == "" && urlSlug != "" {
@@ -146,3 +149,196 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 
 	return slug, ecosystem
 }
+
+// WordpressHandler defines hooks for CNA-specific logic.
+type WordpressHandler interface {
+	PreExtract(cve *models.CVE5)
+	PostExtractDefault(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string)
+}
+
+// WordpressExtractor handles version extraction for WordPress CVEs.
+type WordpressExtractor struct {
+	DefaultVersionExtractor
+	Handler WordpressHandler
+}
+
+var _ VersionExtractor = &WordpressExtractor{}
+
+func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string) {
+	if w.Handler != nil {
+		w.Handler.PreExtract(&cve)
+	}
+
+	// 1. Run default extraction first
+	w.DefaultVersionExtractor.ExtractVersions(cve, v, metrics, repos)
+
+	// 2. Extract slug and determine ecosystem using shared helper
+	slug, ecosystem := extractWordPressSlugAndEcosystem(cve, v)
+
+	if w.Handler != nil {
+		w.Handler.PostExtractDefault(cve, v, metrics, slug, ecosystem)
+	}
+
+	// 3. Update affected packages with correct ecosystem and slug
+	if len(v.Affected) > 0 {
+		for _, aff := range v.Affected {
+			isGit := false
+			for _, r := range aff.Ranges {
+				if r.Type == osvschema.Range_GIT {
+					isGit = true
+					break
+				}
+			}
+			if isGit {
+				aff.Package = nil // Do not put package info on GIT ranges
+				continue
+			}
+
+			if slug == "" {
+				continue // Skip enriching if we have no slug
+			}
+
+			if aff.Package == nil {
+				aff.Package = &osvschema.Package{
+					Ecosystem: ecosystem,
+					Name:      slug,
+				}
+			} else {
+				// Update ecosystem if it was generic
+				if aff.Package.Ecosystem == "WordPress" || aff.Package.Ecosystem == "" {
+					aff.Package.Ecosystem = ecosystem
+				}
+				if aff.Package.Name == "" {
+					aff.Package.Name = slug
+				}
+			}
+		}
+	}
+
+	// 4. Unified Fallback Strategy
+	if len(v.Affected) == 0 {
+		if slug == "" {
+			metrics.AddNote("Failed to extract versions via default, and no WordPress slug found to attempt fallback")
+			return
+		}
+
+		metrics.AddNote("Attempting to generate ECOSYSTEM ranges for WordPress")
+
+		gotVersions := false
+		var allRanges []*osvschema.Range
+
+		// Fallback 1: CNA Affected
+		for _, cveAff := range cve.Containers.CNA.Affected {
+			versionRanges, _ := w.FindNormalAffectedRanges(cveAff, metrics)
+			for _, r := range versionRanges {
+				r.Range.Type = osvschema.Range_ECOSYSTEM
+				allRanges = append(allRanges, r.Range)
+			}
+		}
+
+		if len(allRanges) > 0 {
+			gotVersions = true
+			metrics.AddSource(models.VersionSourceAffected)
+		}
+
+		// Fallback 2: CPE
+		if !gotVersions {
+			versionRanges, _ := cpeVersionExtraction(cve, metrics)
+			for _, r := range versionRanges {
+				r.Range.Type = osvschema.Range_ECOSYSTEM
+				allRanges = append(allRanges, r.Range)
+			}
+			if len(allRanges) > 0 {
+				gotVersions = true
+			}
+		}
+
+		// Fallback 3: Description
+		if !gotVersions {
+			textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics, models.VersionSourceDescription)
+			for _, r := range textRanges {
+				r.Range.Type = osvschema.Range_ECOSYSTEM
+				allRanges = append(allRanges, r.Range)
+			}
+			if len(allRanges) > 0 {
+				gotVersions = true
+			}
+		}
+
+		if gotVersions {
+			aff := &osvschema.Affected{
+				Package: &osvschema.Package{
+					Ecosystem: ecosystem,
+					Name:      slug,
+				},
+				Ranges: allRanges,
+			}
+			c.AddAffected(v, aff, metrics)
+			metrics.Outcome = models.Successful // Override outcome directly
+		}
+	}
+}
+
+// DefaultWordpressHandler provides empty implementations for the hooks.
+type DefaultWordpressHandler struct{}
+
+func (d *DefaultWordpressHandler) PreExtract(cve *models.CVE5) {}
+func (d *DefaultWordpressHandler) PostExtractDefault(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string) {}
+
+// WordfenceHandler implements Wordfence specific quirks.
+type WordfenceHandler struct {
+	DefaultWordpressHandler
+}
+
+func normalizeVersion(v string) string {
+	return strings.TrimPrefix(v, "v")
+}
+
+func (w *WordfenceHandler) PreExtract(cve *models.CVE5) {
+	for i := range cve.Containers.CNA.Affected {
+		for j := range cve.Containers.CNA.Affected[i].Versions {
+			vers := &cve.Containers.CNA.Affected[i].Versions[j]
+			vers.Version = normalizeVersion(vers.Version)
+			vers.LessThan = normalizeVersion(vers.LessThan)
+			vers.LessThanOrEqual = normalizeVersion(vers.LessThanOrEqual)
+		}
+	}
+}
+
+// PatchstackHandler implements Patchstack specific quirks.
+type PatchstackHandler struct {
+	DefaultWordpressHandler
+}
+
+func (p *PatchstackHandler) PostExtractDefault(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string) {
+	if slug != "" {
+		var baseURL string
+		switch ecosystem {
+		case "WordPress:Plugin":
+			baseURL = "https://wordpress.org/plugins/"
+		case "WordPress:Theme":
+			baseURL = "https://wordpress.org/themes/"
+		}
+
+		if baseURL != "" {
+			wpURL := baseURL + slug + "/"
+			// Check if already exists to avoid duplicates
+			exists := slices.ContainsFunc(v.References, func(ref *osvschema.Reference) bool {
+				return ref.GetUrl() == wpURL
+			})
+			if !exists {
+				v.References = append(v.References, &osvschema.Reference{
+					Type: osvschema.Reference_WEB,
+					Url:  wpURL,
+				})
+				metrics.AddNote("Added wordpress.org reference link: %s", wpURL)
+			}
+		}
+	}
+}
+
+// WPScanHandler implements WPScan specific quirks.
+type WPScanHandler struct {
+	DefaultWordpressHandler
+}
+

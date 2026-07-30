@@ -408,7 +408,7 @@ func TestGetVersionExtractor(t *testing.T) {
 					AssignerShortName: "Wordfence",
 				},
 			},
-			expectedType: reflect.TypeOf(&WordfenceVersionExtractor{}),
+			expectedType: reflect.TypeOf(&WordpressExtractor{}),
 		},
 		{
 			name: "Default CVE",

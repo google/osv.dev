@@ -127,7 +127,6 @@ func main() {
 	if *uploadToGCS && gcsHelper != nil {
 		timesBlocked = gcsHelper.GetTimesBlocked()
 		gcsHelper.CloseAndWait()
-
 	}
 
 	logger.Info("Conversion Stats",

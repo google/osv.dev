@@ -99,14 +99,19 @@ func (c *httpClient) do(ctx context.Context, method, path string, query url.Valu
 	}
 }
 
-// Helper function to unmarshal the response body into target proto message
-func unmarshalProtoResponse(r io.Reader, msg proto.Message) error {
-	bodyBytes, err := io.ReadAll(r)
+func (c *httpClient) doAndUnmarshal(ctx context.Context, method, path string, query url.Values, reqBody, respMsg proto.Message) error {
+	httpResp, err := c.do(ctx, method, path, query, reqBody)
+	if err != nil {
+		return err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return fmt.Errorf("failed reading response body: %w", err)
 	}
 
-	if err := proto.Unmarshal(bodyBytes, msg); err != nil {
+	if err := proto.Unmarshal(bodyBytes, respMsg); err != nil {
 		return fmt.Errorf("failed decoding response: %w", err)
 	}
 
@@ -150,14 +155,8 @@ func (c *httpClient) GetTags(ctx context.Context, repoURL string) (*pb.TagsRespo
 	q := url.Values{}
 	q.Set("url", repoURL)
 
-	httpResp, err := c.do(ctx, http.MethodGet, "/tags", q, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer httpResp.Body.Close()
-
 	var tagsResp pb.TagsResponse
-	if err := unmarshalProtoResponse(httpResp.Body, &tagsResp); err != nil {
+	if err := c.doAndUnmarshal(ctx, http.MethodGet, "/tags", q, nil, &tagsResp); err != nil {
 		return nil, err
 	}
 
@@ -166,14 +165,8 @@ func (c *httpClient) GetTags(ctx context.Context, repoURL string) (*pb.TagsRespo
 
 // GetAffectedCommits handles POST /affected-commits
 func (c *httpClient) GetAffectedCommits(ctx context.Context, req *pb.AffectedCommitsRequest) (*pb.AffectedCommitsResponse, error) {
-	httpResp, err := c.do(ctx, http.MethodPost, "/affected-commits", nil, req)
-	if err != nil {
-		return nil, err
-	}
-	defer httpResp.Body.Close()
-
 	var acResp pb.AffectedCommitsResponse
-	if err := unmarshalProtoResponse(httpResp.Body, &acResp); err != nil {
+	if err := c.doAndUnmarshal(ctx, http.MethodPost, "/affected-commits", nil, req, &acResp); err != nil {
 		return nil, err
 	}
 
@@ -182,14 +175,8 @@ func (c *httpClient) GetAffectedCommits(ctx context.Context, req *pb.AffectedCom
 
 // GetFileDiffs handles POST /file-diffs
 func (c *httpClient) GetFileDiffs(ctx context.Context, req *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
-	httpResp, err := c.do(ctx, http.MethodPost, "/file-diffs", nil, req)
-	if err != nil {
-		return nil, err
-	}
-	defer httpResp.Body.Close()
-
 	var diffsResp pb.FileDiffsResponse
-	if err := unmarshalProtoResponse(httpResp.Body, &diffsResp); err != nil {
+	if err := c.doAndUnmarshal(ctx, http.MethodPost, "/file-diffs", nil, req, &diffsResp); err != nil {
 		return nil, err
 	}
 
@@ -198,14 +185,8 @@ func (c *httpClient) GetFileDiffs(ctx context.Context, req *pb.FileDiffsRequest)
 
 // GetFileContent handles POST /file-content
 func (c *httpClient) GetFileContent(ctx context.Context, req *pb.FileContentRequest) (*pb.FileContentResponse, error) {
-	httpResp, err := c.do(ctx, http.MethodPost, "/file-content", nil, req)
-	if err != nil {
-		return nil, err
-	}
-	defer httpResp.Body.Close()
-
 	var fileContentResp pb.FileContentResponse
-	if err := unmarshalProtoResponse(httpResp.Body, &fileContentResp); err != nil {
+	if err := c.doAndUnmarshal(ctx, http.MethodPost, "/file-content", nil, req, &fileContentResp); err != nil {
 		return nil, err
 	}
 

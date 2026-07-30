@@ -99,6 +99,20 @@ func (c *httpClient) do(ctx context.Context, method, path string, query url.Valu
 	}
 }
 
+// Helper function to unmarshal the response body into target proto message
+func unmarshalProtoResponse(r io.Reader, msg proto.Message) error {
+	bodyBytes, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("failed reading response body: %w", err)
+	}
+
+	if err := proto.Unmarshal(bodyBytes, msg); err != nil {
+		return fmt.Errorf("failed decoding response: %w", err)
+	}
+
+	return nil
+}
+
 // GetGit handles GET /git (streaming tarball)
 func (c *httpClient) GetGit(ctx context.Context, repoURL string, forceUpdate bool) (io.ReadCloser, error) {
 	q := url.Values{}
@@ -125,6 +139,7 @@ func (c *httpClient) Cache(ctx context.Context, repoURL string) error {
 	if err != nil {
 		return err
 	}
+	_, _ = io.Copy(io.Discard, resp.Body)
 	resp.Body.Close()
 
 	return nil
@@ -135,20 +150,15 @@ func (c *httpClient) GetTags(ctx context.Context, repoURL string) (*pb.TagsRespo
 	q := url.Values{}
 	q.Set("url", repoURL)
 
-	resp, err := c.do(ctx, http.MethodGet, "/tags", q, nil)
+	httpResp, err := c.do(ctx, http.MethodGet, "/tags", q, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading tags response body: %w", err)
-	}
+	defer httpResp.Body.Close()
 
 	var tagsResp pb.TagsResponse
-	if err := proto.Unmarshal(bodyBytes, &tagsResp); err != nil {
-		return nil, fmt.Errorf("failed decoding tags response: %w", err)
+	if err := unmarshalProtoResponse(httpResp.Body, &tagsResp); err != nil {
+		return nil, err
 	}
 
 	return &tagsResp, nil
@@ -156,41 +166,31 @@ func (c *httpClient) GetTags(ctx context.Context, repoURL string) (*pb.TagsRespo
 
 // GetAffectedCommits handles POST /affected-commits
 func (c *httpClient) GetAffectedCommits(ctx context.Context, req *pb.AffectedCommitsRequest) (*pb.AffectedCommitsResponse, error) {
-	resp, err := c.do(ctx, http.MethodPost, "/affected-commits", nil, req)
+	httpResp, err := c.do(ctx, http.MethodPost, "/affected-commits", nil, req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading affected commits response body: %w", err)
+	var acResp pb.AffectedCommitsResponse
+	if err := unmarshalProtoResponse(httpResp.Body, &acResp); err != nil {
+		return nil, err
 	}
 
-	var affectedResp pb.AffectedCommitsResponse
-	if err := proto.Unmarshal(bodyBytes, &affectedResp); err != nil {
-		return nil, fmt.Errorf("failed decoding affected commits response: %w", err)
-	}
-
-	return &affectedResp, nil
+	return &acResp, nil
 }
 
 // GetFileDiffs handles POST /file-diffs
 func (c *httpClient) GetFileDiffs(ctx context.Context, req *pb.FileDiffsRequest) (*pb.FileDiffsResponse, error) {
-	resp, err := c.do(ctx, http.MethodPost, "/file-diffs", nil, req)
+	httpResp, err := c.do(ctx, http.MethodPost, "/file-diffs", nil, req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading file diffs response body: %w", err)
-	}
+	defer httpResp.Body.Close()
 
 	var diffsResp pb.FileDiffsResponse
-	if err := proto.Unmarshal(bodyBytes, &diffsResp); err != nil {
-		return nil, fmt.Errorf("failed decoding file diffs response: %w", err)
+	if err := unmarshalProtoResponse(httpResp.Body, &diffsResp); err != nil {
+		return nil, err
 	}
 
 	return &diffsResp, nil
@@ -198,20 +198,15 @@ func (c *httpClient) GetFileDiffs(ctx context.Context, req *pb.FileDiffsRequest)
 
 // GetFileContent handles POST /file-content
 func (c *httpClient) GetFileContent(ctx context.Context, req *pb.FileContentRequest) (*pb.FileContentResponse, error) {
-	resp, err := c.do(ctx, http.MethodPost, "/file-content", nil, req)
+	httpResp, err := c.do(ctx, http.MethodPost, "/file-content", nil, req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading file content response body: %w", err)
-	}
+	defer httpResp.Body.Close()
 
 	var fileContentResp pb.FileContentResponse
-	if err := proto.Unmarshal(bodyBytes, &fileContentResp); err != nil {
-		return nil, fmt.Errorf("failed decoding file content response: %w", err)
+	if err := unmarshalProtoResponse(httpResp.Body, &fileContentResp); err != nil {
+		return nil, err
 	}
 
 	return &fileContentResp, nil

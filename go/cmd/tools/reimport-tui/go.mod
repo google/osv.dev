@@ -22,7 +22,7 @@ require (
 	cloud.google.com/go/iam v1.12.0 // indirect
 	cloud.google.com/go/monitoring v1.30.0 // indirect
 	cloud.google.com/go/pubsub/v2 v2.6.1 // indirect
-	cloud.google.com/go/storage v1.63.1 // indirect
+	cloud.google.com/go/storage v1.64.0 // indirect
 	cloud.google.com/go/trace v1.16.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.34.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.58.0 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260714233749-2e9e1cc3ece6 // indirect
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.3 // indirect
@@ -87,7 +87,7 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/api v0.288.0 // indirect
+	google.golang.org/api v0.290.0 // indirect
 	google.golang.org/genproto v0.0.0-20260713224248-f5fc221cf8c4 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260713224248-f5fc221cf8c4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260713224248-f5fc221cf8c4 // indirect

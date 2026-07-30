@@ -52,7 +52,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260714233749-2e9e1cc3ece6 // indirect
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.3 // indirect

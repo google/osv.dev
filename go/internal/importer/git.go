@@ -12,6 +12,7 @@ import (
 	"github.com/google/osv.dev/go/internal/gitter"
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 )
 
@@ -117,13 +118,8 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 			case <-ctx.Done():
 				return ctx.Err()
 			case ch <- WorkItem{
-				Context: ctx,
-				SourceRecord: gitSourceRecord{
-					client:  config.GitterClient,
-					repoURL: sourceRepo.Git.URL,
-					commit:  latestCommit,
-					path:    from,
-				},
+				Context:          ctx,
+				SourceRecord:     nil,
 				SourceRepository: sourceRepo.Name,
 				SourcePath:       from,
 				Action:           ActionWithdraw,
@@ -194,7 +190,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 	// Query Gitter with empty lastSyncedCommit to get all files in the repository
 	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, "")
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
+		if !osvutil.IsContextError(err) {
 			logger.ErrorContext(ctx, "Failed to get file diffs for git reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
 		}
 

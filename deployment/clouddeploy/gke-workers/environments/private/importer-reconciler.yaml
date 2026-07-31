@@ -14,7 +14,9 @@ spec:
               value: private-osv
             - name: WORKER_TASK_TOPIC
               value: "osv-work"
-            - name: DEFAULT_TASK_POOL
+            # We don't have a dedicated reimport pool for this private deployment,
+            # so route reimports to the default pool.
+            - name: REIMPORT_TASK_POOL
               value: "default"
             args: ["--reconcile=true"]
 ---

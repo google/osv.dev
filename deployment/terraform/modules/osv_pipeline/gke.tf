@@ -100,6 +100,7 @@ resource "google_container_node_pool" "highend" {
     service_account = google_service_account.worker_sa.email
     machine_type    = "n4-highmem-32"
     disk_type       = "hyperdisk-balanced"
+    disk_size_gb    = 500
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
@@ -171,7 +172,7 @@ resource "google_container_node_pool" "worker_pool" {
 
   node_config {
     service_account = google_service_account.worker_sa.email
-    machine_type    = "n4-standard-8"
+    machine_type    = "n4-highcpu-8"
     disk_type       = "hyperdisk-balanced"
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]

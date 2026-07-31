@@ -89,9 +89,6 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 
 	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, sourceRepo.Git.LastSyncedCommit)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to get file diffs from gitter",
-			slog.Any("error", err), slog.String("source", sourceRepo.Name))
-
 		return err
 	}
 

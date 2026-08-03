@@ -100,7 +100,7 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash st
 			return ErrUploadSkipped
 		}
 	} else if errors.Is(err, storage.ErrObjectNotExist) {
-		if v.Withdrawn != nil {
+		if v.GetWithdrawn() != nil {
 			return ErrWithdrawnSkipped
 		}
 	} else {
@@ -182,7 +182,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, gcsHelper *gcs.Helper, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
-		if len(v.GetAffected()) == 0 && v.Withdrawn == nil {
+		if len(v.GetAffected()) == 0 && v.GetWithdrawn() == nil {
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue
 		}
@@ -407,7 +407,7 @@ func UploadVulnIfChangedAsync(gcsHelper *gcs.Helper, prefix string, vuln *osvsch
 	}
 
 	objectName := path.Join(prefix, vuln.GetId()+".json")
-	skipIfNotExist := vuln.Withdrawn != nil
+	skipIfNotExist := vuln.GetWithdrawn() != nil
 	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json", skipIfNotExist)
 
 	return nil

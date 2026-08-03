@@ -36,6 +36,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 		if err == nil {
 			v.DatabaseSpecific = databaseSpecific
 		}
+
 		return v, metrics, models.Rejected
 	}
 

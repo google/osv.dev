@@ -216,6 +216,12 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "pd-ssd"
   zone    = google_container_cluster.workers.location
   size    = 6144 # 6TiB
+
+  lifecycle {
+    ignore_changes = [
+      type,
+    ]
+  }
 }
 
 # SSD for Importer Reconciler
@@ -225,5 +231,11 @@ resource "google_compute_disk" "importer_reconciler_git_cache" {
   type    = "pd-ssd"
   zone    = google_container_cluster.workers.location
   size    = 200
+
+  lifecycle {
+    ignore_changes = [
+      type,
+    ]
+  }
 }
 

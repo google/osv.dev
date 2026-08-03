@@ -20,9 +20,9 @@ spec:
             value: highend
           containers:
           - name: nvd-mirror
-            env:
-            - name: WORK_DIR
-              value: /tmp
+            args:
+            - "--gcs-bucket"
+            - "$(BUCKET)"
             image: nvd-mirror
             imagePullPolicy: Always
             resources:

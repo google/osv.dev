@@ -229,14 +229,17 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				}
 				successfulRepos = append(successfulRepos, repo)
 				if len(vr.Range.GetEvents()) > 0 {
-					dbSpecificMap := map[string]any{
-						"extracted_events": vr.Range.GetEvents(),
+					extractedEventGroup := map[string]any{
+						"range": vr.Range.GetEvents(),
 					}
 					if vr.Metadata.CPE != "" {
-						dbSpecificMap["cpe"] = vr.Metadata.CPE
+						extractedEventGroup["cpe"] = vr.Metadata.CPE
 					}
 					if string(vr.Metadata.Source) != "" {
-						dbSpecificMap["source"] = string(vr.Metadata.Source)
+						extractedEventGroup["source"] = string(vr.Metadata.Source)
+					}
+					dbSpecificMap := map[string]any{
+						"extracted_events": []any{extractedEventGroup},
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {

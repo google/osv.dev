@@ -29,13 +29,17 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "18.0"
-              },
-              {
-                "fixed": "18.0.1"
+                "range": [
+                  {
+                    "introduced": "18.0"
+                  },
+                  {
+                    "fixed": "18.0.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -100,13 +104,17 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
-              },
-              {
-                "fixed": "1.10.5"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.10.5"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -347,13 +355,96 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
+                "range": [
+                  {
+                    "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+                  }
+                ],
+                "source": "REFERENCES"
+              }
+            ]
+          },
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
+            }
+          ],
+          "repo": "https://github.com/harfbuzz/harfbuzz",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "mitre",
+    "osv_generated_from": "unknown"
+  },
+  "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
+  "id": "CVE-2022-33068",
+  "modified": "2024-08-03T08:01:19.054Z",
+  "published": "2022-06-22T13:24:42Z",
+  "references": [
+    {
+      "type": "FIX",
+      "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-33068"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://security.gentoo.org/glsa/202209-11"
+    }
+  ],
+  "schema_version": "1.0.0"
+}
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "database_specific": {
+            "extracted_events": [
+              {
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "2.0.0-next.193"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "2.0.0-next.193"
+                "range": [
+                  {
+                    "fixed": "2c1762b85acb84467ed5e799afe1499cd2f912e6"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -361,6 +452,9 @@
             },
             {
               "fixed": "eeda4f90af57368584fa97250cbb0d5bf0a5e16e"
+            },
+            {
+              "fixed": "2c1762b85acb84467ed5e799afe1499cd2f912e6"
             }
           ],
           "repo": "https://github.com/lobehub/lobehub",
@@ -417,19 +511,47 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "4.25.8"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "4.25.8"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "5.29.5"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "5.29.5"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "6.31.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "6.31.1"
+                "range": [
+                  {
+                    "fixed": "17838beda2943d08b8a9d4df5b68f5f04f26d901"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -443,6 +565,9 @@
             },
             {
               "fixed": "74211c0dfc2777318ab53c2cd2c317a2ef9012de"
+            },
+            {
+              "fixed": "17838beda2943d08b8a9d4df5b68f5f04f26d901"
             }
           ],
           "repo": "https://github.com/protocolbuffers/protobuf",
@@ -497,13 +622,25 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "last_affected": "1.25.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "last_affected": "1.25.3"
+                "range": [
+                  {
+                    "fixed": "369830bada2fd8826a5135cb2fc66660a9bef708"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -511,6 +648,9 @@
             },
             {
               "last_affected": "9a7cfd8620989d9de6dc4ca0c95d9fd42c1768ed"
+            },
+            {
+              "fixed": "369830bada2fd8826a5135cb2fc66660a9bef708"
             }
           ],
           "repo": "https://github.com/go-gitea/gitea",
@@ -577,25 +717,47 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "1.7.0"
+                "range": [
+                  {
+                    "introduced": "1.7.0"
+                  },
+                  {
+                    "fixed": "1.18.4"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "1.18.4"
+                "range": [
+                  {
+                    "introduced": "1.19.0"
+                  },
+                  {
+                    "fixed": "1.20.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "introduced": "1.19.0"
+                "range": [
+                  {
+                    "introduced": "1.21.0"
+                  },
+                  {
+                    "fixed": "1.23.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "1.20.3"
-              },
-              {
-                "introduced": "1.21.0"
-              },
-              {
-                "fixed": "1.23.1"
+                "range": [
+                  {
+                    "fixed": "1a997ffbd62334af2553775234e75ede2d7d949f"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -676,19 +838,36 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "2.0.0"
+                "range": [
+                  {
+                    "introduced": "2.0.0"
+                  },
+                  {
+                    "fixed": "2.0.7"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "fixed": "2.0.7"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.26.18"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "introduced": "0"
-              },
-              {
-                "fixed": "1.26.18"
+                "range": [
+                  {
+                    "fixed": "4e98d57809dacab1cbe625fddeec1a290c478ea9"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -702,6 +881,9 @@
             },
             {
               "fixed": "9c2c2307dd1d6af504e09aac0326d86ee3597a0b"
+            },
+            {
+              "fixed": "4e98d57809dacab1cbe625fddeec1a290c478ea9"
             }
           ],
           "repo": "https://github.com/urllib3/urllib3",
@@ -771,13 +953,33 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "4.x"
+                "range": [
+                  {
+                    "introduced": "4.x"
+                  },
+                  {
+                    "last_affected": "4.x"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "last_affected": "4.x"
+                "range": [
+                  {
+                    "fixed": "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"
+                  }
+                ],
+                "source": "REFERENCES"
+              },
+              {
+                "range": [
+                  {
+                    "fixed": "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -785,6 +987,12 @@
             },
             {
               "last_affected": "85c43e41805cde051a7a29aefcac2cd6aee8c69d"
+            },
+            {
+              "fixed": "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"
+            },
+            {
+              "fixed": "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"
             }
           ],
           "repo": "https://github.com/forcedotcom/salesforcemobilesdk-windows",
@@ -846,19 +1054,28 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "5.6.0"
+                "range": [
+                  {
+                    "introduced": "5.6.0"
+                  },
+                  {
+                    "last_affected": "5.6.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               },
               {
-                "last_affected": "5.6.0"
-              },
-              {
-                "introduced": "5.6.1"
-              },
-              {
-                "last_affected": "5.6.1"
+                "range": [
+                  {
+                    "introduced": "5.6.1"
+                  },
+                  {
+                    "last_affected": "5.6.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -1147,577 +1364,1059 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "8.9.0"
-              },
-              {
-                "last_affected": "8.9.0"
-              },
-              {
-                "introduced": "8.8.0"
-              },
-              {
-                "last_affected": "8.8.0"
-              },
-              {
-                "introduced": "8.7.1"
-              },
-              {
-                "last_affected": "8.7.1"
-              },
-              {
-                "introduced": "8.7.0"
-              },
-              {
-                "last_affected": "8.7.0"
-              },
-              {
-                "introduced": "8.6.0"
-              },
-              {
-                "last_affected": "8.6.0"
-              },
-              {
-                "introduced": "8.5.0"
-              },
-              {
-                "last_affected": "8.5.0"
-              },
-              {
-                "introduced": "8.4.0"
-              },
-              {
-                "last_affected": "8.4.0"
-              },
-              {
-                "introduced": "8.3.0"
-              },
-              {
-                "last_affected": "8.3.0"
-              },
-              {
-                "introduced": "8.2.1"
-              },
-              {
-                "last_affected": "8.2.1"
-              },
-              {
-                "introduced": "8.2.0"
-              },
-              {
-                "last_affected": "8.2.0"
-              },
-              {
-                "introduced": "8.1.2"
-              },
-              {
-                "last_affected": "8.1.2"
-              },
-              {
-                "introduced": "8.1.1"
-              },
-              {
-                "last_affected": "8.1.1"
-              },
-              {
-                "introduced": "8.1.0"
-              },
-              {
-                "last_affected": "8.1.0"
-              },
-              {
-                "introduced": "8.0.1"
-              },
-              {
-                "last_affected": "8.0.1"
-              },
-              {
-                "introduced": "8.0.0"
-              },
-              {
-                "last_affected": "8.0.0"
-              },
-              {
-                "introduced": "7.88.1"
-              },
-              {
-                "last_affected": "7.88.1"
-              },
-              {
-                "introduced": "7.88.0"
-              },
-              {
-                "last_affected": "7.88.0"
-              },
-              {
-                "introduced": "7.87.0"
-              },
-              {
-                "last_affected": "7.87.0"
-              },
-              {
-                "introduced": "7.86.0"
-              },
-              {
-                "last_affected": "7.86.0"
-              },
-              {
-                "introduced": "7.85.0"
-              },
-              {
-                "last_affected": "7.85.0"
-              },
-              {
-                "introduced": "7.84.0"
-              },
-              {
-                "last_affected": "7.84.0"
-              },
-              {
-                "introduced": "7.83.1"
-              },
-              {
-                "last_affected": "7.83.1"
-              },
-              {
-                "introduced": "7.83.0"
-              },
-              {
-                "last_affected": "7.83.0"
-              },
-              {
-                "introduced": "7.82.0"
-              },
-              {
-                "last_affected": "7.82.0"
-              },
-              {
-                "introduced": "7.81.0"
-              },
-              {
-                "last_affected": "7.81.0"
-              },
-              {
-                "introduced": "7.80.0"
-              },
-              {
-                "last_affected": "7.80.0"
-              },
-              {
-                "introduced": "7.79.1"
-              },
-              {
-                "last_affected": "7.79.1"
-              },
-              {
-                "introduced": "7.79.0"
-              },
-              {
-                "last_affected": "7.79.0"
-              },
-              {
-                "introduced": "7.78.0"
-              },
-              {
-                "last_affected": "7.78.0"
-              },
-              {
-                "introduced": "7.77.0"
-              },
-              {
-                "last_affected": "7.77.0"
-              },
-              {
-                "introduced": "7.76.1"
-              },
-              {
-                "last_affected": "7.76.1"
-              },
-              {
-                "introduced": "7.76.0"
-              },
-              {
-                "last_affected": "7.76.0"
-              },
-              {
-                "introduced": "7.75.0"
-              },
-              {
-                "last_affected": "7.75.0"
-              },
-              {
-                "introduced": "7.74.0"
-              },
-              {
-                "last_affected": "7.74.0"
-              },
-              {
-                "introduced": "7.73.0"
-              },
-              {
-                "last_affected": "7.73.0"
-              },
-              {
-                "introduced": "7.72.0"
-              },
-              {
-                "last_affected": "7.72.0"
-              },
-              {
-                "introduced": "7.71.1"
-              },
-              {
-                "last_affected": "7.71.1"
-              },
-              {
-                "introduced": "7.71.0"
-              },
-              {
-                "last_affected": "7.71.0"
-              },
-              {
-                "introduced": "7.70.0"
-              },
-              {
-                "last_affected": "7.70.0"
-              },
-              {
-                "introduced": "7.69.1"
-              },
-              {
-                "last_affected": "7.69.1"
-              },
-              {
-                "introduced": "7.69.0"
-              },
-              {
-                "last_affected": "7.69.0"
-              },
-              {
-                "introduced": "7.68.0"
-              },
-              {
-                "last_affected": "7.68.0"
-              },
-              {
-                "introduced": "7.67.0"
-              },
-              {
-                "last_affected": "7.67.0"
-              },
-              {
-                "introduced": "7.66.0"
-              },
-              {
-                "last_affected": "7.66.0"
-              },
-              {
-                "introduced": "7.65.3"
-              },
-              {
-                "last_affected": "7.65.3"
-              },
-              {
-                "introduced": "7.65.2"
-              },
-              {
-                "last_affected": "7.65.2"
-              },
-              {
-                "introduced": "7.65.1"
-              },
-              {
-                "last_affected": "7.65.1"
-              },
-              {
-                "introduced": "7.65.0"
-              },
-              {
-                "last_affected": "7.65.0"
-              },
-              {
-                "introduced": "7.64.1"
-              },
-              {
-                "last_affected": "7.64.1"
-              },
-              {
-                "introduced": "7.64.0"
-              },
-              {
-                "last_affected": "7.64.0"
-              },
-              {
-                "introduced": "7.63.0"
-              },
-              {
-                "last_affected": "7.63.0"
-              },
-              {
-                "introduced": "7.62.0"
-              },
-              {
-                "last_affected": "7.62.0"
-              },
-              {
-                "introduced": "7.61.1"
-              },
-              {
-                "last_affected": "7.61.1"
-              },
-              {
-                "introduced": "7.61.0"
-              },
-              {
-                "last_affected": "7.61.0"
-              },
-              {
-                "introduced": "7.60.0"
-              },
-              {
-                "last_affected": "7.60.0"
-              },
-              {
-                "introduced": "7.59.0"
-              },
-              {
-                "last_affected": "7.59.0"
-              },
-              {
-                "introduced": "7.58.0"
-              },
-              {
-                "last_affected": "7.58.0"
-              },
-              {
-                "introduced": "7.57.0"
-              },
-              {
-                "last_affected": "7.57.0"
-              },
-              {
-                "introduced": "7.56.1"
-              },
-              {
-                "last_affected": "7.56.1"
-              },
-              {
-                "introduced": "7.56.0"
-              },
-              {
-                "last_affected": "7.56.0"
-              },
-              {
-                "introduced": "7.55.1"
-              },
-              {
-                "last_affected": "7.55.1"
-              },
-              {
-                "introduced": "7.55.0"
-              },
-              {
-                "last_affected": "7.55.0"
-              },
-              {
-                "introduced": "7.54.1"
-              },
-              {
-                "last_affected": "7.54.1"
-              },
-              {
-                "introduced": "7.54.0"
-              },
-              {
-                "last_affected": "7.54.0"
-              },
-              {
-                "introduced": "7.53.1"
-              },
-              {
-                "last_affected": "7.53.1"
-              },
-              {
-                "introduced": "7.53.0"
-              },
-              {
-                "last_affected": "7.53.0"
-              },
-              {
-                "introduced": "7.52.1"
-              },
-              {
-                "last_affected": "7.52.1"
-              },
-              {
-                "introduced": "7.52.0"
-              },
-              {
-                "last_affected": "7.52.0"
-              },
-              {
-                "introduced": "7.51.0"
-              },
-              {
-                "last_affected": "7.51.0"
-              },
-              {
-                "introduced": "7.50.3"
-              },
-              {
-                "last_affected": "7.50.3"
-              },
-              {
-                "introduced": "7.50.2"
-              },
-              {
-                "last_affected": "7.50.2"
-              },
-              {
-                "introduced": "7.50.1"
-              },
-              {
-                "last_affected": "7.50.1"
-              },
-              {
-                "introduced": "7.50.0"
-              },
-              {
-                "last_affected": "7.50.0"
-              },
-              {
-                "introduced": "7.49.1"
-              },
-              {
-                "last_affected": "7.49.1"
-              },
-              {
-                "introduced": "7.49.0"
-              },
-              {
-                "last_affected": "7.49.0"
-              },
-              {
-                "introduced": "7.48.0"
-              },
-              {
-                "last_affected": "7.48.0"
-              },
-              {
-                "introduced": "7.47.1"
-              },
-              {
-                "last_affected": "7.47.1"
-              },
-              {
-                "introduced": "7.47.0"
-              },
-              {
-                "last_affected": "7.47.0"
-              },
-              {
-                "introduced": "7.46.0"
-              },
-              {
-                "last_affected": "7.46.0"
-              },
-              {
-                "introduced": "7.45.0"
-              },
-              {
-                "last_affected": "7.45.0"
-              },
-              {
-                "introduced": "7.44.0"
-              },
-              {
-                "last_affected": "7.44.0"
-              },
-              {
-                "introduced": "7.43.0"
-              },
-              {
-                "last_affected": "7.43.0"
-              },
-              {
-                "introduced": "7.42.1"
-              },
-              {
-                "last_affected": "7.42.1"
-              },
-              {
-                "introduced": "7.42.0"
-              },
-              {
-                "last_affected": "7.42.0"
-              },
-              {
-                "introduced": "7.41.0"
-              },
-              {
-                "last_affected": "7.41.0"
-              },
-              {
-                "introduced": "7.40.0"
-              },
-              {
-                "last_affected": "7.40.0"
-              },
-              {
-                "introduced": "7.39.0"
-              },
-              {
-                "last_affected": "7.39.0"
-              },
-              {
-                "introduced": "7.38.0"
-              },
-              {
-                "last_affected": "7.38.0"
-              },
-              {
-                "introduced": "7.37.1"
-              },
-              {
-                "last_affected": "7.37.1"
-              },
-              {
-                "introduced": "7.37.0"
-              },
-              {
-                "last_affected": "7.37.0"
-              },
-              {
-                "introduced": "7.36.0"
-              },
-              {
-                "last_affected": "7.36.0"
-              },
-              {
-                "introduced": "7.35.0"
-              },
-              {
-                "last_affected": "7.35.0"
-              },
-              {
-                "introduced": "7.34.0"
-              },
-              {
-                "last_affected": "7.34.0"
-              },
-              {
-                "introduced": "7.33.0"
-              },
-              {
-                "last_affected": "7.33.0"
-              },
-              {
-                "introduced": "7.32.0"
-              },
-              {
-                "last_affected": "7.32.0"
+                "range": [
+                  {
+                    "introduced": "8.9.0"
+                  },
+                  {
+                    "last_affected": "8.9.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.8.0"
+                  },
+                  {
+                    "last_affected": "8.8.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.7.1"
+                  },
+                  {
+                    "last_affected": "8.7.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.7.0"
+                  },
+                  {
+                    "last_affected": "8.7.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.6.0"
+                  },
+                  {
+                    "last_affected": "8.6.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.5.0"
+                  },
+                  {
+                    "last_affected": "8.5.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.4.0"
+                  },
+                  {
+                    "last_affected": "8.4.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.3.0"
+                  },
+                  {
+                    "last_affected": "8.3.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.2.1"
+                  },
+                  {
+                    "last_affected": "8.2.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.2.0"
+                  },
+                  {
+                    "last_affected": "8.2.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.2"
+                  },
+                  {
+                    "last_affected": "8.1.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.1"
+                  },
+                  {
+                    "last_affected": "8.1.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.0"
+                  },
+                  {
+                    "last_affected": "8.1.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.0.1"
+                  },
+                  {
+                    "last_affected": "8.0.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.0.0"
+                  },
+                  {
+                    "last_affected": "8.0.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.88.1"
+                  },
+                  {
+                    "last_affected": "7.88.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.88.0"
+                  },
+                  {
+                    "last_affected": "7.88.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.87.0"
+                  },
+                  {
+                    "last_affected": "7.87.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.86.0"
+                  },
+                  {
+                    "last_affected": "7.86.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.85.0"
+                  },
+                  {
+                    "last_affected": "7.85.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.84.0"
+                  },
+                  {
+                    "last_affected": "7.84.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.83.1"
+                  },
+                  {
+                    "last_affected": "7.83.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.83.0"
+                  },
+                  {
+                    "last_affected": "7.83.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.82.0"
+                  },
+                  {
+                    "last_affected": "7.82.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.81.0"
+                  },
+                  {
+                    "last_affected": "7.81.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.80.0"
+                  },
+                  {
+                    "last_affected": "7.80.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.79.1"
+                  },
+                  {
+                    "last_affected": "7.79.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.79.0"
+                  },
+                  {
+                    "last_affected": "7.79.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.78.0"
+                  },
+                  {
+                    "last_affected": "7.78.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.77.0"
+                  },
+                  {
+                    "last_affected": "7.77.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.76.1"
+                  },
+                  {
+                    "last_affected": "7.76.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.76.0"
+                  },
+                  {
+                    "last_affected": "7.76.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.75.0"
+                  },
+                  {
+                    "last_affected": "7.75.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.74.0"
+                  },
+                  {
+                    "last_affected": "7.74.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.73.0"
+                  },
+                  {
+                    "last_affected": "7.73.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.72.0"
+                  },
+                  {
+                    "last_affected": "7.72.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.71.1"
+                  },
+                  {
+                    "last_affected": "7.71.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.71.0"
+                  },
+                  {
+                    "last_affected": "7.71.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.70.0"
+                  },
+                  {
+                    "last_affected": "7.70.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.69.1"
+                  },
+                  {
+                    "last_affected": "7.69.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.69.0"
+                  },
+                  {
+                    "last_affected": "7.69.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.68.0"
+                  },
+                  {
+                    "last_affected": "7.68.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.67.0"
+                  },
+                  {
+                    "last_affected": "7.67.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.66.0"
+                  },
+                  {
+                    "last_affected": "7.66.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.3"
+                  },
+                  {
+                    "last_affected": "7.65.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.2"
+                  },
+                  {
+                    "last_affected": "7.65.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.1"
+                  },
+                  {
+                    "last_affected": "7.65.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.0"
+                  },
+                  {
+                    "last_affected": "7.65.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.64.1"
+                  },
+                  {
+                    "last_affected": "7.64.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.64.0"
+                  },
+                  {
+                    "last_affected": "7.64.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.63.0"
+                  },
+                  {
+                    "last_affected": "7.63.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.62.0"
+                  },
+                  {
+                    "last_affected": "7.62.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.61.1"
+                  },
+                  {
+                    "last_affected": "7.61.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.61.0"
+                  },
+                  {
+                    "last_affected": "7.61.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.60.0"
+                  },
+                  {
+                    "last_affected": "7.60.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.59.0"
+                  },
+                  {
+                    "last_affected": "7.59.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.58.0"
+                  },
+                  {
+                    "last_affected": "7.58.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.57.0"
+                  },
+                  {
+                    "last_affected": "7.57.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.56.1"
+                  },
+                  {
+                    "last_affected": "7.56.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.56.0"
+                  },
+                  {
+                    "last_affected": "7.56.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.55.1"
+                  },
+                  {
+                    "last_affected": "7.55.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.55.0"
+                  },
+                  {
+                    "last_affected": "7.55.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.54.1"
+                  },
+                  {
+                    "last_affected": "7.54.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.54.0"
+                  },
+                  {
+                    "last_affected": "7.54.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.53.1"
+                  },
+                  {
+                    "last_affected": "7.53.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.53.0"
+                  },
+                  {
+                    "last_affected": "7.53.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.52.1"
+                  },
+                  {
+                    "last_affected": "7.52.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.52.0"
+                  },
+                  {
+                    "last_affected": "7.52.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.51.0"
+                  },
+                  {
+                    "last_affected": "7.51.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.3"
+                  },
+                  {
+                    "last_affected": "7.50.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.2"
+                  },
+                  {
+                    "last_affected": "7.50.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.1"
+                  },
+                  {
+                    "last_affected": "7.50.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.0"
+                  },
+                  {
+                    "last_affected": "7.50.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.49.1"
+                  },
+                  {
+                    "last_affected": "7.49.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.49.0"
+                  },
+                  {
+                    "last_affected": "7.49.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.48.0"
+                  },
+                  {
+                    "last_affected": "7.48.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.47.1"
+                  },
+                  {
+                    "last_affected": "7.47.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.47.0"
+                  },
+                  {
+                    "last_affected": "7.47.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.46.0"
+                  },
+                  {
+                    "last_affected": "7.46.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.45.0"
+                  },
+                  {
+                    "last_affected": "7.45.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.44.0"
+                  },
+                  {
+                    "last_affected": "7.44.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.43.0"
+                  },
+                  {
+                    "last_affected": "7.43.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.42.1"
+                  },
+                  {
+                    "last_affected": "7.42.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.42.0"
+                  },
+                  {
+                    "last_affected": "7.42.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.41.0"
+                  },
+                  {
+                    "last_affected": "7.41.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.40.0"
+                  },
+                  {
+                    "last_affected": "7.40.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.39.0"
+                  },
+                  {
+                    "last_affected": "7.39.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.38.0"
+                  },
+                  {
+                    "last_affected": "7.38.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.37.1"
+                  },
+                  {
+                    "last_affected": "7.37.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.37.0"
+                  },
+                  {
+                    "last_affected": "7.37.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.36.0"
+                  },
+                  {
+                    "last_affected": "7.36.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.35.0"
+                  },
+                  {
+                    "last_affected": "7.35.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.34.0"
+                  },
+                  {
+                    "last_affected": "7.34.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.33.0"
+                  },
+                  {
+                    "last_affected": "7.33.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.32.0"
+                  },
+                  {
+                    "last_affected": "7.32.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD"
+              },
+              {
+                "range": [
+                  {
+                    "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
+                  }
+                ],
+                "source": "REFERENCES"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -1725,6 +2424,9 @@
             },
             {
               "last_affected": "70812c2f32fc5734bcbbe572b9f61c380433ad6a"
+            },
+            {
+              "fixed": "27959ecce75cdb2809c0bdb3286e60e08fadb519"
             }
           ],
           "repo": "https://github.com/curl/curl",
@@ -1884,47 +2586,6 @@
     }
   ],
   "summary": "ASN.1 date parser overread"
-}
-{
-  "database_specific": {
-    "cna_assigner": "mitre",
-    "osv_generated_from": "unknown"
-  },
-  "details": "An integer overflow in the component hb-ot-shape-fallback.cc of Harfbuzz v4.3.0 allows attackers to cause a Denial of Service (DoS) via unspecified vectors.",
-  "id": "CVE-2022-33068",
-  "modified": "2024-08-03T08:01:19.054Z",
-  "published": "2022-06-22T13:24:42Z",
-  "references": [
-    {
-      "type": "FIX",
-      "url": "https://github.com/harfbuzz/harfbuzz/commit/62e803b36173fd096d7ad460dd1d1db9be542593"
-    },
-    {
-      "type": "REPORT",
-      "url": "https://github.com/harfbuzz/harfbuzz/issues/3557"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/FQBJ24W6TXLSAQWCFW7IBGUMX4AJI3S4/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/QQMEXOVDL3T2UXKBCON7JSOCE646G7HG/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/W56WTC5IY4EIUHVUIHMCXA3BSBZLSZCI/"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-33068"
-    },
-    {
-      "type": "ADVISORY",
-      "url": "https://security.gentoo.org/glsa/202209-11"
-    }
-  ],
-  "schema_version": "1.0.0"
 }
 {
   "database_specific": {

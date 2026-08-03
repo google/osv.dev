@@ -50,6 +50,14 @@ func (c ConversionOutcome) String() string {
 	return conversionOutcomeStrings[ConversionUnknown]
 }
 
+// ShouldEmit returns true if the record should be emitted based on its outcome and the rejectFailed flag.
+func (c ConversionOutcome) ShouldEmit(rejectFailed bool) bool {
+	if !rejectFailed {
+		return true
+	}
+	return c == Successful || c == Rejected
+}
+
 func (c ConversionOutcome) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }

@@ -66,13 +66,11 @@ resource "google_container_node_pool" "default_pool" {
 
   node_config {
     service_account = google_service_account.worker_sa.email
-    machine_type    = "n1-highmem-2"
-    disk_type       = "pd-ssd"
+    machine_type    = "n4-standard-8"
+    disk_type       = "hyperdisk-balanced"
     disk_size_gb    = 64
-    local_ssd_count = 1
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
   }
 }
 
@@ -100,13 +98,9 @@ resource "google_container_node_pool" "highend" {
 
   node_config {
     service_account = google_service_account.worker_sa.email
-    machine_type    = "n2-highmem-32"
-    disk_type       = "pd-ssd"
-    disk_size_gb    = 100
-    ephemeral_storage_config { // This is used for emptyDir storage in kubernetes
-      // Minimum is 4 ssds for n2-highmem-32, for 375GB * 4 = 1.5TB of storage
-      local_ssd_count = 4
-    }
+    machine_type    = "n4-highmem-32"
+    disk_type       = "hyperdisk-balanced"
+    disk_size_gb    = 500
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 

@@ -78,19 +78,6 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "last_affected": "afcae83a064843d71d47624bc162e121cc56c08b"
-                }
-              ],
-              "database_specific": "<Any value>"
-            },
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -107,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.8.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -161,19 +148,6 @@
           "ranges": [
             {
               "type": "GIT",
-              "repo": "https://github.com/behdad/harfbuzz",
-              "events": [
-                {
-                  "introduced": "0"
-                },
-                {
-                  "fixed": "b0af59229cc233a66106c696534ac39be56093d8"
-                }
-              ],
-              "database_specific": "<Any value>"
-            },
-            {
-              "type": "GIT",
               "repo": "https://github.com/harfbuzz/harfbuzz",
               "events": [
                 {
@@ -193,7 +167,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.8.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3443,6 +3417,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -3572,6 +3547,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -4353,6 +4329,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -4422,6 +4399,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -4491,6 +4469,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -4561,6 +4540,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
@@ -4690,6 +4670,7 @@
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",

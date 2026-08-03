@@ -16,3 +16,5 @@ spec:
               value: osv-vulnerabilities
             - name: OSV_FAILED_TASKS_TOPIC
               value: failed-tasks
+            args:
+            - --breakdown-prefixes=ALSA-,BIT-,CGA-{{0..9},{a..z}},CVE-,DLA-,DSA-,GHSA-,GO-,MAL-,MGASA-,OSV-,PYSEC-,RLSA-,RUSTSEC-,SUSE-,UBUNTU-

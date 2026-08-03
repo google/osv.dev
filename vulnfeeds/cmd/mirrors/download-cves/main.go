@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -32,6 +33,7 @@ const (
 	startingYear   = 2002
 	CVEPathDefault = "cve_jsons"
 	GCSDir         = "nvd"
+	maxFileSize    = 1024 * 1024 * 1024 * 10 // 10GB
 )
 
 // Note that we were originally downloading NVD data from data dumps - which were deprecated,
@@ -94,7 +96,7 @@ func main() {
 	})
 
 	if err := g.Wait(); err != nil {
-		logger.Fatal("Failed to complete all downloads", slog.Any("err", err))
+		logger.Error("Failed to complete all downloads", slog.Any("err", err))
 	}
 }
 
@@ -232,8 +234,20 @@ func downloadCVEFromDataDumps(version string, cvePath string) error {
 	defer file.Close()
 
 	err = downloadAndProcess(version, func(r io.Reader) error {
-		_, err := io.Copy(file, io.LimitReader(r, 1024*1024*1024*10)) // 10GB limit
-		return err
+		n, err := io.Copy(file, io.LimitReader(r, maxFileSize))
+		if err != nil {
+			return err
+		}
+		if n >= maxFileSize {
+			var buf [1]byte
+			if _, err := r.Read(buf[:]); err == nil {
+				return fmt.Errorf("file exceeded limit of %d bytes", maxFileSize)
+			} else if !errors.Is(err, io.EOF) {
+				return fmt.Errorf("error checking for remaining data: %w", err)
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err
@@ -247,7 +261,18 @@ func downloadCVEFromDataDumpsToGCS(ctx context.Context, bkt *storage.BucketHandl
 	objectName := GCSDir + "/" + fileNameBase + version + ".json"
 
 	err := downloadAndProcess(version, func(r io.Reader) error {
-		return gcs.UploadToGCS(ctx, bkt, objectName, io.LimitReader(r, 1024*1024*1024*10), "application/json", nil)
+		if err := gcs.UploadToGCS(ctx, bkt, objectName, io.LimitReader(r, maxFileSize), "application/json", nil); err != nil {
+			return err
+		}
+		// Check if we hit the limit
+		var buf [1]byte
+		if _, err := r.Read(buf[:]); err == nil {
+			return fmt.Errorf("file exceeded limit of %d bytes", maxFileSize)
+		} else if !errors.Is(err, io.EOF) {
+			return fmt.Errorf("error checking for remaining data: %w", err)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err

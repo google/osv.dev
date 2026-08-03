@@ -136,7 +136,7 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 }
 
 func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
-	if (cve5 != nil && cve5.GetWithdrawn() != nil) || (nvd != nil && nvd.GetWithdrawn() != nil) {
+	if (cve5.GetWithdrawn() != nil) || (nvd.GetWithdrawn() != nil) {
 		return nil
 	}
 
@@ -146,11 +146,8 @@ func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability)
 	if cve5 != nil {
 		return cve5
 	}
-	if nvd != nil {
-		return nvd
-	}
 
-	return nil
+	return nvd
 }
 
 func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability) {

@@ -187,7 +187,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 
-				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics, vuln.Withdrawn != nil); err != nil {
+				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics); err != nil {
 					logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 			}

@@ -39,10 +39,6 @@ const (
 // the vulnerability payload is unchanged.
 var ErrUploadSkipped = errors.New("upload skipped")
 
-// ErrWithdrawnSkipped indicates that an upload/write was skipped because
-// the vulnerability is withdrawn and does not already exist.
-var ErrWithdrawnSkipped = errors.New("withdrawn skipped")
-
 // writeToDisk writes the vulnerability to a local file.
 // It returns an error if the file could not be written.
 // Writes out withdrawn records regardless of whether they don't already exist.
@@ -99,11 +95,7 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash st
 		if attrs.Metadata != nil && attrs.Metadata[hashMetadataKey] == hexHash {
 			return ErrUploadSkipped
 		}
-	} else if errors.Is(err, storage.ErrObjectNotExist) {
-		if v.GetWithdrawn() != nil {
-			return ErrWithdrawnSkipped
-		}
-	} else {
+	} else if !errors.Is(err, storage.ErrObjectNotExist) {
 		return fmt.Errorf("failed to get object attributes for %s: %w", vulnID, err)
 	}
 
@@ -238,8 +230,6 @@ func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, o
 			}
 		} else if errors.Is(writeErr, ErrUploadSkipped) {
 			logger.Info("Skipping GCS upload, hash matches", slog.String("id", vulnID))
-		} else if errors.Is(writeErr, ErrWithdrawnSkipped) {
-			logger.Info("Skipping withdrawn record, does not exist", slog.String("id", vulnID))
 		} else {
 			if outBkt == nil && gcsHelper == nil {
 				logger.Error("Failed to write to disk", slog.String("id", vulnID), slog.Any("err", writeErr))
@@ -407,14 +397,13 @@ func UploadVulnIfChangedAsync(gcsHelper *gcs.Helper, prefix string, vuln *osvsch
 	}
 
 	objectName := path.Join(prefix, vuln.GetId()+".json")
-	skipIfNotExist := vuln.GetWithdrawn() != nil
-	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json", skipIfNotExist)
+	gcsHelper.Upload(objectName, bytes.NewReader(postModifiedBuf), hexHash, "application/json")
 
 	return nil
 }
 
 // UploadMetricsToGCSAsync marshals ConversionMetrics to JSON and schedules it for upload via the Helper pool.
-func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics, skipIfNotExist bool) error {
+func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.CVEID, metrics *models.ConversionMetrics) error {
 	if metrics == nil || cveID == "" {
 		return errors.New("invalid metrics or CVE ID provided")
 	}
@@ -427,7 +416,7 @@ func UploadMetricsToGCSAsync(gcsHelper *gcs.Helper, prefix string, cveID models.
 	objectName := path.Join(prefix, string(cveID)+".metrics.json")
 	reader := bytes.NewReader(data)
 
-	gcsHelper.Upload(objectName, reader, "", "application/json", skipIfNotExist)
+	gcsHelper.Upload(objectName, reader, "", "application/json")
 
 	return nil
 }

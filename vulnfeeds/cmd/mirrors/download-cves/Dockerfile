@@ -28,6 +28,5 @@ FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:be40864452bd6
 
 WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./
-COPY ./cmd/mirrors/download-cves/mirror_nvd.sh ./
 
-ENTRYPOINT ["/usr/local/bin/mirror_nvd.sh"]
+ENTRYPOINT ["/usr/local/bin/download-cves"]

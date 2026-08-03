@@ -377,6 +377,9 @@ func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string) {
 // AddSeverity adds CVSS severity information to the OSV vulnerability object.
 // It uses the highest available CVSS score from the underlying CVE record.
 func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics) {
+	if metricsData == nil {
+		return
+	}
 	bestVectorString, severityType := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {

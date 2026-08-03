@@ -70,14 +70,21 @@ func getCWEs(cna models.CNA, metrics *models.ConversionMetrics) []string {
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
 func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.ConversionMetrics, sourceLink string) *vulns.Vulnerability {
+	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
+	if err != nil {
+		metrics.AddNote("[%s]: Published date failed to parse, falling back to Epoch", cve.Metadata.CVEID)
+		published = time.Unix(0, 0).UTC()
+	}
+
+	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
+	if err != nil {
+		metrics.AddNote("[%s]: Modified date failed to parse, falling back to Published time", cve.Metadata.CVEID)
+		modified = published
+	}
+
 	var withdrawnTime *timestamppb.Timestamp
 	if cve.Metadata.State == "REJECTED" {
-		withdrawn, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
-		if err != nil {
-			metrics.AddNote("[%s]: Withdrawn date failed to parse, setting time to now", cve.Metadata.CVEID)
-			withdrawn = time.Now()
-		}
-		withdrawnTime = timestamppb.New(withdrawn)
+		withdrawnTime = timestamppb.New(modified)
 	}
 
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
@@ -92,21 +99,9 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 			Related:       related,
 			References:    vulns.ClassifyReferences(refs),
 			Withdrawn:     withdrawnTime,
+			Published:     timestamppb.New(published),
+			Modified:      timestamppb.New(modified),
 		}}
-
-	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
-	if err != nil {
-		metrics.AddNote("[%s]: Published date failed to parse, setting time to now", cve.Metadata.CVEID)
-		published = time.Now()
-	}
-	v.Published = timestamppb.New(published)
-
-	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
-	if err != nil {
-		metrics.AddNote("[%s]: Modified date failed to parse, setting time to now", cve.Metadata.CVEID)
-		modified = time.Now()
-	}
-	v.Modified = timestamppb.New(modified)
 
 	// Try to extract repository URLs from references.
 	repos := conversion.ReposFromReferencesCVEList(refs, models.RefTagDenyList, metrics)

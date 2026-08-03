@@ -55,6 +55,7 @@ func (c ConversionOutcome) ShouldEmit(rejectFailed bool) bool {
 	if !rejectFailed {
 		return true
 	}
+
 	return c == Successful || c == Rejected
 }
 

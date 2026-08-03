@@ -47,7 +47,7 @@ func main() {
 	defer logger.Close()
 
 	flag.Parse()
-	
+
 	ctx := context.Background()
 	var bkt *storage.BucketHandle
 	if *gcsBucket != "" {
@@ -72,6 +72,7 @@ func main() {
 			if bkt != nil {
 				return downloadCVEFromDataDumpsToGCS(ctx, bkt, version)
 			}
+
 			return downloadCVEFromDataDumps(version, *cvePath)
 		})
 	}
@@ -80,6 +81,7 @@ func main() {
 		if bkt != nil {
 			return downloadCVEFromDataDumpsToGCS(ctx, bkt, "modified")
 		}
+
 		return downloadCVEFromDataDumps("modified", *cvePath)
 	})
 
@@ -87,6 +89,7 @@ func main() {
 		if bkt != nil {
 			return downloadCVEFromDataDumpsToGCS(ctx, bkt, "recent")
 		}
+
 		return downloadCVEFromDataDumps("recent", *cvePath)
 	})
 
@@ -236,12 +239,13 @@ func downloadCVEFromDataDumps(version string, cvePath string) error {
 		return err
 	}
 	logger.Info("Successfully downloaded CVE "+version, slog.String("version", version))
+
 	return nil
 }
 
 func downloadCVEFromDataDumpsToGCS(ctx context.Context, bkt *storage.BucketHandle, version string) error {
 	objectName := GCSDir + "/" + fileNameBase + version + ".json"
-	
+
 	err := downloadAndProcess(version, func(r io.Reader) error {
 		return gcs.UploadToGCS(ctx, bkt, objectName, io.LimitReader(r, 1024*1024*1024*10), "application/json", nil)
 	})
@@ -249,5 +253,6 @@ func downloadCVEFromDataDumpsToGCS(ctx context.Context, bkt *storage.BucketHandl
 		return err
 	}
 	logger.Info("Successfully streamed CVE to GCS "+version, slog.String("version", version))
+
 	return nil
 }

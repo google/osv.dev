@@ -209,7 +209,7 @@ resource "google_project_iam_member" "compute_service_datastore" {
 resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
   name    = "gitter-disk"
-  type    = "pd-ssd"
+  type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = 6144 # 6TiB
 

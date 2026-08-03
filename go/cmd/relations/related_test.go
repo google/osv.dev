@@ -93,7 +93,7 @@ func TestComputeRelatedGroups(t *testing.T) {
 	}
 
 	ch := make(chan Update, 100)
-	if err := ComputeRelatedGroups(ctx, dsClient, ch); err != nil {
+	if err := ComputeRelatedGroups(ctx, dsClient, ch, nil); err != nil {
 		t.Fatalf("ComputeRelatedGroups failed: %v", err)
 	}
 	close(ch)

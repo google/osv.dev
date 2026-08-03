@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"cloud.google.com/go/datastore"
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/models"
 )
@@ -272,8 +272,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, nil
 
-	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC || (msg.Type == tea.KeyRunes && msg.String() == "q") {
+	case tea.KeyPressMsg:
+		if (msg.Mod == tea.ModCtrl && msg.Code == 'c') || msg.Text == "q" {
 			return m, tea.Quit
 		}
 
@@ -303,8 +303,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateSelectEnv(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		switch msg.Type {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		switch msg.Code {
 		case tea.KeyUp:
 			if m.envCursor > 0 {
 				m.envCursor--
@@ -318,7 +318,6 @@ func (m model) updateSelectEnv(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateLoading
 
 			return m, loadSourcesCmd(m.selectedEnv.projectID)
-		default:
 		}
 	}
 
@@ -369,8 +368,8 @@ func (m model) updateSelectSources(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
+	case tea.KeyPressMsg:
+		switch msg.Code {
 		case tea.KeySpace:
 			if selected, ok := m.list.SelectedItem().(*item); ok {
 				selected.checked = !selected.checked
@@ -389,7 +388,6 @@ func (m model) updateSelectSources(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			return m, nil
-		default:
 		}
 	default:
 	}
@@ -401,12 +399,12 @@ func (m model) updateSelectSources(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		switch msg.Type {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		switch msg.Code {
 		case tea.KeyEsc:
 			m.state = stateSelectSources
-		case tea.KeyRunes:
-			switch msg.String() {
+		default:
+			switch msg.Text {
 			case "y", "Y":
 				m.state = stateApplying
 				var checkedRepos []*models.SourceRepository
@@ -420,7 +418,6 @@ func (m model) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "n", "N":
 				m.state = stateSelectSources
 			}
-		default:
 		}
 	}
 
@@ -437,8 +434,8 @@ func (m model) updateApplying(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateDone(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		if msg.Type == tea.KeyEnter || (msg.Type == tea.KeyRunes && msg.String() == "q") {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		if msg.Code == tea.KeyEnter || msg.Text == "q" {
 			return m, tea.Quit
 		}
 	}
@@ -448,9 +445,9 @@ func (m model) updateDone(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	if m.width == 0 || m.height == 0 {
-		return "Initializing TUI..."
+		return tea.NewView("Initializing TUI...")
 	}
 
 	dialogWidth := m.width - 4
@@ -562,10 +559,10 @@ func (m model) View() string {
 		}
 	}
 
-	return dialogStyle.
+	return tea.NewView(dialogStyle.
 		Width(contentWidth).
 		Height(contentHeight).
-		Render(s.String())
+		Render(s.String()))
 }
 
 func main() {

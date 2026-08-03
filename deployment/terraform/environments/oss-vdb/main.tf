@@ -51,6 +51,8 @@ module "osv" {
     "reimport",
     "cves",
   ]
+
+  create_oss_fuzz_subnet = true
 }
 
 module "oss_fuzz" {
@@ -59,6 +61,12 @@ module "oss_fuzz" {
   tasks_topic_id               = module.osv.tasks_topic_id
   failed_tasks_topic_id        = module.osv.failed_tasks_topic_id
   pubsub_service_account_email = module.osv.pubsub_service_account_email
+  subnetwork                   = module.osv.oss_fuzz_subnet_self_link
+}
+
+moved {
+  from = module.oss_fuzz.google_compute_subnetwork.oss_fuzz_subnet
+  to   = module.osv.google_compute_subnetwork.oss_fuzz_subnet[0]
 }
 
 module "k8s_cron_alert" {
@@ -88,11 +96,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.39.0"
+      version = "~> 7.40.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.39.0"
+      version = "~> 7.40.0"
     }
     external = {
       source  = "hashicorp/external"

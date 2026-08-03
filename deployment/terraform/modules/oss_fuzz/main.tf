@@ -1,17 +1,8 @@
-resource "google_compute_subnetwork" "oss_fuzz_subnet" {
-  project                  = var.project_id
-  name                     = "oss-fuzz-subnet"
-  network                  = var.network
-  ip_cidr_range            = "10.45.36.0/22"
-  private_ip_google_access = true
-  region                   = var.region
-}
-
 resource "google_container_cluster" "workers" {
   project    = var.project_id
   name       = "oss-fuzz-workers"
   location   = "${var.region}-f"
-  subnetwork = google_compute_subnetwork.oss_fuzz_subnet.self_link
+  subnetwork = var.subnetwork
 
   private_cluster_config {
     enable_private_endpoint = false

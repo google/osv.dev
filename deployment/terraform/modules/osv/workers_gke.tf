@@ -216,6 +216,7 @@ resource "google_compute_disk" "gitter_disk" {
   lifecycle {
     ignore_changes = [
       type,
+      snapshot,
     ]
   }
 }
@@ -231,7 +232,7 @@ resource "google_compute_disk" "importer_reconciler_git_cache" {
   lifecycle {
     ignore_changes = [
       type,
+      snapshot,
     ]
   }
 }
-

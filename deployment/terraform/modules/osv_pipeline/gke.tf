@@ -194,7 +194,7 @@ resource "google_container_node_pool" "worker_pool" {
 resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
   name    = var.gitter_disk_name
-  type    = "pd-ssd"
+  type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.gitter_disk_size_gb
 }
@@ -203,7 +203,7 @@ resource "google_compute_disk" "gitter_disk" {
 resource "google_compute_disk" "importer_reconciler_git_cache" {
   project = var.project_id
   name    = var.importer_reconciler_git_cache_disk_name
-  type    = "pd-ssd"
+  type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.importer_reconciler_git_cache_size_gb
 }

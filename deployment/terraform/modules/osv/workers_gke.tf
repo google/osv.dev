@@ -99,13 +99,9 @@ resource "google_container_node_pool" "highend" {
 
 
   node_config {
-    machine_type = "n2-highmem-32"
-    disk_type    = "pd-balanced"
-    disk_size_gb = 100
-    ephemeral_storage_config { // This is used for emptyDir storage in kubernetes
-      // Minimum is 4 ssds for n2-highmem-32, for 375GB * 4 = 1.5TB of storage
-      local_ssd_count = 4
-    }
+    machine_type = "n4-highmem-32"
+    disk_type    = "hyperdisk-balanced"
+    disk_size_gb = 500
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
 
@@ -213,7 +209,7 @@ resource "google_project_iam_member" "compute_service_datastore" {
 resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
   name    = "gitter-disk"
-  type    = "pd-ssd"
+  type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = 6144 # 6TiB
 
@@ -224,11 +220,11 @@ resource "google_compute_disk" "gitter_disk" {
   }
 }
 
-# SSD for Importer Reconciler
+# Hyperdisk for Importer Reconciler
 resource "google_compute_disk" "importer_reconciler_git_cache" {
   project = var.project_id
   name    = "importer-reconciler-git-cache"
-  type    = "pd-ssd"
+  type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = 200
 

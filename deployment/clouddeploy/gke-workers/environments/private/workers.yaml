@@ -19,7 +19,7 @@ spec:
           - name: OSV_VULNERABILITIES_BUCKET
             value: private-osv-vulnerabilities
           - name: PUBSUB_SUBSCRIPTION
-            value: "default-pool"
+            value: "default"
           - name: FAILED_TASKS_TOPIC
             value: "failed-osv-work"
         resources:

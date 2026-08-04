@@ -17,7 +17,7 @@ spec:
             # We don't have a dedicated reimport pool for this private deployment,
             # so route reimports to the default pool.
             - name: REIMPORT_TASK_POOL
-              value: "default-pool"
+              value: "default"
             args: ["--reconcile=true"]
 ---
 apiVersion: v1

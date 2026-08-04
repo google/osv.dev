@@ -16,6 +16,9 @@ spec:
           - name: importer-deleter
             image: importer
             imagePullPolicy: Always
+            env:
+              - name: DEFAULT_TASK_POOL
+                value: "default"
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"

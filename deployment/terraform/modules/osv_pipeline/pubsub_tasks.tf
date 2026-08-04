@@ -34,7 +34,7 @@ resource "google_pubsub_subscription" "default_work" {
     goog-dm = "pubsub"
   }
 
-  filter = "attributes.work_pool = \"default\""
+  filter = "attributes.work_pool = \"${var.pubsub_subscription_default_work_pool_name}\""
 }
 
 resource "google_pubsub_subscription" "work_pools" {

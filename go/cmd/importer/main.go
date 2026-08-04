@@ -40,6 +40,7 @@ func main() {
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
 	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
 	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for importing")
+	maxCowardEntriesToShow := flag.Int("max-coward-entries-to-show", 250, "Maximum number of entries to show when cowardly refusing to delete missing records")
 	dryRun := flag.Bool("dry-run", false, "Do not send anything to the message bus if true")
 
 	flag.Parse()
@@ -62,14 +63,15 @@ func main() {
 	}
 
 	config := importer.Config{
-		StrictValidation: *strictValidation,
-		DeleteThreshold:  *deleteThresholdPct,
-		NumWorkers:       *numWorkers,
-		DefaultTaskPool:  defaultTaskPool,
-		ReimportTaskPool: reimportTaskPool,
-		GitWorkDir:       filepath.Join(*workDir, "sources"),
-		SampleRate:       vulnerabilitySampleRate(),
-		DryRun:           *dryRun,
+		StrictValidation:       *strictValidation,
+		DeleteThreshold:        *deleteThresholdPct,
+		MaxCowardEntriesToShow: *maxCowardEntriesToShow,
+		NumWorkers:             *numWorkers,
+		DefaultTaskPool:        defaultTaskPool,
+		ReimportTaskPool:       reimportTaskPool,
+		GitWorkDir:             filepath.Join(*workDir, "sources"),
+		SampleRate:             vulnerabilitySampleRate(),
+		DryRun:                 *dryRun,
 	}
 
 	httpClient := retryablehttp.NewClient()

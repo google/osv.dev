@@ -51,10 +51,11 @@ type Config struct {
 	HTTPClient         *http.Client
 	GitWorkDir         string
 
-	StrictValidation bool
-	DeleteThreshold  float64
-	SampleRate       float64
-	DryRun           bool
+	StrictValidation       bool
+	DeleteThreshold        float64
+	SampleRate             float64
+	DryRun                 bool
+	MaxCowardEntriesToShow int
 }
 
 type RetryableHTTPLeveledLogger struct{}

@@ -25,6 +25,7 @@ func TestGenerate(t *testing.T) {
 		{"npm", "@babel/core", "pkg:npm/%40babel/core", false},
 		{"Hex", "acme/foo", "pkg:hex/acme/foo", false},
 		{"SwiftURL", "github.com/apple/swift-markdown", "pkg:swift/github.com/apple/swift-markdown", false},
+		{"Docker Hardened Images", "curl", "pkg:dhi/curl", false},
 		// Error cases
 		{"UnknownEcosystem", "package", "", true},
 	}
@@ -66,6 +67,13 @@ func TestParse(t *testing.T) {
 		{"pkg:npm/%40babel/core@1.2.3", "npm", "@babel/core", "1.2.3", false},
 		{"pkg:hex/acme/foo@1.2.3", "Hex", "acme/foo", "1.2.3", false},
 		{"pkg:swift/github.com/apple/swift-markdown@1.2.3", "SwiftURL", "github.com/apple/swift-markdown", "1.2.3", false},
+		// Docker Hardened Images: release-lineage PURLs resolve to the ecosystem.
+		// Qualifiers are ignored; versionless (OSV affected) and versioned (VEX
+		// product) forms both parse. pkg:dhi/ also still resolves.
+		{"pkg:apk/dhi/curl?os_distro=alpine&os_name=dhi&os_version=3.23", "Docker Hardened Images", "curl", "", false},
+		{"pkg:apk/dhi/curl@8.4.0-r0", "Docker Hardened Images", "curl", "8.4.0-r0", false},
+		{"pkg:deb/dhi/openssl@3.0.11-1", "Docker Hardened Images", "openssl", "3.0.11-1", false},
+		{"pkg:dhi/curl@8.4.0-r0", "Docker Hardened Images", "curl", "8.4.0-r0", false},
 		// Error cases
 		{"invalid-purl", "", "", "", true},
 		{"pkg:unknown/package@1.0.0", "", "", "", true},

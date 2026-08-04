@@ -8,8 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
@@ -318,23 +316,6 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	}
 
 	return nil
-}
-
-func formatEntries(toDelete []*models.VulnSourceRef, max int) string {
-	builder := strings.Builder{}
-
-	for i, v := range toDelete {
-		if i >= max {
-			builder.WriteString("... and ")
-			builder.WriteString(strconv.Itoa(len(toDelete) - max))
-			builder.WriteString(" more")
-			break
-		}
-		builder.WriteString(v.ID)
-		builder.WriteString(", ")
-	}
-
-	return builder.String()
 }
 
 // checkHEAD performs a HEAD request to check for updates

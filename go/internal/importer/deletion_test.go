@@ -196,3 +196,62 @@ type mockCloudStorageStorageProvider struct {
 func (m *mockCloudStorageStorageProvider) Bucket(name string) clients.CloudStorage {
 	return m.buckets[name]
 }
+
+func TestFormatEntries(t *testing.T) {
+	t.Parallel()
+
+	entries := []*models.VulnSourceRef{
+		{ID: "ID-1"},
+		{ID: "ID-2"},
+		{ID: "ID-3"},
+	}
+
+	testCases := []struct {
+		name     string
+		toDelete []*models.VulnSourceRef
+		max      int
+		expected string
+	}{
+		{
+			name:     "empty entries",
+			toDelete: nil,
+			max:      10,
+			expected: "",
+		},
+		{
+			name:     "fewer than max",
+			toDelete: entries[:2],
+			max:      5,
+			expected: "ID-1, ID-2",
+		},
+		{
+			name:     "equal to max",
+			toDelete: entries,
+			max:      3,
+			expected: "ID-1, ID-2, ID-3",
+		},
+		{
+			name:     "more than max",
+			toDelete: entries,
+			max:      2,
+			expected: "ID-1, ID-2 ... and 1 more",
+		},
+		{
+			name:     "max <= 0 fallback to default",
+			toDelete: entries,
+			max:      0,
+			expected: "ID-1, ID-2, ID-3",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := formatEntries(tc.toDelete, tc.max)
+			if got != tc.expected {
+				t.Errorf("formatEntries() = %q, want %q", got, tc.expected)
+			}
+		})
+	}
+}
+

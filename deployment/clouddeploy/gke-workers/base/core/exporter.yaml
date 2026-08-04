@@ -28,10 +28,10 @@ spec:
             resources:
               requests:
                 cpu: "12"
-                memory: "40Gi"
+                memory: "100Gi"
               limits:
                 cpu: "20"
-                memory: "64Gi"
+                memory: "150Gi"
             env:
               - name: TRACE_SAMPLE_RATE
                 value: "0.0"

@@ -160,7 +160,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
-			slog.String("to_delete_entries", formatEntries(toDelete, config.MaxCowardEntriesToShow)),
+			slog.Any("to_delete_entries", formatEntries(toDelete, config.MaxCowardEntriesToShow)),
 			slog.Int("total", len(vulnsInDatastore)),
 			slog.Float64("percentage", percentage),
 			slog.Float64("threshold", threshold))

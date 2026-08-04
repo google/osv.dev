@@ -3,6 +3,7 @@ package importer
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/google/osv.dev/go/internal/models"
@@ -210,37 +211,37 @@ func TestFormatEntries(t *testing.T) {
 		name     string
 		toDelete []*models.VulnSourceRef
 		max      int
-		expected string
+		expected []string
 	}{
 		{
 			name:     "empty entries",
 			toDelete: nil,
 			max:      10,
-			expected: "",
+			expected: nil,
 		},
 		{
 			name:     "fewer than max",
 			toDelete: entries[:2],
 			max:      5,
-			expected: "ID-1, ID-2",
+			expected: []string{"ID-1", "ID-2"},
 		},
 		{
 			name:     "equal to max",
 			toDelete: entries,
 			max:      3,
-			expected: "ID-1, ID-2, ID-3",
+			expected: []string{"ID-1", "ID-2", "ID-3"},
 		},
 		{
 			name:     "more than max",
 			toDelete: entries,
 			max:      2,
-			expected: "ID-1, ID-2 ... and 1 more",
+			expected: []string{"ID-1", "ID-2", "... and 1 more"},
 		},
 		{
 			name:     "max <= 0 fallback to default",
 			toDelete: entries,
 			max:      0,
-			expected: "ID-1, ID-2, ID-3",
+			expected: []string{"ID-1", "ID-2", "ID-3"},
 		},
 	}
 
@@ -248,10 +249,9 @@ func TestFormatEntries(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := formatEntries(tc.toDelete, tc.max)
-			if got != tc.expected {
-				t.Errorf("formatEntries() = %q, want %q", got, tc.expected)
+			if !slices.Equal(got, tc.expected) {
+				t.Errorf("formatEntries() = %v, want %v", got, tc.expected)
 			}
 		})
 	}
 }
-

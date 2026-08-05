@@ -101,7 +101,7 @@
             </span>
             <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
               {% if vulnerability.summary %}
-                {{ vulnerability.summary | literal_backticks }}
+                {{ vulnerability.summary }}
               {% else %}
                 See record for full details
               {% endif %}

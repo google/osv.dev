@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;700&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap">
   </noscript>
   <meta charset="utf-8">
-  <title id="title">OSV - Open Source Vulnerabilities</title>
+  <title id="title">{{ if .Title }}{{ .Title }}{{ else }}OSV - Open Source Vulnerabilities{{ end }}</title>
   <!-- Global site tag (gtag.js) - Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXG9G6HTBR"></script>
   <script>

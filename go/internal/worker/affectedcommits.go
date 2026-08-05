@@ -31,7 +31,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis, vuln.GetId())
+			considerAllBranches := e.shouldConsiderAllBranches(ctx, repo, sourceRepo)
+			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis, vuln.GetId(), considerAllBranches)
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}
@@ -54,8 +55,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	}, nil
 }
 
-func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsResponse, error) {
-	req, err := newAffectedCommitsRequest(aRange, gitAnalysis, refID)
+func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string, considerAllBranches bool) (*gitterpb.AffectedCommitsResponse, error) {
+	req, err := newAffectedCommitsRequest(aRange, gitAnalysis, refID, considerAllBranches)
 	if err != nil {
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
 	}
@@ -163,10 +164,10 @@ func applyAffectedCommitsAndTags(resp *gitterpb.AffectedCommitsResponse, affecte
 	}
 }
 
-func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsRequest, error) {
+func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string, considerAllBranches bool) (*gitterpb.AffectedCommitsRequest, error) {
 	gitterReq := &gitterpb.AffectedCommitsRequest{
 		Url:                         affectedRange.GetRepo(),
-		ConsiderAllBranches:         gitAnalysis.ConsiderAllBranches,
+		ConsiderAllBranches:         considerAllBranches,
 		DetectCherrypicksIntroduced: gitAnalysis.DetectCherrypicks,
 		DetectCherrypicksFixed:      gitAnalysis.DetectCherrypicks,
 		DetectCherrypicksLimit:      gitAnalysis.DetectCherrypicks,
@@ -196,4 +197,22 @@ func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *mode
 	}
 
 	return gitterReq, nil
+}
+
+func (e *Engine) shouldConsiderAllBranches(ctx context.Context, repo string, sourceRepo *models.SourceRepository) bool {
+	// If source repository level consider_all_branches is enabled, use it.
+	if sourceRepo.GitAnalysis.ConsiderAllBranches {
+		return true
+	}
+
+	// Otherwise, check if the specific git repository is in the per-repo allowlist.
+	if e.Stores.RepoCAB == nil {
+		return false
+	}
+	inAllowlist, err := e.Stores.RepoCAB.ShouldConsiderAllBranches(ctx, repo)
+	if err != nil {
+		return false
+	}
+
+	return inAllowlist
 }

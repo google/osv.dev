@@ -84,6 +84,7 @@ func run() error {
 
 	stores := worker.Stores{
 		SourceRepo: db.NewSourceRepositoryStore(dsClient),
+		RepoCAB:    db.NewRepoCABStore(dsClient),
 		Vulnerability: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client:               dsClient,
 			GCS:                  clients.NewGCSClient(gcsClient, vulnBucket),

@@ -35,5 +35,6 @@ type Stores struct {
 	Vulnerability  models.VulnerabilityStore
 	Relations      models.RelationsStore
 	ImportFindings models.ImportFindingsStore
+	RepoCAB        models.RepoCABStore
 	PyPIPublisher  clients.Publisher
 }

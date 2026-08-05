@@ -13,8 +13,10 @@ type AffectedCommit struct {
 	Repo         string `json:"repo,omitempty"          yaml:"repo,omitempty"`
 	Introduced   string `json:"introduced,omitempty"    yaml:"introduced,omitempty"`
 	Fixed        string `json:"fixed,omitempty"         yaml:"fixed,omitempty"`
-	Limit        string `json:"limit,omitempty"         yaml:"limit,omitempty"`
-	LastAffected string `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
+	Limit        string        `json:"limit,omitempty"         yaml:"limit,omitempty"`
+	LastAffected string        `json:"last_affected,omitempty" yaml:"last_affected,omitempty"`
+	Source       VersionSource `json:"-"                       yaml:"-"`
+	OriginalTag  string        `json:"-"                       yaml:"-"`
 }
 
 // SetCommitByType sets the appropriate commit field on an AffectedCommit based on the CommitType.

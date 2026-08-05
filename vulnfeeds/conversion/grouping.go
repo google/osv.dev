@@ -375,9 +375,16 @@ func MergeRangesAndCreateAffected(
 						}
 
 						if len(events) > 0 {
+							source := commit.Source
+							if source == "" || source == models.VersionSourceNone {
+								source = models.VersionSourceRefs
+							}
 							extractedEventGroup := map[string]any{
 								"range":  events,
-								"source": string(models.VersionSourceRefs),
+								"source": string(source),
+							}
+							if commit.OriginalTag != "" {
+								extractedEventGroup["original_tag"] = commit.OriginalTag
 							}
 							dbSpecificMap := map[string]any{
 								"extracted_events": []any{extractedEventGroup},
@@ -423,9 +430,16 @@ func MergeRangesAndCreateAffected(
 			}
 
 			if len(events) > 0 {
+				source := commit.Source
+				if source == "" || source == models.VersionSourceNone {
+					source = models.VersionSourceRefs
+				}
 				extractedEventGroup := map[string]any{
 					"range":  events,
-					"source": string(models.VersionSourceRefs),
+					"source": string(source),
+				}
+				if commit.OriginalTag != "" {
+					extractedEventGroup["original_tag"] = commit.OriginalTag
 				}
 				dbSpecificMap := map[string]any{
 					"extracted_events": []any{extractedEventGroup},

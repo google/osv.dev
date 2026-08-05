@@ -1771,12 +1771,13 @@
                 "source": "CPE_RANGE"
               },
               {
+                "original_tag": "v1.25.4",
                 "range": [
                   {
                     "fixed": "369830bada2fd8826a5135cb2fc66660a9bef708"
                   }
                 ],
-                "source": "REFERENCES"
+                "source": "REFERENCES_TAG"
               }
             ]
           },
@@ -1878,12 +1879,13 @@
                 "source": "CPE_RANGE"
               },
               {
+                "original_tag": "tokio-1.23.1",
                 "range": [
                   {
                     "fixed": "1a997ffbd62334af2553775234e75ede2d7d949f"
                   }
                 ],
-                "source": "REFERENCES"
+                "source": "REFERENCES_TAG"
               }
             ]
           },
@@ -1962,7 +1964,7 @@
                     "fixed": "2c1762b85acb84467ed5e799afe1499cd2f912e6"
                   }
                 ],
-                "source": "REFERENCES"
+                "source": "REFERENCES_COMMIT"
               }
             ]
           },
@@ -2057,7 +2059,7 @@
                     "fixed": "17838beda2943d08b8a9d4df5b68f5f04f26d901"
                   }
                 ],
-                "source": "REFERENCES"
+                "source": "REFERENCES_COMMIT"
               }
             ]
           },
@@ -2512,7 +2514,7 @@
                     "fixed": "62e803b36173fd096d7ad460dd1d1db9be542593"
                   }
                 ],
-                "source": "REFERENCES"
+                "source": "REFERENCES_COMMIT"
               }
             ]
           },

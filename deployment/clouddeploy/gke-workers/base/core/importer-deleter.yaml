@@ -19,6 +19,8 @@ spec:
             env:
               - name: DEFAULT_TASK_POOL
                 value: "default"
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
             volumeMounts:
               - mountPath: "/work"
                 name: "ssd"

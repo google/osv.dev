@@ -86,3 +86,84 @@ func TestPopulateAffectedCommitsAndTags(t *testing.T) {
 		t.Errorf("expected 3 events, got %d", len(aRange.GetEvents()))
 	}
 }
+
+type mockRepoCABStore struct {
+	allowedRepos map[string]bool
+}
+
+func (m *mockRepoCABStore) ShouldConsiderAllBranches(_ context.Context, repoURL string) (bool, error) {
+	if m.allowedRepos[repoURL] {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func TestShouldConsiderAllBranches(t *testing.T) {
+	ctx := context.Background()
+	mockStore := &mockRepoCABStore{
+		allowedRepos: map[string]bool{
+			"https://github.com/test-org/test-repo": true,
+		},
+	}
+
+	engineWithAllowlist := &Engine{
+		Stores: Stores{
+			RepoCAB: mockStore,
+		},
+	}
+	engineWithoutAllowlist := &Engine{}
+
+	sourceRepoCABFalse := &models.SourceRepository{
+		GitAnalysis: &models.GitAnalysisConfig{ConsiderAllBranches: false},
+	}
+	sourceRepoCABTrue := &models.SourceRepository{
+		GitAnalysis: &models.GitAnalysisConfig{ConsiderAllBranches: true},
+	}
+
+	tests := []struct {
+		name       string
+		engine     *Engine
+		repo       string
+		sourceRepo *models.SourceRepository
+		want       bool
+	}{
+		{
+			name:       "Source repo CAB true overrides allowlist",
+			engine:     engineWithoutAllowlist,
+			repo:       "https://github.com/not-relevant/not-relevant.git",
+			sourceRepo: sourceRepoCABTrue,
+			want:       true,
+		},
+		{
+			name:       "Source repo CAB false, in repo-based allowlist",
+			engine:     engineWithAllowlist,
+			repo:       "https://github.com/test-org/test-repo",
+			sourceRepo: sourceRepoCABFalse,
+			want:       true,
+		},
+		{
+			name:       "Source repo CAB false, not in allowlist",
+			engine:     engineWithAllowlist,
+			repo:       "https://github.com/unlisted/repo.git",
+			sourceRepo: sourceRepoCABFalse,
+			want:       false,
+		},
+		{
+			name:       "Source repo CAB false, nil allowlist store",
+			engine:     engineWithoutAllowlist,
+			repo:       "https://github.com/apache/hadoop.git",
+			sourceRepo: sourceRepoCABFalse,
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.engine.shouldConsiderAllBranches(ctx, tt.repo, tt.sourceRepo)
+			if got != tt.want {
+				t.Errorf("shouldConsiderAllBranches(%q) = %v, want %v", tt.repo, got, tt.want)
+			}
+		})
+	}
+}

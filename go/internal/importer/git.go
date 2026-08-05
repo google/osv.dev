@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"os"
 	"path"
 	"strings"
 
@@ -37,6 +38,19 @@ func (g gitSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	}
 
 	return io.NopCloser(bytes.NewReader(resp.GetContent())), nil
+}
+
+func getGitterClient(config Config) (gitter.Client, error) {
+	if config.GitterClient != nil {
+		return config.GitterClient, nil
+	}
+
+	gitterHost := os.Getenv("GITTER_HOST")
+	if gitterHost == "" {
+		return nil, errors.New("GITTER_HOST environment variable is not set")
+	}
+
+	return gitter.NewClient(gitterHost, config.HTTPClient)
 }
 
 // makeGitPathFilter path filtering function based on the SourceRepository rules.
@@ -82,13 +96,14 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git import")
 	}
-	if config.GitterClient == nil {
-		return errors.New("gitter client is required for git import")
+	gitterClient, err := getGitterClient(config)
+	if err != nil {
+		return err
 	}
 	logger.InfoContext(ctx, "Importing git source repository",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
 
-	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, sourceRepo.Git.LastSyncedCommit)
+	resp, err := fetchGitterFileDiffs(ctx, gitterClient, sourceRepo, sourceRepo.Git.LastSyncedCommit)
 	if err != nil {
 		return err
 	}
@@ -140,7 +155,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 		case ch <- WorkItem{
 			Context: ctx,
 			SourceRecord: gitSourceRecord{
-				client:  config.GitterClient,
+				client:  gitterClient,
 				repoURL: sourceRepo.Git.URL,
 				commit:  latestCommit,
 				path:    to,
@@ -173,8 +188,9 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git reconcile")
 	}
-	if config.GitterClient == nil {
-		return errors.New("gitter client is required for git reconcile")
+	gitterClient, err := getGitterClient(config)
+	if err != nil {
+		return err
 	}
 	logger.InfoContext(ctx, "Processing git reconcile",
 		slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.Git.URL))
@@ -188,7 +204,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 	format := extensionToFormat(sourceRepo.Extension)
 
 	// Query Gitter with empty lastSyncedCommit to get all files in the repository
-	resp, err := fetchGitterFileDiffs(ctx, config.GitterClient, sourceRepo, "")
+	resp, err := fetchGitterFileDiffs(ctx, gitterClient, sourceRepo, "")
 	if err != nil {
 		if !osvutil.IsContextError(err) {
 			logger.ErrorContext(ctx, "Failed to get file diffs for git reconcile", slog.Any("error", err), slog.String("source", sourceRepo.Name))
@@ -211,7 +227,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 		}
 
 		sourceRecord := gitSourceRecord{
-			client:  config.GitterClient,
+			client:  gitterClient,
 			repoURL: sourceRepo.Git.URL,
 			commit:  latestCommit,
 			path:    relPath,

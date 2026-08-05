@@ -181,4 +181,3 @@ func TestDisplayPackages(t *testing.T) {
 		t.Errorf("DisplayPackages() = %v, want %v", got, want)
 	}
 }
-

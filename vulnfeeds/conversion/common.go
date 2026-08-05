@@ -145,10 +145,32 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
+	localCanonicalCache := make(map[string]string)
+	getCanonical := func(repo string) (string, error) {
+		if canonical, ok := localCanonicalCache[repo]; ok {
+			return canonical, nil
+		}
+		canonical, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		if err == nil {
+			localCanonicalCache[repo] = canonical
+		}
+
+		return canonical, err
+	}
+
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
-			claimedRepos[vr.Range.GetRepo()] = true
+			canonicalRepo, err := getCanonical(vr.Range.GetRepo())
+			if err != nil {
+				if git.IsRateLimit(err) {
+					metrics.Outcome = models.Error
+					return nil, nil, nil
+				}
+				claimedRepos[vr.Range.GetRepo()] = true
+			} else {
+				claimedRepos[canonicalRepo] = true
+			}
 		}
 	}
 
@@ -160,7 +182,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		repo, err := getCanonical(repo)
 		if err != nil {
 			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
@@ -184,7 +206,19 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
-			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+			vRepo := vr.Range.GetRepo()
+			if vRepo != "" {
+				canonicalVRepo, err := getCanonical(vRepo)
+				if err != nil {
+					if git.IsRateLimit(err) {
+						metrics.Outcome = models.Error
+						return nil, nil, nil
+					}
+				} else {
+					vRepo = canonicalVRepo
+				}
+			}
+			if (vRepo != "" && vRepo != repo) || (vRepo == "" && claimedRepos[repo]) {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 				continue
 			}

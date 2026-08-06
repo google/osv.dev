@@ -145,23 +145,10 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
-	localCanonicalCache := make(map[string]string)
-	getCanonical := func(repo string) (string, error) {
-		if canonical, ok := localCanonicalCache[repo]; ok {
-			return canonical, nil
-		}
-		canonical, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
-		if err == nil {
-			localCanonicalCache[repo] = canonical
-		}
-
-		return canonical, err
-	}
-
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
-			canonicalRepo, err := getCanonical(vr.Range.GetRepo())
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), http.DefaultClient, cache)
 			if err != nil {
 				if git.IsRateLimit(err) {
 					metrics.Outcome = models.Error
@@ -182,7 +169,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		repo, err := getCanonical(repo)
+		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
 		if err != nil {
 			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
@@ -208,7 +195,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		for _, vr := range unresolvedRanges {
 			vRepo := vr.Range.GetRepo()
 			if vRepo != "" {
-				canonicalVRepo, err := getCanonical(vRepo)
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, http.DefaultClient, cache)
 				if err != nil {
 					if git.IsRateLimit(err) {
 						metrics.Outcome = models.Error

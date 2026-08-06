@@ -39,9 +39,10 @@ type RangeWithMetadata struct {
 }
 
 type Metadata struct {
-	CPE      string
-	Source   VersionSource
-	Versions []string
+	CPE         string
+	Source      VersionSource
+	Versions    []string
+	OriginalTag string
 }
 
 func (ac *AffectedCommit) SetRepo(repo string) {

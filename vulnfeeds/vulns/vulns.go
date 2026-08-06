@@ -250,63 +250,6 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		v.Affected = append(v.Affected, affected)
 	}
 
-	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
-	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitCommitRangesByRepo := make(map[string]*osvschema.Range)
-		for _, r := range affected.GetRanges() {
-			if r.GetType() == osvschema.Range_GIT {
-				gitCommitRangesByRepo[r.GetRepo()] = r
-			}
-		}
-
-		hasAddedZeroIntroduced := make(map[string]bool)
-		for repo, r := range gitCommitRangesByRepo {
-			for _, e := range r.GetEvents() {
-				if e.GetIntroduced() == "0" {
-					hasAddedZeroIntroduced[repo] = true
-					break
-				}
-			}
-		}
-
-		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
-			entry, ok := gitCommitRangesByRepo[ac.Repo]
-			// Create the stub for the repo if necessary.
-			if !ok {
-				entry = &osvschema.Range{
-					Type:   osvschema.Range_GIT,
-					Events: []*osvschema.Event{},
-					Repo:   ac.Repo,
-				}
-				gitCommitRangesByRepo[ac.Repo] = entry
-				affected.Ranges = append(affected.Ranges, entry)
-			}
-
-			if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
-				// There was no explicitly defined introduced commit, so create one at 0.
-				entry.Events = append(entry.Events,
-					&osvschema.Event{
-						Introduced: "0",
-					},
-				)
-				hasAddedZeroIntroduced[ac.Repo] = true
-			}
-
-			if ac.Introduced != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Introduced: ac.Introduced})
-			}
-			if ac.Fixed != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Fixed: ac.Fixed})
-			}
-			if ac.LastAffected != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{LastAffected: ac.LastAffected})
-			}
-			if ac.Limit != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Limit: ac.Limit})
-			}
-		}
-	}
-
 	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
 		var versionRange *osvschema.Range
 		for _, r := range affected.GetRanges() {
@@ -344,16 +287,20 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			var introduced string
 			if av.Introduced == "" {
-				introduced = "0"
+				if len(versionRange.Events) == 0 {
+					introduced = "0"
+				}
 			} else {
 				introduced = av.Introduced
 			}
 
-			if _, seen := seenIntroduced[introduced]; !seen {
-				versionRange.Events = append(versionRange.Events, &osvschema.Event{
-					Introduced: introduced,
-				})
-				seenIntroduced[introduced] = true
+			if introduced != "" {
+				if _, seen := seenIntroduced[introduced]; !seen {
+					versionRange.Events = append(versionRange.Events, &osvschema.Event{
+						Introduced: introduced,
+					})
+					seenIntroduced[introduced] = true
+				}
 			}
 
 			if _, seen := seenFixed[av.Fixed]; av.Fixed != "" && !seen {

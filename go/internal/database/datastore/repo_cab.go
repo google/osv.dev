@@ -13,32 +13,39 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
-const defaultCABCacheTTL = 5 * time.Minute
+const defaultCacheTTL = 5 * time.Minute
+
+type allowlistCacheData struct {
+	mu          sync.RWMutex
+	urlCache    map[string]struct{}
+	regexCache  map[string]*regexp.Regexp
+	lastFetched time.Time
+}
+
+var allowlistCache = &allowlistCacheData{
+	urlCache:   make(map[string]struct{}),
+	regexCache: make(map[string]*regexp.Regexp),
+}
+
+// For testing purposes
+func resetAllowlistCache() {
+	allowlistCache.mu.Lock()
+	defer allowlistCache.mu.Unlock()
+	allowlistCache.urlCache = make(map[string]struct{})
+	allowlistCache.regexCache = make(map[string]*regexp.Regexp)
+	allowlistCache.lastFetched = time.Time{}
+}
 
 // RepoCABStore handles Datastore persistence and caching for the repository Consider All Branches allowlist.
 type RepoCABStore struct {
-	client   *datastore.Client
-	cacheTTL time.Duration
-
-	mu          sync.RWMutex
-	urlCache    map[string]struct{}
-	regexCache  []*regexp.Regexp
-	lastFetched time.Time
+	client *datastore.Client
 }
 
 var _ models.RepoCABStore = (*RepoCABStore)(nil)
 
-// NewRepoCABStore returns a new RepoCABStore instance with default cache TTL (5 minutes).
+// NewRepoCABStore returns a new RepoCABStore instance.
 func NewRepoCABStore(client *datastore.Client) *RepoCABStore {
-	return NewRepoCABStoreWithTTL(client, defaultCABCacheTTL)
-}
-
-// NewRepoCABStoreWithTTL returns a new RepoCABStore instance with a specified cache TTL.
-func NewRepoCABStoreWithTTL(client *datastore.Client, cacheTTL time.Duration) *RepoCABStore {
-	return &RepoCABStore{
-		client:   client,
-		cacheTTL: cacheTTL,
-	}
+	return &RepoCABStore{client: client}
 }
 
 // ShouldConsiderAllBranches returns true if the repoURL matches any pattern or url in the cab allowlist.
@@ -76,10 +83,10 @@ func (s *RepoCABStore) matchURL(ctx context.Context, repo string) (bool, error) 
 		return false, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	allowlistCache.mu.RLock()
+	defer allowlistCache.mu.RUnlock()
 
-	_, ok := s.urlCache[repo]
+	_, ok := allowlistCache.urlCache[repo]
 
 	return ok, nil
 }
@@ -90,10 +97,10 @@ func (s *RepoCABStore) matchPattern(ctx context.Context, repoURL, normalizedRepo
 		return false, err
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	allowlistCache.mu.RLock()
+	defer allowlistCache.mu.RUnlock()
 
-	for _, re := range s.regexCache {
+	for _, re := range allowlistCache.regexCache {
 		if re.MatchString(repoURL) || (normalizedRepo != "" && re.MatchString(normalizedRepo)) {
 			return true, nil
 		}
@@ -102,21 +109,21 @@ func (s *RepoCABStore) matchPattern(ctx context.Context, repoURL, normalizedRepo
 	return false, nil
 }
 
-// loadCache retrieves all allowlist entries from Datastore, using in-memory caching for URLs and regexes.
+// loadCache retrieves all allowlist entries from Datastore, using in-memory global caching for URLs and regexes.
 func (s *RepoCABStore) loadCache(ctx context.Context) error {
 	// Fast path: check cache validity under read lock.
-	s.mu.RLock()
-	if s.urlCache != nil && s.regexCache != nil && time.Since(s.lastFetched) < s.cacheTTL {
-		s.mu.RUnlock()
+	allowlistCache.mu.RLock()
+	if allowlistCache.urlCache != nil && allowlistCache.regexCache != nil && time.Since(allowlistCache.lastFetched) < defaultCacheTTL {
+		allowlistCache.mu.RUnlock()
 		return nil
 	}
-	s.mu.RUnlock()
+	allowlistCache.mu.RUnlock()
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	allowlistCache.mu.Lock()
+	defer allowlistCache.mu.Unlock()
 
-	// Re-check if cache is valid in case another goroutine refreshed it while we are waiting for write lock
-	if s.urlCache != nil && s.regexCache != nil && time.Since(s.lastFetched) < s.cacheTTL {
+	// Re-check if cache is valid in case another goroutine refreshed it while we were waiting for write lock
+	if allowlistCache.urlCache != nil && allowlistCache.regexCache != nil && time.Since(allowlistCache.lastFetched) < defaultCacheTTL {
 		return nil
 	}
 
@@ -126,8 +133,8 @@ func (s *RepoCABStore) loadCache(ctx context.Context) error {
 		return fmt.Errorf("failed fetching RepoConsiderAllBranchesAllowList entities: %w", err)
 	}
 
-	urlCache := make(map[string]struct{})
-	regexCache := make([]*regexp.Regexp, 0)
+	newURLCache := make(map[string]struct{})
+	newRegexCache := make(map[string]*regexp.Regexp)
 
 	for _, entry := range entries {
 		switch entry.Type {
@@ -135,24 +142,28 @@ func (s *RepoCABStore) loadCache(ctx context.Context) error {
 			if entry.Value == "" {
 				continue
 			}
-			re, err := regexp.Compile(entry.Value)
-			if err != nil {
-				logger.WarnContext(ctx, "Failed to compile RepoConsiderAllBranchesAllowList regex entry", slog.String("value", entry.Value), slog.Any("error", err))
-				continue
+			re, ok := allowlistCache.regexCache[entry.Value]
+			if !ok {
+				var err error
+				re, err = regexp.Compile(entry.Value)
+				if err != nil {
+					logger.WarnContext(ctx, "Failed to compile RepoConsiderAllBranchesAllowList regex entry", slog.String("value", entry.Value), slog.Any("error", err))
+					continue
+				}
 			}
-			regexCache = append(regexCache, re)
+			newRegexCache[entry.Value] = re
 
 		default: // URL exact match entries
 			if entry.Value == "" {
 				continue
 			}
-			urlCache[entry.Value] = struct{}{}
+			newURLCache[entry.Value] = struct{}{}
 		}
 	}
 
-	s.urlCache = urlCache
-	s.regexCache = regexCache
-	s.lastFetched = time.Now()
+	allowlistCache.urlCache = newURLCache
+	allowlistCache.regexCache = newRegexCache
+	allowlistCache.lastFetched = time.Now()
 
 	return nil
 }

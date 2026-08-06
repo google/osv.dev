@@ -10,6 +10,7 @@ import (
 )
 
 func TestRepoCABStore_ShouldConsiderAllBranches(t *testing.T) {
+	resetAllowlistCache()
 	ctx := context.Background()
 	dsClient := testutils.MustNewDatastoreClientForTesting(t)
 	store := NewRepoCABStore(dsClient)
@@ -107,10 +108,10 @@ func TestRepoCABStore_ShouldConsiderAllBranches(t *testing.T) {
 }
 
 func TestRepoCABStore_Caching(t *testing.T) {
+	resetAllowlistCache()
 	ctx := context.Background()
 	dsClient := testutils.MustNewDatastoreClientForTesting(t)
-	// Create store with very short TTL for testing refresh behavior
-	store := NewRepoCABStoreWithTTL(dsClient, 100*time.Millisecond)
+	store := NewRepoCABStore(dsClient)
 
 	regexEntry := RepoConsiderAllBranchesAllowList{
 		Type:  "regex",
@@ -140,14 +141,14 @@ func TestRepoCABStore_Caching(t *testing.T) {
 	}
 
 	// Check that cache is populated
-	store.mu.RLock()
-	if len(store.regexCache) != 1 {
-		t.Errorf("expected 1 cached regex, got %d", len(store.regexCache))
+	allowlistCache.mu.RLock()
+	if len(allowlistCache.regexCache) != 1 {
+		t.Errorf("expected 1 cached regex, got %d", len(allowlistCache.regexCache))
 	}
-	if _, ok := store.urlCache["github.com/cached-url/repo"]; !ok {
+	if _, ok := allowlistCache.urlCache["github.com/cached-url/repo"]; !ok {
 		t.Errorf("expected urlCache to contain github.com/cached-url/repo")
 	}
-	store.mu.RUnlock()
+	allowlistCache.mu.RUnlock()
 
 	// Delete from Datastore to test that cache hit still succeeds before TTL expires
 	if err := dsClient.DeleteMulti(ctx, []*datastore.Key{regexKey, urlKey}); err != nil {
@@ -164,8 +165,10 @@ func TestRepoCABStore_Caching(t *testing.T) {
 		t.Errorf("Expected cache hit for url to succeed even after DB deletion, got %v, err %v", gotCachedURL, err)
 	}
 
-	// Wait for TTL to expire
-	time.Sleep(150 * time.Millisecond)
+	// Simulate TTL expiry by setting lastFetched into the past
+	allowlistCache.mu.Lock()
+	allowlistCache.lastFetched = time.Now().Add(-6 * time.Minute)
+	allowlistCache.mu.Unlock()
 
 	// After TTL expiry, store should re-query DB and find no matches
 	gotExpired, err := store.ShouldConsiderAllBranches(ctx, "https://github.com/cached-org/repo3")

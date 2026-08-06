@@ -5,3 +5,5 @@
 #   value: "https://github.com/google/osv.dev.git"
 # - type: regex
 #   value: 'github\.com/google/osv-.*'
+- type: url
+  value: 'https://github.com/apache/hadoop.git'

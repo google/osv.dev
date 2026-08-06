@@ -723,11 +723,31 @@ func TestAddPkgInfo_MergeAffected(t *testing.T) {
 		},
 	})
 
+	// 4. Add PackageB in EcosystemA again with no introduced
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageB",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Fixed: "2.1.0"},
+			},
+		},
+	})
+
 	if len(vuln.Affected) != 2 {
 		t.Fatalf("Expected 2 affected entries, got %d", len(vuln.Affected))
 	}
 
-	// Find PackageA
+	expectedEvents := []struct {
+		Introduced string
+		Fixed      string
+	}{
+		{Introduced: "1.0.0"},
+		{Fixed: "1.1.0"},
+		{Fixed: "2.1.0"},
+	}
+
+	// Find and verify PackageA
 	var pkgA *osvschema.Affected
 	for _, a := range vuln.Affected {
 		if a.GetPackage().GetName() == "PackageA" && a.GetPackage().GetEcosystem() == "EcosystemA" {
@@ -741,38 +761,63 @@ func TestAddPkgInfo_MergeAffected(t *testing.T) {
 	}
 
 	// Check ranges for PackageA
-	// It should be a single range of type ECOSYSTEM
 	if len(pkgA.GetRanges()) != 1 {
 		t.Fatalf("Expected 1 range for PackageA, got %d", len(pkgA.GetRanges()))
 	}
 
-	r := pkgA.GetRanges()[0]
-	if r.GetType() != osvschema.Range_ECOSYSTEM {
-		t.Errorf("Expected range type ECOSYSTEM, got %v", r.GetType())
+	rA := pkgA.GetRanges()[0]
+	if rA.GetType() != osvschema.Range_ECOSYSTEM {
+		t.Errorf("Expected range type ECOSYSTEM for PackageA, got %v", rA.GetType())
 	}
 
-	// It should have merged events
-	// Expected: Introduced "1.0.0", Fixed "1.1.0", Fixed "2.1.0"
-	if len(r.GetEvents()) != 3 {
-		t.Errorf("Expected 3 events for PackageA, got %d", len(r.GetEvents()))
+	if len(rA.GetEvents()) != 3 {
+		t.Errorf("Expected 3 events for PackageA, got %d", len(rA.GetEvents()))
 	}
 
-	expectedEvents := []struct {
-		Introduced string
-		Fixed      string
-	}{
-		{Introduced: "1.0.0"},
-		{Fixed: "1.1.0"},
-		{Fixed: "2.1.0"},
-	}
-
-	for i, e := range r.GetEvents() {
+	for i, e := range rA.GetEvents() {
 		if i >= len(expectedEvents) {
-			t.Errorf("Unexpected event at index %d: %+v", i, e)
+			t.Errorf("Unexpected event at index %d for PackageA: %+v", i, e)
 			continue
 		}
 		if expectedEvents[i].Introduced != e.GetIntroduced() || expectedEvents[i].Fixed != e.GetFixed() {
-			t.Errorf("Event at index %d mismatch: got %+v, want %+v", i, e, expectedEvents[i])
+			t.Errorf("Event at index %d mismatch for PackageA: got %+v, want %+v", i, e, expectedEvents[i])
+		}
+	}
+
+	// Find and verify PackageB
+	var pkgB *osvschema.Affected
+	for _, a := range vuln.Affected {
+		if a.GetPackage().GetName() == "PackageB" && a.GetPackage().GetEcosystem() == "EcosystemA" {
+			pkgB = a
+			break
+		}
+	}
+
+	if pkgB == nil {
+		t.Fatalf("Could not find PackageB in EcosystemA")
+	}
+
+	// Check ranges for PackageB
+	if len(pkgB.GetRanges()) != 1 {
+		t.Fatalf("Expected 1 range for PackageB, got %d", len(pkgB.GetRanges()))
+	}
+
+	rB := pkgB.GetRanges()[0]
+	if rB.GetType() != osvschema.Range_ECOSYSTEM {
+		t.Errorf("Expected range type ECOSYSTEM for PackageB, got %v", rB.GetType())
+	}
+
+	if len(rB.GetEvents()) != 3 {
+		t.Errorf("Expected 3 events for PackageB, got %d", len(rB.GetEvents()))
+	}
+
+	for i, e := range rB.GetEvents() {
+		if i >= len(expectedEvents) {
+			t.Errorf("Unexpected event at index %d for PackageB: %+v", i, e)
+			continue
+		}
+		if expectedEvents[i].Introduced != e.GetIntroduced() || expectedEvents[i].Fixed != e.GetFixed() {
+			t.Errorf("Event at index %d mismatch for PackageB: got %+v, want %+v", i, e, expectedEvents[i])
 		}
 	}
 }

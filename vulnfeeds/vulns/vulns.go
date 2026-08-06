@@ -287,7 +287,7 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			var introduced string
 			if av.Introduced == "" {
-				if len(versionRange.Events) == 0 {
+				if len(versionRange.GetEvents()) == 0 {
 					introduced = "0"
 				}
 			} else {

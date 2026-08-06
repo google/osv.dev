@@ -41,9 +41,16 @@ func main() {
 func normalizeRepo(repoURL string) string {
 	// Normalize the repo_url to align with matching logic
 	// Removes the scheme/protocol, the .git extension, and trailing slashes.
+	repoURL = strings.TrimSpace(repoURL)
 	if repoURL == "" {
 		return ""
 	}
+
+	if strings.HasPrefix(repoURL, "git@") || strings.HasPrefix(repoURL, "ssh://") {
+		log.Printf("Warning: Unsupported SSH URL format %q. Only HTTPS or normalized repository paths are supported.", repoURL)
+		return ""
+	}
+
 	parsed, err := url.Parse(repoURL)
 	if err != nil {
 		return repoURL
@@ -63,16 +70,29 @@ func parseYAMLEntries(data []byte) ([]RepoCABEntity, error) {
 
 	var entries []RepoCABEntity
 	for _, entry := range parsed {
-		if entry.Type == "url" {
+		entry.Type = strings.TrimSpace(strings.ToLower(entry.Type))
+
+		switch entry.Type {
+		case "url":
 			// For repo URLs, we normalize the value before inserting to datastore
 			entry.Value = normalizeRepo(entry.Value)
-		} else if entry.Type == "regex" {
+			if entry.Value == "" {
+				continue
+			}
+		case "regex":
 			// For regex, we make sure it compiles
+			if entry.Value == "" {
+				continue
+			}
 			if _, err := regexp.Compile(entry.Value); err != nil {
 				log.Printf("Warning: Skipping invalid regex pattern %q: %v", entry.Value, err)
 				continue
 			}
+		default:
+			log.Printf("Warning: Skipping unrecognized entry type %q for value %q", entry.Type, entry.Value)
+			continue
 		}
+
 		entries = append(entries, entry)
 	}
 

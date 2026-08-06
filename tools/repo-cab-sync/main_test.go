@@ -43,6 +43,21 @@ func TestNormalizeRepo(t *testing.T) {
 			input:    "github.com/google/osv-scanner.git",
 			expected: "github.com/google/osv-scanner",
 		},
+		{
+			name:     "Whitespace in URL",
+			input:    "  https://github.com/google/osv.dev.git  ",
+			expected: "github.com/google/osv.dev",
+		},
+		{
+			name:     "SSH URL format git@",
+			input:    "git@github.com:google/osv.dev.git",
+			expected: "",
+		},
+		{
+			name:     "SSH URL format ssh://",
+			input:    "ssh://git@github.com/google/osv.dev.git",
+			expected: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -57,12 +72,16 @@ func TestNormalizeRepo(t *testing.T) {
 
 func TestParseYAMLEntries(t *testing.T) {
 	yamlContent := []byte(`
-- type: url
-  value: "https://github.com/google/osv.dev.git"
-- type: regex
+- type: URL
+  value: "  https://github.com/google/osv.dev.git  "
+- type: REGEX
   value: 'github\.com/google/osv-.*'
 - type: regex
   value: '[invalid regex'
+- type: unknown
+  value: "https://github.com/google/osv.dev"
+- type: url
+  value: "git@github.com:google/osv.dev.git"
 `)
 
 	entries, err := parseYAMLEntries(yamlContent)
@@ -70,9 +89,9 @@ func TestParseYAMLEntries(t *testing.T) {
 		t.Fatalf("parseYAMLEntries returned unexpected error: %v", err)
 	}
 
-	// Should skip invalid regex and return 2 entries
+	// Should normalize types, trim values, and skip invalid regex, unrecognized types, and SSH URLs
 	if len(entries) != 2 {
-		t.Fatalf("expected 2 valid entries, got %d", len(entries))
+		t.Fatalf("expected 2 valid entries, got %d: %+v", len(entries), entries)
 	}
 
 	// First entry should be normalized URL

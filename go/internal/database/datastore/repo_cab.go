@@ -3,12 +3,14 @@ package datastore
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/logger"
 )
 
 const defaultCABCacheTTL = 5 * time.Minute
@@ -135,7 +137,7 @@ func (s *RepoCABStore) loadCache(ctx context.Context) error {
 			}
 			re, err := regexp.Compile(entry.Value)
 			if err != nil {
-				// Skip invalid regex entries.
+				logger.WarnContext(ctx, "Failed to compile RepoConsiderAllBranchesAllowList regex entry", slog.String("value", entry.Value), slog.Any("error", err))
 				continue
 			}
 			regexCache = append(regexCache, re)

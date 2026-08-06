@@ -211,6 +211,7 @@ func (e *Engine) shouldConsiderAllBranches(ctx context.Context, repo string, sou
 	}
 	inAllowlist, err := e.Stores.RepoCAB.ShouldConsiderAllBranches(ctx, repo)
 	if err != nil {
+		logger.ErrorContext(ctx, "Failed to check RepoCAB allowlist", slog.String("repo", repo), slog.Any("error", err))
 		return false
 	}
 

@@ -211,6 +211,7 @@ func (c *RedisRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 		if !errors.Is(err, redis.Nil) {
 			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
 		}
+
 		return RepoTagsMap{}, false
 	}
 
@@ -264,6 +265,7 @@ func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
 		if !errors.Is(err, redis.Nil) {
 			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
 		}
+
 		return false
 	}
 
@@ -291,6 +293,7 @@ func (c *RedisRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 		if !errors.Is(err, redis.Nil) {
 			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
 		}
+
 		return "", false
 	}
 

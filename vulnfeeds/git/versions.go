@@ -99,13 +99,13 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 		return "", err
 	}
 	logger.Debug("VersionToCommit normalized version", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion))
-	
+
 	// Try a straight out (case-insensitive) match first.
 	if normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]; ok {
 		logger.Debug("VersionToCommit found exact match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion), slog.String("commit", normalizedTag.Commit))
 		return normalizedTag.Commit, nil
 	}
-	
+
 	// Then try to fuzzy-match.
 	if commitHash, ok := findFuzzyCommit(normalizedVersion, normalizedTags); ok {
 		logger.Debug("VersionToCommit found fuzzy match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion), slog.String("commit", commitHash))
@@ -113,6 +113,7 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 	}
 
 	logger.Debug("VersionToCommit failed to find match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion))
+
 	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 }
 

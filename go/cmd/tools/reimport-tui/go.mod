@@ -8,7 +8,7 @@ require (
 	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
-	cloud.google.com/go/datastore v1.25.0
+	cloud.google.com/go/datastore v1.26.0
 	github.com/google/osv.dev/go v0.0.0-20260715030208-adbd23231c20
 )
 

@@ -16,6 +16,7 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/importer"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -80,6 +81,19 @@ func main() {
 	httpClient.RetryWaitMax = 4 * time.Second
 	httpClient.Logger = importer.RetryableHTTPLeveledLogger{}
 	config.HTTPClient = httpClient.StandardClient()
+
+	if !*runDelete {
+		gitterHost := os.Getenv("GITTER_HOST")
+		if gitterHost == "" {
+			logger.FatalContext(ctx, "GITTER_HOST environment variable is not set")
+		}
+		// Use the same HTTP client with retry and logger with gitter
+		gitterClient, err := gitter.NewClient(gitterHost, config.HTTPClient)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create gitter client", slog.Any("error", err))
+		}
+		config.GitterClient = gitterClient
+	}
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

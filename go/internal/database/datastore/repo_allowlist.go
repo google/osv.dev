@@ -116,8 +116,7 @@ func (s *RepoAllowListStore) loadCache(ctx context.Context) error {
 		return fmt.Errorf("failed fetching RepoAllowList entities: %w", err)
 	}
 
-	newURLCache := make(map[string]models.RepoAllowListFlags)
-	newRegexCache := make(map[string]regexCacheEntry)
+	newURLCache := make(map[string]models.RepoAllowListFlags, len(entries))
 
 	for _, entry := range entries {
 		flags := models.RepoAllowListFlags{
@@ -144,7 +143,7 @@ func (s *RepoAllowListStore) loadCache(ctx context.Context) error {
 					continue
 				}
 			}
-			newRegexCache[entry.Value] = regexCacheEntry{
+			cache.regexCache[entry.Value] = regexCacheEntry{
 				pattern: re,
 				flags:   flags,
 			}
@@ -162,7 +161,6 @@ func (s *RepoAllowListStore) loadCache(ctx context.Context) error {
 	}
 
 	cache.urlCache = newURLCache
-	cache.regexCache = newRegexCache
 	cache.lastFetched = time.Now()
 
 	return nil

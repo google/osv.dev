@@ -148,7 +148,16 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
-			claimedRepos[vr.Range.GetRepo()] = true
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), http.DefaultClient, cache)
+			if err != nil {
+				if git.IsRateLimit(err) {
+					metrics.Outcome = models.Error
+					return nil, nil, nil
+				}
+				claimedRepos[vr.Range.GetRepo()] = true
+			} else {
+				claimedRepos[canonicalRepo] = true
+			}
 		}
 	}
 
@@ -185,7 +194,19 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
-			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+			vRepo := vr.Range.GetRepo()
+			if vRepo != "" {
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, http.DefaultClient, cache)
+				if err != nil {
+					if git.IsRateLimit(err) {
+						metrics.Outcome = models.Error
+						return nil, nil, nil
+					}
+				} else {
+					vRepo = canonicalVRepo
+				}
+			}
+			if (vRepo != "" && vRepo != repo) || (vRepo == "" && claimedRepos[repo]) {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 				continue
 			}

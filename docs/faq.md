@@ -27,7 +27,7 @@ OSV consists of:
 1. [The OSV Schema](https://ossf.github.io/osv-schema/): An easy-to-use data
    format that maps precisely to open source versioning schemes.
 2. Reference infrastructure ([OSV.dev website](https://osv.dev/),
-   [API](../api/), and tooling) that aggregates,
+   [API](api/), and tooling) that aggregates,
    [enriches](#what-does-osvdev-do-to-the-records-it-imports) and indexes
    vulnerability data from databases that use the OSV schema.
 3. [OSV-Scanner](https://github.com/google/osv-scanner), the officially
@@ -45,7 +45,7 @@ See our blog posts for more details:
 
 The OSV schema and OSV.dev can be used by:
 
-1. Open source consumers: By querying [OSV.dev's API](../api/) and using our tooling to find known vulnerabilities in their dependencies.
+1. Open source consumers: By querying [OSV.dev's API](api/) and using our tooling to find known vulnerabilities in their dependencies.
 2. Open source projects: By publishing vulnerabilities in the OSV format and having them imported by OSV.dev.
 3. Vulnerability database producers: By making the database available in the OSV format.
 
@@ -67,7 +67,7 @@ The benefits of the OSV schema have led to adoption by several vulnerability dat
 
 ### How do I use OSV as an open source user?
 
-OSV.dev provides an [easy-to-use API](../api/) for querying against the aggregated database of vulnerabilities.
+OSV.dev provides an [easy-to-use API](api/) for querying against the aggregated database of vulnerabilities.
 
 [Command line tooling](https://github.com/google/osv-scanner) is also available for vulnerability scanning of SBOMs, language manifests, and container images.
 
@@ -158,7 +158,7 @@ If you work on a project (like a Linux distribution) and would like to contribut
 1. Version enumeration (for non-SemVer ecosystems where [supporting version enumeration code](https://github.com/google/osv.dev/tree/master/osv/ecosystems) exists)
 2. [Package URL](https://github.com/package-url/purl-spec) [computation](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/models.py#L361-L365) (if necessary)
 3. [Git affected commit enumeration and commit to tag mapping](https://github.com/google/osv.dev/blob/a751ceb26522f093edf26c0ad167cfd0967716d9/osv/impact.py#L422)
-4. Repeat [batch](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/alias-computation.yaml) [computation](https://github.com/google/osv.dev/tree/master/gcp/workers/alias) of [aliases](https://ossf.github.io/osv-schema/#aliases-field) (**Note**: any time the `aliases` field changes, the record's [`modified`](https://ossf.github.io/osv-schema/#id-modified-fields) field is updated)
+4. Repeat [batch](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/extra/relations.yaml) [computation](https://github.com/google/osv.dev/tree/master/go/cmd/relations) of [aliases](https://ossf.github.io/osv-schema/#aliases-field) (**Note**: any time the `aliases` field changes, the record's [`modified`](https://ossf.github.io/osv-schema/#id-modified-fields) field is updated)
 
 Both version and commit enumeration populate the [`affected.versions[]`](https://ossf.github.io/osv-schema/#affectedversions-field) field, which assists with precise version matching.
 

@@ -4,7 +4,7 @@ In this directory you will find two tools to convert CVEs from the CVEListV5 rep
 
 These converters are a continuation of the work described in the [Introducing broad C/C++ vulnerability management support](https://osv.dev/blog/posts/introducing-broad-c-c++-support/)
 
-See [bulk-converter/run_cvelist-converter.sh](https://github.com/google/osv.dev/blob/master/vulnfeeds/cmd/converters/cve/cve5/bulk-converter/run_cvelist-converter.sh) for how this is invoked in Production.
+See [bulk-converter/run-cvelist-converter.sh](bulk-converter/run-cvelist-converter.sh) for how this is invoked in Production.
 
 ## Usage
 

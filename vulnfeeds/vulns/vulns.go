@@ -231,85 +231,79 @@ type Vulnerability struct {
 
 // AddPkgInfo converts a PackageInfo struct to the corresponding Affected and adds it to the OSV vulnerability object.
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
-	affected := &osvschema.Affected{}
-
+	var affected *osvschema.Affected
 	if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
-		affected.Package = &osvschema.Package{
-			Name:      pkgInfo.PkgName,
-			Ecosystem: pkgInfo.Ecosystem,
-			Purl:      pkgInfo.PURL,
+		for _, a := range v.Affected {
+			if a.GetPackage().GetName() == pkgInfo.PkgName && a.GetPackage().GetEcosystem() == pkgInfo.Ecosystem {
+				affected = a
+				break
+			}
 		}
 	}
 
-	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
-	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitCommitRangesByRepo := make(map[string]*osvschema.Range)
-
-		hasAddedZeroIntroduced := make(map[string]bool)
-
-		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
-			entry, ok := gitCommitRangesByRepo[ac.Repo]
-			// Create the stub for the repo if necessary.
-			if !ok {
-				entry = &osvschema.Range{
-					Type:   osvschema.Range_GIT,
-					Events: []*osvschema.Event{},
-					Repo:   ac.Repo,
-				}
-
-				if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
-					// There was no explicitly defined introduced commit, so create one at 0.
-					entry.Events = append(entry.Events,
-						&osvschema.Event{
-							Introduced: "0",
-						},
-					)
-					hasAddedZeroIntroduced[ac.Repo] = true
-				}
+	if affected == nil {
+		affected = &osvschema.Affected{}
+		if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
+			affected.Package = &osvschema.Package{
+				Name:      pkgInfo.PkgName,
+				Ecosystem: pkgInfo.Ecosystem,
+				Purl:      pkgInfo.PURL,
 			}
-
-			if ac.Introduced != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Introduced: ac.Introduced})
-			}
-			if ac.Fixed != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Fixed: ac.Fixed})
-			}
-			if ac.LastAffected != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{LastAffected: ac.LastAffected})
-			}
-			if ac.Limit != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Limit: ac.Limit})
-			}
-			gitCommitRangesByRepo[ac.Repo] = entry
 		}
-
-		for repo := range gitCommitRangesByRepo {
-			affected.Ranges = append(affected.Ranges, gitCommitRangesByRepo[repo])
-		}
+		v.Affected = append(v.Affected, affected)
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
-		versionRange := &osvschema.Range{
-			Type:   osvschema.Range_ECOSYSTEM,
-			Events: []*osvschema.Event{},
+		var versionRange *osvschema.Range
+		for _, r := range affected.GetRanges() {
+			if r.GetType() == osvschema.Range_ECOSYSTEM {
+				versionRange = r
+				break
+			}
 		}
+
+		isNewRange := false
+		if versionRange == nil {
+			versionRange = &osvschema.Range{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{},
+			}
+			isNewRange = true
+		}
+
 		seenIntroduced := map[string]bool{}
 		seenFixed := map[string]bool{}
 		seenLastAffected := map[string]bool{}
 
+		for _, e := range versionRange.GetEvents() {
+			if e.GetIntroduced() != "" {
+				seenIntroduced[e.GetIntroduced()] = true
+			}
+			if e.GetFixed() != "" {
+				seenFixed[e.GetFixed()] = true
+			}
+			if e.GetLastAffected() != "" {
+				seenLastAffected[e.GetLastAffected()] = true
+			}
+		}
+
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			var introduced string
 			if av.Introduced == "" {
-				introduced = "0"
+				if len(versionRange.GetEvents()) == 0 {
+					introduced = "0"
+				}
 			} else {
 				introduced = av.Introduced
 			}
 
-			if _, seen := seenIntroduced[introduced]; !seen {
-				versionRange.Events = append(versionRange.Events, &osvschema.Event{
-					Introduced: introduced,
-				})
-				seenIntroduced[introduced] = true
+			if introduced != "" {
+				if _, seen := seenIntroduced[introduced]; !seen {
+					versionRange.Events = append(versionRange.Events, &osvschema.Event{
+						Introduced: introduced,
+					})
+					seenIntroduced[introduced] = true
+				}
 			}
 
 			if _, seen := seenFixed[av.Fixed]; av.Fixed != "" && !seen {
@@ -326,7 +320,10 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				seenLastAffected[av.LastAffected] = true
 			}
 		}
-		affected.Ranges = append(affected.Ranges, versionRange)
+
+		if isNewRange {
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
 	}
 
 	// Sort affected[].ranges (by type) for stability.
@@ -345,7 +342,6 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	} else {
 		affected.EcosystemSpecific = spec
 	}
-	v.Affected = append(v.Affected, affected)
 }
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.

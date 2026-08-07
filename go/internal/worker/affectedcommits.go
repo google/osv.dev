@@ -199,8 +199,7 @@ func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysisFlags 
 	return gitterReq, nil
 }
 
-// getGitAnalysisFlags determines the gitter flags for a given repo.
-// If the flag is true at source repo level, we follow that. Otherwise, we check the repo allowlist.
+// getGitAnalysisFlags determines the gitter flags for a given repo by combining the source repo level and allowlist configs
 func (e *Engine) getGitAnalysisFlags(ctx context.Context, gitAnalysis *models.GitAnalysisConfig, repo string) models.RepoAllowListFlags {
 	var flags models.RepoAllowListFlags
 

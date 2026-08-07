@@ -159,7 +159,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			continue
 		}
 
-		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || cve.Metadata.State != "PUBLISHED" {
+		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || (cve.Metadata.State != "PUBLISHED" && cve.Metadata.State != "REJECTED") {
 			continue
 		}
 		cveID := cve.Metadata.CVEID
@@ -179,10 +179,14 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			if metrics.Outcome == models.Successful {
 				successfulConversionsCount.Add(1)
 			}
-			if rejectFailed && metrics.Outcome != models.Successful {
+			if !metrics.Outcome.ShouldEmit(rejectFailed) {
 				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 			} else {
-				logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+				if metrics.Outcome == models.Rejected {
+					logger.Info("Queueing withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+				} else {
+					logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+				}
 				if err := writer.UploadVulnIfChangedAsync(gcsHelper, *gcsPrefix, vuln.Vulnerability); err != nil {
 					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
@@ -216,12 +220,16 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 				if metrics.Outcome == models.Successful {
 					successfulConversionsCount.Add(1)
 				}
-				if rejectFailed && metrics.Outcome != models.Successful {
+				if !metrics.Outcome.ShouldEmit(rejectFailed) {
 					logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 					osvFile.Close()
 					os.Remove(osvFile.Name())
 				} else {
-					logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))
+					if metrics.Outcome == models.Rejected {
+						logger.Info("Generated withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName))
+					} else {
+						logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))
+					}
 				}
 			}
 

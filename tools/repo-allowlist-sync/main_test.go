@@ -74,34 +74,64 @@ func TestParseYAMLEntries(t *testing.T) {
 	yamlContent := []byte(`
 - type: URL
   value: "  https://github.com/google/osv.dev.git  "
+  consider_all_branches: true
+  cherrypicks_introduced: true
 - type: REGEX
   value: 'github\.com/google/osv-.*'
+  cherrypicks: true
+- type: url
+  value: "https://github.com/noflags/repo.git"
 - type: regex
   value: '[invalid regex'
 - type: unknown
   value: "https://github.com/google/osv.dev"
 - type: url
-  value: "git@github.com:google/osv.dev.git"
+  value: "git@github.com:ssh/isnot.supported.git"
 `)
 
-	entries, err := parseYAMLEntries(yamlContent)
+	want := []RepoAllowListEntity{
+		// Normalized URL
+		{
+			Type:                  "url",
+			Value:                 "github.com/google/osv.dev",
+			ConsiderAllBranches:   true,
+			CherrypicksIntroduced: true,
+			CherrypicksFixed:      false,
+			CherrypicksLimit:      false,
+		},
+		// Regex type and cherrypicks: true populates all 3 event types
+		{
+			Type:                  "regex",
+			Value:                 `github\.com/google/osv-.*`,
+			ConsiderAllBranches:   false,
+			CherrypicksIntroduced: true,
+			CherrypicksFixed:      true,
+			CherrypicksLimit:      true,
+		},
+		// No flags set (Shouldn't really happen)
+		{
+			Type:                  "url",
+			Value:                 "github.com/noflags/repo",
+			ConsiderAllBranches:   false,
+			CherrypicksIntroduced: false,
+			CherrypicksFixed:      false,
+			CherrypicksLimit:      false,
+		},
+	}
+
+	got, err := parseYAMLEntries(yamlContent)
 	if err != nil {
 		t.Fatalf("parseYAMLEntries returned unexpected error: %v", err)
 	}
 
-	// Should normalize types, trim values, and skip invalid regex, unrecognized types, and SSH URLs
-	if len(entries) != 2 {
-		t.Fatalf("expected 2 valid entries, got %d: %+v", len(entries), entries)
+	if len(got) != len(want) {
+		t.Fatalf("expected %d valid entries, got %d: %+v", len(want), len(got), got)
 	}
 
-	// First entry should be normalized URL
-	if entries[0].Type != "url" || entries[0].Value != "github.com/google/osv.dev" {
-		t.Errorf("entry 0 mismatch: got type=%q val=%q, want type=url val=github.com/google/osv.dev", entries[0].Type, entries[0].Value)
-	}
-
-	// Second entry should preserve regex string
-	if entries[1].Type != "regex" || entries[1].Value != `github\.com/google/osv-.*` {
-		t.Errorf("entry 1 mismatch: got type=%q val=%q, want type=regex val=github\\.com/google/osv-.*", entries[1].Type, entries[1].Value)
+	for i, wantEntry := range want {
+		if got[i] != wantEntry {
+			t.Errorf("entry %d mismatch:\n got: %+v\nwant: %+v", i, got[i], wantEntry)
+		}
 	}
 }
 

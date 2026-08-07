@@ -1,9 +1,0 @@
-# Repository-based consider all branches allowlist
-# Supports exact URLs (type: url) and regex (Go RE2 syntax) patterns (type: regex).
-# Example:
-# - type: url
-#   value: "https://github.com/google/osv.dev.git"
-# - type: regex
-#   value: 'github\.com/google/osv-.*'
-- type: url
-  value: 'https://github.com/apache/hadoop.git'

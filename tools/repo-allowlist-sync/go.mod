@@ -1,4 +1,4 @@
-module github.com/google/osv.dev/tools/repo-cab-sync
+module github.com/google/osv.dev/tools/repo-allowlist-sync
 
 go 1.26.5
 

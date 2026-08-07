@@ -434,7 +434,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 
 	ctx := context.Background()
 
-	backoff := retry.NewExponential(1 * time.Second)
+	backoff := retry.NewExponential(BackoffBaseDelay)
 	backoff = retry.WithMaxRetries(retries, backoff)
 	backoff = newLoggingBackoff(backoff, "RemoteRepoRefs")
 

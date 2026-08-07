@@ -16,25 +16,26 @@ The tool performs a two-way sync:
 
 ## Allowlist YAML Format
 
-The allowlist YAML configuration file accepts a list of entries with `type`, `value`, and boolean feature flag fields:
+The allowlist YAML configuration file accepts a list of entries with `type`, `value`, and boolean feature flag fields.
+* Supported `type`s: `url`, `regex`
+  * `url`: A URL to match against the repository URL.
+  * `regex`: A regex pattern to match against the repository URL (Go RE2 syntax).
+* Supported boolean flags: `consider_all_branches`, `cherrypicks_introduced`, `cherrypicks_fixed`, `cherrypicks_limit`, `cherrypicks` (shorthand for all 3 cherrypick flags)
 
 ```yaml
-# Supported entry types: 'url' and 'regex'
+# Examples
 
-# Shorthand: 'cherrypicks: true' applies to all 3 cherrypick flags (introduced, fixed, limit)
 - type: url
   value: "https://github.com/google/osv.dev.git"
   consider_all_branches: true
   cherrypicks: true
 
-# Fine-grained control with specific overrides
 - type: url
-  value: "https://github.com/apache/hadoop.git"
+  value: "https://github.com/google/osv.dev.git"
   consider_all_branches: true
   cherrypicks: true
-  cherrypicks_fixed: false            # Specific override for fixed
+  cherrypicks_fixed: false            # Overrides cherrypicks: true for fixed event
 
-# Regex pattern match (Go RE2 syntax)
 - type: regex
   value: 'github\.com/google/osv-.*'
   consider_all_branches: true

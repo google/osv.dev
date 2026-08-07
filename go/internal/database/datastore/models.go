@@ -109,11 +109,14 @@ type AliasDenyListEntry struct {
 	VulnID string `datastore:"bug_id"`
 }
 
-// RepoConsiderAllBranchesAllowList holds a repository URL or regex pattern
-// for repo-based consider-all-branches git enumeration.
-type RepoConsiderAllBranchesAllowList struct {
-	Type  string `datastore:"type"`
-	Value string `datastore:"value"`
+// RepoAllowList holds repository URL or regex pattern and repo-based git enumeration flags.
+type RepoAllowList struct {
+	Type                  string `datastore:"type"`
+	Value                 string `datastore:"value"`
+	ConsiderAllBranches   bool   `datastore:"consider_all_branches"`
+	CherrypicksIntroduced bool   `datastore:"cherrypicks_introduced"`
+	CherrypicksFixed      bool   `datastore:"cherrypicks_fixed"`
+	CherrypicksLimit      bool   `datastore:"cherrypicks_limit"`
 }
 
 type Severity struct {

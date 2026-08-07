@@ -166,6 +166,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			break // All ranges have been resolved.
 		}
 		if cache.IsInvalid(repo) {
+			logger.Debug("Repo is marked invalid in cache", slog.String("repo", repo))
 			continue
 		}
 

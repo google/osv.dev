@@ -200,14 +200,14 @@ func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysisFlags 
 }
 
 // getGitAnalysisFlags determines the gitter flags for a given repo by combining the source repo level and allowlist configs
-func (e *Engine) getGitAnalysisFlags(ctx context.Context, gitAnalysis *models.GitAnalysisConfig, repo string) models.RepoAllowListFlags {
+func (e *Engine) getGitAnalysisFlags(ctx context.Context, sourceRepoGitConfig *models.GitAnalysisConfig, repo string) models.RepoAllowListFlags {
 	var flags models.RepoAllowListFlags
 
-	if gitAnalysis != nil {
-		flags.ConsiderAllBranches = gitAnalysis.ConsiderAllBranches
-		flags.CherrypicksIntroduced = gitAnalysis.DetectCherrypicks
-		flags.CherrypicksFixed = gitAnalysis.DetectCherrypicks
-		flags.CherrypicksLimit = gitAnalysis.DetectCherrypicks
+	if sourceRepoGitConfig != nil {
+		flags.ConsiderAllBranches = sourceRepoGitConfig.ConsiderAllBranches
+		flags.CherrypicksIntroduced = sourceRepoGitConfig.DetectCherrypicks
+		flags.CherrypicksFixed = sourceRepoGitConfig.DetectCherrypicks
+		flags.CherrypicksLimit = sourceRepoGitConfig.DetectCherrypicks
 	}
 
 	if e.Stores.RepoAllowList != nil {

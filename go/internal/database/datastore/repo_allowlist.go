@@ -81,7 +81,7 @@ func (s *RepoAllowListStore) GetFlags(ctx context.Context, repoURL string) (mode
 	// 2. Regex pattern match (used when no exact URL match exists)
 	for _, re := range cache.regexCache {
 		// Try to match both the actual and normalized repoURL
-		if re.pattern.MatchString(repoURL) || (normalized != "" && re.pattern.MatchString(normalized)) {
+		if re.pattern.MatchString(repoURL) || re.pattern.MatchString(normalized) {
 			res.ConsiderAllBranches = res.ConsiderAllBranches || re.flags.ConsiderAllBranches
 			res.CherrypicksIntroduced = res.CherrypicksIntroduced || re.flags.CherrypicksIntroduced
 			res.CherrypicksFixed = res.CherrypicksFixed || re.flags.CherrypicksFixed

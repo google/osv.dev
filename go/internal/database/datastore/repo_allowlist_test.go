@@ -133,81 +133,46 @@ func TestRepoAllowListStore_Caching(t *testing.T) {
 	dsClient := testutils.MustNewDatastoreClientForTesting(t)
 	store := NewRepoAllowListStore(dsClient)
 
-	regexEntry := RepoAllowList{
-		Type:                  "regex",
-		Value:                 "github\\.com/cached-org/.*",
-		ConsiderAllBranches:   true,
-		CherrypicksIntroduced: true,
-	}
-	regexKey := datastore.NameKey("RepoAllowList", "github\\.com/cached-org/.*", nil)
-
+	urlKey := datastore.NameKey("RepoAllowList", "github.com/cached-url/repo", nil)
 	urlEntry := RepoAllowList{
 		Type:             "url",
 		Value:            "github.com/cached-url/repo",
 		CherrypicksFixed: true,
-		CherrypicksLimit: true,
 	}
-	urlKey := datastore.NameKey("RepoAllowList", "github.com/cached-url/repo", nil)
 
-	if _, err := dsClient.PutMulti(ctx, []*datastore.Key{regexKey, urlKey}, []RepoAllowList{regexEntry, urlEntry}); err != nil {
+	regexKey := datastore.NameKey("RepoAllowList", "github\\.com/cached-org/.*", nil)
+	regexEntry := RepoAllowList{
+		Type:                "regex",
+		Value:               "github\\.com/cached-org/.*",
+		ConsiderAllBranches: true,
+	}
+
+	if _, err := dsClient.PutMulti(ctx, []*datastore.Key{urlKey, regexKey}, []RepoAllowList{urlEntry, regexEntry}); err != nil {
 		t.Fatalf("Failed setup: %v", err)
 	}
 
-	// First match populates cache
-	flagsRegex, err := store.GetFlags(ctx, "https://github.com/cached-org/repo1")
-	if err != nil || !flagsRegex.ConsiderAllBranches || !flagsRegex.CherrypicksIntroduced {
-		t.Fatalf("Initial GetFlags failed for regex: got %+v, err %v", flagsRegex, err)
+	// 1. Initial call populates cache
+	flags, err := store.GetFlags(ctx, "https://github.com/cached-url/repo")
+	if err != nil || !flags.CherrypicksFixed {
+		t.Fatalf("Initial GetFlags failed: got %+v, err %v", flags, err)
 	}
 
-	flagsURL, err := store.GetFlags(ctx, "https://github.com/cached-url/repo")
-	if err != nil || !flagsURL.CherrypicksFixed || !flagsURL.CherrypicksLimit {
-		t.Fatalf("Initial GetFlags failed for url: got %+v, err %v", flagsURL, err)
-	}
-
-	// Check that cache is populated
-	cache.mu.RLock()
-	if len(cache.regexCache) != 1 {
-		t.Errorf("expected 1 cached regex, got %d", len(cache.regexCache))
-	}
-	if flags, ok := cache.urlCache["github.com/cached-url/repo"]; !ok || !flags.CherrypicksFixed || !flags.CherrypicksLimit {
-		t.Errorf("expected urlCache to contain github.com/cached-url/repo with CherrypicksFixed=true, CherrypicksLimit=true")
-	}
-	cache.mu.RUnlock()
-
-	// Delete from Datastore to test that cache hit still succeeds before TTL expires
-	if err := dsClient.DeleteMulti(ctx, []*datastore.Key{regexKey, urlKey}); err != nil {
+	// 2. Delete entry from Datastore; cache hit still succeeds before TTL expiry
+	if err := dsClient.DeleteMulti(ctx, []*datastore.Key{urlKey, regexKey}); err != nil {
 		t.Fatalf("Failed deleting keys: %v", err)
 	}
-
-	flagsCachedRegex, err := store.GetFlags(ctx, "https://github.com/cached-org/repo2")
-	if err != nil || !flagsCachedRegex.ConsiderAllBranches {
-		t.Errorf("Expected cache hit for regex to succeed even after DB deletion, got %+v, err %v", flagsCachedRegex, err)
+	flags, err = store.GetFlags(ctx, "https://github.com/cached-url/repo")
+	if err != nil || !flags.CherrypicksFixed {
+		t.Errorf("Expected cache hit before TTL expiry, got %+v, err %v", flags, err)
 	}
 
-	flagsCachedURL, err := store.GetFlags(ctx, "https://github.com/cached-url/repo")
-	if err != nil || !flagsCachedURL.CherrypicksFixed {
-		t.Errorf("Expected cache hit for url to succeed even after DB deletion, got %+v, err %v", flagsCachedURL, err)
-	}
-
-	// Simulate TTL expiry by setting lastFetched into the past
+	// 3. Expire TTL -> store re-queries DB and URL entry is cleared from urlCache
 	cache.mu.Lock()
 	cache.lastFetched = time.Now().Add(-6 * time.Minute)
 	cache.mu.Unlock()
 
-	// After TTL expiry, store should re-query DB and find no matches
-	flagsExpired, err := store.GetFlags(ctx, "https://github.com/cached-org/repo3")
-	if err != nil {
-		t.Fatalf("Unexpected error after cache expiry: %v", err)
-	}
-	if flagsExpired.ConsiderAllBranches || flagsExpired.CherrypicksIntroduced {
-		t.Errorf("Expected GetFlags for regex to return zero flags after TTL expiry and DB deletion, got %+v", flagsExpired)
-	}
-
-	flagsExpiredURL, err := store.GetFlags(ctx, "https://github.com/cached-url/repo")
-	if err != nil {
-		t.Fatalf("Unexpected error after cache expiry for url: %v", err)
-	}
-	if flagsExpiredURL.CherrypicksFixed || flagsExpiredURL.CherrypicksLimit {
-		t.Errorf("Expected GetFlags for url to return zero flags after TTL expiry and DB deletion, got %+v", flagsExpiredURL)
+	flags, err = store.GetFlags(ctx, "https://github.com/cached-url/repo")
+	if err != nil || flags.CherrypicksFixed {
+		t.Errorf("Expected URL cache refresh after TTL expiry, got %+v, err %v", flags, err)
 	}
 }

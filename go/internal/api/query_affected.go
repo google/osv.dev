@@ -226,6 +226,16 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 				Cursor:    startTok,
 			})
 			packageIndices = append(packageIndices, i)
+		} else {
+			// The query was somehow successfully parsed, but is not a query we know about.
+			// Getting here is a bug - it should have been caught earlier by parseQuery.
+			var info []any
+			if s.verboseLogs {
+				info = append(info, slog.Any("query", queries[i]))
+			}
+			logger.ErrorContext(ctx, "internal error: unexpectedly parsed invalid query", info...)
+
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("error in query at index %d: unknown query type", i))
 		}
 	}
 

@@ -73,7 +73,6 @@ func init() {
 	registerSimple(osvconstants.EcosystemJulia, "julia", "", nil)
 	registerSimple(osvconstants.EcosystemNuGet, "nuget", "", nil)
 	registerSimple(osvconstants.EcosystemOSSFuzz, "generic", "", nil)
-	registerSlash(osvconstants.EcosystemPackagist, "composer")
 	registerSimple(osvconstants.EcosystemPub, "pub", "", nil)
 	registerSimple(osvconstants.EcosystemPyPI, "pypi", "", nil)
 	registerSimple(osvconstants.EcosystemRubyGems, "gem", "", nil)

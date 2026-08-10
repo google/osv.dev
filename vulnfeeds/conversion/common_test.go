@@ -1,9 +1,11 @@
 package conversion
 
 import (
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv/vulnfeeds/git"
 	"github.com/google/osv/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -454,3 +456,185 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 		})
 	}
 }
+
+func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
+	tests := []struct {
+		name           string
+		versionRanges  []models.RangeWithMetadata
+		repos          []string
+		canonicalLinks map[string]string
+		cachedTags     map[string]git.RepoTagsMap
+		wantResolved   int
+		wantUnresolved int
+		wantSuccessful []string
+	}{
+		{
+			name: "Range repo is alias, Loop repo is canonical",
+			versionRanges: []models.RangeWithMetadata{
+				{
+					Range: &osvschema.Range{
+						Type: osvschema.Range_GIT,
+						Repo: "http://github.com/alias/repo",
+						Events: []*osvschema.Event{
+							{Introduced: "1.0.0"},
+							{Fixed: "1.0.1"},
+						},
+					},
+				},
+			},
+			repos: []string{"https://github.com/canonical/repo"},
+			canonicalLinks: map[string]string{
+				"http://github.com/alias/repo":      "https://github.com/canonical/repo",
+				"https://github.com/canonical/repo": "https://github.com/canonical/repo",
+			},
+			cachedTags: map[string]git.RepoTagsMap{
+				"https://github.com/canonical/repo": {
+					NormalizedTag: map[string]git.NormalizedTag{
+						"1-0-0": {OriginalTag: "v1.0.0", Commit: "100commit"},
+						"1-0-1": {OriginalTag: "v1.0.1", Commit: "101commit"},
+					},
+				},
+			},
+			wantResolved:   1,
+			wantUnresolved: 0,
+			wantSuccessful: []string{"https://github.com/canonical/repo"},
+		},
+		{
+			name: "Range repo is canonical, Loop repo is alias",
+			versionRanges: []models.RangeWithMetadata{
+				{
+					Range: &osvschema.Range{
+						Type: osvschema.Range_GIT,
+						Repo: "https://github.com/canonical/repo",
+						Events: []*osvschema.Event{
+							{Introduced: "1.0.0"},
+							{Fixed: "1.0.1"},
+						},
+					},
+				},
+			},
+			repos: []string{"http://github.com/alias/repo"},
+			canonicalLinks: map[string]string{
+				"http://github.com/alias/repo":      "https://github.com/canonical/repo",
+				"https://github.com/canonical/repo": "https://github.com/canonical/repo",
+			},
+			cachedTags: map[string]git.RepoTagsMap{
+				"https://github.com/canonical/repo": {
+					NormalizedTag: map[string]git.NormalizedTag{
+						"1-0-0": {OriginalTag: "v1.0.0", Commit: "100commit"},
+						"1-0-1": {OriginalTag: "v1.0.1", Commit: "101commit"},
+					},
+				},
+			},
+			wantResolved:   1,
+			wantUnresolved: 0,
+			wantSuccessful: []string{"https://github.com/canonical/repo"},
+		},
+		{
+			name: "Range without repo, Loop repo is alias",
+			versionRanges: []models.RangeWithMetadata{
+				{
+					Range: &osvschema.Range{
+						Type: osvschema.Range_GIT,
+						Events: []*osvschema.Event{
+							{Introduced: "1.0.0"},
+							{Fixed: "1.0.1"},
+						},
+					},
+				},
+			},
+			repos: []string{"http://github.com/alias/repo"},
+			canonicalLinks: map[string]string{
+				"http://github.com/alias/repo":      "https://github.com/canonical/repo",
+				"https://github.com/canonical/repo": "https://github.com/canonical/repo",
+			},
+			cachedTags: map[string]git.RepoTagsMap{
+				"https://github.com/canonical/repo": {
+					NormalizedTag: map[string]git.NormalizedTag{
+						"1-0-0": {OriginalTag: "v1.0.0", Commit: "100commit"},
+						"1-0-1": {OriginalTag: "v1.0.1", Commit: "101commit"},
+					},
+				},
+			},
+			wantResolved:   1,
+			wantUnresolved: 0,
+			wantSuccessful: []string{"https://github.com/canonical/repo"},
+		},
+		{
+			name: "Range without repo skipped if repo claimed by another range",
+			versionRanges: []models.RangeWithMetadata{
+				{
+					Range: &osvschema.Range{
+						Type: osvschema.Range_GIT,
+						Repo: "http://github.com/alias/repo", // Claims the repo
+						Events: []*osvschema.Event{
+							{Introduced: "1.0.0"},
+							{Fixed: "1.0.1"},
+						},
+					},
+				},
+				{
+					Range: &osvschema.Range{
+						Type: osvschema.Range_GIT, // No repo
+						Events: []*osvschema.Event{
+							{Introduced: "2.0.0"},
+							{Fixed: "2.0.1"},
+						},
+					},
+				},
+			},
+			repos: []string{"https://github.com/canonical/repo"},
+			canonicalLinks: map[string]string{
+				"http://github.com/alias/repo":      "https://github.com/canonical/repo",
+				"https://github.com/canonical/repo": "https://github.com/canonical/repo",
+			},
+			cachedTags: map[string]git.RepoTagsMap{
+				"https://github.com/canonical/repo": {
+					NormalizedTag: map[string]git.NormalizedTag{
+						"1-0-0": {OriginalTag: "v1.0.0", Commit: "100commit"},
+						"1-0-1": {OriginalTag: "v1.0.1", Commit: "101commit"},
+						"2-0-0": {OriginalTag: "v2.0.0", Commit: "200commit"},
+						"2-0-1": {OriginalTag: "v2.0.1", Commit: "201commit"},
+					},
+				},
+			},
+			wantResolved:   1, // Only the first range should be resolved by this repo
+			wantUnresolved: 1, // The second range should remain unresolved
+			wantSuccessful: []string{"https://github.com/canonical/repo"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldRedisHost := os.Getenv("REDISHOST")
+			os.Unsetenv("REDISHOST")
+			defer func() {
+				if oldRedisHost != "" {
+					os.Setenv("REDISHOST", oldRedisHost)
+				}
+			}()
+
+			cache := git.NewRepoTagsCache()
+			for k, v := range tt.canonicalLinks {
+				cache.SetCanonicalLink(k, v)
+			}
+			for k, v := range tt.cachedTags {
+				cache.Set(k, v)
+			}
+
+			metrics := &models.ConversionMetrics{}
+			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, metrics, cache)
+
+			if len(gotResolved) != tt.wantResolved {
+				t.Errorf("GitVersionsToCommits() gotResolved count = %v, want %v", len(gotResolved), tt.wantResolved)
+			}
+			if len(gotUnresolved) != tt.wantUnresolved {
+				t.Errorf("GitVersionsToCommits() gotUnresolved count = %v, want %v", len(gotUnresolved), tt.wantUnresolved)
+			}
+			if diff := cmp.Diff(tt.wantSuccessful, gotSuccessful); diff != "" {
+				t.Errorf("GitVersionsToCommits() gotSuccessful mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+

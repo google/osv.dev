@@ -402,7 +402,7 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	tok := query.GetPageToken()
 	if commitQuery, ok := query.GetParam().(*pb.Query_Commit); ok {
 		commit, err := hex.DecodeString(commitQuery.Commit)
-		if err != nil {
+		if commitQuery.Commit == "" || err != nil {
 			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid hash")
 		}
 

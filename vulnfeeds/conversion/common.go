@@ -526,6 +526,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		if a.VendorProduct != b.VendorProduct {
 			return strings.Compare(a.VendorProduct, b.VendorProduct)
 		}
+
 		return strings.Compare(a.OriginalTag, b.OriginalTag)
 	})
 

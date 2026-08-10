@@ -444,6 +444,7 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to make database specific: %v", err)
 		}
+
 		return ds
 	}
 

@@ -621,7 +621,6 @@ func parseExtractedEvent(v *structpb.Value) []ExtractedEvent {
 	}
 	fields := s.GetFields()
 
-	// Check if it's the new grouped structure
 	if rangeVal, ok := fields["range"]; ok && rangeVal.GetListValue() != nil {
 		var events []ExtractedEvent
 		for _, evVal := range rangeVal.GetListValue().GetValues() {
@@ -645,6 +644,7 @@ func parseExtractedEvent(v *structpb.Value) []ExtractedEvent {
 			}
 			events = append(events, ev)
 		}
+
 		return events
 	}
 
@@ -753,7 +753,7 @@ func isCPERange(r *osvschema.Range) bool {
 	if val.GetStringValue() == "CPE_RANGE" {
 		return true
 	}
-	if listVal := val. GetListValue(); listVal != nil {
+	if listVal := val.GetListValue(); listVal != nil {
 		for _, item := range listVal.GetValues() {
 			if item.GetStringValue() == "CPE_RANGE" {
 				return true

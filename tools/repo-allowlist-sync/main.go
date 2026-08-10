@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -15,6 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// TODO: Use go model RepoAllowList struct (#5797)
 // RepoAllowListEntity represents a repository allowlist entity stored in Cloud Datastore
 type RepoAllowListEntity struct {
 	Key                   *datastore.Key `datastore:"__key__"`
@@ -39,6 +41,7 @@ type rawYAMLEntry struct {
 
 func (e RepoAllowListEntity) matches(other RepoAllowListEntity) bool {
 	return e.Type == other.Type &&
+		e.Value == other.Value &&
 		e.ConsiderAllBranches == other.ConsiderAllBranches &&
 		e.CherrypicksIntroduced == other.CherrypicksIntroduced &&
 		e.CherrypicksFixed == other.CherrypicksFixed &&
@@ -200,7 +203,7 @@ func run(ctx context.Context, filePath, project string, dryRun, verbose bool) er
 		}
 
 		if !exists {
-			key := datastore.IncompleteKey("RepoAllowList", nil)
+			key := datastore.NameKey("RepoAllowList", base64.RawURLEncoding.EncodeToString([]byte(val)), nil)
 			if !dryRun {
 				if _, err := dsClient.Put(ctx, key, entity); err != nil {
 					return fmt.Errorf("failed putting entity for %s: %w", val, err)

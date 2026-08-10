@@ -9,68 +9,87 @@ import (
 
 func TestNormalizeRepo(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected string
+		name        string
+		input       string
+		expected    string
+		expectError bool
 	}{
 		{
-			name:     "Empty string",
-			input:    "",
-			expected: "",
+			name:        "Empty string",
+			input:       "",
+			expected:    "",
+			expectError: true,
 		},
 		{
-			name:     "HTTPS URL with .git",
-			input:    "https://github.com/google/osv.dev.git",
-			expected: "github.com/google/osv.dev",
+			name:        "HTTPS URL with .git",
+			input:       "https://github.com/google/osv.dev.git",
+			expected:    "github.com/google/osv.dev",
+			expectError: false,
 		},
 		{
-			name:     "HTTPS URL without .git",
-			input:    "https://github.com/google/osv.dev",
-			expected: "github.com/google/osv.dev",
+			name:        "HTTPS URL without .git",
+			input:       "https://github.com/google/osv.dev",
+			expected:    "github.com/google/osv.dev",
+			expectError: false,
 		},
 		{
-			name:     "URL with trailing slash",
-			input:    "https://github.com/google/osv.dev/",
-			expected: "github.com/google/osv.dev",
+			name:        "URL with trailing slash",
+			input:       "https://github.com/google/osv.dev/",
+			expected:    "github.com/google/osv.dev",
+			expectError: false,
 		},
 		{
-			name:     "No scheme URL",
-			input:    "github.com/google/osv.dev",
-			expected: "github.com/google/osv.dev",
+			name:        "No scheme URL",
+			input:       "github.com/google/osv.dev",
+			expected:    "github.com/google/osv.dev",
+			expectError: false,
 		},
 		{
-			name:     "No scheme with .git",
-			input:    "github.com/google/osv-scanner.git",
-			expected: "github.com/google/osv-scanner",
+			name:        "No scheme with .git",
+			input:       "github.com/google/osv-scanner.git",
+			expected:    "github.com/google/osv-scanner",
+			expectError: false,
 		},
 		{
-			name:     "Whitespace in URL",
-			input:    "  https://github.com/google/osv.dev.git  ",
-			expected: "github.com/google/osv.dev",
+			name:        "Whitespace in URL",
+			input:       "  https://github.com/google/osv.dev.git  ",
+			expected:    "github.com/google/osv.dev",
+			expectError: false,
 		},
 		{
-			name:     "SSH URL format git@",
-			input:    "git@github.com:google/osv.dev.git",
-			expected: "",
+			name:        "SSH URL format git@",
+			input:       "git@github.com:google/osv.dev.git",
+			expected:    "",
+			expectError: true,
 		},
 		{
-			name:     "SSH URL format ssh://",
-			input:    "ssh://git@github.com/google/osv.dev.git",
-			expected: "",
+			name:        "SSH URL format ssh://",
+			input:       "ssh://git@github.com/google/osv.dev.git",
+			expected:    "",
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := normalizeRepo(tt.input)
-			if got != tt.expected {
-				t.Errorf("normalizeRepo(%q) = %q, want %q", tt.input, got, tt.expected)
+			got, err := normalizeRepo(tt.input)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("normalizeRepo(%q) expected error, got nil (result: %q)", tt.input, got)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("normalizeRepo(%q) returned unexpected error: %v", tt.input, err)
+				}
+				if got != tt.expected {
+					t.Errorf("normalizeRepo(%q) = %q, want %q", tt.input, got, tt.expected)
+				}
 			}
 		})
 	}
 }
 
-func TestParseYAMLEntries(t *testing.T) {
+func TestParseYAMLEntries_Valid(t *testing.T) {
 	yamlContent := []byte(`
 - type: URL
   value: "  https://github.com/google/osv.dev.git  "
@@ -81,16 +100,8 @@ func TestParseYAMLEntries(t *testing.T) {
   cherrypicks: true
 - type: url
   value: "https://github.com/noflags/repo.git"
-- type: regex
-  value: '[invalid regex'
-- type: unknown
-  value: "https://github.com/google/osv.dev"
-- type: url
-  value: "git@github.com:ssh/isnot.supported.git"
 `)
-
 	want := []RepoAllowListEntity{
-		// Normalized URL
 		{
 			Type:                  "url",
 			Value:                 "github.com/google/osv.dev",
@@ -99,7 +110,6 @@ func TestParseYAMLEntries(t *testing.T) {
 			CherrypicksFixed:      false,
 			CherrypicksLimit:      false,
 		},
-		// Regex type and cherrypicks: true populates all 3 event types
 		{
 			Type:                  "regex",
 			Value:                 `github\.com/google/osv-.*`,
@@ -108,7 +118,6 @@ func TestParseYAMLEntries(t *testing.T) {
 			CherrypicksFixed:      true,
 			CherrypicksLimit:      true,
 		},
-		// No flags set (Shouldn't really happen)
 		{
 			Type:                  "url",
 			Value:                 "github.com/noflags/repo",
@@ -132,6 +141,42 @@ func TestParseYAMLEntries(t *testing.T) {
 		if got[i] != wantEntry {
 			t.Errorf("entry %d mismatch:\n got: %+v\nwant: %+v", i, got[i], wantEntry)
 		}
+	}
+}
+
+func TestParseYAMLEntries_Invalid(t *testing.T) {
+	invalidTests := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "Unknown YAML field",
+			yaml: "- type: url\n  value: \"https://github.com/google/osv.dev\"\n  unknown_field: true\n",
+		},
+		{
+			name: "Invalid regex",
+			yaml: "- type: regex\n  value: '[invalid regex'\n",
+		},
+		{
+			name: "Unrecognized entry type",
+			yaml: "- type: unknown\n  value: \"https://github.com/google/osv.dev\"\n",
+		},
+		{
+			name: "Unsupported SSH URL",
+			yaml: "- type: url\n  value: \"git@github.com:ssh/isnot.supported.git\"\n",
+		},
+		{
+			name: "Duplicate values",
+			yaml: "- type: url\n  value: \"https://github.com/google/osv.dev.git\"\n- type: url\n  value: \"https://github.com/google/osv.dev\"\n",
+		},
+	}
+
+	for _, tt := range invalidTests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := parseYAMLEntries([]byte(tt.yaml)); err == nil {
+				t.Errorf("parseYAMLEntries expected error for %s, got nil", tt.name)
+			}
+		})
 	}
 }
 

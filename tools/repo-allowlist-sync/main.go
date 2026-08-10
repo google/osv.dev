@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // TODO: Use go model RepoAllowList struct (#5797)
@@ -66,57 +66,62 @@ func main() {
 }
 
 // normalizeRepo removes the URL scheme, trailing slashes, and .git extensions to standardize repo paths.
-func normalizeRepo(repoURL string) string {
+func normalizeRepo(repoURL string) (string, error) {
 	repoURL = strings.TrimSpace(repoURL)
 	if repoURL == "" {
-		return ""
+		return "", fmt.Errorf("repository URL cannot be empty")
 	}
 
 	if strings.HasPrefix(repoURL, "git@") || strings.HasPrefix(repoURL, "ssh://") {
-		log.Printf("Warning: Unsupported SSH URL format %q. Only HTTPS or normalized repository paths are supported.", repoURL)
-		return ""
+		return "", fmt.Errorf("unsupported SSH URL format %q: only HTTPS or normalized repository paths are supported", repoURL)
 	}
 
 	parsed, err := url.Parse(repoURL)
 	if err != nil {
-		return repoURL
+		return "", fmt.Errorf("failed to parse URL %q: %w", repoURL, err)
 	}
 	normalized := parsed.Host + parsed.Path
 	normalized = strings.TrimRight(normalized, "/")
 	normalized = strings.TrimSuffix(normalized, ".git")
 
-	return normalized
+	return normalized, nil
 }
 
 // parseYAMLEntries parses and validates allowlist YAML content, expanding shorthand fields and normalizing values.
 func parseYAMLEntries(data []byte) ([]RepoAllowListEntity, error) {
 	var rawEntries []rawYAMLEntry
-	if err := yaml.Unmarshal(data, &rawEntries); err != nil {
-		return nil, err
+	if err := yaml.Load(data, &rawEntries, yaml.WithKnownFields()); err != nil {
+		return nil, fmt.Errorf("failed parsing YAML: %w", err)
 	}
 
+	seenValues := make(map[string]bool)
 	var entries []RepoAllowListEntity
+
 	for _, raw := range rawEntries {
 		raw.Type = strings.TrimSpace(strings.ToLower(raw.Type))
 
 		switch raw.Type {
 		case "url":
-			raw.Value = normalizeRepo(raw.Value)
-			if raw.Value == "" {
-				continue
+			var err error
+			raw.Value, err = normalizeRepo(raw.Value)
+			if err != nil {
+				return nil, fmt.Errorf("invalid repository URL: %w", err)
 			}
 		case "regex":
 			if raw.Value == "" {
-				continue
+				return nil, fmt.Errorf("empty regex pattern")
 			}
 			if _, err := regexp.Compile(raw.Value); err != nil {
-				log.Printf("Warning: Skipping invalid regex pattern %q: %v", raw.Value, err)
-				continue
+				return nil, fmt.Errorf("invalid regex pattern %q: %w", raw.Value, err)
 			}
 		default:
-			log.Printf("Warning: Skipping unrecognized entry type %q for value %q", raw.Type, raw.Value)
-			continue
+			return nil, fmt.Errorf("unrecognized entry type %q for value %q", raw.Type, raw.Value)
 		}
+
+		if seenValues[raw.Value] {
+			return nil, fmt.Errorf("duplicate allowlist entry value found: %q", raw.Value)
+		}
+		seenValues[raw.Value] = true
 
 		// Process cherrypicks flags: "cherrypicks: bool" acts as a shorthand for all 3 event types,
 		// specifying "cherrypicks_<event>" fields overrides that.

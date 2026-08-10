@@ -19,6 +19,15 @@ type EcosystemCount struct {
 // ListedVulnerabilityDisplay wraps models.ListedVulnerability with website presentation methods.
 type ListedVulnerabilityDisplay models.ListedVulnerability
 
+// FormattedPublished returns the published timestamp in RFC3339 format.
+func (v ListedVulnerabilityDisplay) FormattedPublished() string {
+	if v.Published.IsZero() {
+		return ""
+	}
+
+	return v.Published.Format(time.RFC3339)
+}
+
 // RelativePublished returns a human-readable relative time representation.
 func (v ListedVulnerabilityDisplay) RelativePublished() string {
 	if v.Published.IsZero() {

@@ -128,7 +128,7 @@ func TestParseYAMLEntries_Valid(t *testing.T) {
 		},
 	}
 
-	got, err := parseYAMLEntries(yamlContent)
+	got, err := parseYAMLEntries(yamlContent, false)
 	if err != nil {
 		t.Fatalf("parseYAMLEntries returned unexpected error: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestParseYAMLEntries_Invalid(t *testing.T) {
 
 	for _, tt := range invalidTests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := parseYAMLEntries([]byte(tt.yaml)); err == nil {
+			if _, err := parseYAMLEntries([]byte(tt.yaml), false); err == nil {
 				t.Errorf("parseYAMLEntries expected error for %s, got nil", tt.name)
 			}
 		})
@@ -181,7 +181,7 @@ func TestParseYAMLEntries_Invalid(t *testing.T) {
 }
 
 func TestRun_InvalidFile(t *testing.T) {
-	err := run(context.Background(), "non_existent_file.yaml", "test-project", true, false)
+	err := run(context.Background(), "non_existent_file.yaml", "test-project", true, false, false)
 	if err == nil {
 		t.Error("expected error for non-existent file, got nil")
 	}
@@ -192,8 +192,36 @@ func TestRun_InvalidFile(t *testing.T) {
 		t.Fatalf("failed creating bad yaml file: %v", err)
 	}
 
-	err = run(context.Background(), badYAMLPath, "test-project", true, false)
+	err = run(context.Background(), badYAMLPath, "test-project", true, false, false)
 	if err == nil {
 		t.Error("expected error for invalid YAML file, got nil")
 	}
+}
+
+func TestRun_Validate(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	t.Run("Valid YAML", func(t *testing.T) {
+		validYAML := filepath.Join(tmpDir, "valid.yaml")
+		if err := os.WriteFile(validYAML, []byte("- type: url\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: 'github\\.com/google/.*'\n"), 0644); err != nil {
+			t.Fatalf("failed creating valid yaml file: %v", err)
+		}
+
+		// Validate mode (validate=true) should succeed without needing a Datastore connection/project.
+		if err := run(context.Background(), validYAML, "", true, true, true); err != nil {
+			t.Errorf("run with validate=true returned unexpected error: %v", err)
+		}
+	})
+
+	t.Run("Invalid YAML", func(t *testing.T) {
+		invalidYAML := filepath.Join(tmpDir, "invalid.yaml")
+		if err := os.WriteFile(invalidYAML, []byte("- type: unknown\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: '[invalid regex'\n"), 0644); err != nil {
+			t.Fatalf("failed creating invalid yaml file: %v", err)
+		}
+
+		err := run(context.Background(), invalidYAML, "", true, true, true)
+		if err == nil {
+			t.Error("expected error for invalid YAML file in validate mode, got nil")
+		}
+	})
 }

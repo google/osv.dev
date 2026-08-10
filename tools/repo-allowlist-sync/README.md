@@ -50,7 +50,7 @@ The allowlist YAML configuration file accepts a list of entries with `type`, `va
 ### Normalization and Validation
 
 - **`type: url`**: Repository URLs are automatically normalized before being saved to Datastore (removing protocol scheme, `.git` extension, and trailing slashes). For example, `https://github.com/google/osv.dev.git` is normalized to `github.com/google/osv.dev`.
-- **`type: regex`**: Regular expressions are compiled and validated against Go's RE2 standard syntax. Invalid regex entries are skipped with a warning.
+- **`type: regex`**: Regular expressions are compiled and validated against Go's RE2 standard syntax. Invalid regex entries cause validation failure.
 - **`cherrypicks`**: Acts as a shorthand for setting `cherrypicks_introduced`, `cherrypicks_fixed`, and `cherrypicks_limit` simultaneously. Specific `cherrypicks_<type>` fields override the shorthand value if provided.
 
 ## Usage
@@ -63,9 +63,10 @@ go run . [flags]
 
 ### Options & Flags
 
-| Flag        | Default               | Description                                                       |
-| ----------- | --------------------- | ----------------------------------------------------------------- |
-| `--file`    | `repo_allowlist.yaml` | Path to the input YAML allowlist file                             |
-| `--project` | `oss-vdb-test`        | Target GCP Project ID                                             |
-| `--dry-run` | `true`                | When `true`, previews sync operations without modifying Datastore |
-| `--verbose` | `false`               | Enables detailed logging of create/update/delete operations       |
+| Flag         | Default               | Description                                                       |
+| ------------ | --------------------- | ----------------------------------------------------------------- |
+| `--file`     | `repo_allowlist.yaml` | Path to the input YAML allowlist file                             |
+| `--project`  | `oss-vdb-test`        | Target GCP Project ID                                             |
+| `--dry-run`  | `true`                | When `true`, previews sync operations without modifying Datastore |
+| `--validate` | `false`               | Validates YAML file and prints summary report without Datastore   |
+| `--verbose`  | `true`                | Enables detailed logging of create/update/delete operations       |

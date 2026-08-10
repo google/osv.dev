@@ -1,6 +1,8 @@
 package website_test
 
 import (
+	"context"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,8 +11,52 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/website"
+	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
+
+type mockVulnStore struct {
+	models.UnimplementedVulnerabilityStore
+}
+
+func (m mockVulnStore) GetFull(_ context.Context, id string) (*osvschema.Vulnerability, error) {
+	return &osvschema.Vulnerability{Id: id}, nil
+}
+
+func (m mockVulnStore) GetWithMetadata(_ context.Context, id string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
+	return &osvschema.Vulnerability{Id: id}, &models.VulnSourceRef{ID: id, Source: "test", Path: id + ".json"}, nil
+}
+
+type mockRelationsStore struct{}
+
+func (m mockRelationsStore) GetAliases(_ context.Context, _ string) (*models.GetAliasResult, error) {
+	return nil, models.ErrNotFound
+}
+
+func (m mockRelationsStore) GetRelated(_ context.Context, _ string) (*models.GetRelatedResult, error) {
+	return nil, models.ErrNotFound
+}
+
+func (m mockRelationsStore) GetUpstream(_ context.Context, _ string) (*models.GetUpstreamResult, error) {
+	return nil, models.ErrNotFound
+}
+
+type mockSourceRepoStore struct{}
+
+func (m mockSourceRepoStore) Get(_ context.Context, _ string) (*models.SourceRepository, error) {
+	return &models.SourceRepository{
+		Link: "https://example.com/source/",
+	}, nil
+}
+
+func (m mockSourceRepoStore) Update(_ context.Context, _ string, _ *models.SourceRepository) error {
+	return nil
+}
+
+func (m mockSourceRepoStore) All(_ context.Context) iter.Seq2[*models.SourceRepository, error] {
+	return func(_ func(*models.SourceRepository, error) bool) {}
+}
 
 func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
@@ -20,6 +66,15 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	if cfg.DocsFS == nil {
 		cfg.DocsFS = fstest.MapFS{}
 	}
+	if cfg.Stores.Vuln == nil {
+		cfg.Stores.Vuln = mockVulnStore{}
+	}
+	if cfg.Stores.Relations == nil {
+		cfg.Stores.Relations = mockRelationsStore{}
+	}
+	if cfg.Stores.SourceRepo == nil {
+		cfg.Stores.SourceRepo = mockSourceRepoStore{}
+	}
 	srv, err := website.NewServer(cfg)
 	if err != nil {
 		t.Fatalf("failed creating test server: %v", err)
@@ -28,17 +83,51 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	return srv
 }
 
-func TestNewServer_NilFS(t *testing.T) {
+func TestNewServer_NilConfig(t *testing.T) {
 	t.Parallel()
 
-	if _, err := website.NewServer(website.Config{}); err == nil {
-		t.Errorf("expected error when StaticFS and DocsFS are nil, got nil")
+	validConfig := website.Config{
+		StaticFS: fstest.MapFS{},
+		DocsFS:   fstest.MapFS{},
+		Stores: website.Stores{
+			Vuln:       mockVulnStore{},
+			Relations:  mockRelationsStore{},
+			SourceRepo: mockSourceRepoStore{},
+		},
 	}
-	if _, err := website.NewServer(website.Config{StaticFS: fstest.MapFS{}}); err == nil {
+
+	if _, err := website.NewServer(website.Config{}); err == nil {
+		t.Errorf("expected error when config is empty, got nil")
+	}
+
+	noStatic := validConfig
+	noStatic.StaticFS = nil
+	if _, err := website.NewServer(noStatic); err == nil {
+		t.Errorf("expected error when StaticFS is nil, got nil")
+	}
+
+	noDocs := validConfig
+	noDocs.DocsFS = nil
+	if _, err := website.NewServer(noDocs); err == nil {
 		t.Errorf("expected error when DocsFS is nil, got nil")
 	}
-	if _, err := website.NewServer(website.Config{DocsFS: fstest.MapFS{}}); err == nil {
-		t.Errorf("expected error when StaticFS is nil, got nil")
+
+	noVuln := validConfig
+	noVuln.Stores.Vuln = nil
+	if _, err := website.NewServer(noVuln); err == nil {
+		t.Errorf("expected error when Stores.Vuln is nil, got nil")
+	}
+
+	noRelations := validConfig
+	noRelations.Stores.Relations = nil
+	if _, err := website.NewServer(noRelations); err == nil {
+		t.Errorf("expected error when Stores.Relations is nil, got nil")
+	}
+
+	noSourceRepo := validConfig
+	noSourceRepo.Stores.SourceRepo = nil
+	if _, err := website.NewServer(noSourceRepo); err == nil {
+		t.Errorf("expected error when Stores.SourceRepo is nil, got nil")
 	}
 }
 

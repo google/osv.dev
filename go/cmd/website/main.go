@@ -14,8 +14,13 @@ import (
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
+	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/storage"
+	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/website"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/google/osv.dev/go/osv/clients"
 )
 
 func main() {
@@ -59,9 +64,56 @@ func run() error {
 		return fmt.Errorf("failed to load docs filesystem %q: %w", *docsDir, err)
 	}
 
+	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if project == "" {
+		// Fallback to metadata server for Cloud Run
+		var err error
+		project, err = metadata.ProjectIDWithContext(ctx)
+		if err != nil {
+			logger.ErrorContext(ctx, "GOOGLE_CLOUD_PROJECT environment variable is not set")
+			return errors.New("GOOGLE_CLOUD_PROJECT environment variable is not set")
+		}
+	}
+	datastoreID := os.Getenv("DATASTORE_DATABASE_ID") // empty string is the (default) database
+	dbClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID, datastore.WithIgnoreFieldMismatch())
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to create datastore client", slog.Any("error", err))
+		return err
+	}
+	defer dbClient.Close()
+	gcsClient, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to create storage client", slog.Any("error", err))
+		return err
+	}
+	defer gcsClient.Close()
+	vulnBucket := os.Getenv("OSV_VULNERABILITIES_BUCKET")
+	if vulnBucket == "" {
+		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
+		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
+	}
+	stores := website.Stores{
+		Vuln: db.NewVulnerabilityStore(db.VulnStoreConfig{
+			Client: dbClient,
+			GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
+		}),
+		Relations:  db.NewRelationsStore(dbClient),
+		SourceRepo: db.NewSourceRepositoryStore(dbClient),
+	}
+
+	apiURL := os.Getenv("OSV_API_URL")
+	if apiURL == "" {
+		apiURL = os.Getenv("API_URL")
+	}
+	if apiURL == "" {
+		apiURL = "api.osv.dev"
+	}
+
 	srv, err := website.NewServer(website.Config{
 		StaticFS: staticFiles,
 		DocsFS:   docsFiles,
+		Stores:   stores,
+		APIURL:   apiURL,
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create website server", slog.Any("error", err))

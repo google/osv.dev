@@ -610,7 +610,7 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 			os.Unsetenv("REDISHOST")
 			defer func() {
 				if oldRedisHost != "" {
-					os.Setenv("REDISHOST", oldRedisHost)
+					t.Setenv("REDISHOST", oldRedisHost)
 				}
 			}()
 
@@ -637,4 +637,3 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 		})
 	}
 }
-

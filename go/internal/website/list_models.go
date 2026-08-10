@@ -19,15 +19,6 @@ type EcosystemCount struct {
 // ListedVulnerabilityDisplay wraps models.ListedVulnerability with website presentation methods.
 type ListedVulnerabilityDisplay models.ListedVulnerability
 
-// FormattedPublished returns the published timestamp in RFC3339 format.
-func (v ListedVulnerabilityDisplay) FormattedPublished() string {
-	if v.Published.IsZero() {
-		return ""
-	}
-
-	return v.Published.Format(time.RFC3339)
-}
-
 // RelativePublished returns a human-readable relative time representation.
 func (v ListedVulnerabilityDisplay) RelativePublished() string {
 	if v.Published.IsZero() {
@@ -101,16 +92,16 @@ func (v ListedVulnerabilityDisplay) DisplayPackages() []string {
 		limit = 5
 	}
 
-	result := make([]string, limit)
+	result := make([]string, 0, limit)
 	for i := range limit {
 		pkg := v.Packages[i]
 		if pkg.Repo != "" {
-			result[i] = stripScheme(pkg.Repo)
+			result = append(result, stripScheme(pkg.Repo))
 		} else if pkg.Package != nil {
 			if pkg.Package.GetEcosystem() == "" {
-				result[i] = pkg.Package.GetName()
+				result = append(result, pkg.Package.GetName())
 			} else {
-				result[i] = pkg.Package.GetEcosystem() + "/" + pkg.Package.GetName()
+				result = append(result, pkg.Package.GetEcosystem()+"/"+pkg.Package.GetName())
 			}
 		}
 	}

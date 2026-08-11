@@ -190,8 +190,8 @@ github.com/microcosm-cc/bluemonday v1.0.27 h1:MpEUotklkwCSLeH+Qdx1VJgNqLlpY2KXwX
 github.com/microcosm-cc/bluemonday v1.0.27/go.mod h1:jFi9vgW+H7c3V0lb6nR74Ib/DIB5OBs92Dimizgw2cA=
 github.com/muesli/cancelreader v0.2.2 h1:3I4Kt4BQjOR54NavqnDogx/MIoWBFa0StPA8ELUXHmA=
 github.com/muesli/cancelreader v0.2.2/go.mod h1:3XuTXfFS2VjM+HTLZY9Ak0l6eUKfijIfMUZ4EgX0QYo=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47 h1:zFR2xlCvXhdqTgm57lKpTTXKZXYyroyjXT8xflRXZbg=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47/go.mod h1:IrUa4QzZUi03J3WXDzZYXVawYipHownNfqqZrqeGXfg=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec h1:A92d74F0MP8hOiPXRnUnuWaluaf3G3sGJfMEcjkZfjA=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec/go.mod h1:IrUa4QzZUi03J3WXDzZYXVawYipHownNfqqZrqeGXfg=
 github.com/package-url/packageurl-go v0.1.6 h1:YO3p6u1XmCUliivUg/qWphaY8vI6hxSnnPv7Bfg3m5M=
 github.com/package-url/packageurl-go v0.1.6/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
 github.com/pandatix/go-cvss v0.6.2 h1:TFiHlzUkT67s6UkelHmK6s1INKVUG7nlKYiWWDTITGI=

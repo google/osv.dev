@@ -16,6 +16,7 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/importer"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -40,6 +41,7 @@ func main() {
 	deleteThresholdPct := flag.Float64("delete-threshold-pct", 10.0, "More than this percent of records for a given source being deleted triggers an error")
 	workDir := flag.String("work-dir", "/work", "Work directory for git repos")
 	numWorkers := flag.Int("num-workers", 50, "Number of workers to use for importing")
+	maxCowardEntriesToShow := flag.Int("max-coward-entries-to-show", 250, "Maximum number of entries to show when cowardly refusing to delete missing records")
 	dryRun := flag.Bool("dry-run", false, "Do not send anything to the message bus if true")
 
 	flag.Parse()
@@ -62,14 +64,15 @@ func main() {
 	}
 
 	config := importer.Config{
-		StrictValidation: *strictValidation,
-		DeleteThreshold:  *deleteThresholdPct,
-		NumWorkers:       *numWorkers,
-		DefaultTaskPool:  defaultTaskPool,
-		ReimportTaskPool: reimportTaskPool,
-		GitWorkDir:       filepath.Join(*workDir, "sources"),
-		SampleRate:       vulnerabilitySampleRate(),
-		DryRun:           *dryRun,
+		StrictValidation:       *strictValidation,
+		DeleteThreshold:        *deleteThresholdPct,
+		MaxCowardEntriesToShow: *maxCowardEntriesToShow,
+		NumWorkers:             *numWorkers,
+		DefaultTaskPool:        defaultTaskPool,
+		ReimportTaskPool:       reimportTaskPool,
+		GitWorkDir:             filepath.Join(*workDir, "sources"),
+		SampleRate:             vulnerabilitySampleRate(),
+		DryRun:                 *dryRun,
 	}
 
 	httpClient := retryablehttp.NewClient()
@@ -78,6 +81,19 @@ func main() {
 	httpClient.RetryWaitMax = 4 * time.Second
 	httpClient.Logger = importer.RetryableHTTPLeveledLogger{}
 	config.HTTPClient = httpClient.StandardClient()
+
+	if !*runDelete {
+		gitterHost := os.Getenv("GITTER_HOST")
+		if gitterHost == "" {
+			logger.FatalContext(ctx, "GITTER_HOST environment variable is not set")
+		}
+		// Use the same HTTP client with retry and logger with gitter
+		gitterClient, err := gitter.NewClient(gitterHost, config.HTTPClient)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create gitter client", slog.Any("error", err))
+		}
+		config.GitterClient = gitterClient
+	}
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

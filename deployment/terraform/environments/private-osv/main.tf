@@ -8,7 +8,7 @@ module "osv_pipeline" {
   affected_commits_backups_bucket            = "private-osv-affected-commits-backups"
   pubsub_topic_name                          = "osv-work"
   pubsub_topic_failed_tasks_name             = "failed-osv-work"
-  pubsub_subscription_default_work_pool_name = "default-pool"
+  pubsub_subscription_default_work_pool_name = "default"
   pubsub_subscription_recovery_name          = "recovery"
   cluster_name                               = "workers"
   cluster_location                           = "us-central1-f"
@@ -32,11 +32,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.40.0"
+      version = "~> 7.42.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.40.0"
+      version = "~> 7.42.0"
     }
   }
 }

@@ -247,11 +247,25 @@ func TestStaticFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(goDir, "triage.html"), []byte(`{{ define "content" }}Triage{{ end }}`), 0600); err != nil {
 		t.Fatalf("failed to write triage.html: %v", err)
 	}
+	if err := os.WriteFile(filepath.Join(goDir, "vulnerability.html"), []byte(`{{ define "content" }}Vulnerability {{ .Vulnerability.Id }}{{ end }}`), 0600); err != nil {
+		t.Fatalf("failed to write vulnerability.html: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(goDir, "linter.html"), []byte(`Linter Report`), 0600); err != nil {
 		t.Fatalf("failed to write linter.html: %v", err)
 	}
 
 	srv := newTestServer(t, website.Config{StaticFS: os.DirFS(tmpDir)})
+
+	t.Run("Vulnerability_details_page", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/vulnerability/GHSA-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
 
 	t.Run("Triage_page", func(t *testing.T) {
 		t.Parallel()
@@ -418,7 +432,6 @@ func TestEndpointRegistration(t *testing.T) {
 		method string
 		path   string
 	}{
-		{http.MethodGet, "/vulnerability/GHSA-1234"},
 		{http.MethodGet, "/GHSA-1234"},
 		{http.MethodGet, "/vulnerability/GHSA-1234.json"},
 		{http.MethodGet, "/GHSA-1234.json"},

@@ -61,6 +61,13 @@ func TestEnricher_Enrich(t *testing.T) {
 			initialPurl:  "",
 			expectedPurl: "pkg:deb/debian/curl?arch=source&distro=bullseye",
 		},
+		{
+			name:         "Generate Packagist PURL with repository",
+			ecosystem:    "Packagist:https://packages.drupal.org/8",
+			pkgName:      "drupal/commerce_guest_registration",
+			initialPurl:  "",
+			expectedPurl: "pkg:composer/drupal/commerce_guest_registration?repository_url=https:%2F%2Fpackages.drupal.org%2F8",
+		},
 	}
 
 	for _, tc := range tests {

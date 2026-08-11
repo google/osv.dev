@@ -250,6 +250,22 @@
   editable: False
   strict_validation: True
 
+- name: 'dhi'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!DHI-).*$']
+  directory_path: 'osv'
+  repo_url: 'https://github.com/docker-hardened-images/advisories-test.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DHI-']
+  accepted_ecosystems: ['Docker Hardened Images']
+  ignore_git: True
+  human_link: 'https://scout.docker.com/v/{{ BUG_ID }}'
+  link: 'https://github.com/docker-hardened-images/advisories-test/blob/main/'
+  editable: False
+  strict_validation: True
+
 - name: 'drupal'
   versions_from_repo: False
   type: 0

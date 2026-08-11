@@ -25,9 +25,9 @@ It is structured as a multi-language monorepo:
 ### OSV Schema Reference
 Vulnerabilities across the entire system conform to the **Open Source Vulnerability (OSV) schema**.
 When AI agents need to understand the exact format, fields, and semantics of vulnerability records, refer to the local `osv-schema` submodule:
-- **Full Specification**: [`osv/osv-schema/docs/schema.md`](osv/osv-schema/docs/schema.md)
-- **Protobuf Definition**: [`osv/osv-schema/proto/vulnerability.proto`](osv/osv-schema/proto/vulnerability.proto)
-- **JSON Schema**: [`osv/osv-schema/validation/schema.json`](osv/osv-schema/validation/schema.json)
+- **Full Specification**: [`osv/osv-schema/docs/schema.md`](https://github.com/ossf/osv-schema/blob/main/docs/schema.md)
+- **Protobuf Definition**: [`osv/osv-schema/proto/vulnerability.proto`](https://github.com/ossf/osv-schema/blob/main/proto/vulnerability.proto)
+- **JSON Schema**: [`osv/osv-schema/validation/schema.json`](https://github.com/ossf/osv-schema/blob/main/validation/schema.json)
 
 ---
 

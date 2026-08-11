@@ -109,6 +109,17 @@ type AliasDenyListEntry struct {
 	VulnID string `datastore:"bug_id"`
 }
 
+// RepoAllowList holds repository URL or regex pattern and repo-based git enumeration flags.
+type RepoAllowList struct {
+	Type  string `datastore:"type"`  // `url` or `regex`
+	Value string `datastore:"value"` // normalized URL or regex pattern
+	// The following corresponds to git analysis flags for gitter's affected-commits endpoint.
+	ConsiderAllBranches   bool `datastore:"consider_all_branches"`
+	CherrypicksIntroduced bool `datastore:"cherrypicks_introduced"`
+	CherrypicksFixed      bool `datastore:"cherrypicks_fixed"`
+	CherrypicksLimit      bool `datastore:"cherrypicks_limit"`
+}
+
 type Severity struct {
 	Type  string `datastore:"type"`
 	Score string `datastore:"score"`

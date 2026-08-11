@@ -84,7 +84,12 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 
 	var withdrawnTime *timestamppb.Timestamp
 	if cve.Metadata.State == "REJECTED" {
-		withdrawnTime = timestamppb.New(modified)
+		withdrawn, err := models.ParseCVE5Timestamp(cve.Metadata.DateRejected)
+		if err != nil {
+			metrics.AddNote("[%s]: Rejected date failed to parse or missing, falling back to Modified time", cve.Metadata.CVEID)
+			withdrawn = modified
+		}
+		withdrawnTime = timestamppb.New(withdrawn)
 	}
 
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
@@ -169,6 +174,11 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 	// Collect metrics about the conversion.
 	extractConversionMetrics(cve, v.References, &metrics)
 
+	if cve.Metadata.State == "REJECTED" {
+		metrics.Outcome = models.Rejected
+		return v, &metrics
+	}
+
 	// Add affected version information.
 	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
 	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
@@ -176,10 +186,6 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 	conversion.GroupAffectedRanges(v.Affected)
 
 	models.DetermineOutcome(&metrics)
-
-	if cve.Metadata.State == "REJECTED" {
-		metrics.Outcome = models.Rejected
-	}
 
 	return v, &metrics
 }

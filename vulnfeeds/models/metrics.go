@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 

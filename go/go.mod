@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.19.0
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
 	github.com/package-url/packageurl-go v0.1.6
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/tidwall/gjson v1.19.0

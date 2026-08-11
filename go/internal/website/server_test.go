@@ -25,10 +25,20 @@ func (m mockVulnStore) GetFull(_ context.Context, id string) (*osvschema.Vulnera
 }
 
 func (m mockVulnStore) GetWithMetadata(_ context.Context, id string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
+	if id == "UNKNOWN" || id == "UNKNOWN-1234" {
+		return nil, nil, models.ErrNotFound
+	}
+
 	return &osvschema.Vulnerability{Id: id}, &models.VulnSourceRef{ID: id, Source: "test", Path: id + ".json"}, nil
 }
 
-type mockRelationsStore struct{}
+func (m mockVulnStore) Exists(_ context.Context, id string) (bool, error) {
+	return id != "UNKNOWN" && id != "UNKNOWN-1234", nil
+}
+
+type mockRelationsStore struct {
+	models.UnimplementedRelationsStore
+}
 
 func (m mockRelationsStore) GetAliases(_ context.Context, _ string) (*models.GetAliasResult, error) {
 	return nil, models.ErrNotFound
@@ -39,6 +49,14 @@ func (m mockRelationsStore) GetRelated(_ context.Context, _ string) (*models.Get
 }
 
 func (m mockRelationsStore) GetUpstream(_ context.Context, _ string) (*models.GetUpstreamResult, error) {
+	return nil, models.ErrNotFound
+}
+
+func (m mockRelationsStore) GetUpstreamHierarchy(_ context.Context, _ string) (*models.Hierarchy, error) {
+	return nil, models.ErrNotFound
+}
+
+func (m mockRelationsStore) GetDownstreamHierarchy(_ context.Context, _ string) (*models.Hierarchy, error) {
 	return nil, models.ErrNotFound
 }
 
@@ -61,7 +79,10 @@ func (m mockSourceRepoStore) All(_ context.Context) iter.Seq2[*models.SourceRepo
 func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
-		cfg.StaticFS = fstest.MapFS{}
+		cfg.StaticFS = fstest.MapFS{
+			"go/base.html": &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
+			"go/404.html":  &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
+		}
 	}
 	if cfg.DocsFS == nil {
 		cfg.DocsFS = fstest.MapFS{}
@@ -512,6 +533,98 @@ func TestStaticFiles(t *testing.T) {
 	})
 }
 
+func TestPotentialVulnerability(t *testing.T) {
+	t.Parallel()
+
+	srv := newTestServer(t, website.Config{})
+
+	t.Run("Existing vuln redirects to /vulnerability/{id}", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/GHSA-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/vulnerability/GHSA-1234" {
+			t.Errorf("expected Location '/vulnerability/GHSA-1234', got %q", loc)
+		}
+	})
+
+	t.Run("Non-existent vuln falls back to /list?q={id}", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/UNKNOWN-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/list?q=UNKNOWN-1234" {
+			t.Errorf("expected Location '/list?q=UNKNOWN-1234', got %q", loc)
+		}
+	})
+
+	t.Run("Invalid vuln ID returns 404 Not Found", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/$invalid_id$", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
+}
+
+func TestVulnerabilityJSON(t *testing.T) {
+	t.Parallel()
+
+	srv := newTestServer(t, website.Config{
+		APIURL: "api.osv.dev",
+	})
+
+	t.Run("Existing vuln from /vulnerability/{id}.json redirects to api.osv.dev", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/vulnerability/GHSA-1234.json", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "https://api.osv.dev/v1/vulns/GHSA-1234" {
+			t.Errorf("expected Location 'https://api.osv.dev/v1/vulns/GHSA-1234', got %q", loc)
+		}
+	})
+
+	t.Run("Existing vuln from /{id}.json redirects to api.osv.dev", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/GHSA-1234.json", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "https://api.osv.dev/v1/vulns/GHSA-1234" {
+			t.Errorf("expected Location 'https://api.osv.dev/v1/vulns/GHSA-1234', got %q", loc)
+		}
+	})
+
+	t.Run("Non-existent vuln returns 404", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/vulnerability/UNKNOWN-1234.json", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
+}
+
 func TestEndpointRegistration(t *testing.T) {
 	t.Parallel()
 
@@ -521,9 +634,6 @@ func TestEndpointRegistration(t *testing.T) {
 		method string
 		path   string
 	}{
-		{http.MethodGet, "/GHSA-1234"},
-		{http.MethodGet, "/vulnerability/GHSA-1234.json"},
-		{http.MethodGet, "/GHSA-1234.json"},
 		{http.MethodPost, "/triage/proxy"},
 		{http.MethodGet, "/login"},
 		{http.MethodGet, "/auth/callback"},

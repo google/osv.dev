@@ -77,10 +77,6 @@
       },
       "vulns": [
         {
-          "id": "GHSA-72hv-8253-57qq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
           "id": "GHSA-h46c-h94j-95f3",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -558,10 +554,6 @@
         "version": "2.14.0"
       },
       "vulns": [
-        {
-          "id": "GHSA-72hv-8253-57qq",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
         {
           "id": "GHSA-h46c-h94j-95f3",
           "modified": "<RFC3339 date with the year 2026>"

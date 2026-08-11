@@ -14,18 +14,6 @@
         {
           "id": "CVE-2022-1941",
           "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2022-3171",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2022-3509",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "CVE-2022-3510",
-          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

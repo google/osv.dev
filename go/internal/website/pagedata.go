@@ -1,9 +1,12 @@
 package website
 
-import "html/template"
+import (
+	"html/template"
+)
 
 // BasePageData contains common fields required by the base.html layout template.
 type BasePageData struct {
+	Title             string
 	ActiveSection     string
 	DisableTurboCache bool
 }

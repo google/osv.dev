@@ -3,6 +3,7 @@ package importer
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/google/osv.dev/go/internal/models"
@@ -195,4 +196,62 @@ type mockCloudStorageStorageProvider struct {
 
 func (m *mockCloudStorageStorageProvider) Bucket(name string) clients.CloudStorage {
 	return m.buckets[name]
+}
+
+func TestFormatEntries(t *testing.T) {
+	t.Parallel()
+
+	entries := []*models.VulnSourceRef{
+		{ID: "ID-1"},
+		{ID: "ID-2"},
+		{ID: "ID-3"},
+	}
+
+	testCases := []struct {
+		name     string
+		toDelete []*models.VulnSourceRef
+		max      int
+		expected []string
+	}{
+		{
+			name:     "empty entries",
+			toDelete: nil,
+			max:      10,
+			expected: nil,
+		},
+		{
+			name:     "fewer than max",
+			toDelete: entries[:2],
+			max:      5,
+			expected: []string{"ID-1", "ID-2"},
+		},
+		{
+			name:     "equal to max",
+			toDelete: entries,
+			max:      3,
+			expected: []string{"ID-1", "ID-2", "ID-3"},
+		},
+		{
+			name:     "more than max",
+			toDelete: entries,
+			max:      2,
+			expected: []string{"ID-1", "ID-2", "... and 1 more"},
+		},
+		{
+			name:     "max <= 0 fallback to default",
+			toDelete: entries,
+			max:      0,
+			expected: []string{"ID-1", "ID-2", "ID-3"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := formatEntries(tc.toDelete, tc.max)
+			if !slices.Equal(got, tc.expected) {
+				t.Errorf("formatEntries() = %v, want %v", got, tc.expected)
+			}
+		})
+	}
 }

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
@@ -50,11 +51,13 @@ type Config struct {
 	GCSProvider        clients.CloudStorageProvider
 	HTTPClient         *http.Client
 	GitWorkDir         string
+	GitterClient       gitter.Client
 
-	StrictValidation bool
-	DeleteThreshold  float64
-	SampleRate       float64
-	DryRun           bool
+	StrictValidation       bool
+	DeleteThreshold        float64
+	SampleRate             float64
+	DryRun                 bool
+	MaxCowardEntriesToShow int
 }
 
 type RetryableHTTPLeveledLogger struct{}

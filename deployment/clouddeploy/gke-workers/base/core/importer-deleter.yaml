@@ -13,19 +13,22 @@ spec:
       template:
         spec:
           containers:
-          - name: importer-deleter
-            image: importer
-            imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
-            resources:
-              requests:
-                cpu: "1"
-                memory: "10G"
-              limits:
-                cpu: "1"
-                memory: "11G"
+            - name: importer-deleter
+              image: importer
+              imagePullPolicy: Always
+              env:
+                - name: DEFAULT_TASK_POOL
+                  value: "default"
+              volumeMounts:
+                - mountPath: "/work"
+                  name: "ssd"
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "10G"
+                limits:
+                  cpu: "1"
+                  memory: "11G"
           restartPolicy: Never
           volumes:
             - name: "ssd"

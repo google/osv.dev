@@ -17,7 +17,7 @@ spec:
             # We don't have a dedicated reimport pool for this private deployment,
             # so route reimports to the default pool.
             - name: REIMPORT_TASK_POOL
-              value: "default-pool"
+              value: "default"
             args: ["--reconcile=true"]
 ---
 apiVersion: v1
@@ -27,5 +27,5 @@ metadata:
 spec:
   csi:
     driver: pd.csi.storage.gke.io
-    volumeHandle: projects/oss-vdb-test/zones/us-central1-f/disks/importer-reconciler-git-cache-private
+    volumeHandle: projects/private-osv/zones/us-central1-f/disks/importer-reconciler-git-cache
     fsType: ext4

@@ -30,7 +30,7 @@ This helps ensure that your contribution is aligned with the project's goals
 and avoids duplicate efforts.
 
 When creating a pull request, please use the provided
-[pull request template](/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
+[pull request template](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) and fill out the
 sections to ensure a smooth review process.
 
 ### AI-assisted contributions

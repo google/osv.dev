@@ -85,3 +85,36 @@ func TestParse(t *testing.T) {
 		}
 	}
 }
+
+func TestPackagistRepositoryRoundTrip(t *testing.T) {
+	const (
+		ecosystem   = "Packagist:https://packages.drupal.org/8"
+		packageName = "drupal/commerce_guest_registration"
+		wantPURL    = "pkg:composer/drupal/commerce_guest_registration?repository_url=https:%2F%2Fpackages.drupal.org%2F8"
+	)
+
+	gotPURL, err := Generate(ecosystem, packageName)
+	if err != nil {
+		t.Fatalf("Generate(%q, %q) returned an error: %v", ecosystem, packageName, err)
+	}
+	if gotPURL != wantPURL {
+		t.Fatalf("Generate(%q, %q) = %q, want %q", ecosystem, packageName, gotPURL, wantPURL)
+	}
+
+	gotEcosystem, gotPackage, gotVersion, err := Parse(gotPURL)
+	if err != nil {
+		t.Fatalf("Parse(%q) returned an error: %v", gotPURL, err)
+	}
+	if gotEcosystem != ecosystem || gotPackage != packageName || gotVersion != "" {
+		t.Errorf(
+			"Parse(%q) = (%q, %q, %q), want (%q, %q, %q)",
+			gotPURL,
+			gotEcosystem,
+			gotPackage,
+			gotVersion,
+			ecosystem,
+			packageName,
+			"",
+		)
+	}
+}

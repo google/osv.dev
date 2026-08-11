@@ -141,8 +141,8 @@ github.com/mattn/go-runewidth v0.0.24 h1:cpokDiIn0MGnhdHwuWnJBITySJ20QyNGnY2kR/a
 github.com/mattn/go-runewidth v0.0.24/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
 github.com/muesli/cancelreader v0.2.2 h1:3I4Kt4BQjOR54NavqnDogx/MIoWBFa0StPA8ELUXHmA=
 github.com/muesli/cancelreader v0.2.2/go.mod h1:3XuTXfFS2VjM+HTLZY9Ak0l6eUKfijIfMUZ4EgX0QYo=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47 h1:zFR2xlCvXhdqTgm57lKpTTXKZXYyroyjXT8xflRXZbg=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47/go.mod h1:IrUa4QzZUi03J3WXDzZYXVawYipHownNfqqZrqeGXfg=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec h1:A92d74F0MP8hOiPXRnUnuWaluaf3G3sGJfMEcjkZfjA=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec/go.mod h1:IrUa4QzZUi03J3WXDzZYXVawYipHownNfqqZrqeGXfg=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgmp0tecUJ0sJuv4pzYCqS9+RGSn52M3FUwPs+uo=
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10/go.mod h1:t/avpk3KcrXxUnYOhZhMXJlSEyie6gQbtLq5NM3loB8=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

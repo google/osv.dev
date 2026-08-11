@@ -614,12 +614,41 @@ func getExtractedEvents(r *osvschema.Range) []*structpb.Value {
 	return val.GetListValue().GetValues()
 }
 
-func parseExtractedEvent(v *structpb.Value) ExtractedEvent {
+func parseExtractedEvent(v *structpb.Value) []ExtractedEvent {
 	s := v.GetStructValue()
 	if s == nil {
-		return ExtractedEvent{}
+		return nil
 	}
 	fields := s.GetFields()
+
+	if rangeVal, ok := fields["range"]; ok && rangeVal.GetListValue() != nil {
+		var events []ExtractedEvent
+		for _, evVal := range rangeVal.GetListValue().GetValues() {
+			evS := evVal.GetStructValue()
+			if evS == nil {
+				continue
+			}
+			evFields := evS.GetFields()
+			var ev ExtractedEvent
+			if intro, ok := evFields["introduced"]; ok {
+				ev.Introduced = intro.GetStringValue()
+			}
+			if fixed, ok := evFields["fixed"]; ok {
+				ev.Fixed = fixed.GetStringValue()
+			}
+			if la, ok := evFields["last_affected"]; ok {
+				ev.LastAffected = la.GetStringValue()
+			}
+			if lim, ok := evFields["limit"]; ok {
+				ev.Limit = lim.GetStringValue()
+			}
+			events = append(events, ev)
+		}
+
+		return events
+	}
+
+	// Fallback to old flat structure (single event)
 	var ev ExtractedEvent
 	if intro, ok := fields["introduced"]; ok {
 		ev.Introduced = intro.GetStringValue()
@@ -634,7 +663,11 @@ func parseExtractedEvent(v *structpb.Value) ExtractedEvent {
 		ev.Limit = lim.GetStringValue()
 	}
 
-	return ev
+	if ev != (ExtractedEvent{}) {
+		return []ExtractedEvent{ev}
+	}
+
+	return nil
 }
 
 func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
@@ -642,9 +675,9 @@ func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
 	if len(rawValues) == 0 {
 		return nil
 	}
-	events := make([]ExtractedEvent, 0, len(rawValues))
+	var events []ExtractedEvent
 	for _, val := range rawValues {
-		events = append(events, parseExtractedEvent(val))
+		events = append(events, parseExtractedEvent(val)...)
 	}
 
 	return events
@@ -695,6 +728,24 @@ func isCPERange(r *osvschema.Range) bool {
 	if fields == nil {
 		return false
 	}
+
+	// Check new location inside extracted_events first
+	if extractedEventsVal, ok := fields["extracted_events"]; ok && extractedEventsVal.GetListValue() != nil {
+		for _, groupVal := range extractedEventsVal.GetListValue().GetValues() {
+			groupS := groupVal.GetStructValue()
+			if groupS == nil {
+				continue
+			}
+			groupFields := groupS.GetFields()
+			if sourceVal, ok := groupFields["source"]; ok {
+				if sourceVal.GetStringValue() == "CPE_RANGE" {
+					return true
+				}
+			}
+		}
+	}
+
+	// Fallback to old location
 	val, ok := fields["source"]
 	if !ok {
 		return false

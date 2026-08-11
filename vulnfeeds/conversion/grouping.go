@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/google/osv/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -364,25 +365,37 @@ func MergeRangesAndCreateAffected(
 			if len(commits) > 0 {
 				for _, commit := range commits {
 					if commit.Repo == repo {
+						events := convertCommitToEvents(commit)
 						if mergedRange == nil {
 							mergedRange = BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, repo)
 						} else {
-							event := convertCommitToEvent(commit)
-							if event != nil {
-								addEventToRange(mergedRange, event)
+							for _, e := range events {
+								addEventToRange(mergedRange, e)
 							}
 						}
 
-						if mergedRange.GetDatabaseSpecific() == nil {
-							mergedRange.DatabaseSpecific = &structpb.Struct{
-								Fields: make(map[string]*structpb.Value),
+						if len(events) > 0 {
+							source := commit.Source
+							if source == "" || source == models.VersionSourceNone {
+								source = models.VersionSourceRefs
+							}
+							extractedEventGroup := map[string]any{
+								"range":  events,
+								"source": string(source),
+							}
+							if commit.OriginalTag != "" {
+								extractedEventGroup["original_tag"] = commit.OriginalTag
+							}
+							dbSpecificMap := map[string]any{
+								"extracted_events": []any{extractedEventGroup},
+							}
+							dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
+							if err == nil {
+								mergeDatabaseSpecific(mergedRange, dbSpecific)
+							} else {
+								metrics.AddNote("failed to make database specific for commit: %v", err)
 							}
 						}
-						mergeDatabaseSpecific(mergedRange, &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
-							},
-						})
 					}
 				}
 			}
@@ -404,20 +417,39 @@ func MergeRangesAndCreateAffected(
 
 		for _, commit := range commits {
 			repo := commit.Repo
+			events := convertCommitToEvents(commit)
 			if vr, ok := repoToRange[repo]; !ok {
 				vr := BuildGitVersionRange(commit.Introduced, commit.LastAffected, commit.Fixed, repo)
-				vr.DatabaseSpecific = &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"source": structpb.NewStringValue(string(models.VersionSourceRefs)),
-					},
-				}
 				repoToRange[repo] = vr
 				repoOrder = append(repoOrder, repo)
 				metrics.ResolvedRangesCount++
 			} else {
-				event := convertCommitToEvent(commit)
-				if event != nil {
-					addEventToRange(vr, event)
+				for _, e := range events {
+					addEventToRange(vr, e)
+				}
+			}
+
+			if len(events) > 0 {
+				source := commit.Source
+				if source == "" || source == models.VersionSourceNone {
+					source = models.VersionSourceRefs
+				}
+				extractedEventGroup := map[string]any{
+					"range":  events,
+					"source": string(source),
+				}
+				if commit.OriginalTag != "" {
+					extractedEventGroup["original_tag"] = commit.OriginalTag
+				}
+				dbSpecificMap := map[string]any{
+					"extracted_events": []any{extractedEventGroup},
+				}
+				dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
+				if err == nil {
+					// mergeDatabaseSpecific handles nil DatabaseSpecific in target
+					mergeDatabaseSpecific(repoToRange[repo], dbSpecific)
+				} else {
+					metrics.AddNote("failed to make database specific for commit: %v", err)
 				}
 			}
 		}
@@ -464,26 +496,27 @@ func addEventToRange(versionRange *osvschema.Range, event *osvschema.Event) {
 	}
 }
 
-// convertCommitToEvent creates an OSV Event from an AffectedCommit.
-// It returns an event with the Introduced, Fixed, or LastAffected value from the commit.
-func convertCommitToEvent(commit models.AffectedCommit) *osvschema.Event {
+// convertCommitToEvents creates OSV Events from an AffectedCommit.
+// It returns a slice of events with the Introduced, Fixed, or LastAffected values from the commit.
+func convertCommitToEvents(commit models.AffectedCommit) []*osvschema.Event {
+	var events []*osvschema.Event
 	if commit.Introduced != "" {
-		return &osvschema.Event{
+		events = append(events, &osvschema.Event{
 			Introduced: commit.Introduced,
-		}
+		})
 	}
 	if commit.Fixed != "" {
-		return &osvschema.Event{
+		events = append(events, &osvschema.Event{
 			Fixed: commit.Fixed,
-		}
+		})
 	}
 	if commit.LastAffected != "" {
-		return &osvschema.Event{
+		events = append(events, &osvschema.Event{
 			LastAffected: commit.LastAffected,
-		}
+		})
 	}
 
-	return nil
+	return events
 }
 
 func isStandaloneRange(vrwm models.RangeWithMetadata) bool {

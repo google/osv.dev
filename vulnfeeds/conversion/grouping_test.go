@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -438,6 +439,15 @@ func TestGroupAffectedRanges(t *testing.T) {
 }
 
 func TestMergeRangesAndCreateAffected(t *testing.T) {
+	mustMakeDBSpecific := func(m map[string]any) *structpb.Struct {
+		ds, err := utility.NewStructpbFromMap(m)
+		if err != nil {
+			t.Fatalf("failed to make database specific: %v", err)
+		}
+
+		return ds
+	}
+
 	tests := []struct {
 		name            string
 		resolvedRanges  []*osvschema.Range
@@ -479,11 +489,18 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Fixed: "1.0"},
 							{Fixed: "1.2"},
 						},
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Introduced: "1.1"}},
+									"source": "REFERENCES",
+								},
+								map[string]any{
+									"range":  []*osvschema.Event{{Fixed: "1.2"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -508,11 +525,14 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 						},
 						Repo: "repo2",
 						Type: osvschema.Range_GIT,
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Introduced: "0"}, {Fixed: "1.0"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -543,11 +563,14 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 						},
 						Repo: "repo_a",
 						Type: osvschema.Range_GIT,
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Introduced: "0.5"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 					{
 						Events: []*osvschema.Event{
@@ -556,11 +579,18 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 						},
 						Repo: "repo_b",
 						Type: osvschema.Range_GIT,
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Introduced: "0"}},
+									"source": "REFERENCES",
+								},
+								map[string]any{
+									"range":  []*osvschema.Event{{Fixed: "1.0"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -605,11 +635,22 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Fixed: "1.0"},
 							{LastAffected: "0.5"},
 						},
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Fixed: "1.0"}},
+									"source": "REFERENCES",
+								},
+								map[string]any{
+									"range":  []*osvschema.Event{{Introduced: "0"}},
+									"source": "REFERENCES",
+								},
+								map[string]any{
+									"range":  []*osvschema.Event{{LastAffected: "0.5"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 				},
 			},
@@ -683,11 +724,14 @@ func TestMergeRangesAndCreateAffected(t *testing.T) {
 							{Fixed: "3.0"},
 							{Fixed: "4.0"},
 						},
-						DatabaseSpecific: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"source": structpb.NewStringValue("REFERENCES"),
+						DatabaseSpecific: mustMakeDBSpecific(map[string]any{
+							"extracted_events": []any{
+								map[string]any{
+									"range":  []*osvschema.Event{{Fixed: "4.0"}},
+									"source": "REFERENCES",
+								},
 							},
-						},
+						}),
 					},
 				},
 			},

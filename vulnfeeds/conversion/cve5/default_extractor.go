@@ -2,6 +2,7 @@ package cve5
 
 import (
 	"maps"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -86,9 +87,15 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		}
 	}
 
+	references := identifyPossibleURLs(cve)
+	commits, err := c.ExtractCommitsFromRefs(references, http.DefaultClient, repoTagsCache)
+	if err != nil {
+		metrics.AddNote("Failed to extract commits from references: %v", err)
+	}
+
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
-	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
+	affected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected...)
 
 	if len(unresolvedRanges) > 0 {

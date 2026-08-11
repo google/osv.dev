@@ -272,3 +272,45 @@ func TestComputeAffectedVersions_GitAndSemverWithoutPackage(t *testing.T) {
 		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestComputeAffectedVersions_SortEventsErrorKeepsUnboundedCoarse(t *testing.T) {
+	// Packagist rejects versions containing '#', which forces SortEvents into its
+	// lexicographic fallback. Under that order the events sort as:
+	//   1.0, 1.0#bad, 20.0, 30.0, 9.0
+	// so a positional coarse_max taken from the last event becomes coarse(9.0)
+	// and the Datastore pre-filter excludes the semantically affected version 25.0.
+	// On SortEvents error we must keep the unbounded coarse window instead.
+	vuln := &osvschema.Vulnerability{
+		Id: "TEST-SORT-ERR",
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Name:      "vendor/pkg",
+					Ecosystem: "Packagist",
+				},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_ECOSYSTEM,
+						Events: []*osvschema.Event{
+							{Introduced: "1.0"},
+							{Fixed: "9.0"},
+							{Introduced: "20.0"},
+							{Fixed: "30.0"},
+							{Introduced: "1.0#bad"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+	if len(got) == 0 {
+		t.Fatal("expected at least one AffectedVersions row")
+	}
+	row := got[0]
+	if row.CoarseMin != minCoarseVersion || row.CoarseMax != maxCoarseVersion {
+		t.Fatalf("want unbounded coarse window on SortEvents error, got min=%q max=%q (events=%v)",
+			row.CoarseMin, row.CoarseMax, row.Events)
+	}
+}

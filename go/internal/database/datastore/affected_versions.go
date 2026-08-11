@@ -84,8 +84,16 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 				}
 			}
 
+			// SortEvents returns an error when it had to fall back to a
+			// lexicographic order (any event version failed Parse/Compare).
+			// Positional coarse_min/coarse_max derivation is only valid under a
+			// semantic sort, so on error keep the unbounded window (same
+			// fail-open stance as the Python _get_coarse_min_max ValueError path).
+			eventsSortedOK := false
 			if exists {
-				_ = osvutil.SortEvents(eHelper, events)
+				if err := osvutil.SortEvents(eHelper, events); err == nil {
+					eventsSortedOK = true
+				}
 			}
 
 			var rangeEvents []AffectedEvent
@@ -96,7 +104,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			coarseMin := minCoarseVersion
 			coarseMax := maxCoarseVersion
 
-			if exists {
+			if exists && eventsSortedOK {
 				for _, ev := range rangeEvents {
 					if ev.Type == "introduced" {
 						if cm, err := eHelper.Coarse(ev.Value); err == nil {

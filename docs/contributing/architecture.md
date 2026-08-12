@@ -60,7 +60,7 @@ These run as Python workloads inside GKE:
 
 ## Cloud Run / Cloud Endpoints
 
-The [API server](https://api.osv.dev) (source code in [`go/cmd/api`](../../go/cmd/api)) runs on [Cloud Run], and is served by [Cloud Endpoints] (transcoding HTTP/JSON REST to gRPC using ESPv2).
+The [API server](../api/index.md) (hosted at `api.osv.dev`, source code in [`go/cmd/api`](../../go/cmd/api)) runs on [Cloud Run], and is served by [Cloud Endpoints] (transcoding HTTP/JSON REST to gRPC using ESPv2).
 
 [Cloud Run]: https://cloud.google.com/run
 [Cloud Endpoints]: https://cloud.google.com/endpoints

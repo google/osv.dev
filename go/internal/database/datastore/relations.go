@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
@@ -223,76 +222,55 @@ func ComputeUpstreamHierarchy(targetID string, rawHierarchy map[string][]string)
 	}, nil
 }
 
-func getDownstreamsOfVuln(vulnID string, vulns map[string][]string) []string {
-	var res []string
-	for vuln, upstreamIDs := range vulns {
-		if slices.Contains(upstreamIDs, vulnID) {
-			res = append(res, vuln)
-		}
-	}
-	slices.Sort(res)
-
-	return res
-}
-
 // ComputeDownstreamHierarchy computes a directed downstream hierarchy given downstream bug IDs and their upstream lists.
 func ComputeDownstreamHierarchy(targetID string, downstreams map[string][]string) (*models.Hierarchy, error) {
 	if len(downstreams) == 0 {
 		return nil, models.ErrNotFound
 	}
 
-	type item struct {
-		id          string
-		upstreamIDs []string
-	}
-	items := make([]item, 0, len(downstreams))
-	for k, v := range downstreams {
-		items = append(items, item{id: k, upstreamIDs: v})
-	}
-	slices.SortFunc(items, func(a, b item) int {
-		if len(a.upstreamIDs) != len(b.upstreamIDs) {
-			return len(a.upstreamIDs) - len(b.upstreamIDs)
-		}
-
-		return strings.Compare(a.id, b.id)
-	})
-
 	downstreamMap := make(map[string][]string)
-	leafVulns := make(map[string]bool)
+	hasIntermediateParent := make(map[string]bool)
 
-	for _, it := range items {
-		immediates := getDownstreamsOfVuln(it.id, downstreams)
-		if len(immediates) == 0 {
-			leafVulns[it.id] = true
-		} else {
-			downstreamMap[it.id] = immediates
-		}
-	}
+	// Find direct (parent -> child) relationships via transitive reduction.
+	for parent := range downstreams {
+		for child, upstreams := range downstreams {
+			if parent == child {
+				continue
+			}
+			// Check if 'parent' is upstream of 'child'
+			if slices.Contains(upstreams, parent) {
+				hasIntermediateParent[child] = true
 
-	rootLeaves := make(map[string]bool)
-	for k := range leafVulns {
-		rootLeaves[k] = true
-	}
+				// Check if there is an intermediate node 'm' between parent and child
+				isDirect := true
+				for m, mUpstreams := range downstreams {
+					if m == parent || m == child {
+						continue
+					}
+					if slices.Contains(mUpstreams, parent) && slices.Contains(upstreams, m) {
+						isDirect = false
+						break
+					}
+				}
 
-	sortedMapKeys := make([]string, 0, len(downstreamMap))
-	for k := range downstreamMap {
-		sortedMapKeys = append(sortedMapKeys, k)
-	}
-	slices.Sort(sortedMapKeys)
-
-	for _, vulnID := range sortedMapKeys {
-		downstreamBugs := downstreamMap[vulnID]
-		for leaf := range leafVulns {
-			if slices.Contains(downstreamBugs, leaf) {
-				delete(rootLeaves, leaf)
+				if isDirect {
+					downstreamMap[parent] = append(downstreamMap[parent], child)
+				}
 			}
 		}
-		rootLeaves[vulnID] = true
 	}
 
-	roots := make([]string, 0, len(rootLeaves))
-	for r := range rootLeaves {
-		roots = append(roots, r)
+	// Sort child lists for deterministic output
+	for k := range downstreamMap {
+		slices.Sort(downstreamMap[k])
+	}
+
+	// Roots are all downstreams that have no intermediate parent in this set
+	var roots []string
+	for id := range downstreams {
+		if !hasIntermediateParent[id] {
+			roots = append(roots, id)
+		}
 	}
 	slices.Sort(roots)
 

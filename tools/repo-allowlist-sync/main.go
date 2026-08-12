@@ -14,22 +14,11 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
+	"github.com/google/osv.dev/go/osv/models"
 	"go.yaml.in/yaml/v4"
 )
 
 const repoAllowListKind = "RepoAllowList"
-
-// TODO: Use go model RepoAllowList struct (#5797)
-// RepoAllowListEntity represents a repository allowlist entity stored in Cloud Datastore
-type RepoAllowListEntity struct {
-	Key                   *datastore.Key `datastore:"__key__"`
-	Type                  string         `datastore:"type"`
-	Value                 string         `datastore:"value"`
-	ConsiderAllBranches   bool           `datastore:"consider_all_branches"`
-	CherrypicksIntroduced bool           `datastore:"cherrypicks_introduced"`
-	CherrypicksFixed      bool           `datastore:"cherrypicks_fixed"`
-	CherrypicksLimit      bool           `datastore:"cherrypicks_limit"`
-}
 
 // rawYAMLEntry represents an unmarshaled entry from the YAML file, including optional shorthand field
 type rawYAMLEntry struct {
@@ -42,7 +31,7 @@ type rawYAMLEntry struct {
 	CherrypicksLimit      *bool  `yaml:"cherrypicks_limit"`
 }
 
-func (r rawYAMLEntry) toEntity() RepoAllowListEntity {
+func (r rawYAMLEntry) toEntity() models.RepoAllowList {
 	intro, fixed, limit := false, false, false
 	if r.Cherrypicks != nil {
 		intro, fixed, limit = *r.Cherrypicks, *r.Cherrypicks, *r.Cherrypicks
@@ -56,7 +45,7 @@ func (r rawYAMLEntry) toEntity() RepoAllowListEntity {
 	if r.CherrypicksLimit != nil {
 		limit = *r.CherrypicksLimit
 	}
-	return RepoAllowListEntity{
+	return models.RepoAllowList{
 		Type:                  r.Type,
 		Value:                 r.Value,
 		ConsiderAllBranches:   r.ConsiderAllBranches,
@@ -66,13 +55,13 @@ func (r rawYAMLEntry) toEntity() RepoAllowListEntity {
 	}
 }
 
-func (e RepoAllowListEntity) matches(other RepoAllowListEntity) bool {
-	return e.Type == other.Type &&
-		e.Value == other.Value &&
-		e.ConsiderAllBranches == other.ConsiderAllBranches &&
-		e.CherrypicksIntroduced == other.CherrypicksIntroduced &&
-		e.CherrypicksFixed == other.CherrypicksFixed &&
-		e.CherrypicksLimit == other.CherrypicksLimit
+func entriesMatch(a, b models.RepoAllowList) bool {
+	return a.Type == b.Type &&
+		a.Value == b.Value &&
+		a.ConsiderAllBranches == b.ConsiderAllBranches &&
+		a.CherrypicksIntroduced == b.CherrypicksIntroduced &&
+		a.CherrypicksFixed == b.CherrypicksFixed &&
+		a.CherrypicksLimit == b.CherrypicksLimit
 }
 
 func repoAllowListKey(val string) *datastore.Key {
@@ -122,14 +111,14 @@ func normalizeRepo(repoURL string) (string, error) {
 // parseYAMLEntries parses and validates allowlist YAML content, expanding shorthand fields and normalizing values.
 // If collectAllErrors is true (in validate mode), all entry validation errors are collected and reported together.
 // Otherwise, it fails on the first invalid entry.
-func parseYAMLEntries(data []byte, collectAllErrors bool) ([]RepoAllowListEntity, error) {
+func parseYAMLEntries(data []byte, collectAllErrors bool) ([]models.RepoAllowList, error) {
 	var rawEntries []rawYAMLEntry
 	if err := yaml.Load(data, &rawEntries, yaml.WithKnownFields()); err != nil {
 		return nil, fmt.Errorf("failed parsing YAML: %w", err)
 	}
 
 	seenValues := make(map[string]int, len(rawEntries))
-	entries := make([]RepoAllowListEntity, 0, len(rawEntries))
+	entries := make([]models.RepoAllowList, 0, len(rawEntries))
 	var validationErrs []error
 
 	for i, raw := range rawEntries {
@@ -208,47 +197,49 @@ func run(ctx context.Context, filePath, project string, dryRun, validate, verbos
 
 	// Fetch existing Datastore entities
 	query := datastore.NewQuery(repoAllowListKind)
-	var dsEntities []RepoAllowListEntity
-	if _, err := dsClient.GetAll(ctx, query, &dsEntities); err != nil {
+	var dsEntities []models.RepoAllowList
+	keys, err := dsClient.GetAll(ctx, query, &dsEntities)
+	if err != nil {
 		return fmt.Errorf("failed fetching existing allowlist entities from datastore: %w", err)
 	}
 
-	dsEntitiesMap := make(map[string]RepoAllowListEntity, len(dsEntities))
-	for _, entity := range dsEntities {
-		dsEntitiesMap[entity.Value] = entity
+	remoteEntities := make(map[string]models.RepoAllowList, len(dsEntities))
+	remoteKeys := make(map[string]*datastore.Key, len(dsEntities))
+	for i, entity := range dsEntities {
+		remoteEntities[entity.Value] = entity
+		remoteKeys[entity.Value] = keys[i]
 	}
 
-	localEntriesMap := make(map[string]RepoAllowListEntity, len(entries))
+	localEntities := make(map[string]models.RepoAllowList, len(entries))
 	for _, item := range entries {
-		localEntriesMap[item.Value] = item
+		localEntities[item.Value] = item
 	}
 
 	var createdCount, updatedCount, deletedCount, unchangedCount int
 
 	// Upsert entries in local YAML that are missing from Datastore or modified
-	for val, item := range localEntriesMap {
-		existing, exists := dsEntitiesMap[val]
-		entity := item
+	for val, local := range localEntities {
+		existing, exists := remoteEntities[val]
 
 		if !exists {
 			createdCount++
 			if verbose {
-				log.Printf("Creating RepoAllowList entity: type=%s val=%s", item.Type, item.Value)
+				log.Printf("Creating RepoAllowList entity: type=%s val=%s", local.Type, local.Value)
 			}
 			key := repoAllowListKey(val)
 			if !dryRun {
-				if _, err := dsClient.Put(ctx, key, &entity); err != nil {
-					return fmt.Errorf("failed putting entity for %s: %w", val, err)
+				if _, err := dsClient.Put(ctx, key, &local); err != nil {
+					return fmt.Errorf("failed creating entity for %s: %w", val, err)
 				}
 			}
-		} else if !existing.matches(item) {
+		} else if !entriesMatch(existing, local) {
 			updatedCount++
 			if verbose {
-				log.Printf("Updating RepoAllowList entity: type=%s val=%s", item.Type, item.Value)
+				log.Printf("Updating RepoAllowList entity: type=%s val=%s", local.Type, local.Value)
 			}
-			entity.Key = existing.Key
+			key := remoteKeys[val]
 			if !dryRun {
-				if _, err := dsClient.Put(ctx, existing.Key, &entity); err != nil {
+				if _, err := dsClient.Put(ctx, key, &local); err != nil {
 					return fmt.Errorf("failed updating entity for %s: %w", val, err)
 				}
 			}
@@ -257,15 +248,15 @@ func run(ctx context.Context, filePath, project string, dryRun, validate, verbos
 		}
 	}
 
-	// Delete entries in Datastore that are no longer present in local YAML
-	for val, existing := range dsEntitiesMap {
-		if _, exists := localEntriesMap[val]; !exists {
+	// Delete remote entries in Datastore that are no longer present in local YAML
+	for val := range remoteEntities {
+		if _, exists := localEntities[val]; !exists {
 			deletedCount++
 			if verbose {
 				log.Printf("Deleting RepoAllowList entity: val=%s", val)
 			}
 			if !dryRun {
-				if err := dsClient.Delete(ctx, existing.Key); err != nil {
+				if err := dsClient.Delete(ctx, remoteKeys[val]); err != nil {
 					return fmt.Errorf("failed deleting entity for %s: %w", val, err)
 				}
 			}

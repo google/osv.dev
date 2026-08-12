@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/osv.dev/go/osv/models"
 )
 
 func TestNormalizeRepo(t *testing.T) {
@@ -101,7 +103,7 @@ func TestParseYAMLEntries_Valid(t *testing.T) {
 - type: url
   value: "https://github.com/noflags/repo.git"
 `)
-	want := []RepoAllowListEntity{
+	want := []models.RepoAllowList{
 		{
 			Type:                  "url",
 			Value:                 "github.com/google/osv.dev",

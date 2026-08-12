@@ -27,10 +27,10 @@ import (
 	"strings"
 
 	version "github.com/aquasecurity/go-pep440-version"
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/triage"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/triage"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 )
 
 type pypiLinks struct {

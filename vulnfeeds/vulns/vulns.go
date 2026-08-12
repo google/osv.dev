@@ -37,9 +37,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -469,7 +469,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 				return osvschema.Reference_ADVISORY
 			}
 
-			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
+			// Example: https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
 				return osvschema.Reference_FIX
 			}

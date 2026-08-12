@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/models"
 )
 
 func TestCpeMatchesAlpinePackage(t *testing.T) {

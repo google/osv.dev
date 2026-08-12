@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
 

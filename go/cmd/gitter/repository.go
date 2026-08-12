@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,8 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
 )
+
+const emptyTreeSHA1 = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 type SHA1 [20]byte
 
@@ -958,6 +961,10 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 
 // GetLocalTags uses git show-ref to get tags from local git directory
 func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
 	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags", "--dereference")
 
 	return r.runAndParseTags(ctx, cmd)
@@ -968,4 +975,194 @@ func (r *Repository) GetRemoteTags(ctx context.Context) (map[string]SHA1, error)
 	cmd := prepareCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "ls-remote", "--tags", "--quiet", r.URL)
 
 	return r.runAndParseTags(ctx, cmd)
+}
+
+// FileChange represents change in a file between two git commits
+type FileChange struct {
+	From string
+	To   string
+}
+
+// resolveCommit resolves a branch or (abbreviated) commit SHA to its raw 20-byte SHA-1.
+func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, error) {
+	if strings.TrimSpace(ref) == "" {
+		return "", errors.New("ref cannot be empty")
+	}
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "rev-parse", "--verify", "--quiet", ref+"^{commit}")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to run git rev-parse on %q: %w, output: %s", ref, err, out)
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
+
+// ListFileDiffs lists the files that changed between lastSyncCommit and targetBranch's latest commit.
+func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBranch string) (string, []*FileChange, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
+	logger.DebugContext(ctx, "Starting file diff calculation", slog.String("last_synced_commit", lastSyncCommit), slog.String("branch", targetBranch))
+	start := time.Now()
+
+	ref := strings.TrimSpace(targetBranch)
+	if ref == "" {
+		// Defaults to the default branch of the repository
+		ref = "origin/HEAD"
+	} else if !strings.HasPrefix(ref, "origin/") && !strings.HasPrefix(ref, "refs/") {
+		// For remote repositories, branch references are usually under refs/remotes/origin/<branch>.
+		// But git revisions resolves by matching refs/heads/<refname>, refs/remotes/<refname>, etc.
+		ref = "origin/" + ref
+	}
+
+	latestCommit, err := r.resolveCommit(ctx, ref)
+	if err != nil {
+		// If ref didn't resolve (e.g. in local test repos, tags, or full SHAs), try resolving ref directly
+		var errDirect error
+		latestCommit, errDirect = r.resolveCommit(ctx, strings.TrimSpace(targetBranch))
+		if errDirect != nil {
+			return "", nil, fmt.Errorf("failed to resolve target ref %q: %w", targetBranch, err)
+		}
+	}
+
+	fromCommit := lastSyncCommit
+	if fromCommit == "" {
+		// If lastSyncCommit is empty, diff against empty tree object.
+		fromCommit = emptyTreeSHA1
+	} else {
+		resolved, err := r.resolveCommit(ctx, fromCommit)
+		if err != nil {
+			return "", nil, fmt.Errorf("last_synced_commit %q not found or invalid: %w", fromCommit, err)
+		}
+		fromCommit = resolved
+	}
+
+	// `git diff-tree -r --find-renames --no-commit-id --name-status <fromCommit> <latestCommit>`
+	// -r: recursive
+	// --find-renames: detect renames
+	// --no-commit-id: don't print the commit id on a separate line
+	// --name-status: only show status (A|C|D|M|R|T|U|X|B) and the file path(s)
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "diff-tree", "-r", "--find-renames", "--no-commit-id", "--name-status", fromCommit, latestCommit)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", nil, fmt.Errorf("git diff-tree failed: %w, output: %s", err, out)
+	}
+
+	diffs := parseDiffTree(ctx, out)
+
+	logger.DebugContext(ctx, "File diff calculation completed", slog.Int("changes_count", len(diffs)), slog.Duration("duration", time.Since(start)))
+
+	return latestCommit, diffs, nil
+}
+
+// parseDiffTree parses the output of git diff-tree into list of FileChange.
+func parseDiffTree(ctx context.Context, output []byte) []*FileChange {
+	lines := strings.Split(string(output), "\n")
+	changes := make([]*FileChange, 0, len(lines))
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		change, err := parseNameStatusLine(line)
+		if err != nil {
+			logger.WarnContext(ctx, "Failed to parse diff-tree line", slog.String("line", line), slog.Any("error", err))
+			continue
+		}
+		changes = append(changes, change)
+	}
+
+	return changes
+}
+
+// parseNameStatusLine parses a single tab-delimited line of git diff-tree --name-status output.
+// Format is: <status>\t<path> OR <status>\t<old-path>\t<new-path>
+func parseNameStatusLine(line string) (*FileChange, error) {
+	fields := strings.Split(line, "\t")
+	if len(fields) < 2 || len(fields[0]) == 0 {
+		return nil, fmt.Errorf("invalid diff-tree line: %q", line)
+	}
+
+	/**
+	Reference: https://git-scm.com/docs/diff-format
+	Possible status letters are:
+	A: addition of a file
+	C: copy of a file into a new one
+	D: deletion of a file
+	M: modification of the contents or mode of a file
+	R: renaming of a file
+	T: change in the type of the file (regular file, symbolic link or submodule)
+	U: file is unmerged (you must complete the merge before it can be committed)
+	X: "unknown" change type (most probably a bug, please report it)
+	(B is not a status in the actual output despite it being referenced in the --diff-filter option)
+
+	Status letters C and R are always followed by a score (denoting the percentage of similarity between the source and target of the move or copy).
+	Status letter M may be followed by a score (denoting the percentage of dissimilarity) for file rewrites.
+	**/
+	statusLetter := fields[0][0] // We only want the first char of the status
+
+	switch statusLetter {
+	case 'A':
+		return &FileChange{From: "", To: cleanPath(fields[1])}, nil
+	case 'C':
+		if len(fields) < 3 {
+			return nil, fmt.Errorf("copy missing dst path: %q", line)
+		}
+
+		return &FileChange{From: "", To: cleanPath(fields[2])}, nil
+	case 'D':
+		return &FileChange{From: cleanPath(fields[1]), To: ""}, nil
+	case 'M', 'T':
+		path := cleanPath(fields[1])
+		return &FileChange{From: path, To: path}, nil
+	case 'R':
+		if len(fields) < 3 {
+			return nil, fmt.Errorf("rename missing dst path: %q", line)
+		}
+
+		return &FileChange{From: cleanPath(fields[1]), To: cleanPath(fields[2])}, nil
+	default:
+		// "U" and "X" are not expected, return with error message
+		return nil, fmt.Errorf("unknown diff status %q: %q", statusLetter, line)
+	}
+}
+
+// cleanPath unquotes and un-escape paths that Git determines as "unusual"
+func cleanPath(p string) string {
+	p = strings.TrimSpace(p)
+	// strconv.Unquote conveniently handles everything:
+	// 1. Remove leading / trailing double quotes
+	// 2. Unescape C-style backslash escapes (\n, \t, \\, \", \', etc.)
+	// 3. Unescape bytes >= 0x80 to UTF-8 (handles emojis and special chars)
+	if unquoted, err := strconv.Unquote(p); err == nil {
+		return unquoted
+	}
+
+	return p
+}
+
+// GetFileContent retrieves the raw bytes of a file at a specific commit using git cat-file.
+func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]byte, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
+	path = cleanPath(path)
+
+	// Resolve ref (branch / (abbreviated) commit hash) to full commit hash
+	commit, err := r.resolveCommit(ctx, ref)
+	if err != nil {
+		return nil, fmt.Errorf("commit %q not found or invalid: %w", ref, err)
+	}
+
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "cat-file", "blob", commit+":"+path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("git cat-file failed for %s:%s: %w, output: %s", commit, path, err, out)
+	}
+
+	return out, nil
 }

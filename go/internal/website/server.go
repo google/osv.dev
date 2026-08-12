@@ -2,11 +2,15 @@
 package website
 
 import (
+	"bytes"
 	"errors"
+	"html/template"
 	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
@@ -16,8 +20,9 @@ const goVanityMetadata = `<meta name="go-import" content="osv.dev git https://gi
 
 // Config holds configuration options for the website server.
 type Config struct {
-	StaticFS fs.FS
-	DocsFS   fs.FS
+	StaticFS    fs.FS
+	DocsFS      fs.FS
+	TemplateDir string
 }
 
 // Server handles website routing and HTTP requests.
@@ -65,8 +70,8 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 	s.registerRoutes()
 
-	// Middlewares: Logging (if local/dev) -> ServeMux
-	var h http.Handler = s.mux
+	// Middlewares: 404 Fallback -> Logging (if local/dev) -> ServeMux
+	h := s.notFoundMiddleware(s.mux)
 
 	// Skip HTTP access logging in Cloud Run production to avoid duplicating Cloud Run infrastructure logs.
 	if os.Getenv("K_SERVICE") == "" {
@@ -98,6 +103,19 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			slog.Duration("duration", time.Since(start)),
 			slog.Int64("bytes", rw.bytesWritten),
 		)
+	})
+}
+
+// notFoundMiddleware returns an http.Handler that renders 404.html for unmatched routes.
+func (s *Server) notFoundMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, pattern := s.mux.Handler(r)
+		if pattern == "" {
+			s.RenderNotFound(w, r)
+
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -153,8 +171,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /linter-findings/{source}", s.handleLinterFindings)
 
 	// Triage workflow
+	// TODO: auth stuff
 	s.mux.HandleFunc("GET /triage", s.handleTriagePage)
-	s.mux.HandleFunc("POST /triage/proxy", s.handleTriageProxy)
+	s.mux.HandleFunc("/triage/proxy", s.handleTriageProxy)
 
 	// Google OAuth authentication
 	s.mux.HandleFunc("GET /login", s.handleLogin)
@@ -165,4 +184,58 @@ func (s *Server) registerRoutes() {
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+// renderTemplates parses the specified template files relative to config.TemplateDir
+// and executes the entry template identified by path.Base(files[0]).
+func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status int, data any, files ...string) {
+	if len(files) == 0 {
+		return
+	}
+
+	templateDir := s.config.TemplateDir
+	if templateDir == "" {
+		templateDir = "go"
+	}
+
+	paths := make([]string, len(files))
+	for i, f := range files {
+		paths[i] = path.Join(templateDir, f)
+	}
+	funcMap := template.FuncMap{
+		"hasPrefix": strings.HasPrefix,
+		"add":       func(a, b int) int { return a + b },
+		"sub":       func(a, b int) int { return a - b },
+	}
+
+	entryName := path.Base(files[0])
+	tmpl, err := template.New(entryName).Funcs(funcMap).ParseFS(s.config.StaticFS, paths...)
+	if err != nil {
+		logger.ErrorContext(r.Context(), "Failed to parse template", slog.String("page", entryName), slog.Any("error", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, entryName, data); err != nil {
+		logger.ErrorContext(r.Context(), "Failed to execute template", slog.String("page", entryName), slog.Any("error", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.WriteHeader(status)
+	if _, err := buf.WriteTo(w); err != nil {
+		logger.ErrorContext(r.Context(), "Failed to write rendered template response", slog.String("page", entryName), slog.Any("error", err))
+	}
+}
+
+func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+	s.renderTemplates(w, r, status, data, "base.html", pageFile)
+}
+
+func (s *Server) renderStandalone(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
+	s.renderTemplates(w, r, status, data, pageFile)
 }

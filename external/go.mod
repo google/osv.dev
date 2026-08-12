@@ -6,7 +6,7 @@ require (
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/osv/vulnfeeds v0.0.0-20260713032857-33beb5f74ac6
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260709040909-a9f2a884fb02
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -86,7 +86,7 @@ require (
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260615183401-62b3387ff324 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
-	google.golang.org/grpc v1.81.1 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

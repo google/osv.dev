@@ -4,16 +4,16 @@ go 1.26.5
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260525004216-afe0bddbf893
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47
 	golang.org/x/sync v0.22.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa
-	google.golang.org/grpc v1.82.0
+	google.golang.org/grpc v1.82.1
 )
 
 require (
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260523011958-0a33c5d7ca68 // indirect
 	google.golang.org/protobuf v1.36.11
 )

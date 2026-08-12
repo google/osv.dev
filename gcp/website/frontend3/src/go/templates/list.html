@@ -1,0 +1,153 @@
+{{ define "content" }}
+<div class="list-page">
+  <div class="mdc-layout-grid">
+    <div class="mdc-layout-grid__inner">
+      <div class="mdc-layout-grid__cell--span-12">
+        <h1 class="title">Vulnerabilities</h1>
+        <div class="search">
+          <form action="/list" data-turbo-frame="vulnerability-table">
+            <div class="mdc-layout-grid__inner">
+              <div class="query-container search-suggestions-container mdc-layout-grid__cell--span-8">
+                <md-textfield-with-suggestions label="Package or ID search" class="query-field" type="search" name="q"
+                  value="{{ .Query }}" maxlength="300">
+                  <md-icon slot="leading-icon" aria-hidden="false">search</md-icon>
+                </md-textfield-with-suggestions>
+              </div>
+            </div>
+            <submit-radios>
+              {{ if .EcosystemCounts }}
+              <div class="ecosystem-buttons">
+                <input type="radio" name="ecosystem" id="ecosystem-radio-all" value="" {{ if not .SelectedEcosystem }}checked{{ end }}>
+                <label class="ecosystem-label ecosystem-label-all" for="ecosystem-radio-all">
+                  <span class="ecosystem-name">All ecosystems</span>
+                  <span class="ecosystem-count">{{ .TotalEcosystemCount }}</span>
+                </label>
+                {{ range $i, $eco := .EcosystemCounts }}
+                <input type="radio" name="ecosystem" id="ecosystem-radio-{{ $i }}" value="{{ $eco.Name }}" {{ if eq $.SelectedEcosystem $eco.Name }}checked{{ end }}>
+                <label class="ecosystem-label" for="ecosystem-radio-{{ $i }}">
+                  <span class="ecosystem-name">{{ $eco.Name }}</span>
+                  <span class="ecosystem-count">{{ $eco.Count }}</span>
+                </label>
+                {{ end }}
+              </div>
+              {{ end }}
+            </submit-radios>
+            <input type="submit">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <turbo-frame class="vuln-table-container mdc-data-table" id="vulnerability-table" data-turbo-action="advance" data-title="{{ if .SelectedEcosystem }}{{ .SelectedEcosystem }} - OSV{{ else }}Vulnerability Database - OSV{{ end }}">
+    <div role="table" class="vuln-table mdc-data-table__table" aria-label="Vulnerability table">
+      <div role="rowgroup" class="vuln-table-header">
+        <div role="row" class="vuln-table-row mdc-data-table__header-row">
+          <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header" role="columnheader" scope="col" aria-sort="none" data-column-id="id">
+            <div class="mdc-data-table__header-cell-wrapper">
+              <div class="mdc-data-table__header-cell-label">ID</div>
+            </div>
+          </span>
+          <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header" role="columnheader" scope="col" aria-sort="none" data-column-id="package">
+            <div class="mdc-data-table__header-cell-wrapper">
+              <div class="mdc-data-table__header-cell-label">Packages</div>
+            </div>
+          </span>
+          <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header" role="columnheader" scope="col" aria-sort="none" data-column-id="summary">
+            <div class="mdc-data-table__header-cell-wrapper">
+              <div class="mdc-data-table__header-cell-label">Summary</div>
+            </div>
+          </span>
+          <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header mdc-data-table__header-cell--sorted mdc-data-table__header-cell--sorted-descending" role="columnheader" scope="col" aria-sort="descending" data-column-id="published">
+            <div class="mdc-data-table__header-cell-wrapper">
+              <div class="mdc-data-table__header-cell-label">Published</div>
+              <md-icon-button class="mdc-data-table__sort-icon-button" disabled aria-label="Sorted by Published">
+                <md-icon aria-hidden="false">arrow_upward</md-icon>
+              </md-icon-button>
+            </div>
+          </span>
+          <span class="vuln-table-cell mdc-data-table__header-cell vuln-table-header" role="columnheader" scope="col" aria-sort="none" data-column-id="attributes">
+            <div class="mdc-data-table__header-cell-wrapper">
+              <div class="mdc-data-table__header-cell-label">Attributes</div>
+            </div>
+          </span>
+        </div>
+      </div>
+      <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
+        <turbo-frame id="vulnerability-table-page{{ .Page }}" data-turbo-action="advance" target="_top">
+          {{ range .Vulnerabilities }}
+          <div role="row" class="vuln-table-row mdc-data-table__row">
+            <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+              <a href="/vulnerability/{{ .ID }}">{{ .ID }}</a>
+            </span>
+            <span role="cell" class="vuln-table-cell vuln-packages mdc-data-table__cell">
+              <ul class="packages">
+                {{ range .DisplayPackages }}
+                  <li>{{ . }}</li>
+                {{ end }}
+                {{ if gt .RemainingPackageCount 0 }}
+                  <li class="remaining-packages">... {{ .RemainingPackageCount }} more</li>
+                {{ else if eq (len .Packages) 0 }}
+                  <li>Not specified</li>
+                {{ end }}
+              </ul>
+            </span>
+            <span role="cell" class="vuln-table-cell vuln-summary mdc-data-table__cell">
+              {{ if .Summary }}
+                {{ .Summary }}
+              {{ else }}
+                See record for full details
+              {{ end }}
+            </span>
+            <span role="cell" class="vuln-table-cell mdc-data-table__cell">
+              <span title="{{ .FormattedPublished }}">{{ .RelativePublished }}</span>
+            </span>
+            <span role="cell" class="vuln-table-cell vuln-attributes mdc-data-table__cell">
+              <ul class="tags">
+                <li>
+                  {{ if .IsFixed }}
+                  <span class="tag fix-available">Fix available</span>
+                  {{ else }}
+                  <span class="tag fix-unavailable">No fix available</span>
+                  {{ end }}
+                </li>
+                {{ with .PrimarySeverity }}
+                <li>
+                  <span class="tag severity-{{ .Level }}">Severity - {{ .Rating }}</span>
+                </li>
+                {{ end }}
+              </ul>
+            </span>
+          </div>
+          {{ end }}
+          {{ if eq (len .Vulnerabilities) 0 }}
+          <span class="no-results">No results (check our <a href="https://google.github.io/osv.dev/faq/">FAQ</a> if this is unexpected)</span>
+          {{ end }}
+          {{ if lt .Page .TotalPages }}
+          <turbo-frame id="vulnerability-table-page{{ add .Page 1 }}" data-turbo-action="advance" target="_top" class="next-page-frame">
+            <div class="next-page-container">
+              <a class="next-page-button link-button" data-turbo-frame="_self" href="/list?page={{ add .Page 1 }}{{ if $.Query }}&q={{ $.EncodedQuery }}{{ end }}{{ if $.SelectedEcosystem }}&ecosystem={{ $.EncodedEcosystem }}{{ end }}">
+                <span>Load more...</span>
+                {{ $pagesLeft := sub $.TotalPages $.Page }}
+                {{ if le $pagesLeft 3 }}
+                <span style="margin-left: 5px">({{ $pagesLeft }} page{{ if gt $pagesLeft 1 }}s{{ end }} left)</span>
+                {{ end }}
+              </a>
+              <md-circular-progress class="next-page-indicator" indeterminate density="-4" aria-label="Page loading progress"></md-circular-progress>
+            </div>
+          </turbo-frame>
+          {{ end }}
+        </turbo-frame>
+      </div>
+    </div>
+  <turbo-stream action="update" target="title">
+    <template>
+      {{ if .SelectedEcosystem }}
+      {{ .SelectedEcosystem }} - OSV
+      {{ else }}
+      Vulnerability Database - OSV
+      {{ end }}
+    </template>
+  </turbo-stream>
+  </turbo-frame>
+</div>
+{{ end }}

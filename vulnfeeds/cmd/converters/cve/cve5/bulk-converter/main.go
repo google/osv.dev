@@ -13,8 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/google/osv/vulnfeeds/conversion"
 	"github.com/google/osv/vulnfeeds/conversion/cve5"
 	"github.com/google/osv/vulnfeeds/conversion/writer"
 	"github.com/google/osv/vulnfeeds/gcs-tools"
@@ -22,10 +24,12 @@ import (
 	"github.com/google/osv/vulnfeeds/utility/logger"
 )
 
+const defaultStartYear = "2022"
+
 var (
 	repoDir        = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
 	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
-	startYear      = flag.String("start-year", "2022", "The first in scope year to process.")
+	startYear      = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
 	workers        = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
 	gcsWorkers     = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
 	cnaDenyList    = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
@@ -33,6 +37,12 @@ var (
 	uploadToGCS    = flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
 	outputBucket   = flag.String("output-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to write to.")
 	gcsPrefix      = flag.String("gcs-prefix", "cve5-osv", "The prefix within the GCS bucket.")
+	outputMetrics  = flag.Bool("output-metrics", true, "If true, output the metrics information about the conversion")
+)
+
+var (
+	totalConversionsCount      atomic.Uint64
+	successfulConversionsCount atomic.Uint64
 )
 
 //go:embed cna_denylist.txt
@@ -112,6 +122,24 @@ func main() {
 
 	close(jobs)
 	wg.Wait()
+
+	timesBlocked := int64(0)
+	if *uploadToGCS && gcsHelper != nil {
+		timesBlocked = gcsHelper.GetTimesBlocked()
+		gcsHelper.CloseAndWait()
+	}
+
+	logger.Info("Conversion Stats",
+		slog.Uint64("total_processed", totalConversionsCount.Load()),
+		slog.Uint64("successful_conversions", successfulConversionsCount.Load()),
+		slog.Int64("times_gcs_upload_blocked", timesBlocked),
+	)
+
+	// Conduct analysis on the outcome of the converted files and output to a csv
+	if *outputMetrics {
+		conversion.ConductAnalysis("cve5-conversion-outcomes-", "all", *localOutputDir)
+	}
+
 	logger.Info("CVE5 Conversion run complete")
 }
 
@@ -136,6 +164,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 		}
 		cveID := cve.Metadata.CVEID
 		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
+		totalConversionsCount.Add(1)
 
 		sourceLink := ""
 		baseDirCVEList := "cves/" // The base folder for the CVEListV5 repository.
@@ -147,6 +176,9 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 
 		if gcsHelper != nil {
 			vuln, metrics := cve5.CVEToOSV(cve, sourceLink)
+			if metrics.Outcome == models.Successful {
+				successfulConversionsCount.Add(1)
+			}
 			if rejectFailed && metrics.Outcome != models.Successful {
 				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 			} else {
@@ -181,6 +213,9 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			if err != nil {
 				logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 			} else {
+				if metrics.Outcome == models.Successful {
+					successfulConversionsCount.Add(1)
+				}
 				if rejectFailed && metrics.Outcome != models.Successful {
 					logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
 					osvFile.Close()

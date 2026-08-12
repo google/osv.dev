@@ -81,10 +81,10 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 
 // ConductAnalysis conducts an analysis of the conversion results after completion by reading
 // all of the .metrics.json files and extracting conversion outcomes.
-func ConductAnalysis(year string, dir string) {
+func ConductAnalysis(prefix string, year string, dir string) {
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
-	outcomesCSV := "nvd-conversion-outcomes-" + year + "-" + currentTime + ".csv"
+	outcomesCSV := prefix + year + "-" + currentTime + ".csv"
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
@@ -157,6 +157,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			break // All ranges have been resolved.
 		}
 		if cache.IsInvalid(repo) {
+			logger.Debug("Repo is marked invalid in cache", slog.String("repo", repo))
 			continue
 		}
 

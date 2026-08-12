@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"fmt"
 	"log/slog"
 	"regexp"
 	"slices"
@@ -84,4 +85,25 @@ func extensionToFormat(extension string) RecordFormat {
 	default:
 		return RecordFormatUnknown
 	}
+}
+
+func formatEntries(toDelete []*models.VulnSourceRef, maxEntries int) []string {
+	if len(toDelete) == 0 {
+		return nil
+	}
+	if maxEntries <= 0 {
+		maxEntries = 250
+	}
+
+	limit := min(len(toDelete), maxEntries)
+	result := make([]string, 0, limit+1)
+	for i := range limit {
+		result = append(result, toDelete[i].ID)
+	}
+
+	if len(toDelete) > maxEntries {
+		result = append(result, fmt.Sprintf("... and %d more", len(toDelete)-maxEntries))
+	}
+
+	return result
 }

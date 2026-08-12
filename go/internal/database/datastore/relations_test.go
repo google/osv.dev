@@ -375,6 +375,51 @@ func TestComputeDownstreamHierarchy(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name:     "3-level transitive downstream chain",
+			targetID: "ROOT-1",
+			downstreams: map[string][]string{
+				"DOWN-1": {"ROOT-1"},
+				"DOWN-2": {"ROOT-1", "DOWN-1"},
+				"DOWN-3": {"ROOT-1", "DOWN-1", "DOWN-2"},
+			},
+			want: &models.Hierarchy{
+				Roots: []string{"DOWN-1"},
+				Graph: map[string][]string{
+					"DOWN-1": {"DOWN-2"},
+					"DOWN-2": {"DOWN-3"},
+					"ROOT-1": {"DOWN-1"},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name:     "Multi-root branching downstream hierarchy",
+			targetID: "ROOT-1",
+			downstreams: map[string][]string{
+				"DOWN-A": {"ROOT-1"},
+				"DOWN-B": {"ROOT-1"},
+				"DOWN-C": {"ROOT-1", "DOWN-A"},
+			},
+			want: &models.Hierarchy{
+				Roots: []string{"DOWN-A", "DOWN-B"},
+				Graph: map[string][]string{
+					"DOWN-A": {"DOWN-C"},
+					"ROOT-1": {"DOWN-A", "DOWN-B"},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name:     "Cycle detected",
+			targetID: "ROOT-1",
+			downstreams: map[string][]string{
+				"DOWN-1": {"ROOT-1", "DOWN-2"},
+				"DOWN-2": {"ROOT-1", "DOWN-1"},
+			},
+			want:    nil,
+			wantErr: errors.New("cycle detected in downstream hierarchy for ROOT-1"),
+		},
 	}
 
 	for _, tt := range tests {

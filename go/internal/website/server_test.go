@@ -25,7 +25,7 @@ func (m mockVulnStore) GetFull(_ context.Context, id string) (*osvschema.Vulnera
 }
 
 func (m mockVulnStore) GetWithMetadata(_ context.Context, id string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
-	if id == "UNKNOWN" || id == "UNKNOWN-1234" {
+	if id == "UNKNOWN" || id == "UNKNOWN-1234" || id == "ALIAS-1234" {
 		return nil, nil, models.ErrNotFound
 	}
 
@@ -33,14 +33,20 @@ func (m mockVulnStore) GetWithMetadata(_ context.Context, id string) (*osvschema
 }
 
 func (m mockVulnStore) Exists(_ context.Context, id string) (bool, error) {
-	return id != "UNKNOWN" && id != "UNKNOWN-1234", nil
+	return id != "UNKNOWN" && id != "UNKNOWN-1234" && id != "ALIAS-1234", nil
 }
 
 type mockRelationsStore struct {
 	models.UnimplementedRelationsStore
 }
 
-func (m mockRelationsStore) GetAliases(_ context.Context, _ string) (*models.GetAliasResult, error) {
+func (m mockRelationsStore) GetAliases(_ context.Context, id string) (*models.GetAliasResult, error) {
+	if id == "ALIAS-1234" {
+		return &models.GetAliasResult{
+			Aliases: []string{"GHSA-1234"},
+		}, nil
+	}
+
 	return nil, models.ErrNotFound
 }
 
@@ -377,6 +383,20 @@ func TestStaticFiles(t *testing.T) {
 		}
 	})
 
+	t.Run("Vulnerability_details_single_alias_redirect", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/vulnerability/ALIAS-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/vulnerability/GHSA-1234" {
+			t.Errorf("expected Location '/vulnerability/GHSA-1234', got %q", loc)
+		}
+	})
+
 	t.Run("Triage_page", func(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
@@ -541,6 +561,20 @@ func TestPotentialVulnerability(t *testing.T) {
 	t.Run("Existing vuln redirects to /vulnerability/{id}", func(t *testing.T) {
 		t.Parallel()
 		req := httptest.NewRequest(http.MethodGet, "/GHSA-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/vulnerability/GHSA-1234" {
+			t.Errorf("expected Location '/vulnerability/GHSA-1234', got %q", loc)
+		}
+	})
+
+	t.Run("Single alias vuln redirects to /vulnerability/{canonical_id}", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/ALIAS-1234", nil)
 		rec := httptest.NewRecorder()
 		srv.ServeHTTP(rec, req)
 

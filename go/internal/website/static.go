@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/google/osv.dev/go/logger"
 )
 
 // RenderNotFound renders the standard 404 Not Found page.
@@ -59,15 +61,20 @@ func computeEcosystemDisplays(counts map[string]int) []EcosystemDisplay {
 	return displays
 }
 
-func (s *Server) getEcosystemCounts(_ context.Context) map[string]int {
-	// Stub for ecosystem count fetch (Datastore or cache integration)
-	return map[string]int{
-		"PyPI": 23174,
-		"npm":  222222,
-		"Go":   8010,
-		"GIT":  943411,
-		"Pub":  11,
+func (s *Server) getEcosystemCounts(ctx context.Context) map[string]int {
+	res, err := s.stores.VulnSearch.EcosystemCounts(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get ecosystem counts", "error", err)
+
+		return map[string]int{}
 	}
+
+	counts := make(map[string]int, len(res))
+	for _, eco := range res {
+		counts[eco.Name] = eco.Count
+	}
+
+	return counts
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {

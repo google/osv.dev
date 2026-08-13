@@ -2,7 +2,6 @@ package website
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -11,10 +10,7 @@ import (
 )
 
 // EcosystemCount represents an ecosystem filter option and its vulnerability count.
-type EcosystemCount struct {
-	Name  string
-	Count int
-}
+type EcosystemCount = models.EcosystemCount
 
 // ListedVulnerabilityDisplay wraps models.ListedVulnerability with website presentation methods.
 type ListedVulnerabilityDisplay models.ListedVulnerability
@@ -160,19 +156,9 @@ type ListPageData struct {
 
 	Query               string
 	SelectedEcosystem   string
-	Page                int
-	TotalPages          int
+	CurrentAfter        string
+	NextAfter           string
 	EcosystemCounts     []EcosystemCount
 	TotalEcosystemCount int
 	Vulnerabilities     []ListedVulnerabilityDisplay
-}
-
-// EncodedQuery returns the URL query-escaped search query string.
-func (d ListPageData) EncodedQuery() string {
-	return url.QueryEscape(d.Query)
-}
-
-// EncodedEcosystem returns the URL query-escaped ecosystem filter string.
-func (d ListPageData) EncodedEcosystem() string {
-	return url.QueryEscape(d.SelectedEcosystem)
 }

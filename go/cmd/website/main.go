@@ -18,6 +18,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/gcs"
 	"github.com/google/osv.dev/go/internal/website"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -94,6 +95,11 @@ func run() error {
 		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
 	}
 
+	linterBucket := os.Getenv("OSV_LINTER_BUCKET")
+	if linterBucket == "" {
+		linterBucket = "osv-test-public-import-logs"
+	}
+
 	var redisClient redis.Cmdable
 	if redisHost := os.Getenv("REDISHOST"); redisHost != "" {
 		redisPort := os.Getenv("REDISPORT")
@@ -119,6 +125,7 @@ func run() error {
 		Relations:  db.NewRelationsStore(dbClient),
 		SourceRepo: db.NewSourceRepositoryStore(dbClient),
 		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
+		Linter:     gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")

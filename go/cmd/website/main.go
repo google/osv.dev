@@ -21,6 +21,7 @@ import (
 	"github.com/google/osv.dev/go/internal/website"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -92,6 +93,24 @@ func run() error {
 		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
 		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
 	}
+
+	var redisClient redis.Cmdable
+	if redisHost := os.Getenv("REDISHOST"); redisHost != "" {
+		redisPort := os.Getenv("REDISPORT")
+		if redisPort == "" {
+			redisPort = "6379"
+		}
+		rdb := redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redisPort),
+		})
+		defer func() {
+			if err := rdb.Close(); err != nil {
+				logger.ErrorContext(ctx, "Failed to close redis client", slog.Any("error", err))
+			}
+		}()
+		redisClient = rdb
+	}
+
 	stores := website.Stores{
 		Vuln: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client: dbClient,
@@ -99,7 +118,7 @@ func run() error {
 		}),
 		Relations:  db.NewRelationsStore(dbClient),
 		SourceRepo: db.NewSourceRepositoryStore(dbClient),
-		VulnSearch: db.NewVulnerabilitySearchStore(dbClient),
+		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")

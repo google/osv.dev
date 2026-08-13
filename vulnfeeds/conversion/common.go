@@ -3,6 +3,7 @@
 package conversion
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	gcs "github.com/google/osv.dev/vulnfeeds/gcs-tools"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility"
@@ -82,15 +84,22 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 // ConductAnalysis conducts an analysis of the conversion results after completion by reading
 // all of the .metrics.json files and extracting conversion outcomes.
 func ConductAnalysis(prefix string, year string, dir string) {
+	ConductAnalysisAndUpload(prefix, year, dir, nil, "")
+}
+
+// ConductAnalysisAndUpload conducts an analysis of the conversion results after completion by reading
+// all of the .metrics.json files, writing the outcomes CSV locally, and uploading it to GCS if a helper is provided.
+func ConductAnalysisAndUpload(prefix string, year string, dir string, gcsHelper *gcs.Helper, gcsPrefix string) string {
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := prefix + year + "-" + currentTime + ".csv"
+	csvPath := filepath.Join(dir, outcomesCSV)
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
 	}
 
-	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
+	csvFile, err := os.Create(csvPath)
 	if err != nil {
 		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))
 	}
@@ -136,6 +145,25 @@ func ConductAnalysis(prefix string, year string, dir string) {
 	if err != nil {
 		logger.Error("Failed to walk directory for analysis", slog.Any("err", err))
 	}
+
+	csvWriter.Flush()
+	_ = csvFile.Sync()
+
+	if gcsHelper != nil {
+		csvData, err := os.ReadFile(csvPath)
+		if err != nil {
+			logger.Error("Failed to read outcome CSV for GCS upload", slog.Any("err", err))
+		} else {
+			gcsObjName := outcomesCSV
+			if gcsPrefix != "" {
+				gcsObjName = gcsPrefix + "/metrics/outcomes/" + outcomesCSV
+			}
+			gcsHelper.Upload(gcsObjName, bytes.NewReader(csvData), "", "text/csv")
+			logger.Info("Queued outcome CSV upload to GCS", slog.String("object", gcsObjName))
+		}
+	}
+
+	return csvPath
 }
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.

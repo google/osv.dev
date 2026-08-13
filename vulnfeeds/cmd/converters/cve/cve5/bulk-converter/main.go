@@ -123,6 +123,11 @@ func main() {
 	close(jobs)
 	wg.Wait()
 
+	// Conduct analysis on the outcome of the converted files and output to a csv
+	if *outputMetrics {
+		conversion.ConductAnalysisAndUpload("cve5-conversion-outcomes-", "all", *localOutputDir, gcsHelper, *gcsPrefix)
+	}
+
 	timesBlocked := int64(0)
 	if *uploadToGCS && gcsHelper != nil {
 		timesBlocked = gcsHelper.GetTimesBlocked()
@@ -134,11 +139,6 @@ func main() {
 		slog.Uint64("successful_conversions", successfulConversionsCount.Load()),
 		slog.Int64("times_gcs_upload_blocked", timesBlocked),
 	)
-
-	// Conduct analysis on the outcome of the converted files and output to a csv
-	if *outputMetrics {
-		conversion.ConductAnalysis("cve5-conversion-outcomes-", "all", *localOutputDir)
-	}
 
 	logger.Info("CVE5 Conversion run complete")
 }

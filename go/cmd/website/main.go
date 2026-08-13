@@ -99,6 +99,7 @@ func run() error {
 		}),
 		Relations:  db.NewRelationsStore(dbClient),
 		SourceRepo: db.NewSourceRepositoryStore(dbClient),
+		VulnSearch: db.NewVulnerabilitySearchStore(dbClient),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")

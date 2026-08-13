@@ -82,6 +82,22 @@ func (m mockSourceRepoStore) All(_ context.Context) iter.Seq2[*models.SourceRepo
 	return func(_ func(*models.SourceRepository, error) bool) {}
 }
 
+type mockVulnSearchStore struct {
+	models.UnimplementedVulnerabilitySearchStore
+}
+
+func (m mockVulnSearchStore) Search(_ context.Context, _ models.VulnerabilitySearchQuery) (*models.VulnerabilitySearchResult, error) {
+	return &models.VulnerabilitySearchResult{}, nil
+}
+
+func (m mockVulnSearchStore) Autocomplete(_ context.Context, _ string, _ int) ([]string, error) {
+	return nil, nil
+}
+
+func (m mockVulnSearchStore) EcosystemCounts(_ context.Context) ([]models.EcosystemCount, error) {
+	return nil, nil
+}
+
 func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
@@ -102,6 +118,9 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	if cfg.Stores.SourceRepo == nil {
 		cfg.Stores.SourceRepo = mockSourceRepoStore{}
 	}
+	if cfg.Stores.VulnSearch == nil {
+		cfg.Stores.VulnSearch = mockVulnSearchStore{}
+	}
 	srv, err := website.NewServer(cfg)
 	if err != nil {
 		t.Fatalf("failed creating test server: %v", err)
@@ -120,6 +139,7 @@ func TestNewServer_NilConfig(t *testing.T) {
 			Vuln:       mockVulnStore{},
 			Relations:  mockRelationsStore{},
 			SourceRepo: mockSourceRepoStore{},
+			VulnSearch: mockVulnSearchStore{},
 		},
 	}
 
@@ -155,6 +175,12 @@ func TestNewServer_NilConfig(t *testing.T) {
 	noSourceRepo.Stores.SourceRepo = nil
 	if _, err := website.NewServer(noSourceRepo); err == nil {
 		t.Errorf("expected error when Stores.SourceRepo is nil, got nil")
+	}
+
+	noVulnSearch := validConfig
+	noVulnSearch.Stores.VulnSearch = nil
+	if _, err := website.NewServer(noVulnSearch); err == nil {
+		t.Errorf("expected error when Stores.VulnSearch is nil, got nil")
 	}
 }
 

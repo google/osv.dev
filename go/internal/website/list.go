@@ -49,9 +49,9 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	if afterStr != "" {
 		timeStr, id, found := strings.Cut(afterStr, "_")
 		if found {
-			sec, err := strconv.ParseInt(timeStr, 10, 64)
+			usec, err := strconv.ParseInt(timeStr, 10, 64)
 			if err == nil {
-				afterTime = time.Unix(sec, 0)
+				afterTime = time.UnixMicro(usec)
 				afterID = id
 			} else {
 				logger.ErrorContext(r.Context(), "failed to parse after_time", "after_time", afterStr)
@@ -86,7 +86,7 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 			vulns[i] = ListedVulnerabilityDisplay(*v)
 		}
 		if !result.NextAfterTime.IsZero() {
-			nextAfter = fmt.Sprintf("%d_%s", result.NextAfterTime.Unix(), result.NextAfterID)
+			nextAfter = fmt.Sprintf("%d_%s", result.NextAfterTime.UnixMicro(), result.NextAfterID)
 		}
 
 		return nil

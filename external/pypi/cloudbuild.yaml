@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # These steps generate pypi_links.sql and pypi_versions.sql as described on
-# https://github.com/google/osv/tree/master/vulnfeeds/pypi.
+# https://github.com/google/osv.dev/tree/master/vulnfeeds/pypi.
 steps:
 - name: gcr.io/cloud-builders/gcloud
   entrypoint: bash

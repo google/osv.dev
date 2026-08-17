@@ -331,8 +331,8 @@ def main():
           all_failed_ids.extend(failed_ids)
           total_processed_count += len(future_to_batch[future])
         except Exception as e:
-          logging.exception(
-              'Failed to process a batch of vulnerabilities: %s', e)
+          logging.exception('Failed to process a batch of vulnerabilities: %s',
+                            e)
 
   logging.info('Processed %d vulnerabilities, generated %d new signatures.',
                total_processed_count, total_generated_count)

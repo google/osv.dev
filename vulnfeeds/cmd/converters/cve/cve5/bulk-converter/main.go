@@ -27,17 +27,22 @@ import (
 const defaultStartYear = "2022"
 
 var (
-	repoDir        = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
-	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
-	startYear      = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
-	workers        = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
-	gcsWorkers     = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
-	cnaDenyList    = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
-	rejectFailed   = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
-	uploadToGCS    = flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
-	outputBucket   = flag.String("output-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to write to.")
-	gcsPrefix      = flag.String("gcs-prefix", "cve5-osv", "The prefix within the GCS bucket.")
-	outputMetrics  = flag.Bool("output-metrics", true, "If true, output the metrics information about the conversion")
+	repoDir           = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
+	localOutputDir    = flag.String("out-dir", "cve5", "Path to output results.")
+	metricsDir        = flag.String("metrics-dir", "", "Path to output metrics JSON files (defaults to out-dir).")
+	outcomesDir       = flag.String("outcomes-dir", "", "Path to output conversion outcomes CSV file (defaults to metrics-dir or out-dir).")
+	csvDir            = flag.String("csv-dir", "", "Alias for outcomes-dir.")
+	startYear         = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
+	workers           = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
+	gcsWorkers        = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
+	cnaDenyList       = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
+	rejectFailed      = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
+	uploadToGCS       = flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
+	outputBucket      = flag.String("output-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to write to.")
+	gcsPrefix         = flag.String("gcs-prefix", "cve5-osv", "The prefix within the GCS bucket.")
+	gcsMetricsPrefix  = flag.String("gcs-metrics-prefix", "metadata/cve5/metrics", "The prefix for metrics JSON within the GCS bucket.")
+	gcsOutcomesPrefix = flag.String("gcs-outcomes-prefix", "metadata/cve5/outcomes", "The prefix for outcomes CSV within the GCS bucket.")
+	outputMetrics     = flag.Bool("output-metrics", true, "If true, output the metrics information about the conversion")
 )
 
 var (
@@ -53,9 +58,32 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
+	actualMetricsDir := *localOutputDir
+	if *metricsDir != "" {
+		actualMetricsDir = *metricsDir
+	}
+	actualOutcomesDir := actualMetricsDir
+	if *outcomesDir != "" {
+		actualOutcomesDir = *outcomesDir
+	} else if *csvDir != "" {
+		actualOutcomesDir = *csvDir
+	}
+
 	logger.Info("Commencing CVE to OSV conversion run")
-	if err := os.MkdirAll(*localOutputDir, 0755); err != nil {
-		logger.Fatal("Failed to create local output directory", slog.Any("err", err))
+	if !*uploadToGCS && *localOutputDir != "" {
+		if err := os.MkdirAll(*localOutputDir, 0755); err != nil {
+			logger.Fatal("Failed to create local output directory", slog.Any("err", err))
+		}
+	}
+	if *outputMetrics && actualMetricsDir != "" {
+		if err := os.MkdirAll(actualMetricsDir, 0755); err != nil {
+			logger.Fatal("Failed to create metrics directory", slog.Any("err", err))
+		}
+	}
+	if *outputMetrics && actualOutcomesDir != "" {
+		if err := os.MkdirAll(actualOutcomesDir, 0755); err != nil {
+			logger.Fatal("Failed to create outcomes directory", slog.Any("err", err))
+		}
 	}
 
 	jobs := make(chan string)
@@ -87,7 +115,7 @@ func main() {
 	// Start the worker pool.
 	for range *workers {
 		wg.Add(1)
-		go worker(&wg, jobs, gcsHelper, *localOutputDir, cnaList, *rejectFailed)
+		go worker(&wg, jobs, gcsHelper, *localOutputDir, actualMetricsDir, cnaList, *rejectFailed, *outputMetrics, *gcsMetricsPrefix)
 	}
 
 	// Discover files and send them to the workers.
@@ -125,7 +153,7 @@ func main() {
 
 	// Conduct analysis on the outcome of the converted files and output to a csv
 	if *outputMetrics {
-		conversion.ConductAnalysisAndUpload("cve5-conversion-outcomes-", "all", *localOutputDir, gcsHelper, *gcsPrefix)
+		conversion.ConductAnalysisAndUpload("cve5-conversion-outcomes-", "all", actualMetricsDir, actualOutcomesDir, gcsHelper, *gcsOutcomesPrefix)
 	}
 
 	timesBlocked := int64(0)
@@ -144,7 +172,7 @@ func main() {
 }
 
 // worker is a function that processes CVE files from the jobs channel.
-func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, cnas []string, rejectFailed bool) {
+func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, metricsDir string, cnas []string, rejectFailed bool, outputMetrics bool, gcsMetricsPrefix string) {
 	defer wg.Done()
 	for path := range jobs {
 		data, err := os.ReadFile(path)
@@ -187,25 +215,37 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
 				}
 
-				if err := writer.UploadMetricsToGCSAsync(gcsHelper, *gcsPrefix, cveID, metrics); err != nil {
-					logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+				if outputMetrics {
+					if err := writer.UploadMetricsToGCSAsync(gcsHelper, gcsMetricsPrefix, cveID, metrics); err != nil {
+						logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+					}
 				}
 			}
 
 			// Always write metrics locally for outcomes CSV auditing
-			metricsFile, err := writer.CreateMetricsFile(cveID, outDir)
-			if err == nil {
-				err = writer.WriteMetricsFile(metrics, metricsFile)
-				if err != nil {
-					logger.Error("Failed to write metrics file", slog.String("cve", string(cveID)), slog.Any("err", err))
+			if outputMetrics {
+				metricsFile, err := writer.CreateMetricsFile(cveID, metricsDir)
+				if err == nil {
+					err = writer.WriteMetricsFile(metrics, metricsFile)
+					if err != nil {
+						logger.Error("Failed to write metrics file", slog.String("cve", string(cveID)), slog.Any("err", err))
+					}
+					metricsFile.Close()
 				}
-				metricsFile.Close()
 			}
 		} else {
 			osvFile, errCVE := writer.CreateOSVFile(cveID, outDir)
-			metricsFile, errMetrics := writer.CreateMetricsFile(cveID, outDir)
-			if errCVE != nil || errMetrics != nil {
+			if errCVE != nil {
 				logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
+			}
+
+			var metricsFile *os.File
+			if outputMetrics {
+				var errMetrics error
+				metricsFile, errMetrics = writer.CreateMetricsFile(cveID, metricsDir)
+				if errMetrics != nil {
+					logger.Fatal("File failed to be created for CVE metrics", slog.String("cve", string(cveID)))
+				}
 			}
 
 			// Perform the conversion and export the results.
@@ -225,7 +265,9 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 				}
 			}
 
-			metricsFile.Close()
+			if metricsFile != nil {
+				metricsFile.Close()
+			}
 			osvFile.Close()
 		}
 	}

@@ -1,9 +1,18 @@
 package conversion
 
 import (
+	"context"
+	"encoding/csv"
+	"encoding/json"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/google/go-cmp/cmp"
+	gcs "github.com/google/osv.dev/vulnfeeds/gcs-tools"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -453,4 +462,120 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConductAnalysisAndUpload(t *testing.T) {
+	tempBase := t.TempDir()
+	metricsDir := filepath.Join(tempBase, "metrics")
+	csvDir := filepath.Join(tempBase, "outcomes")
+
+	if err := os.MkdirAll(filepath.Join(metricsDir, "2024"), 0755); err != nil {
+		t.Fatalf("Failed to create metrics directory: %v", err)
+	}
+
+	metrics1 := models.ConversionMetrics{
+		CVEID:   "CVE-2024-0001",
+		Outcome: models.Successful,
+	}
+	metrics2 := models.ConversionMetrics{
+		CVEID:   "CVE-2024-0002",
+		Outcome: models.NoCommitRanges,
+	}
+
+	data1, err := json.Marshal(metrics1)
+	if err != nil {
+		t.Fatalf("Failed to marshal metrics1: %v", err)
+	}
+	data2, err := json.Marshal(metrics2)
+	if err != nil {
+		t.Fatalf("Failed to marshal metrics2: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(metricsDir, "2024", "CVE-2024-0001.metrics.json"), data1, 0600); err != nil {
+		t.Fatalf("Failed to write metrics file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(metricsDir, "CVE-2024-0002.metrics.json"), data2, 0600); err != nil {
+		t.Fatalf("Failed to write metrics file: %v", err)
+	}
+
+	t.Run("Separate csvDir and metricsDir", func(t *testing.T) {
+		csvPath := ConductAnalysisAndUpload("test-prefix-", "2024", metricsDir, csvDir, nil, "")
+		if !strings.HasPrefix(csvPath, csvDir) {
+			t.Errorf("Expected csvPath to be in %s, got %s", csvDir, csvPath)
+		}
+
+		f, err := os.Open(csvPath)
+		if err != nil {
+			t.Fatalf("Failed to open generated CSV: %v", err)
+		}
+		defer f.Close()
+
+		r := csv.NewReader(f)
+		records, err := r.ReadAll()
+		if err != nil {
+			t.Fatalf("Failed to read CSV records: %v", err)
+		}
+
+		if len(records) != 3 { // Header + 2 entries
+			t.Fatalf("Expected 3 records in CSV, got %d", len(records))
+		}
+		if records[0][0] != "CVEID" || records[0][1] != "Outcome" {
+			t.Errorf("Unexpected header: %v", records[0])
+		}
+
+		outcomes := make(map[string]string)
+		for _, rec := range records[1:] {
+			outcomes[rec[0]] = rec[1]
+		}
+
+		if outcomes["CVE-2024-0001"] != models.Successful.String() {
+			t.Errorf("Expected Successful for CVE-2024-0001, got %s", outcomes["CVE-2024-0001"])
+		}
+		if outcomes["CVE-2024-0002"] != models.NoCommitRanges.String() {
+			t.Errorf("Expected NoCommitRanges for CVE-2024-0002, got %s", outcomes["CVE-2024-0002"])
+		}
+	})
+
+	t.Run("Default csvDir to metricsDir when empty", func(t *testing.T) {
+		csvPath := ConductAnalysisAndUpload("test-prefix-", "2024", metricsDir, "", nil, "")
+		if !strings.HasPrefix(csvPath, metricsDir) {
+			t.Errorf("Expected csvPath to be in %s, got %s", metricsDir, csvPath)
+		}
+		if _, err := os.Stat(csvPath); err != nil {
+			t.Fatalf("Expected CSV file to exist at %s: %v", csvPath, err)
+		}
+	})
+
+	t.Run("Upload to GCS with custom outcomes prefix", func(t *testing.T) {
+		server, err := fakestorage.NewServerWithOptions(fakestorage.Options{
+			Scheme: "http",
+		})
+		if err != nil {
+			t.Fatalf("Failed to create fake storage server: %v", err)
+		}
+		defer server.Stop()
+
+		t.Setenv("STORAGE_EMULATOR_HOST", server.URL())
+
+		ctx := context.Background()
+		bucketName := "test-outcomes-bucket"
+		server.CreateBucketWithOpts(fakestorage.CreateBucketOpts{Name: bucketName})
+
+		gcsHelper, err := gcs.InitUploadPool(ctx, 2, bucketName)
+		if err != nil {
+			t.Fatalf("Failed to init upload pool: %v", err)
+		}
+
+		outcomesPrefix := "metadata/cve5/outcomes"
+		csvPath := ConductAnalysisAndUpload("test-prefix-", "2024", metricsDir, csvDir, gcsHelper, outcomesPrefix)
+		gcsHelper.CloseAndWait()
+
+		client := server.Client()
+		bkt := client.Bucket(bucketName)
+		objName := path.Join(outcomesPrefix, filepath.Base(csvPath))
+		_, err = bkt.Object(objName).Attrs(ctx)
+		if err != nil {
+			t.Fatalf("Expected outcomes CSV %q to exist on GCS, got error: %v", objName, err)
+		}
+	})
 }

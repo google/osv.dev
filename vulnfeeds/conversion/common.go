@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -83,19 +84,22 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 
 // ConductAnalysis conducts an analysis of the conversion results after completion by reading
 // all of the .metrics.json files and extracting conversion outcomes.
-func ConductAnalysis(prefix string, year string, dir string) {
-	ConductAnalysisAndUpload(prefix, year, dir, nil, "")
+func ConductAnalysis(prefix string, year string, metricsDir string, csvDir string) {
+	ConductAnalysisAndUpload(prefix, year, metricsDir, csvDir, nil, "")
 }
 
 // ConductAnalysisAndUpload conducts an analysis of the conversion results after completion by reading
 // all of the .metrics.json files, writing the outcomes CSV locally, and uploading it to GCS if a helper is provided.
-func ConductAnalysisAndUpload(prefix string, year string, dir string, gcsHelper *gcs.Helper, gcsPrefix string) string {
+func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csvDir string, gcsHelper *gcs.Helper, gcsOutcomesPrefix string) string {
+	if csvDir == "" {
+		csvDir = metricsDir
+	}
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := prefix + year + "-" + currentTime + ".csv"
-	csvPath := filepath.Join(dir, outcomesCSV)
+	csvPath := filepath.Join(csvDir, outcomesCSV)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(csvDir, 0755); err != nil {
 		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
 	}
 
@@ -113,7 +117,7 @@ func ConductAnalysisAndUpload(prefix string, year string, dir string, gcsHelper 
 		logger.Fatal("Failed to write header to CSV", slog.Any("err", err))
 	}
 
-	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(metricsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -155,8 +159,8 @@ func ConductAnalysisAndUpload(prefix string, year string, dir string, gcsHelper 
 			logger.Error("Failed to read outcome CSV for GCS upload", slog.Any("err", err))
 		} else {
 			gcsObjName := outcomesCSV
-			if gcsPrefix != "" {
-				gcsObjName = gcsPrefix + "/metrics/outcomes/" + outcomesCSV
+			if gcsOutcomesPrefix != "" {
+				gcsObjName = path.Join(gcsOutcomesPrefix, outcomesCSV)
 			}
 			gcsHelper.Upload(gcsObjName, bytes.NewReader(csvData), "", "text/csv")
 			logger.Info("Queued outcome CSV upload to GCS", slog.String("object", gcsObjName))

@@ -25,6 +25,10 @@ var _ VersionExtractor = &LinuxVersionExtractor{}
 
 // handleAffected takes an array of models.Affected and handles how to extract them
 func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []models.Affected, metrics *models.ConversionMetrics) bool {
+	if len(l.Strategies) == 0 {
+		l.Strategies = LinuxStrategies()
+	}
+
 	hasGit := false
 	gotVersions := false
 	for _, cveAff := range affected {
@@ -161,46 +165,4 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 	metrics.AddNote("no ranges found")
 
 	return nil, VersionRangeTypeUnknown
-}
-
-func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
-	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []models.RangeWithMetadata
-	for _, vers := range affected.Versions {
-		ranges, currentVersionType, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
-		versionRanges = append(versionRanges, c.ToRangeWithMetadata(ranges, models.VersionSourceAffected)...)
-		if shouldContinue {
-			continue
-		}
-		// In this case only vers.Version exists which either means that it is _only_ that version that is
-		// affected, but more likely, it affects up to that version. It could also mean that the range is given
-		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.AddNote("Only version exists")
-
-		if currentVersionType == VersionRangeTypeGit {
-			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceGit)...)
-
-			continue
-		}
-
-		// As a fallback, assume a single version means it's the last affected version.
-		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
-		}
-	}
-
-	// Determine the most frequent version type to return as the range type.
-	maxCount := 0
-	mostFrequentVersionType := VersionRangeTypeEcosystem
-	for versionType, count := range versionTypesCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentVersionType = versionType
-		}
-	}
-
-	return versionRanges, mostFrequentVersionType
 }

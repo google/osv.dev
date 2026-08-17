@@ -851,7 +851,12 @@
         },
         "version": "2.14.1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-qv9r-c865-cp47",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -1642,7 +1647,12 @@
         },
         "version": "2.14.1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-qv9r-c865-cp47",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -1742,7 +1752,12 @@
         },
         "version": "2.14.1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-qv9r-c865-cp47",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -1809,7 +1824,12 @@
         },
         "version": "2.14.1"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-qv9r-c865-cp47",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {

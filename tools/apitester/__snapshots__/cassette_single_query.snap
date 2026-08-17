@@ -94,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.8.0",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -167,7 +167,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.8.0",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2139,7 +2139,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2226,7 +2226,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2334,7 +2334,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2444,7 +2444,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2540,7 +2540,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2634,7 +2634,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2713,7 +2713,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2821,7 +2821,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2891,7 +2891,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2959,7 +2959,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3031,7 +3031,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3107,7 +3107,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3179,7 +3179,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3255,7 +3255,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3330,7 +3330,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3398,7 +3398,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3468,7 +3468,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3528,7 +3528,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3598,7 +3598,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3669,7 +3669,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3745,7 +3745,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3825,7 +3825,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3899,7 +3899,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3968,7 +3968,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4032,7 +4032,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4105,7 +4105,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4178,7 +4178,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4247,7 +4247,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4310,7 +4310,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4380,7 +4380,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4450,7 +4450,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4521,7 +4521,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4591,7 +4591,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4651,7 +4651,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4721,7 +4721,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",

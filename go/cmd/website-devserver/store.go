@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"iter"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -236,60 +235,21 @@ func (ds *DevStore) Exists(ctx context.Context, id string) (bool, error) {
 // models.RelationsStore Implementation
 // =========================================================================
 
+// GetAliases returns the aliases for the given vulnerability.
+// For the dev server, we assume the vulnerability's aliases field in its JSON
+// record is already complete and fully populated, returning it directly without
+// computing transitive alias closures across all records.
 func (ds *DevStore) GetAliases(_ context.Context, id string) (*models.GetAliasResult, error) {
 	vuln, _, err := ds.readRecordFromDisk(id)
 	if err != nil {
 		return nil, err
 	}
 
-	aliasSet := make(map[string]struct{})
-	for _, a := range vuln.GetAliases() {
-		aliasSet[a] = struct{}{}
-	}
-
-	// Also scan all records in dataDir that list `id` in their aliases
-	allVulns := ds.loadAllVulns()
-	for _, other := range allVulns {
-		if other.GetId() == id {
-			continue
-		}
-		if slices.Contains(other.GetAliases(), id) {
-			aliasSet[other.GetId()] = struct{}{}
-		}
-	}
-
-	aliases := make([]string, 0, len(aliasSet))
-	for a := range aliasSet {
-		aliases = append(aliases, a)
-	}
+	aliases := slices.Clone(vuln.GetAliases())
 	slices.Sort(aliases)
 
 	return &models.GetAliasResult{
 		Aliases:  aliases,
-		Modified: vuln.GetModified().AsTime(),
-	}, nil
-}
-
-func (ds *DevStore) GetRelated(_ context.Context, id string) (*models.GetRelatedResult, error) {
-	vuln, _, err := ds.readRecordFromDisk(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &models.GetRelatedResult{
-		Related:  vuln.GetRelated(),
-		Modified: vuln.GetModified().AsTime(),
-	}, nil
-}
-
-func (ds *DevStore) GetUpstream(_ context.Context, id string) (*models.GetUpstreamResult, error) {
-	vuln, _, err := ds.readRecordFromDisk(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &models.GetUpstreamResult{
-		Upstream: vuln.GetUpstream(),
 		Modified: vuln.GetModified().AsTime(),
 	}, nil
 }
@@ -387,19 +347,6 @@ func (ds *DevStore) Get(_ context.Context, name string) (*models.SourceRepositor
 	}
 
 	return repo, nil
-}
-
-func (ds *DevStore) All(_ context.Context) iter.Seq2[*models.SourceRepository, error] {
-	return func(yield func(*models.SourceRepository, error) bool) {
-		ds.mu.RLock()
-		defer ds.mu.RUnlock()
-
-		for _, r := range ds.sourceRepos {
-			if !yield(r, nil) {
-				return
-			}
-		}
-	}
 }
 
 // =========================================================================
@@ -604,9 +551,6 @@ func (ds *DevStore) Autocomplete(_ context.Context, prefix string, limit int) ([
 					results = append(results, pkgName)
 				}
 			}
-		}
-		if len(results) >= limit {
-			break
 		}
 	}
 

@@ -1,0 +1,35 @@
+- name: 'test'
+  link: 'https://github.com/google/osv.dev/blob/master/'
+  human_link: 'https://osv.dev/vulnerability/{{ BUG_ID }}'
+
+- name: 'cve-osv'
+  link: 'https://storage.googleapis.com/cve-osv-conversion/osv-output/'
+  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
+
+- name: 'ubuntu'
+  link: 'https://git.launchpad.net/ubuntu-cve-tracker/tree/'
+  human_link: 'https://ubuntu.com/security/{{ BUG_ID }}'
+
+- name: 'ubuntu-cve'
+  link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
+  human_link: 'https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}'
+
+- name: 'ubuntu-usn'
+  link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
+  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+
+- name: 'debian'
+  link: 'https://salsa.debian.org/security-tracker-team/security-tracker/blob/master/'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+
+- name: 'debian-dla'
+  link: 'https://storage.googleapis.com/debian-osv/'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+
+- name: 'suse'
+  link: 'https://ftp.suse.com/pub/projects/security/osv/'
+  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
+
+- name: 'ghsa'
+  link: 'https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/'
+  human_link: 'https://github.com/advisories/{{ BUG_ID }}'

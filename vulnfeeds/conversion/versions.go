@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/knqyf263/go-cpe/naming"
 )
 

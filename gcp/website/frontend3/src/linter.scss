@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "backtick-override";
+  src: local("Arial");
+  unicode-range: U+0060;
+}
+
 :root {
   --osv-background: #292929;
   --osv-text-color: #fff;
@@ -6,7 +12,7 @@
   --osv-grey-800: #3c4043;
   --osv-surface-color: #333;
   --osv-border-color: #555;
-  --osv-body-font-family: "Overpass", sans-serif;
+  --osv-body-font-family: "backtick-override", "Overpass", sans-serif;
   --osv-heading-font-family: "Overpass Mono", monospace;
   --osv-border-radius-small: 4px;
   --osv-red-300: #f23835;

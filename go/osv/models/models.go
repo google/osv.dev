@@ -38,6 +38,8 @@ type Severity = datastore.Severity
 
 type ListedVulnerability = datastore.ListedVulnerability
 
+type RepoAllowList = datastore.RepoAllowList
+
 type ImportFindings int
 
 const (

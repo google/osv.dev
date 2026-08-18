@@ -542,6 +542,7 @@ class IntegrationTests(unittest.TestCase,
         self._get('DEBIAN-CVE-2018-25047'),
         self._get('DEBIAN-CVE-2023-28447'),
         self._get('DEBIAN-CVE-2024-35226'),
+        self._get('DEBIAN-CVE-2026-62992'),
         self._get('DSA-5830-1'),
     ]
 

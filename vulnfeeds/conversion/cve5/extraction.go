@@ -1,8 +1,8 @@
 package cve5
 
 import (
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 )
 
 // VersionExtractor defines the interface for different version extraction strategies.

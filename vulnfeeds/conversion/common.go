@@ -17,11 +17,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/structpb"
 )

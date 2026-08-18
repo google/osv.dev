@@ -83,7 +83,8 @@ func run() error {
 	defer psClient.Close()
 
 	stores := worker.Stores{
-		SourceRepo: db.NewSourceRepositoryStore(dsClient),
+		SourceRepo:    db.NewSourceRepositoryStore(dsClient),
+		RepoAllowList: db.NewRepoAllowListStore(dsClient),
 		Vulnerability: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client:               dsClient,
 			GCS:                  clients.NewGCSClient(gcsClient, vulnBucket),

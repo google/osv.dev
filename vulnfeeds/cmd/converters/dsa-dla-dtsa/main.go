@@ -20,8 +20,8 @@ import (
 	"time"
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
-	"github.com/google/osv/vulnfeeds/conversion/writer"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/conversion/writer"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"golang.org/x/text/encoding/charmap"
 	"google.golang.org/protobuf/encoding/protojson"

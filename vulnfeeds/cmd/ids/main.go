@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 )

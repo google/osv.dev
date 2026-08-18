@@ -1,4 +1,4 @@
-module github.com/google/osv/vulnfeeds
+module github.com/google/osv.dev/vulnfeeds
 
 go 1.26.5
 
@@ -16,7 +16,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/sethvargo/go-retry v0.4.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.44.0

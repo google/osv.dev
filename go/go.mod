@@ -14,13 +14,13 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.34.0
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/dustin/go-humanize v1.0.1
-	github.com/go-git/go-git/v6 v6.0.0-alpha.4
+	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scalibr v0.4.5
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/klauspost/compress v1.19.0
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260716013833-d4a00c3e2a47
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
 	github.com/package-url/packageurl-go v0.1.6
 	github.com/pandatix/go-cvss v0.6.2
 	github.com/tidwall/gjson v1.19.0
@@ -73,7 +73,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
-	github.com/go-git/go-billy/v6 v6.0.0-alpha.1 // indirect
+	github.com/go-git/go-billy/v6 v6.0.0-alpha.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

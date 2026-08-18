@@ -98,12 +98,29 @@ func (m mockVulnSearchStore) EcosystemCounts(_ context.Context) ([]models.Ecosys
 	return nil, nil
 }
 
+type mockLinterStore struct {
+	models.UnimplementedLinterStore
+}
+
+func (m mockLinterStore) ListSources(_ context.Context) ([]string, error) {
+	return []string{"cve-osv", "ghsa"}, nil
+}
+
+func (m mockLinterStore) GetFindings(_ context.Context, source string) ([]byte, error) {
+	if source == "ghsa" {
+		return []byte(`{"findings":[]}`), nil
+	}
+
+	return nil, models.ErrNotFound
+}
+
 func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
 		cfg.StaticFS = fstest.MapFS{
-			"go/base.html": &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
-			"go/404.html":  &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
+			"go/base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
+			"go/404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
+			"go/linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
 		}
 	}
 	if cfg.DocsFS == nil {
@@ -120,6 +137,9 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	}
 	if cfg.Stores.VulnSearch == nil {
 		cfg.Stores.VulnSearch = mockVulnSearchStore{}
+	}
+	if cfg.Stores.Linter == nil {
+		cfg.Stores.Linter = mockLinterStore{}
 	}
 	srv, err := website.NewServer(cfg)
 	if err != nil {
@@ -140,6 +160,7 @@ func TestNewServer_NilConfig(t *testing.T) {
 			Relations:  mockRelationsStore{},
 			SourceRepo: mockSourceRepoStore{},
 			VulnSearch: mockVulnSearchStore{},
+			Linter:     mockLinterStore{},
 		},
 	}
 
@@ -181,6 +202,12 @@ func TestNewServer_NilConfig(t *testing.T) {
 	noVulnSearch.Stores.VulnSearch = nil
 	if _, err := website.NewServer(noVulnSearch); err == nil {
 		t.Errorf("expected error when Stores.VulnSearch is nil, got nil")
+	}
+
+	noLinter := validConfig
+	noLinter.Stores.Linter = nil
+	if _, err := website.NewServer(noLinter); err == nil {
+		t.Errorf("expected error when Stores.Linter is nil, got nil")
 	}
 }
 
@@ -712,4 +739,98 @@ func TestEndpointRegistration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLinterEndpoints(t *testing.T) {
+	t.Parallel()
+
+	srv := newTestServer(t, website.Config{})
+
+	t.Run("GET /linter renders successfully", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /linter on osv.dev redirects to test.osv.dev", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter", nil)
+		req.Host = "OSV.DEV:443"
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "https://test.osv.dev/linter" {
+			t.Errorf("expected Location 'https://test.osv.dev/linter', got %q", loc)
+		}
+	})
+
+	t.Run("GET /linter-findings returns sources JSON", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter-findings", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+		expectedBody := "[\"cve-osv\",\"ghsa\"]\n"
+		if rec.Body.String() != expectedBody {
+			t.Errorf("expected body %q, got %q", expectedBody, rec.Body.String())
+		}
+	})
+
+	t.Run("GET /linter-findings on osv.dev redirects to test.osv.dev", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter-findings", nil)
+		req.Host = "osv.dev"
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "https://test.osv.dev/linter-findings" {
+			t.Errorf("expected Location 'https://test.osv.dev/linter-findings', got %q", loc)
+		}
+	})
+
+	t.Run("GET /linter-findings/{source} returns findings JSON", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter-findings/ghsa", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+		expectedBody := `{"findings":[]}`
+		if rec.Body.String() != expectedBody {
+			t.Errorf("expected body %q, got %q", expectedBody, rec.Body.String())
+		}
+	})
+
+	t.Run("GET /linter-findings/{source} on unknown source returns 404", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodGet, "/linter-findings/unknown-source", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
 }

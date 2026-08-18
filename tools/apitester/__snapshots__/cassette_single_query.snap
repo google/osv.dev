@@ -3614,6 +3614,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:08:52.431Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -3685,6 +3686,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:09:08.746Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -4326,6 +4328,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:17.541Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4537,6 +4540,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:06.376Z",
       "related": [
+        "ALSA-2026:55432",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4667,6 +4671,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:18:44.499Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",

@@ -1,13 +1,15 @@
 package website
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/google/osv.dev/go/logger"
+	"golang.org/x/sync/errgroup"
 )
 
 const vulnsPerPage = 16
@@ -21,12 +23,14 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	ecosystem := r.URL.Query().Get("ecosystem")
 	pageStr := r.URL.Query().Get("page")
+	afterStr := r.URL.Query().Get("after")
 	isTurboFrame := r.Header.Get("Turbo-Frame") != ""
 
 	// Redirect full-page requests (non-Turbo-Frame) that contain a page parameter back to canonical URL
-	if !isTurboFrame && pageStr != "" {
+	if !isTurboFrame && (pageStr != "" || afterStr != "") {
 		queryVals := r.URL.Query()
 		queryVals.Del("page")
+		queryVals.Del("after")
 		targetURL := "/list"
 		if encoded := queryVals.Encode(); encoded != "" {
 			targetURL += "?" + encoded
@@ -40,62 +44,77 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
 		page = p
 	}
-
-	// Stub mock data for development
-	mockVulns := []ListedVulnerabilityDisplay{
-		{
-			ID:        "GHSA-1234-5678-90ab",
-			Published: time.Now().Add(-24 * time.Hour),
-			Packages: []models.Package{
-				{Package: &osvschema.Package{Ecosystem: "PyPI", Name: "requests"}},
-				{Package: &osvschema.Package{Ecosystem: "PyPI", Name: "urllib3"}},
-			},
-			Summary: "Critical remote code execution in `requests`",
-			IsFixed: true,
-			Severities: []*osvschema.Severity{
-				{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"},
-			},
-		},
-		{
-			ID:        "CVE-2024-9999",
-			Published: time.Now().Add(-48 * time.Hour),
-			Packages: []models.Package{
-				{Package: &osvschema.Package{Ecosystem: "Go", Name: "golang.org/x/net"}},
-				{Repo: "https://github.com/golang/net"},
-			},
-			Summary: "Denial of service in HTTP/2 handler",
-			IsFixed: false,
-			Severities: []*osvschema.Severity{
-				{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"},
-			},
-		},
+	var afterTime time.Time
+	var afterID string
+	if afterStr != "" {
+		timeStr, id, found := strings.Cut(afterStr, "_")
+		if found {
+			usec, err := strconv.ParseInt(timeStr, 10, 64)
+			if err == nil {
+				afterTime = time.UnixMicro(usec)
+				afterID = id
+			} else {
+				logger.ErrorContext(r.Context(), "failed to parse after_time", "after_time", afterStr)
+			}
+		} else {
+			logger.ErrorContext(r.Context(), "failed to parse after_time", "after_time", afterStr)
+		}
+	}
+	if page > 1 {
+		logger.WarnContext(r.Context(), "search is using legacy pagination")
 	}
 
-	mockEcosystemCounts := []EcosystemCount{
-		{Name: "PyPI", Count: 1420},
-		{Name: "Go", Count: 850},
-		{Name: "npm", Count: 3200},
-		{Name: "Maven", Count: 1100},
-		{Name: "A Very Long Ecosystem Name", Count: 1111111},
-		{Name: "A Very *Very* Long Ecosystem Name (comes with snacks!)", Count: 1111111},
-		{Name: "Evil PyPI", Count: 1420},
-		{Name: "Evil Go", Count: 850},
-		{Name: "Good npm", Count: 3200},
-		{Name: "Evil Maven", Count: 1100},
+	g, ctx := errgroup.WithContext(r.Context())
+
+	var vulns []ListedVulnerabilityDisplay
+	var nextAfter string
+	g.Go(func() error {
+		result, err := s.stores.VulnSearch.Search(ctx, models.VulnerabilitySearchQuery{
+			Query:     q,
+			Ecosystem: ecosystem,
+			AfterTime: afterTime,
+			AfterID:   afterID,
+			PageSize:  vulnsPerPage,
+			Page:      page,
+		})
+		if err != nil {
+			return err
+		}
+
+		vulns = make([]ListedVulnerabilityDisplay, len(result.Vulnerabilities))
+		for i, v := range result.Vulnerabilities {
+			vulns[i] = ListedVulnerabilityDisplay(*v)
+		}
+		if !result.NextAfterTime.IsZero() {
+			nextAfter = fmt.Sprintf("%d_%s", result.NextAfterTime.UnixMicro(), result.NextAfterID)
+		}
+
+		return nil
+	})
+
+	var ecoCounts []EcosystemCount
+	if !isTurboFrame {
+		// Only need to do this for the first page load, not subsequent page loads using the Turbo frame.
+		g.Go(func() error {
+			counts, err := s.stores.VulnSearch.EcosystemCounts(ctx)
+			if err != nil {
+				return err
+			}
+			ecoCounts = counts
+
+			return nil
+		})
 	}
 
-	totalEcosystemCount := 0
-	for _, eco := range mockEcosystemCounts {
-		totalEcosystemCount += eco.Count
+	if err := g.Wait(); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
 	}
 
-	now := time.Now()
-	vulns := make([]ListedVulnerabilityDisplay, 0, vulnsPerPage)
-	for i := range vulnsPerPage {
-		idx := (page-1)*vulnsPerPage + i
-		item := mockVulns[i%len(mockVulns)]
-		item.Published = now.Add(-time.Duration(idx*3) * time.Hour)
-		vulns = append(vulns, item)
+	totalEcoCounts := 0
+	for _, c := range ecoCounts {
+		totalEcoCounts += c.Count
 	}
 
 	pageTitle := "Vulnerability Database - OSV"
@@ -111,10 +130,10 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		},
 		Query:               q,
 		SelectedEcosystem:   ecosystem,
-		Page:                page,
-		TotalPages:          5,
-		EcosystemCounts:     mockEcosystemCounts,
-		TotalEcosystemCount: totalEcosystemCount,
+		CurrentAfter:        afterStr,
+		NextAfter:           nextAfter,
+		EcosystemCounts:     ecoCounts,
+		TotalEcosystemCount: totalEcoCounts,
 		Vulnerabilities:     vulns,
 	}
 

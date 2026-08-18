@@ -32,6 +32,7 @@ type Stores struct {
 	Vuln       models.VulnerabilityStore
 	Relations  models.RelationsStore
 	SourceRepo models.SourceRepositoryStore
+	VulnSearch models.VulnerabilitySearchStore
 }
 
 // Server handles website routing and HTTP requests.
@@ -83,6 +84,9 @@ func NewServer(cfg Config) (*Server, error) {
 	if cfg.Stores.SourceRepo == nil {
 		return nil, errors.New("Stores.SourceRepo is required")
 	}
+	if cfg.Stores.VulnSearch == nil {
+		return nil, errors.New("Stores.VulnSearch is required")
+	}
 
 	if cfg.APIURL == "" {
 		cfg.APIURL = "api.osv.dev"
@@ -124,6 +128,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		logger.InfoContext(r.Context(), "HTTP Request",
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
+			slog.String("query", r.URL.RawQuery),
 			slog.Int("status", rw.statusCode),
 			slog.Duration("duration", time.Since(start)),
 			slog.Int64("bytes", rw.bytesWritten),

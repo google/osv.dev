@@ -160,12 +160,15 @@ Many tests use expected outputs saved directly in the source tree:
   make run-website-devserver
   ```
   - Mock vulnerability records are located in [`go/cmd/website-devserver/testdata/`](go/cmd/website-devserver/testdata/). Add or edit `.json` records and `.meta.yaml` companion files to immediately see changes on page refresh.
-- **Python Website with Datastore Emulator (Legacy)**:
-  Run the legacy Python website server against a local Datastore emulator:
+- **Run against Cloud Datastore**:
+  Run the Go website server against production Datastore:
   ```bash
-  make run-website-emulator
+  make run-website
   ```
-  - Add custom mock testcases inside [`gcp/website/testdata/osv/`](gcp/website/testdata/osv/).
+  Or against staging Datastore:
+  ```bash
+  make run-website-staging
+  ```
 
 ### Local API Server Development (Go-native)
 - To run the public OSV API server locally using the native Go implementation alongside the ESPv2 proxy (which transcodes HTTP/JSON REST requests to gRPC):

@@ -3,7 +3,7 @@ module github.com/google/osv.dev/tools/repo-allowlist-sync
 go 1.26.5
 
 require (
-	cloud.google.com/go/datastore v1.25.0
+	cloud.google.com/go/datastore v1.26.0
 	github.com/google/osv.dev/go v0.0.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )

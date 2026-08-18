@@ -109,8 +109,8 @@ run-go-website: build-website-frontend ## Run local Go website against prod Data
 run-go-website-staging: build-website-frontend
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
-run-go-website-emulator: build-website-frontend ## Run local Go website against emulator
-	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+run-website-devserver: build-website-frontend ## Run local Go website development server against local mock dataset
+	cd go && go run ./cmd/website-devserver -data-dir cmd/website-devserver/testdata -static-dir ../website/dist -docs-dir ../docs
 
 stage-website-assets: build-website-frontend
 	mkdir -p go/cmd/website/dist go/cmd/website/docs

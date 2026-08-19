@@ -21,17 +21,18 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
 const (
 	// hashMetadataKey is the key for the sha256 hash in the GCS object metadata.
-	hashMetadataKey = "sha256-hash"
-	overrideFolder  = "osv-output-overrides" // location of overrides within bucket
+	hashMetadataKey   = "sha256-hash"
+	overrideFolder    = "osv-output-overrides" // location of overrides within bucket
+	parallelStartYear = 2018
 )
 
 // ErrUploadSkipped indicates that an upload was intentionally skipped because
@@ -309,7 +310,12 @@ func UploadVulnsToGCS(
 
 func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutputPath string, validVulnIDs []string) {
 	// Check if any need to be deleted
-	bucketObjects, err := gcs.ListBucketObjects(ctx, outBkt, osvOutputPath)
+	currentYear := time.Now().Year()
+	var breakdowns []string
+	for year := parallelStartYear; year <= currentYear; year++ {
+		breakdowns = append(breakdowns, fmt.Sprintf("CVE-%d-", year))
+	}
+	bucketObjects, err := gcs.ListObjectsFast(ctx, outBkt, osvOutputPath, breakdowns)
 	if err != nil {
 		logger.Error("Failed to list bucket objects for deletion check, skipping deletion.", slog.Any("err", err))
 		return

@@ -24,7 +24,7 @@ All vulnerability data is stored in [Cloud Datastore], with the [models] defined
 
 [Cloud Datastore]: https://cloud.google.com/datastore
 [models]: https://googleapis.dev/python/python-ndb/latest/index.html#defining-entities-keys-and-properties
-[here]: https://github.com/google/osv/blob/master/osv/models.py
+[here]: https://github.com/google/osv.dev/blob/master/osv/models.py
 
 ## Google Kubernetes Engine (GKE)
 
@@ -35,7 +35,7 @@ Workers are Docker containers, which use [gVisor] for sandboxing untrusted
 workloads.
 
 [GKE]: https://cloud.google.com/kubernetes-engine
-[workers]: https://github.com/google/osv/tree/master/gcp/workers
+[workers]: https://github.com/google/osv.dev/tree/master/gcp/workers
 [gVisor]: https://gvisor.dev/
 [Cloud Pub/Sub]: https://cloud.google.com/pubsub
 
@@ -43,7 +43,7 @@ workloads.
 
 The [API server] runs on [Cloud Run], and is served by [Cloud Endpoints].
 
-[API server]: https://github.com/google/osv/tree/master/gcp/api
+[API server]: https://github.com/google/osv.dev/tree/master/go/cmd/api
 [Cloud Run]: https://cloud.google.com/run
 [Cloud Endpoints]: https://cloud.google.com/endpoints
 

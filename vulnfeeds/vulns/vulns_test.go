@@ -1,7 +1,6 @@
 package vulns
 
 import (
-	"cmp"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,11 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"slices"
-
 	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -28,7 +25,7 @@ func TestClassifyReferenceLink(t *testing.T) {
 		refType osvschema.Reference_Type
 	}{
 		{"https://example.com", "", osvschema.Reference_WEB},
-		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", osvschema.Reference_FIX},
+		{"https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", osvschema.Reference_FIX},
 		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "", osvschema.Reference_ADVISORY},
 		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "", osvschema.Reference_ADVISORY},
 		{"https://github.com/Netflix/lemur/issues/117", "", osvschema.Reference_REPORT},
@@ -248,16 +245,6 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
-	testPkgInfoCommits := PackageInfo{
-		VersionInfo: models.VersionInfo{
-			AffectedCommits: []models.AffectedCommit{
-				{
-					Fixed: "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
-					Repo:  "github.com/foo/bar",
-				},
-			},
-		},
-	}
 	testPkgInfoHybrid := PackageInfo{
 		PkgName:   "apackage",
 		Ecosystem: "Debian",
@@ -266,35 +253,6 @@ func TestAddPkgInfo(t *testing.T) {
 			AffectedVersions: []models.AffectedVersion{
 				{
 					Fixed: "1.2.3-4",
-				},
-			},
-			AffectedCommits: []models.AffectedCommit{
-				{
-					Fixed: "0xdeadbeef",
-					Repo:  "github.com/foo/bar",
-				},
-				{
-					Fixed: "0xdeadbeef",
-					Repo:  "github.com/baz/quux",
-				},
-			},
-		},
-	}
-	testPkgInfoCommitsMultiple := PackageInfo{
-		VersionInfo: models.VersionInfo{
-			AffectedCommits: []models.AffectedCommit{
-				{
-					Introduced: "0xdeadbeef",
-					Fixed:      "dsafwefwfe370a9e65d68d62ef37345597e4100b0e87021dfb",
-					Repo:       "github.com/foo/bar",
-				},
-				{
-					Fixed: "658fe213",
-					Repo:  "github.com/foo/bar",
-				},
-				{
-					LastAffected: "0xdeadf00d",
-					Repo:         "github.com/foo/baz",
 				},
 			},
 		},
@@ -311,12 +269,10 @@ func TestAddPkgInfo(t *testing.T) {
 			},
 		},
 	}
-	vuln.AddPkgInfo(testPkgInfoNameEco)         // This will end up in vuln.Affected[0]
-	vuln.AddPkgInfo(testPkgInfoPURL)            // This will end up in vuln.Affected[1]
-	vuln.AddPkgInfo(testPkgInfoCommits)         // This will end up in vuln.Affected[2]
-	vuln.AddPkgInfo(testPkgInfoHybrid)          // This will end up in vuln.Affected[3]
-	vuln.AddPkgInfo(testPkgInfoCommitsMultiple) // This will end up in vuln.Affected[4]
-	vuln.AddPkgInfo(testPkgInfoEcoMultiple)     // This will end up in vuln.Affected[5]
+	vuln.AddPkgInfo(testPkgInfoNameEco)     // This will end up in vuln.Affected[0]
+	vuln.AddPkgInfo(testPkgInfoPURL)        // This will end up in vuln.Affected[1]
+	vuln.AddPkgInfo(testPkgInfoHybrid)      // This will end up in vuln.Affected[2]
+	vuln.AddPkgInfo(testPkgInfoEcoMultiple) // This will end up in vuln.Affected[3]
 
 	t.Logf("Resulting vuln: %+v", &vuln)
 
@@ -354,42 +310,11 @@ func TestAddPkgInfo(t *testing.T) {
 	}
 	// testPkgInfoPURL ^^^^^^^^^^^^^^^
 
-	// testPkgInfoCommits vvvvvvvvvvvvvv
-	if vuln.Affected[2].GetRanges()[0].GetRepo() != "github.com/foo/bar" {
-		t.Errorf("AddPkgInfo has not corrected add ranges repo. %#v", vuln.Affected[2])
-	}
-
-	if vuln.Affected[2].GetRanges()[0].GetType() != osvschema.Range_GIT {
-		t.Errorf("AddPkgInfo has not correctly added ranges type.")
-	}
-	if vuln.Affected[2].GetRanges()[0].GetEvents()[1].GetFixed() != testPkgInfoCommits.VersionInfo.AffectedCommits[0].Fixed {
-		t.Errorf("AddPkgInfo has not correctly added ranges fixed.")
-	}
-	if vuln.Affected[2].GetPackage() != nil {
-		t.Errorf("AddPkgInfo has not correctly avoided setting a package field for an ecosystem-less vulnerability.")
-	}
-	if !slices.IsSortedFunc(vuln.Affected[3].GetRanges(), func(a, b *osvschema.Range) int {
-		if n := cmp.Compare(a.GetType(), b.GetType()); n != 0 {
-			return n
-		}
-
-		return cmp.Compare(a.GetRepo(), b.GetRepo())
-	}) {
-		t.Errorf("AddPkgInfo has not generated a correctly sorted range.")
-	}
-	// testPkgInfoCommits ^^^^^^^^^^^^^^^
-
-	// testPkgInfoCommitsMultiple vvvvvvvvvvvvv
-	if len(vuln.Affected[4].GetRanges()[0].GetEvents()) != 3 {
-		t.Errorf("AddPkgInfo has not correctly added distinct range events from commits: %+v", vuln.Affected[4].GetRanges())
-	}
-	// testPkgInfoCommitsMultiple ^^^^^^^^^^^^^
-
 	// testPkgInfoEcoMultiple vvvvvvvvvvvvv
-	if len(vuln.Affected[5].GetRanges()[0].GetEvents()) != 2 {
-		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[5].GetRanges())
+	if len(vuln.Affected[2].GetRanges()[0].GetEvents()) != 2 {
+		t.Errorf("AddPkgInfo has not correctly added distinct range events from versions: %+v", vuln.Affected[3].GetRanges())
 	}
-	// testPkgInfoEcoMultiple ^^^^^^^^^^^^^
+	// testPkgInfoEcoMultiple ^^^^^^^^^^^^
 
 	for _, a := range vuln.Affected {
 		perRepoZeroIntroducedCommitHashCount := make(map[string]int)
@@ -755,5 +680,144 @@ func TestToYAMLFromYAMLRoundTripLastAffected(t *testing.T) {
 	}
 	if !lastAffectedSeen {
 		t.Errorf("last_affected '2.12.1' did not survive the YAML round-trip; events=%v", events)
+	}
+}
+
+func TestAddPkgInfo_MergeAffected(t *testing.T) {
+	vuln := &Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: "TEST-VULN",
+		},
+	}
+
+	// 1. Add PackageA in EcosystemA
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageA",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "1.1.0"},
+			},
+		},
+	})
+
+	// 2. Add PackageA in EcosystemA again with different version
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageA",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "2.1.0"},
+			},
+		},
+	})
+
+	// 3. Add PackageB in EcosystemA
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageB",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Introduced: "1.0.0", Fixed: "1.1.0"},
+			},
+		},
+	})
+
+	// 4. Add PackageB in EcosystemA again with no introduced
+	vuln.AddPkgInfo(PackageInfo{
+		PkgName:   "PackageB",
+		Ecosystem: "EcosystemA",
+		VersionInfo: models.VersionInfo{
+			AffectedVersions: []models.AffectedVersion{
+				{Fixed: "2.1.0"},
+			},
+		},
+	})
+
+	if len(vuln.Affected) != 2 {
+		t.Fatalf("Expected 2 affected entries, got %d", len(vuln.Affected))
+	}
+
+	expectedEvents := []struct {
+		Introduced string
+		Fixed      string
+	}{
+		{Introduced: "1.0.0"},
+		{Fixed: "1.1.0"},
+		{Fixed: "2.1.0"},
+	}
+
+	// Find and verify PackageA
+	var pkgA *osvschema.Affected
+	for _, a := range vuln.Affected {
+		if a.GetPackage().GetName() == "PackageA" && a.GetPackage().GetEcosystem() == "EcosystemA" {
+			pkgA = a
+			break
+		}
+	}
+
+	if pkgA == nil {
+		t.Fatalf("Could not find PackageA in EcosystemA")
+	}
+
+	// Check ranges for PackageA
+	if len(pkgA.GetRanges()) != 1 {
+		t.Fatalf("Expected 1 range for PackageA, got %d", len(pkgA.GetRanges()))
+	}
+
+	rA := pkgA.GetRanges()[0]
+	if rA.GetType() != osvschema.Range_ECOSYSTEM {
+		t.Errorf("Expected range type ECOSYSTEM for PackageA, got %v", rA.GetType())
+	}
+
+	if len(rA.GetEvents()) != 3 {
+		t.Errorf("Expected 3 events for PackageA, got %d", len(rA.GetEvents()))
+	}
+
+	for i, e := range rA.GetEvents() {
+		if i >= len(expectedEvents) {
+			t.Errorf("Unexpected event at index %d for PackageA: %+v", i, e)
+			continue
+		}
+		if expectedEvents[i].Introduced != e.GetIntroduced() || expectedEvents[i].Fixed != e.GetFixed() {
+			t.Errorf("Event at index %d mismatch for PackageA: got %+v, want %+v", i, e, expectedEvents[i])
+		}
+	}
+
+	// Find and verify PackageB
+	var pkgB *osvschema.Affected
+	for _, a := range vuln.Affected {
+		if a.GetPackage().GetName() == "PackageB" && a.GetPackage().GetEcosystem() == "EcosystemA" {
+			pkgB = a
+			break
+		}
+	}
+
+	if pkgB == nil {
+		t.Fatalf("Could not find PackageB in EcosystemA")
+	}
+
+	// Check ranges for PackageB
+	if len(pkgB.GetRanges()) != 1 {
+		t.Fatalf("Expected 1 range for PackageB, got %d", len(pkgB.GetRanges()))
+	}
+
+	rB := pkgB.GetRanges()[0]
+	if rB.GetType() != osvschema.Range_ECOSYSTEM {
+		t.Errorf("Expected range type ECOSYSTEM for PackageB, got %v", rB.GetType())
+	}
+
+	if len(rB.GetEvents()) != 3 {
+		t.Errorf("Expected 3 events for PackageB, got %d", len(rB.GetEvents()))
+	}
+
+	for i, e := range rB.GetEvents() {
+		if i >= len(expectedEvents) {
+			t.Errorf("Unexpected event at index %d for PackageB: %+v", i, e)
+			continue
+		}
+		if expectedEvents[i].Introduced != e.GetIntroduced() || expectedEvents[i].Fixed != e.GetFixed() {
+			t.Errorf("Event at index %d mismatch for PackageB: got %+v, want %+v", i, e, expectedEvents[i])
+		}
 	}
 }

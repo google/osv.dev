@@ -67,13 +67,11 @@ func init() {
 	registerSimple(osvconstants.EcosystemBitnami, "bitnami", "", nil)
 	registerSimple(osvconstants.EcosystemCRAN, "cran", "", nil)
 	registerSimple(osvconstants.EcosystemConanCenter, "conan", "", nil)
-	registerSimple(osvconstants.EcosystemDockerHardenedImages, "dhi", "", nil)
 	registerSimple(osvconstants.EcosystemHackage, "hackage", "", nil)
 	registerSlash(osvconstants.EcosystemHex, "hex")
 	registerSimple(osvconstants.EcosystemJulia, "julia", "", nil)
 	registerSimple(osvconstants.EcosystemNuGet, "nuget", "", nil)
 	registerSimple(osvconstants.EcosystemOSSFuzz, "generic", "", nil)
-	registerSlash(osvconstants.EcosystemPackagist, "composer")
 	registerSimple(osvconstants.EcosystemPub, "pub", "", nil)
 	registerSimple(osvconstants.EcosystemPyPI, "pypi", "", nil)
 	registerSimple(osvconstants.EcosystemRubyGems, "gem", "", nil)
@@ -103,4 +101,14 @@ func init() {
 	registerSimple(osvconstants.EcosystemAlpaquita, "apk", "alpaquita", sourceArchQualifiers)
 	registerSimple(osvconstants.EcosystemAlpine, "apk", "alpine", sourceArchQualifiers)
 	registerSimple(osvconstants.EcosystemBellSoftHardenedContainers, "apk", "bellsoft-hardened-containers", sourceArchQualifiers)
+
+	// Docker Hardened Images
+	registerSimple(osvconstants.EcosystemDockerHardenedImages, "dhi", "", nil)
+	// DHI advisories also publish release-lineage PURLs -- pkg:apk/dhi/<name>
+	// for the Alpine lineage and pkg:deb/dhi/<name> for Debian -- so map both
+	// back to the ecosystem for PURL queries. Generation stays pkg:dhi/ (the
+	// registerSimple above); the dhi namespace disambiguates from Alpine
+	// (apk/alpine) and Debian (deb/debian), so there is no parser collision.
+	registerParser("apk", "dhi", simpleParser{ecosystem: osvconstants.EcosystemDockerHardenedImages})
+	registerParser("deb", "dhi", simpleParser{ecosystem: osvconstants.EcosystemDockerHardenedImages})
 }

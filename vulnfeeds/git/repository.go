@@ -41,7 +41,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/redis/go-redis/v9"
 	"github.com/sethvargo/go-retry"
 )
@@ -52,7 +52,8 @@ const (
 
 var ErrRateLimit = errors.New("rate limit exceeded")
 
-// IsRateLimit checks if the error represents an HTTP 429 Rate Limit / Too Many Requests error.
+// IsRateLimit checks if the error represents an HTTP 429 Rate Limit / Too Many Requests error
+// or a transient server error (5xx).
 func IsRateLimit(err error) bool {
 	if err == nil {
 		return false
@@ -60,6 +61,14 @@ func IsRateLimit(err error) bool {
 	if errors.Is(err, ErrRateLimit) {
 		return true
 	}
+
+	var gitterErr *GitterError
+	if errors.As(err, &gitterErr) {
+		if gitterErr.StatusCode == http.StatusTooManyRequests || (gitterErr.StatusCode >= 500 && gitterErr.StatusCode < 600) {
+			return true
+		}
+	}
+
 	errStr := err.Error()
 
 	return strings.Contains(errStr, "status code 429") ||
@@ -70,7 +79,15 @@ func IsRateLimit(err error) bool {
 		strings.Contains(errStr, "code: 429") ||
 		strings.Contains(errStr, "status: 429") ||
 		strings.Contains(errStr, "HTTP 429") ||
-		strings.Contains(errStr, "http: 429")
+		strings.Contains(errStr, "http: 429") ||
+		strings.Contains(errStr, "status code 500") ||
+		strings.Contains(errStr, "status code 502") ||
+		strings.Contains(errStr, "status code 503") ||
+		strings.Contains(errStr, "status code 504") ||
+		strings.Contains(errStr, "status 500") ||
+		strings.Contains(errStr, "status 502") ||
+		strings.Contains(errStr, "status 503") ||
+		strings.Contains(errStr, "status 504")
 }
 
 // A GitTag holds a Git tag and corresponding commit hash.
@@ -191,11 +208,16 @@ func (c *RedisRepoTagsCache) Get(repo string) (RepoTagsMap, bool) {
 	key := "repo_tags:" + repo
 	val, err := c.redisClient.Get(ctx, key).Result()
 	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
+		}
+
 		return RepoTagsMap{}, false
 	}
 
 	var tags RepoTagsMap
 	if err := json.Unmarshal([]byte(val), &tags); err != nil {
+		logger.Warn("Failed to unmarshal tags from Redis", slog.String("key", key), slog.Any("error", err))
 		return RepoTagsMap{}, false
 	}
 
@@ -209,11 +231,14 @@ func (c *RedisRepoTagsCache) Set(repo string, tags RepoTagsMap) {
 	key := "repo_tags:" + repo
 	val, err := json.Marshal(tags)
 	if err != nil {
+		logger.Warn("Failed to marshal tags for Redis", slog.String("key", key), slog.Any("error", err))
 		return
 	}
 
 	ttl := randomTTL()
-	c.redisClient.Set(ctx, key, val, ttl)
+	if err := c.redisClient.Set(ctx, key, val, ttl).Err(); err != nil {
+		logger.Warn("Redis Set failed", slog.String("key", key), slog.Any("error", err))
+	}
 }
 
 func (c *RedisRepoTagsCache) SetInvalid(repo string) {
@@ -225,7 +250,9 @@ func (c *RedisRepoTagsCache) SetInvalidWithTTL(repo string, ttl time.Duration) {
 	defer cancel()
 
 	key := "invalid_repo:" + repo
-	c.redisClient.Set(ctx, key, "true", ttl)
+	if err := c.redisClient.Set(ctx, key, "true", ttl).Err(); err != nil {
+		logger.Warn("Redis Set failed", slog.String("key", key), slog.Any("error", err))
+	}
 }
 
 func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
@@ -235,6 +262,10 @@ func (c *RedisRepoTagsCache) IsInvalid(repo string) bool {
 	key := "invalid_repo:" + repo
 	val, err := c.redisClient.Get(ctx, key).Result()
 	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
+		}
+
 		return false
 	}
 
@@ -247,7 +278,9 @@ func (c *RedisRepoTagsCache) SetCanonicalLink(repo string, canonicalLink string)
 
 	key := "canonical_link:" + repo
 	ttl := randomTTL()
-	c.redisClient.Set(ctx, key, canonicalLink, ttl)
+	if err := c.redisClient.Set(ctx, key, canonicalLink, ttl).Err(); err != nil {
+		logger.Warn("Redis Set failed", slog.String("key", key), slog.Any("error", err))
+	}
 }
 
 func (c *RedisRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
@@ -257,6 +290,10 @@ func (c *RedisRepoTagsCache) GetCanonicalLink(repo string) (string, bool) {
 	key := "canonical_link:" + repo
 	val, err := c.redisClient.Get(ctx, key).Result()
 	if err != nil {
+		if !errors.Is(err, redis.Nil) {
+			logger.Warn("Redis Get failed", slog.String("key", key), slog.Any("error", err))
+		}
+
 		return "", false
 	}
 
@@ -348,19 +385,25 @@ func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read gitter response: %w", err)
+	}
+
 	if resp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		logger.Warn("Gitter request failed", slog.Int("status", resp.StatusCode), slog.String("body", string(bodyBytes)), slog.String("repo", repoURL))
 		return nil, &GitterError{
 			StatusCode: resp.StatusCode,
-			Body:       string(body),
+			Body:       string(bodyBytes),
 		}
 	}
 
 	var tagsResp GitterTagsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tagsResp); err != nil {
+	if err := json.Unmarshal(bodyBytes, &tagsResp); err != nil {
+		logger.Warn("Failed to decode Gitter response", slog.String("body", string(bodyBytes)), slog.String("repo", repoURL), slog.Any("error", err))
 		return nil, fmt.Errorf("failed to decode gitter response: %w", err)
 	}
 

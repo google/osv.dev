@@ -50,7 +50,7 @@ variable "pubsub_topic_failed_tasks_name" {
 variable "pubsub_subscription_default_work_pool_name" {
   type        = string
   description = "The name of the default work pool Pub/Sub subscription."
-  default     = "default-pool"
+  default     = "default"
 }
 
 variable "pubsub_subscription_recovery_name" {

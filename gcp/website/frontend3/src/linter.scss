@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "backtick-override";
+  src: local("Arial");
+  unicode-range: U+0060;
+}
+
 :root {
   --osv-background: #292929;
   --osv-text-color: #fff;
@@ -6,9 +12,10 @@
   --osv-grey-800: #3c4043;
   --osv-surface-color: #333;
   --osv-border-color: #555;
-  --osv-body-font-family: "Overpass", sans-serif;
+  --osv-body-font-family: "backtick-override", "Overpass", sans-serif;
   --osv-heading-font-family: "Overpass Mono", monospace;
   --osv-border-radius-small: 4px;
+  --osv-red-300: #f23835;
 }
 
 /** Reset */
@@ -428,6 +435,31 @@ tr:hover {
   border-radius: 4px;
 }
 
+.json-container {
+  background-color: var(--osv-surface-color);
+  padding: 15px;
+  border-radius: 4px;
+  overflow-y: auto;
+  color: var(--osv-text-color);
+  flex-grow: 1;
+  font-family: var(--osv-heading-font-family);
+  font-size: 14px;
+}
+
+.json-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.json-container::-webkit-scrollbar-track {
+  background: var(--osv-surface-color);
+}
+
+.json-container::-webkit-scrollbar-thumb {
+  background-color: var(--osv-grey-800);
+  border-radius: 4px;
+}
+
+
 .close-tab {
   margin-left: 8px;
   cursor: pointer;
@@ -492,3 +524,139 @@ tr.clickable {
 .findings-table tr:hover {
   background-color: var(--osv-grey-800);
 }
+
+
+
+/* ==========================================================================
+   Details Tab Header & Copy Button
+   ========================================================================== */
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  min-height: 26px; /* Ensures uniform header height across grid columns */
+
+  h2 {
+    margin-bottom: 0;
+  }
+}
+
+.copy-button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--osv-border-radius-small);
+  border: 1px solid var(--osv-border-color);
+  background-color: var(--osv-surface-color);
+  color: var(--osv-text-color);
+  transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: var(--osv-grey-800);
+  }
+
+  .material-icons {
+    font-size: 16px;
+  }
+}
+
+/* ==========================================================================
+   Linter Findings Table
+   ========================================================================== */
+
+.clickable-finding-row {
+  cursor: pointer;
+
+  &:hover {
+    .action-cell {
+      color: var(--osv-red-300);
+    }
+  }
+}
+
+.findings-table th:last-child {
+  width: 60px;
+}
+
+.action-cell {
+  vertical-align: middle !important;
+  text-align: center;
+  color: var(--osv-grey-600);
+  transition: color 0.2s ease-in-out;
+
+  .material-icons {
+    font-size: 18px;
+    display: block;
+  }
+}
+
+/* ==========================================================================
+   Interactive Custom JSON Tree Viewer
+   ========================================================================== */
+
+.custom-json-node {
+  font-family: var(--osv-heading-font-family);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--osv-text-color);
+  display: inline; /* Keeps JSON values on the same line as their key span */
+
+  /* Primitive Data Type Syntax Highlighting */
+  .json-value-null { color: var(--osv-grey-600); font-weight: bold; }
+  .json-value-boolean { color: #f48fb1; font-weight: bold; }
+  .json-value-number { color: #81d4fa; }
+  .json-value-string { color: #c5e1a5; white-space: pre-wrap; word-break: break-all; }
+  .json-bracket { color: var(--osv-grey-600); font-weight: bold; }
+
+  /* Interactive Expand / Collapse Toggle Span */
+  .json-toggle {
+    cursor: pointer;
+    color: var(--osv-grey-600);
+    font-weight: bold;
+    user-select: none;
+    display: inline-block;
+    padding: 0 4px;
+    transition: color 0.2s ease-in-out;
+
+    &:hover { color: #fff; }
+  }
+
+  /* Indented Child Container with Left Dotted Alignment Line */
+  .json-children {
+    padding-left: 20px;
+    border-left: 1px dotted var(--osv-border-color);
+    margin-left: 6px;
+  }
+
+  /* Key-Value Row Item */
+  .json-row {
+    margin: 2px 0;
+    padding: 2px 4px;
+    border-radius: var(--osv-border-radius-small);
+    border-left: 3px solid transparent;
+    transition: background-color 0.2s ease-in-out, border-left-color 0.2s ease-in-out;
+  }
+
+  /* JSON Property Key & Array Index Styling */
+  .json-key {
+    color: #90caf9;
+    margin-right: 4px;
+    &.array-index {
+      color: var(--osv-grey-600);
+    }
+  }
+
+  /* Highlighted JSON Row (Triggered by Clicking a Linter Finding) */
+  .json-row.json-highlighted {
+    background-color: rgba(255, 193, 7, 0.15); /* Soft amber background tint */
+    border-left-color: #ffc107;                 /* Solid amber indicator bar */
+
+    > .json-key { color: #ffca28; }
+    > .custom-json-node > .json-value-string { color: #d4e157; }
+  }
+}
+

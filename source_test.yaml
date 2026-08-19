@@ -125,7 +125,7 @@
 
 - name: 'chainguard'
   versions_from_repo: False
-  rest_api_url: 'https://packages.cgr.dev/chainguard/osv/all.json'
+  rest_api_url: 'https://advisories.cgr.dev/chainguard/v3/osv/all.json'
   type: 2
   ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
   directory_path: 'chainguard/osv'
@@ -134,7 +134,7 @@
   db_prefix: ['CGA-']
   accepted_ecosystems: ['Chainguard', 'Wolfi']
   ignore_git: True
-  link: 'https://packages.cgr.dev/chainguard/osv/'
+  link: 'https://advisories.cgr.dev/chainguard/v3/osv/'
   human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
   editable: False
   strict_validation: True
@@ -247,6 +247,22 @@
   ignore_git: True
   human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
+  editable: False
+  strict_validation: True
+
+- name: 'dhi'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!DHI-).*$']
+  directory_path: 'osv'
+  repo_url: 'https://github.com/docker-hardened-images/advisories-test.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DHI-']
+  accepted_ecosystems: ['Docker Hardened Images']
+  ignore_git: True
+  human_link: 'https://scout.docker.com/v/{{ BUG_ID }}'
+  link: 'https://github.com/docker-hardened-images/advisories-test/blob/main/'
   editable: False
   strict_validation: True
 

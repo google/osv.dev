@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/internal/testutils"
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
+	"github.com/google/osv.dev/vulnfeeds/models"
 )
 
 func loadTestData2(cveName string) models.Vulnerability {
@@ -508,7 +508,7 @@ func TestExtractGitCommit(t *testing.T) {
 	}{
 		{
 			description:     "Valid GitHub commit URL",
-			inputLink:       "https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+			inputLink:       "https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
 				Repo:  "https://github.com/google/osv.dev",
@@ -604,7 +604,7 @@ func TestExtractGitCommit(t *testing.T) {
 		},
 		{
 			description:            "Unsupported GitHub PR URL",
-			inputLink:              "https://github.com/google/osv/pull/123",
+			inputLink:              "https://github.com/google/osv.dev/pull/123",
 			inputCommitType:        models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{},
 			expectFailure:          true,

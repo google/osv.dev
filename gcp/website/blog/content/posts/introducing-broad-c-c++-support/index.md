@@ -35,11 +35,13 @@ Matching C/C++ dependencies to known vulnerabilities has been one of the final p
 
 Submoduled dependencies retain their Git histories. [OSV-Scanner](https://google.github.io/osv-scanner/) [v1.4.3](https://github.com/google/osv-scanner/releases/tag/v1.4.3) is able to determine the most recent Git commits for the submoduled dependencies and return any associated vulnerabilities. 
 
+<!-- markdown-link-check-disable -->
 For example, let’s consider the archived [yuzu](https://github.com/yuzu-emu-mirror/yuzu) project repository and see if we can find any vulnerabilities in the project dependencies. We’ll be working from commit `43be2bfe332d5537041262eb08037993239eaf5f` for this example. 
 
 Follow these steps:
 
 1. Clone the yuzu project to your local machine using `git clone --recursive https://github.com/yuzu-emu-mirror/yuzu`.
+<!-- markdown-link-check-enable -->
 2. Checkout the relevant commit using `git -C yuzu checkout 43be2bfe332d5537041262eb08037993239eaf5f`
 3. Run `osv-scanner yuzu`
 

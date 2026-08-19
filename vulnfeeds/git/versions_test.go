@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/internal/testutils"
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
+	"github.com/google/osv.dev/vulnfeeds/models"
 )
 
 func TestVersionToAffectedCommit(t *testing.T) {

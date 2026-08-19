@@ -25,9 +25,9 @@ It is structured as a multi-language monorepo:
 ### OSV Schema Reference
 Vulnerabilities across the entire system conform to the **Open Source Vulnerability (OSV) schema**.
 When AI agents need to understand the exact format, fields, and semantics of vulnerability records, refer to the local `osv-schema` submodule:
-- **Full Specification**: [`osv/osv-schema/docs/schema.md`](osv/osv-schema/docs/schema.md)
-- **Protobuf Definition**: [`osv/osv-schema/proto/vulnerability.proto`](osv/osv-schema/proto/vulnerability.proto)
-- **JSON Schema**: [`osv/osv-schema/validation/schema.json`](osv/osv-schema/validation/schema.json)
+- **Full Specification**: [`osv/osv-schema/docs/schema.md`](https://github.com/ossf/osv-schema/blob/main/docs/schema.md)
+- **Protobuf Definition**: [`osv/osv-schema/proto/vulnerability.proto`](https://github.com/ossf/osv-schema/blob/main/proto/vulnerability.proto)
+- **JSON Schema**: [`osv/osv-schema/validation/schema.json`](https://github.com/ossf/osv-schema/blob/main/validation/schema.json)
 
 ---
 
@@ -250,7 +250,7 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Status**: **Active (Go)**.
 - Serves the public OSV gRPC API server (transcoded to HTTP/JSON REST via ESPv2).
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
-- *Note*: Fully migrated from Python to Go. The legacy Python implementation remains in `gcp/api/` but is retired.
+- *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
 ### 2. Website (`gcp/website/`)
 - **Status**: **Active**.

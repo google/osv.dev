@@ -38,7 +38,7 @@ type ecosystemWorker struct {
 
 // newEcosystemWorker creates and starts a new ecosystemWorker.
 func newEcosystemWorker(ctx context.Context, ecosystem string, outCh chan<- writeMsg, wg *sync.WaitGroup) *ecosystemWorker {
-	ch := make(chan *osvschema.Vulnerability)
+	ch := make(chan *osvschema.Vulnerability, 100)
 	worker := &ecosystemWorker{
 		ecosystem: ecosystem,
 		inCh:      ch,
@@ -65,24 +65,11 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	defer span.End()
 
 	logger.InfoContext(ctx, "new ecosystem worker started", slog.String("ecosystem", w.ecosystem))
-	var allVulns []vulnData
-	var csvData [][]string
+	// 500 size is around the minimum each ecosystem would need, most ecosystems are much bigger.
+	allVulns := make([]vulnData, 0, 500)
+	csvData := make([][]string, 0, 500)
 	var vanirVulns []vulnData
-WorkLoop:
-	for {
-		var v *osvschema.Vulnerability
-		var ok bool
-
-		// Wait to receive a vulnerability, or be cancelled.
-		select {
-		case <-ctx.Done():
-			logger.WarnContext(ctx, "ecosystem worker cancelled", slog.String("ecosystem", w.ecosystem), slog.Any("err", ctx.Err()))
-			return
-		case v, ok = <-w.inCh:
-			if !ok {
-				break WorkLoop
-			}
-		}
+	for v := range w.inCh {
 		// Process vulnerability.
 		b, err := marshalToJSON(v)
 		if err != nil {
@@ -114,6 +101,10 @@ WorkLoop:
 		}
 	}
 
+	if ctx.Err() != nil {
+		return
+	}
+
 	logger.InfoContext(ctx, "All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
 	writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
 	writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh)
@@ -143,7 +134,7 @@ type allEcosystemWorker struct {
 
 // newAllEcosystemWorker creates and starts a new allEcosystemWorker.
 func newAllEcosystemWorker(ctx context.Context, outCh chan<- writeMsg, wg *sync.WaitGroup) *allEcosystemWorker {
-	ch := make(chan vulnAndEcos)
+	ch := make(chan vulnAndEcos, 100)
 	worker := &allEcosystemWorker{
 		inCh: ch,
 	}
@@ -161,32 +152,31 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 	defer span.End()
 
 	logger.InfoContext(ctx, "all-ecosystem worker started")
-	var allVulns []vulnData
-	var csvData [][]string
+	// We have currently about 1.8 million entries, so start at 100k
+	allVulns := make([]vulnData, 0, 100000)
+	csvData := make([][]string, 0, 100000)
 	ecosystems := make(map[string]struct{})
-WorkLoop:
-	for {
-		select {
-		case <-ctx.Done():
-			logger.WarnContext(ctx, "all-ecosystem worker cancelled", slog.Any("err", ctx.Err()))
-			return
-		case v, ok := <-w.inCh:
-			if !ok {
-				break WorkLoop
-			}
-			b, err := marshalToJSON(v.Vulnerability)
-			if err != nil {
-				logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
-				continue
-			}
-			modified := v.GetModified().AsTime()
-			allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
-			for _, e := range v.ecosystems {
-				ecosystems[e] = struct{}{}
-				csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), e + "/" + v.GetId()})
+	for v := range w.inCh {
+		b, err := marshalToJSON(v.Vulnerability)
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", v.GetId()), slog.Any("err", err))
+			continue
+		}
+		modified := v.GetModified().AsTime()
+		allVulns = append(allVulns, vulnData{id: v.GetId(), modified: modified, data: b})
+		for _, e := range v.ecosystems {
+			ecosystems[e] = struct{}{}
+			csvData = append(csvData, []string{modified.Format(time.RFC3339Nano), e + "/" + v.GetId()})
+			if len(csvData)%10000 == 0 {
+				logger.InfoContext(ctx, "processed N vulnerabilities", slog.Int("n", len(csvData)))
 			}
 		}
 	}
+
+	if ctx.Err() != nil {
+		return
+	}
+
 	writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)
 	writeZIP(ctx, allZipFilename, allVulns, outCh)
 	ecos := slices.Collect(maps.Keys(ecosystems))

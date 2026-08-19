@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -38,13 +38,14 @@ func sortAffected(affected []*osvschema.Affected) {
 	})
 }
 
-func loadTestData(t *testing.T, cveName string) models.Vulnerability {
+func loadTestMetadata(t *testing.T, cveName string) vulns.VulnerabilityMetadata {
 	t.Helper()
 	fileName := fmt.Sprintf("../../../test_data/nvdcve-2.0/%s.json", cveName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		t.Fatalf("Failed to load test data from %q: %#v", fileName, err)
 	}
+	defer file.Close()
 	var nvdCves models.CVEAPIJSON20Schema
 	err = json.NewDecoder(file).Decode(&nvdCves)
 	if err != nil {
@@ -52,12 +53,16 @@ func loadTestData(t *testing.T, cveName string) models.Vulnerability {
 	}
 	for _, vulnerability := range nvdCves.Vulnerabilities {
 		if string(vulnerability.CVE.ID) == cveName {
-			return vulnerability
+			return vulns.VulnerabilityMetadata{
+				Published: vulnerability.CVE.Published.Time,
+				Modified:  vulnerability.CVE.LastModified.Time,
+				Metrics:   vulnerability.CVE.Metrics,
+			}
 		}
 	}
 	t.Fatalf("test data doesn't contain %q", cveName)
 
-	return models.Vulnerability{}
+	return vulns.VulnerabilityMetadata{}
 }
 
 func TestGenerateOSVFromDebianTracker(t *testing.T) {
@@ -77,10 +82,10 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 		"bookworm": "12",
 		"trixie":   "13",
 	}
-	cveStuff := map[models.CVEID]models.Vulnerability{
-		"CVE-2014-1424": loadTestData(t, "CVE-2014-1424"),
-		"CVE-2017-6507": loadTestData(t, "CVE-2017-6507"),
-		"CVE-2016-1585": loadTestData(t, "CVE-2016-1585"),
+	cveStuff := map[models.CVEID]vulns.VulnerabilityMetadata{
+		"CVE-2014-1424": loadTestMetadata(t, "CVE-2014-1424"),
+		"CVE-2017-6507": loadTestMetadata(t, "CVE-2017-6507"),
+		"CVE-2016-1585": loadTestMetadata(t, "CVE-2016-1585"),
 	}
 	got := generateOSVFromDebianTracker(trackerData, releaseMap, cveStuff)
 

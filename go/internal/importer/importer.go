@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
@@ -50,11 +51,13 @@ type Config struct {
 	GCSProvider        clients.CloudStorageProvider
 	HTTPClient         *http.Client
 	GitWorkDir         string
+	GitterClient       gitter.Client
 
-	StrictValidation bool
-	DeleteThreshold  float64
-	SampleRate       float64
-	DryRun           bool
+	StrictValidation       bool
+	DeleteThreshold        float64
+	SampleRate             float64
+	DryRun                 bool
+	MaxCowardEntriesToShow int
 }
 
 type RetryableHTTPLeveledLogger struct{}
@@ -177,6 +180,15 @@ var reconcileSkipSources = []string{
 	"root",
 	// cve-osv is in a state of flux at the moment, let's wait a bit
 	"cve-osv",
+}
+
+// reconcileWarningAsInfoSources is a list of source names to log as INFO instead of WARNING during reconciliation.
+var reconcileWarningAsInfoSources = []string{
+	"minimos",
+}
+
+func reconcileWarningsAsInfo(source string) bool {
+	return slices.Contains(reconcileWarningAsInfoSources, source)
 }
 
 // ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
@@ -325,9 +337,15 @@ func checkReconcile(
 
 	dbMod, exists := dbRecords[path]
 	if !exists {
-		logger.WarnContext(ctx, "Found missing vulnerability in database during reconcile",
-			slog.String("source", recordTemplate.SourceRepository),
-			slog.String("path", path))
+		if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
+			logger.InfoContext(ctx, "Found missing vulnerability in database during reconcile",
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+		} else {
+			logger.WarnContext(ctx, "Found missing vulnerability in database during reconcile",
+				slog.String("source", recordTemplate.SourceRepository),
+				slog.String("path", path))
+		}
 		// Trigger a standard import
 		recordTemplate.Action = ActionImport
 		select {
@@ -351,11 +369,19 @@ func checkReconcile(
 		}
 
 		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
-			logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
-				slog.String("source", recordTemplate.SourceRepository),
-				slog.String("path", path),
-				slog.Time("database_modified", dbMod),
-				slog.Time("upstream_modified", modified))
+			if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
+				logger.InfoContext(ctx, "Found outdated vulnerability in database during reconcile",
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path),
+					slog.Time("database_modified", dbMod),
+					slog.Time("upstream_modified", modified))
+			} else {
+				logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
+					slog.String("source", recordTemplate.SourceRepository),
+					slog.String("path", path),
+					slog.Time("database_modified", dbMod),
+					slog.Time("upstream_modified", modified))
+			}
 
 			// We found that it is outdated, trigger a standard import
 			recordTemplate.Action = ActionImport
@@ -600,11 +626,19 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 					return
 				}
 
-				logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
-					slog.String("source", sourceRepoName),
-					slog.String("path", sourcePath),
-					slog.Time("database_modified", dbModified),
-					slog.Time("upstream_modified", modified))
+				if reconcileWarningsAsInfo(sourceRepoName) {
+					logger.InfoContext(ctx, "Found outdated vulnerability in database during reconcile",
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourcePath),
+						slog.Time("database_modified", dbModified),
+						slog.Time("upstream_modified", modified))
+				} else {
+					logger.WarnContext(ctx, "Found outdated vulnerability in database during reconcile",
+						slog.String("source", sourceRepoName),
+						slog.String("path", sourcePath),
+						slog.Time("database_modified", dbModified),
+						slog.Time("upstream_modified", modified))
+				}
 			default:
 			}
 		}

@@ -21,22 +21,25 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	goccyyaml "github.com/goccy/go-yaml"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -228,85 +231,79 @@ type Vulnerability struct {
 
 // AddPkgInfo converts a PackageInfo struct to the corresponding Affected and adds it to the OSV vulnerability object.
 func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
-	affected := &osvschema.Affected{}
-
+	var affected *osvschema.Affected
 	if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
-		affected.Package = &osvschema.Package{
-			Name:      pkgInfo.PkgName,
-			Ecosystem: pkgInfo.Ecosystem,
-			Purl:      pkgInfo.PURL,
+		for _, a := range v.Affected {
+			if a.GetPackage().GetName() == pkgInfo.PkgName && a.GetPackage().GetEcosystem() == pkgInfo.Ecosystem {
+				affected = a
+				break
+			}
 		}
 	}
 
-	// Aggregate commits by their repo, and synthesize a zero introduced commit if necessary.
-	if len(pkgInfo.VersionInfo.AffectedCommits) > 0 {
-		gitCommitRangesByRepo := make(map[string]*osvschema.Range)
-
-		hasAddedZeroIntroduced := make(map[string]bool)
-
-		for _, ac := range pkgInfo.VersionInfo.AffectedCommits {
-			entry, ok := gitCommitRangesByRepo[ac.Repo]
-			// Create the stub for the repo if necessary.
-			if !ok {
-				entry = &osvschema.Range{
-					Type:   osvschema.Range_GIT,
-					Events: []*osvschema.Event{},
-					Repo:   ac.Repo,
-				}
-
-				if !pkgInfo.VersionInfo.HasIntroducedCommits(ac.Repo) && !hasAddedZeroIntroduced[ac.Repo] {
-					// There was no explicitly defined introduced commit, so create one at 0.
-					entry.Events = append(entry.Events,
-						&osvschema.Event{
-							Introduced: "0",
-						},
-					)
-					hasAddedZeroIntroduced[ac.Repo] = true
-				}
+	if affected == nil {
+		affected = &osvschema.Affected{}
+		if pkgInfo.PkgName != "" && pkgInfo.Ecosystem != "" {
+			affected.Package = &osvschema.Package{
+				Name:      pkgInfo.PkgName,
+				Ecosystem: pkgInfo.Ecosystem,
+				Purl:      pkgInfo.PURL,
 			}
-
-			if ac.Introduced != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Introduced: ac.Introduced})
-			}
-			if ac.Fixed != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Fixed: ac.Fixed})
-			}
-			if ac.LastAffected != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{LastAffected: ac.LastAffected})
-			}
-			if ac.Limit != "" {
-				entry.Events = append(entry.Events, &osvschema.Event{Limit: ac.Limit})
-			}
-			gitCommitRangesByRepo[ac.Repo] = entry
 		}
-
-		for repo := range gitCommitRangesByRepo {
-			affected.Ranges = append(affected.Ranges, gitCommitRangesByRepo[repo])
-		}
+		v.Affected = append(v.Affected, affected)
 	}
 
 	if len(pkgInfo.VersionInfo.AffectedVersions) > 0 {
-		versionRange := &osvschema.Range{
-			Type:   osvschema.Range_ECOSYSTEM,
-			Events: []*osvschema.Event{},
+		var versionRange *osvschema.Range
+		for _, r := range affected.GetRanges() {
+			if r.GetType() == osvschema.Range_ECOSYSTEM {
+				versionRange = r
+				break
+			}
 		}
+
+		isNewRange := false
+		if versionRange == nil {
+			versionRange = &osvschema.Range{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{},
+			}
+			isNewRange = true
+		}
+
 		seenIntroduced := map[string]bool{}
 		seenFixed := map[string]bool{}
 		seenLastAffected := map[string]bool{}
 
+		for _, e := range versionRange.GetEvents() {
+			if e.GetIntroduced() != "" {
+				seenIntroduced[e.GetIntroduced()] = true
+			}
+			if e.GetFixed() != "" {
+				seenFixed[e.GetFixed()] = true
+			}
+			if e.GetLastAffected() != "" {
+				seenLastAffected[e.GetLastAffected()] = true
+			}
+		}
+
 		for _, av := range pkgInfo.VersionInfo.AffectedVersions {
 			var introduced string
 			if av.Introduced == "" {
-				introduced = "0"
+				if len(versionRange.GetEvents()) == 0 {
+					introduced = "0"
+				}
 			} else {
 				introduced = av.Introduced
 			}
 
-			if _, seen := seenIntroduced[introduced]; !seen {
-				versionRange.Events = append(versionRange.Events, &osvschema.Event{
-					Introduced: introduced,
-				})
-				seenIntroduced[introduced] = true
+			if introduced != "" {
+				if _, seen := seenIntroduced[introduced]; !seen {
+					versionRange.Events = append(versionRange.Events, &osvschema.Event{
+						Introduced: introduced,
+					})
+					seenIntroduced[introduced] = true
+				}
 			}
 
 			if _, seen := seenFixed[av.Fixed]; av.Fixed != "" && !seen {
@@ -323,7 +320,10 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 				seenLastAffected[av.LastAffected] = true
 			}
 		}
-		affected.Ranges = append(affected.Ranges, versionRange)
+
+		if isNewRange {
+			affected.Ranges = append(affected.Ranges, versionRange)
+		}
 	}
 
 	// Sort affected[].ranges (by type) for stability.
@@ -342,7 +342,6 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	} else {
 		affected.EcosystemSpecific = spec
 	}
-	v.Affected = append(v.Affected, affected)
 }
 
 // getBestSeverity finds the best CVSS severity vector from the provided metrics data.
@@ -470,7 +469,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 				return osvschema.Reference_ADVISORY
 			}
 
-			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
+			// Example: https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
 				return osvschema.Reference_FIX
 			}
@@ -861,6 +860,98 @@ func CheckQuality(text string) QualityCheck {
 	}
 
 	return Success
+}
+
+// VulnerabilityMetadata contains lightweight metadata (publication time, last modified time, and severity metrics) for a CVE.
+type VulnerabilityMetadata struct {
+	Published time.Time
+	Modified  time.Time
+	Metrics   *models.CVEItemMetrics
+}
+
+type lightNVDItem struct {
+	CVE struct {
+		ID           models.CVEID           `json:"id"`
+		Published    models.NVDTime         `json:"published"`
+		LastModified models.NVDTime         `json:"lastModified"`
+		Metrics      *models.CVEItemMetrics `json:"metrics"`
+	} `json:"cve"`
+}
+
+type lightNVDSchema struct {
+	Vulnerabilities []lightNVDItem `json:"vulnerabilities"`
+}
+
+// LoadTargetCVEMetadata loads publication dates, last modified dates, and severity metrics for target CVE IDs,
+// avoiding memory-heavy decoding of CPE match configurations, descriptions, and references.
+func LoadTargetCVEMetadata(cvePath string, targetCVEs map[string]bool) map[models.CVEID]VulnerabilityMetadata {
+	type cveMeta struct {
+		id   models.CVEID
+		meta VulnerabilityMetadata
+	}
+
+	metaChan := make(chan cveMeta)
+	var wg sync.WaitGroup
+
+	err := filepath.WalkDir(cvePath, func(filePath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
+			return nil
+		}
+
+		// Spawning one goroutine per file is acceptable here because the number of files
+		// is small (typically one per year of CVE data).
+		wg.Add(1)
+		go func(p string) {
+			defer wg.Done()
+			file, err := os.Open(p)
+			if err != nil {
+				logger.Error("Failed to open CVE JSON", slog.String("path", p), slog.Any("err", err))
+				return
+			}
+			defer file.Close()
+
+			var nvdcve lightNVDSchema
+			if err := json.NewDecoder(file).Decode(&nvdcve); err != nil {
+				logger.Error("Failed to decode JSON", slog.String("file", p), slog.Any("err", err))
+				return
+			}
+
+			for _, item := range nvdcve.Vulnerabilities {
+				if targetCVEs == nil || targetCVEs[string(item.CVE.ID)] {
+					metaChan <- cveMeta{
+						id: item.CVE.ID,
+						meta: VulnerabilityMetadata{
+							Published: item.CVE.Published.Time,
+							Modified:  item.CVE.LastModified.Time,
+							Metrics:   item.CVE.Metrics,
+						},
+					}
+				}
+			}
+			logger.Info("Loaded "+filepath.Base(p), slog.String("cve", filepath.Base(p)))
+		}(filePath)
+
+		return nil
+	})
+
+	if err != nil {
+		logger.Fatal("Failed to walk CVE path", slog.String("path", cvePath), slog.Any("err", err))
+	}
+
+	go func() {
+		wg.Wait()
+		close(metaChan)
+	}()
+
+	result := make(map[models.CVEID]VulnerabilityMetadata)
+	for item := range metaChan {
+		result[item.id] = item.meta
+	}
+
+	return result
 }
 
 // LoadAllCVEs loads the downloaded CVE's from the NVD database into memory.

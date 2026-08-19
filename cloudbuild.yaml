@@ -33,11 +33,6 @@ steps:
   waitFor: ['init']
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-  id: 'api-tests'
-  args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=gcp/api/cloudbuild.yaml', '.']
-  waitFor: ['init']
-
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   id: 'vulnfeeds-tests'
   args: ['gcloud', 'builds', 'submit', '--region=${LOCATION}', '--config=vulnfeeds/cloudbuild.yaml', '.']
   waitFor: ['init']

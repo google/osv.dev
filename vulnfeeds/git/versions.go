@@ -17,6 +17,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -24,7 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
 
@@ -94,16 +96,24 @@ func VersionToCommit(version string, normalizedTags map[string]NormalizedTag) (s
 	// TODO: try unnormalized version first.
 	normalizedVersion, err := NormalizeVersion(version)
 	if err != nil {
+		logger.Debug("VersionToCommit failed to normalize version", slog.String("version", version), slog.Any("error", err))
 		return "", err
 	}
+	logger.Debug("VersionToCommit normalized version", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion))
+
 	// Try a straight out (case-insensitive) match first.
 	if normalizedTag, ok := normalizedTags[strings.ToLower(normalizedVersion)]; ok {
+		logger.Debug("VersionToCommit found exact match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion), slog.String("commit", normalizedTag.Commit))
 		return normalizedTag.Commit, nil
 	}
+
 	// Then try to fuzzy-match.
 	if commitHash, ok := findFuzzyCommit(normalizedVersion, normalizedTags); ok {
+		logger.Debug("VersionToCommit found fuzzy match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion), slog.String("commit", commitHash))
 		return commitHash, nil
 	}
+
+	logger.Debug("VersionToCommit failed to find match", slog.String("version", version), slog.String("normalizedVersion", normalizedVersion))
 
 	return "", fmt.Errorf("failed to find a commit for version %q normalized as %q", version, normalizedVersion)
 }

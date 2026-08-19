@@ -1,5 +1,4 @@
 resources:
-- backup.yaml
 - custommetrics.yaml
 - generate-sitemap.yaml
 - relations.yaml

@@ -50,7 +50,6 @@ type Config struct {
 	Publisher          clients.Publisher
 	GCSProvider        clients.CloudStorageProvider
 	HTTPClient         *http.Client
-	GitWorkDir         string
 	GitterClient       gitter.Client
 
 	StrictValidation       bool

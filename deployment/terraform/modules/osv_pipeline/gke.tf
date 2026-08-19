@@ -117,41 +117,6 @@ resource "google_container_node_pool" "highend" {
   }
 }
 
-resource "google_container_node_pool" "importer_pool" {
-  project    = var.project_id
-  name       = "importer-pool"
-  cluster    = google_container_cluster.workers.name
-  location   = google_container_cluster.workers.location
-  node_count = 1
-
-  lifecycle {
-    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  node_config {
-    service_account = google_service_account.worker_sa.email
-    machine_type    = "n2-highmem-4"
-    disk_type       = "pd-ssd"
-    disk_size_gb    = 64
-    local_ssd_count = 1
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "importer-pool"
-    }
-
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "importer-pool"
-    }
-  }
-}
-
 resource "google_container_node_pool" "worker_pool" {
   project  = var.project_id
   name     = "worker-pool"
@@ -197,13 +162,4 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.gitter_disk_size_gb
-}
-
-# SSD for Importer Reconciler Git Cache
-resource "google_compute_disk" "importer_reconciler_git_cache" {
-  project = var.project_id
-  name    = var.importer_reconciler_git_cache_disk_name
-  type    = "hyperdisk-balanced"
-  zone    = google_container_cluster.workers.location
-  size    = var.importer_reconciler_git_cache_size_gb
 }

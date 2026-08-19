@@ -96,18 +96,6 @@ variable "gitter_disk_size_gb" {
   default     = 6144 # 6TiB
 }
 
-variable "importer_reconciler_git_cache_disk_name" {
-  type        = string
-  description = "The name of the persistent SSD disk for the importer reconciler git cache."
-  default     = "importer-reconciler-git-cache"
-}
-
-variable "importer_reconciler_git_cache_size_gb" {
-  type        = number
-  description = "The size in GiB of the persistent SSD disk used by the importer reconciler git cache."
-  default     = 200
-}
-
 # Networking
 variable "subnet_name" {
   type        = string

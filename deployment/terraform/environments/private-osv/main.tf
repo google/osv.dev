@@ -15,8 +15,6 @@ module "osv_pipeline" {
   cluster_master_cidr                        = "172.16.0.80/28"
   gitter_disk_name                           = "gitter-disk"
   gitter_disk_size_gb                        = 6144
-  importer_reconciler_git_cache_disk_name    = "importer-reconciler-git-cache"
-  importer_reconciler_git_cache_size_gb      = 200
   subnet_name                                = "osv-subnet"
   subnet_cidr                                = "10.45.80.0/22"
   router_name                                = "osv-router"

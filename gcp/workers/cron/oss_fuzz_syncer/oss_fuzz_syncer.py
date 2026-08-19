@@ -236,13 +236,18 @@ class Syncer:
 
   def derive_commit_range(self, cf_testcase: datastore.Entity, bisect_type: str,
                           main_repo: str) -> tuple[str, str]:
-    """Derives a best effort commit range in absense of a valid
+    """Derives a best effort commit range in absence of a valid
     ClusterFuzz-bisected revision range."""
     url_format = get_revisions_url_format(cf_testcase)
 
     # Get the very first and very last revision available.
     first_revision, last_revision = self.get_first_and_last_revision(
         cf_testcase)
+
+    if not first_revision or not last_revision:
+      raise ValueError(
+          f'Could not determine build revisions for testcase {cf_testcase.key.id}'
+      )
 
     # Map them to commit hashes.
     first_commit = get_commit(
@@ -272,23 +277,19 @@ class Syncer:
     bucket = self.storage.get_bucket(netloc)
     directory, pattern = path.rsplit('/', maxsplit=1)
 
-    first_revision = None
-    last_revision = None
+    prefix = (directory.lstrip('/') + '/') if directory.lstrip('/') else None
+    revisions = []
 
-    blob_names = [
-        blob.name for blob in bucket.list_blobs(
-            prefix=directory.lstrip('/') + '/', delimiter='/')
-    ]
-    blob_names.sort()
-    for blob in blob_names:
-      match = re.match(pattern, os.path.basename(blob))
+    for blob in bucket.list_blobs(prefix=prefix, delimiter='/'):
+      match = re.match(pattern, os.path.basename(blob.name))
       if match:
-        if first_revision is None:
-          first_revision = match.group(1)
+        revisions.append(match.group(1))
 
-        last_revision = match.group(1)
+    if not revisions:
+      return None, None
 
-    return first_revision, last_revision
+    revisions.sort(key=lambda r: int(r) if r.isdigit() else r)
+    return revisions[0], revisions[-1]
 
 
 def is_wontfix(issue: dict) -> bool:

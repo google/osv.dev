@@ -176,10 +176,22 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
+	// claimedRepos tracks repositories explicitly specified in version ranges.
+	// This prevents generic version ranges (without a repo) from being processed
+	// against repositories that are explicitly targeted by other ranges.
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
-			claimedRepos[vr.Range.GetRepo()] = true
+			claimedRepos[vr.Range.GetRepo()] = true // Always claim the raw repository URL.
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), http.DefaultClient, cache)
+			if err != nil {
+				if git.IsRateLimit(err) {
+					metrics.Outcome = models.Error
+					return nil, nil, nil
+				}
+			} else {
+				claimedRepos[canonicalRepo] = true // Also claim the canonical URL if different.
+			}
 		}
 	}
 
@@ -216,7 +228,19 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
-			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+			vRepo := vr.Range.GetRepo()
+			if vRepo != "" {
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, http.DefaultClient, cache)
+				if err != nil {
+					if git.IsRateLimit(err) {
+						metrics.Outcome = models.Error
+						return nil, nil, nil
+					}
+				} else {
+					vRepo = canonicalVRepo
+				}
+			}
+			if (vRepo != "" && vRepo != repo) || (vRepo == "" && claimedRepos[repo]) {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 				continue
 			}

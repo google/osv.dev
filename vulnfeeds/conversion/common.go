@@ -171,7 +171,7 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
@@ -204,7 +204,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		repo, err := git.FindCanonicalLink(repo, httpClient, cache)
 		if err != nil {
 			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
@@ -729,12 +729,12 @@ func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) er
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
 
-	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache)
+	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache, httpClient)
 	if len(r) > 0 {
 		metrics.ResolvedRangesCount += len(r)
 		metrics.SetOutcome(models.Successful)

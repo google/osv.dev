@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
@@ -417,16 +418,18 @@ func TestExtractVersions(t *testing.T) {
 		expectedAffected []*osvschema.Affected
 	}{
 		{
-			name:  "CVE-2025-1110",
-			cve:   loadTestData(t, "CVE-2025-1110"),
-			repos: []string{"https://gitlab.com/gitlab-org/gitlab"},
+			name:  "CVE-2023-45803",
+			cve:   loadTestData(t, "CVE-2023-45803"),
+			repos: []string{"https://github.com/urllib3/urllib3"},
 			expectedAffected: []*osvschema.Affected{{
 				Ranges: []*osvschema.Range{{
 					Type: osvschema.Range_GIT,
-					Repo: "https://gitlab.com/gitlab-org/gitlab",
+					Repo: "https://github.com/urllib3/urllib3",
 					Events: []*osvschema.Event{
-						{Introduced: "504fd9e5236e13d674e051c6b8a1e9892b371c58"},
-						{Fixed: "3426be1b93852c5358240c5df40970c0ddfbdb2a"},
+						{Introduced: "6446fef0cf432ca035169602a1447a0d8ef53e80"},
+						{Fixed: "56f01e088dc006c03d4ee6ea9da4ab810f1ed700"},
+						{Introduced: "0"},
+						{Fixed: "9c2c2307dd1d6af504e09aac0326d86ee3597a0b"},
 					},
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
@@ -439,7 +442,7 @@ func TestExtractVersions(t *testing.T) {
 												Kind: &structpb.Value_StructValue{
 													StructValue: &structpb.Struct{
 														Fields: map[string]*structpb.Value{
-															"introduced": structpb.NewStringValue("18.0"),
+															"introduced": structpb.NewStringValue("2.0.0"),
 														},
 													},
 												},
@@ -448,7 +451,25 @@ func TestExtractVersions(t *testing.T) {
 												Kind: &structpb.Value_StructValue{
 													StructValue: &structpb.Struct{
 														Fields: map[string]*structpb.Value{
-															"fixed": structpb.NewStringValue("18.0.1"),
+															"fixed": structpb.NewStringValue("2.0.7"),
+														},
+													},
+												},
+											},
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"introduced": structpb.NewStringValue("0"),
+														},
+													},
+												},
+											},
+											{
+												Kind: &structpb.Value_StructValue{
+													StructValue: &structpb.Struct{
+														Fields: map[string]*structpb.Value{
+															"fixed": structpb.NewStringValue("1.26.18"),
 														},
 													},
 												},
@@ -598,13 +619,14 @@ func TestExtractVersions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			r := testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
 				Vulnerability: &osvschema.Vulnerability{},
 			}
 			extractor := GetVersionExtractor(tc.cnaAssigner)
-			extractor.ExtractVersions(tc.cve, &v, metrics, tc.repos)
+			cache := &git.InMemoryRepoTagsCache{}
+			extractor.ExtractVersions(tc.cve, &v, metrics, tc.repos, cache, r.GetDefaultClient())
 
 			if diff := cmp.Diff(tc.expectedAffected, v.Affected, protocmp.Transform()); diff != "" {
 				t.Errorf("ExtractVersions() mismatch (-want +got):\n%s", diff)

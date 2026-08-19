@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -747,7 +748,7 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 			}
 
 			metrics := &models.ConversionMetrics{}
-			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, metrics, cache)
+			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, metrics, cache, http.DefaultClient)
 
 			if len(gotResolved) != tt.wantResolved {
 				t.Errorf("GitVersionsToCommits() gotResolved count = %v, want %v", len(gotResolved), tt.wantResolved)

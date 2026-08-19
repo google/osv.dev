@@ -258,7 +258,7 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)
-- **Legacy Importer/Worker (`gcp/workers/importer/`, `gcp/workers/worker/`)**: **Retired**. These are fully replaced by the Go implementations under `go/cmd/`.
+- **Legacy Worker (`gcp/workers/worker/`)**: **Retired**. These are fully replaced by the Go implementations under `go/cmd/`.
 - **ClusterFuzz Worker (`gcp/workers/oss_fuzz_worker/`, `gcp/workers/oss_fuzz_importer/`)**: **Barely Maintained**. Siloed workloads for OSS-Fuzz integration.
   - **Deployment Target**: **GKE** (managed via Cloud Deploy pipeline `oss-fuzz-workers`).
 - **`vanir_signatures`**: **Active (Python)**. Used for signature generation/verification.

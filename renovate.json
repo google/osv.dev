@@ -41,7 +41,7 @@
     },
     {
       "matchDepNames": [
-        "gcp/workers/worker/osv-test"
+        "gcp/workers/oss_fuzz_worker/osv-test"
       ],
       "enabled": false
     },

@@ -17,20 +17,13 @@
 #
 # Maintain a GCS bucket mirror of Debian's copyright files
 #
-#
-#
 # Inputs:
-# * A local work directory
-# * GCS bucket name + path to tarball
+# * A local work directory ($WORK_DIR)
+# * GCS bucket name + path to tarball ($GCS_PATH)
 #
-
-# Setting BE_VERBOSE to an empty string or null value suppresses silencing of
-# commands
 
 mkdir -p "${WORK_DIR}" || true
 
-python3 debian-copyright-mirror.py "${WORK_DIR}/metadata.ftp-master.debian.org/changelogs/"
-
-tar -C "${WORK_DIR}" -cf "${WORK_DIR}/$(basename ${GCS_PATH})" .
-
-gcloud storage ${BE_VERBOSE="--quiet"} cp "${WORK_DIR}/$(basename ${GCS_PATH})" "${GCS_PATH}"
+debian-copyright-mirror \
+  -work-dir "${WORK_DIR}/metadata.ftp-master.debian.org/changelogs/" \
+  -gcs-path "${GCS_PATH}"

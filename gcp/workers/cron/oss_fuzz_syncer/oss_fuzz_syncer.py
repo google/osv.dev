@@ -243,9 +243,8 @@ class Syncer:
         cf_testcase)
 
     if not first_revision or not last_revision:
-      raise ValueError(
-          'Could not determine build revisions for testcase '
-          f'{cf_testcase.key.id}')
+      raise ValueError('Could not determine build revisions for testcase '
+                       f'{cf_testcase.key.id}')
 
     # Map them to commit hashes.
     first_commit = get_commit(
@@ -276,18 +275,23 @@ class Syncer:
     directory, pattern = path.rsplit('/', maxsplit=1)
 
     prefix = (directory.lstrip('/') + '/') if directory.lstrip('/') else None
-    revisions = []
+    first_revision = None
+    last_revision = None
 
-    for blob in bucket.list_blobs(prefix=prefix, delimiter='/'):
-      match = re.match(pattern, os.path.basename(blob.name))
+    blob_names = [
+        blob.name for blob in bucket.list_blobs(prefix=prefix, delimiter='/')
+    ]
+    # Alphabetical sorting is intentional to keep complexity down.
+    blob_names.sort()
+    for blob in blob_names:
+      match = re.match(pattern, os.path.basename(blob))
       if match:
-        revisions.append(match.group(1))
+        if first_revision is None:
+          first_revision = match.group(1)
 
-    if not revisions:
-      return None, None
+        last_revision = match.group(1)
 
-    revisions.sort(key=lambda r: int(r) if r.isdigit() else r)
-    return revisions[0], revisions[-1]
+    return first_revision, last_revision
 
 
 def is_wontfix(issue: dict) -> bool:

@@ -376,17 +376,16 @@ class SyncerProcessTest(unittest.TestCase):
         repo_url='https://github.com/example/test_proj')
 
   def test_get_first_and_last_revision(self):
-    """Test get_first_and_last_revision with numeric sorting and prefix
-    handling."""
+    """Test get_first_and_last_revision with prefix and alphabetical sorting."""
     mock_bucket = mock.MagicMock()
     mock_blob_1 = mock.MagicMock()
-    mock_blob_1.name = 'builds/test_proj-address-9.zip'
+    mock_blob_1.name = 'builds/test_proj-address-20240101.zip'
     mock_blob_2 = mock.MagicMock()
-    mock_blob_2.name = 'builds/test_proj-address-10.zip'
+    mock_blob_2.name = 'builds/test_proj-address-20240102.zip'
     mock_blob_3 = mock.MagicMock()
-    mock_blob_3.name = 'builds/test_proj-address-100.zip'
+    mock_blob_3.name = 'builds/test_proj-address-20240103.zip'
     mock_blob_other = mock.MagicMock()
-    mock_blob_other.name = 'builds/test_proj-memory-50.zip'
+    mock_blob_other.name = 'builds/test_proj-memory-20240102.zip'
 
     mock_bucket.list_blobs.return_value = [
         mock_blob_3, mock_blob_1, mock_blob_other, mock_blob_2
@@ -396,15 +395,16 @@ class SyncerProcessTest(unittest.TestCase):
     cf_testcase = {
         'additional_metadata':
             json.dumps({
-                'build_url': 'gs://test-bucket/builds/test_proj-address-50.zip'
+                'build_url':
+                    'gs://test-bucket/builds/test_proj-address-20240102.zip'
             })
     }
 
     first, last = self.syncer.get_first_and_last_revision(cf_testcase)
     mock_bucket.list_blobs.assert_called_once_with(
         prefix='builds/', delimiter='/')
-    self.assertEqual('9', first)
-    self.assertEqual('100', last)
+    self.assertEqual('20240101', first)
+    self.assertEqual('20240103', last)
 
   def test_get_first_and_last_revision_root_bucket(self):
     """Test get_first_and_last_revision when build_url is in the bucket root."""

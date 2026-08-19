@@ -304,6 +304,176 @@ class SyncerProcessTest(unittest.TestCase):
 
     self.mock_publisher.publish.assert_not_called()
 
+  @mock.patch.object(
+      oss_fuzz_syncer,
+      'get_commits',
+      side_effect=ValueError('Invalid commit range'))
+  @mock.patch.object(
+      oss_fuzz_syncer.Syncer,
+      'derive_commit_range',
+      return_value=('derived_old', 'derived_new'))
+  def test_process_issue_derive_commit_range_fallback(self, mock_derive,
+                                                      mock_get_commits):
+    """Test process_issue falls back to derive_commit_range when get_commits fails."""
+    mock_testcase = mock.MagicMock()
+    mock_testcase.key.id = 123456
+    testcase_dict = {
+        'project_name':
+            'test_proj',
+        'job_type':
+            'libfuzzer_asan_test_proj',
+        'bug_information':
+            '999',
+        'crash_type':
+            'Heap-buffer-overflow',
+        'crash_state':
+            'Foo::Bar',
+        'timestamp':
+            None,
+        'regression':
+            'NA',
+        'fixed':
+            None,
+        'additional_metadata':
+            json.dumps({'fuzzer_binary_name': 'fuzz_target_1'}),
+        'security_flag':
+            True,
+        'security_severity':
+            None,
+    }
+    mock_testcase.__getitem__.side_effect = lambda key: testcase_dict[key]
+    mock_testcase.get.side_effect = lambda key, default=None: testcase_dict.get(
+        key, default)
+
+    self.syncer.get_oss_fuzz_testcase = mock.MagicMock(
+        return_value=mock_testcase)
+    self.syncer.has_analyzed_regression = mock.MagicMock(return_value=False)
+    self.syncer.has_analyzed_fixed = mock.MagicMock(return_value=True)
+
+    issue = {'issueId': '999', 'issueState': {'status': 'NEW'}}
+    self.syncer.process_issue(issue)
+
+    mock_derive.assert_called_once_with(mock_testcase, 'regressed',
+                                        'https://github.com/example/test_proj')
+    self.mock_publisher.publish.assert_called_once_with(
+        'projects/test-osv-project/topics/tasks',
+        b'',
+        type='regressed',
+        source_id='oss-fuzz:123456',
+        testcase_id='123456',
+        project_name='test_proj',
+        architecture='x86_64',
+        sanitizer='address',
+        fuzz_target='fuzz_target_1',
+        old_commit='derived_old',
+        new_commit='derived_new',
+        issue_id='999',
+        crash_type='Heap-buffer-overflow',
+        crash_state='Foo::Bar',
+        security='True',
+        severity='',
+        timestamp='',
+        repo_url='https://github.com/example/test_proj')
+
+  def test_get_first_and_last_revision(self):
+    """Test get_first_and_last_revision with numeric sorting and prefix handling."""
+    mock_bucket = mock.MagicMock()
+    mock_blob_1 = mock.MagicMock()
+    mock_blob_1.name = 'builds/test_proj-address-9.zip'
+    mock_blob_2 = mock.MagicMock()
+    mock_blob_2.name = 'builds/test_proj-address-10.zip'
+    mock_blob_3 = mock.MagicMock()
+    mock_blob_3.name = 'builds/test_proj-address-100.zip'
+    mock_blob_other = mock.MagicMock()
+    mock_blob_other.name = 'builds/test_proj-memory-50.zip'
+
+    mock_bucket.list_blobs.return_value = [
+        mock_blob_3, mock_blob_1, mock_blob_other, mock_blob_2
+    ]
+    self.syncer.storage.get_bucket.return_value = mock_bucket
+
+    cf_testcase = {
+        'additional_metadata':
+            json.dumps({
+                'build_url': 'gs://test-bucket/builds/test_proj-address-50.zip'
+            })
+    }
+
+    first, last = self.syncer.get_first_and_last_revision(cf_testcase)
+    mock_bucket.list_blobs.assert_called_once_with(
+        prefix='builds/', delimiter='/')
+    self.assertEqual('9', first)
+    self.assertEqual('100', last)
+
+  def test_get_first_and_last_revision_root_bucket(self):
+    """Test get_first_and_last_revision when build_url is in the bucket root."""
+    mock_bucket = mock.MagicMock()
+    mock_blob = mock.MagicMock()
+    mock_blob.name = 'test_proj-address-1.zip'
+    mock_bucket.list_blobs.return_value = [mock_blob]
+    self.syncer.storage.get_bucket.return_value = mock_bucket
+
+    cf_testcase = {
+        'additional_metadata':
+            json.dumps(
+                {'build_url': 'gs://test-bucket/test_proj-address-1.zip'})
+    }
+
+    first, last = self.syncer.get_first_and_last_revision(cf_testcase)
+    mock_bucket.list_blobs.assert_called_once_with(prefix=None, delimiter='/')
+    self.assertEqual('1', first)
+    self.assertEqual('1', last)
+
+  @mock.patch.object(oss_fuzz_syncer, 'get_commit')
+  def test_derive_commit_range(self, mock_get_commit):
+    """Test derive_commit_range for regressed and fixed types."""
+    self.syncer.get_first_and_last_revision = mock.MagicMock(
+        return_value=('10', '100'))
+
+    def fake_get_commit(url, _):
+      if '10.srcmap' in url:
+        return 'commit_first'
+      if '100.srcmap' in url:
+        return 'commit_last'
+      if '50.srcmap' in url:
+        return 'commit_crash'
+      raise ValueError(f'Unexpected url {url}')
+
+    mock_get_commit.side_effect = fake_get_commit
+
+    cf_testcase = {
+        'additional_metadata':
+            json.dumps({'build_url': 'gs://bucket/test-50.zip'}),
+        'crash_revision':
+            '50',
+    }
+
+    regress_old, regress_new = self.syncer.derive_commit_range(
+        cf_testcase, 'regressed', 'https://github.com/example/test_proj')
+    self.assertEqual('commit_first', regress_old)
+    self.assertEqual('commit_crash', regress_new)
+
+    fix_old, fix_new = self.syncer.derive_commit_range(
+        cf_testcase, 'fixed', 'https://github.com/example/test_proj')
+    self.assertEqual('commit_crash', fix_old)
+    self.assertEqual('commit_last', fix_new)
+
+  def test_derive_commit_range_no_revisions(self):
+    """Test derive_commit_range raises ValueError when revisions are None."""
+    mock_testcase = mock.MagicMock()
+    mock_testcase.key.id = 123456
+    mock_testcase.get.side_effect = lambda k, default=None: None
+    mock_testcase.__getitem__.side_effect = lambda k: json.dumps({
+        'build_url': 'gs://bucket/test-50.zip'
+    }) if k == 'additional_metadata' else '50'
+
+    self.syncer.get_first_and_last_revision = mock.MagicMock(
+        return_value=(None, None))
+
+    with self.assertRaises(ValueError):
+      self.syncer.derive_commit_range(mock_testcase, 'regressed',
+                                      'https://github.com/example/test_proj')
+
 
 if __name__ == '__main__':
   unittest.main()

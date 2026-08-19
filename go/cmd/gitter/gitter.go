@@ -295,6 +295,7 @@ func getRepoDirName(repoURL string) string {
 	base := path.Base(repoURL)
 	base = filepath.Base(base)
 	base = strings.TrimSuffix(base, ".git")
+	base = url.QueryEscape(base)
 	hash := sha256.Sum256([]byte(repoURL))
 
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))

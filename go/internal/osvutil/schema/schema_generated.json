@@ -446,7 +446,8 @@
         "Ubuntu",
         "vcpkg",
         "VSCode",
-        "Wolfi"
+        "Wolfi",
+        "WordPress"
       ]
     },
     "ecosystemSuffix": {
@@ -457,7 +458,7 @@
       "type": "string",
       "title": "Currently supported ecosystems",
       "description": "These ecosystems are also documented at https://ossf.github.io/osv-schema/#affectedpackage-field",
-      "pattern": "^(AlmaLinux|Alpaquita|Alpine|Android|Azure Linux|BellSoft Hardened Containers|Bioconductor|Bitnami|Chainguard|CleanStart|ConanCenter|CRAN|crates\\.io|Debian|Docker Hardened Images|Echo|FreeBSD|GHC|GitHub Actions|Go|Hackage|Hex|Homebrew|Julia|Kubernetes|Linux|Mageia|Maven|MinimOS|npm|NuGet|opam|openEuler|openSUSE|OSS-Fuzz|Packagist|Photon OS|Pub|PyPI|Red Hat|Rocky Linux|Root|RubyGems|SUSE|SwiftURL|TuxCare|Ubuntu|vcpkg|VSCode|Wolfi|GIT)(:.+)?$"
+      "pattern": "^(AlmaLinux|Alpaquita|Alpine|Android|Azure Linux|BellSoft Hardened Containers|Bioconductor|Bitnami|Chainguard|CleanStart|ConanCenter|CRAN|crates\\.io|Debian|Docker Hardened Images|Echo|FreeBSD|GHC|GitHub Actions|Go|Hackage|Hex|Homebrew|Julia|Kubernetes|Linux|Mageia|Maven|MinimOS|npm|NuGet|opam|openEuler|openSUSE|OSS-Fuzz|Packagist|Photon OS|Pub|PyPI|Red Hat|Rocky Linux|Root|RubyGems|SUSE|SwiftURL|TuxCare|Ubuntu|vcpkg|VSCode|Wolfi|WordPress|GIT)(:.+)?$"
     },
     "prefix": {
       "type": "string",

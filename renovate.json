@@ -53,16 +53,6 @@
     },
     {
       "matchFileNames": [
-        "gcp/api/**"
-      ],
-      "matchPackageNames": [
-        "grpcio*"
-      ],
-      "enabled": false
-    },
-    {
-      "matchFileNames": [
-        "gcp/api/**",
         "gcp/functions/**",
         "gcp/workers/**"
       ],

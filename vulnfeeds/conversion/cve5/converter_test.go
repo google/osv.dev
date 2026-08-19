@@ -210,6 +210,32 @@ func TestFromCVE5(t *testing.T) {
 			},
 		},
 		{
+			name: "rejected record",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID:         "CVE-2025-8888",
+					State:         "REJECTED",
+					DatePublished: "2025-05-04T07:20:46.575Z",
+					DateUpdated:   "2025-05-04T07:20:46.575Z",
+				},
+			},
+			refs: []models.Reference{},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:            "CVE-2025-8888",
+					SchemaVersion: "1.7.5",
+					Published:     timestamppb.New(cvePlaceholder),
+					Modified:      timestamppb.New(cvePlaceholder),
+					Withdrawn:     timestamppb.New(cvePlaceholder),
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "CVE-2025-1110",
 			cve:  loadTestData(t, "CVE-2025-1110"),
 			refs: []models.Reference{

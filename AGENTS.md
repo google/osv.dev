@@ -250,7 +250,7 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Status**: **Active (Go)**.
 - Serves the public OSV gRPC API server (transcoded to HTTP/JSON REST via ESPv2).
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
-- *Note*: Fully migrated from Python to Go. The legacy Python implementation remains in `gcp/api/` but is retired.
+- *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
 ### 2. Website (`gcp/website/`)
 - **Status**: **Active**.

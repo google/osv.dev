@@ -244,8 +244,8 @@ class Syncer:
 
     if not first_revision or not last_revision:
       raise ValueError(
-          f'Could not determine build revisions for testcase {cf_testcase.key.id}'
-      )
+          'Could not determine build revisions for testcase '
+          f'{cf_testcase.key.id}')
 
     # Map them to commit hashes.
     first_commit = get_commit(

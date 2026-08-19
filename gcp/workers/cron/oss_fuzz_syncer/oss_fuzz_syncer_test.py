@@ -312,9 +312,9 @@ class SyncerProcessTest(unittest.TestCase):
       oss_fuzz_syncer.Syncer,
       'derive_commit_range',
       return_value=('derived_old', 'derived_new'))
-  def test_process_issue_derive_commit_range_fallback(self, mock_derive,
-                                                      mock_get_commits):
-    """Test process_issue falls back to derive_commit_range when get_commits fails."""
+  def test_process_issue_derive_commit_range_fallback(self, mock_derive, _):
+    """Test process_issue falls back to derive_commit_range when get_commits
+    fails."""
     mock_testcase = mock.MagicMock()
     mock_testcase.key.id = 123456
     testcase_dict = {
@@ -376,7 +376,8 @@ class SyncerProcessTest(unittest.TestCase):
         repo_url='https://github.com/example/test_proj')
 
   def test_get_first_and_last_revision(self):
-    """Test get_first_and_last_revision with numeric sorting and prefix handling."""
+    """Test get_first_and_last_revision with numeric sorting and prefix
+    handling."""
     mock_bucket = mock.MagicMock()
     mock_blob_1 = mock.MagicMock()
     mock_blob_1.name = 'builds/test_proj-address-9.zip'

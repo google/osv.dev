@@ -1075,6 +1075,88 @@ func TestCombineTwoOSVRecords(t *testing.T) {
 	}
 }
 
+func TestCombineIntoOSV(t *testing.T) {
+	cve5WithdrawnTime, _ := time.Parse(time.RFC3339, "2023-01-01T12:00:00Z")
+	nvdWithdrawnTime, _ := time.Parse(time.RFC3339, "2023-01-02T12:00:00Z")
+
+	validCVE5 := &osvschema.Vulnerability{Id: "CVE-2023-1234", Details: "CVE5 Details"}
+	validNVD := &osvschema.Vulnerability{Id: "CVE-2023-1234", Details: "NVD Details"}
+
+	withdrawnCVE5 := &osvschema.Vulnerability{
+		Id:        "CVE-2023-1234",
+		Withdrawn: timestamppb.New(cve5WithdrawnTime),
+	}
+	withdrawnNVD := &osvschema.Vulnerability{
+		Id:        "CVE-2023-1234",
+		Withdrawn: timestamppb.New(nvdWithdrawnTime),
+	}
+
+	tests := []struct {
+		name string
+		cve5 *osvschema.Vulnerability
+		nvd  *osvschema.Vulnerability
+		want *osvschema.Vulnerability
+	}{
+		{
+			name: "CVE5 withdrawn, NVD valid",
+			cve5: withdrawnCVE5,
+			nvd:  validNVD,
+			want: nil,
+		},
+		{
+			name: "CVE5 valid, NVD withdrawn",
+			cve5: validCVE5,
+			nvd:  withdrawnNVD,
+			want: nil,
+		},
+		{
+			name: "Both withdrawn",
+			cve5: withdrawnCVE5,
+			nvd:  withdrawnNVD,
+			want: nil,
+		},
+		{
+			name: "CVE5 withdrawn, NVD nil",
+			cve5: withdrawnCVE5,
+			nvd:  nil,
+			want: nil,
+		},
+		{
+			name: "CVE5 nil, NVD withdrawn",
+			cve5: nil,
+			nvd:  withdrawnNVD,
+			want: nil,
+		},
+		{
+			name: "CVE5 valid, NVD nil",
+			cve5: validCVE5,
+			nvd:  nil,
+			want: validCVE5,
+		},
+		{
+			name: "CVE5 nil, NVD valid",
+			cve5: nil,
+			nvd:  validNVD,
+			want: validNVD,
+		},
+		{
+			name: "Both nil",
+			cve5: nil,
+			nvd:  nil,
+			want: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := combineIntoOSV(tc.cve5, tc.nvd)
+			if diff := cmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("combineIntoOSV() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 	cve5 := &osvschema.Vulnerability{
 		Id: "CVE-2023-1234",

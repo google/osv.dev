@@ -43,7 +43,7 @@ workloads.
 
 The [API server] runs on [Cloud Run], and is served by [Cloud Endpoints].
 
-[API server]: https://github.com/google/osv.dev/tree/master/gcp/api
+[API server]: https://github.com/google/osv.dev/tree/master/go/cmd/api
 [Cloud Run]: https://cloud.google.com/run
 [Cloud Endpoints]: https://cloud.google.com/endpoints
 

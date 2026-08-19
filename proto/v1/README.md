@@ -7,18 +7,21 @@ Updates to the protobufs and service configurations require a few steps,
 outlined below.
 
 ## Regenerate protobufs
+Run from the root directory:
+```sh
+make build-protos
 ```
-python3 -m grpc_tools.protoc \
+Or directly using `protoc`:
+```sh
+protoc \
     --include_imports \
     --include_source_info \
-    --proto_path=googleapis \
-    --proto_path=. \
-    --proto_path=.. \
-    --descriptor_set_out=api_descriptor.pb \
-    --python_out=../. \
-    --grpc_python_out=../ \
-    --mypy_out=../ \
-    osv_service_v1.proto
+    --proto_path=proto \
+    --proto_path=proto/v1 \
+    --proto_path=osv \
+    --proto_path=osv/osv-schema/proto \
+    --descriptor_set_out=proto/v1/api_descriptor.pb \
+    proto/v1/osv_service_v1.proto
 ```
 
 ## Deploy service proxy

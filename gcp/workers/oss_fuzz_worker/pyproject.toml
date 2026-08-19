@@ -14,6 +14,7 @@ dependencies = [
     "requests==2.33.0",
     "jsonschema==4.26.0",
     "vanir==1.0.2",
+    "google-cloud-datastore>=2.20.0",
     "osv",
 ]
 

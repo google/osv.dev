@@ -22,6 +22,9 @@ dependencies = [
     "grpcio>=1.0", 
     "packaging-legacy>=23.0.post0",
     "requests>=2.33", 
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.150.0",
+    "google-cloud-datastore>=2.20.0",
 ]
 
 

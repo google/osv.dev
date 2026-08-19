@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class IssueTrackerPermissionError(IssueTrackerError):
 class IssueTracker:
   """Google issue tracker implementation."""
 
-  def __init__(self, http_client):
+  def __init__(self, http_client=None):
     self._client = http_client
 
   @property
@@ -77,3 +77,16 @@ class IssueTracker:
   def get_issue(self, issue_id):
     """Gets the issue with the given ID."""
     return self._execute(self.client.issues().get(issueId=str(issue_id)))
+
+  def find_issues(self, query):
+    """Finds issues matching a query."""
+    page_token = None
+    while True:
+      issues = self._execute(self.client.issues().list(
+          query=query, pageToken=page_token))
+      if 'issues' not in issues:
+        return
+      yield from issues['issues']
+      page_token = issues.get('nextPageToken')
+      if not page_token:
+        break

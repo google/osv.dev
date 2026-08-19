@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ HttpError = errors.HttpError
 UnknownApiNameOrVersion = errors.UnknownApiNameOrVersion
 
 
-def build_http():
+def build_http(service_account: str = _IMPERSONATED_SERVICE_ACCOUNT):
   """Builds a httplib2.Http."""
   source_credentials, _ = google.auth.default()
   credentials = impersonated_credentials.Credentials(
       source_credentials=source_credentials,
-      target_principal=_IMPERSONATED_SERVICE_ACCOUNT,
+      target_principal=service_account,
       target_scopes=[_SCOPE])
 
   return google_auth_httplib2.AuthorizedHttp(
@@ -57,8 +57,10 @@ def _call_discovery(api, http):
       static_discovery=False)
 
 
-def build(api='issuetracker', http=None):
+def build(api='issuetracker',
+          http=None,
+          service_account: str = _IMPERSONATED_SERVICE_ACCOUNT):
   """Builds a google api client for buganizer."""
   if not http:
-    http = build_http()
+    http = build_http(service_account=service_account)
   return _call_discovery(api, http)

@@ -40,6 +40,23 @@ class ReposTest(unittest.TestCase):
     with self.assertRaises(repos.RepoInaccessibleError):
       repos.clone(url, checkout_dir)
 
+  @unittest.mock.patch('osv.repos.gitter_host', return_value='')
+  @unittest.mock.patch('osv.repos.open_repo')
+  @unittest.mock.patch('subprocess.run')
+  def test_clone_with_depth(self, mock_subprocess_run, mock_open_repo, _):
+    """Test cloning with depth parameter."""
+    del mock_open_repo
+    url = 'https://github.com/example/repo.git'
+    checkout_dir = os.path.join(self.tmp_dir, 'checkout')
+
+    repos.clone(url, checkout_dir, depth=1)
+    mock_subprocess_run.assert_called_once()
+    cmd = mock_subprocess_run.call_args[0][0]
+    self.assertIn('--depth', cmd)
+    self.assertIn('1', cmd)
+    self.assertEqual('git', cmd[0])
+    self.assertEqual('clone', cmd[1])
+
 
 if __name__ == '__main__':
   unittest.main()

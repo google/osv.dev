@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: oss-fuzz-syncer
+  labels:
+    cronLastSuccessfulTimeMins: "120"
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cron
+            image: cron
+            imagePullPolicy: Always
+            command: ["/usr/local/bin/oss_fuzz_syncer/oss_fuzz_syncer.py"]
+            args:
+              - "--no-dry-run"
+              - "--oss-fuzz-dir=/work/oss-fuzz"
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "oss-vdb"
+            - name: OSV_VULNERABILITIES_BUCKET
+              value: osv-vulnerabilities
+            volumeMounts:
+            - mountPath: "/work"
+              name: "scratch"
+            resources:
+              requests:
+                cpu: 1
+                memory: "2G"
+              limits:
+                cpu: 2
+                memory: "4G"
+          restartPolicy: OnFailure
+          volumes:
+          - name: "scratch"
+            emptyDir: {}

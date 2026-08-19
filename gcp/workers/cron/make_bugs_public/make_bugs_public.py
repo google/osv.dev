@@ -18,9 +18,9 @@ import logging
 import sys
 from google.cloud import ndb
 
-from google_issue_tracker import client
-from google_issue_tracker import issue_tracker
 import osv
+from osv.google_issue_tracker import client
+from osv.google_issue_tracker import issue_tracker
 import osv.logs
 
 

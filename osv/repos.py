@@ -138,7 +138,8 @@ def clone(git_url,
           checkout_dir,
           git_callbacks=None,
           blobless=False,
-          force_update=False):
+          force_update=False,
+          depth=None):
   """Perform a clone."""
   # Don't user Gitter for oss-fuzz-vulns repo because it requires auth
   logging.info('Cloning %s to %s.', git_url, checkout_dir)
@@ -187,6 +188,8 @@ def clone(git_url,
     # Use 'git' CLI here as it's much faster than libgit2's clone.
     env = _set_git_callback_env(git_callbacks)
     cmd = ['git', 'clone']
+    if depth:
+      cmd.extend(['--depth', str(depth)])
     if blobless:
       cmd.append('--filter=blob:none')
     cmd.extend([_git_mirror(git_url), checkout_dir])
@@ -210,7 +213,8 @@ def clone_with_retries(git_url,
                        git_callbacks=None,
                        branch=None,
                        blobless=False,
-                       force_update=False):
+                       force_update=False,
+                       depth=None):
   """Clone with retries."""
   logging.info('Cloning %s to %s', git_url, checkout_dir)
   os.makedirs(checkout_dir, exist_ok=True)
@@ -221,7 +225,8 @@ def clone_with_retries(git_url,
           checkout_dir,
           git_callbacks,
           blobless=blobless,
-          force_update=force_update)
+          force_update=force_update,
+          depth=depth)
       repo.cache = {}
       if branch:
         _checkout_branch(repo, branch)
@@ -272,7 +277,8 @@ def ensure_updated_checkout(git_url,
                             git_callbacks=None,
                             branch=None,
                             blobless=False,
-                            force_update=False):
+                            force_update=False,
+                            depth=None):
   """Ensure updated checkout."""
   if os.path.exists(checkout_dir):
     # Already exists, reset and checkout latest revision.
@@ -298,7 +304,8 @@ def ensure_updated_checkout(git_url,
       git_callbacks=git_callbacks,
       branch=branch,
       blobless=blobless,
-      force_update=force_update)
+      force_update=force_update,
+      depth=depth)
   logging.info('Repo now at: %s', repo.head.peel().message)
   return repo
 

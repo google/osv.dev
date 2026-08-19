@@ -620,7 +620,7 @@ func TestFromCVE5_SourceLink(t *testing.T) {
 	if vuln.DatabaseSpecific == nil {
 		t.Fatalf("Expected DatabaseSpecific to be non-nil")
 	}
-	got := vuln.DatabaseSpecific.Fields["osv_generated_from"].GetStringValue()
+	got := vuln.DatabaseSpecific.GetFields()["osv_generated_from"].GetStringValue()
 	if got != sourceLink {
 		t.Errorf("osv_generated_from = %q, want %q", got, sourceLink)
 	}
@@ -665,8 +665,8 @@ func TestFromCVE5_SeverityMerging(t *testing.T) {
 		t.Fatalf("Expected severity to be populated")
 	}
 	// CVSS v3.1 from CNA should take precedence over CVSS v3.0 from ADP
-	if vuln.Severity[0].Score != "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N" {
-		t.Errorf("vuln.Severity[0].Score = %q, want CVSS 3.1 score", vuln.Severity[0].Score)
+	if vuln.Severity[0].GetScore() != "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N" {
+		t.Errorf("vuln.Severity[0].Score = %q, want CVSS 3.1 score", vuln.Severity[0].GetScore())
 	}
 }
 
@@ -788,7 +788,7 @@ func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
 
 type errWriter struct{}
 
-func (e errWriter) Write(p []byte) (n int, err error) {
+func (errWriter) Write(_ []byte) (int, error) {
 	return 0, errors.New("simulated write error")
 }
 

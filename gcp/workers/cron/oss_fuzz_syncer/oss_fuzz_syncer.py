@@ -88,10 +88,8 @@ class Syncer:
 
   def ensure_oss_fuzz_checkout(self):
     """Ensures OSS-Fuzz repository is checked out shallowly."""
-    if not os.path.exists(self.oss_fuzz_dir) or not os.path.exists(
-        os.path.join(self.oss_fuzz_dir, 'projects')):
-      logging.info('Cloning OSS-Fuzz shallowly to %s', self.oss_fuzz_dir)
-      osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, self.oss_fuzz_dir, depth=1)
+    logging.info('Ensuring OSS-Fuzz checkout at %s', self.oss_fuzz_dir)
+    osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, self.oss_fuzz_dir, depth=1)
 
   def process_issue(self, issue: dict):
     """Process an OSS-Fuzz issue."""

@@ -217,6 +217,7 @@ class SyncerProcessTest(unittest.TestCase):
         'projects/test-osv-project/topics/tasks',
         b'',
         type='invalid',
+        source_id='oss-fuzz:123456',
         testcase_id='123456')
 
   @mock.patch.object(oss_fuzz_syncer, 'get_commits')
@@ -271,16 +272,21 @@ class SyncerProcessTest(unittest.TestCase):
     call1 = self.mock_publisher.publish.call_args_list[0]
     self.assertEqual('projects/test-osv-project/topics/tasks', call1[0][0])
     self.assertEqual('regressed', call1[1]['type'])
-    self.assertEqual('regress_old', call1[1]['old_commit'])
-    self.assertEqual('regress_new', call1[1]['new_commit'])
+    self.assertEqual('oss-fuzz:123456', call1[1]['source_id'])
+    self.assertEqual('123456', call1[1]['testcase_id'])
     self.assertEqual('test_proj', call1[1]['project_name'])
+    self.assertEqual('x86_64', call1[1]['architecture'])
     self.assertEqual('address', call1[1]['sanitizer'])
     self.assertEqual('fuzz_target_1', call1[1]['fuzz_target'])
+    self.assertEqual('regress_old', call1[1]['old_commit'])
+    self.assertEqual('regress_new', call1[1]['new_commit'])
     self.assertEqual('High', call1[1]['severity'])
 
     # Second call: fixed
     call2 = self.mock_publisher.publish.call_args_list[1]
     self.assertEqual('fixed', call2[1]['type'])
+    self.assertEqual('oss-fuzz:123456', call2[1]['source_id'])
+    self.assertEqual('123456', call2[1]['testcase_id'])
     self.assertEqual('fix_old', call2[1]['old_commit'])
     self.assertEqual('fix_new', call2[1]['new_commit'])
 

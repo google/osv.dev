@@ -100,9 +100,11 @@ class Syncer:
       logging.info('%s is wontfix', issue_id)
       testcase = self.get_oss_fuzz_testcase(issue_id)
       if testcase:
+        testcase_id = str(testcase.key.id)
         self.send_osv_request({
             'type': 'invalid',
-            'testcase_id': str(testcase.key.id),
+            'source_id': f'oss-fuzz:{testcase_id}',
+            'testcase_id': testcase_id,
         })
       return
 
@@ -170,11 +172,18 @@ class Syncer:
       fuzz_target = json.loads(cf_testcase['additional_metadata']).get(
           'fuzzer_binary_name', '')
 
+    testcase_id = str(cf_testcase.key.id)
     request = {
         'type':
             bisect_type,
+        'source_id':
+            f'oss-fuzz:{testcase_id}',
+        'testcase_id':
+            testcase_id,
         'project_name':
             cf_testcase['project_name'],
+        'architecture':
+            cf_testcase.get('architecture', 'x86_64'),
         'sanitizer':
             get_sanitizer_name(cf_testcase['job_type']),
         'fuzz_target':
@@ -183,26 +192,23 @@ class Syncer:
             old_commit,
         'new_commit':
             new_commit,
-        'testcase_id':
-            str(cf_testcase.key.id),
         'issue_id':
-            str(cf_testcase['bug_information']),
+            str(cf_testcase.get('bug_information', '')),
         'crash_type':
             cf_testcase.get('crash_type', ''),
         'crash_state':
             cf_testcase.get('crash_state', ''),
         'security':
             str(cf_testcase.get('security_flag', '')),
+        'severity':
+            _SEVERITY_MAP.get(cf_testcase.get('security_severity'), 'Missing')
+            if cf_testcase.get('security_severity') is not None else '',
         'timestamp':
             cf_testcase['timestamp'].isoformat()
             if cf_testcase.get('timestamp') else '',
         'repo_url':
             main_repo,
     }
-
-    if cf_testcase.get('security_severity') is not None:
-      request['severity'] = _SEVERITY_MAP.get(cf_testcase['security_severity'],
-                                              'Missing')
 
     self.send_osv_request(request)
 

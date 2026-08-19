@@ -26,6 +26,8 @@ import yaml
 
 from gcp.workers.cron.oss_fuzz_syncer import oss_fuzz_syncer
 
+# --- THIS TEST IS ONLY USEFUL FOR DEBUGGING BEHAVIOR CHANGES ---
+# This is not actually verified as behavior we want.
 
 class SyncerHelpersTest(unittest.TestCase):
   """Tests for syncer helper functions."""

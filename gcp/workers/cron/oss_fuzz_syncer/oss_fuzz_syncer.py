@@ -46,7 +46,6 @@ _SEVERITY_MAP = {
     1: 'High',
     2: 'Medium',
     3: 'Low',
-    4: 'Missing',
 }
 
 
@@ -101,7 +100,6 @@ class Syncer:
         testcase_id = str(testcase.key.id)
         self.send_osv_request({
             'type': 'invalid',
-            'source_id': f'oss-fuzz:{testcase_id}',
             'testcase_id': testcase_id,
         })
       return
@@ -174,14 +172,8 @@ class Syncer:
     request = {
         'type':
             bisect_type,
-        'source_id':
-            f'oss-fuzz:{testcase_id}',
-        'testcase_id':
-            testcase_id,
         'project_name':
             cf_testcase['project_name'],
-        'architecture':
-            cf_testcase.get('architecture', 'x86_64'),
         'sanitizer':
             get_sanitizer_name(cf_testcase['job_type']),
         'fuzz_target':
@@ -190,6 +182,8 @@ class Syncer:
             old_commit,
         'new_commit':
             new_commit,
+        'testcase_id':
+            testcase_id,
         'issue_id':
             str(cf_testcase.get('bug_information', '')),
         'crash_type':
@@ -198,15 +192,15 @@ class Syncer:
             cf_testcase.get('crash_state', ''),
         'security':
             str(cf_testcase.get('security_flag', '')),
-        'severity':
-            _SEVERITY_MAP.get(cf_testcase.get('security_severity'), 'Missing')
-            if cf_testcase.get('security_severity') is not None else '',
         'timestamp':
             cf_testcase['timestamp'].isoformat()
             if cf_testcase.get('timestamp') else '',
         'repo_url':
             main_repo,
     }
+
+    if cf_testcase.get('security_severity') in _SEVERITY_MAP:
+      request['severity'] = _SEVERITY_MAP[cf_testcase['security_severity']]
 
     self.send_osv_request(request)
 

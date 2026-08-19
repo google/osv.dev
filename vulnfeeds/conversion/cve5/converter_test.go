@@ -447,6 +447,29 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 	}
 }
 
+func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
+	cve := loadTestData(t, "CVE-2025-1110")
+
+	// 1. Untyped nil metricsSink
+	vWriter := bytes.NewBuffer(nil)
+	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, nil, "")
+	if err != nil {
+		t.Fatalf("Unexpected error with untyped nil metricsSink: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+
+	// 2. Both sinks nil
+	metrics, err = ConvertAndExportCVEToOSV(cve, nil, nil, "")
+	if err != nil {
+		t.Fatalf("Unexpected error with both sinks nil: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+}
+
 func TestCVE5Snapshot(t *testing.T) {
 	testDir := "../../test_data/cve5"
 	//TODO: split this into individual records.

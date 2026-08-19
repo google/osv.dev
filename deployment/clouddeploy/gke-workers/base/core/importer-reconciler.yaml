@@ -17,9 +17,6 @@ spec:
             image: importer
             imagePullPolicy: Always
             args: ["--reconcile=true"]
-            volumeMounts:
-              - mountPath: "/work"
-                name: git-cache
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
@@ -31,10 +28,10 @@ spec:
                 value: "reimport"
             resources:
               requests:
-                cpu: "1"
+                cpu: "2"
                 memory: "10G"
               limits:
-                cpu: "2"
+                cpu: "3"
                 memory: "11G"
           restartPolicy: Never
           volumes:

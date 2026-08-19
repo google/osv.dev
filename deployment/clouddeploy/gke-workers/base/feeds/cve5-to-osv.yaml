@@ -32,7 +32,3 @@ spec:
           - key: workloadType
             operator: Equal
             value: highend
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

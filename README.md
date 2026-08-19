@@ -38,9 +38,8 @@ consists of:
 |-----------------|------|
 | `bindings/`     | Language bindings for the [OSV API](https://google.github.io/osv.dev/api/) (currently Go only) |
 | `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
-| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> `worker-base` docker image for `gcp/workers/worker` |
-| `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
-| `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|
+| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`, `esp`) <br /> `worker-base` docker image for `gcp/workers/worker` |
+| `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.sh` and `tools.go` |
 | `gcp/datastore` | The datastore index file (`index.yaml`) |
 | `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
 | `gcp/indexer`   | The determine version `indexer` |

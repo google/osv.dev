@@ -19,6 +19,7 @@ spec:
             args:
               - "--no-dry-run"
               - "--oss-fuzz-dir=/work/oss-fuzz"
+              - "--lookback-days=14"
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: "oss-vdb"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -180,15 +181,25 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
+	// Safeguard for early returns / context cancellation
+	defer tmpFile.Close()
 
 	// `git log --all --full-history --sparse --format=%H%x09%P%x09%D > git-log.out`
 	// --all: all branches
 	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
-	// We are also running via bash because redirecting to file is faster than using stdout pipe and git binary's own --output flag
-	err = runCmd(ctx, r.repoPath, nil, "bash", "-c", "git log --all --full-history --sparse --format="+gitLogFormat+" > "+tmpFile.Name())
-	if err != nil {
-		return nil, fmt.Errorf("failed to run git log: %w", err)
+	// Redirecting to a file is faster than using stdout pipe and git binary's own --output flag.
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
+	cmd.Stdout = tmpFile
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", "git log"), slog.Any("err", ctx.Err()))
+			return nil, fmt.Errorf("command git log cancelled: %w", ctx.Err())
+		}
+		return nil, fmt.Errorf("failed to run git log: %w, stderr: %s", err, stderr.String())
 	}
+	_ = tmpFile.Close()
 
 	// Read git log output
 	file, err := os.Open(tmpFile.Name())

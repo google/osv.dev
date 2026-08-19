@@ -184,10 +184,10 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	// Safeguard for early returns / context cancellation
 	defer tmpFile.Close()
 
-	// `git log --all --full-history --sparse --format=%H%x09%P%x09%D > git-log.out`
+	// `git log --all --full-history --sparse --format=%H%x09%P%x09%D`
 	// --all: all branches
 	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
-	// Redirecting to a file is faster than using stdout pipe and git binary's own --output flag.
+	// This is faster than git binary's own --output flag.
 	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
 	cmd.Stdout = tmpFile
 	var stderr bytes.Buffer
@@ -197,6 +197,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", "git log"), slog.Any("err", ctx.Err()))
 			return nil, fmt.Errorf("command git log cancelled: %w", ctx.Err())
 		}
+
 		return nil, fmt.Errorf("failed to run git log: %w, stderr: %s", err, stderr.String())
 	}
 	_ = tmpFile.Close()

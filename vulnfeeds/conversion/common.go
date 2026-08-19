@@ -110,7 +110,6 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 	defer csvFile.Close()
 
 	csvWriter := csv.NewWriter(csvFile)
-	defer csvWriter.Flush()
 
 	header := []string{"CVEID", "Outcome"}
 	if err := csvWriter.Write(header); err != nil {

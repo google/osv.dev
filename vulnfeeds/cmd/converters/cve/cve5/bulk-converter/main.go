@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"flag"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -27,22 +28,29 @@ import (
 const defaultStartYear = "2022"
 
 var (
-	repoDir           = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
-	localOutputDir    = flag.String("out-dir", "cve5", "Path to output results.")
-	metricsDir        = flag.String("metrics-dir", "", "Path to output metrics JSON files (defaults to out-dir).")
-	outcomesDir       = flag.String("outcomes-dir", "", "Path to output conversion outcomes CSV file (defaults to metrics-dir or out-dir).")
-	csvDir            = flag.String("csv-dir", "", "Alias for outcomes-dir.")
-	startYear         = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
-	workers           = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
-	gcsWorkers        = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
-	cnaDenyList       = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
-	rejectFailed      = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
+	// Input & filtering flags.
+	repoDir      = flag.String("cve5-repo", "cvelistV5", "CVEListV5 directory path")
+	startYear    = flag.String("start-year", defaultStartYear, "The first in scope year to process.")
+	cnaDenyList  = flag.String("cna-denylist", "", "A comma-separated list of CNAs to skip. If not provided, defaults to cna_denylist.txt.")
+	rejectFailed = flag.Bool("reject-failed", false, "If set, OSV records with a failed conversion outcome will not be generated.")
+
+	// Local output directory flags.
+	localOutputDir = flag.String("out-dir", "cve5", "Path to output results.")
+	metricsDir     = flag.String("metrics-dir", "", "Path to output metrics JSON files (defaults to out-dir).")
+	outcomesDir    = flag.String("outcomes-dir", "", "Path to output conversion outcomes CSV file (defaults to metrics-dir or out-dir).")
+	csvDir         = flag.String("csv-dir", "", "Alias for outcomes-dir.")
+	outputMetrics  = flag.Bool("output-metrics", true, "If true, output the metrics information about the conversion")
+
+	// Concurrency & worker flags.
+	workers    = flag.Int("workers", 10, "The number of concurrent workers to use for processing CVEs.")
+	gcsWorkers = flag.Int("gcs-workers", 30, "The number of concurrent workers to use for GCS uploads.")
+
+	// GCS upload flags.
 	uploadToGCS       = flag.Bool("upload-to-gcs", false, "If true, upload to GCS bucket instead of writing to local disk.")
 	outputBucket      = flag.String("output-bucket", "osv-test-cve-osv-conversion", "The GCS bucket to write to.")
 	gcsPrefix         = flag.String("gcs-prefix", "cve5-osv", "The prefix within the GCS bucket.")
 	gcsMetricsPrefix  = flag.String("gcs-metrics-prefix", "metadata/cve5/metrics", "The prefix for metrics JSON within the GCS bucket.")
 	gcsOutcomesPrefix = flag.String("gcs-outcomes-prefix", "metadata/cve5/outcomes", "The prefix for outcomes CSV within the GCS bucket.")
-	outputMetrics     = flag.Bool("output-metrics", true, "If true, output the metrics information about the conversion")
 )
 
 var (
@@ -240,16 +248,18 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			}
 
 			var metricsFile *os.File
+			var metricsSink io.Writer
 			if outputMetrics {
 				var errMetrics error
 				metricsFile, errMetrics = writer.CreateMetricsFile(cveID, metricsDir)
 				if errMetrics != nil {
 					logger.Fatal("File failed to be created for CVE metrics", slog.String("cve", string(cveID)))
 				}
+				metricsSink = metricsFile
 			}
 
 			// Perform the conversion and export the results.
-			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, sourceLink)
+			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsSink, sourceLink)
 			if err != nil {
 				logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 			} else {

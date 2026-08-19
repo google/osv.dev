@@ -187,7 +187,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	// `git log --all --full-history --sparse --format=%H%x09%P%x09%D`
 	// --all: all branches
 	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
-	// This is faster than git binary's own --output flag.
+	// Redirecting to a file is faster than git binary's own --output flag or streaming into memory.
 	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
 	cmd.Stdout = tmpFile
 	var stderr bytes.Buffer

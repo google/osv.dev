@@ -35,6 +35,7 @@ resource "google_container_cluster" "workers" {
       # Updating this value in terraform forces a replacement, even though the default pool is destroyed. Ignore it to prevent disruption.
       initial_node_count,
     ]
+    prevent_destroy = true
   }
 
   monitoring_config {
@@ -126,4 +127,11 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.gitter_disk_size_gb
+
+  lifecycle {
+    ignore_changes = [
+      type,
+      snapshot,
+    ]
+  }
 }

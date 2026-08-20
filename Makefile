@@ -18,13 +18,6 @@ run-cmd := poetry run
 lib-tests: ## Run core Python library tests
 	./run_tests.sh
 
-worker-tests: ## Run legacy Python worker tests
-	git submodule update --init --recursive
-	cd gcp/workers/worker && ./run_tests.sh
-
-importer-tests: ## Run legacy Python importer tests
-	cd gcp/workers/importer && ./run_tests.sh
-
 recoverer-tests: ## Run Python recoverer tests
 	cd gcp/workers/recoverer && ./run_tests.sh
 
@@ -130,7 +123,7 @@ run-api-server-test:
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 # TODO: API integration tests.
-all-tests: lib-tests worker-tests importer-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
+all-tests: lib-tests recoverer-tests website-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 
 reimport-tui: ## Run the reimport TUI tool
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)

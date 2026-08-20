@@ -120,42 +120,6 @@ resource "google_container_node_pool" "highend" {
   }
 }
 
-resource "google_container_node_pool" "worker_pool_temp" {
-  count    = var.project_id == "oss-vdb-test" ? 1 : 0
-  project  = var.project_id
-  name     = "worker-pool-temp"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
-
-  lifecycle {
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  autoscaling {
-    min_node_count  = 0
-    max_node_count  = 250
-    location_policy = "BALANCED"
-  }
-
-  node_config {
-    machine_type = "n4-highcpu-8"
-    disk_type    = "hyperdisk-balanced"
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "worker-pool"
-    }
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "worker-pool"
-    }
-  }
-}
-
 # Service account permissions
 data "google_compute_default_service_account" "default" {
   project = var.project_id

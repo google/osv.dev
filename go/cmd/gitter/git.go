@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -69,23 +71,148 @@ func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
 	return runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
 }
 
-func isIndexLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
+// regex to extract HTTP status code from git error output.
+var httpStatusRegex = regexp.MustCompile(`(?:The requested URL returned error:\s*|HTTP\s+|http_code\s*=\s*|remote:\s*)(\d{3})`)
 
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
+// extractHTTPStatusCode extracts a 3-digit HTTP status code from git or libcurl stderr output if present.
+func extractHTTPStatusCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	m := httpStatusRegex.FindStringSubmatch(err.Error())
+	if len(m) >= 2 {
+		code, _ := strconv.Atoi(m[1])
+		if code >= 100 && code <= 599 {
+			return code
+		}
+	}
+
+	return 0
 }
 
-func isRefConflictError(err error) bool {
+// errContainsAny returns true if err's lowercase error message contains any of the given substrings (case-insensitively).
+func errContainsAny(err error, substrs ...string) bool {
 	if err == nil {
 		return false
 	}
-	errString := err.Error()
+	s := strings.ToLower(err.Error())
+	for _, sub := range substrs {
+		if strings.Contains(s, strings.ToLower(sub)) {
+			return true
+		}
+	}
 
-	return strings.Contains(errString, "refname conflict") ||
-		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
+	return false
+}
+
+// errContainsAll returns true if err's lowercase error message contains all of the given substrings (case-insensitively).
+func errContainsAll(err error, substrs ...string) bool {
+	if err == nil || len(substrs) == 0 {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	for _, sub := range substrs {
+		if !strings.Contains(s, strings.ToLower(sub)) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isIndexLockError checks if an error indicates a stale index.lock file left behind by an interrupted git process.
+func isIndexLockError(err error) bool {
+	return errContainsAll(err, "index.lock", "file exists")
+}
+
+// isRefConflictError checks if an error was caused by conflicting local and remote branch or tag references.
+func isRefConflictError(err error) bool {
+	return errContainsAny(err, "refname conflict") ||
+		errContainsAll(err, "some local refs could not be updated", "try running 'git remote prune origin'")
+}
+
+// isRateLimitError checks if an error indicates rate limiting (HTTP 429) or upstream load shedding by the git host.
+func isRateLimitError(err error) bool {
+	if extractHTTPStatusCode(err) == 429 {
+		return true
+	}
+
+	return errContainsAny(err,
+		"unable to handle this request due to load",
+		"too many requests",
+		"secondary rate limit",
+	)
+}
+
+// isRemoteHostError checks if an error indicates an upstream server error (HTTP 5xx), transport failure,
+// network timeout, TLS error, or remote server resource exhaustion (e.g. OOM during pack generation).
+func isRemoteHostError(err error) bool {
+	code := extractHTTPStatusCode(err)
+	if code == 500 || code == 502 || code == 503 || code == 504 {
+		return true
+	}
+
+	return errContainsAny(err,
+		"could not connect to server",
+		"failed to connect to",
+		"connection reset by peer",
+		"recv failure",
+		"connection timed out",
+		"empty reply from server",
+		"tls connect error",
+		"ssl routines",
+		"rpc failed",
+		"early eof",
+		"fetch-pack: invalid index-pack output",
+		"is not responding",
+	)
+}
+
+// isAuthError checks if an error is due to missing git credentials or authentication failure.
+func isAuthError(err error) bool {
+	return errContainsAny(err,
+		"could not read username",
+		"authentication failed",
+	)
+}
+
+// isForbiddenError checks if access to the remote repository was denied (HTTP 403).
+func isForbiddenError(err error) bool {
+	if extractHTTPStatusCode(err) == 403 {
+		return true
+	}
+
+	return errContainsAny(err,
+		"forbidden",
+	)
+}
+
+// isNotFoundError returns true if the requested repository does not exist (HTTP 404 or repository not found).
+func isNotFoundError(err error) bool {
+	if extractHTTPStatusCode(err) == 404 {
+		return true
+	}
+
+	return errContainsAll(err, "repository", "not found")
+}
+
+// isRefNotFoundError returns true if the requested branch, tag, or commit hash cannot be resolved.
+func isRefNotFoundError(err error) bool {
+	return errContainsAny(err,
+		"not found or invalid",
+		"failed to resolve target ref",
+		"failed to run git rev-parse",
+		"ref cannot be empty",
+	)
+}
+
+// isFileNotFoundError returns true if a file path does not exist at the requested commit.
+func isFileNotFoundError(err error) bool {
+	return errContainsAny(err,
+		"git cat-file failed",
+		"invalid object name",
+		"does not exist in",
+	)
 }
 
 // Attempt to recover from git fetch + reset errors
@@ -177,14 +304,28 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 					err = fetchAndResetRepo(ctx, repoPath)
 				}
 
-				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
+				// If still failing or recovery wasn't attempted, check if we should reclone as a fallback
 				if err != nil {
-					if isForbiddenError(err) {
-						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
+					var reason string
+					switch {
+					case isForbiddenError(err):
+						reason = "403 Forbidden"
+					case isRateLimitError(err):
+						reason = "upstream rate limit or load"
+					case isRemoteHostError(err) || ctx.Err() != nil:
+						reason = "remote host or network error"
+					}
+
+					if reason != "" {
+						logger.WarnContext(ctx, "Fetch failed due to "+reason+". Using local repo.",
+							slog.Duration("sinceLastFetch", time.Since(accessTime)),
+							slog.Any("err", err))
+						updateLastFetch(repoURL)
+
 						return nil
 					}
 
-					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
+					logger.WarnContext(ctx, "Fetch failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
 					if err := os.RemoveAll(repoPath); err != nil {
 						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
 					}

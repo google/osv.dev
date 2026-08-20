@@ -301,57 +301,6 @@ func getRepoDirName(repoURL string) string {
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))
 }
 
-func isAuthError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "could not read Username") ||
-		strings.Contains(errString, "Authentication failed")
-}
-
-func isForbiddenError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "The requested URL returned error: 403")
-}
-
-func isNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(strings.ToLower(errString), "repository") && strings.Contains(strings.ToLower(errString), "not found")
-}
-
-func isRefNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	s := strings.ToLower(err.Error())
-
-	return strings.Contains(s, "not found or invalid") ||
-		strings.Contains(s, "failed to resolve target ref") ||
-		strings.Contains(s, "failed to run git rev-parse") ||
-		strings.Contains(s, "ref cannot be empty")
-}
-
-func isFileNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	s := strings.ToLower(err.Error())
-
-	return strings.Contains(s, "git cat-file failed") ||
-		strings.Contains(s, "invalid object name") ||
-		strings.Contains(s, "does not exist in")
-}
-
 // Helper function to unmarshal request body based on Content-Type (protobuf or JSON)
 func unmarshalRequest(req *http.Request, msg proto.Message) error {
 	data, err := io.ReadAll(req.Body)

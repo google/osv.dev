@@ -471,11 +471,15 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	// Archive repo
 	fileDataAny, err, _ := gArchive.Do(repoURL, func() (any, error) {
 		return runWithConcurrencyControl(ctx, true, func() (any, error) {
-			return ArchiveRepo(ctx, repoURL)
+			data, err := ArchiveRepo(ctx, repoURL)
+			if err != nil {
+				logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
+			}
+
+			return data, err
 		})
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Error archiving blob", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error archiving blob: %v", err), statusCode)
 
@@ -722,7 +726,6 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 		if repo.repoPath != "" {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
-				logger.ErrorContext(ctx, "Error fetching repo", slog.Any("error", errFetch))
 				if isAuthError(errFetch) || isForbiddenError(errFetch) {
 					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
 					statusCode = http.StatusForbidden
@@ -744,10 +747,14 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			}
 
 			tagsMapAny, errLocal, _ := gLocalTags.Do(repoURL, func() (any, error) {
-				return repo.GetLocalTags(ctx)
+				tags, err := repo.GetLocalTags(ctx)
+				if err != nil {
+					logger.ErrorContext(ctx, "Error parsing local tags", slog.Any("error", err))
+				}
+
+				return tags, err
 			})
 			if errLocal != nil {
-				logger.ErrorContext(ctx, "Error parsing local tags", slog.Any("error", errLocal))
 				statusCode = http.StatusInternalServerError
 				http.Error(w, "Error parsing local tags", statusCode)
 
@@ -758,7 +765,12 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			// If repo is not on disk, we use ls-remote to get the tags instead
 			logger.DebugContext(ctx, "Local repo not found, using ls-remote")
 			tagsMapAny, errLsRemote, _ := gLsRemote.Do(repoURL, func() (any, error) {
-				return repo.GetRemoteTags(ctx)
+				tags, err := repo.GetRemoteTags(ctx)
+				if err != nil && !isAuthError(err) && !isForbiddenError(err) && !isNotFoundError(err) {
+					logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", err))
+				}
+
+				return tags, err
 			})
 			if errLsRemote != nil {
 				if isAuthError(errLsRemote) || isForbiddenError(errLsRemote) {
@@ -775,7 +787,6 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 
 					return
 				}
-				logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", errLsRemote))
 				statusCode = http.StatusInternalServerError
 				http.Error(w, "Error listing remote tags", statusCode)
 

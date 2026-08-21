@@ -221,11 +221,15 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 func SyncRepoOnDisk(ctx context.Context, repoURL string, opts FetchOptions) (*Repository, error) {
 	_, err, _ := gFetch.Do(repoURL, func() (any, error) {
 		return runWithConcurrencyControl(ctx, opts.SkipReqConcurrencySemaphore, func() (any, error) {
-			return nil, refreshRepo(ctx, repoURL, opts.ForceUpdate)
+			err := refreshRepo(ctx, repoURL, opts.ForceUpdate)
+			if err != nil {
+				logger.ErrorContext(ctx, "Error syncing repository on disk", slog.Any("error", err))
+			}
+
+			return nil, err
 		})
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Error syncing repository on disk", slog.Any("error", err))
 		return nil, err
 	}
 
@@ -256,11 +260,15 @@ func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Reposito
 			repoLock.RLock()
 			defer repoLock.RUnlock()
 
-			return LoadRepository(ctx, repoPath)
+			repo, err := LoadRepository(ctx, repoPath)
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
+			}
+
+			return repo, err
 		})
 	})
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
 		return nil, err
 	}
 	repo := repoAny.(*Repository)

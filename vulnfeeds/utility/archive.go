@@ -29,6 +29,7 @@ func CreateTarArchive(sourceDir string, w io.Writer) error {
 	defer tw.Close()
 
 	sourceDir = filepath.Clean(sourceDir)
+
 	return filepath.Walk(sourceDir, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -73,6 +74,8 @@ func CreateTarArchive(sourceDir string, w io.Writer) error {
 	})
 }
 
+const maxTarEntrySize = 1 * 1024 * 1024 * 1024 // 1GB max entry size limit
+
 // ExtractTarArchive extracts a tar archive stream into the destination directory.
 func ExtractTarArchive(r io.Reader, destDir string) error {
 	tr := tar.NewReader(r)
@@ -106,7 +109,7 @@ func ExtractTarArchive(r io.Reader, destDir string) error {
 			if err != nil {
 				return fmt.Errorf("failed to create file %s: %w", targetPath, err)
 			}
-			if _, err := io.Copy(outFile, tr); err != nil {
+			if _, err := io.Copy(outFile, io.LimitReader(tr, maxTarEntrySize)); err != nil {
 				outFile.Close()
 				return fmt.Errorf("failed to write file content %s: %w", targetPath, err)
 			}

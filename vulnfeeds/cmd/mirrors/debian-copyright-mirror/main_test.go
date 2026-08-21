@@ -150,6 +150,7 @@ func TestDownloadFilesConcurrently(t *testing.T) {
 		if content, ok := fileMap[path]; ok {
 			w.WriteHeader(http.StatusOK)
 			_, _ = fmt.Fprint(w, content)
+
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

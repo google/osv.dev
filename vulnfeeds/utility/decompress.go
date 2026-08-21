@@ -28,6 +28,7 @@ import (
 // is waited for and input resources are closed when Close() is called.
 type SubprocessReadCloser struct {
 	io.ReadCloser
+
 	cmd         *exec.Cmd
 	bodyToClose io.Closer
 }
@@ -53,6 +54,7 @@ func (s *SubprocessReadCloser) Close() error {
 			}
 		}
 	}
+
 	return errors.Join(errs...)
 }
 
@@ -63,6 +65,7 @@ func getXZDecompressCommand() (string, error) {
 	if _, err := exec.LookPath("unxz"); err == nil {
 		return "unxz", nil
 	}
+
 	return "", errors.New("neither 'xz' nor 'unxz' command-line tool found in PATH")
 }
 

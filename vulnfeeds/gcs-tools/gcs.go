@@ -155,6 +155,7 @@ func ParseGCSPath(gcsURI string) (bucket, object string, err error) {
 	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
 		return "", "", fmt.Errorf("invalid GCS URI format %q (expected gs://bucket/object)", gcsURI)
 	}
+
 	return parts[0], parts[1], nil
 }
 

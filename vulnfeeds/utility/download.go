@@ -62,6 +62,7 @@ func DownloadFile(ctx context.Context, client *http.Client, url, destPath string
 			if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
 				return retry.RetryableError(fmt.Errorf("HTTP status %d for %s", resp.StatusCode, url))
 			}
+
 			return fmt.Errorf("HTTP status %d for %s", resp.StatusCode, url)
 		}
 

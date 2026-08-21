@@ -32,10 +32,10 @@ func TestTarArchiveRoundtrip(t *testing.T) {
 
 	file1 := filepath.Join(sourceDir, "file1.txt")
 	file2 := filepath.Join(sourceDir, "sub", "file2.txt")
-	if err := os.WriteFile(file1, []byte("hello archive"), 0644); err != nil {
+	if err := os.WriteFile(file1, []byte("hello archive"), 0600); err != nil {
 		t.Fatalf("Failed to write file1: %v", err)
 	}
-	if err := os.WriteFile(file2, []byte("nested file content"), 0644); err != nil {
+	if err := os.WriteFile(file2, []byte("nested file content"), 0600); err != nil {
 		t.Fatalf("Failed to write file2: %v", err)
 	}
 

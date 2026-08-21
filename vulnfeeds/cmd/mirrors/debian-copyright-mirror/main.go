@@ -64,6 +64,7 @@ func ExtractUnstableCopyright(r io.Reader, prefixFilter string) ([]string, error
 		if len(line) > 0 && line[0] != ' ' && line[0] != '\t' && strings.HasSuffix(line, ":") {
 			inUnstable = false
 			currentPkgFound = false
+
 			continue
 		}
 
@@ -79,6 +80,7 @@ func ExtractUnstableCopyright(r io.Reader, prefixFilter string) ([]string, error
 			} else {
 				inUnstable = false
 			}
+
 			continue
 		}
 
@@ -123,7 +125,7 @@ func DownloadFilesConcurrently(ctx context.Context, client *http.Client, filelis
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		g.Go(func() error {
 			for path := range jobs {
 				select {
@@ -140,6 +142,7 @@ func DownloadFilesConcurrently(ctx context.Context, client *http.Client, filelis
 						skipped.Add(1)
 						count := completed.Add(1)
 						logProgress(count, total, startTime)
+
 						continue
 					}
 				}
@@ -152,6 +155,7 @@ func DownloadFilesConcurrently(ctx context.Context, client *http.Client, filelis
 					logProgress(count, total, startTime)
 				}
 			}
+
 			return nil
 		})
 	}
@@ -274,6 +278,7 @@ func UploadTarToGCS(ctx context.Context, storageClient *storage.Client, workDir,
 	}
 
 	logger.Info("Successfully uploaded tar archive to GCS", slog.String("gcsURI", gcsURI))
+
 	return nil
 }
 

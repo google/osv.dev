@@ -58,7 +58,7 @@ func TestDecompressXZ(t *testing.T) {
 func TestDecompressXZFile(t *testing.T) {
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "test.xz")
-	if err := os.WriteFile(filePath, testXZPayload, 0644); err != nil {
+	if err := os.WriteFile(filePath, testXZPayload, 0600); err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
@@ -81,7 +81,7 @@ func TestDecompressXZFile(t *testing.T) {
 }
 
 func TestFetchAndDecompressXZ(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(testXZPayload)
 	}))

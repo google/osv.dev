@@ -29,6 +29,7 @@ func TestDownloadFile(t *testing.T) {
 		if r.URL.Path == "/file.txt" {
 			w.WriteHeader(http.StatusOK)
 			_, _ = fmt.Fprint(w, "downloaded content")
+
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

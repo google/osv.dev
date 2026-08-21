@@ -69,8 +69,8 @@ func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
 	return runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
 }
 
-// Attempt to recover from git fetch + reset errors
-// Returns true if recovery was attempted and we should retry fetch + reset
+// Attempt to recover from git fetch errors
+// Returns true if recovery was attempted and we should retry fetch
 func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	if err == nil {
 		return false
@@ -88,7 +88,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 		return true
 	}
 
-	// index.lock exists, likely a previous git reset got terminated and wasn't cleaned up properly.
+	// index.lock exists, likely a previous git operation got terminated and wasn't cleaned up properly.
 	// We want to reclone as fallback but log a separate warning (for stats)
 	if isIndexLockError(err) {
 		logger.WarnContext(ctx, "index.lock exists, will reclone instead")
@@ -97,8 +97,8 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	return false
 }
 
-// fetchAndResetRepo fetches remote origin and resets origin/HEAD to the remote's default branch
-func fetchAndResetRepo(ctx context.Context, repoPath string) error {
+// fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
+func fetchRepo(ctx context.Context, repoPath string) error {
 	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
@@ -110,16 +110,11 @@ func fetchAndResetRepo(ctx context.Context, repoPath string) error {
 		logger.WarnContext(ctx, "git remote set-head failed: ", slog.Any("err", err))
 	}
 
-	err = runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD")
-	if err != nil {
-		return fmt.Errorf("git reset failed: %w", err)
-	}
-
 	return nil
 }
 
 // refreshRepo updates the local repository on disk if it is stale or if forceUpdate is true.
-// It clones the repository if it doesn't exist, or fetches and resets it with error recovery and fallback recloning.
+// It clones the repository if it doesn't exist, or fetches it with error recovery and fallback recloning.
 func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	logger.DebugContext(ctx, "Refreshing repository on disk")
 	start := time.Now()
@@ -150,16 +145,16 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 			} else {
 				logger.DebugContext(ctx, "Fetching git repository")
 			}
-			err := fetchAndResetRepo(ctx, repoPath)
+			err := fetchRepo(ctx, repoPath)
 
 			// Attempt recovery and fallback
 			if err != nil {
-				logger.WarnContext(ctx, "Initial fetch and reset failed, attempting to recover", slog.Any("err", err))
+				logger.WarnContext(ctx, "Initial fetch failed, attempting to recover", slog.Any("err", err))
 
-				// Attempt recovery and retry fetch and reset if successful
+				// Attempt recovery and retry fetch if successful
 				if attemptGitRecovery(ctx, repoPath, err) {
-					logger.InfoContext(ctx, "Retrying fetch and reset after recovery")
-					err = fetchAndResetRepo(ctx, repoPath)
+					logger.InfoContext(ctx, "Retrying fetch after recovery")
+					err = fetchRepo(ctx, repoPath)
 				}
 
 				// If still failing or recovery wasn't attempted, check if we should reclone as a fallback
@@ -281,8 +276,8 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	archivePath := repoPath + ".zst"
 
 	repoLock := GetRepoLock(repoURL)
-	repoLock.RLock()
-	defer repoLock.RUnlock()
+	repoLock.Lock()
+	defer repoLock.Unlock()
 
 	lastFetchMu.Lock()
 	lastFetchTime := lastFetch[repoURL]
@@ -294,6 +289,12 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(lastFetchTime)) {
 		logger.DebugContext(ctx, "Archiving git blob")
 		startArchive := time.Now()
+
+		// Reset working tree to origin/HEAD before creating archive
+		if err := runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD"); err != nil {
+			return nil, fmt.Errorf("git reset failed: %w", err)
+		}
+
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely

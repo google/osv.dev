@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 )
 
@@ -23,6 +24,14 @@ type Config struct {
 	StaticFS    fs.FS
 	DocsFS      fs.FS
 	TemplateDir string
+	Stores      Stores
+	APIURL      string
+}
+
+type Stores struct {
+	Vuln       models.VulnerabilityStore
+	Relations  models.RelationsStore
+	SourceRepo models.SourceRepositoryStore
 }
 
 // Server handles website routing and HTTP requests.
@@ -30,6 +39,8 @@ type Server struct {
 	config  Config
 	mux     *http.ServeMux
 	handler http.Handler
+
+	stores Stores
 }
 
 type responseLogger struct {
@@ -55,7 +66,7 @@ func (r *responseLogger) Write(b []byte) (int, error) {
 }
 
 // NewServer creates and initializes a new website Server.
-// It returns an error if cfg.StaticFS or cfg.DocsFS is nil.
+// It returns an error if cfg.StaticFS, cfg.DocsFS, or any of the cfg.Stores are nil.
 func NewServer(cfg Config) (*Server, error) {
 	if cfg.StaticFS == nil {
 		return nil, errors.New("StaticFS is required")
@@ -63,10 +74,24 @@ func NewServer(cfg Config) (*Server, error) {
 	if cfg.DocsFS == nil {
 		return nil, errors.New("DocsFS is required")
 	}
+	if cfg.Stores.Vuln == nil {
+		return nil, errors.New("Stores.Vuln is required")
+	}
+	if cfg.Stores.Relations == nil {
+		return nil, errors.New("Stores.Relations is required")
+	}
+	if cfg.Stores.SourceRepo == nil {
+		return nil, errors.New("Stores.SourceRepo is required")
+	}
+
+	if cfg.APIURL == "" {
+		cfg.APIURL = "api.osv.dev"
+	}
 
 	s := &Server{
 		config: cfg,
 		mux:    http.NewServeMux(),
+		stores: cfg.Stores,
 	}
 	s.registerRoutes()
 

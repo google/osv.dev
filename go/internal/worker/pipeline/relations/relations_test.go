@@ -15,6 +15,8 @@ import (
 )
 
 type mockRelationsStore struct {
+	models.UnimplementedRelationsStore
+
 	aliases  *models.GetAliasResult
 	related  *models.GetRelatedResult
 	upstream *models.GetUpstreamResult

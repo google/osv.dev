@@ -70,29 +70,33 @@ go run ./cmd/mirrors/debian-copyright-mirror [flags] [work_dir]
 Examples:
 
 ```bash
-# Download copyright files into /tmp/debian_copyright using 50 workers
-go run ./cmd/mirrors/debian-copyright-mirror -workers 50 /tmp/debian_copyright
+# Download copyright files into ./debian_copyright (relative to current directory) using 50 workers
+go run ./cmd/mirrors/debian-copyright-mirror -workers 50
+
+# Specify a custom relative output directory
+go run ./cmd/mirrors/debian-copyright-mirror -out-dir debian_copyright
 
 # Incremental run skipping already downloaded files
-go run ./cmd/mirrors/debian-copyright-mirror -skip-existing /tmp/debian_copyright
+go run ./cmd/mirrors/debian-copyright-mirror -skip-existing
 
 # Download and create a local tar archive
-go run ./cmd/mirrors/debian-copyright-mirror -tar-path /scratch/debian_copyright.tar /tmp/debian_copyright
+go run ./cmd/mirrors/debian-copyright-mirror -tar-path debian_copyright.tar
 
 # Download and stream directly to GCS
-go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_copyright.tar /tmp/debian_copyright
+go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_copyright.tar
 ```
 
 ### Flags
 
 | Flag | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `-work-dir` | string | `.` | Target directory to save downloaded copyright files (can also be passed as the first positional argument). |
+| `-out-dir` | string | `debian_copyright` | Target directory (relative or absolute) to save downloaded copyright files. |
+| `-work-dir` | string | `""` | Alias for `-out-dir` (can also be passed as the first positional argument). |
 | `-workers` | int | `50` | Number of concurrent download workers. |
 | `-skip-existing` | bool | `false` | Skip downloading files that already exist on disk with non-zero size. |
 | `-max-failure-rate` | float | `0.05` | Maximum allowable fraction of failed downloads (e.g. `0.05` = 5%) before failing the job. |
 | `-gcs-path` | string | `""` | Destination GCS path for the tarball archive (e.g. `gs://bucket/debian_copyright.tar`). Defaults to `$GCS_PATH` if unset. |
-| `-tar-path` | string | `""` | Optional local destination path for tarball archive. |
+| `-tar-path` | string | `""` | Optional local destination path for tarball archive (e.g. `debian_copyright.tar`). |
 | `-filelist-url` | string | `https://metadata.ftp-master.debian.org/changelogs/filelist.yaml.xz` | URL of the Debian filelist YAML archive. |
 | `-url-base` | string | `https://metadata.ftp-master.debian.org/changelogs` | Base URL for downloading individual copyright files. |
 | `-prefix-filter` | string | `main/` | Archive section prefix to filter (e.g., `main/`). |
@@ -100,6 +104,7 @@ go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_cop
 | `-use-curl` | bool | `false` | Delegate downloads to `curl --parallel` instead of Go worker pool. |
 | `-curl-config-file` | string | `""` | Optional path to output the generated curl configuration file. |
 | `-curl-config-only` | bool | `false` | Generate the curl configuration file and exit immediately without downloading. |
+
 
 ---
 
@@ -118,4 +123,4 @@ docker build -t gcr.io/oss-vdb/debian-copyright-mirror:latest -f cmd/mirrors/deb
 In production, this mirror runs as a scheduled Kubernetes `CronJob` in GKE (defined in `deployment/clouddeploy/gke-workers/base/feeds/debian-copyright-mirror.yaml` and environment overlays):
 
 - **Schedule**: Runs daily (`0 5 * * *` Sydney time).
-- **Entrypoint**: Executes `debian-copyright-mirror.sh`, which runs `debian-copyright-mirror` with `-gcs-path "${GCS_PATH}"` to stream the archive directly to `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`.
+- **Entrypoint**: Runs the `debian-copyright-mirror` Go binary directly, which reads `WORK_DIR` (e.g. `/scratch`) and `GCS_PATH` (e.g. `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`) from the environment and streams the archive directly to Cloud Storage.

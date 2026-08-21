@@ -281,28 +281,47 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	workDirFlag := flag.String("work-dir", "", "Directory to download copyright files into.")
+	// Input & source configuration flags.
 	filelistURL := flag.String("filelist-url", DefaultFilelistURL, "URL of the Debian filelist.yaml.xz file.")
 	urlBase := flag.String("url-base", DefaultURLBase, "Base URL for downloading Debian changelog/copyright files.")
 	prefixFilter := flag.String("prefix-filter", DefaultPrefixFilter, "Prefix filter for package paths to download (e.g. 'main/').")
 	minExpectedFiles := flag.Int("min-expected-files", DefaultMinExpectedFiles, "Minimum expected number of copyright files.")
+
+	// Local output directory & archive flags.
+	outDirFlag := flag.String("out-dir", "", "Directory to download copyright files into (defaults to WORK_DIR env var or ./debian_copyright).")
+	workDirFlag := flag.String("work-dir", "", "Alias for -out-dir.")
+	tarPath := flag.String("tar-path", "", "Optional local destination path for tarball archive (e.g. debian_copyright.tar).")
+
+	// Concurrency & fault tolerance flags.
 	numWorkers := flag.Int("workers", DefaultNumWorkers, "Number of concurrent download workers.")
 	skipExisting := flag.Bool("skip-existing", false, "Skip downloading files that already exist on disk with non-zero size.")
 	maxFailureRate := flag.Float64("max-failure-rate", DefaultMaxFailureRate, "Maximum allowable fraction of failed downloads before failing the job.")
+
+	// GCS upload flags.
 	gcsPath := flag.String("gcs-path", "", "Destination GCS path for tarball archive (e.g. gs://bucket/path/debian_copyright.tar). Defaults to GCS_PATH env var if unset.")
-	tarPath := flag.String("tar-path", "", "Optional local destination path for tarball archive (e.g. /scratch/debian_copyright.tar).")
+
+	// Curl fallback flags.
 	useCurl := flag.Bool("use-curl", false, "If true, delegate downloads to curl --parallel instead of Go HTTP workers.")
 	curlConfigFile := flag.String("curl-config-file", "", "Optional path to write the generated curl configuration to.")
 	curlConfigOnly := flag.Bool("curl-config-only", false, "If true, only write the curl configuration file and exit.")
 
 	flag.Parse()
 
-	workDir := *workDirFlag
-	if workDir == "" && flag.NArg() > 0 {
+	workDir := *outDirFlag
+	if *workDirFlag != "" {
+		workDir = *workDirFlag
+	} else if flag.NArg() > 0 {
 		workDir = flag.Arg(0)
+	} else if workDir == "" {
+		if envWorkDir := os.Getenv("WORK_DIR"); envWorkDir != "" {
+			workDir = envWorkDir
+		} else {
+			workDir = "debian_copyright"
+		}
 	}
-	if workDir == "" {
-		workDir = "."
+	workDir = filepath.Clean(workDir)
+	if err := os.MkdirAll(workDir, 0755); err != nil {
+		logger.Fatal("Failed to create work directory", slog.String("workDir", workDir), slog.Any("err", err))
 	}
 
 	ctx := context.Background()

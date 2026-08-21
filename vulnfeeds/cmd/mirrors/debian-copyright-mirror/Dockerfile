@@ -24,11 +24,10 @@ RUN go mod download
 COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o debian-copyright-mirror ./cmd/mirrors/debian-copyright-mirror
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:be40864452bd6d7be21632a1dc18adf03d423de0bf2595f4a287c22400c484bb
+FROM alpine:3.21
 
-RUN apk add --no-cache xz curl
+RUN apk add --no-cache xz curl ca-certificates
 
-COPY --from=GO_BUILD /src/debian-copyright-mirror /usr/local/bin/
-COPY ./cmd/mirrors/debian-copyright-mirror/debian-copyright-mirror.sh /
+COPY --from=GO_BUILD /src/debian-copyright-mirror /usr/local/bin/debian-copyright-mirror
 
-ENTRYPOINT ["/debian-copyright-mirror.sh"]
+ENTRYPOINT ["/usr/local/bin/debian-copyright-mirror"]

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'gcp/api/v1/osv_service_v1.proto'
+      - 'proto/v1/osv_service_v1.proto'
       - 'osv/importfinding.proto'
       - 'osv/osv-schema/proto/vulnerability.proto'
   workflow_dispatch:
@@ -41,9 +41,7 @@ jobs:
         run: pip install poetry==2.3.3
 
       - name: Set up poetry
-        run: |
-          poetry install
-          cd gcp/api && poetry install
+        run: poetry install
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

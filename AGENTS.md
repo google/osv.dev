@@ -220,9 +220,14 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
+8. **`recoverer`**:
+   - Daemon that subscribes to failed task recovery Pub/Sub messages.
+   - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
+
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
+- **`recoverer/`**: Core engine and handlers for the Go recoverer.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
   - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
   - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
@@ -250,7 +255,7 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Status**: **Active (Go)**.
 - Serves the public OSV gRPC API server (transcoded to HTTP/JSON REST via ESPv2).
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
-- *Note*: Fully migrated from Python to Go. The legacy Python implementation remains in `gcp/api/` but is retired.
+- *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
 ### 2. Website (`gcp/website/`)
 - **Status**: **Active**.
@@ -258,14 +263,14 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)
-- **Legacy Importer/Worker (`gcp/workers/importer/`, `gcp/workers/worker/`)**: **Retired**. These are fully replaced by the Go implementations under `go/cmd/`.
+- **`worker` (`gcp/workers/worker/`)**: **Base Environment**. Retains shared Poetry dependencies and base Dockerfile for Python workers (`vanir_signatures`); legacy worker daemon replaced by Go worker under `go/cmd/worker/`.
 - **ClusterFuzz Worker (`gcp/workers/oss_fuzz_worker/`, `gcp/workers/oss_fuzz_importer/`)**: **Barely Maintained**. Siloed workloads for OSS-Fuzz integration.
   - **Deployment Target**: **GKE** (managed via Cloud Deploy pipeline `oss-fuzz-workers`).
 - **`vanir_signatures`**: **Active (Python)**. Used for signature generation/verification.
-- **`recoverer`**: **Active (Python)**. Used to recover/repair states; scheduled for migration to Go in the future.
 
 ### 4. Indexer (`gcp/indexer/`)
 - **Status**: **Active (Go)**.
 - Handles indexing, but is not under active development.
 - **Deployment Target**: **GKE** (managed via Cloud Deploy pipeline `gke-indexer`).
+
 

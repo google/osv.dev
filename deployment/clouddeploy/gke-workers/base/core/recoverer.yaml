@@ -30,11 +30,15 @@ spec:
       - name: recoverer
         image: recoverer
         imagePullPolicy: Always
-      resources:
-        requests:
-          cpu: "10m"
-          memory: "256Mi"
-        limits:
-          cpu: "200m"
-          memory: "512Mi"
+        env:
+          - name: GITTER_HOST
+            value: http://gitter-service:8888
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"
+
 

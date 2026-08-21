@@ -38,15 +38,14 @@ consists of:
 |-----------------|------|
 | `bindings/`     | Language bindings for the [OSV API](https://google.github.io/osv.dev/api/) (currently Go only) |
 | `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
-| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`) <br /> `worker-base` docker image for `gcp/workers/worker` |
-| `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.py` and `tools.go` |
-| `gcp/api`       | OSV API server files (including files for the local ESP server) <br /> protobuf files in `/v1`|
+| `docker/`       | CI docker files (`ci`, `deployment`, `terraform`, `esp`) <br /> `worker-base` docker image for `gcp/workers/worker` |
+| `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.sh` and `tools.go` |
 | `gcp/datastore` | The datastore index file (`index.yaml`) |
 | `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
 | `gcp/indexer`   | The determine version `indexer` |
 | `gcp/website`   | The backend of the osv.dev web interface, with the frontend in `frontend3` <br /> Blog posts (in `blog`) |
-| `gcp/workers/`  | Workers for bisection and impact analysis (`worker`, `importer`, `alias`) <br /> `cron/` jobs for database backups and processing oss-fuzz records |
-| `go/`           | Go module for shared libraries and commands (`cmd/exporter`, `cmd/recordchecker`) |
+| `gcp/workers/`  | Python workers (`vanir_signatures` and `oss_fuzz_worker`) |
+| `go/`           | Go module for shared libraries and commands (`cmd/api`, `cmd/importer`, `cmd/worker`, `cmd/exporter`, `cmd/recoverer`, `cmd/relations`, etc.) |
 | `osv/`          | The core OSV Python library, used in basically all Python services <br /> OSV ecosystem package versioning helpers in `ecosystems/` <br /> Datastore model definitions in `models.py` |
 | `tools/`        | Misc scripts/tools, mostly intended for development (datastore stuff, linting) <br /> The `indexer-api-caller` for indexer calling |
 | `vulnfeeds/`    | Go module for (mostly) the NVD CVE conversion <br /> The Alpine feed converter (`cmd/alpine`) <br /> The Debian feed converter (`tools/debian`, which is written in Python) |

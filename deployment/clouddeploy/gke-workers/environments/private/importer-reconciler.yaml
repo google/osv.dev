@@ -19,13 +19,3 @@ spec:
             - name: REIMPORT_TASK_POOL
               value: "default"
             args: ["--reconcile=true"]
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: importer-reconciler-git-cache-pv
-spec:
-  csi:
-    driver: pd.csi.storage.gke.io
-    volumeHandle: projects/private-osv/zones/us-central1-f/disks/importer-reconciler-git-cache
-    fsType: ext4

@@ -1,0 +1,21 @@
+{
+  "id": "MULTI-ECO-FIX-DEMO",
+  "modified": "2025-10-13T15:48:04.932419Z",
+  "published": "2025-03-01T00:00:00Z",
+  "summary": "Demo vuln with fix only in PyPI ecosystem",
+  "affected": [
+    {
+      "package": {"ecosystem": "PyPI", "name": "demo-lib"},
+      "ranges": [
+        {"type": "SEMVER", "events": [{"introduced": "0"}, {"fixed": "1.2.0"}]}
+      ]
+    },
+    {
+      "package": {"ecosystem": "npm", "name": "demo-lib"},
+      "ranges": [
+        {"type": "SEMVER", "events": [{"introduced": "0"}]}
+      ]
+    }
+  ]
+}
+

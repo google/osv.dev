@@ -73,7 +73,7 @@
         </div>
       </div>
       <div role="rowgroup" class="vuln-table-rows mdc-data-table__content">
-        <turbo-frame id="vulnerability-table-page{{ .Page }}" data-turbo-action="advance" target="_top">
+        <turbo-frame id="vulnerability-table-page{{ if .CurrentAfter }}-{{ .CurrentAfter }}{{ end }}" data-turbo-action="advance" target="_top">
           {{ range .Vulnerabilities }}
           <div role="row" class="vuln-table-row mdc-data-table__row">
             <span role="cell" class="vuln-table-cell mdc-data-table__cell">
@@ -122,15 +122,11 @@
           {{ if eq (len .Vulnerabilities) 0 }}
           <span class="no-results">No results (check our <a href="https://google.github.io/osv.dev/faq/">FAQ</a> if this is unexpected)</span>
           {{ end }}
-          {{ if lt .Page .TotalPages }}
-          <turbo-frame id="vulnerability-table-page{{ add .Page 1 }}" data-turbo-action="advance" target="_top" class="next-page-frame">
+          {{ if .NextAfter }}
+          <turbo-frame id="vulnerability-table-page-{{ .NextAfter }}" data-turbo-action="advance" target="_top" class="next-page-frame">
             <div class="next-page-container">
-              <a class="next-page-button link-button" data-turbo-frame="_self" href="/list?page={{ add .Page 1 }}{{ if $.Query }}&q={{ $.EncodedQuery }}{{ end }}{{ if $.SelectedEcosystem }}&ecosystem={{ $.EncodedEcosystem }}{{ end }}">
+              <a class="next-page-button link-button" data-turbo-frame="_self" href="/list?after={{ .NextAfter }}{{ if $.Query }}&q={{ $.Query }}{{ end }}{{ if $.SelectedEcosystem }}&ecosystem={{ $.SelectedEcosystem }}{{ end }}">
                 <span>Load more...</span>
-                {{ $pagesLeft := sub $.TotalPages $.Page }}
-                {{ if le $pagesLeft 3 }}
-                <span style="margin-left: 5px">({{ $pagesLeft }} page{{ if gt $pagesLeft 1 }}s{{ end }} left)</span>
-                {{ end }}
               </a>
               <md-circular-progress class="next-page-indicator" indeterminate density="-4" aria-label="Page loading progress"></md-circular-progress>
             </div>

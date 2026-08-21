@@ -256,10 +256,13 @@ steps:
   id: 'pull-recoverer'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '--target', 'recoverer', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/recoverer:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '--target', 'recoverer', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/recoverer:latest', '--pull', '.']
   dir: 'go'
   id: 'build-recoverer'
   waitFor: ['pull-recoverer', 'build-osv-server']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
   waitFor: ['build-recoverer', 'cloud-build-queue']

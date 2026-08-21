@@ -373,8 +373,8 @@ steps:
 
 # Build/push Debian copyright mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '.']
-  dir: 'vulnfeeds/cmd/mirrors/debian-copyright-mirror'
+  args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '-f', 'cmd/mirrors/debian-copyright-mirror/Dockerfile', '.']
+  dir: 'vulnfeeds'
   id: 'build-debian-copyright-mirror'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker

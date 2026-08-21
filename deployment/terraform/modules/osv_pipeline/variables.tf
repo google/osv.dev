@@ -96,6 +96,18 @@ variable "gitter_disk_size_gb" {
   default     = 6144 # 6TiB
 }
 
+variable "node_pool_location" {
+  type        = string
+  description = "Location for GKE worker node pools."
+  default     = "us-central1"
+}
+
+variable "node_pool_node_locations" {
+  type        = list(string)
+  description = "Node locations (zones) for GKE worker node pools."
+  default     = ["us-central1-a", "us-central1-b", "us-central1-f"]
+}
+
 # Networking
 variable "subnet_name" {
   type        = string

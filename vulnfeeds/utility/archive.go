@@ -16,12 +16,15 @@ package utility
 
 import (
 	"archive/tar"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+const maxTarEntrySize = 1 * 1024 * 1024 * 1024 // 1GB max entry size limit for decompression bomb protection
 
 // CreateTarArchive archives all files and subdirectories in sourceDir into the tar writer.
 func CreateTarArchive(sourceDir string, w io.Writer) error {
@@ -74,38 +77,77 @@ func CreateTarArchive(sourceDir string, w io.Writer) error {
 	})
 }
 
-const maxTarEntrySize = 1 * 1024 * 1024 * 1024 // 1GB max entry size limit
+// sanitizeTarPath validates that an archive entry name does not escape destDir (Zip Slip protection)
+// and returns the canonical target path.
+func sanitizeTarPath(destDir, name string) (string, error) {
+	cleanDest := filepath.Clean(destDir)
+	cleanName := filepath.Clean(filepath.FromSlash(name))
 
-// ExtractTarArchive extracts a tar archive stream into the destination directory.
+	// Reject absolute paths and parent directory traversals
+	if filepath.IsAbs(cleanName) || strings.HasPrefix(cleanName, string(os.PathSeparator)) {
+		return "", fmt.Errorf("illegal absolute path in tar archive: %s", name)
+	}
+	if cleanName == ".." || strings.HasPrefix(cleanName, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path traversal attempt in tar archive: %s", name)
+	}
+
+	targetPath := filepath.Join(cleanDest, cleanName)
+	cleanTarget := filepath.Clean(targetPath)
+
+	// Ensure target path is strictly inside cleanDest
+	rel, err := filepath.Rel(cleanDest, cleanTarget)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path traversal attempt in tar archive: %s", name)
+	}
+
+	return cleanTarget, nil
+}
+
+// ExtractTarArchive extracts a tar archive stream into the destination directory,
+// protecting against path traversal (Zip Slip), symlink hijacking, and decompression bombs.
 func ExtractTarArchive(r io.Reader, destDir string) error {
 	tr := tar.NewReader(r)
 	cleanDest := filepath.Clean(destDir)
 
+	if err := os.MkdirAll(cleanDest, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory %s: %w", cleanDest, err)
+	}
+
 	for {
 		hdr, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
 			return fmt.Errorf("error reading tar entry: %w", err)
 		}
 
-		// Prevent Zip Slip / path traversal
-		targetPath := filepath.Join(cleanDest, filepath.FromSlash(hdr.Name))
-		if !strings.HasPrefix(targetPath, cleanDest+string(os.PathSeparator)) && targetPath != cleanDest {
-			return fmt.Errorf("illegal file path in tar archive: %s", hdr.Name)
+		targetPath, err := sanitizeTarPath(cleanDest, hdr.Name)
+		if err != nil {
+			return err
 		}
 
 		switch hdr.Typeflag {
 		case tar.TypeDir:
+			if targetPath == cleanDest {
+				continue
+			}
 			if err := os.MkdirAll(targetPath, 0755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", targetPath, err)
 			}
 		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			if targetPath == cleanDest {
+				return fmt.Errorf("tar entry attempts to overwrite destination directory: %s", hdr.Name)
+			}
+			dir := filepath.Dir(targetPath)
+			if err := os.MkdirAll(dir, 0755); err != nil {
 				return fmt.Errorf("failed to create directory for file %s: %w", targetPath, err)
 			}
-			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, hdr.FileInfo().Mode())
+
+			// Clean existing file to avoid writing through pre-existing symlinks
+			_ = os.Remove(targetPath)
+
+			outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 			if err != nil {
 				return fmt.Errorf("failed to create file %s: %w", targetPath, err)
 			}
@@ -113,7 +155,12 @@ func ExtractTarArchive(r io.Reader, destDir string) error {
 				outFile.Close()
 				return fmt.Errorf("failed to write file content %s: %w", targetPath, err)
 			}
-			outFile.Close()
+			if err := outFile.Close(); err != nil {
+				return fmt.Errorf("failed to close file %s: %w", targetPath, err)
+			}
+		default:
+			// Skip unsupported entry types (symlinks, devices, pipes) to prevent link-based traversal attacks
+			continue
 		}
 	}
 

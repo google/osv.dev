@@ -15,6 +15,7 @@
 package utility
 
 import (
+	"archive/tar"
 	"bytes"
 	"os"
 	"path/filepath"
@@ -65,5 +66,43 @@ func TestTarArchiveRoundtrip(t *testing.T) {
 	}
 	if string(data2) != "nested file content" {
 		t.Errorf("file2 content = %q, want %q", string(data2), "nested file content")
+	}
+}
+
+func TestExtractTarArchive_ZipSlipProtection(t *testing.T) {
+	maliciousPaths := []string{
+		"../escaped.txt",
+		"../../../../etc/passwd",
+		"/etc/passwd",
+		"sub/../../escaped.txt",
+		"sub/../../../escaped.txt",
+		"../dest_sibling.txt",
+	}
+
+	for _, malPath := range maliciousPaths {
+		t.Run(malPath, func(t *testing.T) {
+			destDir := filepath.Join(t.TempDir(), "target")
+			var buf bytes.Buffer
+			tw := tar.NewWriter(&buf)
+
+			hdr := &tar.Header{
+				Name:     malPath,
+				Mode:     0600,
+				Size:     int64(len("malicious")),
+				Typeflag: tar.TypeReg,
+			}
+			if err := tw.WriteHeader(hdr); err != nil {
+				t.Fatalf("Failed to write tar header: %v", err)
+			}
+			if _, err := tw.Write([]byte("malicious")); err != nil {
+				t.Fatalf("Failed to write tar body: %v", err)
+			}
+			tw.Close()
+
+			err := ExtractTarArchive(&buf, destDir)
+			if err == nil {
+				t.Errorf("Expected Zip Slip error for path %q, got nil", malPath)
+			}
+		})
 	}
 }

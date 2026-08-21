@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -56,6 +57,7 @@ func TestRepoName(t *testing.T) {
 }
 
 func TestRepoTags(t *testing.T) {
+	testutils.SetupGitVCR(t)
 	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
@@ -89,6 +91,12 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
 				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
+				{Tag: "v1.7.4.3430", Commit: "a84e101fd4d70b6225086d862068c0d42c302880"},
+				{Tag: "v1.7.5.3500", Commit: "221e21bfca7ad6966760612217dc6447f4cea868"},
+				{Tag: "v1.7.5.3510", Commit: "5ddc6d1bdc2735940f6dfba2aeb9258e31f3353f"},
+				{Tag: "v1.7.5.3520", Commit: "36983e144ba0402b5577338ee239a8957b8d1208"},
+				{Tag: "v1.7.5.3530", Commit: "f46a2973e4ad32c49d09eb776443964c6263adb4"},
+				{Tag: "v1.7.5.3540", Commit: "4f980c0da629a05c34c8d46db25fb24b356dac40"},
 			},
 			expectedOk: true,
 		},
@@ -115,6 +123,12 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
 				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
+				{Tag: "v1.7.4.3430", Commit: "a84e101fd4d70b6225086d862068c0d42c302880"},
+				{Tag: "v1.7.5.3500", Commit: "221e21bfca7ad6966760612217dc6447f4cea868"},
+				{Tag: "v1.7.5.3510", Commit: "5ddc6d1bdc2735940f6dfba2aeb9258e31f3353f"},
+				{Tag: "v1.7.5.3520", Commit: "36983e144ba0402b5577338ee239a8957b8d1208"},
+				{Tag: "v1.7.5.3530", Commit: "f46a2973e4ad32c49d09eb776443964c6263adb4"},
+				{Tag: "v1.7.5.3540", Commit: "4f980c0da629a05c34c8d46db25fb24b356dac40"},
 			},
 			expectedOk: true,
 		},
@@ -180,7 +194,7 @@ func TestRepoTags(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -280,6 +294,7 @@ func TestNormalizeRepoTag(t *testing.T) {
 }
 
 func TestNormalizeRepoTags(t *testing.T) {
+	testutils.SetupGitVCR(t)
 	tests := []struct {
 		description       string
 		inputRepoURL      string
@@ -310,7 +325,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 	cache := &InMemoryRepoTagsCache{}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestNormalizeRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -332,6 +347,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 }
 
 func TestValidRepo(t *testing.T) {
+	testutils.SetupGitVCR(t)
 	tests := []struct {
 		description       string
 		repoURL           string
@@ -378,7 +394,7 @@ func TestValidRepo(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			// This tests against Internet hosts and may have intermittent failures.
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestValidRepo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.repoURL, tc.disableExpiryDate)
@@ -394,12 +410,21 @@ func TestValidRepo(t *testing.T) {
 
 func TestInvalidRepos(t *testing.T) {
 	testutils.SetupGitVCR(t)
+	var mu sync.Mutex
 	redundantRepos := []string{}
+	var wg sync.WaitGroup
 	for _, repo := range models.InvalidRepos {
-		if valid, _ := ValidRepoAndHasUsableRefs(repo); !valid {
-			redundantRepos = append(redundantRepos, repo)
-		}
+		wg.Add(1)
+		go func(r string) {
+			defer wg.Done()
+			if valid, _ := ValidRepoAndHasUsableRefs(r); !valid {
+				mu.Lock()
+				redundantRepos = append(redundantRepos, r)
+				mu.Unlock()
+			}
+		}(repo)
 	}
+	wg.Wait()
 	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}

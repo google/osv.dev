@@ -33,15 +33,15 @@ func TestVersionToAffectedCommit(t *testing.T) {
 			expectedOk:     true,
 		},
 		{
-			description:    "A fuzzy version match",
-			inputRepoURL:   "https://gitlab.com/gitlab-org/gitlab",
+			description:    "A fuzzy version match (fallback to -0)",
+			inputRepoURL:   "https://github.com/urllib3/urllib3",
 			cache:          cache,
-			inputVersion:   "12.0",
-			expectedResult: "3b13818e8330f68625d80d9bf5d8049c41fbe197",
+			inputVersion:   "1.26",
+			expectedResult: "ddb8c96bd93f3a00fe9eba142e6739533c2b7164",
 			expectedOk:     true,
 		},
 		{
-			description:    "A fuzzy version match",
+			description:    "A fuzzy version match (stripped prefix)",
 			inputRepoURL:   "https://github.com/eclipse-openj9/openj9",
 			cache:          cache,
 			inputVersion:   "0.38.0",
@@ -403,6 +403,10 @@ func TestValidateAndCanonicalizeLink_429(t *testing.T) {
 }
 
 func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
+	oldDelay := BackoffBaseDelay
+	BackoffBaseDelay = 1 * time.Millisecond
+	defer func() { BackoffBaseDelay = oldDelay }()
+
 	requests := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++

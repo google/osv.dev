@@ -114,6 +114,18 @@ func (m mockLinterStore) GetFindings(_ context.Context, source string) ([]byte, 
 	return nil, models.ErrNotFound
 }
 
+type mockTriageStore struct {
+	models.UnimplementedTriageStore
+}
+
+func (m mockTriageStore) GetFile(_ context.Context, source, cveID string) ([]byte, error) {
+	if cveID == "CVE-2024-1234" && (source == "test-nvd" || source == "cve") {
+		return []byte(`{"id":"CVE-2024-1234"}`), nil
+	}
+
+	return nil, models.ErrNotFound
+}
+
 func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
@@ -121,6 +133,7 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 			"go/base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
 			"go/404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
 			"go/linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
+			"go/triage.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}triage{{ end }}`)},
 		}
 	}
 	if cfg.DocsFS == nil {
@@ -140,6 +153,12 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	}
 	if cfg.Stores.Linter == nil {
 		cfg.Stores.Linter = mockLinterStore{}
+	}
+	if cfg.Stores.Triage == nil {
+		cfg.Stores.Triage = mockTriageStore{}
+	}
+	if !cfg.Auth.BypassOAuth && cfg.Auth.ClientID == "" && cfg.Auth.ClientSecret == "" {
+		cfg.Auth.BypassOAuth = true
 	}
 	srv, err := website.NewServer(cfg)
 	if err != nil {
@@ -161,6 +180,7 @@ func TestNewServer_NilConfig(t *testing.T) {
 			SourceRepo: mockSourceRepoStore{},
 			VulnSearch: mockVulnSearchStore{},
 			Linter:     mockLinterStore{},
+			Triage:     mockTriageStore{},
 		},
 	}
 
@@ -208,6 +228,12 @@ func TestNewServer_NilConfig(t *testing.T) {
 	noLinter.Stores.Linter = nil
 	if _, err := website.NewServer(noLinter); err == nil {
 		t.Errorf("expected error when Stores.Linter is nil, got nil")
+	}
+
+	noTriage := validConfig
+	noTriage.Stores.Triage = nil
+	if _, err := website.NewServer(noTriage); err == nil {
+		t.Errorf("expected error when Stores.Triage is nil, got nil")
 	}
 }
 
@@ -712,33 +738,289 @@ func TestVulnerabilityJSON(t *testing.T) {
 	})
 }
 
-func TestEndpointRegistration(t *testing.T) {
+func TestAuthEndpoints(t *testing.T) {
 	t.Parallel()
 
-	srv := newTestServer(t, website.Config{})
-
-	endpoints := []struct {
-		method string
-		path   string
-	}{
-		{http.MethodPost, "/triage/proxy"},
-		{http.MethodGet, "/login"},
-		{http.MethodGet, "/auth/callback"},
-		{http.MethodGet, "/logout"},
-	}
-
-	for _, ep := range endpoints {
-		t.Run(ep.method+" "+ep.path, func(t *testing.T) {
-			t.Parallel()
-			req := httptest.NewRequest(ep.method, ep.path, nil)
-			rec := httptest.NewRecorder()
-			srv.ServeHTTP(rec, req)
-
-			if rec.Code != http.StatusNotImplemented {
-				t.Errorf("expected status 501 Not Implemented, got %d", rec.Code)
-			}
+	t.Run("GET /login with BypassOAuth sets cookie and redirects to /triage", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
 		})
-	}
+		req := httptest.NewRequest(http.MethodGet, "/login", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/triage" {
+			t.Errorf("expected Location '/triage', got %q", loc)
+		}
+		cookies := rec.Result().Cookies()
+		if len(cookies) == 0 || cookies[0].Name != "osv_session" {
+			t.Errorf("expected session cookie to be set")
+		}
+	})
+
+	t.Run("GET /login without credentials returns 500 JSON", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				ClientID: "missing-client-secret",
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/login", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusInternalServerError {
+			t.Errorf("expected status 500, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /login with credentials redirects to Google OAuth and sets state cookie", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/login", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		loc := rec.Header().Get("Location")
+		if !strings.HasPrefix(loc, "https://accounts.google.com/o/oauth2/auth") && !strings.HasPrefix(loc, "https://accounts.google.com/o/oauth2/v2/auth") {
+			t.Errorf("expected Location to start with Google auth URL, got %q", loc)
+		}
+		cookies := rec.Result().Cookies()
+		var stateCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "osv_oauth_state" {
+				stateCookie = c
+				break
+			}
+		}
+		if stateCookie == nil || stateCookie.Value == "" {
+			t.Errorf("expected osv_oauth_state cookie to be set")
+		}
+	})
+
+	t.Run("GET /auth/callback with mismatched state returns 400", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{})
+		req := httptest.NewRequest(http.MethodGet, "/auth/callback?state=invalid-state", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 Bad Request, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /logout clears session cookie and redirects", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{})
+		req := httptest.NewRequest(http.MethodGet, "/logout", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/triage" {
+			t.Errorf("expected Location '/triage', got %q", loc)
+		}
+		cookies := rec.Result().Cookies()
+		for _, c := range cookies {
+			if c.Name == "osv_session" && c.MaxAge != -1 {
+				t.Errorf("expected osv_session cookie to be cleared (MaxAge=-1), got %d", c.MaxAge)
+			}
+		}
+	})
+}
+
+func TestTriageEndpoints(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GET /triage without auth redirects to /login", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/login" {
+			t.Errorf("expected Location '/login', got %q", loc)
+		}
+	})
+
+	t.Run("GET /triage with valid session cookie renders 200 OK", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+				SecretKey:    "test-secret-key-12345",
+			},
+		})
+
+		// First log in with bypass to get a valid session cookie
+		bypassSrv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+				SecretKey:   "test-secret-key-12345",
+			},
+		})
+		loginReq := httptest.NewRequest(http.MethodGet, "/login", nil)
+		loginRec := httptest.NewRecorder()
+		bypassSrv.ServeHTTP(loginRec, loginReq)
+
+		cookies := loginRec.Result().Cookies()
+		var sessionCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "osv_session" {
+				sessionCookie = c
+				break
+			}
+		}
+		if sessionCookie == nil {
+			t.Fatalf("expected session cookie from login")
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		req.AddCookie(sessionCookie)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK with valid cookie, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /triage with invalid session cookie redirects to /login", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				ClientID:     "test-client-id",
+				ClientSecret: "test-client-secret",
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  "osv_session",
+			Value: "tampered-or-invalid-cookie",
+		})
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusFound {
+			t.Errorf("expected status 302 Found, got %d", rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "/login" {
+			t.Errorf("expected Location '/login', got %q", loc)
+		}
+	})
+
+	t.Run("GET /triage with BypassOAuth renders 200 OK", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /triage/proxy fetches file successfully", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage/proxy?source=test-nvd&id=CVE-2024-1234", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Errorf("expected status 200 OK, got %d", rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Errorf("expected Content-Type application/json, got %q", ct)
+		}
+		if rec.Body.String() != `{"id":"CVE-2024-1234"}` {
+			t.Errorf("unexpected response body: %s", rec.Body.String())
+		}
+	})
+
+	t.Run("GET /triage/proxy with missing params returns 400", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage/proxy", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 Bad Request, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /triage/proxy with invalid CVE ID format returns 400", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage/proxy?source=test-nvd&id=INVALID", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 Bad Request, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /triage/proxy with non-existent CVE returns 404", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage/proxy?source=test-nvd&id=CVE-2024-9999", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
+		}
+	})
 }
 
 func TestLinterEndpoints(t *testing.T) {

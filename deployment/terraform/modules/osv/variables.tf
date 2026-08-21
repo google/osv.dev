@@ -80,12 +80,6 @@ variable "create_oss_fuzz_subnet" {
   default     = false
 }
 
-variable "node_pool_location" {
-  type        = string
-  description = "Location for GKE worker node pools."
-  default     = "us-central1"
-}
-
 variable "node_pool_node_locations" {
   type        = list(string)
   description = "Node locations (zones) for GKE worker node pools."

@@ -44,7 +44,8 @@ module "osv_pipeline" {
 module "osv_test" {
   source = "../../modules/osv"
 
-  project_id = "oss-vdb-test"
+  project_id                   = "oss-vdb-test"
+  worker_service_account_email = module.osv_pipeline.worker_service_account_email
 
   public_import_logs_bucket     = "osv-test-public-import-logs"
   logs_bucket                   = "osv-test-logs"

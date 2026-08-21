@@ -46,7 +46,8 @@ module "osv_pipeline" {
 module "osv" {
   source = "../../modules/osv"
 
-  project_id = "oss-vdb"
+  project_id                   = "oss-vdb"
+  worker_service_account_email = module.osv_pipeline.worker_service_account_email
 
   public_import_logs_bucket     = "osv-public-import-logs"
   cve_osv_conversion_bucket     = "cve-osv-conversion"

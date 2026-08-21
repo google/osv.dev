@@ -53,3 +53,9 @@ variable "website_domain" {
   description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."
 }
 
+variable "worker_service_account_email" {
+  type        = string
+  description = "The email of the GKE worker service account to grant access to OSV pipeline buckets and topics."
+  default     = ""
+}
+

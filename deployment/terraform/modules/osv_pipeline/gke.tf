@@ -45,10 +45,11 @@ resource "google_container_cluster" "workers" {
 }
 
 resource "google_container_node_pool" "default_pool" {
-  project  = var.project_id
-  name     = "default-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "default-pool"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
@@ -75,10 +76,11 @@ resource "google_container_node_pool" "default_pool" {
 }
 
 resource "google_container_node_pool" "highend" {
-  project  = var.project_id
-  name     = "highend"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "highend"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
   # For using the ephemeral storage local ssd config
   provider = google-beta
 

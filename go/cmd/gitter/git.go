@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -165,8 +166,10 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 						reason = "403 Forbidden"
 					case isRateLimitError(err):
 						reason = "upstream rate limit or load"
-					case isRemoteHostError(err) || ctx.Err() != nil:
+					case isRemoteHostError(err):
 						reason = "remote host or network error"
+					case ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
+						reason = "context cancelled"
 					}
 
 					if reason != "" {

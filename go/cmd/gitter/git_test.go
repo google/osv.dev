@@ -35,7 +35,7 @@ func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 	}
 }
 
-func TestRefreshRepo_InhibitRecloneOnRemoteError(t *testing.T) {
+func TestRefreshRepo_DontRecloneOnRemoteError(t *testing.T) {
 	setupTest(t)
 	ctx := t.Context()
 

@@ -16,6 +16,12 @@ func GetVersionExtractor(cna string) VersionExtractor {
 	switch cna {
 	case "Linux":
 		return &LinuxVersionExtractor{}
+	case "Wordfence":
+		return &WordpressExtractor{Handler: &WordfenceHandler{}}
+	case "Patchstack":
+		return &WordpressExtractor{Handler: &PatchstackHandler{}}
+	case "WPScan":
+		return &WordpressExtractor{Handler: &WPScanHandler{}}
 	default:
 		return &DefaultVersionExtractor{}
 	}

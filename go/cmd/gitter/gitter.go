@@ -83,6 +83,7 @@ var (
 	gitMirrors = map[string]string{
 		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
 		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"https://git.pengutronix.de/cgit/barebox":                            "https://github.com/barebox/barebox.git",
 	}
 )
 

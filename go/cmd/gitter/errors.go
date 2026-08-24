@@ -184,7 +184,7 @@ func errorToHTTPStatusCode(err error) int {
 	case isRateLimitError(err):
 		return http.StatusTooManyRequests // 429
 	case isRemoteHostError(err):
-		return http.StatusFailedDependency // 424
+		return http.StatusBadGateway // 502
 	default:
 		return http.StatusInternalServerError // 500
 	}

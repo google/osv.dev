@@ -64,6 +64,13 @@ module "osv_test" {
   indexer_repos_bucket   = "osv-test-indexer-repos"
 }
 
+# The test instance importer reads Android advisories from android-osv-test (configured in source_test.yaml)
+resource "google_storage_bucket_iam_member" "worker_android_import" {
+  bucket = "android-osv-test"
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${module.osv_pipeline.worker_service_account_email}"
+}
+
 module "k8s_cron_alert" {
   for_each                         = local.kube_manifests
   source                           = "../../modules/k8s_cron_alert"

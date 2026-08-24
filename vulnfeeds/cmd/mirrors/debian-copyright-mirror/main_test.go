@@ -139,10 +139,10 @@ func TestGenerateCurlConfiguration(t *testing.T) {
 	}
 }
 
-func TestDownloadFilesConcurrently(t *testing.T) {
+func TestExecuteCurl(t *testing.T) {
 	fileMap := map[string]string{
-		"main/a/pkg1/unstable_copyright": "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nSource: https://github.com/foo/pkg1\n",
-		"main/b/pkg2/unstable_copyright": "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nSource: https://github.com/bar/pkg2\n",
+		"main/a/pkg1/unstable_copyright": "Copyright pkg1\n",
+		"main/b/pkg2/unstable_copyright": "Copyright pkg2\n",
 	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,37 +158,56 @@ func TestDownloadFilesConcurrently(t *testing.T) {
 	defer ts.Close()
 
 	tempDir := t.TempDir()
-	ctx := context.Background()
-	client := ts.Client()
+	configPath := filepath.Join(tempDir, "curl_config")
+	workDir := filepath.Join(tempDir, "work")
 
 	filelist := []string{
 		"main/a/pkg1/unstable_copyright",
 		"main/b/pkg2/unstable_copyright",
 	}
 
-	if err := DownloadFilesConcurrently(ctx, client, filelist, ts.URL, tempDir, 2, false, 0.05); err != nil {
-		t.Fatalf("DownloadFilesConcurrently failed: %v", err)
+	if err := GenerateCurlConfiguration(filelist, ts.URL, configPath); err != nil {
+		t.Fatalf("GenerateCurlConfiguration failed: %v", err)
+	}
+
+	if err := ExecuteCurl(context.Background(), configPath, workDir); err != nil {
+		t.Fatalf("ExecuteCurl failed: %v", err)
 	}
 
 	for _, relPath := range filelist {
-		fullPath := filepath.Join(tempDir, relPath)
-		data, err := os.ReadFile(fullPath)
+		data, err := os.ReadFile(filepath.Join(workDir, relPath))
 		if err != nil {
-			t.Errorf("Failed to read %s: %v", relPath, err)
+			t.Errorf("Failed to read downloaded file %s: %v", relPath, err)
 			continue
 		}
 		if string(data) != fileMap[relPath] {
 			t.Errorf("Content mismatch for %s: got %q, want %q", relPath, string(data), fileMap[relPath])
 		}
 	}
+}
 
-	// Test failure threshold breach
-	badFileList := []string{
-		"main/missing/1",
-		"main/missing/2",
+func TestCreateTarArchive(t *testing.T) {
+	tempDir := t.TempDir()
+	workDir := filepath.Join(tempDir, "work")
+	subDir := filepath.Join(workDir, "main", "a", "pkg1")
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
 	}
-	err := DownloadFilesConcurrently(ctx, client, badFileList, ts.URL, tempDir, 2, false, 0.05)
-	if err == nil {
-		t.Errorf("Expected failure threshold error, got nil")
+	filePath := filepath.Join(subDir, "unstable_copyright")
+	if err := os.WriteFile(filePath, []byte("test copyright content"), 0600); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	tarPath := filepath.Join(workDir, "test_archive.tar")
+	if err := CreateTarArchive(context.Background(), workDir, tarPath); err != nil {
+		t.Fatalf("CreateTarArchive failed: %v", err)
+	}
+
+	fi, err := os.Stat(tarPath)
+	if err != nil {
+		t.Fatalf("Expected tar file to exist: %v", err)
+	}
+	if fi.Size() == 0 {
+		t.Errorf("Expected non-empty tar archive")
 	}
 }

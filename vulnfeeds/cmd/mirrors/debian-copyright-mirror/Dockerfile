@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build -o debian-copyright-mirror ./cmd/mirrors/debian-copyr
 
 FROM alpine:3.21
 
-RUN apk add --no-cache xz curl ca-certificates
+RUN apk add --no-cache xz curl tar ca-certificates
 
 COPY --from=GO_BUILD /src/debian-copyright-mirror /usr/local/bin/debian-copyright-mirror
 

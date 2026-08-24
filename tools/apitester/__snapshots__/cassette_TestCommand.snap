@@ -7512,7 +7512,7 @@
         },
         {
           "id": "GHSA-xc3p-ff3m-f46v",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2020-43",
@@ -8764,7 +8764,7 @@
         },
         {
           "id": "GHSA-xc3p-ff3m-f46v",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2020-43",

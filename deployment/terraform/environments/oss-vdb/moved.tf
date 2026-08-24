@@ -1,0 +1,105 @@
+# Migration of pipeline resources from module.osv to module.osv_pipeline
+
+# Datastore & Storage
+moved {
+  from = module.osv.google_firestore_database.datastore
+  to   = module.osv_pipeline.google_firestore_database.datastore
+}
+
+moved {
+  from = module.osv.google_storage_bucket.osv_vulnerabilities_export
+  to   = module.osv_pipeline.google_storage_bucket.osv_vulnerabilities_export
+}
+
+moved {
+  from = module.osv.google_storage_bucket.affected_commits_backups_bucket
+  to   = module.osv_pipeline.google_storage_bucket.affected_commits_backups_bucket
+}
+
+# GKE Cluster & Node Pools & Gitter Disk
+moved {
+  from = module.osv.google_container_cluster.workers
+  to   = module.osv_pipeline.google_container_cluster.workers
+}
+
+moved {
+  from = module.osv.google_container_node_pool.default_pool
+  to   = module.osv_pipeline.google_container_node_pool.default_pool
+}
+
+moved {
+  from = module.osv.google_container_node_pool.highend
+  to   = module.osv_pipeline.google_container_node_pool.highend
+}
+
+moved {
+  from = module.osv.google_compute_disk.gitter_disk
+  to   = module.osv_pipeline.google_compute_disk.gitter_disk
+}
+
+# Network
+moved {
+  from = module.osv.google_compute_subnetwork.my_subnet_0
+  to   = module.osv_pipeline.google_compute_subnetwork.my_subnet_0
+}
+
+moved {
+  from = module.osv.google_compute_router.router
+  to   = module.osv_pipeline.google_compute_router.router
+}
+
+moved {
+  from = module.osv.google_compute_router_nat.nat_config
+  to   = module.osv_pipeline.google_compute_router_nat.nat_config
+}
+
+moved {
+  from = module.osv.google_compute_subnetwork.oss_fuzz_subnet[0]
+  to   = module.osv_pipeline.google_compute_subnetwork.oss_fuzz_subnet[0]
+}
+
+# Pub/Sub
+moved {
+  from = module.osv.google_pubsub_topic.tasks
+  to   = module.osv_pipeline.google_pubsub_topic.tasks
+}
+
+moved {
+  from = module.osv.google_pubsub_topic.failed_tasks
+  to   = module.osv_pipeline.google_pubsub_topic.failed_tasks
+}
+
+moved {
+  from = module.osv.google_pubsub_subscription.default_work
+  to   = module.osv_pipeline.google_pubsub_subscription.default_work
+}
+
+moved {
+  from = module.osv.google_pubsub_subscription.work_pools
+  to   = module.osv_pipeline.google_pubsub_subscription.work_pools
+}
+
+moved {
+  from = module.osv.google_project_service_identity.pubsub
+  to   = module.osv_pipeline.google_project_service_identity.pubsub
+}
+
+moved {
+  from = module.osv.google_pubsub_subscription_iam_member.default_work_service_subscriber
+  to   = module.osv_pipeline.google_pubsub_subscription_iam_member.default_work_service_subscriber
+}
+
+moved {
+  from = module.osv.google_pubsub_topic_iam_member.failed_tasks_service_publisher
+  to   = module.osv_pipeline.google_pubsub_topic_iam_member.failed_tasks_service_publisher
+}
+
+moved {
+  from = module.osv.google_pubsub_subscription.recovery
+  to   = module.osv_pipeline.google_pubsub_subscription.recovery
+}
+
+moved {
+  from = module.osv.google_pubsub_subscription_iam_member.recovery_service_subscriber
+  to   = module.osv_pipeline.google_pubsub_subscription_iam_member.recovery_service_subscriber
+}

@@ -4329,6 +4329,7 @@
       "published": "2026-07-03T06:14:17.541Z",
       "related": [
         "ALSA-2026:55439",
+        "ALSA-2026:57462",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4828,7 +4829,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-5prr-v3j2-97mh",
@@ -4872,7 +4873,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4922,7 +4923,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4983,7 +4984,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-8678-w3jw-xfc2",
@@ -5027,7 +5028,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5077,7 +5078,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5126,7 +5127,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5191,7 +5192,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5241,7 +5242,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5291,7 +5292,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5340,7 +5341,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5393,7 +5394,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wfpw-mmfh-qq69",
@@ -5437,7 +5438,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wjv4-x9w8-wm3h",
@@ -5481,7 +5482,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5530,7 +5531,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5611,7 +5612,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5677,7 +5678,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5747,7 +5748,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6057,7 +6058,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6123,7 +6124,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6193,7 +6194,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6504,7 +6505,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6570,7 +6571,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6640,7 +6641,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",

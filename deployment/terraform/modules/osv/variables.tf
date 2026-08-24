@@ -8,11 +8,6 @@ variable "public_import_logs_bucket" {
   description = "Name of bucket to write importer logs to."
 }
 
-variable "vulnerabilities_export_bucket" {
-  type        = string
-  description = "Name of bucket to export vulnerabilities to."
-}
-
 variable "logs_bucket" {
   type        = string
   description = "Name of bucket to export logs to."
@@ -26,16 +21,6 @@ variable "backups_bucket" {
 variable "backups_bucket_retention_days" {
   type        = number
   description = "Number of days to retain osv backups"
-}
-
-variable "affected_commits_backups_bucket" {
-  type        = string
-  description = "Name of bucket to backup osv AffectedCommits entries to."
-}
-
-variable "affected_commits_backups_bucket_retention_days" {
-  type        = number
-  description = "Number of days to retain osv AffectedCommits backups"
 }
 
 variable "cve_osv_conversion_bucket" {
@@ -68,20 +53,33 @@ variable "website_domain" {
   description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."
 }
 
-variable "extra_work_pools" {
-  type        = list(string)
-  description = "Additional Pub/Sub worker pool subscriptions to create"
-  default     = []
+variable "worker_service_account_email" {
+  type        = string
+  description = "The email of the GKE worker service account to grant access to OSV pipeline buckets and topics."
+  default     = ""
 }
 
-variable "create_oss_fuzz_subnet" {
-  type        = bool
-  description = "Whether to create the OSS-Fuzz subnetwork and add it to NAT."
-  default     = false
+variable "indexer_configs_bucket" {
+  type        = string
+  description = "Name of bucket storing indexer configuration."
+  default     = ""
 }
 
-variable "node_pool_node_locations" {
-  type        = list(string)
-  description = "Node locations (zones) for GKE worker node pools."
-  default     = ["us-central1-a", "us-central1-b", "us-central1-f"]
+variable "indexer_repos_bucket" {
+  type        = string
+  description = "Name of bucket storing indexer repository data."
+  default     = ""
 }
+
+variable "indexer_topic" {
+  type        = string
+  description = "Name of indexer Pub/Sub topic."
+  default     = "indexer-work"
+}
+
+variable "indexer_subscription" {
+  type        = string
+  description = "Name of indexer Pub/Sub subscription."
+  default     = "indexer-work-sub"
+}
+

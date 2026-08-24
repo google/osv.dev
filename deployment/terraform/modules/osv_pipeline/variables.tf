@@ -127,3 +127,15 @@ variable "nat_name" {
   default     = "nat-config"
 }
 
+variable "logs_bucket" {
+  type        = string
+  description = "The name of the GCS bucket for access logging."
+  default     = ""
+}
+
+variable "create_oss_fuzz_subnet" {
+  type        = bool
+  description = "Whether to create the OSS-Fuzz subnetwork and add it to NAT."
+  default     = false
+}
+

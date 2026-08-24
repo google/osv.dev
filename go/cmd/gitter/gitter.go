@@ -783,8 +783,8 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			logger.DebugContext(ctx, "Local repo not found, using ls-remote")
 			tagsMapAny, errLsRemote, _ := gLsRemote.Do(repoURL, func() (any, error) {
 				tags, err := repo.GetRemoteTags(ctx)
-				if err != nil && !isAuthError(err) && !isForbiddenError(err) && !isNotFoundError(err) {
-					logger.ErrorContext(ctx, "Error running git ls-remote", slog.Any("error", err))
+				if err != nil && !isAuthError(err) && !isForbiddenError(err) && !isNotFoundError(err) && !isRateLimitError(err) && !isRemoteHostError(err) && !errors.Is(ctx.Err(), context.Canceled) && !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+					logger.WarnContext(ctx, "Error running git ls-remote", slog.Any("error", err))
 				}
 
 				return tags, err
@@ -801,7 +801,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if len(tagsMap) == 0 {
-		logger.InfoContext(ctx, "No tags in repository")
+		logger.DebugContext(ctx, "No tags in repository")
 		invalidRepoCache.SetWithTTL(repoURL, http.StatusNoContent, 1, invalidRepoTTL)
 		statusCode = http.StatusNoContent
 		w.WriteHeader(statusCode)

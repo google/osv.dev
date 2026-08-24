@@ -69,8 +69,7 @@ func buildPartitionQueries(globalPrefix string, breakdownPrefixes []string) []*s
 		return []*storage.Query{{Prefix: globalPrefixWithSlash}}
 	}
 
-	sortedBreakdowns := make([]string, len(breakdownPrefixes))
-	copy(sortedBreakdowns, breakdownPrefixes)
+	sortedBreakdowns := slices.Clone(breakdownPrefixes)
 	slices.Sort(sortedBreakdowns)
 
 	queries := make([]*storage.Query, 0, len(sortedBreakdowns)+1)

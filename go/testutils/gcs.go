@@ -55,8 +55,7 @@ func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error)
 	}
 
 	// Return copies to prevent race conditions if the caller modifies the slice.
-	dataCopy := make([]byte, len(obj.data))
-	copy(dataCopy, obj.data)
+	dataCopy := slices.Clone(obj.data)
 
 	return dataCopy, nil
 }

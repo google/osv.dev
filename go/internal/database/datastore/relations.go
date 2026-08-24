@@ -58,8 +58,7 @@ func (s *RelationsStore) GetRelated(ctx context.Context, id string) (*models.Get
 	if err != nil {
 		return nil, fmt.Errorf("failed to get related group: %w", err)
 	}
-	related := make([]string, len(relatedGroup.RelatedIDs))
-	copy(related, relatedGroup.RelatedIDs)
+	related := slices.Clone(relatedGroup.RelatedIDs)
 	slices.Sort(related)
 
 	return &models.GetRelatedResult{
@@ -87,8 +86,7 @@ func (s *RelationsStore) GetUpstream(ctx context.Context, id string) (*models.Ge
 	if err != nil {
 		return nil, err
 	}
-	upstream := make([]string, len(upstreamGroup.UpstreamIDs))
-	copy(upstream, upstreamGroup.UpstreamIDs)
+	upstream := slices.Clone(upstreamGroup.UpstreamIDs)
 	slices.Sort(upstream)
 
 	return &models.GetUpstreamResult{

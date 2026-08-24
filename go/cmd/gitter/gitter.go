@@ -83,6 +83,7 @@ var (
 	gitMirrors = map[string]string{
 		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
 		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"https://git.pengutronix.de/cgit/barebox":                            "https://github.com/barebox/barebox.git",
 	}
 )
 
@@ -295,6 +296,7 @@ func getRepoDirName(repoURL string) string {
 	base := path.Base(repoURL)
 	base = filepath.Base(base)
 	base = strings.TrimSuffix(base, ".git")
+	base = url.QueryEscape(base)
 	hash := sha256.Sum256([]byte(repoURL))
 
 	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(hash[:]))

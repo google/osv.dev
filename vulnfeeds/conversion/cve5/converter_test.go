@@ -11,8 +11,8 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -203,6 +203,32 @@ func TestFromCVE5(t *testing.T) {
 					DatabaseSpecific: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
 							"isDisputed":         structpb.NewBoolValue(true),
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "rejected record",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID:         "CVE-2025-8888",
+					State:         "REJECTED",
+					DatePublished: "2025-05-04T07:20:46.575Z",
+					DateUpdated:   "2025-05-04T07:20:46.575Z",
+				},
+			},
+			refs: []models.Reference{},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:            "CVE-2025-8888",
+					SchemaVersion: "1.7.5",
+					Published:     timestamppb.New(cvePlaceholder),
+					Modified:      timestamppb.New(cvePlaceholder),
+					Withdrawn:     timestamppb.New(cvePlaceholder),
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
 							"osv_generated_from": structpb.NewStringValue("unknown"),
 						},
 					},
@@ -444,6 +470,29 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 			}
 			snaps.MatchSnapshot(t, strings.ReplaceAll(vWriter.String(), `"schema_version": "`+osvconstants.SchemaVersion+`"`, `"schema_version": "1.0.0"`))
 		})
+	}
+}
+
+func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
+	cve := loadTestData(t, "CVE-2025-1110")
+
+	// 1. Untyped nil metricsSink
+	vWriter := bytes.NewBuffer(nil)
+	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, nil, "")
+	if err != nil {
+		t.Fatalf("Unexpected error with untyped nil metricsSink: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+
+	// 2. Both sinks nil
+	metrics, err = ConvertAndExportCVEToOSV(cve, nil, nil, "")
+	if err != nil {
+		t.Fatalf("Unexpected error with both sinks nil: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
 	}
 }
 

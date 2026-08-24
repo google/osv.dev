@@ -96,16 +96,10 @@ variable "gitter_disk_size_gb" {
   default     = 6144 # 6TiB
 }
 
-variable "importer_reconciler_git_cache_disk_name" {
-  type        = string
-  description = "The name of the persistent SSD disk for the importer reconciler git cache."
-  default     = "importer-reconciler-git-cache"
-}
-
-variable "importer_reconciler_git_cache_size_gb" {
-  type        = number
-  description = "The size in GiB of the persistent SSD disk used by the importer reconciler git cache."
-  default     = 200
+variable "node_pool_node_locations" {
+  type        = list(string)
+  description = "Node locations (zones) for GKE worker node pools."
+  default     = ["us-central1-a", "us-central1-b", "us-central1-f"]
 }
 
 # Networking

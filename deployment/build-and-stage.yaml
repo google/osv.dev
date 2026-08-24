@@ -62,7 +62,7 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker-base']
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
-# Build/push core worker/recoverer images.
+# Build/push core worker images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
   id: 'build-worker'
@@ -70,15 +70,6 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker']
   waitFor: ['build-worker', 'cloud-build-queue']
-
-- name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/recoverer'
-  id: 'build-recoverer'
-  waitFor: ['build-worker']
-- name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
-  waitFor: ['build-recoverer', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:latest', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', '-f', 'gcp/workers/oss_fuzz_worker/Dockerfile', '.']
@@ -99,15 +90,26 @@ steps:
 
 # Build/push go images
 - name: 'gcr.io/cloud-builders/docker'
+  args: ['buildx', 'create', '--name', 'osv-builder', '--use', '--driver-opt', 'network=host']
+  id: 'setup-buildx'
+  waitFor: ['setup']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+
+- name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker pull gcr.io/oss-vdb/importer:latest || exit 0']
   id: 'pull-importer'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '--target', 'importer', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/importer:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/importer:latest', '-t', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', '--target', 'importer', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/importer:latest', '--pull', '.']
   dir: 'go'
   id: 'build-importer'
-  waitFor: ['pull-importer']
+  waitFor: ['pull-importer', 'setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/importer']
   waitFor: ['build-importer', 'cloud-build-queue']
@@ -118,10 +120,13 @@ steps:
   id: 'pull-osv-worker'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/osv-worker:latest', '-t', 'gcr.io/oss-vdb/osv-worker:$COMMIT_SHA', '--target', 'worker', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-worker:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/osv-worker:latest', '-t', 'gcr.io/oss-vdb/osv-worker:$COMMIT_SHA', '--target', 'worker', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-worker:latest', '--pull', '.']
   dir: 'go'
   id: 'build-osv-worker'
   waitFor: ['pull-osv-worker', 'build-importer']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-worker']
   waitFor: ['build-osv-worker', 'cloud-build-queue']
@@ -132,10 +137,13 @@ steps:
   id: 'pull-exporter'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '--target', 'exporter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/exporter:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/exporter:latest', '-t', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', '--target', 'exporter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/exporter:latest', '--pull', '.']
   dir: 'go'
   id: 'build-exporter'
   waitFor: ['pull-exporter', 'build-osv-worker']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/exporter']
   waitFor: ['build-exporter', 'cloud-build-queue']
@@ -146,10 +154,13 @@ steps:
   id: 'pull-record-checker'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/record-checker:latest', '-t', 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA', '--target', 'recordchecker', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/record-checker:latest', '-t', 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA', '--target', 'recordchecker', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/record-checker:latest', '--pull', '.']
   dir: 'go'
   id: 'build-record-checker'
   waitFor: ['pull-record-checker', 'build-exporter']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/record-checker']
   waitFor: ['build-record-checker', 'cloud-build-queue']
@@ -160,10 +171,13 @@ steps:
   id: 'pull-relations'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/relations:latest', '-t', 'gcr.io/oss-vdb/relations:$COMMIT_SHA', '--target', 'relations', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/relations:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/relations:latest', '-t', 'gcr.io/oss-vdb/relations:$COMMIT_SHA', '--target', 'relations', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/relations:latest', '--pull', '.']
   dir: 'go'
   id: 'build-relations'
   waitFor: ['pull-relations', 'build-record-checker']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/relations']
   waitFor: ['build-relations', 'cloud-build-queue']
@@ -174,10 +188,13 @@ steps:
   id: 'pull-generatesitemap'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/generatesitemap:latest', '-t', 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA', '--target', 'generatesitemap', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/generatesitemap:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/generatesitemap:latest', '-t', 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA', '--target', 'generatesitemap', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/generatesitemap:latest', '--pull', '.']
   dir: 'go'
   id: 'build-generatesitemap'
   waitFor: ['pull-generatesitemap', 'build-relations']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/generatesitemap']
   waitFor: ['build-generatesitemap', 'cloud-build-queue']
@@ -188,10 +205,13 @@ steps:
   id: 'pull-custommetrics'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/custommetrics:latest', '-t', 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA', '--target', 'custommetrics', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/custommetrics:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/custommetrics:latest', '-t', 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA', '--target', 'custommetrics', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/custommetrics:latest', '--pull', '.']
   dir: 'go'
   id: 'build-custommetrics'
   waitFor: ['pull-custommetrics', 'build-generatesitemap']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/custommetrics']
   waitFor: ['build-custommetrics', 'cloud-build-queue']
@@ -202,10 +222,13 @@ steps:
   id: 'pull-gitter'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/gitter:latest', '-t', 'gcr.io/oss-vdb/gitter:$COMMIT_SHA', '--target', 'gitter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/gitter:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/gitter:latest', '-t', 'gcr.io/oss-vdb/gitter:$COMMIT_SHA', '--target', 'gitter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/gitter:latest', '--pull', '.']
   dir: 'go'
   id: 'build-gitter'
   waitFor: ['pull-gitter', 'build-custommetrics']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/gitter']
   waitFor: ['build-gitter', 'cloud-build-queue']
@@ -216,13 +239,33 @@ steps:
   id: 'pull-osv-server'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/osv-server:latest', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '--target', 'api', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-server:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/osv-server:latest', '-t', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', '--target', 'api', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-server:latest', '--pull', '.']
   dir: 'go'
   id: 'build-osv-server'
   waitFor: ['pull-osv-server', 'build-gitter']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-server']
   waitFor: ['build-osv-server', 'cloud-build-queue']
+
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/recoverer:latest || exit 0']
+  id: 'pull-recoverer'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/recoverer:latest', '-t', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', '--target', 'recoverer', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/recoverer:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-recoverer'
+  waitFor: ['pull-recoverer', 'build-osv-server']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/recoverer']
+  waitFor: ['build-recoverer', 'cloud-build-queue']
 
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
@@ -236,10 +279,13 @@ steps:
 
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--build-context', 'bindings=../bindings', '-f', 'cmd/osv-linter-worker/Dockerfile', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--build-context', 'bindings=../bindings', '-f', 'cmd/osv-linter-worker/Dockerfile', '.']
   dir: 'go'
   id: 'build-osv-linter'
   waitFor: ['build-worker', 'build-gitter']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/osv-linter']
   waitFor: ['build-osv-linter', 'cloud-build-queue']
@@ -358,10 +404,13 @@ steps:
   id: 'pull-first-package-finder'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '-t', 'gcr.io/oss-vdb/run_first_package_finder:latest', '-t', 'gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA', '--target', 'first_package_finder', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/run_first_package_finder:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/run_first_package_finder:latest', '-t', 'gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA', '--target', 'first_package_finder', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/run_first_package_finder:latest', '--pull', '.']
   dir: 'go'
   id: 'build-first-package-finder'
   waitFor: ['pull-first-package-finder', 'build-osv-linter']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/run_first_package_finder']
   waitFor: ['build-first-package-finder', 'cloud-build-queue']
@@ -403,11 +452,14 @@ steps:
   id: 'pull-website'
   waitFor: ['setup']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['buildx', 'build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
+  args: ['buildx', 'build', '--load', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
          '-f', 'gcp/website/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   id: 'build-website'
   waitFor: ['pull-website', 'build-first-package-finder']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/osv-website']
   waitFor: ['build-website', 'cloud-build-queue']

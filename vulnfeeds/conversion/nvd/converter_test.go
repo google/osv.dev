@@ -8,14 +8,15 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-cmp/cmp"
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -94,6 +95,37 @@ func TestCVEToOSV_429(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestCVEToOSV_Rejected(t *testing.T) {
+	cve := models.NVDCVE{
+		ID: "CVE-2025-54321",
+		VulnStatus: func() *string {
+			s := "Rejected"
+			return &s
+		}(),
+		LastModified: models.NVDTime{Time: func() time.Time {
+			t, _ := time.Parse(time.RFC3339, "2025-06-01T12:00:00Z")
+			return t
+		}()},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	cache := &git.InMemoryRepoTagsCache{}
+
+	vuln, _, outcome := CVEToOSV(cve, nil, nil, cache, metrics)
+
+	if outcome != models.Rejected {
+		t.Errorf("Expected outcome models.Rejected, got %v", outcome)
+	}
+
+	if vuln == nil {
+		t.Fatal("Expected non-nil vulnerability for rejected CVE")
+	}
+
+	if vuln.GetWithdrawn() == nil {
+		t.Error("Expected Withdrawn timestamp to be set for rejected CVE")
 	}
 }
 

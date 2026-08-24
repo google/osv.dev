@@ -10,11 +10,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -70,7 +70,30 @@ func getCWEs(cna models.CNA, metrics *models.ConversionMetrics) []string {
 // It populates the main fields of the OSV record, including ID, summary, details,
 // references, timestamps, severity, and version information.
 func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.ConversionMetrics, sourceLink string) *vulns.Vulnerability {
+	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
+	if err != nil {
+		metrics.AddNote("[%s]: Published date failed to parse, falling back to Epoch", cve.Metadata.CVEID)
+		published = time.Unix(0, 0).UTC()
+	}
+
+	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
+	if err != nil {
+		metrics.AddNote("[%s]: Modified date failed to parse, falling back to Published time", cve.Metadata.CVEID)
+		modified = published
+	}
+
+	var withdrawnTime *timestamppb.Timestamp
+	if cve.Metadata.State == "REJECTED" {
+		withdrawn, err := models.ParseCVE5Timestamp(cve.Metadata.DateRejected)
+		if err != nil {
+			metrics.AddNote("[%s]: Rejected date failed to parse or missing, falling back to Modified time", cve.Metadata.CVEID)
+			withdrawn = modified
+		}
+		withdrawnTime = timestamppb.New(withdrawn)
+	}
+
 	aliases, related := vulns.ExtractReferencedVulns(cve.Metadata.CVEID, cve.Metadata.CVEID, refs)
+
 	v := vulns.Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			SchemaVersion: osvconstants.SchemaVersion,
@@ -80,21 +103,10 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 			Aliases:       aliases,
 			Related:       related,
 			References:    vulns.ClassifyReferences(refs),
+			Withdrawn:     withdrawnTime,
+			Published:     timestamppb.New(published),
+			Modified:      timestamppb.New(modified),
 		}}
-
-	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
-	if err != nil {
-		metrics.AddNote("[%s]: Published date failed to parse, setting time to now", cve.Metadata.CVEID)
-		published = time.Now()
-	}
-	v.Published = timestamppb.New(published)
-
-	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
-	if err != nil {
-		metrics.AddNote("[%s]: Modified date failed to parse, setting time to now", cve.Metadata.CVEID)
-		modified = time.Now()
-	}
-	v.Modified = timestamppb.New(modified)
 
 	// Try to extract repository URLs from references.
 	repos := conversion.ReposFromReferencesCVEList(refs, models.RefTagDenyList, metrics)
@@ -162,6 +174,11 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 	// Collect metrics about the conversion.
 	extractConversionMetrics(cve, v.References, &metrics)
 
+	if cve.Metadata.State == "REJECTED" {
+		metrics.Outcome = models.Rejected
+		return v, &metrics
+	}
+
 	// Add affected version information.
 	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
 	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
@@ -174,25 +191,27 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 }
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
-// converts it into an OSV record, collects metrics, and writes both to disk.
+// converts it into an OSV record, collects metrics, and writes both to sinks if provided.
 func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*models.ConversionMetrics, error) {
 	v, metrics := CVEToOSV(cve, sourceLink)
 
-	err := v.ToJSON(vulnSink)
-	if err != nil {
-		logger.Info("Failed to write", slog.Any("err", err))
-		return metrics, err
+	if vulnSink != nil {
+		if err := v.ToJSON(vulnSink); err != nil {
+			logger.Info("Failed to write", slog.Any("err", err))
+			return metrics, err
+		}
 	}
 
-	marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
-	if err != nil {
-		logger.Info("Failed to marshal", slog.Any("err", err))
-		return metrics, err
-	}
-	_, err = metricsSink.Write(marshalledMetrics)
-	if err != nil {
-		logger.Info("Failed to write", slog.Any("err", err))
-		return metrics, err
+	if metricsSink != nil {
+		marshalledMetrics, err := json.MarshalIndent(metrics, "", "  ")
+		if err != nil {
+			logger.Info("Failed to marshal", slog.Any("err", err))
+			return metrics, err
+		}
+		if _, err := metricsSink.Write(marshalledMetrics); err != nil {
+			logger.Info("Failed to write", slog.Any("err", err))
+			return metrics, err
+		}
 	}
 
 	return metrics, nil

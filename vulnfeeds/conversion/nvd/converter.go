@@ -9,12 +9,12 @@ import (
 	"slices"
 	"strings"
 
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -28,6 +28,17 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	metrics.CPEs = CPEs
 	refs := c.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
+
+	if cve.VulnStatus != nil && *cve.VulnStatus == "Rejected" {
+		metrics.SetOutcome(models.Rejected)
+		v := vulns.FromNVDCVE(cve.ID, cve)
+		databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
+		if err == nil {
+			v.DatabaseSpecific = databaseSpecific
+		}
+
+		return v, metrics, models.Rejected
+	}
 
 	if len(CPEs) > 0 {
 		_, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.

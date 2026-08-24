@@ -46,10 +46,11 @@ resource "google_container_cluster" "workers" {
 }
 
 resource "google_container_node_pool" "default_pool" {
-  project  = var.project_id
-  name     = "default-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "default-pool"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
@@ -62,24 +63,25 @@ resource "google_container_node_pool" "default_pool" {
   autoscaling {
     min_node_count  = 1
     max_node_count  = 1000
-    location_policy = "BALANCED"
+    location_policy = "ANY"
   }
 
 
   node_config {
     machine_type = "n4-standard-8"
     disk_type    = "hyperdisk-balanced"
-    disk_size_gb = 64
+    disk_size_gb = 128
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 }
 
 resource "google_container_node_pool" "highend" {
-  project  = var.project_id
-  name     = "highend"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "highend"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
   # For using the ephemeral storage local ssd config
   provider = google-beta
 
@@ -115,41 +117,6 @@ resource "google_container_node_pool" "highend" {
       value  = "highend"
     }
 
-  }
-}
-
-resource "google_container_node_pool" "importer_pool" {
-  project    = var.project_id
-  name       = "importer-pool"
-  cluster    = google_container_cluster.workers.name
-  location   = google_container_cluster.workers.location
-  node_count = 1
-
-  lifecycle {
-    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
-    # A bit redundant since the cluster has prevent_destroy = true.
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  node_config {
-    machine_type    = "n2-highmem-4"
-    disk_type       = "pd-ssd"
-    disk_size_gb    = 64
-    local_ssd_count = 1
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "importer-pool"
-    }
-
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "importer-pool"
-    }
   }
 }
 
@@ -212,22 +179,6 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = 6144 # 6TiB
-
-  lifecycle {
-    ignore_changes = [
-      type,
-      snapshot,
-    ]
-  }
-}
-
-# Hyperdisk for Importer Reconciler
-resource "google_compute_disk" "importer_reconciler_git_cache" {
-  project = var.project_id
-  name    = "importer-reconciler-git-cache"
-  type    = "hyperdisk-balanced"
-  zone    = google_container_cluster.workers.location
-  size    = 200
 
   lifecycle {
     ignore_changes = [

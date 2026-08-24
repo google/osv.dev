@@ -24,6 +24,8 @@ func TestGetRepoDirName(t *testing.T) {
 		{"https://github.com/google/osv.dev.git", "osv.dev"},
 		{"https://github.com/google/osv.dev", "osv.dev"},
 		{"https://gitlab.com/gitlab-org/gitlab.git", "gitlab"},
+		{"http://some-domain.com/special_char-!@#$%^&*().,><;:?.git", "special_char-%21%40%23%24%25%5E%26%2A%28%29.%2C%3E%3C%3B%3A%3F"},
+		{"http://some-domain.com/repo with spaces.git", "repo+with+spaces"},
 	}
 
 	for _, tt := range tests {
@@ -115,6 +117,18 @@ func TestPrepareURL(t *testing.T) {
 		{
 			name:      "Unsupported protocol file://",
 			url:       "file://this-is-invalid",
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "URL with newline control character",
+			url:       "https://github.com/google/osv.dev\n.git",
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "URL with null byte control character",
+			url:       "https://github.com/google/osv.dev\x00.git",
 			expected:  "",
 			expectErr: true,
 		},

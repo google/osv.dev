@@ -12,17 +12,10 @@ spec:
     spec:
       template:
         spec:
-          tolerations:
-          - key: workloadType
-            operator: Equal
-            value: importer-pool
           containers:
           - name: importer
             image: importer
             imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
@@ -36,15 +29,9 @@ spec:
                 value: "reimport"
             resources:
               requests:
-                cpu: "1"
+                cpu: "3"
                 memory: "24G"
               limits:
-                cpu: "2"
-                memory: "32G"
-          nodeSelector:
-            cloud.google.com/gke-nodepool: importer-pool
+                cpu: "4"
+                memory: "29G"
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

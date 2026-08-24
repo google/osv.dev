@@ -46,6 +46,7 @@ type CVE5Metadata struct {
 	DateUpdated       string `json:"dateUpdated,omitempty"`
 	DateReserved      string `json:"dateReserved,omitempty"`
 	DatePublished     string `json:"datePublished,omitempty"`
+	DateRejected      string `json:"dateRejected,omitempty"`
 }
 
 type CPE struct {

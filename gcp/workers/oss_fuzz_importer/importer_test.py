@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Importer tests."""
-import contextlib
 import datetime
+import logging
 import os
 import shutil
 import tempfile
 import unittest
-import http.server
-import logging
-import threading
 
 from unittest import mock
 from urllib3.exceptions import SystemTimeWarning
@@ -30,7 +27,6 @@ from google.cloud import ndb
 from google.cloud import storage
 from google.cloud.storage import retry
 import pygit2
-from gcp.workers.mock_test.mock_test_handler import MockDataHandler
 import importer
 import osv
 from osv import tests
@@ -49,9 +45,6 @@ _MIN_INVALID_VULNERABILITY = '''{
    "id":"OSV-2017-145",
    "schema_version":"1.3.0",
 }'''
-PORT = 8888
-SERVER_ADDRESS = ('localhost', PORT)
-MOCK_ADDRESS_FORMAT = f"http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}/"
 
 
 @mock.patch('importer.utcnow',
@@ -860,183 +853,6 @@ class BucketImporterMassDeletionTest(unittest.TestCase):
             deleted='true',
             req_timestamp=mock.ANY)
     ])
-
-
-@mock.patch('importer.utcnow',
-            lambda: datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
-class RESTImporterTest(unittest.TestCase):
-  """REST importer tests."""
-  httpd = None
-
-  @classmethod
-  def setUpClass(cls):
-    # Start the emulator BEFORE creating the ndb client
-    cls.emulator = cls.enterClassContext(tests.datastore_emulator())
-    cls.enterClassContext(ndb.Client().context(cache_policy=False))
-
-  def setUp(self):
-    self.emulator.reset()
-    self.tmp_dir = tempfile.mkdtemp()
-
-    tests.mock_datetime(self)
-    warnings.filterwarnings('ignore', category=SystemTimeWarning)
-
-    storage_patcher = mock.patch('google.cloud.storage.Client')
-    self.addCleanup(storage_patcher.stop)
-    self.mock_storage_client = storage_patcher.start()
-
-    self.source_repo = osv.SourceRepository(
-        type=osv.SourceRepositoryType.REST_ENDPOINT,
-        id='curl',
-        name='curl',
-        link=MOCK_ADDRESS_FORMAT,
-        rest_api_url=MOCK_ADDRESS_FORMAT,
-        db_prefix=['CURL-', 'RHSA-', 'OSV-'],
-        extension='.json',
-        editable=False,
-        strict_validation=True)
-    self.source_repo.put()
-    self.tasks_topic = f'projects/{tests.TEST_PROJECT_ID}/topics/tasks'
-
-  def tearDown(self):
-    shutil.rmtree(self.tmp_dir, ignore_errors=True)
-
-  @contextlib.contextmanager
-  def server(self, handler_class):
-    """REST mock server context manager."""
-    httpd = http.server.HTTPServer(SERVER_ADDRESS, handler_class)
-    thread = threading.Thread(target=httpd.serve_forever)
-    thread.start()
-    try:
-      yield httpd
-    finally:
-      httpd.shutdown()
-      httpd.server_close()
-      thread.join()
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_invalid(self, unused_mock_time: mock.MagicMock,
-                   mock_publish: mock.MagicMock):
-    """Test invalid records are treated correctly."""
-    # TODO(apollock): implement
-
-  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
-  @mock.patch('time.time', return_value=12345.0)
-  def test_importer_bug_creation_and_update_rest(self, unused_mock_time,
-                                                 mock_publish):
-    """Test importer bug creation and updates via REST."""
-    self.skipTest('disabled')
-    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
-                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
-                            False, False)
-
-    # 1. Start with bug not in db.
-    test_id = 'OSV-TEST-REST-1'
-    self.assertIsNone(osv.Bug.get_by_id(test_id))
-
-    # 2. Run importer for one REST record.
-    vuln_v1 = f'''[{{
-       "id": "{test_id}",
-       "modified": "2023-01-01T00:00:00Z",
-       "schema_version": "1.3.0",
-       "summary": "Summary v1",
-       "affected": [
-         {{
-           "package": {{ "name": "package-a", "ecosystem": "PyPI" }},
-           "versions": [ "1.0.0" ]
-         }}
-       ]
-    }}]'''
-    data_handler = MockDataHandler
-    data_handler.last_modified = 'Mon, 01 Jan 2023 00:00:00 GMT'
-    data_handler.load_data(data_handler, vuln_v1)
-
-    with self.server(data_handler):
-      imp.run()
-
-    # 3. Check that record is now in db.
-    mock_publish.assert_called_once()
-    bug_v1 = osv.Bug.get_by_id(test_id)
-    self.assertIsNotNone(bug_v1)
-    self.assertEqual('Summary v1', bug_v1.summary)
-    self.assertEqual(1, len(bug_v1.affected_packages))
-    self.assertEqual('package-a', bug_v1.affected_packages[0].package.name)
-    self.assertIsNotNone(bug_v1.affected_checksum)
-    v1_checksum = bug_v1.affected_checksum
-
-    mock_publish.reset_mock()
-
-    # 4. Rerun import for record w/ modified affected[].
-    vuln_v2 = f'''[{{
-       "id": "{test_id}",
-       "modified": "2023-01-02T00:00:00Z",
-       "schema_version": "1.3.0",
-       "summary": "Summary v1",
-       "affected": [
-         {{
-           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
-           "versions": [ "2.0.0" ]
-         }}
-       ]
-    }}]'''
-    data_handler.last_modified = 'Mon, 02 Jan 2023 00:00:00 GMT'
-    data_handler.load_data(data_handler, vuln_v2)
-
-    with self.server(data_handler):
-      imp.run()
-
-    # 5. Check that modified affected now in datastore.
-    mock_publish.assert_called_once()
-    bug_v2 = osv.Bug.get_by_id(test_id)
-    self.assertIsNotNone(bug_v2)
-    self.assertEqual('Summary v1', bug_v2.summary)
-    self.assertEqual(1, len(bug_v2.affected_packages))
-    self.assertEqual('package-b', bug_v2.affected_packages[0].package.name)
-    self.assertNotEqual(v1_checksum, bug_v2.affected_checksum)
-    v2_checksum = bug_v2.affected_checksum
-
-    mock_publish.reset_mock()
-
-    # 6. Manually modify the Bug.affected (to pretend it's been enriched).
-    enriched_package = osv.AffectedPackage(
-        package=osv.Package(name='package-b', ecosystem='PyPI'),
-        ecosystem_specific={'extra_data': 'enriched'})
-    bug_v2.affected_packages = [enriched_package]
-    bug_v2.put()
-
-    # 7. Rerun import for record w/ modified summary (but affected the same).
-    vuln_v3 = f'''[{{
-       "id": "{test_id}",
-       "modified": "2023-01-03T00:00:00Z",
-       "schema_version": "1.3.0",
-       "summary": "Summary v3",
-       "affected": [
-         {{
-           "package": {{ "name": "package-b", "ecosystem": "PyPI" }},
-           "versions": [ "2.0.0" ]
-         }}
-       ]
-    }}]'''
-    data_handler.last_modified = 'Mon, 03 Jan 2023 00:00:00 GMT'
-    data_handler.load_data(data_handler, vuln_v3)
-
-    with self.server(data_handler):
-      imp.run()
-
-    # 8. Check that summary has been updated, but not affected.
-    mock_publish.assert_called_once()
-    bug_v3 = osv.Bug.get_by_id(test_id)
-    self.assertIsNotNone(bug_v3)
-    self.assertEqual('Summary v3', bug_v3.summary)
-    self.assertEqual(1, len(bug_v3.affected_packages))
-    self.assertEqual('package-b', bug_v3.affected_packages[0].package.name)
-    # This is the key check: the enriched data should still be there.
-    self.assertEqual({'extra_data': 'enriched'},
-                     bug_v3.affected_packages[0].ecosystem_specific)
-    # The checksum should be the same as before enrichment, as it's based on
-    # the raw vuln.
-    self.assertEqual(v2_checksum, bug_v3.affected_checksum)
 
 
 @mock.patch('importer.utcnow',

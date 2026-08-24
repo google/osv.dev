@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	minCoarseVersion = "00:00000000.00000000.00000000"
-	maxCoarseVersion = "99:99999999.99999999.99999999"
+	minCoarseVersion     = "00:00000000.00000000.00000000"
+	maxCoarseVersion     = "99:99999999.99999999.99999999"
+	maxVersionsPerEntity = 1000
 )
 
 func normalizeRepo(repoURL string) string {
@@ -126,34 +127,40 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			}
 		}
 
-		if pkgName != "" && len(affected.GetVersions()) > 0 {
-			hasAffected = true
-			coarseMin := minCoarseVersion
-			coarseMax := maxCoarseVersion
+		// In some extreme cases, we may have too many enumerated versions to fit
+		// in a single Datastore entity. Chunk them to prevent issues.
+		chunkedVersions := slices.Collect(slices.Chunk(affected.GetVersions(), maxVersionsPerEntity))
 
-			if exists {
-				var allCoarse []string
-				for _, v := range affected.GetVersions() {
-					if cm, err := eHelper.Coarse(v); err == nil {
-						allCoarse = append(allCoarse, cm)
+		if pkgName != "" && len(chunkedVersions) > 0 {
+			hasAffected = true
+			for _, chunk := range chunkedVersions {
+				coarseMin := minCoarseVersion
+				coarseMax := maxCoarseVersion
+
+				if exists {
+					var allCoarse []string
+					for _, v := range chunk {
+						if cm, err := eHelper.Coarse(v); err == nil {
+							allCoarse = append(allCoarse, cm)
+						}
+					}
+					if len(allCoarse) > 0 {
+						slices.Sort(allCoarse)
+						coarseMin = allCoarse[0]
+						coarseMax = allCoarse[len(allCoarse)-1]
 					}
 				}
-				if len(allCoarse) > 0 {
-					slices.Sort(allCoarse)
-					coarseMin = allCoarse[0]
-					coarseMax = allCoarse[len(allCoarse)-1]
-				}
-			}
 
-			for _, e := range allPkgEcosystems {
-				res = append(res, AffectedVersions{
-					VulnID:    vuln.GetId(),
-					Ecosystem: e,
-					Name:      pkgName,
-					Versions:  affected.GetVersions(),
-					CoarseMin: coarseMin,
-					CoarseMax: coarseMax,
-				})
+				for _, e := range allPkgEcosystems {
+					res = append(res, AffectedVersions{
+						VulnID:    vuln.GetId(),
+						Ecosystem: e,
+						Name:      pkgName,
+						Versions:  chunk,
+						CoarseMin: coarseMin,
+						CoarseMax: coarseMax,
+					})
+				}
 			}
 		}
 
@@ -174,15 +181,26 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 		}
 
 		if repoURL != "" {
-			// If we have a repository, always add a GIT entry.
-			// Even if affected.versions is empty, we still want to return this vuln
-			// for the API queries with no versions specified.
-			res = append(res, AffectedVersions{
-				VulnID:    vuln.GetId(),
-				Ecosystem: "GIT",
-				Name:      normalizeRepo(repoURL),
-				Versions:  affected.GetVersions(),
-			})
+			if len(chunkedVersions) == 0 {
+				// If we have a repository, always add a GIT entry.
+				// Even if affected.versions is empty, we still want to return this vuln
+				// for the API queries with no versions specified.
+				res = append(res, AffectedVersions{
+					VulnID:    vuln.GetId(),
+					Ecosystem: "GIT",
+					Name:      normalizeRepo(repoURL),
+					Versions:  []string{},
+				})
+			} else {
+				for _, chunk := range chunkedVersions {
+					res = append(res, AffectedVersions{
+						VulnID:    vuln.GetId(),
+						Ecosystem: "GIT",
+						Name:      normalizeRepo(repoURL),
+						Versions:  chunk,
+					})
+				}
+			}
 		}
 	}
 

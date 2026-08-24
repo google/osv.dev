@@ -82,7 +82,7 @@ func TestPayloadBuilders(t *testing.T) {
 	})
 
 	t.Run("BatchPayload", func(t *testing.T) {
-		payload, err := buildBatchPayload(rng, []string{"OSV-001"}, vulnMap)
+		payload, err := buildBatchPayload(rng, []string{"OSV-001"}, vulnMap, 10)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -138,16 +138,17 @@ func TestRunTrafficGenerator(t *testing.T) {
 	}
 
 	cfg := GeneratorConfig{
-		BaseURL:        ts.URL,
-		Duration:       200 * time.Millisecond,
-		Interval:       50 * time.Millisecond,
-		VulnRate:       2,
-		VersionRate:    2,
-		PackageRate:    2,
-		PURLRate:       2,
-		BatchRate:      1,
-		LargeBatchRate: 1,
-		StatsInterval:  100 * time.Millisecond,
+		BaseURL:                ts.URL,
+		Duration:               200 * time.Millisecond,
+		VulnRate:               20,
+		VersionRate:            20,
+		PackageRate:            20,
+		PURLRate:               20,
+		BatchRate:              10,
+		LargeBatchRate:         10,
+		MaxBatchQuerySize:      10,
+		MaxLargeBatchQuerySize: 10,
+		StatsInterval:          100 * time.Millisecond,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

@@ -61,7 +61,6 @@ func run() error {
 	localZipFlag := flag.String("local-zip", os.Getenv("LOCAL_ZIP"), "Optional local path to all.zip (skips GCS download if specified)")
 	apiURLFlag := flag.String("api-url", defaultAPIURL, "Base URL for the OSV API under test")
 	durationFlag := flag.Duration("duration", 5*time.Hour, "Total run duration of the load test (e.g. 5h, 30m)")
-	intervalFlag := flag.Duration("interval", 1*time.Second, "Interval at which to dispatch batches of queries")
 	seedFlag := flag.Uint64("seed", 0, "Random seed (0 to generate a random seed)")
 
 	vulnRateFlag := flag.Int("vuln-rate", 50, "Number of GET /v1/vulns/{id} requests per second")
@@ -70,6 +69,8 @@ func run() error {
 	purlRateFlag := flag.Int("purl-rate", 30, "Number of POST /v1/query (purl) requests per second")
 	batchRateFlag := flag.Int("batch-rate", 3, "Number of POST /v1/querybatch (normal) requests per second")
 	largeBatchRateFlag := flag.Int("large-batch-rate", 2, "Number of POST /v1/querybatch (large) requests per second")
+	maxBatchSizeFlag := flag.Int("max-batch-size", 100, "Maximum number of queries per standard /v1/querybatch request (1-1000)")
+	maxLargeBatchSizeFlag := flag.Int("max-large-batch-size", 100, "Maximum number of queries per heavy /v1/querybatch request (1-1000)")
 	statsIntervalFlag := flag.Duration("stats-interval", 30*time.Second, "Interval between logging summary statistics")
 
 	flag.Parse()
@@ -109,16 +110,17 @@ func run() error {
 	)
 
 	cfg := GeneratorConfig{
-		BaseURL:        *apiURLFlag,
-		Duration:       *durationFlag,
-		Interval:       *intervalFlag,
-		VulnRate:       *vulnRateFlag,
-		VersionRate:    *versionRateFlag,
-		PackageRate:    *packageRateFlag,
-		PURLRate:       *purlRateFlag,
-		BatchRate:      *batchRateFlag,
-		LargeBatchRate: *largeBatchRateFlag,
-		StatsInterval:  *statsIntervalFlag,
+		BaseURL:                *apiURLFlag,
+		Duration:               *durationFlag,
+		VulnRate:               *vulnRateFlag,
+		VersionRate:            *versionRateFlag,
+		PackageRate:            *packageRateFlag,
+		PURLRate:               *purlRateFlag,
+		BatchRate:              *batchRateFlag,
+		LargeBatchRate:         *largeBatchRateFlag,
+		MaxBatchQuerySize:      *maxBatchSizeFlag,
+		MaxLargeBatchQuerySize: *maxLargeBatchSizeFlag,
+		StatsInterval:          *statsIntervalFlag,
 	}
 
 	_, err = RunTrafficGenerator(ctx, nil, pools, cfg, seed)

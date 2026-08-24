@@ -32,31 +32,61 @@ import (
 
 // GeneratorConfig holds configuration for the API load test generator.
 type GeneratorConfig struct {
-	BaseURL        string
-	Duration       time.Duration
-	Interval       time.Duration
-	VulnRate       int
-	VersionRate    int
-	PackageRate    int
-	PURLRate       int
-	BatchRate      int
+	// BaseURL is the root URL of the OSV API under test (e.g. "https://api.test.osv.dev/v1").
+	BaseURL string
+
+	// Duration is the total execution time for the load test.
+	Duration time.Duration
+
+	// VulnRate is the sustained rate of GET /v1/vulns/{id} requests per second.
+	// It tests the endpoint for fetching full vulnerability details by OSV ID (e.g. GHSA-..., CVE-...).
+	VulnRate int
+
+	// VersionRate is the sustained rate of POST /v1/query (package + version) requests per second.
+	// It simulates standard scanner checks (e.g. osv-scanner) for a specific package version against affected semver/ecosystem ranges.
+	VersionRate int
+
+	// PackageRate is the sustained rate of POST /v1/query (package name only) requests per second.
+	// It simulates unversioned queries retrieving all vulnerabilities associated with a given package.
+	PackageRate int
+
+	// PURLRate is the sustained rate of POST /v1/query (Package URL) requests per second.
+	// It simulates queries using package URLs, randomly alternating between versioned and unversioned PURLs.
+	PURLRate int
+
+	// BatchRate is the sustained rate of POST /v1/querybatch requests per second.
+	// Each batch request bundles up to MaxBatchQuerySize queries across all packages, simulating dependency manifest scans.
+	BatchRate int
+
+	// LargeBatchRate is the sustained rate of heavy POST /v1/querybatch requests per second.
+	// Each request contains up to MaxLargeBatchQuerySize queries sampled strictly from the top 5,000 packages with the most vulnerabilities,
+	// stress-testing backend range matching and result hydration under high match volumes.
 	LargeBatchRate int
-	StatsInterval  time.Duration
+
+	// MaxBatchQuerySize is the maximum number of queries to bundle in a single standard /v1/querybatch request (1-1000).
+	MaxBatchQuerySize int
+
+	// MaxLargeBatchQuerySize is the maximum number of queries to bundle in a single heavy /v1/querybatch request (1-1000).
+	MaxLargeBatchQuerySize int
+
+	// StatsInterval is the interval at which progress and throughput statistics are logged.
+	StatsInterval time.Duration
 }
 
 // DefaultGeneratorConfig returns standard load testing configuration matching production staging tests.
 func DefaultGeneratorConfig() GeneratorConfig {
 	return GeneratorConfig{
-		BaseURL:        "https://api.test.osv.dev/v1",
-		Duration:       5 * time.Hour,
-		Interval:       1 * time.Second,
-		VulnRate:       50,
-		VersionRate:    80,
-		PackageRate:    20,
-		PURLRate:       30,
-		BatchRate:      3,
-		LargeBatchRate: 2,
-		StatsInterval:  30 * time.Second,
+		BaseURL:                "https://api.test.osv.dev/v1",
+		Duration:               5 * time.Hour,
+		VulnRate:               50,
+		VersionRate:            80,
+		PackageRate:            20,
+		PURLRate:               30,
+		BatchRate:              3,
+		LargeBatchRate:         2,
+		MaxBatchQuerySize:      100,
+		MaxLargeBatchQuerySize: 100,
+		StatsInterval:          30 * time.Second,
 	}
 }
 
@@ -179,12 +209,16 @@ func buildPURLPayload(rng *rand.Rand, id string, vulnMap map[string]*SimpleVuln)
 }
 
 // buildBatchPayload constructs payload for batch queries.
-func buildBatchPayload(rng *rand.Rand, requestIDs []string, vulnMap map[string]*SimpleVuln) ([]byte, error) {
+func buildBatchPayload(rng *rand.Rand, requestIDs []string, vulnMap map[string]*SimpleVuln, maxBatchQueries int) ([]byte, error) {
 	if len(requestIDs) == 0 {
 		return json.Marshal(BatchQueryPayload{Queries: []QueryPayload{}})
 	}
 
-	sampleSize := rng.IntN(100) + 1
+	if maxBatchQueries <= 0 {
+		maxBatchQueries = 100
+	}
+
+	sampleSize := rng.IntN(maxBatchQueries) + 1
 	if sampleSize > len(requestIDs) {
 		sampleSize = len(requestIDs)
 	}
@@ -261,24 +295,41 @@ func executeRequest(ctx context.Context, client *http.Client, req *http.Request,
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
+		if ctx.Err() == nil {
+			logger.Warn("Failed to send HTTP request",
+				"url", req.URL.String(),
+				"method", req.Method,
+				"error", err,
+			)
+		}
 		stats.RecordNetworkError()
 
 		return
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= 400 {
+		bodySnippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		logger.Warn("HTTP request returned error status",
+			"url", req.URL.String(),
+			"method", req.Method,
+			"statusCode", resp.StatusCode,
+			"response", string(bodySnippet),
+		)
+	}
+
 	// Drain response body to enable connection reuse
 	_, _ = io.Copy(io.Discard, resp.Body)
 	stats.RecordStatus(resp.StatusCode)
 }
 
-// runVulnWorker sends GET /v1/vulns/{id} requests.
+// runVulnWorker dispatches GET /v1/vulns/{id} requests evenly spaced at cfg.VulnRate per second.
 func runVulnWorker(ctx context.Context, wg *sync.WaitGroup, client *http.Client, pools *QueryPools, stats *GeneratorStats, cfg GeneratorConfig) {
 	if len(pools.VulnQueryIDs) == 0 || cfg.VulnRate <= 0 {
 		return
 	}
 
-	ticker := time.NewTicker(cfg.Interval)
+	ticker := time.NewTicker(time.Second / time.Duration(cfg.VulnRate))
 	defer ticker.Stop()
 
 	index := 0
@@ -290,23 +341,21 @@ func runVulnWorker(ctx context.Context, wg *sync.WaitGroup, client *http.Client,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for i := range cfg.VulnRate {
-				reqID := pools.VulnQueryIDs[(index+i)%length]
-				url := fmt.Sprintf("%s/%s", baseURL, reqID)
-				req, err := http.NewRequest(http.MethodGet, url, nil)
-				if err != nil {
-					continue
-				}
-				wg.Go(func() {
-					executeRequest(ctx, client, req, stats)
-				})
+			reqID := pools.VulnQueryIDs[index%length]
+			index++
+			url := fmt.Sprintf("%s/%s", baseURL, reqID)
+			req, err := http.NewRequest(http.MethodGet, url, nil)
+			if err != nil {
+				continue
 			}
-			index = (index + cfg.VulnRate) % length
+			wg.Go(func() {
+				executeRequest(ctx, client, req, stats)
+			})
 		}
 	}
 }
 
-// runSingleQueryWorker sends POST /v1/query requests using the given payload builder.
+// runSingleQueryWorker dispatches POST /v1/query requests evenly spaced at the specified rate per second.
 func runSingleQueryWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -322,7 +371,7 @@ func runSingleQueryWorker(
 		return
 	}
 
-	ticker := time.NewTicker(cfg.Interval)
+	ticker := time.NewTicker(time.Second / time.Duration(rate))
 	defer ticker.Stop()
 
 	index := 0
@@ -334,27 +383,25 @@ func runSingleQueryWorker(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for i := range rate {
-				reqID := requestIDs[(index+i)%length]
-				payload, err := payloadBuilder(reqID, vulnMap)
-				if err != nil {
-					continue
-				}
-				req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
-				if err != nil {
-					continue
-				}
-				req.Header.Set("Content-Type", "application/json")
-				wg.Go(func() {
-					executeRequest(ctx, client, req, stats)
-				})
+			reqID := requestIDs[index%length]
+			index++
+			payload, err := payloadBuilder(reqID, vulnMap)
+			if err != nil {
+				continue
 			}
-			index = (index + rate) % length
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+			if err != nil {
+				continue
+			}
+			req.Header.Set("Content-Type", "application/json")
+			wg.Go(func() {
+				executeRequest(ctx, client, req, stats)
+			})
 		}
 	}
 }
 
-// runPURLWorker sends POST /v1/query requests with purl payload.
+// runPURLWorker dispatches POST /v1/query (PURL) requests evenly spaced at cfg.PURLRate per second.
 func runPURLWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -363,13 +410,15 @@ func runPURLWorker(
 	vulnMap map[string]*SimpleVuln,
 	stats *GeneratorStats,
 	cfg GeneratorConfig,
-	rng *rand.Rand,
+	seed uint64,
 ) {
 	if len(requestIDs) == 0 || cfg.PURLRate <= 0 {
 		return
 	}
 
-	ticker := time.NewTicker(cfg.Interval)
+	//nolint:gosec // math/rand is sufficient for mock traffic generation
+	rng := rand.New(rand.NewPCG(seed, seed^0x12345))
+	ticker := time.NewTicker(time.Second / time.Duration(cfg.PURLRate))
 	defer ticker.Stop()
 
 	index := 0
@@ -381,27 +430,25 @@ func runPURLWorker(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for i := range cfg.PURLRate {
-				reqID := requestIDs[(index+i)%length]
-				payload, err := buildPURLPayload(rng, reqID, vulnMap)
-				if err != nil {
-					continue
-				}
-				req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
-				if err != nil {
-					continue
-				}
-				req.Header.Set("Content-Type", "application/json")
-				wg.Go(func() {
-					executeRequest(ctx, client, req, stats)
-				})
+			reqID := requestIDs[index%length]
+			index++
+			payload, err := buildPURLPayload(rng, reqID, vulnMap)
+			if err != nil {
+				continue
 			}
-			index = (index + cfg.PURLRate) % length
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+			if err != nil {
+				continue
+			}
+			req.Header.Set("Content-Type", "application/json")
+			wg.Go(func() {
+				executeRequest(ctx, client, req, stats)
+			})
 		}
 	}
 }
 
-// runBatchWorker sends POST /v1/querybatch requests.
+// runBatchWorker dispatches POST /v1/querybatch requests evenly spaced at the specified batchRate per second.
 func runBatchWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -410,14 +457,17 @@ func runBatchWorker(
 	vulnMap map[string]*SimpleVuln,
 	stats *GeneratorStats,
 	batchRate int,
+	maxBatchQueries int,
 	cfg GeneratorConfig,
-	rng *rand.Rand,
+	seed uint64,
 ) {
 	if len(requestIDs) == 0 || batchRate <= 0 {
 		return
 	}
 
-	ticker := time.NewTicker(cfg.Interval)
+	//nolint:gosec // math/rand is sufficient for mock traffic generation
+	rng := rand.New(rand.NewPCG(seed, seed^0x6789A))
+	ticker := time.NewTicker(time.Second / time.Duration(batchRate))
 	defer ticker.Stop()
 
 	url := cfg.BaseURL + "/querybatch"
@@ -427,20 +477,18 @@ func runBatchWorker(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for range batchRate {
-				payload, err := buildBatchPayload(rng, requestIDs, vulnMap)
-				if err != nil {
-					continue
-				}
-				req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
-				if err != nil {
-					continue
-				}
-				req.Header.Set("Content-Type", "application/json")
-				wg.Go(func() {
-					executeRequest(ctx, client, req, stats)
-				})
+			payload, err := buildBatchPayload(rng, requestIDs, vulnMap, maxBatchQueries)
+			if err != nil {
+				continue
 			}
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+			if err != nil {
+				continue
+			}
+			req.Header.Set("Content-Type", "application/json")
+			wg.Go(func() {
+				executeRequest(ctx, client, req, stats)
+			})
 		}
 	}
 }
@@ -452,10 +500,8 @@ func RunTrafficGenerator(ctx context.Context, client *http.Client, pools *QueryP
 	}
 
 	stats := NewGeneratorStats()
-	//nolint:gosec // math/rand is sufficient for mock traffic generation
-	rng := rand.New(rand.NewPCG(seed, seed^0x5DEECE66D))
 
-	logger.Info("Starting API traffic generator",
+	logger.Info("Starting API traffic generator with smooth rate pacing",
 		"baseURL", cfg.BaseURL,
 		"duration", cfg.Duration,
 		"vulnRate", cfg.VulnRate,
@@ -464,6 +510,8 @@ func RunTrafficGenerator(ctx context.Context, client *http.Client, pools *QueryP
 		"purlRate", cfg.PURLRate,
 		"batchRate", cfg.BatchRate,
 		"largeBatchRate", cfg.LargeBatchRate,
+		"maxBatchQuerySize", cfg.MaxBatchQuerySize,
+		"maxLargeBatchQuerySize", cfg.MaxLargeBatchQuerySize,
 		"totalVulns", len(pools.VulnQueryIDs),
 		"totalPackages", len(pools.PackageQueryIDs),
 		"totalLargeBatchPackages", len(pools.LargeBatchQueryIDs),
@@ -474,7 +522,7 @@ func RunTrafficGenerator(ctx context.Context, client *http.Client, pools *QueryP
 
 	var wg sync.WaitGroup
 
-	// Start workers
+	// Start workers with smooth pacing and isolated rng seeds per worker
 	wg.Go(func() {
 		runVulnWorker(genCtx, &wg, client, pools, stats, cfg)
 	})
@@ -485,13 +533,13 @@ func RunTrafficGenerator(ctx context.Context, client *http.Client, pools *QueryP
 		runSingleQueryWorker(genCtx, &wg, client, pools.PackageQueryIDs, pools.VulnMap, stats, cfg.VersionRate, cfg, buildVersionPayload)
 	})
 	wg.Go(func() {
-		runPURLWorker(genCtx, &wg, client, pools.PackageQueryIDs, pools.VulnMap, stats, cfg, rng)
+		runPURLWorker(genCtx, &wg, client, pools.PackageQueryIDs, pools.VulnMap, stats, cfg, seed+1)
 	})
 	wg.Go(func() {
-		runBatchWorker(genCtx, &wg, client, pools.PackageQueryIDs, pools.VulnMap, stats, cfg.BatchRate, cfg, rng)
+		runBatchWorker(genCtx, &wg, client, pools.PackageQueryIDs, pools.VulnMap, stats, cfg.BatchRate, cfg.MaxBatchQuerySize, cfg, seed+2)
 	})
 	wg.Go(func() {
-		runBatchWorker(genCtx, &wg, client, pools.LargeBatchQueryIDs, pools.VulnMap, stats, cfg.LargeBatchRate, cfg, rng)
+		runBatchWorker(genCtx, &wg, client, pools.LargeBatchQueryIDs, pools.VulnMap, stats, cfg.LargeBatchRate, cfg.MaxLargeBatchQuerySize, cfg, seed+3)
 	})
 
 	// Periodic stats reporter

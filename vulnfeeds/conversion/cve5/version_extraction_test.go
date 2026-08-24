@@ -661,23 +661,11 @@ func TestExtractVersions(t *testing.T) {
 			}},
 		},
 		{
-			name:        "CVE-2015-10001",
-			cve:         loadTestData(t, "CVE-2015-10001"),
-			cnaAssigner: "WPScan",
-			repos:       []string{},
-			expectedAffected: []*osvschema.Affected{{
-				Package: &osvschema.Package{
-					Ecosystem: "WordPress:Plugin",
-					Name:      "wp-stats",
-				},
-				Ranges: []*osvschema.Range{{
-					Type: osvschema.Range_ECOSYSTEM,
-					Events: []*osvschema.Event{
-						{Introduced: "2.52"},
-						{LastAffected: "2.52"},
-					},
-				}},
-			}},
+			name:             "CVE-2015-10001",
+			cve:              loadTestData(t, "CVE-2015-10001"),
+			cnaAssigner:      "WPScan",
+			repos:            []string{},
+			expectedAffected: nil,
 		},
 	}
 

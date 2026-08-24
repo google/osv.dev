@@ -12,11 +12,15 @@ import (
 )
 
 var (
-	wpPluginTracRegex    = regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/]+)`)
-	wpPluginSvnRegex     = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/]+)`)
+	wpPluginTracRegex = regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/]+)`)
+	wpPluginSvnRegex  = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/]+)`)
+	wpPluginOrgRegex  = regexp.MustCompile(`wordpress\.org/plugins/([^/]+)`)
+	wpThemeTracRegex  = regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/]+)`)
+	wpThemeSvnRegex   = regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/]+)`)
+	wpThemeOrgRegex   = regexp.MustCompile(`wordpress\.org/themes/([^/]+)`)
+
 	wordfencePluginRegex = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/]+)`)
-	wpPluginOrgRegex     = regexp.MustCompile(`wordpress\.org/plugins/([^/]+)`)
-	wpThemeOrgRegex      = regexp.MustCompile(`wordpress\.org/themes/([^/]+)`)
+	wordfenceThemeRegex  = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-themes/([^/]+)`)
 
 	patchstackVulnRegex   = regexp.MustCompile(`patchstack\.com/database/vulnerability/([^/]+)`)
 	patchstackPluginRegex = regexp.MustCompile(`patchstack\.com/database/wordpress/plugin/([^/]+)`)
@@ -37,15 +41,7 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 		}
 	}
 
-	// 2. Slug from PackageName
-	if len(cve.Containers.CNA.Affected) > 0 {
-		aff := cve.Containers.CNA.Affected[0]
-		if aff.PackageName != "" {
-			slug = aff.PackageName
-		}
-	}
-
-	// 3. Ecosystem Extraction from CollectionURL
+	// 2. Ecosystem Extraction from CollectionURL
 	if len(cve.Containers.CNA.Affected) > 0 {
 		aff := cve.Containers.CNA.Affected[0]
 		switch aff.CollectionURL {
@@ -56,7 +52,7 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 		}
 	}
 
-	// 4. URL Heuristics Fallback (for slug and ecosystem)
+	// 3. Extract slug and ecosystem from Reference URLs
 	var tracSlug, svnSlug, wordfenceSlug, wpOrgPluginSlug, wpOrgThemeSlug, patchstackPluginSlug, patchstackThemeSlug, patchstackVulnSlug string
 	var urlEcosystem string
 
@@ -73,10 +69,25 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 			if urlEcosystem == "" {
 				urlEcosystem = "WordPress:Plugin"
 			}
+		} else if match := wpThemeTracRegex.FindStringSubmatch(url); match != nil {
+			tracSlug = match[1]
+			if urlEcosystem == "" {
+				urlEcosystem = "WordPress:Theme"
+			}
+		} else if match := wpThemeSvnRegex.FindStringSubmatch(url); match != nil {
+			svnSlug = match[1]
+			if urlEcosystem == "" {
+				urlEcosystem = "WordPress:Theme"
+			}
 		} else if match := wordfencePluginRegex.FindStringSubmatch(url); match != nil {
 			wordfenceSlug = match[1]
 			if urlEcosystem == "" {
 				urlEcosystem = "WordPress:Plugin"
+			}
+		} else if match := wordfenceThemeRegex.FindStringSubmatch(url); match != nil {
+			wordfenceSlug = match[1]
+			if urlEcosystem == "" {
+				urlEcosystem = "WordPress:Theme"
 			}
 		} else if match := wpPluginOrgRegex.FindStringSubmatch(url); match != nil {
 			wpOrgPluginSlug = match[1]
@@ -112,7 +123,6 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 		}
 	}
 
-	var urlSlug string
 	slugsToTry := []string{
 		tracSlug,
 		svnSlug,
@@ -126,22 +136,8 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 
 	for _, s := range slugsToTry {
 		if s != "" {
-			urlSlug = s
+			slug = s
 			break
-		}
-	}
-
-	if slug == "" && urlSlug != "" {
-		slug = urlSlug
-	}
-
-	// Slug from Product Fallback
-	if slug == "" && len(cve.Containers.CNA.Affected) > 0 {
-		aff := cve.Containers.CNA.Affected[0]
-		if vulns.CheckQuality(aff.Product).AtLeast(vulns.Spaces) {
-			// Basic slugification (lowercase, replace spaces with hyphens)
-			slug = strings.ToLower(aff.Product)
-			slug = strings.ReplaceAll(slug, " ", "-")
 		}
 	}
 
@@ -149,7 +145,7 @@ func extractWordPressSlugAndEcosystem(cve models.CVE5, v *vulns.Vulnerability) (
 		ecosystem = urlEcosystem
 	}
 
-	// 5. Description/Title Heuristics Fallback
+	// 4. Description/Title Heuristics Fallback for ecosystem
 	if ecosystem == "WordPress" {
 		desc := strings.ToLower(models.EnglishDescription(cve.Containers.CNA.Descriptions))
 		title := strings.ToLower(cve.Containers.CNA.Title)
@@ -234,6 +230,9 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 	if len(v.Affected) == 0 {
 		if slug == "" {
 			metrics.AddNote("Failed to extract versions via default, and no WordPress slug found to attempt fallback")
+			if len(repos) == 0 {
+				metrics.Outcome = models.NoRepos
+			}
 			return
 		}
 

@@ -233,6 +233,7 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 			if len(repos) == 0 {
 				metrics.Outcome = models.NoRepos
 			}
+
 			return
 		}
 

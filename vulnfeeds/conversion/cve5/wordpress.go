@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/vulns"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -173,6 +173,7 @@ type WordpressHandler interface {
 // WordpressExtractor handles version extraction for WordPress CVEs.
 type WordpressExtractor struct {
 	DefaultVersionExtractor
+
 	Handler WordpressHandler
 }
 

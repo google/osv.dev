@@ -59,3 +59,27 @@ variable "worker_service_account_email" {
   default     = ""
 }
 
+variable "indexer_configs_bucket" {
+  type        = string
+  description = "Name of bucket storing indexer configuration."
+  default     = ""
+}
+
+variable "indexer_repos_bucket" {
+  type        = string
+  description = "Name of bucket storing indexer repository data."
+  default     = ""
+}
+
+variable "indexer_topic" {
+  type        = string
+  description = "Name of indexer Pub/Sub topic."
+  default     = "indexer-work"
+}
+
+variable "indexer_subscription" {
+  type        = string
+  description = "Name of indexer Pub/Sub subscription."
+  default     = "indexer-work-sub"
+}
+

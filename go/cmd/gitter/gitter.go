@@ -456,13 +456,7 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 
 	// Fetch repo first
 	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipReqConcurrencySemaphore: true}); err != nil {
-		if isAuthError(err) || isForbiddenError(err) {
-			statusCode = http.StatusForbidden
-		} else if isNotFoundError(err) {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
+		statusCode = errorToHTTPStatusCode(err)
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
 
 		return
@@ -527,13 +521,7 @@ func cacheHandler(w http.ResponseWriter, req *http.Request) {
 	logger.DebugContext(ctx, "Received request: /cache")
 
 	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: true}); err != nil {
-		if isAuthError(err) || isForbiddenError(err) {
-			statusCode = http.StatusForbidden
-		} else if isNotFoundError(err) {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
+		statusCode = errorToHTTPStatusCode(err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -598,13 +586,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 
 	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: false})
 	if err != nil {
-		if isAuthError(err) || isForbiddenError(err) {
-			statusCode = http.StatusForbidden
-		} else if isNotFoundError(err) {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
+		statusCode = errorToHTTPStatusCode(err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -726,22 +708,11 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 		if repo.repoPath != "" {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
-				if isAuthError(errFetch) || isForbiddenError(errFetch) {
-					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
-					statusCode = http.StatusForbidden
-					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
-
-					return
+				statusCode = errorToHTTPStatusCode(errFetch)
+				if statusCode == http.StatusForbidden || statusCode == http.StatusNotFound {
+					invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
 				}
-				if isNotFoundError(errFetch) {
-					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
-					statusCode = http.StatusNotFound
-					http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
-
-					return
-				}
-				statusCode = http.StatusInternalServerError
-				http.Error(w, "Error fetching repository", statusCode)
+				http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
 
 				return
 			}
@@ -773,22 +744,11 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 				return tags, err
 			})
 			if errLsRemote != nil {
-				if isAuthError(errLsRemote) || isForbiddenError(errLsRemote) {
-					invalidRepoCache.SetWithTTL(repoURL, http.StatusForbidden, 1, invalidRepoTTL)
-					statusCode = http.StatusForbidden
-					http.Error(w, fmt.Sprintf("Repository authentication failed: %v", errLsRemote), statusCode)
-
-					return
+				statusCode = errorToHTTPStatusCode(errLsRemote)
+				if statusCode == http.StatusForbidden || statusCode == http.StatusNotFound {
+					invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
 				}
-				if isNotFoundError(errLsRemote) {
-					invalidRepoCache.SetWithTTL(repoURL, http.StatusNotFound, 1, invalidRepoTTL)
-					statusCode = http.StatusNotFound
-					http.Error(w, "Repository not found", statusCode)
-
-					return
-				}
-				statusCode = http.StatusInternalServerError
-				http.Error(w, "Error listing remote tags", statusCode)
+				http.Error(w, fmt.Sprintf("Error listing remote tags: %v", errLsRemote), statusCode)
 
 				return
 			}
@@ -846,13 +806,7 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: true})
 	if err != nil {
-		if isAuthError(err) || isForbiddenError(err) {
-			statusCode = http.StatusForbidden
-		} else if isNotFoundError(err) {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
+		statusCode = errorToHTTPStatusCode(err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -932,13 +886,7 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
 	if err != nil {
-		if isAuthError(err) || isForbiddenError(err) {
-			statusCode = http.StatusForbidden
-		} else if isNotFoundError(err) {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
+		statusCode = errorToHTTPStatusCode(err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return

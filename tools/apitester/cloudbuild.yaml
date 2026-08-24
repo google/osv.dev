@@ -1,0 +1,30 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# apitester snapshot test runner
+# This should be triggered on changes to the following:
+# tools/apitester/**
+
+steps:
+- name: 'gcr.io/oss-vdb/ci'
+  id: 'api-snapshot-tests'
+  dir: tools/apitester
+  args: ['bash', '-ex', 'run_tests.sh']
+  env:
+    - 'OSV_API_BASE_URL=api.test.osv.dev'
+
+timeout: 1800s
+serviceAccount: 'projects/oss-vdb/serviceAccounts/api-e2e-tester@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

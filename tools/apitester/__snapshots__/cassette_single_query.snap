@@ -3614,6 +3614,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:08:52.431Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -3685,6 +3686,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:09:08.746Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -4326,6 +4328,8 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:17.541Z",
       "related": [
+        "ALSA-2026:55439",
+        "ALSA-2026:57462",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4537,6 +4541,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:06.376Z",
       "related": [
+        "ALSA-2026:55432",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4667,6 +4672,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:18:44.499Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4823,7 +4829,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-5prr-v3j2-97mh",
@@ -4867,7 +4873,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4917,7 +4923,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4978,7 +4984,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-8678-w3jw-xfc2",
@@ -5022,7 +5028,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5072,7 +5078,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5121,7 +5127,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5186,7 +5192,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5236,7 +5242,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5286,7 +5292,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5335,7 +5341,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5388,7 +5394,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wfpw-mmfh-qq69",
@@ -5432,7 +5438,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wjv4-x9w8-wm3h",
@@ -5476,7 +5482,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5525,7 +5531,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5606,7 +5612,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5672,7 +5678,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5742,7 +5748,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6052,7 +6058,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6118,7 +6124,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6188,7 +6194,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6499,7 +6505,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6565,7 +6571,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6635,7 +6641,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",

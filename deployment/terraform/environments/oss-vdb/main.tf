@@ -26,26 +26,14 @@ locals {
   }
 }
 
-module "osv" {
-  source = "../../modules/osv"
+module "osv_pipeline" {
+  source = "../../modules/osv_pipeline"
 
-  project_id = "oss-vdb"
-
-  public_import_logs_bucket                      = "osv-public-import-logs"
+  project_id                                     = "oss-vdb"
   vulnerabilities_export_bucket                  = "osv-vulnerabilities"
-  cve_osv_conversion_bucket                      = "cve-osv-conversion"
-  debian_osv_conversion_bucket                   = "debian-osv"
-  logs_bucket                                    = "osv-logs"
-  osv_dev_sitemap_bucket                         = "osv-dev-sitemap"
-  backups_bucket                                 = "osv-backup"
-  backups_bucket_retention_days                  = 60
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
-  gcs_log_dir                                    = "gs://oss-vdb-tf/apply-logs"
-
-  website_domain = "osv.dev"
-  api_url        = "api.osv.dev"
-  esp_version    = "2.55.3"
+  logs_bucket                                    = "osv-logs"
 
   extra_work_pools = [
     "reimport",
@@ -55,18 +43,33 @@ module "osv" {
   create_oss_fuzz_subnet = true
 }
 
+module "osv" {
+  source = "../../modules/osv"
+
+  project_id                   = "oss-vdb"
+  worker_service_account_email = module.osv_pipeline.worker_service_account_email
+
+  public_import_logs_bucket     = "osv-public-import-logs"
+  cve_osv_conversion_bucket     = "cve-osv-conversion"
+  debian_osv_conversion_bucket  = "debian-osv"
+  logs_bucket                   = "osv-logs"
+  osv_dev_sitemap_bucket        = "osv-dev-sitemap"
+  backups_bucket                = "osv-backup"
+  backups_bucket_retention_days = 60
+  gcs_log_dir                   = "gs://oss-vdb-tf/apply-logs"
+
+  website_domain = "osv.dev"
+  api_url        = "api.osv.dev"
+  esp_version    = "2.55.3"
+}
+
 module "oss_fuzz" {
   source                       = "../../modules/oss_fuzz"
   project_id                   = "oss-vdb"
-  tasks_topic_id               = module.osv.tasks_topic_id
-  failed_tasks_topic_id        = module.osv.failed_tasks_topic_id
-  pubsub_service_account_email = module.osv.pubsub_service_account_email
-  subnetwork                   = module.osv.oss_fuzz_subnet_self_link
-}
-
-moved {
-  from = module.oss_fuzz.google_compute_subnetwork.oss_fuzz_subnet
-  to   = module.osv.google_compute_subnetwork.oss_fuzz_subnet[0]
+  tasks_topic_id               = module.osv_pipeline.tasks_topic_id
+  failed_tasks_topic_id        = module.osv_pipeline.failed_tasks_topic_id
+  pubsub_service_account_email = module.osv_pipeline.pubsub_service_account_email
+  subnetwork                   = module.osv_pipeline.oss_fuzz_subnet_self_link
 }
 
 module "k8s_cron_alert" {
@@ -79,7 +82,7 @@ module "k8s_cron_alert" {
 }
 
 import {
-  to = module.osv.google_firestore_database.datastore
+  to = module.osv_pipeline.google_firestore_database.datastore
   id = "oss-vdb/(default)"
 }
 
@@ -96,11 +99,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.42.0"
+      version = "~> 7.44.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.42.0"
+      version = "~> 7.44.0"
     }
     external = {
       source  = "hashicorp/external"

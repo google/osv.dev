@@ -26,31 +26,39 @@ locals {
   }
 }
 
-module "osv_test" {
-  source = "../../modules/osv"
+module "osv_pipeline" {
+  source = "../../modules/osv_pipeline"
 
-  project_id = "oss-vdb-test"
-
-  public_import_logs_bucket                      = "osv-test-public-import-logs"
+  project_id                                     = "oss-vdb-test"
   vulnerabilities_export_bucket                  = "osv-test-vulnerabilities"
-  logs_bucket                                    = "osv-test-logs"
-  cve_osv_conversion_bucket                      = "osv-test-cve-osv-conversion"
-  debian_osv_conversion_bucket                   = "osv-test-debian-osv"
-  osv_dev_sitemap_bucket                         = "test-osv-dev-sitemap"
-  backups_bucket                                 = "osv-test-backup"
-  backups_bucket_retention_days                  = 5
   affected_commits_backups_bucket                = "osv-test-affected-commits"
   affected_commits_backups_bucket_retention_days = 2
-  gcs_log_dir                                    = "gs://oss-vdb-tf/apply-logs"
-
-  website_domain = "test.osv.dev"
-  api_url        = "api.test.osv.dev"
-  esp_version    = "2.55.3"
+  logs_bucket                                    = "osv-test-logs"
 
   extra_work_pools = [
     "reimport",
     "cves",
   ]
+}
+
+module "osv_test" {
+  source = "../../modules/osv"
+
+  project_id                   = "oss-vdb-test"
+  worker_service_account_email = module.osv_pipeline.worker_service_account_email
+
+  public_import_logs_bucket     = "osv-test-public-import-logs"
+  logs_bucket                   = "osv-test-logs"
+  cve_osv_conversion_bucket     = "osv-test-cve-osv-conversion"
+  debian_osv_conversion_bucket  = "osv-test-debian-osv"
+  osv_dev_sitemap_bucket        = "test-osv-dev-sitemap"
+  backups_bucket                = "osv-test-backup"
+  backups_bucket_retention_days = 5
+  gcs_log_dir                   = "gs://oss-vdb-tf/apply-logs"
+
+  website_domain = "test.osv.dev"
+  api_url        = "api.test.osv.dev"
+  esp_version    = "2.55.3"
 }
 
 module "k8s_cron_alert" {
@@ -63,7 +71,7 @@ module "k8s_cron_alert" {
 }
 
 import {
-  to = module.osv_test.google_firestore_database.datastore
+  to = module.osv_pipeline.google_firestore_database.datastore
   id = "oss-vdb-test/(default)"
 }
 
@@ -82,11 +90,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.42.0"
+      version = "~> 7.44.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.42.0"
+      version = "~> 7.44.0"
     }
     external = {
       source  = "hashicorp/external"

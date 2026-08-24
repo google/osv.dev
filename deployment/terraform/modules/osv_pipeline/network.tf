@@ -26,6 +26,16 @@ resource "google_compute_router" "router" {
   region  = "us-central1"
 }
 
+resource "google_compute_subnetwork" "oss_fuzz_subnet" {
+  count                    = var.create_oss_fuzz_subnet ? 1 : 0
+  project                  = var.project_id
+  name                     = "oss-fuzz-subnet"
+  network                  = "default"
+  ip_cidr_range            = "10.45.36.0/22"
+  private_ip_google_access = true
+  region                   = "us-central1"
+}
+
 # Cloud NAT
 # Allows private GKE nodes to securely access the public internet.
 resource "google_compute_router_nat" "nat_config" {
@@ -40,6 +50,14 @@ resource "google_compute_router_nat" "nat_config" {
   subnetwork {
     name                    = google_compute_subnetwork.my_subnet_0.id
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+
+  dynamic "subnetwork" {
+    for_each = var.create_oss_fuzz_subnet ? [1] : []
+    content {
+      name                    = google_compute_subnetwork.oss_fuzz_subnet[0].id
+      source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+    }
   }
 
   log_config {

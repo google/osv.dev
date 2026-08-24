@@ -19,18 +19,11 @@ spec:
               env:
                 - name: DEFAULT_TASK_POOL
                   value: "default"
-              volumeMounts:
-                - mountPath: "/work"
-                  name: "ssd"
               resources:
                 requests:
                   cpu: "1"
                   memory: "10G"
                 limits:
-                  cpu: "1"
+                  cpu: "2"
                   memory: "11G"
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

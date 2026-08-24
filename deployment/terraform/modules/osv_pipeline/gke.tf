@@ -35,6 +35,7 @@ resource "google_container_cluster" "workers" {
       # Updating this value in terraform forces a replacement, even though the default pool is destroyed. Ignore it to prevent disruption.
       initial_node_count,
     ]
+    prevent_destroy = true
   }
 
   monitoring_config {
@@ -45,10 +46,11 @@ resource "google_container_cluster" "workers" {
 }
 
 resource "google_container_node_pool" "default_pool" {
-  project  = var.project_id
-  name     = "default-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "default-pool"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
@@ -75,10 +77,11 @@ resource "google_container_node_pool" "default_pool" {
 }
 
 resource "google_container_node_pool" "highend" {
-  project  = var.project_id
-  name     = "highend"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
+  project        = var.project_id
+  name           = "highend"
+  cluster        = google_container_cluster.workers.name
+  location       = google_container_cluster.workers.location
+  node_locations = var.node_pool_node_locations
   # For using the ephemeral storage local ssd config
   provider = google-beta
 
@@ -117,79 +120,6 @@ resource "google_container_node_pool" "highend" {
   }
 }
 
-resource "google_container_node_pool" "importer_pool" {
-  project    = var.project_id
-  name       = "importer-pool"
-  cluster    = google_container_cluster.workers.name
-  location   = google_container_cluster.workers.location
-  node_count = 1
-
-  lifecycle {
-    # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  node_config {
-    service_account = google_service_account.worker_sa.email
-    machine_type    = "n2-highmem-4"
-    disk_type       = "pd-ssd"
-    disk_size_gb    = 64
-    local_ssd_count = 1
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "importer-pool"
-    }
-
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "importer-pool"
-    }
-  }
-}
-
-resource "google_container_node_pool" "worker_pool" {
-  project  = var.project_id
-  name     = "worker-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
-
-  lifecycle {
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  autoscaling {
-    min_node_count  = 0
-    max_node_count  = 250
-    location_policy = "BALANCED"
-  }
-
-  node_config {
-    service_account = google_service_account.worker_sa.email
-    machine_type    = "n4-highcpu-8"
-    disk_type       = "hyperdisk-balanced"
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "worker-pool"
-    }
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "worker-pool"
-    }
-  }
-}
-
-
-
 # 6TiB SSD disk used by the gitter caching service
 resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
@@ -197,13 +127,11 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.gitter_disk_size_gb
-}
 
-# SSD for Importer Reconciler Git Cache
-resource "google_compute_disk" "importer_reconciler_git_cache" {
-  project = var.project_id
-  name    = var.importer_reconciler_git_cache_disk_name
-  type    = "hyperdisk-balanced"
-  zone    = google_container_cluster.workers.location
-  size    = var.importer_reconciler_git_cache_size_gb
+  lifecycle {
+    ignore_changes = [
+      type,
+      snapshot,
+    ]
+  }
 }

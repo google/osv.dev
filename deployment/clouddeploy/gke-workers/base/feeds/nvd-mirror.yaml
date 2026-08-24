@@ -35,7 +35,3 @@ spec:
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

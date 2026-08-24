@@ -204,6 +204,25 @@ func CloseInvalidRepoCache() {
 	}
 }
 
+// checkInvalidRepoCache checks if the repository is cached as invalid.
+// If found in the cache, it logs the cache hit and returns the status code and true.
+func checkInvalidRepoCache(ctx context.Context, repoURL string) (int, bool) {
+	if code, found := invalidRepoCache.Get(repoURL); found {
+		logger.DebugContext(ctx, "Invalid repo cache hit", slog.Int("code", code))
+
+		return code, true
+	}
+
+	return 0, false
+}
+
+// cacheInvalidRepo records a negative response (404, 403, or 429) in the cache.
+func cacheInvalidRepo(repoURL string, statusCode int) {
+	if statusCode == http.StatusNotFound || statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
+		invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
+	}
+}
+
 // runWithConcurrencyControl runs function f for request concurrency control.
 // If skipReqConcurrencySemaphore is true, it executes f directly without waiting for a semaphore spot.
 func runWithConcurrencyControl(ctx context.Context, skipReqConcurrencySemaphore bool, f func() (any, error)) (any, error) {
@@ -351,7 +370,8 @@ func main() {
 	concurrentLimit := flag.Int("concurrent-limit", 100, "Concurrent limit for unique requests")
 	flag.DurationVar(&repoTTL, "repo-cache-ttl", time.Hour, "Repository LRU cache time-to-live duration")
 	repoMaxCostStr := flag.String("repo-cache-max-cost", "1GiB", "Repository LRU cache max cost (in bytes)")
-	flag.DurationVar(&invalidRepoTTL, "invalid-repo-cache-ttl", time.Hour, "Invalid repository cache time-to-live duration")
+	// 5 min is enough to remediate bursts of request for a given repository, while allowing 429 cooldowns / fixed permissions to be picked up quickly.
+	flag.DurationVar(&invalidRepoTTL, "invalid-repo-cache-ttl", 5*time.Minute, "Invalid repository cache time-to-live duration")
 	flag.Int64Var(&invalidRepoCacheMaxEntries, "invalid-repo-cache-max-entries", 5000, "Invalid repository cache max entries")
 	flag.Parse()
 
@@ -454,9 +474,19 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /git", slog.Bool("forceUpdate", forceUpdate), slog.String("remoteAddr", req.RemoteAddr))
 
+	if !forceUpdate {
+		if code, found := checkInvalidRepoCache(ctx, repoURL); found {
+			statusCode = code
+			w.WriteHeader(code)
+
+			return
+		}
+	}
+
 	// Fetch repo first
 	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
 
 		return
@@ -520,8 +550,18 @@ func cacheHandler(w http.ResponseWriter, req *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /cache")
 
+	if !body.GetForceUpdate() {
+		if code, found := checkInvalidRepoCache(ctx, repoURL); found {
+			statusCode = code
+			w.WriteHeader(code)
+
+			return
+		}
+	}
+
 	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -584,9 +624,19 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
 
+	if !body.GetForceUpdate() {
+		if code, found := checkInvalidRepoCache(ctx, repoURL); found {
+			statusCode = code
+			w.WriteHeader(code)
+
+			return
+		}
+	}
+
 	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -682,9 +732,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	logger.DebugContext(ctx, "Received request: /tags")
 
 	// Previously cached invalid repo (does not exist or does not have tags)
-	// Get() will not return if the entry is past its TTL, so we can safely return the same http status code as is.
-	if code, found := invalidRepoCache.Get(repoURL); found {
-		logger.DebugContext(ctx, "Invalid repo cache hit", slog.Int("code", code))
+	if code, found := checkInvalidRepoCache(ctx, repoURL); found {
 		statusCode = code
 		w.WriteHeader(code)
 
@@ -709,9 +757,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
 				statusCode = errorToHTTPStatusCode(errFetch)
-				if statusCode == http.StatusForbidden || statusCode == http.StatusNotFound {
-					invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
-				}
+				cacheInvalidRepo(repoURL, statusCode)
 				http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
 
 				return
@@ -745,9 +791,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			})
 			if errLsRemote != nil {
 				statusCode = errorToHTTPStatusCode(errLsRemote)
-				if statusCode == http.StatusForbidden || statusCode == http.StatusNotFound {
-					invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
-				}
+				cacheInvalidRepo(repoURL, statusCode)
 				http.Error(w, fmt.Sprintf("Error listing remote tags: %v", errLsRemote), statusCode)
 
 				return
@@ -807,6 +851,7 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -887,6 +932,7 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return

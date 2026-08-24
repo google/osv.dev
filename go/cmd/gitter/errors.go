@@ -62,7 +62,9 @@ func isIndexLockError(err error) bool {
 
 // isRefConflictError checks if an error was caused by conflicting local and remote branch or tag references.
 func isRefConflictError(err error) bool {
+	// conflicting ref names (e.g. branch vs directory name)
 	return errContainsAny(err, "refname conflict") ||
+		// stale local tracking branches that conflict with remote
 		errContainsAll(err, "some local refs could not be updated", "try running 'git remote prune origin'")
 }
 
@@ -73,8 +75,11 @@ func isRateLimitError(err error) bool {
 	}
 
 	return errContainsAny(err,
+		// gitlab rate limit message
 		"unable to handle this request due to load",
+		// generic rate limiting
 		"too many requests",
+		// github secondary rate limits
 		"secondary rate limit",
 	)
 }
@@ -83,28 +88,42 @@ func isRateLimitError(err error) bool {
 // network timeout, TLS error, or remote server resource exhaustion (e.g. OOM during pack generation).
 func isRemoteHostError(err error) bool {
 	code := extractHTTPStatusCode(err)
-	if code == 500 || code == 502 || code == 503 || code == 504 {
+	if code >= 500 {
 		return true
 	}
 
 	return errContainsAny(err,
+		// connection failures, drops, resets
 		"could not connect to server",
 		"failed to connect to",
 		"connection reset by peer",
 		"recv failure",
+		// network timeouts
 		"connection timed out",
+		// server closed connection prematurely
 		"empty reply from server",
+		// tls / ssl negotiation failures
 		"tls connect error",
 		"ssl routines",
+		// git smart http rpc failures
 		"rpc failed",
+		// interrupted or truncated pack transfers (e.g. remote OOM)
 		"early eof",
 		"fetch-pack: invalid index-pack output",
+		// remote host unreachable
 		"is not responding",
+		// dns failures
+		"could not resolve host",
+		"temporary failure in name resolution",
 	)
 }
 
 // isAuthError checks if an error is due to missing git credentials or authentication failure.
 func isAuthError(err error) bool {
+	if extractHTTPStatusCode(err) == 401 {
+		return true
+	}
+
 	return errContainsAny(err,
 		"could not read username",
 		"authentication failed",

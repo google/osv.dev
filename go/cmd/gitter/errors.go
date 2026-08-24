@@ -7,7 +7,7 @@ import (
 )
 
 // regex to extract HTTP status code from git error output.
-var httpStatusRegex = regexp.MustCompile(`(?:The requested URL returned error:\s*|HTTP\s+|http_code\s*=\s*|remote:\s*)(\d{3})`)
+var httpStatusRegex = regexp.MustCompile(`(?:The requested URL returned error:\s*|HTTP\s+|http_code\s*=\s*|remote:\s*)(\d{3}\b)`)
 
 // extractHTTPStatusCode extracts a 3-digit HTTP status code from git or libcurl stderr output if present.
 func extractHTTPStatusCode(err error) int {

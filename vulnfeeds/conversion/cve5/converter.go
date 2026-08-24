@@ -159,6 +159,10 @@ func CVEToOSV(cve models.CVE5, sourceLink string, cache git.RepoTagsCache, httpC
 	if httpClient == nil {
 		panic("http client not set")
 	}
+	if cache == nil {
+		panic("git cache not set")
+	}
+
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)

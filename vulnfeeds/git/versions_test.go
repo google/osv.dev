@@ -14,6 +14,7 @@ import (
 
 func TestVersionToAffectedCommit(t *testing.T) {
 	cache := &InMemoryRepoTagsCache{}
+	r := testutils.SetupGitVCR(t)
 
 	tests := []struct {
 		description       string
@@ -100,14 +101,14 @@ func TestVersionToAffectedCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToAffectedCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionToAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
-			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache, r.GetDefaultClient())
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 			}

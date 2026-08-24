@@ -68,7 +68,8 @@ func main() {
 
 	// Perform the conversion and export the results.
 	cache := git.NewRepoTagsCache()
-	if metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, "", cache, http.DefaultClient); err != nil {
+	httpClient := http.DefaultClient
+	if metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsFile, "", cache, httpClient); err != nil {
 		logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 	} else {
 		logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))

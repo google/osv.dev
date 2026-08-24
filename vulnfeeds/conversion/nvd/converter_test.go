@@ -112,7 +112,7 @@ func TestCVEToOSV_Rejected(t *testing.T) {
 	metrics := &models.ConversionMetrics{}
 	cache := &git.InMemoryRepoTagsCache{}
 
-	vuln, _, outcome := CVEToOSV(cve, nil, nil, cache, metrics, nil)
+	vuln, _, outcome := CVEToOSV(cve, nil, nil, cache, metrics, http.DefaultClient)
 
 	if outcome != models.Rejected {
 		t.Errorf("Expected outcome models.Rejected, got %v", outcome)
@@ -145,7 +145,7 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 	var firstResult []*osvschema.Reference
 	for i := range 10 {
 		cache := &git.InMemoryRepoTagsCache{}
-		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics, nil)
+		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics, http.DefaultClient)
 		if vuln == nil {
 			t.Fatalf("Iteration %d produced nil vulnerability", i)
 		}

@@ -183,7 +183,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
 			claimedRepos[vr.Range.GetRepo()] = true // Always claim the raw repository URL.
-			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), http.DefaultClient, cache)
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), httpClient, cache)
 			if err != nil {
 				if git.IsRateLimit(err) {
 					metrics.Outcome = models.Error
@@ -215,7 +215,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache, httpClient)
 		if err != nil {
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
@@ -230,7 +230,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		for _, vr := range unresolvedRanges {
 			vRepo := vr.Range.GetRepo()
 			if vRepo != "" {
-				canonicalVRepo, err := git.FindCanonicalLink(vRepo, http.DefaultClient, cache)
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, httpClient, cache)
 				if err != nil {
 					if git.IsRateLimit(err) {
 						metrics.Outcome = models.Error

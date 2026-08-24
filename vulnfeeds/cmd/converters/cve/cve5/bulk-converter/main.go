@@ -205,6 +205,8 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
 		totalConversionsCount.Add(1)
 
+		httpClient := http.DefaultClient
+
 		sourceLink := ""
 		baseDirCVEList := "cves/" // The base folder for the CVEListV5 repository.
 		idx := strings.Index(path, baseDirCVEList)
@@ -214,7 +216,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 		}
 
 		if gcsHelper != nil {
-			vuln, metrics := cve5.CVEToOSV(cve, sourceLink, cache, http.DefaultClient)
+			vuln, metrics := cve5.CVEToOSV(cve, sourceLink, cache, httpClient)
 			if metrics.Outcome == models.Successful {
 				successfulConversionsCount.Add(1)
 			}
@@ -266,7 +268,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			}
 
 			// Perform the conversion and export the results.
-			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsSink, sourceLink, cache, http.DefaultClient)
+			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsSink, sourceLink, cache, httpClient)
 			if err != nil {
 				logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
 			} else {

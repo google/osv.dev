@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -317,7 +318,7 @@ func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
 }
 
 // Analyze CPE Dictionary and return a product-to-repo map and a reference description frequency table.
-func analyzeCPEDictionary(cpes []CPE) (productToRepo c.VendorProductToRepoMap, descriptionFrequency map[string]int) {
+func analyzeCPEDictionary(cpes []CPE, httpClient *http.Client) (productToRepo c.VendorProductToRepoMap, descriptionFrequency map[string]int) {
 	productToRepo = make(c.VendorProductToRepoMap)
 	descriptionFrequency = make(map[string]int)
 	MaybeTryDebian := make(map[c.VendorProduct]bool)
@@ -385,7 +386,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo c.VendorProductToRepoMap, d
 					logger.Info("Disregarding derived repo", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product), slog.Any("err", err))
 					continue
 				}
-				if valid, _ := git.ValidRepoAndHasUsableRefs(repo); !valid {
+				if valid, _ := git.ValidRepoAndHasUsableRefs(repo, httpClient); !valid {
 					logger.Info("Disregarding derived repo as unusable", slog.String("repo", repo), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 					continue
 				}
@@ -398,7 +399,7 @@ func analyzeCPEDictionary(cpes []CPE) (productToRepo c.VendorProductToRepoMap, d
 }
 
 // validateRepos takes a VendorProductToRepoMap and removes any entries where the repository fails remote validation.
-func validateRepos(prm c.VendorProductToRepoMap) (validated c.VendorProductToRepoMap) {
+func validateRepos(prm c.VendorProductToRepoMap, httpClient *http.Client) (validated c.VendorProductToRepoMap) {
 	validated = make(c.VendorProductToRepoMap)
 	logger.Info("Validating repos", slog.Int("products", len(prm)))
 	// This is likely to be time consuming, so give an impatient log watcher something to gauge progress by.
@@ -407,7 +408,7 @@ func validateRepos(prm c.VendorProductToRepoMap) (validated c.VendorProductToRep
 		entryCount++
 		// As a side-effect, this also omits any with no repos.
 		for _, r := range prm[vp] {
-			if valid, _ := git.ValidRepoAndHasUsableRefs(r); !valid {
+			if valid, _ := git.ValidRepoAndHasUsableRefs(r, httpClient); !valid {
 				logger.Info("Invalid repo", slog.Int("count", entryCount), slog.Int("total", len(prm)), slog.String("repo", r), slog.String("vendor", vp.Vendor), slog.String("product", vp.Product))
 				continue
 			}
@@ -435,9 +436,10 @@ func main() {
 		logger.Fatal("Failed to load CPEs", slog.String("path", *CPEDictionaryDir), slog.Any("err", err))
 	}
 
-	productToRepo, descriptionFrequency := analyzeCPEDictionary(cpes)
+	httpClient := http.DefaultClient
+	productToRepo, descriptionFrequency := analyzeCPEDictionary(cpes, httpClient)
 	if *Validate {
-		productToRepo = validateRepos(productToRepo)
+		productToRepo = validateRepos(productToRepo, httpClient)
 	}
 
 	mappingFile, err := os.Create(filepath.Join(*OutputDir, "cpe_product_to_repo.json"))

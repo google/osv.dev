@@ -206,7 +206,7 @@ func ValidateAndCanonicalizeLink(link string, httpClient *http.Client) (canonica
 		return link, err
 	}
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		panic("ValidateAndCanonicalizeLink called with nil httpClient")
 	}
 	backoff := retry.NewExponential(BackoffBaseDelay)
 	loggingBackoff := newLoggingBackoff(retry.WithMaxRetries(3, backoff), "ValidateAndCanonicalizeLink")

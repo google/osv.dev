@@ -284,7 +284,6 @@ func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.cveID, func(t *testing.T) {
-			t.Parallel()
 			cve, ok := cveMap[tc.cveID]
 			if !ok {
 				t.Fatalf("CVE %s not found in test.json", tc.cveID)

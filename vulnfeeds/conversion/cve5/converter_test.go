@@ -724,7 +724,6 @@ func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
 }
 
 func TestConvertAndExportCVEToOSV(t *testing.T) {
-	t.Parallel()
 	r := testutils.SetupGitVCR(t)
 	cve := loadTestData(t, "CVE-2025-1110")
 	cache := &git.InMemoryRepoTagsCache{}
@@ -774,7 +773,6 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 }
 
 func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
-	t.Parallel()
 	cve := loadTestData(t, "CVE-2025-1110")
 	cache := &git.InMemoryRepoTagsCache{}
 	r := testutils.SetupGitVCR(t)
@@ -819,7 +817,6 @@ func (errWriter) Write(_ []byte) (int, error) {
 }
 
 func TestConvertAndExportCVEToOSV_WriterErrors(t *testing.T) {
-	t.Parallel()
 	cve := loadTestData(t, "CVE-2025-1110")
 	cache := &git.InMemoryRepoTagsCache{}
 	r := testutils.SetupGitVCR(t)

@@ -101,7 +101,6 @@ func TestVersionToAffectedCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToAffectedCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -404,6 +403,7 @@ func TestValidateAndCanonicalizeLink_429(t *testing.T) {
 }
 
 func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
+	// Reduce the backoff delay so the test doesn't take too long - DO NOT USE t.Parallel with this!!!
 	oldDelay := BackoffBaseDelay
 	BackoffBaseDelay = 1 * time.Millisecond
 	defer func() { BackoffBaseDelay = oldDelay }()

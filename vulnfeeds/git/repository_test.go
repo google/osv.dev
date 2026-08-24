@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -410,21 +409,12 @@ func TestValidRepo(t *testing.T) {
 
 func TestInvalidRepos(t *testing.T) {
 	r := testutils.SetupGitVCR(t)
-	var mu sync.Mutex
 	redundantRepos := []string{}
-	var wg sync.WaitGroup
 	for _, repo := range models.InvalidRepos {
-		wg.Add(1)
-		go func(x string) {
-			defer wg.Done()
-			if valid, _ := ValidRepoAndHasUsableRefs(x, r.GetDefaultClient()); !valid {
-				mu.Lock()
-				redundantRepos = append(redundantRepos, x)
-				mu.Unlock()
-			}
-		}(repo)
+		if valid, _ := ValidRepoAndHasUsableRefs(repo, r.GetDefaultClient()); !valid {
+			redundantRepos = append(redundantRepos, repo)
+		}
 	}
-	wg.Wait()
 	if diff := cmp.Diff([]string{}, redundantRepos); diff != "" {
 		t.Errorf("These redundant repos are in InvalidRepos: %s", diff)
 	}

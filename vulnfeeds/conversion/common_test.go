@@ -747,7 +747,6 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 		}
 		httpClient := http.DefaultClient
 		t.Run(tt.name, func(t *testing.T) {
-
 			metrics := &models.ConversionMetrics{}
 			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, metrics, cache, httpClient)
 

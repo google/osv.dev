@@ -156,6 +156,9 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 
 // CVEToOSV converts a models.CVE5 object into an OSV Vulerability record and returns it along with its conversion metrics.
 func CVEToOSV(cve models.CVE5, sourceLink string, cache git.RepoTagsCache, httpClient *http.Client) (*vulns.Vulnerability, *models.ConversionMetrics) {
+	if httpClient == nil {
+		panic("http client not set")
+	}
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)

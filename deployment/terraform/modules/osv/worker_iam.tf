@@ -42,3 +42,33 @@ resource "google_pubsub_topic_iam_member" "worker_pypi_bridge_publisher" {
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:${var.worker_service_account_email}"
 }
+
+resource "google_storage_bucket_iam_member" "worker_indexer_configs" {
+  count  = var.worker_service_account_email != "" && var.indexer_configs_bucket != "" ? 1 : 0
+  bucket = var.indexer_configs_bucket
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${var.worker_service_account_email}"
+}
+
+resource "google_storage_bucket_iam_member" "worker_indexer_repos" {
+  count  = var.worker_service_account_email != "" && var.indexer_repos_bucket != "" ? 1 : 0
+  bucket = var.indexer_repos_bucket
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${var.worker_service_account_email}"
+}
+
+resource "google_pubsub_topic_iam_member" "worker_indexer_work_publisher" {
+  count   = var.worker_service_account_email != "" && var.indexer_topic != "" ? 1 : 0
+  project = var.project_id
+  topic   = var.indexer_topic
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:${var.worker_service_account_email}"
+}
+
+resource "google_pubsub_subscription_iam_member" "worker_indexer_work_subscriber" {
+  count        = var.worker_service_account_email != "" && var.indexer_subscription != "" ? 1 : 0
+  project      = var.project_id
+  subscription = var.indexer_subscription
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:${var.worker_service_account_email}"
+}

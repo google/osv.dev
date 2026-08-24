@@ -3,6 +3,7 @@ package website
 
 import (
 	"bytes"
+	"crypto/hkdf"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
@@ -108,8 +109,11 @@ func NewServer(cfg Config) (*Server, error) {
 
 	var secretKey []byte
 	if cfg.Auth.SecretKey != "" {
-		hash := sha256.Sum256([]byte(cfg.Auth.SecretKey))
-		secretKey = hash[:]
+		var err error
+		secretKey, err = hkdf.Key(sha256.New, []byte(cfg.Auth.SecretKey), nil, "osv-cookie-encryption", 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive secret key: %w", err)
+		}
 	} else {
 		secretKey = make([]byte, 32)
 		if _, err := io.ReadFull(rand.Reader, secretKey); err != nil {

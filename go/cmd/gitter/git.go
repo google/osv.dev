@@ -132,11 +132,11 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	defer repoLock.Unlock()
 
 	lastFetchMu.Lock()
-	accessTime, ok := lastFetch[repoURL]
+	lastFetchTime, ok := lastFetch[repoURL]
 	lastFetchMu.Unlock()
 
 	// Check if we need to fetch
-	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
+	if forceUpdate || !ok || time.Since(lastFetchTime) > fetchTimeout {
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
 			logger.DebugContext(ctx, "Cloning git repository")
@@ -146,7 +146,7 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 		} else {
 			// Fetch and reset
 			if ok {
-				logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+				logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceLastFetch", time.Since(lastFetchTime)))
 			} else {
 				logger.DebugContext(ctx, "Fetching git repository")
 			}
@@ -179,7 +179,7 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 					if reason != "" {
 						if ok {
 							logger.WarnContext(ctx, "Fetch failed due to "+reason+". Using local repo.",
-								slog.Duration("sinceAccessTime", time.Since(accessTime)),
+								slog.Duration("sinceLastFetch", time.Since(lastFetchTime)),
 								slog.Any("err", err))
 						} else {
 							logger.WarnContext(ctx, "Fetch failed due to "+reason+". Using local repo.",

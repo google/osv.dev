@@ -19,16 +19,12 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "8"
-                memory: "64G"
+                cpu: "2"
+                memory: "4G"
               limits:
-                cpu: "12"
-                memory: "96G"
+                cpu: "3"
+                memory: "8G"
             env:
               - name: GITTER_HOST
                 value: http://gitter-service:8888
           restartPolicy: Never
-          tolerations:
-          - key: workloadType
-            operator: Equal
-            value: highend

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 )
 
@@ -167,7 +167,7 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 						reason = "upstream rate limit or load"
 					case isRemoteHostError(err):
 						reason = "remote host or network error"
-					case ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
+					case osvutil.IsContextError(err):
 						reason = "context cancelled"
 					}
 

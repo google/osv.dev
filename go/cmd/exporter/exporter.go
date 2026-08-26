@@ -155,7 +155,7 @@ func ecosystemRouter(ctx context.Context, inCh <-chan processedVuln, outCh chan<
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
 	vulnCounter := 0
-	var vanirVulns []vulnData
+	var vanirVulnIDs []string
 
 	allEcosystemWorker := newAllEcosystemWorker(ctx, scratchDir, outCh, &workersWg)
 
@@ -173,8 +173,8 @@ RouterLoop:
 		}
 		vulnCounter++
 
-		if len(vuln.vanirData) > 0 {
-			vanirVulns = append(vanirVulns, vulnData{id: vuln.meta.id, data: vuln.vanirData})
+		if vuln.hasVanir {
+			vanirVulnIDs = append(vanirVulnIDs, vuln.meta.id)
 		}
 
 		for _, eco := range vuln.ecosystems {
@@ -202,8 +202,8 @@ RouterLoop:
 	allEcosystemWorker.Finish()
 	workersWg.Wait()
 
-	if len(vanirVulns) > 0 && ctx.Err() == nil {
-		writeVanir(ctx, vanirVulns, outCh)
+	if len(vanirVulnIDs) > 0 && ctx.Err() == nil {
+		writeVanir(ctx, vanirVulnIDs, outCh, scratchDir)
 	}
 
 	if ctx.Err() == nil {

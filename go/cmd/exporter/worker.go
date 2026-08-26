@@ -37,23 +37,17 @@ type vulnMeta struct {
 	modified time.Time
 }
 
-// vulnData holds the ID and marshalled JSON data for a vulnerability.
-type vulnData struct {
-	id   string
-	data []byte
-}
-
 // csvEntry holds the unix timestamp in nanoseconds and the relative entry path.
 type csvEntry struct {
 	modified int64
 	path     string
 }
 
-// processedVuln holds the metadata, ecosystems, and optional Vanir signatures for a processed vulnerability.
+// processedVuln holds the metadata, ecosystems, and Vanir flag for a processed vulnerability.
 type processedVuln struct {
 	meta       vulnMeta
 	ecosystems []string
-	vanirData  []byte
+	hasVanir   bool
 }
 
 // ecosystemWorker processes vulnerabilities for a single ecosystem.
@@ -281,17 +275,53 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 	writeStream(ctx, path, tmpZip.Name(), "application/zip", outCh)
 }
 
-// writeVanir constructs and writes the osv_git.json file containing vulnerabilities with Vanir signatures.
-func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMsg) {
-	slices.SortFunc(vanirVulns, func(a, b vulnData) int { return cmp.Compare(a.id, b.id) })
-	vulns := make([]json.RawMessage, len(vanirVulns))
-	for i, v := range vanirVulns {
-		vulns[i] = v.data
-	}
-	finalJSON, err := json.Marshal(vulns)
+// writeVanir constructs and writes the osv_git.json file containing vulnerabilities with Vanir signatures
+// by streaming the cached JSON files from disk into a temporary JSON array file.
+func writeVanir(ctx context.Context, vanirVulnIDs []string, outCh chan<- writeMsg, scratchDir string) {
+	logger.InfoContext(ctx, "constructing vanir file", slog.Int("count", len(vanirVulnIDs)))
+	slices.Sort(vanirVulnIDs)
+
+	tmpVanir, err := os.CreateTemp(scratchDir, "vanir-*.json")
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to marshal vanir JSON file", slog.Any("err", err))
+		logger.ErrorContext(ctx, "failed to create temp vanir file", slog.Any("err", err))
 		return
 	}
-	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", outCh)
+	defer tmpVanir.Close()
+
+	if _, err := tmpVanir.WriteString("["); err != nil {
+		logger.ErrorContext(ctx, "failed to write vanir header", slog.Any("err", err))
+		return
+	}
+
+	first := true
+	for _, id := range vanirVulnIDs {
+		localPath := filepath.Join(scratchDir, id+".json")
+		f, err := os.Open(localPath)
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to open local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+		if !first {
+			if _, err := tmpVanir.WriteString(","); err != nil {
+				f.Close()
+				logger.ErrorContext(ctx, "failed to write vanir separator", slog.Any("err", err))
+				return
+			}
+		}
+		if _, err := io.Copy(tmpVanir, f); err != nil {
+			f.Close()
+			logger.ErrorContext(ctx, "failed to copy vuln to vanir file", slog.String("id", id), slog.Any("err", err))
+			return
+		}
+		f.Close()
+		first = false
+	}
+
+	if _, err := tmpVanir.WriteString("]"); err != nil {
+		logger.ErrorContext(ctx, "failed to write vanir footer", slog.Any("err", err))
+		return
+	}
+
+	logger.InfoContext(ctx, "writing vanir file", slog.String("path", filepath.Join(gitEcosystem, vanirVulnsFilename)))
+	writeStream(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), tmpVanir.Name(), "application/json", outCh)
 }

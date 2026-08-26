@@ -60,12 +60,12 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 			return
 		}
 
-		var vanirData []byte
+		hasVanir := false
 		// Check for Vanir signatures
 		for _, aff := range vuln.GetAffected() {
 			spec := aff.GetDatabaseSpecific()
 			if _, ok := spec.GetFields()["vanir_signatures"]; ok {
-				vanirData = b
+				hasVanir = true
 				break
 			}
 		}
@@ -104,7 +104,7 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 				modified: vuln.GetModified().AsTime(),
 			},
 			ecosystems: ecoNames,
-			vanirData:  vanirData,
+			hasVanir:   hasVanir,
 		}:
 		case <-ctx.Done():
 			return

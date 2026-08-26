@@ -182,7 +182,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open all.zip: %v", err)
 	}
-	var zipNames []string
+	zipNames := make([]string, 0, len(zipReader.File))
 	for _, f := range zipReader.File {
 		zipNames = append(zipNames, f.Name)
 	}

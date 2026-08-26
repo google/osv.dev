@@ -31,83 +31,69 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 	defer wg.Done()
 	for msg := range inCh {
 		path := filepath.Join(pathPrefix, msg.path)
+		var err error
 		if msg.filePath != "" {
-			if client != nil {
-				if gcsFileUnchanged(ctx, client, path, msg.filePath) {
-					_ = os.Remove(msg.filePath)
-					continue
-				}
-				f, err := os.Open(msg.filePath)
-				if err != nil {
-					logger.Error("failed to open local file for upload", slog.String("path", path), slog.String("file", msg.filePath), slog.Any("err", err))
-					_ = os.Remove(msg.filePath)
-					cancel()
-
-					break
-				}
-				err = client.WriteObjectStream(ctx, path, f, &clients.WriteOptions{
-					ContentType: msg.mimeType,
-				})
-				f.Close()
-				_ = os.Remove(msg.filePath)
-				if err != nil {
-					logger.Error("failed to stream write file", slog.String("path", path), slog.Any("err", err))
-					cancel()
-
-					break
-				}
-			} else {
-				// Write locally: copy from msg.filePath to path
-				dir := filepath.Dir(path)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
-					_ = os.Remove(msg.filePath)
-					cancel()
-
-					break
-				}
-				if err := copyFile(msg.filePath, path); err != nil {
-					logger.Error("failed to copy file locally", slog.String("src", msg.filePath), slog.String("dst", path), slog.Any("err", err))
-					_ = os.Remove(msg.filePath)
-					cancel()
-
-					break
-				}
-				_ = os.Remove(msg.filePath)
-			}
+			err = writeFromFile(ctx, client, path, msg.filePath, msg.mimeType)
 		} else {
-			if client != nil {
-				// Skip the upload if the object already has the same content.
-				if gcsContentUnchanged(ctx, client, path, msg.data) {
-					continue
-				}
-				err := client.WriteObject(ctx, path, msg.data, &clients.WriteOptions{
-					ContentType: msg.mimeType,
-				})
-				if err != nil {
-					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
-					cancel()
+			err = writeFromMemory(ctx, client, path, msg.data, msg.mimeType)
+		}
+		if err != nil {
+			logger.Error("failed to write output file", slog.String("path", path), slog.Any("err", err))
+			cancel()
 
-					break
-				}
-			} else {
-				// Write locally.
-				dir := filepath.Dir(path)
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
-					cancel()
-
-					break
-				}
-				if err := os.WriteFile(path, msg.data, 0600); err != nil {
-					logger.Error("failed to write file", slog.String("path", path), slog.Any("err", err))
-					cancel()
-
-					break
-				}
-			}
+			break
 		}
 	}
+}
+
+// writeFromFile handles writing or uploading a file by streaming from a local file path.
+// It removes the source file when finished.
+func writeFromFile(ctx context.Context, client clients.CloudStorage, path, filePath, mimeType string) error {
+	defer os.Remove(filePath)
+
+	if client != nil {
+		if gcsFileUnchanged(ctx, client, path, filePath) {
+			return nil
+		}
+		f, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		return client.WriteObjectStream(ctx, path, f, &clients.WriteOptions{
+			ContentType: mimeType,
+		})
+	}
+
+	// Write locally: copy from filePath to path
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return copyFile(filePath, path)
+}
+
+// writeFromMemory handles writing or uploading in-memory byte data to GCS or a local file.
+func writeFromMemory(ctx context.Context, client clients.CloudStorage, path string, data []byte, mimeType string) error {
+	if client != nil {
+		if gcsContentUnchanged(ctx, client, path, data) {
+			return nil
+		}
+
+		return client.WriteObject(ctx, path, data, &clients.WriteOptions{
+			ContentType: mimeType,
+		})
+	}
+
+	// Write locally
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0600)
 }
 
 func copyFile(src, dst string) error {

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/api/option"
 )
@@ -92,35 +90,36 @@ func main() {
 	}
 
 	// The exporter uses a pipeline of channels and worker pools. The data flow is as follows:
-	// 1. The main goroutine lists GCS objects and sends them to `gcsPathToDownloaderCh`.
-	// 2. A pool of `downloader` workers receive GCS objects, downloads and unmarshals them into
-	//    OSV vulnerabilities, and send them to `downloaderToRouterCh`.
-	// 3. The `ecosystemRouter` receives vulnerabilities and dispatches them. It creates a new
+	// 1. The main goroutine lists GCS objects and sends them to `gcsPathToProcessorCh`.
+	// 2. A pool of `downloadThenProcessor` workers receive GCS objects, downloads, unmarshals,
+	//    marshals to JSON, saves to scratch disk, queues individual JSON writes to `writeCh`,
+	//    and sends metadata to `processorToRouterCh`.
+	// 3. The `ecosystemRouter` receives metadata and dispatches it. It creates a new
 	//    `ecosystemWorker` for each new ecosystem, and sends all vulnerabilities to a single
 	//    `allEcosystemWorker`.
-	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` process the vulnerabilities and
-	//    generate the final files, sending the data to be written to `routerToWriteCh`.
+	// 4. The `ecosystemWorker`s and the `allEcosystemWorker` aggregate metadata and generate the
+	//    final zip, csv, and ecosystems.txt files, sending the write requests to `writeCh`.
 	// 5. A pool of `writer` workers receive the file data and write it to the output.
-	gcsPathToDownloaderCh := make(chan string, 100)
-	downloaderToRouterCh := make(chan *osvschema.Vulnerability, 100)
-	routerToWriteCh := make(chan writeMsg, 100)
+	gcsPathToProcessorCh := make(chan string, 100)
+	processorToRouterCh := make(chan processedVuln, 100)
+	writeCh := make(chan writeMsg, 100)
 
 	breakdownPrefixes := sharding.ExpandBreakdownPrefixes(*breakdownPrefixesStr)
 
-	var downloaderWg sync.WaitGroup
+	var processorWg sync.WaitGroup
 	for range *numWorkers / 2 {
-		downloaderWg.Add(1)
-		go downloader(ctx, vulnClient, gcsPathToDownloaderCh, downloaderToRouterCh, &downloaderWg)
+		processorWg.Add(1)
+		go downloadThenProcessor(ctx, cancel, vulnClient, scratchDir, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
 	}
 
 	var writerWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		writerWg.Add(1)
-		go writer(ctx, cancel, routerToWriteCh, outClient, outPrefix, &writerWg)
+		go writer(ctx, cancel, writeCh, outClient, outPrefix, &writerWg)
 	}
 	var routerWg sync.WaitGroup
 	routerWg.Add(1)
-	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, scratchDir, &routerWg)
+	go ecosystemRouter(ctx, processorToRouterCh, writeCh, scratchDir, &routerWg)
 
 MainLoop:
 	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
@@ -128,17 +127,17 @@ MainLoop:
 			logger.FatalContext(ctx, "failed to list objects", slog.Any("err", err))
 		}
 		select {
-		case gcsPathToDownloaderCh <- objName:
+		case gcsPathToProcessorCh <- objName:
 		case <-ctx.Done():
 			break MainLoop
 		}
 	}
 
-	close(gcsPathToDownloaderCh)
-	downloaderWg.Wait()
-	close(downloaderToRouterCh)
+	close(gcsPathToProcessorCh)
+	processorWg.Wait()
+	close(processorToRouterCh)
 	routerWg.Wait()
-	close(routerToWriteCh)
+	close(writeCh)
 	writerWg.Wait()
 
 	if ctx.Err() != nil {
@@ -147,10 +146,10 @@ MainLoop:
 	logger.InfoContext(ctx, "export completed successfully")
 }
 
-// ecosystemRouter receives vulnerabilities from inCh and fans them out to the
+// ecosystemRouter receives processed vulnerabilities from inCh and fans them out to the
 // appropriate ecosystemWorker. It creates workers on-demand for each new
 // ecosystem encountered. It also sends every vulnerability to the allEcosystemWorker.
-func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, outCh chan<- writeMsg, scratchDir string, wg *sync.WaitGroup) {
+func ecosystemRouter(ctx context.Context, inCh <-chan processedVuln, outCh chan<- writeMsg, scratchDir string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	logger.InfoContext(ctx, "ecosystem router starting")
 	workers := make(map[string]*ecosystemWorker)
@@ -162,7 +161,7 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 
 RouterLoop:
 	for {
-		var vuln *osvschema.Vulnerability
+		var vuln processedVuln
 		var ok bool
 		select {
 		case <-ctx.Done():
@@ -174,71 +173,24 @@ RouterLoop:
 		}
 		vulnCounter++
 
-		// Marshal JSON ONCE for this vulnerability.
-		b, err := marshalToJSON(vuln)
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", vuln.GetId()), slog.Any("err", err))
-			continue
+		if len(vuln.vanirData) > 0 {
+			vanirVulns = append(vanirVulns, vulnData{id: vuln.meta.id, data: vuln.vanirData})
 		}
 
-		// Cache to local scratch disk for later ZIP generation.
-		localPath := filepath.Join(scratchDir, vuln.GetId()+".json")
-		if err := os.WriteFile(localPath, b, 0600); err != nil {
-			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
-			continue
-		}
-
-		meta := vulnMeta{
-			id:       vuln.GetId(),
-			modified: vuln.GetModified().AsTime(),
-		}
-
-		// Check for Vanir signatures
-		for _, aff := range vuln.GetAffected() {
-			spec := aff.GetDatabaseSpecific()
-			if _, ok := spec.GetFields()["vanir_signatures"]; ok {
-				vanirVulns = append(vanirVulns, vulnData{id: vuln.GetId(), data: b})
-				break
-			}
-		}
-
-		ecosystems := make(map[string]struct{})
-		for _, aff := range vuln.GetAffected() {
-			eco := aff.GetPackage().GetEcosystem()
-			eco, _, _ = strings.Cut(eco, ":")
-			if eco != "" {
-				ecosystems[eco] = struct{}{}
-			}
-			for _, ref := range aff.GetRanges() {
-				if ref.GetType() == osvschema.Range_GIT {
-					ecosystems["GIT"] = struct{}{}
-				}
-			}
-		}
-		if len(ecosystems) == 0 {
-			ecosystems["[EMPTY]"] = struct{}{}
-		}
-		ecoNames := make([]string, 0, len(ecosystems))
-		for eco := range ecosystems {
-			ecoNames = append(ecoNames, eco)
+		for _, eco := range vuln.ecosystems {
 			worker, ok := workers[eco]
 			if !ok {
 				worker = newEcosystemWorker(ctx, eco, scratchDir, outCh, &workersWg)
 				workers[eco] = worker
 			}
 			select {
-			case worker.inCh <- meta:
-			case <-ctx.Done():
-				break RouterLoop
-			}
-			select {
-			case outCh <- writeMsg{path: filepath.Join(eco, vuln.GetId()) + ".json", mimeType: "application/json", data: b}:
+			case worker.inCh <- vuln.meta:
 			case <-ctx.Done():
 				break RouterLoop
 			}
 		}
 		select {
-		case allEcosystemWorker.inCh <- vulnAndEcos{meta: meta, ecosystems: ecoNames}:
+		case allEcosystemWorker.inCh <- vulnAndEcos{meta: vuln.meta, ecosystems: vuln.ecosystems}:
 		case <-ctx.Done():
 			break RouterLoop
 		}

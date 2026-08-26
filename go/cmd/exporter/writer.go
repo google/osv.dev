@@ -34,11 +34,13 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 		if msg.filePath != "" {
 			if client != nil {
 				if gcsFileUnchanged(ctx, client, path, msg.filePath) {
+					_ = os.Remove(msg.filePath)
 					continue
 				}
 				f, err := os.Open(msg.filePath)
 				if err != nil {
 					logger.Error("failed to open local file for upload", slog.String("path", path), slog.String("file", msg.filePath), slog.Any("err", err))
+					_ = os.Remove(msg.filePath)
 					cancel()
 
 					break
@@ -47,6 +49,7 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 					ContentType: msg.mimeType,
 				})
 				f.Close()
+				_ = os.Remove(msg.filePath)
 				if err != nil {
 					logger.Error("failed to stream write file", slog.String("path", path), slog.Any("err", err))
 					cancel()
@@ -58,16 +61,19 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 				dir := filepath.Dir(path)
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					logger.Error("failed to create directories", slog.String("dir", dir), slog.Any("err", err))
+					_ = os.Remove(msg.filePath)
 					cancel()
 
 					break
 				}
 				if err := copyFile(msg.filePath, path); err != nil {
 					logger.Error("failed to copy file locally", slog.String("src", msg.filePath), slog.String("dst", path), slog.Any("err", err))
+					_ = os.Remove(msg.filePath)
 					cancel()
 
 					break
 				}
+				_ = os.Remove(msg.filePath)
 			}
 		} else {
 			if client != nil {

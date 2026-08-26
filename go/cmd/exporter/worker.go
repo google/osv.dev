@@ -49,6 +49,13 @@ type csvEntry struct {
 	path     string
 }
 
+// processedVuln holds the metadata, ecosystems, and optional Vanir signatures for a processed vulnerability.
+type processedVuln struct {
+	meta       vulnMeta
+	ecosystems []string
+	vanirData  []byte
+}
+
 // ecosystemWorker processes vulnerabilities for a single ecosystem.
 type ecosystemWorker struct {
 	ecosystem  string

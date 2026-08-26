@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/osv.dev/go/testutils"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -74,18 +75,8 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	defer cancel()
 
 	scratchDir := t.TempDir()
-	storage := testutils.NewMockStorage()
-
-	inCh := make(chan *osvschema.Vulnerability, 10)
-	routerToWriteCh := make(chan writeMsg, 100)
-
-	var writerWg sync.WaitGroup
-	writerWg.Add(1)
-	go writer(ctx, cancel, routerToWriteCh, storage, "export", &writerWg)
-
-	var routerWg sync.WaitGroup
-	routerWg.Add(1)
-	go ecosystemRouter(ctx, inCh, routerToWriteCh, scratchDir, &routerWg)
+	vulnStorage := testutils.NewMockStorage()
+	outStorage := testutils.NewMockStorage()
 
 	time1 := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 	time2 := time.Date(2023, 2, 1, 12, 0, 0, 0, time.UTC)
@@ -103,6 +94,11 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 			},
 		},
 	}
+	pb1, err := proto.Marshal(vuln1)
+	if err != nil {
+		t.Fatalf("failed to marshal proto: %v", err)
+	}
+	_ = vulnStorage.WriteObject(ctx, "all/pb/vuln1", pb1, nil)
 
 	// Create test vulnerability 2: npm and GIT with Vanir signatures
 	vanirField, _ := structpb.NewValue("test-signature")
@@ -128,17 +124,40 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 			},
 		},
 	}
+	pb2, err := proto.Marshal(vuln2)
+	if err != nil {
+		t.Fatalf("failed to marshal proto: %v", err)
+	}
+	_ = vulnStorage.WriteObject(ctx, "all/pb/vuln2", pb2, nil)
 
-	inCh <- vuln1
-	inCh <- vuln2
-	close(inCh)
+	gcsPathToProcessorCh := make(chan string, 10)
+	processorToRouterCh := make(chan processedVuln, 10)
+	writeCh := make(chan writeMsg, 100)
 
+	var processorWg sync.WaitGroup
+	processorWg.Add(1)
+	go downloadThenProcessor(ctx, cancel, vulnStorage, scratchDir, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
+
+	var writerWg sync.WaitGroup
+	writerWg.Add(1)
+	go writer(ctx, cancel, writeCh, outStorage, "export", &writerWg)
+
+	var routerWg sync.WaitGroup
+	routerWg.Add(1)
+	go ecosystemRouter(ctx, processorToRouterCh, writeCh, scratchDir, &routerWg)
+
+	gcsPathToProcessorCh <- "all/pb/vuln1"
+	gcsPathToProcessorCh <- "all/pb/vuln2"
+	close(gcsPathToProcessorCh)
+
+	processorWg.Wait()
+	close(processorToRouterCh)
 	routerWg.Wait()
-	close(routerToWriteCh)
+	close(writeCh)
 	writerWg.Wait()
 
 	// 1. Verify individual JSON outputs
-	pypiJSON, err := storage.ReadObject(ctx, "export/PyPI/GHSA-pypi-1.json")
+	pypiJSON, err := outStorage.ReadObject(ctx, "export/PyPI/GHSA-pypi-1.json")
 	if err != nil {
 		t.Fatalf("expected PyPI/GHSA-pypi-1.json in storage: %v", err)
 	}
@@ -146,7 +165,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 		t.Errorf("PyPI JSON content mismatch: %s", string(pypiJSON))
 	}
 
-	npmJSON, err := storage.ReadObject(ctx, "export/npm/GHSA-npm-git-2.json")
+	npmJSON, err := outStorage.ReadObject(ctx, "export/npm/GHSA-npm-git-2.json")
 	if err != nil {
 		t.Fatalf("expected npm/GHSA-npm-git-2.json in storage: %v", err)
 	}
@@ -155,7 +174,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	}
 
 	// 2. Verify all.zip contains all JSON files
-	allZipBytes, err := storage.ReadObject(ctx, "export/all.zip")
+	allZipBytes, err := outStorage.ReadObject(ctx, "export/all.zip")
 	if err != nil {
 		t.Fatalf("expected all.zip: %v", err)
 	}
@@ -172,7 +191,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	}
 
 	// 3. Verify modified_id.csv ordering (descending by modified time)
-	csvBytes, err := storage.ReadObject(ctx, "export/modified_id.csv")
+	csvBytes, err := outStorage.ReadObject(ctx, "export/modified_id.csv")
 	if err != nil {
 		t.Fatalf("expected modified_id.csv: %v", err)
 	}
@@ -190,7 +209,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	}
 
 	// 4. Verify ecosystems.txt
-	ecoTxtBytes, err := storage.ReadObject(ctx, "export/ecosystems.txt")
+	ecoTxtBytes, err := outStorage.ReadObject(ctx, "export/ecosystems.txt")
 	if err != nil {
 		t.Fatalf("expected ecosystems.txt: %v", err)
 	}
@@ -200,7 +219,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	}
 
 	// 5. Verify Vanir signatures file (GIT/osv_git.json)
-	vanirBytes, err := storage.ReadObject(ctx, "export/GIT/osv_git.json")
+	vanirBytes, err := outStorage.ReadObject(ctx, "export/GIT/osv_git.json")
 	if err != nil {
 		t.Fatalf("expected GIT/osv_git.json: %v", err)
 	}

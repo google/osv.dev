@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/google/osv.dev/go/internal/osvutil"
@@ -12,10 +15,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// downloader is a worker that receives GCS object handles from inCh, downloads
-// the raw protobuf data, unmarshals it into a Vulnerability, and sends the
-// result to outCh.
-func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan string, outCh chan<- *osvschema.Vulnerability, wg *sync.WaitGroup) {
+// downloadThenProcessor is a worker that receives GCS object handles from inCh, downloads
+// the raw protobuf data, unmarshals it into a Vulnerability, marshals it to compact
+// JSON, saves it to scratch disk, queues individual JSON uploads, and sends the
+// metadata to routerCh.
+func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, client clients.CloudStorage, scratchDir string, inCh <-chan string, routerCh chan<- processedVuln, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for path := range inCh {
 		// Process object.
@@ -38,9 +42,70 @@ func downloader(ctx context.Context, client clients.CloudStorage, inCh <-chan st
 			continue
 		}
 
-		// Wait to send the result, or be cancelled.
+		// Marshal JSON ONCE for this vulnerability.
+		b, err := marshalToJSON(vuln)
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to marshal vulnerability to json", slog.String("id", vuln.GetId()), slog.Any("err", err))
+			continue
+		}
+
+		// Cache to local scratch disk for later ZIP generation.
+		localPath := filepath.Join(scratchDir, vuln.GetId()+".json")
+		if err := os.WriteFile(localPath, b, 0600); err != nil {
+			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
+			// Cancel the exporter context if writing to the scratch disk fails (e.g. disk full)
+			// to fail fast rather than producing incomplete archives later.
+			cancel()
+
+			return
+		}
+
+		var vanirData []byte
+		// Check for Vanir signatures
+		for _, aff := range vuln.GetAffected() {
+			spec := aff.GetDatabaseSpecific()
+			if _, ok := spec.GetFields()["vanir_signatures"]; ok {
+				vanirData = b
+				break
+			}
+		}
+
+		ecosystems := make(map[string]struct{})
+		for _, aff := range vuln.GetAffected() {
+			eco := aff.GetPackage().GetEcosystem()
+			eco, _, _ = strings.Cut(eco, ":")
+			if eco != "" {
+				ecosystems[eco] = struct{}{}
+			}
+			for _, ref := range aff.GetRanges() {
+				if ref.GetType() == osvschema.Range_GIT {
+					ecosystems["GIT"] = struct{}{}
+				}
+			}
+		}
+		if len(ecosystems) == 0 {
+			ecosystems["[EMPTY]"] = struct{}{}
+		}
+		ecoNames := make([]string, 0, len(ecosystems))
+		for eco := range ecosystems {
+			ecoNames = append(ecoNames, eco)
+			select {
+			case writeCh <- writeMsg{path: filepath.Join(eco, vuln.GetId()) + ".json", mimeType: "application/json", data: b}:
+			case <-ctx.Done():
+				return
+			}
+		}
+
+		// Send processed metadata to router.
 		select {
-		case outCh <- vuln:
+		case routerCh <- processedVuln{
+			meta: vulnMeta{
+				id:       vuln.GetId(),
+				modified: vuln.GetModified().AsTime(),
+			},
+			ecosystems: ecoNames,
+			vanirData:  vanirData,
+		}:
 		case <-ctx.Done():
 			return
 		}

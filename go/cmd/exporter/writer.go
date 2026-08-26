@@ -47,10 +47,7 @@ func writer(ctx context.Context, cancel context.CancelFunc, inCh <-chan writeMsg
 }
 
 // writeFromFile handles writing or uploading a file by streaming from a local file path.
-// It removes the source file when finished.
 func writeFromFile(ctx context.Context, client clients.CloudStorage, path, filePath, mimeType string) error {
-	defer os.Remove(filePath)
-
 	if client != nil {
 		if gcsFileUnchanged(ctx, client, path, filePath) {
 			return nil

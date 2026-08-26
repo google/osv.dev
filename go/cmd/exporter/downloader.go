@@ -80,6 +80,7 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 			for _, ref := range aff.GetRanges() {
 				if ref.GetType() == osvschema.Range_GIT {
 					ecosystems["GIT"] = struct{}{}
+					break
 				}
 			}
 		}

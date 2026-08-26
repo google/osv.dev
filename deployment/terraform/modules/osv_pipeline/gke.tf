@@ -140,6 +140,9 @@ resource "google_compute_reservation" "default_pool_res" {
   project = var.project_id
   name    = "n4-standard-8-res"
   zone    = "us-west2-b" # google_container_cluster.workers.location
+  reservation_sharing_policy {
+    service_share_type = "ALLOW_ALL"
+  }
   specific_reservation {
     count = var.default_pool_res_size
     instance_properties {
@@ -152,6 +155,9 @@ resource "google_compute_reservation" "highend_pool_res" {
   project = var.project_id
   name    = "n4-highmem-32-res"
   zone    = "us-west2-b" # google_container_cluster.workers.location
+  reservation_sharing_policy {
+    service_share_type = "ALLOW_ALL"
+  }
   specific_reservation {
     count = var.highend_pool_res_size
     instance_properties {

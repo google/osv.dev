@@ -37,9 +37,9 @@ type vulnMeta struct {
 	modified time.Time
 }
 
-// csvEntry holds the unix timestamp in nanoseconds and the relative entry path.
+// csvEntry holds the modified time and the relative entry path.
 type csvEntry struct {
-	modified int64
+	modified time.Time
 	path     string
 }
 
@@ -85,7 +85,7 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	csvData := make([]csvEntry, 0, 500)
 	for v := range w.inCh {
 		allVulns = append(allVulns, v)
-		csvData = append(csvData, csvEntry{modified: v.modified.UnixNano(), path: v.id})
+		csvData = append(csvData, csvEntry{modified: v.modified, path: v.id})
 	}
 
 	if ctx.Err() != nil {
@@ -145,7 +145,7 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 		allVulns = append(allVulns, v.meta)
 		for _, e := range v.ecosystems {
 			ecosystems[e] = struct{}{}
-			csvData = append(csvData, csvEntry{modified: v.meta.modified.UnixNano(), path: e + "/" + v.meta.id})
+			csvData = append(csvData, csvEntry{modified: v.meta.modified, path: e + "/" + v.meta.id})
 			if len(csvData)%50000 == 0 {
 				logger.InfoContext(ctx, "processed N vulnerabilities", slog.Int("n", len(csvData)))
 			}
@@ -206,15 +206,15 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, ou
 	logger.InfoContext(ctx, "constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b csvEntry) int {
 		return cmp.Or(
-			-cmp.Compare(a.modified, b.modified), // Modified date, descending
-			cmp.Compare(a.path, b.path),          // path/vuln ID, ascending
+			-a.modified.Compare(b.modified), // Modified date, descending
+			cmp.Compare(a.path, b.path),     // path/vuln ID, ascending
 		)
 	})
 
 	var buf bytes.Buffer
 	wr := csv.NewWriter(&buf)
 	for _, entry := range csvData {
-		t := time.Unix(0, entry.modified).UTC().Format(time.RFC3339Nano)
+		t := entry.modified.UTC().Format(time.RFC3339Nano)
 		if err := wr.Write([]string{t, entry.path}); err != nil {
 			logger.ErrorContext(ctx, "failed writing csv line", slog.String("path", path), slog.Any("err", err))
 			return

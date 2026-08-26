@@ -31,11 +31,16 @@ const (
 	ecosystemsFilename  = "ecosystems.txt"
 )
 
-// vulnMeta holds the ID, modified time, and local staging file path for a vulnerability.
+// vulnMeta holds the ID and modified time for a vulnerability.
 type vulnMeta struct {
-	id        string
-	modified  time.Time
-	localPath string
+	id       string
+	modified time.Time
+}
+
+// vulnData holds the ID and marshalled JSON data for a vulnerability.
+type vulnData struct {
+	id   string
+	data []byte
 }
 
 // csvEntry holds the unix timestamp in nanoseconds and the relative entry path.
@@ -87,7 +92,7 @@ func (w *ecosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg *sy
 	}
 
 	logger.InfoContext(ctx, "All vulnerabilities processed", slog.String("ecosystem", w.ecosystem))
-	writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh, w.scratchDir)
+	writeModifiedIDCSV(ctx, filepath.Join(w.ecosystem, modifiedCSVFilename), csvData, outCh)
 	writeZIP(ctx, filepath.Join(w.ecosystem, allZipFilename), allVulns, outCh, w.scratchDir)
 	logger.InfoContext(ctx, "ecosystem worker finished processing", slog.String("ecosystem", w.ecosystem))
 }
@@ -150,7 +155,7 @@ func (w *allEcosystemWorker) run(ctx context.Context, outCh chan<- writeMsg, wg 
 		return
 	}
 
-	writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh, w.scratchDir)
+	writeModifiedIDCSV(ctx, modifiedCSVFilename, csvData, outCh)
 	writeZIP(ctx, allZipFilename, allVulns, outCh, w.scratchDir)
 	ecos := slices.Collect(maps.Keys(ecosystems))
 	slices.Sort(ecos)
@@ -195,8 +200,8 @@ func writeStream(ctx context.Context, path string, filePath string, mimeType str
 	}
 }
 
-// writeModifiedIDCSV constructs and writes a modified_id.csv file by streaming to a temporary file.
-func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, outCh chan<- writeMsg, scratchDir string) {
+// writeModifiedIDCSV constructs and writes a modified_id.csv file.
+func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, outCh chan<- writeMsg) {
 	logger.InfoContext(ctx, "constructing csv file", slog.String("path", path))
 	slices.SortFunc(csvData, func(a, b csvEntry) int {
 		return cmp.Or(
@@ -205,14 +210,8 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, ou
 		)
 	})
 
-	tmpCsv, err := os.CreateTemp(scratchDir, "csv-*.tmp")
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to create temp csv file", slog.String("path", path), slog.Any("err", err))
-		return
-	}
-	defer tmpCsv.Close()
-
-	wr := csv.NewWriter(tmpCsv)
+	var buf bytes.Buffer
+	wr := csv.NewWriter(&buf)
 	for _, entry := range csvData {
 		t := time.Unix(0, entry.modified).UTC().Format(time.RFC3339Nano)
 		if err := wr.Write([]string{t, entry.path}); err != nil {
@@ -227,7 +226,7 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, ou
 	}
 
 	logger.InfoContext(ctx, "writing csv file", slog.String("path", path))
-	writeStream(ctx, path, tmpCsv.Name(), "text/csv", outCh)
+	write(ctx, path, buf.Bytes(), "text/csv", outCh)
 }
 
 // writeZIP constructs and writes a zip file by streaming from local files to a temporary zip file.
@@ -255,9 +254,10 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 			logger.ErrorContext(ctx, "failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 			continue
 		}
-		f, err := os.Open(vuln.localPath)
+		localPath := filepath.Join(scratchDir, vuln.id+".json")
+		f, err := os.Open(localPath)
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to open local vuln json file", slog.String("path", vuln.localPath), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to open local vuln json file", slog.String("path", localPath), slog.Any("err", err))
 			continue
 		}
 		if _, err := io.Copy(w, f); err != nil {
@@ -275,46 +275,16 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 }
 
 // writeVanir constructs and writes the osv_git.json file containing vulnerabilities with Vanir signatures.
-func writeVanir(ctx context.Context, vanirVulns []vulnMeta, outCh chan<- writeMsg, scratchDir string) {
-	slices.SortFunc(vanirVulns, func(a, b vulnMeta) int { return cmp.Compare(a.id, b.id) })
-
-	tmpVanir, err := os.CreateTemp(scratchDir, "vanir-*.json")
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to create temp vanir file", slog.Any("err", err))
-		return
-	}
-	defer tmpVanir.Close()
-
-	if _, err := tmpVanir.WriteString("[\n"); err != nil {
-		logger.ErrorContext(ctx, "failed to write vanir header", slog.Any("err", err))
-		return
-	}
+func writeVanir(ctx context.Context, vanirVulns []vulnData, outCh chan<- writeMsg) {
+	slices.SortFunc(vanirVulns, func(a, b vulnData) int { return cmp.Compare(a.id, b.id) })
+	vulns := make([]json.RawMessage, len(vanirVulns))
 	for i, v := range vanirVulns {
-		data, err := os.ReadFile(v.localPath)
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to read local vanir file", slog.String("path", v.localPath), slog.Any("err", err))
-			continue
-		}
-		if _, err := tmpVanir.Write(data); err != nil {
-			logger.ErrorContext(ctx, "failed to write vanir entry", slog.Any("err", err))
-			return
-		}
-		if i < len(vanirVulns)-1 {
-			if _, err := tmpVanir.WriteString(",\n"); err != nil {
-				logger.ErrorContext(ctx, "failed to write vanir separator", slog.Any("err", err))
-				return
-			}
-		} else {
-			if _, err := tmpVanir.WriteString("\n"); err != nil {
-				logger.ErrorContext(ctx, "failed to write vanir newline", slog.Any("err", err))
-				return
-			}
-		}
+		vulns[i] = v.data
 	}
-	if _, err := tmpVanir.WriteString("]\n"); err != nil {
-		logger.ErrorContext(ctx, "failed to write vanir footer", slog.Any("err", err))
+	finalJSON, err := json.Marshal(vulns)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to marshal vanir JSON file", slog.Any("err", err))
 		return
 	}
-
-	writeStream(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), tmpVanir.Name(), "application/json", outCh)
+	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", outCh)
 }

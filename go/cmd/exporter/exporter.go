@@ -1,3 +1,5 @@
+// Package main runs the exporter, exporting the whole OSV database to the GCS bucket.
+// See the README.md for more details.
 package main
 
 import (
@@ -52,11 +54,11 @@ func main() {
 	if err := os.MkdirAll(scratchDir, 0755); err != nil {
 		logger.FatalContext(ctx, "failed to create scratch directory", slog.String("dir", scratchDir), slog.Any("err", err))
 	}
-	stagingDir, err := os.MkdirTemp(scratchDir, "osv-exporter-staging-*")
+	scratchDir, err := os.MkdirTemp(scratchDir, "osv-exporter-*")
 	if err != nil {
-		logger.FatalContext(ctx, "failed to create staging directory in scratch dir", slog.String("dir", scratchDir), slog.Any("err", err))
+		logger.FatalContext(ctx, "failed to create temp directory in scratch dir", slog.String("dir", scratchDir), slog.Any("err", err))
 	}
-	defer os.RemoveAll(stagingDir)
+	defer os.RemoveAll(scratchDir)
 
 	logger.InfoContext(ctx, "exporter starting",
 		slog.String("bucket", *outBucketName),
@@ -64,8 +66,7 @@ func main() {
 		slog.Bool("upload-to-gcs", *uploadToGCS),
 		slog.Int("workers", *numWorkers),
 		slog.String("breakdown-prefixes", *breakdownPrefixesStr),
-		slog.String("scratch-dir", scratchDir),
-		slog.String("staging-dir", stagingDir))
+		slog.String("scratch-dir", scratchDir))
 
 	if *vulnBucketName == "" {
 		logger.FatalContext(ctx, "OSV_VULNERABILITIES_BUCKET must be set")
@@ -119,7 +120,7 @@ func main() {
 	}
 	var routerWg sync.WaitGroup
 	routerWg.Add(1)
-	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, stagingDir, &routerWg)
+	go ecosystemRouter(ctx, downloaderToRouterCh, routerToWriteCh, scratchDir, &routerWg)
 
 MainLoop:
 	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
@@ -155,12 +156,7 @@ func ecosystemRouter(ctx context.Context, inCh <-chan *osvschema.Vulnerability, 
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
 	vulnCounter := 0
-	var vanirVulns []vulnMeta
-
-	vulnsDir := filepath.Join(scratchDir, "vulns")
-	if err := os.MkdirAll(vulnsDir, 0755); err != nil {
-		logger.FatalContext(ctx, "failed to create scratch vulns directory", slog.Any("err", err))
-	}
+	var vanirVulns []vulnData
 
 	allEcosystemWorker := newAllEcosystemWorker(ctx, scratchDir, outCh, &workersWg)
 
@@ -186,23 +182,22 @@ RouterLoop:
 		}
 
 		// Cache to local scratch disk for later ZIP generation.
-		localPath := filepath.Join(vulnsDir, vuln.GetId()+".json")
+		localPath := filepath.Join(scratchDir, vuln.GetId()+".json")
 		if err := os.WriteFile(localPath, b, 0600); err != nil {
 			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
 			continue
 		}
 
 		meta := vulnMeta{
-			id:        vuln.GetId(),
-			modified:  vuln.GetModified().AsTime(),
-			localPath: localPath,
+			id:       vuln.GetId(),
+			modified: vuln.GetModified().AsTime(),
 		}
 
 		// Check for Vanir signatures
 		for _, aff := range vuln.GetAffected() {
 			spec := aff.GetDatabaseSpecific()
 			if _, ok := spec.GetFields()["vanir_signatures"]; ok {
-				vanirVulns = append(vanirVulns, meta)
+				vanirVulns = append(vanirVulns, vulnData{id: vuln.GetId(), data: b})
 				break
 			}
 		}
@@ -256,7 +251,7 @@ RouterLoop:
 	workersWg.Wait()
 
 	if len(vanirVulns) > 0 && ctx.Err() == nil {
-		writeVanir(ctx, vanirVulns, outCh, scratchDir)
+		writeVanir(ctx, vanirVulns, outCh)
 	}
 
 	if ctx.Err() == nil {

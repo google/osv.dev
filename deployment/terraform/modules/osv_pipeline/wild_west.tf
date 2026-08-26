@@ -1,15 +1,18 @@
-# GKE "workers" cluster and node pools
+# Temporary resource to facilitate migrating ckuster to us-west2
 
-resource "google_container_cluster" "workers" {
+
+
+
+resource "google_container_cluster" "workers_west" {
   project    = var.project_id
   name       = var.cluster_name
-  location   = var.cluster_location
-  subnetwork = google_compute_subnetwork.my_subnet_0.self_link
+  location   = "us-west2-b"
+  subnetwork = google_compute_subnetwork.my_subnet_west.self_link
 
   private_cluster_config {
     enable_private_endpoint = false
     enable_private_nodes    = true
-    master_ipv4_cidr_block  = var.cluster_master_cidr
+    master_ipv4_cidr_block  = "172.16.0.64/28"
   }
 
   # We need to define this for private clusters, but all fields are optional.
@@ -44,17 +47,17 @@ resource "google_container_cluster" "workers" {
   }
 }
 
-resource "google_container_node_pool" "default_pool" {
+resource "google_container_node_pool" "default_pool_west" {
   project        = var.project_id
   name           = "default-pool"
-  cluster        = google_container_cluster.workers.name
-  location       = google_container_cluster.workers.location
-  node_locations = var.node_pool_node_locations
+  cluster        = google_container_cluster.workers_west.name
+  location       = google_container_cluster.workers_west.location
+  node_locations = ["us-west2-a", "us-west2-b", "us-west2-c"]
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
     replace_triggered_by = [
-      google_container_cluster.workers.id,
+      google_container_cluster.workers_west.id,
     ]
   }
 
@@ -75,19 +78,19 @@ resource "google_container_node_pool" "default_pool" {
   }
 }
 
-resource "google_container_node_pool" "highend" {
+resource "google_container_node_pool" "highend_west" {
   project        = var.project_id
   name           = "highend"
-  cluster        = google_container_cluster.workers.name
-  location       = google_container_cluster.workers.location
-  node_locations = var.node_pool_node_locations
+  cluster        = google_container_cluster.workers_west.name
+  location       = google_container_cluster.workers_west.location
+  node_locations = ["us-west2-a", "us-west2-b", "us-west2-c"]
   # For using the ephemeral storage local ssd config
   provider = google-beta
 
   lifecycle {
     # Terraform doesn't automatically know to recreate node pools when the cluster is recreated.
     replace_triggered_by = [
-      google_container_cluster.workers.id,
+      google_container_cluster.workers_west.id,
     ]
   }
 
@@ -120,11 +123,11 @@ resource "google_container_node_pool" "highend" {
 }
 
 # 6TiB SSD disk used by the gitter caching service
-resource "google_compute_disk" "gitter_disk" {
+resource "google_compute_disk" "gitter_disk_west" {
   project = var.project_id
   name    = var.gitter_disk_name
   type    = "hyperdisk-balanced"
-  zone    = google_container_cluster.workers.location
+  zone    = google_container_cluster.workers_west.location
   size    = var.gitter_disk_size_gb
 
   lifecycle {
@@ -135,33 +138,47 @@ resource "google_compute_disk" "gitter_disk" {
   }
 }
 
-# Reservations for N4 VMs so our infra can keep running in case of capacity issues
-resource "google_compute_reservation" "default_pool_res" {
-  project = var.project_id
-  name    = "n4-standard-8-res"
-  zone    = "us-west2-b" # google_container_cluster.workers.location
-  reservation_sharing_policy {
-    service_share_type = "ALLOW_ALL"
-  }
-  specific_reservation {
-    count = var.default_pool_res_size
-    instance_properties {
-      machine_type = "n4-standard-8"
-    }
+
+resource "google_compute_subnetwork" "my_subnet_west" {
+  project                  = var.project_id
+  name                     = var.subnet_name
+  network                  = "default"
+  ip_cidr_range            = "10.44.0.0/20"
+  private_ip_google_access = true
+  region                   = "us-west2"
+
+  lifecycle {
+    ignore_changes = [
+      description,
+    ]
   }
 }
 
-resource "google_compute_reservation" "highend_pool_res" {
+# Cloud Router
+# Required to route traffic for GKE nodes running on private IPs.
+resource "google_compute_router" "router_west" {
   project = var.project_id
-  name    = "n4-highmem-32-res"
-  zone    = "us-west2-b" # google_container_cluster.workers.location
-  reservation_sharing_policy {
-    service_share_type = "ALLOW_ALL"
+  name    = var.router_name
+  network = "default"
+  region  = "us-west2"
+}
+
+resource "google_compute_router_nat" "nat_config_west" {
+  project                             = var.project_id
+  name                                = var.nat_name
+  router                              = google_compute_router.router_west.name
+  source_subnetwork_ip_ranges_to_nat  = "LIST_OF_SUBNETWORKS"
+  nat_ip_allocate_option              = "AUTO_ONLY"
+  region                              = google_compute_router.router_west.region
+  enable_endpoint_independent_mapping = false
+
+  subnetwork {
+    name                    = google_compute_subnetwork.my_subnet_west.id
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   }
-  specific_reservation {
-    count = var.highend_pool_res_size
-    instance_properties {
-      machine_type = "n4-highmem-32"
-    }
+
+  log_config {
+    enable = false
+    filter = "ALL"
   }
 }

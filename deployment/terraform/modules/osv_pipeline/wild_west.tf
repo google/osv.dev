@@ -124,11 +124,12 @@ resource "google_container_node_pool" "highend_west" {
 
 # 6TiB SSD disk used by the gitter caching service
 resource "google_compute_disk" "gitter_disk_west" {
-  project = var.project_id
-  name    = var.gitter_disk_name
-  type    = "hyperdisk-balanced"
-  zone    = google_container_cluster.workers_west.location
-  size    = var.gitter_disk_size_gb
+  project  = var.project_id
+  name     = var.gitter_disk_name
+  type     = "hyperdisk-balanced"
+  zone     = google_container_cluster.workers_west.location
+  size     = var.gitter_disk_size_gb
+  snapshot = "instant-snapshot-transfer-to-west-full"
 
   lifecycle {
     ignore_changes = [

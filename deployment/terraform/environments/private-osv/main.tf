@@ -19,6 +19,9 @@ module "osv_pipeline" {
   subnet_cidr                                = "10.45.80.0/22"
   router_name                                = "osv-router"
   nat_name                                   = "osv-nat-config"
+
+  default_pool_res_size = 1
+  highend_pool_res_size = 1
 }
 
 

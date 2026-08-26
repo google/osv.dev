@@ -134,3 +134,28 @@ resource "google_compute_disk" "gitter_disk" {
     ]
   }
 }
+
+# Reservations for N4 VMs so our infra can keep running in case of capacity issues
+resource "google_compute_reservation" "default_pool_res" {
+  project = var.project_id
+  name    = "n4-standard-8-res"
+  zone    = "us-west2-b" # google_container_cluster.workers.location
+  specific_reservation {
+    count = var.default_pool_res_size
+    instance_properties {
+      machine_type = "n4-standard-8"
+    }
+  }
+}
+
+resource "google_compute_reservation" "highend_pool_res" {
+  project = var.project_id
+  name    = "n4-highmem-32-res"
+  zone    = "us-west2-b" # google_container_cluster.workers.location
+  specific_reservation {
+    count = var.highend_pool_res_size
+    instance_properties {
+      machine_type = "n4-highmem-32"
+    }
+  }
+}

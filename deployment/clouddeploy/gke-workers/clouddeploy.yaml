@@ -19,7 +19,7 @@ metadata:
   name: staging-workers
 description: oss-vdb-test worker cluster
 gke:
-  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb-test/locations/us-west2-b/clusters/workers
 executionConfigs:
 - usages:
   - RENDER

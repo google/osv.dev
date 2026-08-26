@@ -276,52 +276,28 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 }
 
 // writeVanir constructs and writes the osv_git.json file containing vulnerabilities with Vanir signatures
-// by streaming the cached JSON files from disk into a temporary JSON array file.
+// by reading the cached JSON files from disk and marshaling the combined JSON array in memory.
 func writeVanir(ctx context.Context, vanirVulnIDs []string, outCh chan<- writeMsg, scratchDir string) {
 	logger.InfoContext(ctx, "constructing vanir file", slog.Int("count", len(vanirVulnIDs)))
 	slices.Sort(vanirVulnIDs)
 
-	tmpVanir, err := os.CreateTemp(scratchDir, "vanir-*.json")
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to create temp vanir file", slog.Any("err", err))
-		return
-	}
-	defer tmpVanir.Close()
-
-	if _, err := tmpVanir.WriteString("["); err != nil {
-		logger.ErrorContext(ctx, "failed to write vanir header", slog.Any("err", err))
-		return
-	}
-
-	first := true
+	vulns := make([]json.RawMessage, 0, len(vanirVulnIDs))
 	for _, id := range vanirVulnIDs {
 		localPath := filepath.Join(scratchDir, id+".json")
-		f, err := os.Open(localPath)
+		data, err := os.ReadFile(localPath)
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to open local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to read local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
 			continue
 		}
-		if !first {
-			if _, err := tmpVanir.WriteString(","); err != nil {
-				f.Close()
-				logger.ErrorContext(ctx, "failed to write vanir separator", slog.Any("err", err))
-				return
-			}
-		}
-		if _, err := io.Copy(tmpVanir, f); err != nil {
-			f.Close()
-			logger.ErrorContext(ctx, "failed to copy vuln to vanir file", slog.String("id", id), slog.Any("err", err))
-			return
-		}
-		f.Close()
-		first = false
+		vulns = append(vulns, data)
 	}
 
-	if _, err := tmpVanir.WriteString("]"); err != nil {
-		logger.ErrorContext(ctx, "failed to write vanir footer", slog.Any("err", err))
+	finalJSON, err := json.Marshal(vulns)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to marshal vanir JSON file", slog.Any("err", err))
 		return
 	}
 
 	logger.InfoContext(ctx, "writing vanir file", slog.String("path", filepath.Join(gitEcosystem, vanirVulnsFilename)))
-	writeStream(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), tmpVanir.Name(), "application/json", outCh)
+	write(ctx, filepath.Join(gitEcosystem, vanirVulnsFilename), finalJSON, "application/json", outCh)
 }

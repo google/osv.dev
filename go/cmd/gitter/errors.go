@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -167,4 +168,24 @@ func isFileNotFoundError(err error) bool {
 		"invalid object name",
 		"does not exist in",
 	)
+}
+
+// errorToHTTPStatusCode maps an error from gitter operation into an appropriate HTTP response status code.
+func errorToHTTPStatusCode(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+
+	switch {
+	case isNotFoundError(err):
+		return http.StatusNotFound // 404
+	case isAuthError(err) || isForbiddenError(err):
+		return http.StatusForbidden // 403
+	case isRateLimitError(err):
+		return http.StatusTooManyRequests // 429
+	case isRemoteHostError(err):
+		return http.StatusBadGateway // 502
+	default:
+		return http.StatusInternalServerError // 500
+	}
 }

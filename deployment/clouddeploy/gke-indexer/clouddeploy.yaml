@@ -31,7 +31,7 @@ metadata:
   name: production-indexer
 description: oss-vdb worker cluster
 gke:
-  cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb/locations/us-west2-c/clusters/workers
 executionConfigs:
 - usages:
   - RENDER

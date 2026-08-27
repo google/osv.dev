@@ -6,7 +6,7 @@
 resource "google_container_cluster" "workers_west" {
   project    = var.project_id
   name       = var.cluster_name
-  location   = "us-west2-b"
+  location   = var.reservation_location
   subnetwork = google_compute_subnetwork.my_subnet_west.self_link
 
   private_cluster_config {

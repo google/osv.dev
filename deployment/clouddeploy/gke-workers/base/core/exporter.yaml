@@ -26,11 +26,11 @@ spec:
               requests:
                 cpu: "4"
                 memory: "4G"
-                ephemeral-storage: "15G"
+                ephemeral-storage: "35G"
               limits:
                 cpu: "7"
                 memory: "8G"
-                ephemeral-storage: "30G"
+                ephemeral-storage: "50G"
             env:
               - name: TRACE_SAMPLE_RATE
                 value: "0.0"
@@ -39,5 +39,5 @@ spec:
           volumes:
           - name: "scratch-volume"
             emptyDir:
-              sizeLimit: "30G"
+              sizeLimit: "50G"
           restartPolicy: Never

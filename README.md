@@ -75,6 +75,7 @@ to consult the [OpenSSF's Concise Guide for Evaluating Open Source Software](htt
 to determine suitability for your use. Some popular third party tools are:
 
 - [Cortex XSOAR](https://github.com/demisto/content)
+- [CVE Lite CLI](https://github.com/OWASP/cve-lite-cli)
 - [dep-scan](https://github.com/AppThreat/dep-scan)
 - [Dependency-Track](https://github.com/DependencyTrack/dependency-track)
 - [GUAC](https://github.com/guacsec/guac)

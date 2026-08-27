@@ -17,6 +17,17 @@ const (
 	TaskDelete
 )
 
+func (t TaskType) String() string {
+	switch t {
+	case TaskUpdate:
+		return "update"
+	case TaskDelete:
+		return "delete"
+	default:
+		return "unknown"
+	}
+}
+
 type Task struct {
 	Type         TaskType
 	Vuln         *osvschema.Vulnerability

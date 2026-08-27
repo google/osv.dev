@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
 )
 
@@ -66,7 +67,14 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 
 // cloneRepo clones a git repository into repoPath.
 func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
-	return runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+	start := time.Now()
+	err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+	metrics.GitterOperationDuration.WithLabelValues("clone").Observe(time.Since(start).Seconds())
+	if err != nil {
+		metrics.GitterDataErrors.WithLabelValues("clone_error").Inc()
+	}
+
+	return err
 }
 
 func isIndexLockError(err error) bool {
@@ -118,8 +126,11 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 
 // fetchAndResetRepo fetches remote origin and resets origin/HEAD to the remote's default branch
 func fetchAndResetRepo(ctx context.Context, repoPath string) error {
+	start := time.Now()
 	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+	metrics.GitterOperationDuration.WithLabelValues("fetch").Observe(time.Since(start).Seconds())
 	if err != nil {
+		metrics.GitterDataErrors.WithLabelValues("fetch_error").Inc()
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
 
@@ -234,6 +245,7 @@ func SyncRepoOnDisk(ctx context.Context, repoURL string, opts FetchOptions) (*Re
 // LoadRepo handles fetching and loading of a repository into RAM (commit graph, patch IDs).
 // If opts.ForceUpdate is false, it will use the in-memory cache if available.
 func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Repository, error) {
+	start := time.Now()
 	repoDirName := getRepoDirName(repoURL)
 	repoPath := filepath.Join(gitStorePath, repoDirName)
 
@@ -260,10 +272,12 @@ func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Reposito
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
+		metrics.GitterDataErrors.WithLabelValues("load_error").Inc()
 		return nil, err
 	}
 	repo := repoAny.(*Repository)
 	repoCache.SetWithTTL(repoURL, repo, 0, repoTTL)
+	metrics.GitterOperationDuration.WithLabelValues("load_repo").Observe(time.Since(start).Seconds())
 
 	return repo, nil
 }

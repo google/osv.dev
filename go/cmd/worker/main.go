@@ -17,6 +17,7 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/worker"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/registry"
 	"github.com/google/osv.dev/go/logger"
@@ -36,6 +37,9 @@ func run() error {
 	defer logger.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	metricsPort := envOrDefault("METRICS_PORT", "9090")
+	metrics.StartServer(ctx, metricsPort)
 
 	logger.DebugContext(ctx, "worker starting")
 

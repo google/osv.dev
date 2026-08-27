@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -50,6 +51,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	task.Vuln, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
+		metrics.WorkerFailedTasks.WithLabelValues(task.SourceID, "parse_error", "true").Inc()
 		m.Nack()
 
 		return
@@ -83,13 +85,25 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		task.SHA256 = m.Attributes["original_sha256"]
 	}
 
+	eco := getTaskEcosystem(task)
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
+		metrics.WorkerTasksProcessed.WithLabelValues(task.Type.String(), "failure", eco, task.SourceID).Inc()
+		metrics.WorkerFailedTasks.WithLabelValues(task.SourceID, "run_task_error", "true").Inc()
 		m.Nack()
 	} else {
+		metrics.WorkerTasksProcessed.WithLabelValues(task.Type.String(), "success", eco, task.SourceID).Inc()
 		logTaskLatency(taskCtx, task)
 		m.Ack()
 	}
+}
+
+func getTaskEcosystem(task Task) string {
+	if task.Vuln != nil && len(task.Vuln.GetAffected()) > 0 && task.Vuln.GetAffected()[0].GetPackage() != nil {
+		return string(task.Vuln.GetAffected()[0].GetPackage().GetEcosystem())
+	}
+
+	return "UNKNOWN"
 }
 
 func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, error) {
@@ -138,6 +152,8 @@ func logTaskLatency(ctx context.Context, task Task) {
 	now := time.Now()
 	latency := now.Sub(*task.ReceivedTime)
 	latencySeconds := int64(latency.Seconds())
+	metrics.WorkerRecordLatency.WithLabelValues(task.SourceID).Observe(latency.Seconds())
+
 	logAttrs := []any{
 		slog.Int64("latency", latencySeconds),
 		slog.String("source", task.SourceID),
@@ -145,6 +161,7 @@ func logTaskLatency(ctx context.Context, task Task) {
 	}
 	if task.SourceTime != nil {
 		srcLatency := now.Sub(*task.SourceTime)
+		metrics.WorkerPublishedToAvailable.WithLabelValues(task.SourceID).Observe(srcLatency.Seconds())
 		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
 	}
 	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)

@@ -28,7 +28,9 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/dustin/go-humanize"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -436,6 +438,13 @@ func main() {
 	for endpoint, handler := range endpointHandlers {
 		http.Handle(endpoint, otelhttp.NewHandler(handler, endpoint))
 	}
+	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok\n"))
+	})
+
+	go trackDiskUsage(ctx, *workDir)
 
 	logger.Info("Gitter starting and listening", slog.Int("port", *port))
 
@@ -1008,5 +1017,31 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
+	}
+}
+
+func trackDiskUsage(ctx context.Context, workDir string) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	update := func() {
+		var stat syscall.Statfs_t
+		if err := syscall.Statfs(workDir, &stat); err == nil {
+			capacity := stat.Blocks * uint64(stat.Bsize)
+			free := stat.Bfree * uint64(stat.Bsize)
+			used := capacity - free
+			metrics.GitterDiskCapacityBytes.Set(float64(capacity))
+			metrics.GitterDiskUsedBytes.Set(float64(used))
+		}
+	}
+
+	update()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			update()
+		}
 	}
 }

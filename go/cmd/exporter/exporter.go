@@ -121,6 +121,8 @@ func main() {
 	routerWg.Add(1)
 	go ecosystemRouter(ctx, processorToRouterCh, writeCh, scratchDir, &routerWg)
 
+	logDiskUsage(ctx, scratchDir, "startup")
+
 MainLoop:
 	for objName, err := range vulnClient.ObjectsFast(ctx, gcsProtoPrefix, breakdownPrefixes) {
 		if err != nil {
@@ -135,8 +137,10 @@ MainLoop:
 
 	close(gcsPathToProcessorCh)
 	processorWg.Wait()
+	logDiskUsage(ctx, scratchDir, "downloads_complete")
 	close(processorToRouterCh)
 	routerWg.Wait()
+	logDiskUsage(ctx, scratchDir, "export_complete")
 	close(writeCh)
 	writerWg.Wait()
 
@@ -144,6 +148,32 @@ MainLoop:
 		logger.FatalContext(ctx, "exporter cancelled")
 	}
 	logger.InfoContext(ctx, "export completed successfully")
+}
+
+// logDiskUsage logs the scratch filesystem space metrics.
+func logDiskUsage(ctx context.Context, dir string, stage string) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(dir, &stat); err != nil {
+		logger.WarnContext(ctx, "failed to get scratch disk usage", slog.String("dir", dir), slog.Any("err", err))
+		return
+	}
+	if stat.Bsize <= 0 || stat.Blocks == 0 {
+		return
+	}
+
+	const gib = 1024 * 1024 * 1024
+	blockSize := float64(stat.Bsize)
+	usedGB := float64(stat.Blocks-stat.Bfree) * blockSize / gib
+	totalGB := float64(stat.Blocks) * blockSize / gib
+	freeGB := float64(stat.Bavail) * blockSize / gib
+
+	logger.InfoContext(ctx, "scratch disk usage",
+		slog.String("stage", stage),
+		slog.Float64("used_gb", usedGB),
+		slog.Float64("free_gb", freeGB),
+		slog.Float64("total_gb", totalGB),
+		slog.Float64("used_pct", usedGB/totalGB*100),
+	)
 }
 
 // ecosystemRouter receives processed vulnerabilities from inCh and fans them out to the

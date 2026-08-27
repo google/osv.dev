@@ -139,7 +139,7 @@ resource "google_compute_disk" "gitter_disk" {
 resource "google_compute_reservation" "default_pool_res" {
   project = var.project_id
   name    = "n4-standard-8-res"
-  zone    = "us-west2-b" # google_container_cluster.workers.location
+  zone    = var.reservation_location
   reservation_sharing_policy {
     service_share_type = "ALLOW_ALL"
   }
@@ -154,7 +154,7 @@ resource "google_compute_reservation" "default_pool_res" {
 resource "google_compute_reservation" "highend_pool_res" {
   project = var.project_id
   name    = "n4-highmem-32-res"
-  zone    = "us-west2-b" # google_container_cluster.workers.location
+  zone    = var.reservation_location
   reservation_sharing_policy {
     service_share_type = "ALLOW_ALL"
   }

@@ -90,6 +90,12 @@ variable "highend_pool_res_size" {
   default     = 2
 }
 
+variable "reservation_location" {
+  type        = string
+  description = "Location for compute pool reservations."
+  default     = "us-west2-c"
+}
+
 variable "cluster_master_cidr" {
   type        = string
   description = "The private /28 IP range to allocate for the GKE master control plane peering."

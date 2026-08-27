@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -67,25 +67,6 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 // cloneRepo clones a git repository into repoPath.
 func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
 	return runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
-}
-
-func isIndexLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "index.lock") && strings.Contains(errString, "File exists")
-}
-
-func isRefConflictError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errString := err.Error()
-
-	return strings.Contains(errString, "refname conflict") ||
-		(strings.Contains(errString, "some local refs could not be updated") && strings.Contains(errString, "try running 'git remote prune origin'"))
 }
 
 // Attempt to recover from git fetch + reset errors
@@ -151,20 +132,24 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	defer repoLock.Unlock()
 
 	lastFetchMu.Lock()
-	accessTime, ok := lastFetch[repoURL]
+	lastFetchTime, ok := lastFetch[repoURL]
 	lastFetchMu.Unlock()
 
 	// Check if we need to fetch
-	if forceUpdate || !ok || time.Since(accessTime) > fetchTimeout {
+	if forceUpdate || !ok || time.Since(lastFetchTime) > fetchTimeout {
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); os.IsNotExist(err) {
 			// Clone
-			logger.DebugContext(ctx, "Cloning git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+			logger.DebugContext(ctx, "Cloning git repository")
 			if err := cloneRepo(ctx, repoURL, repoPath); err != nil {
 				return fmt.Errorf("git clone failed: %w", err)
 			}
 		} else {
 			// Fetch and reset
-			logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+			if ok {
+				logger.DebugContext(ctx, "Fetching git repository", slog.Duration("sinceLastFetch", time.Since(lastFetchTime)))
+			} else {
+				logger.DebugContext(ctx, "Fetching git repository")
+			}
 			err := fetchAndResetRepo(ctx, repoPath)
 
 			// Attempt recovery and fallback
@@ -177,19 +162,40 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 					err = fetchAndResetRepo(ctx, repoPath)
 				}
 
-				// If still failing or recovery wasn't attempted, reclone the repo as final fallback
+				// If still failing or recovery wasn't attempted, check if we should reclone as a fallback
 				if err != nil {
-					if isForbiddenError(err) {
-						logger.WarnContext(ctx, "Fetch failed with 403 Forbidden. Using local repo.", slog.Duration("sinceLastFetch", time.Since(accessTime)), slog.Any("err", err))
+					var reason string
+					switch {
+					case isForbiddenError(err):
+						reason = "403 Forbidden"
+					case isRateLimitError(err):
+						reason = "upstream rate limit or load"
+					case isRemoteHostError(err):
+						reason = "remote host or network error"
+					case ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
+						reason = "context cancelled"
+					}
+
+					if reason != "" {
+						if ok {
+							logger.WarnContext(ctx, "Fetch failed due to "+reason+". Using local repo.",
+								slog.Duration("sinceLastFetch", time.Since(lastFetchTime)),
+								slog.Any("err", err))
+						} else {
+							logger.WarnContext(ctx, "Fetch failed due to "+reason+". Using local repo.",
+								slog.Any("err", err))
+						}
+						updateLastFetch(repoURL)
+
 						return nil
 					}
 
-					logger.WarnContext(ctx, "Fetch and reset failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
+					logger.WarnContext(ctx, "Fetch failed after recovery attempt, deleting repo and recloning", slog.Any("err", err))
 					if err := os.RemoveAll(repoPath); err != nil {
 						return fmt.Errorf("failed to remove repo directory for reclone: %w", err)
 					}
 
-					logger.InfoContext(ctx, "Cloning git repository after fallback", slog.Duration("sinceAccessTime", time.Since(accessTime)))
+					logger.InfoContext(ctx, "Cloning git repository after fallback")
 					if err := cloneRepo(ctx, repoURL, repoPath); err != nil {
 						return fmt.Errorf("git clone failed after fallback: %w", err)
 					}
@@ -279,13 +285,13 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	defer repoLock.RUnlock()
 
 	lastFetchMu.Lock()
-	accessTime := lastFetch[repoURL]
+	lastFetchTime := lastFetch[repoURL]
 	lastFetchMu.Unlock()
 
 	// Check if archive needs update
 	// We update if archive does not exist OR if it is older than the last fetch
 	stats, err := os.Stat(archivePath)
-	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(accessTime)) {
+	if os.IsNotExist(err) || (err == nil && stats.ModTime().Before(lastFetchTime)) {
 		logger.DebugContext(ctx, "Archiving git blob")
 		startArchive := time.Now()
 		// Archive

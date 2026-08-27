@@ -105,7 +105,16 @@ Always format and lint your code before proposing changes. The repository provid
 - **Rule**: When running Python scripts, always use `poetry run`.
 
 ### Go Standards
-- Linter: `golangci-lint` (run automatically by the lint script per module).
+- Linter: `golangci-lint`
+- **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`):
+  ```bash
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...
+  ```
+  *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
+- **Formatting Command**:
+  ```bash
+  cd go && gofmt -s -w .
+  ```
 - **Rule**: Go code must follow standard Go formatting guidelines.
 
 ### Git Commit Guidelines

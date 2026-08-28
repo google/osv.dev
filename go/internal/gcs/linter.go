@@ -69,7 +69,7 @@ func (s *LinterStore) ListSources(ctx context.Context) ([]string, error) {
 
 // GetFindings downloads the result.json findings file for the specified source.
 func (s *LinterStore) GetFindings(ctx context.Context, source string) ([]byte, error) {
-	if source == "" || strings.Contains(source, "/") || strings.Contains(source, "..") {
+	if source == "" || source == "." || strings.Contains(source, "/") || strings.Contains(source, "..") {
 		return nil, models.ErrNotFound
 	}
 

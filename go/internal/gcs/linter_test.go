@@ -27,7 +27,7 @@ func TestGetFindings_InvalidSource(t *testing.T) {
 	t.Parallel()
 
 	s := gcs.NewLinterStore(nil, "")
-	invalidSources := []string{"", "../etc/passwd", "a/b", "..", "/root"}
+	invalidSources := []string{"", ".", "../etc/passwd", "a/b", "..", "/root"}
 
 	for _, src := range invalidSources {
 		_, err := s.GetFindings(context.Background(), src)

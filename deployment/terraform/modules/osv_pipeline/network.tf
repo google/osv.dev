@@ -8,7 +8,7 @@ resource "google_compute_subnetwork" "my_subnet_0" {
   network                  = "default"
   ip_cidr_range            = var.subnet_cidr
   private_ip_google_access = true
-  region                   = "us-central1"
+  region                   = "us-west2"
 
   lifecycle {
     ignore_changes = [
@@ -23,7 +23,7 @@ resource "google_compute_router" "router" {
   project = var.project_id
   name    = var.router_name
   network = "default"
-  region  = "us-central1"
+  region  = "us-west2"
 }
 
 resource "google_compute_subnetwork" "oss_fuzz_subnet" {
@@ -50,14 +50,6 @@ resource "google_compute_router_nat" "nat_config" {
   subnetwork {
     name                    = google_compute_subnetwork.my_subnet_0.id
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
-  }
-
-  dynamic "subnetwork" {
-    for_each = var.create_oss_fuzz_subnet ? [1] : []
-    content {
-      name                    = google_compute_subnetwork.oss_fuzz_subnet[0].id
-      source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
-    }
   }
 
   log_config {

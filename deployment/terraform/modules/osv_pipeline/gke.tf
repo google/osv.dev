@@ -37,7 +37,23 @@ resource "google_container_cluster" "workers" {
     ]
   }
 
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
   monitoring_config {
+    enable_components = [
+      "SYSTEM_COMPONENTS",
+      "APISERVER",
+      "SCHEDULER",
+      "CONTROLLER_MANAGER",
+      "STORAGE",
+      "HPA",
+      "POD",
+      "DAEMONSET",
+      "DEPLOYMENT",
+      "STATEFULSET",
+      "KUBELET",
+      "CADVISOR"
+    ]
+
     managed_prometheus {
       enabled = true
     }
@@ -139,7 +155,7 @@ resource "google_compute_disk" "gitter_disk" {
 resource "google_compute_reservation" "default_pool_res" {
   project = var.project_id
   name    = "n4-standard-8-res"
-  zone    = var.reservation_location
+  zone    = var.cluster_location
   reservation_sharing_policy {
     service_share_type = "ALLOW_ALL"
   }
@@ -154,7 +170,7 @@ resource "google_compute_reservation" "default_pool_res" {
 resource "google_compute_reservation" "highend_pool_res" {
   project = var.project_id
   name    = "n4-highmem-32-res"
-  zone    = var.reservation_location
+  zone    = var.cluster_location
   reservation_sharing_policy {
     service_share_type = "ALLOW_ALL"
   }

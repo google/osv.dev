@@ -11,7 +11,7 @@ module "osv_pipeline" {
   pubsub_subscription_default_work_pool_name = "default"
   pubsub_subscription_recovery_name          = "recovery"
   cluster_name                               = "workers"
-  cluster_location                           = "us-central1-f"
+  cluster_location                           = "us-west2-c"
   cluster_master_cidr                        = "172.16.0.80/28"
   gitter_disk_name                           = "gitter-disk"
   gitter_disk_size_gb                        = 6144

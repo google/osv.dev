@@ -40,7 +40,7 @@ module "osv_pipeline" {
     "cves",
   ]
 
-  reservation_location = "us-west2-b"
+  cluster_location = "us-west2-b"
 }
 
 module "osv_test" {

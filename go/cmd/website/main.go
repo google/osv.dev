@@ -149,6 +149,9 @@ func run() error {
 	if secretKey == "" {
 		secretKey = os.Getenv("SECRET_KEY")
 	}
+	if secretKey == "" && !bypassOAuth {
+		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
+	}
 
 	srv, err := website.NewServer(website.Config{
 		StaticFS: staticFiles,

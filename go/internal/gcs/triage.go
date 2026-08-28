@@ -14,6 +14,10 @@ import (
 	"github.com/google/osv.dev/go/internal/models"
 )
 
+const (
+	maxResponseSize = 10 * 1024 * 1024 // 10 MB
+)
+
 var cveIDRegex = regexp.MustCompile(`^(?i)CVE-(\d{4})-(\d+)$`)
 
 type sourceConfig struct {
@@ -57,7 +61,7 @@ func (s *TriageStore) GetFile(ctx context.Context, source, cveID string) ([]byte
 	cveID = strings.ToUpper(cveID)
 	matches := cveIDRegex.FindStringSubmatch(cveID)
 	if len(matches) < 3 {
-		return nil, fmt.Errorf("invalid CVE ID format: %s", cveID)
+		return nil, fmt.Errorf("%w: invalid CVE ID format: %s", models.ErrInvalidArgument, cveID)
 	}
 
 	// Handle GCS sources
@@ -92,7 +96,7 @@ func (s *TriageStore) GetFile(ctx context.Context, source, cveID string) ([]byte
 	case "nvd":
 		url = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" + cveID
 	default:
-		return nil, fmt.Errorf("invalid source: %s", source)
+		return nil, fmt.Errorf("%w: invalid source: %s", models.ErrInvalidArgument, source)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -113,5 +117,5 @@ func (s *TriageStore) GetFile(ctx context.Context, source, cveID string) ([]byte
 		return nil, fmt.Errorf("external API returned status %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(resp.Body)
+	return io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 }

@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -252,7 +253,7 @@ func (s *Server) handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryState := r.URL.Query().Get("state")
-	if queryState == "" || queryState != statePayload.State {
+	if subtle.ConstantTimeCompare([]byte(queryState), []byte(statePayload.State)) != 1 {
 		s.renderJSON(w, r, http.StatusBadRequest, map[string]string{
 			"error": "Invalid state parameter",
 		})

@@ -119,6 +119,9 @@ type mockTriageStore struct {
 }
 
 func (m mockTriageStore) GetFile(_ context.Context, source, cveID string) ([]byte, error) {
+	if source == "invalid-source" {
+		return nil, models.ErrInvalidArgument
+	}
 	if cveID == "CVE-2024-1234" && (source == "test-nvd" || source == "cve") {
 		return []byte(`{"id":"CVE-2024-1234"}`), nil
 	}
@@ -998,6 +1001,22 @@ func TestTriageEndpoints(t *testing.T) {
 			},
 		})
 		req := httptest.NewRequest(http.MethodGet, "/triage/proxy?source=test-nvd&id=INVALID", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400 Bad Request, got %d", rec.Code)
+		}
+	})
+
+	t.Run("GET /triage/proxy with invalid source returns 400", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, website.Config{
+			Auth: website.AuthConfig{
+				BypassOAuth: true,
+			},
+		})
+		req := httptest.NewRequest(http.MethodGet, "/triage/proxy?source=invalid-source&id=CVE-2024-1234", nil)
 		rec := httptest.NewRecorder()
 		srv.ServeHTTP(rec, req)
 

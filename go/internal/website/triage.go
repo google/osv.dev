@@ -45,6 +45,13 @@ func (s *Server) handleTriageProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := s.stores.Triage.GetFile(r.Context(), source, vulnID)
+	if errors.Is(err, models.ErrInvalidArgument) {
+		s.renderJSON(w, r, http.StatusBadRequest, map[string]string{
+			"error": "Invalid source",
+		})
+
+		return
+	}
 	if errors.Is(err, models.ErrNotFound) {
 		s.renderJSON(w, r, http.StatusNotFound, map[string]string{
 			"error": "File not found",

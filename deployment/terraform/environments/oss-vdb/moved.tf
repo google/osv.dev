@@ -16,42 +16,6 @@ moved {
   to   = module.osv_pipeline.google_storage_bucket.affected_commits_backups_bucket
 }
 
-# GKE Cluster & Node Pools & Gitter Disk
-moved {
-  from = module.osv.google_container_cluster.workers
-  to   = module.osv_pipeline.google_container_cluster.workers
-}
-
-moved {
-  from = module.osv.google_container_node_pool.default_pool
-  to   = module.osv_pipeline.google_container_node_pool.default_pool
-}
-
-moved {
-  from = module.osv.google_container_node_pool.highend
-  to   = module.osv_pipeline.google_container_node_pool.highend
-}
-
-moved {
-  from = module.osv.google_compute_disk.gitter_disk
-  to   = module.osv_pipeline.google_compute_disk.gitter_disk
-}
-
-# Network
-moved {
-  from = module.osv.google_compute_subnetwork.my_subnet_0
-  to   = module.osv_pipeline.google_compute_subnetwork.my_subnet_0
-}
-
-moved {
-  from = module.osv.google_compute_router.router
-  to   = module.osv_pipeline.google_compute_router.router
-}
-
-moved {
-  from = module.osv.google_compute_router_nat.nat_config
-  to   = module.osv_pipeline.google_compute_router_nat.nat_config
-}
 
 moved {
   from = module.osv.google_compute_subnetwork.oss_fuzz_subnet[0]

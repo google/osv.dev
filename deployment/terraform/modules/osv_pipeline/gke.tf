@@ -85,7 +85,7 @@ resource "google_container_node_pool" "default_pool" {
     service_account = google_service_account.worker_sa.email
     machine_type    = "n4-standard-8"
     disk_type       = "hyperdisk-balanced"
-    disk_size_gb    = 64
+    disk_size_gb    = 128
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }

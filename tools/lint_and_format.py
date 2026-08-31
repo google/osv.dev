@@ -49,10 +49,6 @@ Subsystem File Tracking:
         '*.golangci.yaml', '*.golangci.yml'.
       * Module resolution: Walks up parent directories to find the nearest
         'go.mod' (excluding 'docs/').
-      * Inter-module dependencies:
-          - If 'bindings/go' changes -> both 'bindings/go' and 'go' are linted.
-          - If 'go' changes -> 'go', 'go/cmd/tools/reimport-tui', and
-            'tools/repo-allowlist-sync' are linted.
       * Skipped (0.0s) when no in-scope Go modules changed.
   - Terraform (terraform fmt):
       * Tracked: '*.tf', '*.tfvars', and any files in 'deployment/terraform/'.
@@ -97,14 +93,14 @@ def run_cmd(
 
 def git_cmd(args: List[str]) -> str:
   """Runs a git command and returns stripped stdout."""
-  res = run_cmd(["git"] + args, capture_output=True, check=True)
+  res = run_cmd(['git'] + args, capture_output=True, check=True)
   return res.stdout.strip()
 
 
 def ref_exists(ref: str) -> bool:
   """Checks if a git reference exists."""
   res = run_cmd(
-      ["git", "rev-parse", "--verify", "--quiet", ref],
+      ['git', 'rev-parse', '--verify', '--quiet', ref],
       capture_output=True,
   )
   return res.returncode == 0
@@ -116,13 +112,13 @@ def find_base_ref(custom_base: Optional[str] = None) -> Optional[str]:
     return custom_base
 
   # Check GitHub Actions PR target branch
-  gh_base = os.environ.get("GITHUB_BASE_REF")
+  gh_base = os.environ.get('GITHUB_BASE_REF')
   if gh_base:
     origin_base = f"origin/{gh_base}"
     # Fetch if needed (e.g. shallow clone)
     if not ref_exists(origin_base):
       run_cmd(
-          ["git", "fetch", "origin", gh_base, "--depth=50"],
+          ['git', 'fetch', 'origin', gh_base, '--depth=50'],
           capture_output=True,
       )
     if ref_exists(origin_base):
@@ -131,12 +127,12 @@ def find_base_ref(custom_base: Optional[str] = None) -> Optional[str]:
 
   # Local branch detection: prioritize upstream, then origin, then local master
   candidates = [
-      "upstream/master",
-      "origin/master",
-      "master",
-      "upstream/main",
-      "origin/main",
-      "main",
+      'upstream/master',
+      'origin/master',
+      'master',
+      'upstream/main',
+      'origin/main',
+      'main',
   ]
   for ref in candidates:
     if ref_exists(ref):
@@ -148,11 +144,11 @@ def find_base_ref(custom_base: Optional[str] = None) -> Optional[str]:
 def get_all_python_files() -> List[str]:
   """Returns all in-scope Python files in the repository."""
   output = git_cmd(
-      ["ls-files", "--cached", "--others", "--exclude-standard", "*.py"])
+      ['ls-files', '--cached', '--others', '--exclude-standard', '*.py'])
   files = []
   for f in output.splitlines():
     f = f.strip()
-    if f and "_pb2" not in f and "third_party" not in f:
+    if f and '_pb2' not in f and 'third_party' not in f:
       if (REPO_ROOT / f).is_file():
         files.append(f)
   return sorted(files)
@@ -160,61 +156,50 @@ def get_all_python_files() -> List[str]:
 
 def get_all_go_modules() -> List[str]:
   """Returns all in-scope Go module directory paths."""
-  output = git_cmd(["ls-files", "*/go.mod", "go.mod"])
+  output = git_cmd(['ls-files', '*/go.mod', 'go.mod'])
   modules = set()
   for path_str in output.splitlines():
     p = Path(path_str.strip())
     mod_dir = p.parent
     # Explicitly exclude docs module
-    if "docs" in mod_dir.parts:
+    if 'docs' in mod_dir.parts:
       continue
     modules.add(str(mod_dir))
   return sorted(modules)
 
 
-def find_go_module_for_file(
-    file_path: Path,
-    all_modules: Set[str],
-) -> Optional[str]:
+def find_go_module(file_path: Path, all_modules: Set[str]) -> Optional[str]:
   """Finds the nearest parent directory containing go.mod for a file."""
   if file_path.is_absolute():
     try:
       file_path = file_path.relative_to(REPO_ROOT)
     except ValueError:
-      pass
+      return None
   current = (
       file_path if (REPO_ROOT / file_path).is_dir() else file_path.parent)
   while current != current.parent:
-    rel = str(current)
-    if rel in all_modules:
-      return rel
-    if (REPO_ROOT / current / "go.mod").is_file():
-      if "docs" not in current.parts:
-        return rel
+    if str(current) in all_modules:
+      return str(current)
     current = current.parent
-  if (REPO_ROOT / "go.mod").is_file() and "." in all_modules:
-    return "."
-  return None
+  return '.' if '.' in all_modules else None
 
 
 def get_changed_files_for_ref(
     base_ref: str,) -> Tuple[List[str], Optional[str]]:
   """Returns changed files relative to base_ref using merge-base."""
   merge_base = None
-  res = run_cmd(["git", "merge-base", base_ref, "HEAD"], capture_output=True)
+  res = run_cmd(['git', 'merge-base', base_ref, 'HEAD'], capture_output=True)
   if res.returncode == 0 and res.stdout.strip():
     merge_base = res.stdout.strip()
     diff_target = merge_base
   else:
     diff_target = base_ref
 
-  # Committed + staged + unstaged changes (including deleted files)
-  diff_output = git_cmd(["diff", "--name-only", diff_target])
-  # Untracked files
-  untracked_output = git_cmd(["ls-files", "--others", "--exclude-standard"])
+  diff_output = git_cmd(['diff', '--name-only', diff_target])
+  untracked_output = git_cmd(['ls-files', '--others', '--exclude-standard'])
 
   changed = set()
-  for line in (diff_output + "\n" + untracked_output).splitlines():
+  for line in (diff_output + '\n' + untracked_output).splitlines():
     line = line.strip()
     if line:
       changed.add(line)
@@ -224,46 +209,49 @@ def get_changed_files_for_ref(
 
 def get_staged_files() -> List[str]:
   """Returns all currently staged files."""
-  output = git_cmd(["diff", "--cached", "--name-only"])
+  output = git_cmd(['diff', '--cached', '--name-only'])
   return [f.strip() for f in output.splitlines() if f.strip()]
 
 
-def expand_explicit_target(
-    file_str: str,
-    all_go_mods: Set[str],
-) -> Tuple[List[Path], Set[str], bool]:
-  """Expands an explicit file or directory argument into paths and modules."""
-  p = Path(file_str)
-  if not p.is_absolute():
-    p = (Path.cwd() / p).resolve()
-  try:
-    p = p.relative_to(REPO_ROOT)
-  except ValueError:
-    print(f"Warning: Skipping '{file_str}' (outside repository root).")
-    return [], set(), False
+def is_python_file(path_str: str) -> bool:
+  """Checks if a path is an in-scope Python file."""
+  return (path_str.endswith('.py') and '_pb2' not in path_str and
+          'third_party' not in path_str and (REPO_ROOT / path_str).is_file())
 
-  files: List[Path] = []
-  mods: Set[str] = set()
+
+def is_go_file(path_str: str) -> bool:
+  """Checks if a path is an in-scope Go file."""
+  return (path_str.endswith(('.go', '.golangci.yaml', '.golangci.yml')) or
+          path_str.endswith('go.mod') or path_str.endswith('go.sum'))
+
+
+def is_terraform_file(path_str: str) -> bool:
+  """Checks if a path is an in-scope Terraform file."""
+  return (path_str.startswith('deployment/terraform/') or path_str.endswith(
+      ('.tf', '.tfvars')))
+
+
+def categorize_files(
+    files: List[Path],
+    all_go_mods: Set[str],
+) -> Tuple[List[str], List[str], bool]:
+  """Categorizes files into Python files, Go modules, and Terraform status."""
+  py_files = set()
+  go_mods = set()
   run_tf = False
 
-  full_p = REPO_ROOT / p
-  if full_p.is_dir():
-    for child in full_p.rglob("*"):
-      if child.is_file():
-        files.append(child.relative_to(REPO_ROOT))
-    mod = find_go_module_for_file(p, all_go_mods)
-    if mod:
-      mods.add(mod)
-    for m in all_go_mods:
-      if m == str(p) or m.startswith(f"{p}/"):
-        mods.add(m)
-    if str(p) == "deployment/terraform" or str(p).startswith(
-        "deployment/terraform/"):
+  for p in files:
+    s = str(p)
+    if is_python_file(s):
+      py_files.add(s)
+    if is_go_file(s):
+      mod = find_go_module(p, all_go_mods)
+      if mod:
+        go_mods.add(mod)
+    if is_terraform_file(s):
       run_tf = True
-  else:
-    files.append(p)
 
-  return files, mods, run_tf
+  return sorted(py_files), sorted(go_mods), run_tf
 
 
 def resolve_targets(
@@ -271,150 +259,97 @@ def resolve_targets(
     base_ref: Optional[str],
     explicit_files: List[str],
 ) -> Tuple[List[str], List[str], bool, str]:
-  """Resolves Python files, Go modules, and Terraform status based on mode.
-
-  Returns:
-    (python_files, go_modules, run_terraform, description)
-  """
+  """Resolves Python files, Go modules, and Terraform status based on mode."""
   all_py_files = get_all_python_files()
   all_go_mods = set(get_all_go_modules())
 
   # 1. Explicit files / directories mode
   if explicit_files:
-    py_files = []
-    affected_mods = set()
-    run_tf = False
-
-    expanded_files: List[Path] = []
+    expanded: List[Path] = []
     for file_str in explicit_files:
-      files, mods, tf_flag = expand_explicit_target(file_str, all_go_mods)
-      expanded_files.extend(files)
-      affected_mods.update(mods)
-      run_tf = run_tf or tf_flag
+      p = Path(file_str)
+      if not p.is_absolute():
+        p = (Path.cwd() / p).resolve()
+      try:
+        rel_p = p.relative_to(REPO_ROOT)
+      except ValueError:
+        print(f"Warning: Skipping '{file_str}' (outside repository root).")
+        continue
 
-    for p in expanded_files:
-      norm_str = str(p)
+      full_p = REPO_ROOT / rel_p
+      if full_p.is_dir():
+        for child in full_p.rglob('*'):
+          if child.is_file():
+            expanded.append(child.relative_to(REPO_ROOT))
+      else:
+        expanded.append(rel_p)
 
-      if (norm_str.endswith(".py") and "_pb2" not in norm_str and
-          "third_party" not in norm_str):
-        if (REPO_ROOT / p).is_file():
-          py_files.append(norm_str)
+    py_files, go_mods, run_tf = categorize_files(expanded, all_go_mods)
+    return py_files, go_mods, run_tf, 'Explicit Files Mode'
 
-      if (norm_str.endswith((".tf", ".tfvars")) or
-          norm_str.startswith("deployment/terraform/")):
-        run_tf = True
-
-      if (norm_str.endswith((".go", ".golangci.yaml", ".golangci.yml")) or
-          norm_str.endswith("go.mod") or norm_str.endswith("go.sum")):
-        mod = find_go_module_for_file(p, all_go_mods)
-        if mod:
-          affected_mods.add(mod)
-
-    # Dependency propagation for Go
-    if "bindings/go" in affected_mods and "go" in all_go_mods:
-      affected_mods.add("go")
-    if "go" in affected_mods:
-      for dep in ("go/cmd/tools/reimport-tui", "tools/repo-allowlist-sync"):
-        if dep in all_go_mods:
-          affected_mods.add(dep)
-
-    go_mods = sorted(m for m in affected_mods if m in all_go_mods)
-    return sorted(set(py_files)), go_mods, run_tf, "Explicit Files Mode"
-
-  # 2. Smart auto-detect mode if AUTO
+  # 2. Smart auto-detection if AUTO
   if mode == LintMode.AUTO:
-    if os.environ.get("GITHUB_BASE_REF"):
+    if os.environ.get('GITHUB_BASE_REF'):
       mode = LintMode.CHANGED
-    elif (os.environ.get("GITHUB_ACTIONS") == "true" and
-          os.environ.get("GITHUB_EVENT_NAME") != "pull_request"):
+    elif (os.environ.get('GITHUB_ACTIONS') == 'true' and
+          os.environ.get('GITHUB_EVENT_NAME') != 'pull_request'):
       mode = LintMode.ALL
     else:
       detected = find_base_ref(base_ref)
-      if detected:
-        changed, _ = get_changed_files_for_ref(detected)
-        if changed:
-          mode = LintMode.CHANGED
-          base_ref = detected
-        else:
-          mode = LintMode.ALL
+      if detected and get_changed_files_for_ref(detected)[0]:
+        mode = LintMode.CHANGED
+        base_ref = detected
       else:
         mode = LintMode.ALL
 
   # 3. Full scan mode
   if mode == LintMode.ALL:
-    return all_py_files, sorted(all_go_mods), True, "Full Scan (all files)"
+    return all_py_files, sorted(all_go_mods), True, 'Full Scan (all files)'
 
   # 4. Staged or Changed modes
   if mode == LintMode.STAGED:
-    changed_files = get_staged_files()
-    desc = "Incremental Scan (staged files)"
+    changed_files = [Path(f) for f in get_staged_files()]
+    desc = 'Incremental Scan (staged files)'
   else:  # LintMode.CHANGED
     detected_base = find_base_ref(base_ref)
     if not detected_base:
-      print("Warning: Could not detect base branch. Falling back to full scan.")
+      print('Warning: Could not detect base branch. Falling back to full scan.')
       return (
           all_py_files,
           sorted(all_go_mods),
           True,
-          "Full Scan (all files, fallback)",
+          'Full Scan (all files, fallback)',
       )
-    changed_files, merge_base = get_changed_files_for_ref(detected_base)
-    mb_short = f" @ {merge_base[:8]}" if merge_base else ""
+    changed_strs, merge_base = get_changed_files_for_ref(detected_base)
+    changed_files = [Path(f) for f in changed_strs]
+    mb_short = f" @ {merge_base[:8]}" if merge_base else ''
     desc = f"Incremental Scan (diff against {detected_base}{mb_short})"
 
-  # Check if Python configs changed
-  py_config_changed = any(f in {".pylintrc", ".style.yapf", "pyproject.toml"}
-                          for f in changed_files)
+  py_files, go_mods, run_tf = categorize_files(changed_files, all_go_mods)
 
-  if py_config_changed:
-    print("[Python] Global config changed; checking all Python files.")
+  # If Python global configs changed, check all Python files
+  if any(
+      str(p) in {'.pylintrc', '.style.yapf', 'pyproject.toml'}
+      for p in changed_files):
+    print('[Python] Global config changed; checking all Python files.')
     py_files = all_py_files
-  else:
-    py_files = [
-        f for f in changed_files
-        if f.endswith(".py") and "_pb2" not in f and "third_party" not in f and
-        (REPO_ROOT / f).is_file()
-    ]
 
-  # Terraform files
-  run_tf = any(
-      f.startswith("deployment/terraform/") or f.endswith((".tf", ".tfvars"))
-      for f in changed_files
-      if (REPO_ROOT / f).exists())
-
-  # Go modules
-  affected_mods = set()
-  for f_str in changed_files:
-    if (f_str.endswith((".go", ".golangci.yaml", ".golangci.yml")) or
-        f_str.endswith("go.mod") or f_str.endswith("go.sum")):
-      mod = find_go_module_for_file(Path(f_str), all_go_mods)
-      if mod:
-        affected_mods.add(mod)
-
-  if "bindings/go" in affected_mods and "go" in all_go_mods:
-    affected_mods.add("go")
-  if "go" in affected_mods:
-    for dep in ("go/cmd/tools/reimport-tui", "tools/repo-allowlist-sync"):
-      if dep in all_go_mods:
-        affected_mods.add(dep)
-
-  go_mods = sorted(m for m in affected_mods if m in all_go_mods)
-  return sorted(py_files), go_mods, run_tf, desc
+  return py_files, go_mods, run_tf, desc
 
 
 def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
   """Validates that necessary tools exist in PATH."""
   missing = []
   if has_py:
-    for tool in ("pylint", "yapf"):
+    for tool in ('pylint', 'yapf'):
       if not shutil.which(tool):
         missing.append(tool)
   if has_go:
-    if not shutil.which("go"):
-      missing.append("go")
+    if not shutil.which('go'):
+      missing.append('go')
   if has_tf:
-    if not shutil.which("terraform"):
-      missing.append("terraform")
+    if not shutil.which('terraform'):
+      missing.append('terraform')
 
   if missing:
     print(
@@ -426,7 +361,7 @@ def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
         file=sys.stderr,
     )
     print(
-        "See: https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md",
+        'See: https://github.com/google/osv.dev/blob/master/CONTRIBUTING.md',
         file=sys.stderr,
     )
     return False
@@ -434,14 +369,14 @@ def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
 
 
 GOLANGCI_LINT_PKG = (
-    "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0")
-GOLANGCI_LINT_CMD = ["go", "run", GOLANGCI_LINT_PKG]
+    'github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0')
+GOLANGCI_LINT_CMD = ['go', 'run', GOLANGCI_LINT_PKG]
 
 
 def main() -> int:
   parser = argparse.ArgumentParser(
       description=(
-          "Run linters and format checks on Python, Go, and Terraform files."),
+          'Run linters and format checks on Python, Go, and Terraform files.'),
       formatter_class=argparse.RawDescriptionHelpFormatter,
       epilog="""
 Examples:
@@ -454,45 +389,45 @@ Examples:
 """,
   )
   parser.add_argument(
-      "-a",
-      "--all",
-      dest="mode_all",
-      action="store_true",
-      help="Lint all in-scope files across the entire repository",
+      '-a',
+      '--all',
+      dest='mode_all',
+      action='store_true',
+      help='Lint all in-scope files across the entire repository',
   )
   parser.add_argument(
-      "-c",
-      "--changed",
-      dest="custom_changed",
-      nargs="?",
-      const="",
+      '-c',
+      '--changed',
+      dest='custom_changed',
+      nargs='?',
+      const='',
       default=None,
-      help="Lint only files changed relative to base (optional ref)",
+      help='Lint only files changed relative to base (optional ref)',
   )
   parser.add_argument(
-      "-s",
-      "--staged",
-      dest="mode_staged",
-      action="store_true",
-      help="Lint only git staged files",
+      '-s',
+      '--staged',
+      dest='mode_staged',
+      action='store_true',
+      help='Lint only git staged files',
   )
   parser.add_argument(
-      "-b",
-      "--base",
-      dest="base_ref",
+      '-b',
+      '--base',
+      dest='base_ref',
       default=None,
-      help="Specify the base branch/commit to diff against",
+      help='Specify the base branch/commit to diff against',
   )
   parser.add_argument(
-      "-f",
-      "--fix",
-      action="store_true",
-      help="Auto format files where supported (yapf, terraform, gofmt)",
+      '-f',
+      '--fix',
+      action='store_true',
+      help='Auto format files where supported (yapf, terraform, gofmt)',
   )
   parser.add_argument(
-      "files",
-      nargs="*",
-      help="Specific files or directories to lint",
+      'files',
+      nargs='*',
+      help='Specific files or directories to lint',
   )
 
   args = parser.parse_args()
@@ -523,26 +458,26 @@ Examples:
   if py_files:
     print(f"[Python] Checking {len(py_files)} file(s)...")
 
-    print("  -> Running pylint (-j 0)...")
+    print('  -> Running pylint (-j 0)...')
     rc = f"--rcfile={REPO_ROOT / '.pylintrc'}"
-    pylint_res = run_cmd(["pylint", "-j", "0", rc] + py_files)
+    pylint_res = run_cmd(['pylint', '-j', '0', rc] + py_files)
     if pylint_res.returncode != 0:
-      findings.append("Python pylint lint findings")
+      findings.append('Python pylint lint findings')
 
     if args.fix:
-      print("  -> Running yapf formatting (-p -i)...")
+      print('  -> Running yapf formatting (-p -i)...')
       st = f"--style={REPO_ROOT / '.style.yapf'}"
-      yapf_cmd = ["yapf", "-p", "-i", st] + py_files
+      yapf_cmd = ['yapf', '-p', '-i', st] + py_files
     else:
-      print("  -> Checking yapf formatting (-p -d)...")
+      print('  -> Checking yapf formatting (-p -d)...')
       st = f"--style={REPO_ROOT / '.style.yapf'}"
-      yapf_cmd = ["yapf", "-p", "-d", st] + py_files
+      yapf_cmd = ['yapf', '-p', '-d', st] + py_files
 
     yapf_res = run_cmd(yapf_cmd)
     if yapf_res.returncode != 0:
-      findings.append("Python yapf formatting findings")
+      findings.append('Python yapf formatting findings')
   else:
-    print("[Python] Skipped (no in-scope Python files changed)")
+    print('[Python] Skipped (no in-scope Python files changed)')
 
   # --- 2. Go Linting & Formatting ---
   if go_mods:
@@ -552,53 +487,53 @@ Examples:
       print(f"  -> Module: {mod}")
       mod_dir = REPO_ROOT / mod
       if args.fix:
-        run_cmd(["gofmt", "-s", "-w", "."], cwd=mod_dir)
-        cmd = GOLANGCI_LINT_CMD + ["run", "--fix", "./..."]
+        run_cmd(['gofmt', '-s', '-w', '.'], cwd=mod_dir)
+        cmd = GOLANGCI_LINT_CMD + ['run', '--fix', './...']
       else:
-        gofmt_res = run_cmd(["gofmt", "-s", "-d", "."],
+        gofmt_res = run_cmd(['gofmt', '-s', '-d', '.'],
                             cwd=mod_dir,
                             capture_output=True)
         if gofmt_res.stdout.strip():
           print(gofmt_res.stdout)
           findings.append(f"Go format findings in {mod} (run with --fix)")
-        cmd = GOLANGCI_LINT_CMD + ["run", "./..."]
+        cmd = GOLANGCI_LINT_CMD + ['run', './...']
 
       res = run_cmd(cmd, cwd=mod_dir)
       if res.returncode != 0:
         findings.append(f"Go lint findings in {mod}")
   else:
-    print("[Go] Skipped (no in-scope Go modules changed)")
+    print('[Go] Skipped (no in-scope Go modules changed)')
 
   # --- 3. Terraform Formatting ---
   if run_tf:
-    print("[Terraform] Checking deployment/terraform/...")
-    tf_dir = REPO_ROOT / "deployment" / "terraform"
+    print('[Terraform] Checking deployment/terraform/...')
+    tf_dir = REPO_ROOT / 'deployment' / 'terraform'
     if args.fix:
-      tf_res = run_cmd(["terraform", "fmt", "-recursive"], cwd=tf_dir)
+      tf_res = run_cmd(['terraform', 'fmt', '-recursive'], cwd=tf_dir)
     else:
       tf_res = run_cmd(
-          ["terraform", "fmt", "-check", "-recursive", "-diff"],
+          ['terraform', 'fmt', '-check', '-recursive', '-diff'],
           cwd=tf_dir,
       )
 
     if tf_res.returncode != 0:
-      findings.append("Terraform format findings")
+      findings.append('Terraform format findings')
   else:
-    print("[Terraform] Skipped (no Terraform files changed)")
+    print('[Terraform] Skipped (no Terraform files changed)')
 
   # --- Summary ---
-  print("----------------------------------------------------")
+  print('----------------------------------------------------')
   if findings:
-    print("Findings detected! Please fix the above issues:")
+    print('Findings detected! Please fix the above issues:')
     for finding in findings:
       print(f"  - {finding}")
     if not args.fix:
-      print("Tip: Run with --fix (-f) to automatically format supported files.")
+      print('Tip: Run with --fix (-f) to automatically format supported files.')
     return 1
 
-  print("✓ All lint and format checks passed!")
+  print('✓ All lint and format checks passed!')
   return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   sys.exit(main())

@@ -17,6 +17,46 @@
 Supports smart incremental checking (auto-detecting changed files relative
 to the base branch), explicit modes (--all, --changed, --staged, --fix),
 and per-subsystem (Python, Go, Terraform) filtering and prerequisite checks.
+
+Base Branch Discovery:
+  - In CI (Pull Requests): Reads $GITHUB_BASE_REF (e.g. 'master') and diffs
+    against 'origin/$GITHUB_BASE_REF'.
+  - In CI (Push to master): Defaults to full scan (--all).
+  - Locally: Checks git references in order:
+      1. Custom base via --base <ref> or -c <ref>
+      2. 'upstream/master' (typical for fork workflows)
+      3. 'origin/master'
+      4. 'master'
+      5. 'upstream/main', 'origin/main', 'main'
+  - If changes exist relative to the detected base branch, incremental mode
+    is used. If working tree is clean and on master, full scan (--all) runs.
+
+Change Detection Mechanics:
+  - Computes `git merge-base <base> HEAD` to find the fork commit.
+  - Collects committed changes since merge-base, staged changes, unstaged
+    working tree modifications, and untracked files.
+  - Excludes deleted files (--diff-filter=d) so linters don't error on missing
+    files.
+
+Subsystem File Tracking:
+  - Python (pylint, yapf):
+      * Tracked: '*.py' excluding '*_pb2.py' (protos) and 'third_party/'.
+      * Config triggers: If '.pylintrc', '.style.yapf', or 'pyproject.toml'
+        are modified, all Python files are checked.
+      * Skipped (0.0s) when no in-scope Python files changed.
+  - Go (golangci-lint, gofmt):
+      * Tracked: '*.go', 'go.mod', 'go.sum',
+        '*.golangci.yaml', '*.golangci.yml'.
+      * Module resolution: Walks up parent directories to find the nearest
+        'go.mod' (excluding 'docs/').
+      * Inter-module dependencies:
+          - If 'bindings/go' changes -> both 'bindings/go' and 'go' are linted.
+          - If 'go' changes -> 'go', 'go/cmd/tools/reimport-tui', and
+            'tools/repo-allowlist-sync' are linted.
+      * Skipped (0.0s) when no in-scope Go modules changed.
+  - Terraform (terraform fmt):
+      * Tracked: '*.tf', '*.tfvars', and any files in 'deployment/terraform/'.
+      * Skipped (0.0s) when no Terraform files changed.
 """
 
 import argparse

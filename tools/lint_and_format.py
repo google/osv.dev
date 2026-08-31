@@ -138,12 +138,14 @@ def find_base_ref(custom_base: Optional[str] = None) -> Optional[str]:
 
 def get_all_python_files() -> List[str]:
   """Returns all in-scope Python files in the repository."""
-  output = git_cmd(["ls-files", "*.py"])
+  output = git_cmd(
+      ["ls-files", "--cached", "--others", "--exclude-standard", "*.py"])
   files = []
   for f in output.splitlines():
     f = f.strip()
     if f and "_pb2" not in f and "third_party" not in f:
-      files.append(f)
+      if (REPO_ROOT / f).is_file():
+        files.append(f)
   return sorted(files)
 
 
@@ -166,7 +168,13 @@ def find_go_module_for_file(
     all_modules: Set[str],
 ) -> Optional[str]:
   """Finds the nearest parent directory containing go.mod for a file."""
-  current = file_path.parent
+  if file_path.is_absolute():
+    try:
+      file_path = file_path.relative_to(REPO_ROOT)
+    except ValueError:
+      pass
+  current = (
+      file_path if (REPO_ROOT / file_path).is_dir() else file_path.parent)
   while current != current.parent:
     rel = str(current)
     if rel in all_modules:
@@ -191,8 +199,8 @@ def get_changed_files_for_ref(
   else:
     diff_target = base_ref
 
-  # Committed + staged + unstaged changes
-  diff_output = git_cmd(["diff", "--name-only", "--diff-filter=d", diff_target])
+  # Committed + staged + unstaged changes (including deleted files)
+  diff_output = git_cmd(["diff", "--name-only", diff_target])
   # Untracked files
   untracked_output = git_cmd(["ls-files", "--others", "--exclude-standard"])
 
@@ -207,8 +215,46 @@ def get_changed_files_for_ref(
 
 def get_staged_files() -> List[str]:
   """Returns all currently staged files."""
-  output = git_cmd(["diff", "--cached", "--name-only", "--diff-filter=d"])
+  output = git_cmd(["diff", "--cached", "--name-only"])
   return [f.strip() for f in output.splitlines() if f.strip()]
+
+
+def expand_explicit_target(
+    file_str: str,
+    all_go_mods: Set[str],
+) -> Tuple[List[Path], Set[str], bool]:
+  """Expands an explicit file or directory argument into paths and modules."""
+  p = Path(file_str)
+  if not p.is_absolute():
+    p = (Path.cwd() / p).resolve()
+  try:
+    p = p.relative_to(REPO_ROOT)
+  except ValueError:
+    print(f"Warning: Skipping '{file_str}' (outside repository root).")
+    return [], set(), False
+
+  files: List[Path] = []
+  mods: Set[str] = set()
+  run_tf = False
+
+  full_p = REPO_ROOT / p
+  if full_p.is_dir():
+    for child in full_p.rglob("*"):
+      if child.is_file():
+        files.append(child.relative_to(REPO_ROOT))
+    mod = find_go_module_for_file(p, all_go_mods)
+    if mod:
+      mods.add(mod)
+    for m in all_go_mods:
+      if m == str(p) or m.startswith(f"{p}/"):
+        mods.add(m)
+    if str(p) == "deployment/terraform" or str(p).startswith(
+        "deployment/terraform/"):
+      run_tf = True
+  else:
+    files.append(p)
+
+  return files, mods, run_tf
 
 
 def resolve_targets(
@@ -224,20 +270,20 @@ def resolve_targets(
   all_py_files = get_all_python_files()
   all_go_mods = set(get_all_go_modules())
 
-  # 1. Explicit files mode
+  # 1. Explicit files / directories mode
   if explicit_files:
     py_files = []
     affected_mods = set()
     run_tf = False
 
+    expanded_files: List[Path] = []
     for file_str in explicit_files:
-      p = Path(file_str)
-      # Normalize relative to repo root if absolute
-      if p.is_absolute():
-        try:
-          p = p.relative_to(REPO_ROOT)
-        except ValueError:
-          pass
+      files, mods, tf_flag = expand_explicit_target(file_str, all_go_mods)
+      expanded_files.extend(files)
+      affected_mods.update(mods)
+      run_tf = run_tf or tf_flag
+
+    for p in expanded_files:
       norm_str = str(p)
 
       if (norm_str.endswith(".py") and "_pb2" not in norm_str and
@@ -264,7 +310,7 @@ def resolve_targets(
           affected_mods.add(dep)
 
     go_mods = sorted(m for m in affected_mods if m in all_go_mods)
-    return sorted(py_files), go_mods, run_tf, "Explicit Files Mode"
+    return sorted(set(py_files)), go_mods, run_tf, "Explicit Files Mode"
 
   # 2. Smart auto-detect mode if AUTO
   if mode == "AUTO":
@@ -500,6 +546,12 @@ Examples:
         run_cmd(["gofmt", "-s", "-w", "."], cwd=mod_dir)
         cmd = GOLANGCI_LINT_CMD + ["run", "--fix", "./..."]
       else:
+        gofmt_res = run_cmd(["gofmt", "-s", "-d", "."],
+                            cwd=mod_dir,
+                            capture_output=True)
+        if gofmt_res.stdout.strip():
+          print(gofmt_res.stdout)
+          findings.append(f"Go format findings in {mod} (run with --fix)")
         cmd = GOLANGCI_LINT_CMD + ["run", "./..."]
 
       res = run_cmd(cmd, cwd=mod_dir)

@@ -60,6 +60,7 @@ Subsystem File Tracking:
 """
 
 import argparse
+import enum
 import os
 from pathlib import Path
 import shutil
@@ -68,6 +69,14 @@ import sys
 from typing import List, Optional, Set, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+class LintMode(enum.Enum):
+  """Execution mode for linting and formatting checks."""
+  AUTO = enum.auto()
+  ALL = enum.auto()
+  CHANGED = enum.auto()
+  STAGED = enum.auto()
 
 
 def run_cmd(
@@ -258,7 +267,7 @@ def expand_explicit_target(
 
 
 def resolve_targets(
-    mode: str,
+    mode: LintMode,
     base_ref: Optional[str],
     explicit_files: List[str],
 ) -> Tuple[List[str], List[str], bool, str]:
@@ -313,33 +322,33 @@ def resolve_targets(
     return sorted(set(py_files)), go_mods, run_tf, "Explicit Files Mode"
 
   # 2. Smart auto-detect mode if AUTO
-  if mode == "AUTO":
+  if mode == LintMode.AUTO:
     if os.environ.get("GITHUB_BASE_REF"):
-      mode = "CHANGED"
+      mode = LintMode.CHANGED
     elif (os.environ.get("GITHUB_ACTIONS") == "true" and
           os.environ.get("GITHUB_EVENT_NAME") != "pull_request"):
-      mode = "ALL"
+      mode = LintMode.ALL
     else:
       detected = find_base_ref(base_ref)
       if detected:
         changed, _ = get_changed_files_for_ref(detected)
         if changed:
-          mode = "CHANGED"
+          mode = LintMode.CHANGED
           base_ref = detected
         else:
-          mode = "ALL"
+          mode = LintMode.ALL
       else:
-        mode = "ALL"
+        mode = LintMode.ALL
 
   # 3. Full scan mode
-  if mode == "ALL":
+  if mode == LintMode.ALL:
     return all_py_files, sorted(all_go_mods), True, "Full Scan (all files)"
 
   # 4. Staged or Changed modes
-  if mode == "STAGED":
+  if mode == LintMode.STAGED:
     changed_files = get_staged_files()
     desc = "Incremental Scan (staged files)"
-  else:  # CHANGED
+  else:  # LintMode.CHANGED
     detected_base = find_base_ref(base_ref)
     if not detected_base:
       print("Warning: Could not detect base branch. Falling back to full scan.")
@@ -490,15 +499,15 @@ Examples:
 
   # Determine mode
   if args.mode_all:
-    mode = "ALL"
+    mode = LintMode.ALL
   elif args.mode_staged:
-    mode = "STAGED"
+    mode = LintMode.STAGED
   elif args.custom_changed is not None:
-    mode = "CHANGED"
+    mode = LintMode.CHANGED
     if args.custom_changed:
       args.base_ref = args.custom_changed
   else:
-    mode = "AUTO"
+    mode = LintMode.AUTO
 
   py_files, go_mods, run_tf, description = resolve_targets(
       mode, args.base_ref, args.files)

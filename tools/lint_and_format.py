@@ -380,18 +380,7 @@ def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
 
 GOLANGCI_LINT_PKG = (
     "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0")
-
-
-def get_golangci_lint_cmd(test_module: str) -> List[str]:
-  """Returns command to run golangci-lint, preferring system if compatible."""
-  if shutil.which("golangci-lint"):
-    test_res = run_cmd(["golangci-lint", "linters"],
-                       cwd=REPO_ROOT / test_module,
-                       capture_output=True)
-    if test_res.returncode == 0:
-      return ["golangci-lint"]
-
-  return ["go", "run", GOLANGCI_LINT_PKG]
+GOLANGCI_LINT_CMD = ["go", "run", GOLANGCI_LINT_PKG]
 
 
 def main() -> int:
@@ -503,16 +492,15 @@ Examples:
   # --- 2. Go Linting & Formatting ---
   if go_mods:
     print(f"[Go] Checking {len(go_mods)} module(s)...")
-    golangci_cmd = get_golangci_lint_cmd(go_mods[0])
 
     for mod in go_mods:
       print(f"  -> Module: {mod}")
       mod_dir = REPO_ROOT / mod
       if args.fix:
         run_cmd(["gofmt", "-s", "-w", "."], cwd=mod_dir)
-        cmd = golangci_cmd + ["run", "--fix", "./..."]
+        cmd = GOLANGCI_LINT_CMD + ["run", "--fix", "./..."]
       else:
-        cmd = golangci_cmd + ["run", "./..."]
+        cmd = GOLANGCI_LINT_CMD + ["run", "./..."]
 
       res = run_cmd(cmd, cwd=mod_dir)
       if res.returncode != 0:

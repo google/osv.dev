@@ -233,6 +233,70 @@ func TestDevStore_Search(t *testing.T) {
 		}
 	})
 
+	t.Run("Search by repository URL", func(t *testing.T) {
+		t.Parallel()
+		tmpDir := t.TempDir()
+		gitVuln := `{
+			"id": "GIT-VULN-1",
+			"summary": "Git repo vuln",
+			"affected": [
+				{
+					"ranges": [
+						{
+							"type": "GIT",
+							"repo": "https://github.com/example/awesome-repo",
+							"events": [{"introduced": "0"}]
+						}
+					]
+				}
+			]
+		}`
+		if err := os.WriteFile(filepath.Join(tmpDir, "GIT-VULN-1.json"), []byte(gitVuln), 0600); err != nil {
+			t.Fatalf("failed to write test git vuln: %v", err)
+		}
+		gitStore, err := NewDevStore(tmpDir, "")
+		if err != nil {
+			t.Fatalf("failed to initialize DevStore: %v", err)
+		}
+
+		res, err := gitStore.Search(ctx, models.VulnerabilitySearchQuery{
+			Query: "awesome-repo",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(res.Vulnerabilities) == 0 || res.Vulnerabilities[0].ID != "GIT-VULN-1" {
+			t.Fatalf("expected to find GIT-VULN-1 by repo URL query, got %v", res.Vulnerabilities)
+		}
+		if len(res.Vulnerabilities[0].Packages) == 0 || res.Vulnerabilities[0].Packages[0].Repo != "https://github.com/example/awesome-repo" {
+			t.Errorf("expected package Repo to be populated, got %v", res.Vulnerabilities[0].Packages)
+		}
+	})
+
+	t.Run("Search with legacy page parameter", func(t *testing.T) {
+		t.Parallel()
+		page1, err := store.Search(ctx, models.VulnerabilitySearchQuery{
+			PageSize: 10,
+			Page:     1,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		page2, err := store.Search(ctx, models.VulnerabilitySearchQuery{
+			PageSize: 10,
+			Page:     2,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(page1.Vulnerabilities) != 10 || len(page2.Vulnerabilities) != 10 {
+			t.Fatalf("expected 10 items on page 1 and page 2, got %d and %d", len(page1.Vulnerabilities), len(page2.Vulnerabilities))
+		}
+		if page1.Vulnerabilities[0].ID == page2.Vulnerabilities[0].ID {
+			t.Errorf("expected page 2 to have different items from page 1")
+		}
+	})
+
 	t.Run("Search by ecosystem filter", func(t *testing.T) {
 		t.Parallel()
 		res, err := store.Search(ctx, models.VulnerabilitySearchQuery{

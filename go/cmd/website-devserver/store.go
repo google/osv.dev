@@ -182,6 +182,12 @@ func (ds *DevStore) loadAllVulns() []*osvschema.Vulnerability {
 		if err == nil && vuln != nil && vuln.GetId() != "" {
 			records = append(records, vuln)
 		}
+		if err != nil {
+			slog.Error("Failed to read vulnerability",
+				slog.String("path", filepath.Join(ds.dataDir, entry.Name())),
+				slog.Any("err", err),
+			)
+		}
 	}
 
 	return records
@@ -378,7 +384,7 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 			}
 		}
 
-		// Filter by Query (ID, Summary, Details, Aliases, Package Name)
+		// Filter by Query (ID, Summary, Details, Aliases, Package Name, Repository URL)
 		if q != "" {
 			matchedQuery := false
 			if strings.Contains(strings.ToLower(v.GetId()), q) ||
@@ -402,6 +408,16 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 
 						break
 					}
+					for _, r := range a.GetRanges() {
+						if strings.Contains(strings.ToLower(r.GetRepo()), q) {
+							matchedQuery = true
+
+							break
+						}
+					}
+					if matchedQuery {
+						break
+					}
 				}
 			}
 			if !matchedQuery {
@@ -413,16 +429,20 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 		var packages []models.Package
 		isFixed := false
 		for _, a := range v.GetAffected() {
-			packages = append(packages, models.Package{
+			pkg := models.Package{
 				Package: a.GetPackage(),
-			})
+			}
 			for _, r := range a.GetRanges() {
+				if r.GetType() == osvschema.Range_GIT && r.GetRepo() != "" {
+					pkg.Repo = r.GetRepo()
+				}
 				for _, ev := range r.GetEvents() {
 					if ev.GetFixed() != "" {
 						isFixed = true
 					}
 				}
 			}
+			packages = append(packages, pkg)
 		}
 
 		listed = append(listed, &models.ListedVulnerability{
@@ -455,7 +475,7 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 		pageSize = 16
 	}
 
-	// Cursor and legacy pagination
+	// Keyset (cursor) pagination, with fallback to legacy 1-based page numbers for interface and handler compatibility.
 	startIndex := 0
 	if !query.AfterTime.IsZero() {
 		afterTime := query.AfterTime.Truncate(time.Microsecond)
@@ -549,6 +569,15 @@ func (ds *DevStore) Autocomplete(_ context.Context, prefix string, limit int) ([
 				if _, ok := seen[pkgName]; !ok {
 					seen[pkgName] = struct{}{}
 					results = append(results, pkgName)
+				}
+			}
+			for _, r := range a.GetRanges() {
+				repo := r.GetRepo()
+				if repo != "" && strings.HasPrefix(strings.ToLower(repo), p) {
+					if _, ok := seen[repo]; !ok {
+						seen[repo] = struct{}{}
+						results = append(results, repo)
+					}
 				}
 			}
 		}

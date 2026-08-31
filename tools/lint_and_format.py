@@ -338,45 +338,20 @@ def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
   return True
 
 
+GOLANGCI_LINT_PKG = (
+    "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0")
+
+
 def get_golangci_lint_cmd(test_module: str) -> List[str]:
-  """Finds or builds a compatible golangci-lint binary."""
-  cache_dir = (
-      Path(os.environ.get("XDG_CACHE_HOME",
-                          Path.home() / ".cache")) / "osv" / "bin")
-  cached_bin = cache_dir / "golangci-lint-v2.4.0"
-
-  # Test if cached binary works with Go module version
-  if cached_bin.is_file() and os.access(cached_bin, os.X_OK):
-    test_res = run_cmd([str(cached_bin), "linters"],
-                       cwd=REPO_ROOT / test_module)
-    if test_res.returncode == 0:
-      return [str(cached_bin)]
-
-  # Test if system golangci-lint works with Go module version
+  """Returns command to run golangci-lint, preferring system if compatible."""
   if shutil.which("golangci-lint"):
     test_res = run_cmd(["golangci-lint", "linters"],
-                       cwd=REPO_ROOT / test_module)
+                       cwd=REPO_ROOT / test_module,
+                       capture_output=True)
     if test_res.returncode == 0:
       return ["golangci-lint"]
 
-  # Try installing once to cache dir
-  cache_dir.mkdir(parents=True, exist_ok=True)
-  env = dict(os.environ, GOBIN=str(cache_dir))
-  pkg = "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0"
-  install_res = subprocess.run(
-      ["go", "install", pkg],
-      env=env,
-      cwd=REPO_ROOT,
-      capture_output=True,
-      check=False,
-  )
-  raw_installed = cache_dir / "golangci-lint"
-  if install_res.returncode == 0 and raw_installed.is_file():
-    raw_installed.rename(cached_bin)
-    return [str(cached_bin)]
-
-  # Fallback to go run
-  return ["go", "run", pkg]
+  return ["go", "run", GOLANGCI_LINT_PKG]
 
 
 def main() -> int:

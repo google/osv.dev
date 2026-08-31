@@ -15,6 +15,12 @@ spec:
     spec:
       template:
         spec:
+          tolerations:
+          - key: workloadType
+            operator: Equal
+            value: highend
+          nodeSelector:
+            cloud.google.com/gke-nodepool: highend
           containers:
           - name: exporter
             image: exporter
@@ -24,18 +30,20 @@ spec:
               name: "scratch-volume"
             resources:
               requests:
-                cpu: "4"
-                memory: "4G"
+                cpu: "8"
+                memory: "30G"
                 ephemeral-storage: "35G"
               limits:
-                cpu: "7"
-                memory: "8G"
+                cpu: "16"
+                memory: "60G"
                 ephemeral-storage: "50G"
             env:
               - name: TRACE_SAMPLE_RATE
                 value: "0.0"
               - name: SCRATCH_DIR
                 value: "/scratch"
+              - name: GOMEMLIMIT
+                value: "50GiB"
           volumes:
           - name: "scratch-volume"
             emptyDir:

@@ -50,8 +50,8 @@ resource "google_container_cluster" "workers" {
       "DAEMONSET",
       "DEPLOYMENT",
       "STATEFULSET",
-      "KUBELET",
-      "CADVISOR"
+      "CADVISOR",
+      "KUBELET"
     ]
 
     managed_prometheus {
@@ -92,11 +92,10 @@ resource "google_container_node_pool" "default_pool" {
 }
 
 resource "google_container_node_pool" "highend" {
-  project        = var.project_id
-  name           = "highend"
-  cluster        = google_container_cluster.workers.name
-  location       = google_container_cluster.workers.location
-  node_locations = var.node_pool_node_locations
+  project  = var.project_id
+  name     = "highend"
+  cluster  = google_container_cluster.workers.name
+  location = google_container_cluster.workers.location
   # For using the ephemeral storage local ssd config
   provider = google-beta
 

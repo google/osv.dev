@@ -39,8 +39,15 @@ api-server-tests: ## Run Go API server integration tests
 update-api-snapshots: ## Update API query snapshots
 	UPDATE_SNAPS=true ./tools/apitester/run_tests.sh
 
-lint: ## Run linters and format checks
+lint: ## Run linters and format checks (smart auto-detect: changed files)
 	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh
+
+lint-all: ## Run linters and format checks across all files
+	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh --all
+
+format: ## Automatically format files where supported
+	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh --fix
+
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto

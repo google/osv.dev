@@ -87,26 +87,43 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
 ---
 
 ## Code Style & Formatting
-Always format and lint your code before proposing changes. The repository provides a unified script to check for style violations:
+Always format and lint your code before proposing changes. The repository provides a unified script to check for style violations with smart incremental checking:
 
-- **Run Linters & Format Checks**:
+- **Run Linters & Format Checks (Smart Auto-Detect)**:
+  By default, this automatically checks only the files and Go modules changed relative to `master` (or full repo if on clean master):
   ```bash
   poetry run tools/lint_and_format.sh
   ```
-  *Note: This script only checks for violations and does not automatically format code.*
+- **Run Full Check on Entire Repo**:
+  ```bash
+  poetry run tools/lint_and_format.sh --all
+  ```
+- **Run on Staged Changes Only**:
+  ```bash
+  poetry run tools/lint_and_format.sh --staged
+  ```
+- **Automatically Fix/Format Files**:
+  ```bash
+  poetry run tools/lint_and_format.sh --fix
+  ```
+- **Lint Specific Files**:
+  ```bash
+  poetry run tools/lint_and_format.sh osv/bug.py go/cmd/worker/main.go
+  ```
 
 ### Python Standards
-- Formatter: `yapf` (config: [`.style.yapf`](.style.yapf))
-- Linter: `pylint` (config: [`.pylintrc`](.pylintrc))
+- Formatter: `yapf` (config: [`.style.yapf`](.style.yapf), runs in parallel via `-p`)
+- Linter: `pylint` (config: [`.pylintrc`](.pylintrc), runs in parallel via `-j 0`)
 - **Formatting Command**: To automatically format Python files, run:
   ```bash
   poetry run yapf -i <path_to_file>.py
   ```
+  *(Or run `poetry run tools/lint_and_format.sh --fix`)*
 - **Rule**: When running Python scripts, always use `poetry run`.
 
 ### Go Standards
 - Linter: `golangci-lint`
-- **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`):
+- **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
   ```bash
   cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...
   ```

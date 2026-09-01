@@ -2,11 +2,13 @@ package cve5
 
 import (
 	"fmt"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
@@ -55,7 +57,7 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 }
 
 // ExtractVersions for LinuxVersionExtractor.
-func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, _ []string) {
+func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, _ []string, _ git.RepoTagsCache, _ *http.Client) {
 	gotVersions := l.handleAffected(v, cve.Containers.CNA.Affected, metrics)
 
 	if !gotVersions {

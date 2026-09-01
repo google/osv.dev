@@ -23,7 +23,10 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
-func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cache git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+	if httpClient == nil {
+		panic("http client not set")
+	}
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	refs := c.DeduplicateRefs(cve.References)
@@ -88,7 +91,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// If we have ranges, try to resolve them
-	r, un, sR := c.ProcessRanges(cpeRanges, repos, metrics, cache)
+	r, un, sR := c.ProcessRanges(cpeRanges, repos, metrics, cache, httpClient)
 	if metrics.Outcome == models.Error {
 		return nil, metrics, models.Error
 	}
@@ -99,7 +102,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// Extract Commits
-	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient, cache)
+	commits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %v", err)
 		if git.IsRateLimit(err) {
@@ -122,7 +125,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
-		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache)
+		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache, httpClient)
 		if metrics.Outcome == models.Error {
 			return nil, metrics, models.Error
 		}

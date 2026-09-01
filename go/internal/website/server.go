@@ -33,6 +33,7 @@ type Stores struct {
 	Relations  models.RelationsStore
 	SourceRepo models.SourceRepositoryStore
 	VulnSearch models.VulnerabilitySearchStore
+	Linter     models.LinterStore
 }
 
 // Server handles website routing and HTTP requests.
@@ -86,6 +87,9 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 	if cfg.Stores.VulnSearch == nil {
 		return nil, errors.New("Stores.VulnSearch is required")
+	}
+	if cfg.Stores.Linter == nil {
+		return nil, errors.New("Stores.Linter is required")
 	}
 
 	if cfg.APIURL == "" {

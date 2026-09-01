@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - service_account.yaml
+  - backend_config.yaml
+  - managed_cert.yaml
+  - service.yaml
+  - ingress.yaml
+  - deployment.yaml
+  - rules.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: grafana-datasources
+    files:
+      - datasources.yaml=provisioning/datasources/datasources.yaml
+  - name: grafana-dashboards-provisioning
+    files:
+      - dashboards.yaml=provisioning/dashboards/dashboards.yaml
+  - name: grafana-dashboards
+    files:
+      - dashboards/dashboard_1_executive_overview_slas.json
+      - dashboards/dashboard_2_pipeline_ingestion_ops.json
+      - dashboards/dashboard_3_data_quality_drift.json
+      - dashboards/dashboard_4_cve_feed_conversions.json
+
+

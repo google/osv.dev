@@ -1,0 +1,56 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: Rules
+metadata:
+  name: osv-alerting-rules
+  labels:
+    app.kubernetes.io/name: osv-monitoring
+    app.kubernetes.io/part-of: google-cloud-managed-prometheus
+spec:
+  groups:
+  - name: osv-pipeline-alerts
+    interval: 30s
+    rules:
+    - alert: OSVPubSubBacklogHigh
+      expr: sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id="default"}) > 25000
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "OSV tasks Pub/Sub queue backlog is elevated (> 25k messages)"
+        description: "Default tasks subscription has {{ $value }} undelivered messages for more than 15 minutes."
+
+    - alert: OSVOldestMessageAgeHigh
+      expr: max(pubsub_googleapis_com:subscription_oldest_unacked_message_age) > 7200
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "OSV oldest unacked Pub/Sub message exceeds 2 hours"
+        description: "Oldest unacknowledged task message is {{ $value }}s old, indicating worker stall or head-of-line blocking."
+
+    - alert: OSVWorkerTaskFailureRateHigh
+      expr: sum(rate(osv_worker_failed_tasks_total[5m])) / sum(rate(osv_worker_tasks_processed_total[5m])) > 0.05
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "OSV worker task failure rate exceeds 5%"
+        description: "Worker processing is failing at a rate of {{ $value | humanizePercentage }} over 5m."
+
+    - alert: OSVDatastoreGCSDriftDetected
+      expr: sum(osv_recordchecker_drift_count) > 10
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "OSV Datastore vs. GCS record drift detected"
+        description: "RecordChecker identified {{ $value }} state synchronization drift discrepancies between Datastore and GCS."
+
+    - alert: OSVDeleterSafetyRefusalTripped
+      expr: sum(rate(osv_deleter_refused_deletions_total[1h])) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "OSV Deleter safety refusal triggered"
+        description: "Deleter refused upstream deletion requests exceeding safety threshold."

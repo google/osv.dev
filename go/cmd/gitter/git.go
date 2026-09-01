@@ -105,10 +105,9 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	return false
 }
 
-
 // fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
 func fetchRepo(ctx context.Context, repoPath string) error {
-  start := time.Now()
+	start := time.Now()
 	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 	metrics.GitterOperationDuration.WithLabelValues("fetch").Observe(time.Since(start).Seconds())
 	if err != nil {
@@ -280,6 +279,7 @@ func LoadRepo(ctx context.Context, repoURL string, opts FetchOptions) (*Reposito
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to load repository", slog.Any("error", err))
 		metrics.GitterDataErrors.WithLabelValues("load_error").Inc()
+
 		return nil, err
 	}
 	repo := repoAny.(*Repository)

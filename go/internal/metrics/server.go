@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -29,7 +28,7 @@ func StartServer(ctx context.Context, port string) {
 	})
 
 	srv := &http.Server{
-		Addr:              fmt.Sprintf(":%s", port),
+		Addr:              ":" + port,
 		Handler:           mux,
 		ReadHeaderTimeout: 3 * time.Second,
 	}

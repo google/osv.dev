@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"cmp"
 	"context"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
+	kzip "github.com/klauspost/compress/zip"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -176,7 +176,7 @@ func marshalToJSON(vuln *osvschema.Vulnerability) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Compact the JSON, making output (more) stable.
+	// Compact the JSON, removing extra spaces emitted by protojson.
 	var out bytes.Buffer
 	if err := json.Compact(&out, b); err != nil {
 		return nil, err
@@ -244,12 +244,12 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 	}
 	defer tmpZip.Close()
 
-	wr := zip.NewWriter(tmpZip)
+	wr := kzip.NewWriter(tmpZip)
 	for _, vuln := range allVulns {
-		w, err := wr.CreateHeader(&zip.FileHeader{
+		w, err := wr.CreateHeader(&kzip.FileHeader{
 			Name:     vuln.id + ".json",
 			Modified: vuln.modified,
-			Method:   zip.Deflate,
+			Method:   kzip.Deflate,
 		})
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))

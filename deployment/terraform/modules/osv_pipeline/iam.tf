@@ -91,3 +91,30 @@ resource "google_pubsub_subscription_iam_member" "worker_recovery_subscriber" {
   role         = "roles/pubsub.subscriber"
   member       = "serviceAccount:${google_service_account.worker_sa.email}"
 }
+
+# Dedicated GKE Monitoring Service Account (Grafana)
+resource "google_service_account" "monitoring_sa" {
+  project      = var.project_id
+  account_id   = "osv-monitoring-sa"
+  display_name = "OSV Monitoring Service Account"
+}
+
+# Read-only telemetry roles for monitoring dashboards
+resource "google_project_iam_member" "monitoring_sa_roles" {
+  for_each = toset([
+    "roles/monitoring.viewer",
+    "roles/logging.viewer"
+  ])
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.monitoring_sa.email}"
+}
+
+# Workload Identity binding for Grafana K8s ServiceAccount
+resource "google_service_account_iam_member" "grafana_workload_identity" {
+  service_account_id = google_service_account.monitoring_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[default/grafana-sa]"
+}
+

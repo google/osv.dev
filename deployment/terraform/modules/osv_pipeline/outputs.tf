@@ -67,3 +67,9 @@ output "affected_commits_backups_bucket_name" {
   value       = google_storage_bucket.affected_commits_backups_bucket.name
   description = "The name of the AffectedCommits backups bucket"
 }
+
+output "monitoring_service_account_email" {
+  value       = google_service_account.monitoring_sa.email
+  description = "The email of the GKE monitoring service account"
+}
+

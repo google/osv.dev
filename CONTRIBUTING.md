@@ -186,16 +186,15 @@ make run-website
 
 #### Running a local UI instance
 
-For contributors without access to the GCP project, you can use the website emulator which does
-not require Google Cloud project access. This emulator uses a local datastore
-and loads data from a local directory.
+For contributors without access to the GCP project, you can use the website devserver which does
+not require Google Cloud project access or a Datastore emulator. It serves the Go website using a live flat mock dataset with hot reloading.
 
 ```shell
-make run-website-emulator
+make run-website-devserver
 ```
 
-You can add testcase records to `gcp/website/testdata/osv/` to test odd cases.
-See [gcp/website/testdata/osv/README.md](gcp/website/testdata/osv/README.md)
+Mock vulnerability records are located in `go/cmd/website-devserver/testdata/`.
+See [go/cmd/website-devserver/testdata/README.md](go/cmd/website-devserver/testdata/README.md)
 for more information on the format of these records.
 
 ### Linting and formatting

@@ -445,6 +445,25 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-cve-osv']
   waitFor: ['build-nvd-cve-osv', 'cloud-build-queue']
 
+# Build website frontend assets
+- name: 'node:24.18'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    corepack enable pnpm
+    pnpm install --frozen-lockfile --ignore-scripts
+    pnpm run build:prod
+  dir: 'gcp/website/frontend3'
+  id: 'build-frontend3'
+  waitFor: ['setup']
+
+- name: 'gcr.io/oss-vdb/ci'
+  args: ['hugo', '--buildFuture', '-d', '../dist/static/blog']
+  dir: 'gcp/website/blog'
+  id: 'build-hugo'
+  waitFor: ['setup']
+
 # Build/push Website image
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
@@ -454,9 +473,14 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'build', '--load', '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
-         '-f', 'gcp/website/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
+         '--target', 'website',
+         '--build-context', 'bindings=../bindings',
+         '--build-context', 'website-dist=../gcp/website/dist',
+         '--build-context', 'docs=../docs',
+         '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
+  dir: 'go'
   id: 'build-website'
-  waitFor: ['pull-website', 'build-first-package-finder']
+  waitFor: ['pull-website', 'build-frontend3', 'build-hugo', 'build-first-package-finder']
   volumes:
   - name: 'docker-config'
     path: '/root/.docker'

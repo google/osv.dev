@@ -21,9 +21,10 @@
 # 
 #   cd go
 #   docker build -t osv/importer --target importer --build-context bindings=../bindings -f Dockerfile .
+#   docker build -t osv/website --target website --build-context bindings=../bindings --build-context website-dist=../website/dist --build-context docs=../docs -f Dockerfile .
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter, 
-# relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder, api, recoverer).
+# relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder, api, recoverer, website).
 # ====================================================================================
 
 # ========================================================
@@ -158,3 +159,13 @@ FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f1
 COPY --from=recoverer-build /app/recoverer /
 ENTRYPOINT ["/recoverer"]
 
+# Target: Website
+# ========================================================
+FROM builder AS website-build
+COPY --from=website-dist . /workspace/go/cmd/website/dist/
+COPY --from=docs osv_service_v1.swagger.json /workspace/go/cmd/website/docs/
+RUN CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
+
+FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS website
+COPY --from=website-build /app/website /
+ENTRYPOINT ["/website"]

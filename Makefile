@@ -84,19 +84,10 @@ build-website-frontend:
 	cd website/frontend3 && pnpm install && pnpm run build
 	cd website/blog && hugo --buildFuture -d ../dist/static/blog
 
-run-website: build-website-frontend ## Run local Python website against prod Datastore
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
-
-run-website-staging: build-website-frontend
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
-
-run-website-emulator: build-website-frontend ## Run local Python website against emulator
-	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
-
-run-go-website: build-website-frontend ## Run local Go website against prod Datastore
+run-website: build-website-frontend ## Run local Go website against prod Datastore
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
-run-go-website-staging: build-website-frontend
+run-website-staging: build-website-frontend
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
 run-website-devserver: build-website-frontend ## Run local Go website development server against local mock dataset
@@ -107,7 +98,7 @@ stage-website-assets: build-website-frontend
 	cp -r website/dist/* go/cmd/website/dist/
 	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
 
-run-go-website-prod: stage-website-assets
+run-website-prod: stage-website-assets
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run -tags embedstatic ./cmd/website
 
 

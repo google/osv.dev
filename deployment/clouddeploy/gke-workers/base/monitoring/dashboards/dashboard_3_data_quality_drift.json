@@ -121,7 +121,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus (GMP)" },
           "editorMode": "code",
-          "expr": "sum(osv_recordchecker_drift_count)",
+          "expr": "sum(osv_recordchecker_drift)",
           "legendFormat": "Drift Inconsistencies",
           "range": true,
           "refId": "A"
@@ -283,7 +283,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "Prometheus (GMP)" },
           "editorMode": "code",
-          "expr": "sum by (type) (osv_recordchecker_drift_count)",
+          "expr": "sum by (type) (osv_recordchecker_drift)",
           "legendFormat": "{{type}}",
           "range": true,
           "refId": "A"

@@ -980,9 +980,10 @@ func trackDiskUsage(ctx context.Context, workDir string) {
 
 	update := func() {
 		var stat syscall.Statfs_t
-		if err := syscall.Statfs(workDir, &stat); err == nil {
-			capacity := stat.Blocks * uint64(stat.Bsize)
-			free := stat.Bfree * uint64(stat.Bsize)
+		if err := syscall.Statfs(workDir, &stat); err == nil && stat.Bsize > 0 {
+			bsize := uint64(stat.Bsize)
+			capacity := stat.Blocks * bsize
+			free := stat.Bfree * bsize
 			used := capacity - free
 			metrics.GitterDiskCapacityBytes.Set(float64(capacity))
 			metrics.GitterDiskUsedBytes.Set(float64(used))

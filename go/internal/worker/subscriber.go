@@ -100,7 +100,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 
 func getTaskEcosystem(task Task) string {
 	if task.Vuln != nil && len(task.Vuln.GetAffected()) > 0 && task.Vuln.GetAffected()[0].GetPackage() != nil {
-		return string(task.Vuln.GetAffected()[0].GetPackage().GetEcosystem())
+		return task.Vuln.GetAffected()[0].GetPackage().GetEcosystem()
 	}
 
 	return "UNKNOWN"

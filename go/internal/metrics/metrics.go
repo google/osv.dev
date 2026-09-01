@@ -57,12 +57,12 @@ var (
 
 	// Gitter Metrics
 
-	// GitterReposTotal tracks total repositories cached by Gitter.
-	GitterReposTotal = promauto.NewGauge(
+	// GitterRepos tracks total repositories cached by Gitter.
+	GitterRepos = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "osv",
 			Subsystem: "gitter",
-			Name:      "repos_total",
+			Name:      "repos",
 			Help:      "Total git repositories cached by Gitter.",
 		},
 	)
@@ -235,12 +235,12 @@ var (
 		[]string{"source", "rule_code", "severity"},
 	)
 
-	// RecordCheckerDriftCount tracks Datastore vs GCS drift count.
-	RecordCheckerDriftCount = promauto.NewGaugeVec(
+	// RecordCheckerDrift tracks Datastore vs GCS drift.
+	RecordCheckerDrift = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "osv",
 			Subsystem: "recordchecker",
-			Name:      "drift_count",
+			Name:      "drift",
 			Help:      "Total synchronization drift count between Datastore and GCS.",
 		},
 		[]string{"type"},
@@ -251,7 +251,7 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "osv",
 			Subsystem: "recordchecker",
-			Name:      "invalid_records_count",
+			Name:      "invalid_records",
 			Help:      "Total invalid records detected by record checker per source.",
 		},
 		[]string{"source"},

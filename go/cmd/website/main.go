@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -117,6 +118,10 @@ func run() error {
 		redisClient = rdb
 	}
 
+	bypassOAuth := strings.EqualFold(os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV"), "true") ||
+		os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV") == "1" ||
+		strings.EqualFold(os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV"), "t")
+
 	stores := website.Stores{
 		Vuln: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client: dbClient,
@@ -126,6 +131,7 @@ func run() error {
 		SourceRepo: db.NewSourceRepositoryStore(dbClient),
 		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
 		Linter:     gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
+		Triage:     gcs.NewTriageStore(gcsClient),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")
@@ -136,11 +142,28 @@ func run() error {
 		apiURL = "api.osv.dev"
 	}
 
+	secretKey := os.Getenv("SESSION_SECRET_KEY")
+	if secretKey == "" {
+		secretKey = os.Getenv("FLASK_SECRET_KEY")
+	}
+	if secretKey == "" {
+		secretKey = os.Getenv("SECRET_KEY")
+	}
+	if secretKey == "" && !bypassOAuth {
+		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
+	}
+
 	srv, err := website.NewServer(website.Config{
 		StaticFS: staticFiles,
 		DocsFS:   docsFiles,
 		Stores:   stores,
 		APIURL:   apiURL,
+		Auth: website.AuthConfig{
+			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+			SecretKey:    secretKey,
+			BypassOAuth:  bypassOAuth,
+		},
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create website server", slog.Any("error", err))

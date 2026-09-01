@@ -231,3 +231,52 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 		t.Errorf("unexpected vanir content: %s", string(vanirBytes))
 	}
 }
+
+func TestMarshalToJSON_IsCompact(t *testing.T) {
+	time1 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	vuln := &osvschema.Vulnerability{
+		SchemaVersion: "1.6.0",
+		Id:            "OSV-2026-1234",
+		Modified:      timestamppb.New(time1),
+		Published:     timestamppb.New(time1),
+		Summary:       "A test vulnerability summary",
+		Details:       "Detailed description with some text\nand a newline inside the string field.",
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "PyPI",
+					Name:      "test-pkg",
+				},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_ECOSYSTEM,
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "1.0.0"},
+						},
+					},
+				},
+				DatabaseSpecific: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"custom_key": structpb.NewStringValue("custom_val"),
+					},
+				},
+			},
+		},
+	}
+
+	got, err := marshalToJSON(vuln)
+	if err != nil {
+		t.Fatalf("marshalToJSON failed: %v", err)
+	}
+
+	// Verify that the output is byte-for-byte identical to json.Compact
+	var compacted bytes.Buffer
+	if err := json.Compact(&compacted, got); err != nil {
+		t.Fatalf("json.Compact failed on marshalToJSON output: %v", err)
+	}
+
+	if !bytes.Equal(got, compacted.Bytes()) {
+		t.Errorf("marshalToJSON output is not compact.\nGot:       %s\nCompacted: %s", string(got), compacted.String())
+	}
+}

@@ -119,8 +119,8 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		patchIDErr = repo.calculatePatchIDs(ctx, newCommits)
 	}
 
-	// If error is anything other than context cancel, exit early without saving
-	if patchIDErr != nil && !errors.Is(ctx.Err(), context.Canceled) {
+	// If error is anything other than context cancel/timeout, exit early without saving
+	if patchIDErr != nil && !errors.Is(ctx.Err(), context.Canceled) && !errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return nil, fmt.Errorf("failed to calculate patch id for commits: %w", patchIDErr)
 	}
 
@@ -194,7 +194,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() != nil {
-			logger.WarnContext(ctx, "Command cancelled", slog.String("cmd", "git log"), slog.Any("err", ctx.Err()))
+			logger.DebugContext(ctx, "Command cancelled", slog.String("cmd", "git log"), slog.Any("err", ctx.Err()))
 			return nil, fmt.Errorf("command git log cancelled: %w", ctx.Err())
 		}
 
@@ -261,8 +261,8 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 			}
 			childHash = SHA1(hash)
 		default:
-			// No line should be completely empty (doesn't even have a commit hash) so error
-			logger.ErrorContext(ctx, "Invalid commit info", slog.String("line", line))
+			// No line should be completely empty (doesn't even have a commit hash)
+			logger.WarnContext(ctx, "Invalid commit info", slog.String("line", line))
 			continue
 		}
 
@@ -504,7 +504,7 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 		if idx, ok := r.hashToIndex[h]; ok {
 			indices = append(indices, idx)
 		} else {
-			logger.ErrorContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
+			logger.WarnContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
 		}
 	}
 

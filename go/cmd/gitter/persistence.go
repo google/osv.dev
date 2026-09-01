@@ -30,7 +30,7 @@ func updateLastFetch(url string) {
 // deleteLastFetch removed an entry from the last fetch map for cases where the git dir does not exist
 // This should not happen, but if it does, we should clean up the last fetch map to allow refetching
 func deleteLastFetch(url string) {
-	logger.Error("Cache says file should exist, but file does not exist.", slog.String("url", url))
+	logger.Warn("Cache says file should exist, but file does not exist.", slog.String("url", url))
 
 	lastFetchMu.Lock()
 	defer lastFetchMu.Unlock()
@@ -70,7 +70,7 @@ func loadLastFetchMap() {
 	data, err := os.ReadFile(persistencePath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logger.Error("Error reading lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
+			logger.Warn("Error reading lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 		}
 
 		return
@@ -80,7 +80,7 @@ func loadLastFetchMap() {
 	defer lastFetchMu.Unlock()
 
 	if err := json.Unmarshal(data, &lastFetch); err != nil {
-		logger.Error("Error unmarshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
+		logger.Warn("Error unmarshaling lastFetch map", slog.String("path", persistencePath), slog.Any("error", err))
 	}
 
 	logger.Debug("Loaded lastFetch map", slog.Int("entry_count", len(lastFetch)))

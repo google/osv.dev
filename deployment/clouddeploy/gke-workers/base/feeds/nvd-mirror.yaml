@@ -14,10 +14,6 @@ spec:
       activeDeadlineSeconds: 7200
       template:
         spec:
-          tolerations:
-          - key: workloadType
-            operator: Equal
-            value: highend
           containers:
           - name: nvd-mirror
             args:
@@ -27,11 +23,9 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "30"
-                memory: "192G"
+                cpu: "1"
+                memory: "1G"
               limits:
-                cpu: "30"
-                memory: "192G"
-          nodeSelector:
-            cloud.google.com/gke-nodepool: highend
+                cpu: "2"
+                memory: "2G"
           restartPolicy: Never

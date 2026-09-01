@@ -11,14 +11,17 @@ module "osv_pipeline" {
   pubsub_subscription_default_work_pool_name = "default"
   pubsub_subscription_recovery_name          = "recovery"
   cluster_name                               = "workers"
-  cluster_location                           = "us-central1-f"
-  cluster_master_cidr                        = "172.16.0.80/28"
+  cluster_location                           = "us-west2-c"
+  cluster_master_cidr                        = "172.16.0.64/28"
   gitter_disk_name                           = "gitter-disk"
   gitter_disk_size_gb                        = 6144
   subnet_name                                = "osv-subnet"
-  subnet_cidr                                = "10.45.80.0/22"
+  subnet_cidr                                = "10.44.0.0/20"
   router_name                                = "osv-router"
   nat_name                                   = "osv-nat-config"
+
+  default_pool_res_size = 1
+  highend_pool_res_size = 1
 }
 
 

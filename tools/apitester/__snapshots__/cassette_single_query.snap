@@ -3421,6 +3421,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -3923,6 +3924,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -3985,7 +3987,11 @@
       "aliases": ["CURL-CVE-2026-5773"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:27:42.342Z",
-      "related": ["SUSE-SU-2026:2703-1", "openSUSE-SU-2026:10674-1"],
+      "related": [
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "openSUSE-SU-2026:10674-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4056,6 +4062,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4129,6 +4136,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4202,6 +4210,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4264,6 +4273,7 @@
       "aliases": ["CURL-CVE-2026-7168"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:29:08.900Z",
+      "related": ["SUSE-SU-2026:3798-1", "SUSE-SU-2026:3814-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4337,6 +4347,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4407,6 +4418,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4477,6 +4489,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:11266-1",
         "openSUSE-SU-2026:21272-1"
@@ -4680,6 +4693,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4935,6 +4949,7 @@
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
+      "aliases": ["CVE-2025-71346"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-04-21T21:55:56Z",
       "database_specific": "<Any value>",
@@ -5090,6 +5105,7 @@
       "id": "GHSA-c4rq-3m3g-8wgx",
       "summary": "Nokogiri CSS selector tokenizer has regular expression backtracking",
       "details": "## Summary\n\nNokogiri's CSS selector tokenizer contains regular expressions whose construction may result in exponential regex backtracking on adversarial selectors. Three ReDoS vectors are addressed in this release:\n\n1. String-literal tokenization on certain unterminated quoted-string input.\n2. String-literal tokenization on a separate class of hex-escape-rich input.\n3. Identifier tokenization on hex-escape-rich input.\n\nThe public CSS selector methods that funnel through the affected tokenizer are `Nokogiri::CSS.xpath_for`, `Node#css`, `Node#at_css`, `Searchable#search`, and `CSS::Parser#parse`.\n\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.3`.\n\nIf users are unable to upgrade, two options are available:\n\n- Avoid the use of attacker-controlled text in CSS selectors. Applications that only pass developer-authored selectors to Nokogiri are not directly exposed.\n- Set global `Regexp.timeout` (Ruby 3.2+, JRuby 9.4+) to bound parse time.\n\n## Severity\n\nThe Nokogiri maintainers have evaluated this as **High Severity** (CVSS 7.5, `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H`).\n\nAn attacker able to inject user-supplied text into a CSS selector parse method can cause exponential backtracking, resulting in a potential denial of service.\n\n\n## Resources\n\n- [CWE-1333: Inefficient Regular Expression Complexity](https://cwe.mitre.org/data/definitions/1333.html)\n\n\n## Credit\n\nVector 1 was responsibly reported by @colby-swandale. Vectors 2 and 3 were discovered by @flavorjones during the response to the original report.",
+      "aliases": ["CVE-2026-79770"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-06T18:24:18Z",
       "database_specific": "<Any value>",
@@ -5139,6 +5155,7 @@
       "id": "GHSA-mrxw-mxhj-p664",
       "summary": "Nokogiri updates packaged libxslt to v1.1.43 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.4 upgrades its dependency libxslt to [v1.1.43](https://gitlab.gnome.org/GNOME/libxslt/-/releases/v1.1.43).\n\nlibxslt v1.1.43 resolves:\n\n- CVE-2025-24855: Fix use-after-free of XPath context node\n- CVE-2024-55549: Fix UAF related to excluded namespaces\n\n## Impact\n\n### CVE-2025-24855\n\n- \"Use-after-free due to xsltEvalXPathStringNs leaking xpathCtxt-\u003enode\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/128\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-24855\n\n### CVE-2024-55549\n\n- \"Use-after-free related to excluded result prefixes\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/127\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2024-55549",
+      "aliases": ["CVE-2025-71406"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-14T18:51:37Z",
       "database_specific": "<Any value>",
@@ -5304,6 +5321,7 @@
       "id": "GHSA-v2fc-qm4h-8hqv",
       "summary": "Nokogiri XSLT transform has a memory leak",
       "details": "## Summary\n\nNokogiri's `Nokogiri::XSLT::Stylesheet#transform` leaks a small heap allocation when passed a Ruby string parameter containing a null byte.\n\nFor applications that pass attacker-controlled input through `XSLT.transform` parameters, this may be a vector for a denial of service attack against long-running processes.\n\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.3`.\n\nUsers may also be able to mitigate this issue without upgrading by validating untrusted transform parameters before passing them to `Nokogiri::XSLT::Stylesheet#transform`.\n\n\n## Severity\n\nThe Nokogiri maintainers have evaluated this as **Moderate Severity**, CVSS 5.3.\n\nEach leaked allocation is approximately 24–32 bytes, so meaningful memory growth requires sustained attacker-controlled traffic at high call rates. The bug does not cause memory corruption, information disclosure, or any change in the behavior of the transform itself, and the string-handling exception is raised as expected.\n\nApplications that do not pass raw attacker-controlled bytes to XSLT parameters are unlikely to be affected in practice.\n\n\n## Resources\n\n- [CWE-401: Missing Release of Memory after Effective Lifetime](https://cwe.mitre.org/data/definitions/401.html)\n\n\n## Credit\n\nThis vulnerability was responsibly reported by @Captainjack-kor.",
+      "aliases": ["CVE-2026-79771"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-06T18:27:38Z",
       "database_specific": "<Any value>",
@@ -5353,6 +5371,7 @@
       "id": "GHSA-vvfq-8hwr-qm4m",
       "summary": "Nokogiri updates packaged libxml2 to 2.13.6 to resolve CVE-2025-24928 and CVE-2024-56171",
       "details": "## Summary\n\nNokogiri v1.18.3 upgrades its dependency libxml2 to [v2.13.6](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.6).\n\nlibxml2 v2.13.6 addresses:\n\n- CVE-2025-24928\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/847\n- CVE-2024-56171\n   - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/828\n\n## Impact\n\n### CVE-2025-24928\n\nStack-buffer overflow is possible when reporting DTD validation errors if the input contains a long (~3kb) QName prefix.\n\n### CVE-2024-56171\n\nUse-after-free is possible during validation against untrusted XML Schemas (.xsd) and, potentially, validation of untrusted documents against trusted Schemas if they make use of `xsd:keyref` in combination with recursively defined types that have additional identity constraints.",
+      "aliases": ["CVE-2025-71407"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-18T22:36:03Z",
       "database_specific": "<Any value>",
@@ -5494,6 +5513,7 @@
       "id": "GHSA-wx95-c6cv-8532",
       "summary": "Nokogiri does not check the return value from xmlC14NExecute",
       "details": "## Summary\n\nNokogiri's CRuby extension fails to check the return value from `xmlC14NExecute` in the method `Nokogiri::XML::Document#canonicalize` and `Nokogiri::XML::Node#canonicalize`. When canonicalization fails, an empty string is returned instead of raising an exception. This incorrect return value may allow downstream libraries to accept invalid or incomplete canonicalized XML, which has been demonstrated to enable signature validation bypass in SAML libraries.\n\nJRuby is not affected, as the Java implementation correctly raises `RuntimeError` on canonicalization failure.\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.1`.\n\n## Severity\n\nThe maintainers have assessed this as **Medium** severity. Nokogiri itself is a parsing library without a clear security boundary related to canonicalization, so the direct impact is that a method returns incorrect data on invalid input. However, this behavior was exploited in practice to bypass SAML signature validation in downstream libraries (see References).\n\n## Credit\n\nThis vulnerability was responsibly reported by HackerOne researcher `d4d`.",
+      "aliases": ["CVE-2026-79772"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-02-18T21:57:38Z",
       "database_specific": "<Any value>",

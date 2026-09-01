@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -28,6 +29,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	if taskType := m.Attributes["type"]; taskType != "update" {
 		logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
+		metrics.RecordTaskProcessed("skipped", m.Attributes["source"])
 		m.Ack()
 
 		return
@@ -50,6 +52,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	task.Vuln, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
+		metrics.RecordTaskProcessed("error", task.SourceID)
 		m.Nack()
 
 		return
@@ -83,10 +86,20 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		task.SHA256 = m.Attributes["original_sha256"]
 	}
 
+	startTime := time.Now()
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
+		duration := time.Since(startTime).Seconds()
+		metrics.RecordTaskProcessed("error", task.SourceID)
+		metrics.RecordTaskDuration("error", task.SourceID, duration)
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
+		duration := time.Since(startTime).Seconds()
+		metrics.RecordTaskProcessed("success", task.SourceID)
+		metrics.RecordTaskDuration("success", task.SourceID, duration)
+		if task.SourceTime != nil {
+			metrics.RecordPipelinePublishedToAvailable(task.SourceID, time.Since(*task.SourceTime).Seconds())
+		}
 		logTaskLatency(taskCtx, task)
 		m.Ack()
 	}

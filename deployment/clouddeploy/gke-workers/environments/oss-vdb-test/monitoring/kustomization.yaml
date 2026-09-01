@@ -1,0 +1,9 @@
+resources:
+- worker_pod_monitoring.yaml
+- grafana_service_account.yaml
+- grafana_datasources.yaml
+- grafana_dashboards_prov.yaml
+- grafana_dashboards.yaml
+- grafana_deployment.yaml
+- grafana_service.yaml
+- grafana_ingress.yaml

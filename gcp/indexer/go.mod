@@ -1,11 +1,11 @@
 module github.com/google/osv.dev/gcp/indexer
 
-go 1.27.0
+go 1.26.5
 
 require (
 	cloud.google.com/go/datastore v1.26.0
-	cloud.google.com/go/pubsub/v2 v2.6.2
-	cloud.google.com/go/storage v1.65.0
+	cloud.google.com/go/pubsub/v2 v2.6.1
+	cloud.google.com/go/storage v1.64.0
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0

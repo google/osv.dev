@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -185,6 +186,22 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 	zipNames := make([]string, 0, len(zipReader.File))
 	for _, f := range zipReader.File {
 		zipNames = append(zipNames, f.Name)
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatalf("failed to open zip entry %s: %v", f.Name, err)
+		}
+		entryBytes, err := io.ReadAll(rc)
+		_ = rc.Close()
+		if err != nil {
+			t.Fatalf("failed to read/decompress zip entry %s: %v", f.Name, err)
+		}
+		var parsed map[string]any
+		if err := json.Unmarshal(entryBytes, &parsed); err != nil {
+			t.Fatalf("failed to parse JSON from zip entry %s: %v", f.Name, err)
+		}
+		if parsed["id"] != f.Name[:len(f.Name)-len(".json")] {
+			t.Errorf("expected id %s in %s, got %v", f.Name[:len(f.Name)-len(".json")], f.Name, parsed["id"])
+		}
 	}
 	if len(zipNames) != 2 {
 		t.Errorf("expected 2 files in all.zip, got %v", zipNames)

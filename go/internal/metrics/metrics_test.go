@@ -14,8 +14,8 @@ import (
 )
 
 func TestMetricsRecording(t *testing.T) {
-	metrics.RecordTaskProcessed("success")
-	metrics.RecordTaskProcessed("error")
+	metrics.RecordTaskProcessed(metrics.TaskStatusSuccess)
+	metrics.RecordTaskProcessed(metrics.TaskStatusError)
 
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	rec := httptest.NewRecorder()

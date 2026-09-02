@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/part-of: osv-monitoring
 spec:
   domains:
-    - monitoring.osv.dev
+    - monitoring.test.osv.dev
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -42,7 +42,7 @@ metadata:
     networking.gke.io/managed-certificates: grafana-managed-cert
 spec:
   rules:
-  - host: monitoring.osv.dev
+  - host: monitoring.test.osv.dev
     http:
       paths:
       - path: /

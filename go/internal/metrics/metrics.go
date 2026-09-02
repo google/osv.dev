@@ -17,10 +17,20 @@ var (
 	)
 )
 
+// TaskStatus represents the outcome of processing a worker task.
+type TaskStatus string
+
+const (
+	TaskStatusSuccess TaskStatus = "success"
+	TaskStatusError   TaskStatus = "error"
+	TaskStatusSkipped TaskStatus = "skipped"
+	TaskStatusUnknown TaskStatus = "unknown"
+)
+
 // RecordTaskProcessed increments the task processed counter for a given status.
-func RecordTaskProcessed(status string) {
+func RecordTaskProcessed(status TaskStatus) {
 	if status == "" {
-		status = "unknown"
+		status = TaskStatusUnknown
 	}
-	WorkerTasksProcessedTotal.WithLabelValues(status).Inc()
+	WorkerTasksProcessedTotal.WithLabelValues(string(status)).Inc()
 }

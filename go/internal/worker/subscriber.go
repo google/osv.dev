@@ -29,7 +29,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	if taskType := m.Attributes["type"]; taskType != "update" {
 		logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
-		metrics.RecordTaskProcessed("skipped")
+		metrics.RecordTaskProcessed(metrics.TaskStatusSkipped)
 		m.Ack()
 
 		return
@@ -52,7 +52,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	task.Vuln, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
-		metrics.RecordTaskProcessed("error")
+		metrics.RecordTaskProcessed(metrics.TaskStatusError)
 		m.Nack()
 
 		return
@@ -87,11 +87,11 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	}
 
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
-		metrics.RecordTaskProcessed("error")
+		metrics.RecordTaskProcessed(metrics.TaskStatusError)
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
-		metrics.RecordTaskProcessed("success")
+		metrics.RecordTaskProcessed(metrics.TaskStatusSuccess)
 		logTaskLatency(taskCtx, task)
 		m.Ack()
 	}

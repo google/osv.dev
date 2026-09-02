@@ -33,16 +33,28 @@ spec:
           value: "false"
         - name: GF_AUTH_BASIC_ENABLED
           value: "false"
-        - name: GF_AUTH_PROXY_ENABLED
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
           value: "true"
-        - name: GF_AUTH_PROXY_HEADER_NAME
-          value: "X-Goog-Authenticated-User-Email"
-        - name: GF_AUTH_PROXY_HEADER_PROPERTY
+        - name: GF_AUTH_JWT_ENABLED
+          value: "true"
+        - name: GF_AUTH_JWT_HEADER_NAME
+          value: "X-Goog-IAP-JWT-Assertion"
+        - name: GF_AUTH_JWT_EMAIL_CLAIM
           value: "email"
-        - name: GF_AUTH_PROXY_AUTO_SIGN_UP
+        - name: GF_AUTH_JWT_USERNAME_CLAIM
+          value: "email"
+        - name: GF_AUTH_JWT_JWK_SET_URL
+          value: "https://www.gstatic.com/iap/verify/public_key-jwk"
+        - name: GF_AUTH_JWT_EXPECT_CLAIMS
+          value: '{"iss": "https://cloud.google.com/iap"}'
+        - name: GF_AUTH_JWT_AUTO_SIGN_UP
           value: "true"
+        - name: GF_USERS_AUTO_ASSIGN_ORG
+          value: "true"
+        - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
+          value: "Admin"
         - name: GF_SERVER_ROOT_URL
-          value: "https://monitoring.osv.dev"
+          value: "https://monitoring.test.osv.dev"
         resources:
           requests:
             cpu: 250m
@@ -50,6 +62,22 @@ spec:
           limits:
             cpu: 1000m
             memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
         volumeMounts:
         - name: datasources
           mountPath: /etc/grafana/provisioning/datasources

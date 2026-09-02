@@ -3,8 +3,14 @@ package website
 
 import (
 	"bytes"
+	"crypto/hkdf"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -26,6 +32,7 @@ type Config struct {
 	TemplateDir string
 	Stores      Stores
 	APIURL      string
+	Auth        AuthConfig
 }
 
 type Stores struct {
@@ -33,15 +40,17 @@ type Stores struct {
 	Relations  models.RelationsStore
 	SourceRepo models.SourceRepositoryStore
 	VulnSearch models.VulnerabilitySearchStore
+	Linter     models.LinterStore
+	Triage     models.TriageStore
 }
 
 // Server handles website routing and HTTP requests.
 type Server struct {
-	config  Config
-	mux     *http.ServeMux
-	handler http.Handler
-
-	stores Stores
+	config    Config
+	mux       *http.ServeMux
+	handler   http.Handler
+	stores    Stores
+	secretKey []byte
 }
 
 type responseLogger struct {
@@ -87,15 +96,36 @@ func NewServer(cfg Config) (*Server, error) {
 	if cfg.Stores.VulnSearch == nil {
 		return nil, errors.New("Stores.VulnSearch is required")
 	}
+	if cfg.Stores.Linter == nil {
+		return nil, errors.New("Stores.Linter is required")
+	}
+	if cfg.Stores.Triage == nil {
+		return nil, errors.New("Stores.Triage is required")
+	}
 
 	if cfg.APIURL == "" {
 		cfg.APIURL = "api.osv.dev"
 	}
 
+	var secretKey []byte
+	if cfg.Auth.SecretKey != "" {
+		var err error
+		secretKey, err = hkdf.Key(sha256.New, []byte(cfg.Auth.SecretKey), nil, "osv-cookie-encryption", 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive secret key: %w", err)
+		}
+	} else {
+		secretKey = make([]byte, 32)
+		if _, err := io.ReadFull(rand.Reader, secretKey); err != nil {
+			return nil, fmt.Errorf("failed to generate secret key: %w", err)
+		}
+	}
+
 	s := &Server{
-		config: cfg,
-		mux:    http.NewServeMux(),
-		stores: cfg.Stores,
+		config:    cfg,
+		mux:       http.NewServeMux(),
+		stores:    cfg.Stores,
+		secretKey: secretKey,
 	}
 	s.registerRoutes()
 
@@ -200,10 +230,10 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /linter-findings/", s.handleLinterSources)
 	s.mux.HandleFunc("GET /linter-findings/{source}", s.handleLinterFindings)
 
-	// Triage workflow
-	// TODO: auth stuff
-	s.mux.HandleFunc("GET /triage", s.handleTriagePage)
-	s.mux.HandleFunc("/triage/proxy", s.handleTriageProxy)
+	// Triage workflow (protected by Google OAuth account authentication)
+	s.mux.HandleFunc("GET /triage", s.requireGoogleAccount(s.handleTriagePage))
+	s.mux.HandleFunc("GET /triage/", s.requireGoogleAccount(s.handleTriagePage))
+	s.mux.HandleFunc("GET /triage/proxy", s.requireGoogleAccount(s.handleTriageProxy))
 
 	// Google OAuth authentication
 	s.mux.HandleFunc("GET /login", s.handleLogin)
@@ -268,4 +298,12 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string,
 
 func (s *Server) renderStandalone(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
 	s.renderTemplates(w, r, status, data, pageFile)
+}
+
+func (s *Server) renderJSON(w http.ResponseWriter, r *http.Request, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		logger.ErrorContext(r.Context(), "failed to encode JSON response", "error", err)
+	}
 }

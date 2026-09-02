@@ -3,6 +3,7 @@ package cve5
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,9 +12,10 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -145,6 +147,7 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			refs := identifyPossibleURLs(tc.cve)
 			if diff := cmp.Diff(tc.expectedRefs, refs); diff != "" {
 				t.Errorf("identifyPossibleURLs() mismatch (-want +got):\n%s", diff)
@@ -153,7 +156,197 @@ func TestIdentifyPossibleURLs(t *testing.T) {
 	}
 }
 
+func TestGetCWEs(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		cna      models.CNA
+		wantCWEs []string
+		wantNote bool
+	}{
+		{
+			name: "empty problem types",
+			cna: models.CNA{
+				ProblemTypes: nil,
+			},
+			wantCWEs: nil,
+			wantNote: false,
+		},
+		{
+			name: "empty CWEID",
+			cna: models.CNA{
+				ProblemTypes: models.ProblemTypes{
+					{
+						Descriptions: []struct {
+							CWEID       string `json:"cweId,omitempty"`
+							Type        string `json:"type,omitempty"`
+							Lang        string `json:"lang,omitempty"`
+							Description string `json:"description,omitempty"`
+						}{
+							{CWEID: ""},
+						},
+					},
+				},
+			},
+			wantCWEs: nil,
+			wantNote: false,
+		},
+		{
+			name: "duplicates and unsorted CWEs",
+			cna: models.CNA{
+				ProblemTypes: models.ProblemTypes{
+					{
+						Descriptions: []struct {
+							CWEID       string `json:"cweId,omitempty"`
+							Type        string `json:"type,omitempty"`
+							Lang        string `json:"lang,omitempty"`
+							Description string `json:"description,omitempty"`
+						}{
+							{CWEID: "CWE-79"},
+							{CWEID: "CWE-20"},
+						},
+					},
+					{
+						Descriptions: []struct {
+							CWEID       string `json:"cweId,omitempty"`
+							Type        string `json:"type,omitempty"`
+							Lang        string `json:"lang,omitempty"`
+							Description string `json:"description,omitempty"`
+						}{
+							{CWEID: "CWE-79"},
+							{CWEID: "CWE-125"},
+						},
+					},
+				},
+			},
+			wantCWEs: []string{"CWE-125", "CWE-20", "CWE-79"},
+			wantNote: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			metrics := &models.ConversionMetrics{}
+			got := getCWEs(tt.cna, metrics)
+			if diff := cmp.Diff(tt.wantCWEs, got); diff != "" {
+				t.Errorf("getCWEs() mismatch (-want +got):\n%s", diff)
+			}
+			hasNote := len(metrics.Notes) > 0
+			if hasNote != tt.wantNote {
+				t.Errorf("getCWEs() note presence = %v, want %v", hasNote, tt.wantNote)
+			}
+		})
+	}
+}
+
+func TestExtractConversionMetrics(t *testing.T) {
+	t.Parallel()
+	cve := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID:             "CVE-2025-1234",
+			AssignerShortName: "mitre",
+		},
+	}
+	refs := []*osvschema.Reference{
+		{Type: osvschema.Reference_ADVISORY, Url: "https://example.com/advisory1"},
+		{Type: osvschema.Reference_ADVISORY, Url: "https://example.com/advisory2"},
+		{Type: osvschema.Reference_FIX, Url: "https://example.com/fix1"},
+		{Type: osvschema.Reference_REPORT, Url: "https://example.com/report1"},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	extractConversionMetrics(cve, refs, metrics)
+
+	if metrics.CNA != "mitre" {
+		t.Errorf("metrics.CNA = %q, want %q", metrics.CNA, "mitre")
+	}
+
+	expectedCounts := map[osvschema.Reference_Type]int{
+		osvschema.Reference_ADVISORY: 2,
+		osvschema.Reference_FIX:      1,
+		osvschema.Reference_REPORT:   1,
+	}
+	if diff := cmp.Diff(expectedCounts, metrics.RefTypesCount); diff != "" {
+		t.Errorf("metrics.RefTypesCount mismatch (-want +got):\n%s", diff)
+	}
+
+	if len(metrics.Notes) != 3 {
+		t.Errorf("Expected 3 notes for 3 ref types, got %d: %v", len(metrics.Notes), metrics.Notes)
+	}
+}
+
+func TestBuildDBSpecific(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		cve        models.CVE5
+		sourceLink string
+		want       map[string]any
+	}{
+		{
+			name: "all fields present",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "redhat",
+				},
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						Tags: []string{"disputed"},
+						ProblemTypes: models.ProblemTypes{
+							{
+								Descriptions: []struct {
+									CWEID       string `json:"cweId,omitempty"`
+									Type        string `json:"type,omitempty"`
+									Lang        string `json:"lang,omitempty"`
+									Description string `json:"description,omitempty"`
+								}{
+									{CWEID: "CWE-79"},
+								},
+							},
+						},
+					},
+				},
+			},
+			sourceLink: "https://example.com/source.json",
+			want: map[string]any{
+				"osv_generated_from": "https://example.com/source.json",
+				"cna_assigner":       "redhat",
+				"isDisputed":         true,
+				"cwe_ids":            []string{"CWE-79"},
+			},
+		},
+		{
+			name: "minimal fields defaults to unknown source",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "",
+				},
+			},
+			sourceLink: "",
+			want: map[string]any{
+				"osv_generated_from": "unknown",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			metrics := &models.ConversionMetrics{}
+			got := buildDBSpecific(tt.cve, metrics, tt.sourceLink)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("buildDBSpecific() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFromCVE5(t *testing.T) {
+	t.Parallel()
 	cve1110Pub, _ := models.ParseCVE5Timestamp("2025-05-22T14:02:31.385Z")
 	cve1110Mod, _ := models.ParseCVE5Timestamp("2025-05-22T14:17:44.379Z")
 	cve21634Pub, _ := models.ParseCVE5Timestamp("2024-01-03T22:46:03.585Z")
@@ -359,21 +552,61 @@ func TestFromCVE5(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "invalid date fallback",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID:         "CVE-2025-0001",
+					State:         "PUBLISHED",
+					DatePublished: "invalid-date",
+					DateUpdated:   "not-a-timestamp",
+				},
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: models.CNA{
+						Descriptions: []models.LangString{
+							{
+								Lang:  "en",
+								Value: "Invalid dates fallback test.",
+							},
+						},
+					},
+				},
+			},
+			refs: []models.Reference{},
+			expectedVuln: &vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Id:            "CVE-2025-0001",
+					SchemaVersion: "1.7.5",
+					Details:       "Invalid dates fallback test.",
+					DatabaseSpecific: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
+							"osv_generated_from": structpb.NewStringValue("unknown"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			metrics := &models.ConversionMetrics{}
 			vuln := FromCVE5(tc.cve, tc.refs, metrics, "")
 			vuln.SchemaVersion = tc.expectedVuln.SchemaVersion
 
-			// Handle non-deterministic time.Now()
+			// Handle non-deterministic time.Now() and verify date parse error notes
 			if strings.Contains(tc.name, "invalid date") {
-				if vuln.Published != nil {
-					vuln.Published = nil
+				if vuln.Published == nil || vuln.Modified == nil {
+					t.Errorf("Expected non-nil Published and Modified dates for invalid date fallback")
 				}
-				if vuln.Modified != nil && strings.Contains(tc.name, "invalid modified") {
-					vuln.Modified = nil
+				vuln.Published = nil
+				vuln.Modified = nil
+				if len(metrics.Notes) < 2 {
+					t.Errorf("Expected at least 2 notes for date parse errors, got %d", len(metrics.Notes))
 				}
 			}
 			sort.Slice(vuln.References, func(i, j int) bool {
@@ -392,22 +625,6 @@ func TestFromCVE5(t *testing.T) {
 				return tc.expectedVuln.References[i].GetType() < tc.expectedVuln.References[j].GetType()
 			})
 
-			// Sort references for deterministic comparison.
-			sort.Slice(vuln.GetReferences(), func(i, j int) bool {
-				if vuln.GetReferences()[i].GetUrl() != vuln.GetReferences()[j].GetUrl() {
-					return vuln.GetReferences()[i].GetUrl() < vuln.GetReferences()[j].GetUrl()
-				}
-
-				return vuln.GetReferences()[i].GetType() < vuln.GetReferences()[j].GetType()
-			})
-			sort.Slice(tc.expectedVuln.GetReferences(), func(i, j int) bool {
-				if tc.expectedVuln.GetReferences()[i].GetUrl() != tc.expectedVuln.GetReferences()[j].GetUrl() {
-					return tc.expectedVuln.GetReferences()[i].GetUrl() < tc.expectedVuln.GetReferences()[j].GetUrl()
-				}
-
-				return tc.expectedVuln.GetReferences()[i].GetType() < tc.expectedVuln.GetReferences()[j].GetType()
-			})
-
 			if diff := cmp.Diff(tc.expectedVuln, vuln, protocmp.Transform()); diff != "" {
 				t.Errorf("FromCVE5() vuln mismatch (-want +got):\n%s", diff)
 			}
@@ -415,135 +632,72 @@ func TestFromCVE5(t *testing.T) {
 	}
 }
 
-func TestConvertAndExportCVEToOSV(t *testing.T) {
-	testCases := []struct {
-		name string
-		cve  models.CVE5
-	}{
-		{
-			name: "disputed record",
-			cve: models.CVE5{
-				Metadata: models.CVE5Metadata{
-					CVEID:             "CVE-2025-9999",
-					State:             "PUBLISHED",
-					DatePublished:     "2025-05-04T07:20:46.575Z",
-					DateUpdated:       "2025-05-04T07:20:46.575Z",
-					AssignerShortName: "unknown",
+func TestFromCVE5_SourceLink(t *testing.T) {
+	t.Parallel()
+	cve := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID: "CVE-2025-0002",
+		},
+	}
+	metrics := &models.ConversionMetrics{}
+	sourceLink := "https://github.com/CVEProject/cvelistV5/blob/main/cves/2025/0xxx/CVE-2025-0002.json"
+	vuln := FromCVE5(cve, nil, metrics, sourceLink)
+
+	if vuln.DatabaseSpecific == nil {
+		t.Fatalf("Expected DatabaseSpecific to be non-nil")
+	}
+	got := vuln.DatabaseSpecific.GetFields()["osv_generated_from"].GetStringValue()
+	if got != sourceLink {
+		t.Errorf("osv_generated_from = %q, want %q", got, sourceLink)
+	}
+}
+
+func TestFromCVE5_SeverityMerging(t *testing.T) {
+	t.Parallel()
+	cveWithCNAAndADP := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID: "CVE-2025-5555",
+		},
+		Containers: struct {
+			CNA models.CNA   `json:"cna"`
+			ADP []models.CNA `json:"adp,omitempty"`
+		}{
+			CNA: models.CNA{
+				Metrics: []models.Metrics{
+					{
+						CVSSv3_1: models.BaseCVSS{
+							VectorString: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+						},
+					},
 				},
-				Containers: struct {
-					CNA models.CNA   `json:"cna"`
-					ADP []models.CNA `json:"adp,omitempty"`
-				}{
-					CNA: models.CNA{
-						Tags: []string{"disputed"},
-						Descriptions: []models.LangString{
-							{
-								Lang:  "en",
-								Value: "A disputed vulnerability.",
+			},
+			ADP: []models.CNA{
+				{
+					Metrics: []models.Metrics{
+						{
+							CVSSv3_0: models.BaseCVSS{
+								VectorString: "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
 							},
 						},
 					},
 				},
 			},
 		},
-		{
-			name: "CVE-2025-1110",
-			cve:  loadTestData(t, "CVE-2025-1110"),
-		},
-		{
-			name: "CVE-2024-21634",
-			cve:  loadTestData(t, "CVE-2024-21634"),
-		},
-		{
-			name: "CVE-2025-21772",
-			cve:  loadTestData(t, "CVE-2025-21772"),
-		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			vWriter := bytes.NewBuffer(nil)
-			mWriter := bytes.NewBuffer(nil)
-			_, err := ConvertAndExportCVEToOSV(tc.cve, vWriter, mWriter, "")
-			if err != nil {
-				t.Errorf("Unexpected error from ConvertAndExportCVEToOSV: %v", err)
-			}
-			snaps.MatchSnapshot(t, strings.ReplaceAll(vWriter.String(), `"schema_version": "`+osvconstants.SchemaVersion+`"`, `"schema_version": "1.0.0"`))
-		})
+	metrics := &models.ConversionMetrics{}
+	vuln := FromCVE5(cveWithCNAAndADP, nil, metrics, "")
+	if len(vuln.Severity) == 0 {
+		t.Fatalf("Expected severity to be populated")
 	}
-}
-
-func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
-	cve := loadTestData(t, "CVE-2025-1110")
-
-	// 1. Untyped nil metricsSink
-	vWriter := bytes.NewBuffer(nil)
-	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, nil, "")
-	if err != nil {
-		t.Fatalf("Unexpected error with untyped nil metricsSink: %v", err)
+	// CVSS v3.1 from CNA should take precedence over CVSS v3.0 from ADP
+	if vuln.Severity[0].GetScore() != "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N" {
+		t.Errorf("vuln.Severity[0].Score = %q, want CVSS 3.1 score", vuln.Severity[0].GetScore())
 	}
-	if metrics == nil {
-		t.Fatalf("Expected non-nil metrics return")
-	}
-
-	// 2. Both sinks nil
-	metrics, err = ConvertAndExportCVEToOSV(cve, nil, nil, "")
-	if err != nil {
-		t.Fatalf("Unexpected error with both sinks nil: %v", err)
-	}
-	if metrics == nil {
-		t.Fatalf("Expected non-nil metrics return")
-	}
-}
-
-func TestCVE5Snapshot(t *testing.T) {
-	testDir := "../../test_data/cve5"
-	//TODO: split this into individual records.
-	files, err := os.ReadDir(testDir)
-	if err != nil {
-		t.Fatalf("Failed to read test directory %s: %v", testDir, err)
-	}
-
-	results := make([]string, 0, len(files))
-	for _, file := range files {
-		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
-			continue
-		}
-
-		path := filepath.Join(testDir, file.Name())
-		content, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("Failed to read %s: %v", path, err)
-		}
-
-		var cve models.CVE5
-		err = json.Unmarshal(content, &cve)
-		if err != nil {
-			t.Fatalf("Failed to unmarshal %s: %v", path, err)
-		}
-
-		vWriter := bytes.NewBuffer(nil)
-		mWriter := bytes.NewBuffer(nil)
-		_, err = ConvertAndExportCVEToOSV(cve, vWriter, mWriter, "")
-		if err != nil {
-			t.Fatalf("Failed to convert %s: %v", path, err)
-		}
-
-		results = append(results, strings.ReplaceAll(vWriter.String(), `"schema_version": "`+osvconstants.SchemaVersion+`"`, `"schema_version": "1.0.0"`))
-	}
-
-	// Sort results for deterministic snapshot
-	sort.Strings(results)
-
-	keys := make([]any, 0, len(results))
-	for _, r := range results {
-		keys = append(keys, r)
-	}
-
-	snaps.MatchSnapshot(t, keys...)
 }
 
 func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
+	t.Parallel()
 	cve := models.CVE5{}
 	metrics := &models.ConversionMetrics{}
 	refData := []models.Reference{
@@ -566,5 +720,168 @@ func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
 		if diff := cmp.Diff(firstResult, vuln.References, protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestConvertAndExportCVEToOSV(t *testing.T) {
+	r := testutils.SetupGitVCR(t)
+	cve := loadTestData(t, "CVE-2025-1110")
+	cache := &git.InMemoryRepoTagsCache{}
+
+	vWriter := bytes.NewBuffer(nil)
+	mWriter := bytes.NewBuffer(nil)
+	sourceLink := "https://example.com/CVE-2025-1110.json"
+
+	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, mWriter, sourceLink, cache, r.GetDefaultClient())
+	if err != nil {
+		t.Fatalf("Unexpected error from ConvertAndExportCVEToOSV: %v", err)
+	}
+
+	if metrics == nil {
+		t.Fatal("Expected non-nil metrics")
+	}
+	if metrics.CVEID != "CVE-2025-1110" {
+		t.Errorf("metrics.CVEID = %q, want CVE-2025-1110", metrics.CVEID)
+	}
+
+	// Verify vulnSink wrote valid JSON
+	var parsedVuln map[string]any
+	if err := json.Unmarshal(vWriter.Bytes(), &parsedVuln); err != nil {
+		t.Fatalf("vulnSink did not contain valid JSON: %v", err)
+	}
+	if parsedVuln["id"] != "CVE-2025-1110" {
+		t.Errorf("parsedVuln id = %v, want CVE-2025-1110", parsedVuln["id"])
+	}
+
+	// Verify sourceLink is present in database_specific
+	if dbSpec, ok := parsedVuln["database_specific"].(map[string]any); ok {
+		if dbSpec["osv_generated_from"] != sourceLink {
+			t.Errorf("osv_generated_from = %v, want %s", dbSpec["osv_generated_from"], sourceLink)
+		}
+	} else {
+		t.Error("database_specific missing in parsed vulnerability")
+	}
+
+	// Verify metricsSink wrote valid JSON matching returned metrics
+	var parsedMetrics models.ConversionMetrics
+	if err := json.Unmarshal(mWriter.Bytes(), &parsedMetrics); err != nil {
+		t.Fatalf("metricsSink did not contain valid JSON: %v", err)
+	}
+	if parsedMetrics.CVEID != metrics.CVEID || parsedMetrics.CNA != metrics.CNA {
+		t.Errorf("metricsSink content mismatch: got %+v, want %+v", parsedMetrics, metrics)
+	}
+}
+
+func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
+	cve := loadTestData(t, "CVE-2025-1110")
+	cache := &git.InMemoryRepoTagsCache{}
+	r := testutils.SetupGitVCR(t)
+
+	// 1. Untyped nil metricsSink
+	vWriter := bytes.NewBuffer(nil)
+	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, nil, "", cache, r.GetDefaultClient())
+	if err != nil {
+		t.Fatalf("Unexpected error with untyped nil metricsSink: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+
+	// 2. Untyped nil vulnSink
+	mWriter := bytes.NewBuffer(nil)
+	metrics, err = ConvertAndExportCVEToOSV(cve, nil, mWriter, "", cache, r.GetDefaultClient())
+	if err != nil {
+		t.Fatalf("Unexpected error with untyped nil vulnSink: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+	if mWriter.Len() == 0 {
+		t.Fatalf("Expected non-empty metricsSink output")
+	}
+
+	// 3. Both sinks nil
+	metrics, err = ConvertAndExportCVEToOSV(cve, nil, nil, "", cache, r.GetDefaultClient())
+	if err != nil {
+		t.Fatalf("Unexpected error with both sinks nil: %v", err)
+	}
+	if metrics == nil {
+		t.Fatalf("Expected non-nil metrics return")
+	}
+}
+
+type errWriter struct{}
+
+func (errWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("simulated write error")
+}
+
+func TestConvertAndExportCVEToOSV_WriterErrors(t *testing.T) {
+	cve := loadTestData(t, "CVE-2025-1110")
+	cache := &git.InMemoryRepoTagsCache{}
+	r := testutils.SetupGitVCR(t)
+
+	// 1. Error on vulnSink
+	_, err := ConvertAndExportCVEToOSV(cve, errWriter{}, nil, "", cache, r.GetDefaultClient())
+	if err == nil {
+		t.Error("Expected error when vulnSink fails to write, got nil")
+	}
+
+	// 2. Error on metricsSink
+	vWriter := bytes.NewBuffer(nil)
+	_, err = ConvertAndExportCVEToOSV(cve, vWriter, errWriter{}, "", cache, r.GetDefaultClient())
+	if err == nil {
+		t.Error("Expected error when metricsSink fails to write, got nil")
+	}
+}
+
+func TestCVE5Snapshot(t *testing.T) {
+	r := testutils.SetupGitVCR(t)
+	testDir := "../../test_data/cve5"
+	files, err := os.ReadDir(testDir)
+	if err != nil {
+		t.Fatalf("Failed to read test directory %s: %v", testDir, err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
+			continue
+		}
+
+		t.Run(file.Name(), func(t *testing.T) {
+			t.Parallel()
+			cache := &git.InMemoryRepoTagsCache{}
+
+			path := filepath.Join(testDir, file.Name())
+			content, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("Failed to read %s: %v", path, err)
+			}
+
+			var cve models.CVE5
+			err = json.Unmarshal(content, &cve)
+			if err != nil {
+				t.Fatalf("Failed to unmarshal %s: %v", path, err)
+			}
+
+			vWriter := bytes.NewBuffer(nil)
+			mWriter := bytes.NewBuffer(nil)
+			_, err = ConvertAndExportCVEToOSV(cve, vWriter, mWriter, "", cache, r.GetDefaultClient())
+			if err != nil {
+				t.Fatalf("Failed to convert %s: %v", path, err)
+			}
+
+			var vuln map[string]any
+			if err := json.Unmarshal(vWriter.Bytes(), &vuln); err != nil {
+				t.Fatalf("Failed to unmarshal converted output %s: %v", path, err)
+			}
+			delete(vuln, "schema_version")
+			cleanJSON, err := json.MarshalIndent(vuln, "", "  ")
+			if err != nil {
+				t.Fatalf("Failed to marshal output %s: %v", path, err)
+			}
+
+			snaps.MatchSnapshot(t, string(cleanJSON))
+		})
 	}
 }

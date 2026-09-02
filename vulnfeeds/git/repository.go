@@ -353,7 +353,7 @@ func (e *GitterError) Error() string {
 	return fmt.Sprintf("gitter request failed with status %d: %s", e.StatusCode, e.Body)
 }
 
-func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
+func gitterRepoRefs(repoURL string, httpClient *http.Client) ([]*plumbing.Reference, error) {
 	gitterHost := os.Getenv("GITTER_HOST")
 	if gitterHost == "" {
 		return nil, errors.New("GITTER_HOST not set")
@@ -379,7 +379,7 @@ func gitterRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func RemoteRepoRefsWithRetry(repoURL string, retries uint64) (refs []*plumbing.R
 
 	ctx := context.Background()
 
-	backoff := retry.NewExponential(1 * time.Second)
+	backoff := retry.NewExponential(BackoffBaseDelay)
 	backoff = retry.WithMaxRetries(retries, backoff)
 	backoff = newLoggingBackoff(backoff, "RemoteRepoRefs")
 
@@ -475,7 +475,7 @@ func RepoName(repoURL string) (name string, e error) {
 // RepoTags returns an array of Tag being the (unpeeled, if annotated) tags and associated commits in repoURL.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
 // *** Does external calls to verify repos ***
-func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) {
+func RepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Client) (tags Tags, e error) {
 	if repoTagsCache != nil {
 		tagsRepoMap, ok := repoTagsCache.Get(repoURL)
 		if ok {
@@ -486,7 +486,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache) (tags Tags, e error) 
 		}
 	}
 	// Cache miss.
-	refs, err := getRepoRefs(repoURL)
+	refs, err := getRepoRefs(repoURL, httpClient)
 	if err != nil {
 		if repoTagsCache != nil {
 			if IsRateLimit(err) {
@@ -559,7 +559,7 @@ func normalizeRepoTag(tag string, reponame string) (normalizedTag string, err er
 
 // NormalizeRepoTags returns a map of normalized tags mapping back to original tags and also commit hashes.
 // An optional repoTagsCache can be supplied to reduce repeated remote connections to the same repo.
-func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedTags map[string]NormalizedTag, e error) {
+func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Client) (normalizedTags map[string]NormalizedTag, e error) {
 	if repoTagsCache != nil {
 		tags, ok := repoTagsCache.Get(repoURL)
 		if ok && tags.NormalizedTag != nil {
@@ -571,7 +571,7 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache) (normalizedT
 	if err != nil {
 		return nil, err
 	}
-	tags, err := RepoTags(repoURL, repoTagsCache)
+	tags, err := RepoTags(repoURL, repoTagsCache, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -619,9 +619,9 @@ func RefBranches(refs []*plumbing.Reference) (branches []*plumbing.Reference) {
 	return branches
 }
 
-func getRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
+func getRepoRefs(repoURL string, httpClient *http.Client) ([]*plumbing.Reference, error) {
 	if os.Getenv("GITTER_HOST") != "" {
-		return gitterRepoRefs(repoURL)
+		return gitterRepoRefs(repoURL, httpClient)
 	}
 
 	return RemoteRepoRefsWithRetry(repoURL, 3)
@@ -629,15 +629,15 @@ func getRepoRefs(repoURL string) ([]*plumbing.Reference, error) {
 
 // Validate the repo by attempting to query it's references.
 // *** Does external calls to verify repos ***
-func ValidRepo(repoURL string) (bool, error) {
-	_, err := getRepoRefs(repoURL)
+func ValidRepo(repoURL string, httpClient *http.Client) (bool, error) {
+	_, err := getRepoRefs(repoURL, httpClient)
 	return err == nil, err
 }
 
 // Otherwise functional repos that don't have any tags are not valid.
 // *** Does external calls to verify repos ***
-func ValidRepoAndHasUsableRefs(repoURL string) (bool, error) {
-	refs, err := getRepoRefs(repoURL)
+func ValidRepoAndHasUsableRefs(repoURL string, httpClient *http.Client) (bool, error) {
+	refs, err := getRepoRefs(repoURL, httpClient)
 	if err != nil || len(refs) == 0 {
 		return false, err
 	}

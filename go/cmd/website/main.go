@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,9 +19,11 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/gcs"
 	"github.com/google/osv.dev/go/internal/website"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -92,6 +95,33 @@ func run() error {
 		logger.ErrorContext(ctx, "OSV_VULNERABILITIES_BUCKET environment variable is not set")
 		return errors.New("OSV_VULNERABILITIES_BUCKET environment variable is not set")
 	}
+
+	linterBucket := os.Getenv("OSV_LINTER_BUCKET")
+	if linterBucket == "" {
+		linterBucket = "osv-test-public-import-logs"
+	}
+
+	var redisClient redis.Cmdable
+	if redisHost := os.Getenv("REDISHOST"); redisHost != "" {
+		redisPort := os.Getenv("REDISPORT")
+		if redisPort == "" {
+			redisPort = "6379"
+		}
+		rdb := redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redisPort),
+		})
+		defer func() {
+			if err := rdb.Close(); err != nil {
+				logger.ErrorContext(ctx, "Failed to close redis client", slog.Any("error", err))
+			}
+		}()
+		redisClient = rdb
+	}
+
+	bypassOAuth := strings.EqualFold(os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV"), "true") ||
+		os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV") == "1" ||
+		strings.EqualFold(os.Getenv("BYPASS_OAUTH_FOR_LOCAL_DEV"), "t")
+
 	stores := website.Stores{
 		Vuln: db.NewVulnerabilityStore(db.VulnStoreConfig{
 			Client: dbClient,
@@ -99,7 +129,9 @@ func run() error {
 		}),
 		Relations:  db.NewRelationsStore(dbClient),
 		SourceRepo: db.NewSourceRepositoryStore(dbClient),
-		VulnSearch: db.NewVulnerabilitySearchStore(dbClient),
+		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
+		Linter:     gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
+		Triage:     gcs.NewTriageStore(gcsClient),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")
@@ -110,11 +142,28 @@ func run() error {
 		apiURL = "api.osv.dev"
 	}
 
+	secretKey := os.Getenv("SESSION_SECRET_KEY")
+	if secretKey == "" {
+		secretKey = os.Getenv("FLASK_SECRET_KEY")
+	}
+	if secretKey == "" {
+		secretKey = os.Getenv("SECRET_KEY")
+	}
+	if secretKey == "" && !bypassOAuth {
+		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
+	}
+
 	srv, err := website.NewServer(website.Config{
 		StaticFS: staticFiles,
 		DocsFS:   docsFiles,
 		Stores:   stores,
 		APIURL:   apiURL,
+		Auth: website.AuthConfig{
+			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+			SecretKey:    secretKey,
+			BypassOAuth:  bypassOAuth,
+		},
 	})
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create website server", slog.Any("error", err))

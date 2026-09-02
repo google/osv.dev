@@ -2,6 +2,7 @@ package cve5
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
@@ -14,12 +15,47 @@ type VersionExtractor interface {
 	FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType)
 }
 
-// GetVersionExtractor returns the appropriate VersionExtractor for a given CNA.
+// GetVersionExtractor returns the appropriate VersionExtractor configured with CNA-specific strategies.
 func GetVersionExtractor(cna string) VersionExtractor {
-	switch cna {
-	case "Linux":
-		return &LinuxVersionExtractor{}
+	switch strings.ToLower(cna) {
+	case "linux":
+		return &LinuxVersionExtractor{
+			DefaultVersionExtractor: DefaultVersionExtractor{
+				Strategies: LinuxStrategies(),
+			},
+		}
+	case "wordfence":
+		return &WordpressExtractor{
+			Handler: &WordfenceHandler{},
+			DefaultVersionExtractor: DefaultVersionExtractor{
+				Strategies: WordfenceStrategies(),
+			},
+		}
+	case "patchstack":
+		return &WordpressExtractor{
+			Handler: &PatchstackHandler{},
+			DefaultVersionExtractor: DefaultVersionExtractor{
+				Strategies: PatchstackStrategies(),
+			},
+		}
+	case "wpscan":
+		return &WordpressExtractor{
+			Handler: &WPScanHandler{},
+			DefaultVersionExtractor: DefaultVersionExtractor{
+				Strategies: WPScanStrategies(),
+			},
+		}
+	case "github_m", "github":
+		return &DefaultVersionExtractor{
+			Strategies: GitHubStrategies(),
+		}
+	case "mitre":
+		return &DefaultVersionExtractor{
+			Strategies: MITREStrategies(),
+		}
 	default:
-		return &DefaultVersionExtractor{}
+		return &DefaultVersionExtractor{
+			Strategies: DefaultStrategies(),
+		}
 	}
 }

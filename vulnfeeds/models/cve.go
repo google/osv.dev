@@ -122,6 +122,7 @@ type Affected struct {
 	Product       string     `json:"product,omitempty"`
 	PackageName   string     `json:"packageName,omitempty"`
 	CollectionURL string     `json:"collectionURL,omitempty"`
+	Cpes          []string   `json:"cpes,omitempty"`
 	Versions      []Versions `json:"versions,omitempty"`
 	Repo          string     `json:"repo,omitempty"`
 	DefaultStatus string     `json:"defaultStatus,omitempty"`

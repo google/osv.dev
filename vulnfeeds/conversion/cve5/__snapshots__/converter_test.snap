@@ -2010,14 +2010,6 @@
           }
         ],
         "source": "AFFECTED_FIELD"
-      },
-      {
-        "extracted_events": [
-          {
-            "fixed": "7.61.1"
-          }
-        ],
-        "source": "DESCRIPTION"
       }
     ]
   },

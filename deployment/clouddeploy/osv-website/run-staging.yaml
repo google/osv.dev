@@ -14,6 +14,10 @@ spec:
         env:
         - name: OSV_VULNERABILITIES_BUCKET
           value: 'osv-test-vulnerabilities'
+        - name: OSV_LINTER_BUCKET
+          value: 'osv-test-public-import-logs'
+        - name: OSV_API_URL
+          value: 'api.test.osv.dev'
         - name: REDISHOST
           value: '10.189.34.180'
         - name: REDISPORT
@@ -28,7 +32,7 @@ spec:
             secretKeyRef:
               name: google-oauth-client-secret
               key: 'latest'
-        - name: FLASK_SECRET_KEY
+        - name: SESSION_SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: flask-secret-key

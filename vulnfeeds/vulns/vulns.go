@@ -37,9 +37,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -373,6 +373,9 @@ func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string) {
 // AddSeverity adds CVSS severity information to the OSV vulnerability object.
 // It uses the highest available CVSS score from the underlying CVE record.
 func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics) {
+	if metricsData == nil {
+		return
+	}
 	bestVectorString, severityType := getBestSeverity(metricsData)
 
 	if bestVectorString == "" {
@@ -469,7 +472,7 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 				return osvschema.Reference_ADVISORY
 			}
 
-			// Example: https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
+			// Example: https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5
 			if len(pathParts) >= 3 && pathParts[len(pathParts)-2] == "commit" {
 				return osvschema.Reference_FIX
 			}
@@ -752,6 +755,11 @@ func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 // and the ExtractReferencedVulns function uses these in a check to add the other ID as an alias.
 func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 	aliases, related := ExtractReferencedVulns(id, cve.ID, cve.References)
+	var withdrawnTime *timestamppb.Timestamp
+	if cve.VulnStatus != nil && *cve.VulnStatus == "Rejected" {
+		withdrawnTime = timestamppb.New(cve.LastModified.Time)
+	}
+
 	v := &Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
 			Id:         string(id),
@@ -761,6 +769,7 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 			Published:  timestamppb.New(cve.Published.Time),
 			Modified:   timestamppb.New(cve.LastModified.Time),
 			References: ClassifyReferences(cve.References),
+			Withdrawn:  withdrawnTime,
 		},
 	}
 	v.AddSeverity(cve.Metrics)

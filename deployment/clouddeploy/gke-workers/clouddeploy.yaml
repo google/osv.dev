@@ -19,7 +19,7 @@ metadata:
   name: staging-workers
 description: oss-vdb-test worker cluster
 gke:
-  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb-test/locations/us-west2-b/clusters/workers
 executionConfigs:
 - usages:
   - RENDER
@@ -33,7 +33,7 @@ metadata:
   name: production-workers
 description: oss-vdb worker cluster
 gke:
-  cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb/locations/us-west2-c/clusters/workers
 executionConfigs:
 - usages:
   - RENDER
@@ -47,7 +47,7 @@ metadata:
   name: private-workers
 description: Private OSV worker cluster
 gke:
-  cluster: projects/private-osv/locations/us-central1-f/clusters/workers
+  cluster: projects/private-osv/locations/us-west2-c/clusters/workers
 executionConfigs:
 - usages:
   - RENDER

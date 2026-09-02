@@ -9,12 +9,12 @@ import (
 	"slices"
 	"strings"
 
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -23,11 +23,25 @@ var ErrNoRanges = errors.New("no ranges")
 var ErrUnresolvedFix = errors.New("fixes not resolved to commits")
 
 // CVEToOSV Takes an NVD CVE record and returns an OSV Vulnerability object, ConversionMetrics, and the outcome.
-func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cache git.RepoTagsCache, metrics *models.ConversionMetrics) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) (*vulns.Vulnerability, *models.ConversionMetrics, models.ConversionOutcome) {
+	if httpClient == nil {
+		panic("http client not set")
+	}
 	CPEs := c.CPEs(cve)
 	metrics.CPEs = CPEs
 	refs := c.DeduplicateRefs(cve.References)
 	// The vendor name and product name are used to construct the output `vulnDir` below, so need to be set to *something* to keep the output tidy.
+
+	if cve.VulnStatus != nil && *cve.VulnStatus == "Rejected" {
+		metrics.SetOutcome(models.Rejected)
+		v := vulns.FromNVDCVE(cve.ID, cve)
+		databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
+		if err == nil {
+			v.DatabaseSpecific = databaseSpecific
+		}
+
+		return v, metrics, models.Rejected
+	}
 
 	if len(CPEs) > 0 {
 		_, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
@@ -77,7 +91,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// If we have ranges, try to resolve them
-	r, un, sR := c.ProcessRanges(cpeRanges, repos, metrics, cache)
+	r, un, sR := c.ProcessRanges(cpeRanges, repos, metrics, cache, httpClient)
 	if metrics.Outcome == models.Error {
 		return nil, metrics, models.Error
 	}
@@ -88,7 +102,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// Extract Commits
-	commits, err := c.ExtractCommitsFromRefs(refs, http.DefaultClient, cache)
+	commits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from refs: %v", err)
 		if git.IsRateLimit(err) {
@@ -111,7 +125,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 		if len(textRanges) > 0 {
 			metrics.AddNote("Extracted versions from description: %v", textRanges)
 		}
-		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache)
+		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache, httpClient)
 		if metrics.Outcome == models.Error {
 			return nil, metrics, models.Error
 		}

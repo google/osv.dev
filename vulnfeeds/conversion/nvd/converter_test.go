@@ -8,14 +8,16 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-cmp/cmp"
-	c "github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
+	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -27,7 +29,6 @@ func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestCVEToOSV_429(t *testing.T) {
-	originalTransport := http.DefaultTransport
 	requests := 0
 	customTransport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		requests++
@@ -37,8 +38,6 @@ func TestCVEToOSV_429(t *testing.T) {
 			Request:    req,
 		}, nil
 	})
-	http.DefaultTransport = customTransport
-	defer func() { http.DefaultTransport = originalTransport }()
 
 	customClient := &http.Client{Transport: customTransport}
 	client.InstallProtocol("https", githttp.NewClient(customClient))
@@ -73,7 +72,7 @@ func TestCVEToOSV_429(t *testing.T) {
 	cache := &git.InMemoryRepoTagsCache{}
 	outDir := t.TempDir()
 
-	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, nil, cache, metrics)
+	_, _, outcome := CVEToOSV(cve, []string{"https://github.com/foo/bar"}, nil, cache, metrics, customClient)
 
 	// It should fail because of the 429 error causing unresolved fixes
 	if outcome != models.Error {
@@ -97,6 +96,37 @@ func TestCVEToOSV_429(t *testing.T) {
 	}
 }
 
+func TestCVEToOSV_Rejected(t *testing.T) {
+	cve := models.NVDCVE{
+		ID: "CVE-2025-54321",
+		VulnStatus: func() *string {
+			s := "Rejected"
+			return &s
+		}(),
+		LastModified: models.NVDTime{Time: func() time.Time {
+			t, _ := time.Parse(time.RFC3339, "2025-06-01T12:00:00Z")
+			return t
+		}()},
+	}
+
+	metrics := &models.ConversionMetrics{}
+	cache := &git.InMemoryRepoTagsCache{}
+
+	vuln, _, outcome := CVEToOSV(cve, nil, nil, cache, metrics, http.DefaultClient)
+
+	if outcome != models.Rejected {
+		t.Errorf("Expected outcome models.Rejected, got %v", outcome)
+	}
+
+	if vuln == nil {
+		t.Fatal("Expected non-nil vulnerability for rejected CVE")
+	}
+
+	if vuln.GetWithdrawn() == nil {
+		t.Error("Expected Withdrawn timestamp to be set for rejected CVE")
+	}
+}
+
 func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 	cve := models.NVDCVE{
 		ID: "CVE-2025-12345",
@@ -115,7 +145,7 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 	var firstResult []*osvschema.Reference
 	for i := range 10 {
 		cache := &git.InMemoryRepoTagsCache{}
-		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics)
+		vuln, _, _ := CVEToOSV(cve, nil, nil, cache, metrics, http.DefaultClient)
 		if vuln == nil {
 			t.Fatalf("Iteration %d produced nil vulnerability", i)
 		}
@@ -132,16 +162,10 @@ func TestCVEToOSV_ReferencesDeterminism(t *testing.T) {
 }
 
 func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
-	originalTransport := http.DefaultTransport
-	customTransport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       http.NoBody,
-			Request:    req,
-		}, nil
-	})
-	http.DefaultTransport = customTransport
-	defer func() { http.DefaultTransport = originalTransport }()
+	r := testutils.SetupGitVCR(t)
+	oldDelay := git.BackoffBaseDelay
+	git.BackoffBaseDelay = 1 * time.Millisecond
+	defer func() { git.BackoffBaseDelay = oldDelay }()
 
 	data, err := os.ReadFile(filepath.Join("testdata", "test.json"))
 	if err != nil {
@@ -270,10 +294,10 @@ func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
 				CVEID: cve.ID,
 				CNA:   "nvd",
 			}
-			repos := FindRepos(cve, vpCache, gitCache, metrics, http.DefaultClient)
+			repos := FindRepos(cve, vpCache, gitCache, metrics, r.GetDefaultClient())
 			metrics.Repos = repos
 
-			vuln, _, outcome := CVEToOSV(cve, repos, vpCache, gitCache, metrics)
+			vuln, _, outcome := CVEToOSV(cve, repos, vpCache, gitCache, metrics, r.GetDefaultClient())
 			if outcome != tc.expectedOutcome {
 				t.Fatalf("Expected outcome %v, got %v during CVEToOSV for %s", tc.expectedOutcome, outcome, cve.ID)
 			}

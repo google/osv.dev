@@ -21,10 +21,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	"github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -41,6 +41,7 @@ var ErrUploadSkipped = errors.New("upload skipped")
 
 // writeToDisk writes the vulnerability to a local file.
 // It returns an error if the file could not be written.
+// Writes out withdrawn records regardless of whether they don't already exist.
 func writeToDisk(v *osvschema.Vulnerability, preModifiedBuf []byte, outputPrefix string) error {
 	filename := v.GetId() + ".json"
 	filePath := path.Join(outputPrefix, filename)
@@ -173,7 +174,7 @@ func handleOverride(ctx context.Context, v *osvschema.Vulnerability, overridesBk
 func VulnWorker(ctx context.Context, vulnChan <-chan *osvschema.Vulnerability, outBkt, overridesBkt *storage.BucketHandle, gcsHelper *gcs.Helper, outputPrefix string, counter *atomic.Uint64) {
 	for v := range vulnChan {
 		vulnID := v.GetId()
-		if len(v.GetAffected()) == 0 {
+		if len(v.GetAffected()) == 0 && v.GetWithdrawn() == nil {
 			logger.Warn("Skipping OSV record as no affected versions found.", slog.String("id", vulnID))
 			continue
 		}

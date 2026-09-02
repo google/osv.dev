@@ -4,6 +4,11 @@
     "title": "OSV",
     "version": "1.0"
   },
+  "tags": [
+    {
+      "name": "OSV"
+    }
+  ],
   "consumes": [
     "application/json"
   ],
@@ -31,7 +36,7 @@
         },
         "parameters": [
           {
-            "name": "body",
+            "name": "query",
             "in": "body",
             "required": true,
             "schema": {
@@ -46,7 +51,7 @@
     },
     "/v1/querybatch": {
       "post": {
-        "summary": "Query vulnerabilities (batched) for given package versions and commits.\nThis currently allows a maximum of 1000 package versions to be included in a single query.",
+        "summary": "Query vulnerabilities (batched) for given package versions and commits.\nThis currently allows a maximum of 1000 package versions to be included in\na single query.",
         "operationId": "OSV_QueryAffectedBatch",
         "responses": {
           "200": {
@@ -64,7 +69,7 @@
         },
         "parameters": [
           {
-            "name": "body",
+            "name": "query",
             "in": "body",
             "required": true,
             "schema": {
@@ -128,7 +133,7 @@
         },
         "parameters": [
           {
-            "name": "body",
+            "name": "query",
             "in": "body",
             "required": true,
             "schema": {
@@ -140,19 +145,69 @@
           "OSV"
         ]
       }
+    },
+    "/v1experimental/importfindings/{source}": {
+      "get": {
+        "summary": "Get import findings per source.",
+        "operationId": "OSV_ImportFindings",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ImportFindingList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OSV"
+        ]
+      }
     }
   },
   "definitions": {
+    "FileHashHashType": {
+      "type": "string",
+      "enum": [
+        "MD5"
+      ],
+      "default": "MD5"
+    },
+    "SeveritySource": {
+      "type": "string",
+      "enum": [
+        "SOURCE_UNSPECIFIED",
+        "NVD",
+        "CNA",
+        "SELF"
+      ],
+      "default": "SOURCE_UNSPECIFIED",
+      "description": "Source of the severity."
+    },
     "osvAffected": {
       "type": "object",
       "properties": {
         "package": {
           "$ref": "#/definitions/osvPackage",
-          "description": "Required. Package information."
+          "description": "Optional. Package information."
         },
         "ranges": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvRange"
           },
           "description": "Required. Range information."
@@ -164,17 +219,18 @@
           },
           "description": "Optional. List of affected versions."
         },
-        "ecosystemSpecific": {
+        "ecosystem_specific": {
           "type": "object",
           "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the ecosystem for which the record applies."
         },
-        "databaseSpecific": {
+        "database_specific": {
           "type": "object",
           "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
         },
         "severity": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvSeverity"
           },
           "description": "Optional. Severity of the vulnerability for this package."
@@ -234,12 +290,57 @@
           "type": "string",
           "description": "The limit to apply to the range."
         },
-        "lastAffected": {
+        "last_affected": {
           "type": "string",
           "description": "The last affected version."
         }
       },
       "description": "Version events."
+    },
+    "osvImportFinding": {
+      "type": "object",
+      "properties": {
+        "bug_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/osvImportFindingType"
+          }
+        },
+        "first_seen": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_attempt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "An importfinding entry.\nThe protobuf representation is *NOT* stable and only used for implementing\nthe JSON based API."
+    },
+    "osvImportFindingType": {
+      "type": "string",
+      "enum": [
+        "IMPORT_FINDING_TYPE_NONE",
+        "IMPORT_FINDING_TYPE_DELETED",
+        "IMPORT_FINDING_TYPE_INVALID_JSON",
+        "IMPORT_FINDING_TYPE_INVALID_PACKAGE",
+        "IMPORT_FINDING_TYPE_INVALID_PURL",
+        "IMPORT_FINDING_TYPE_INVALID_VERSION",
+        "IMPORT_FINDING_TYPE_INVALID_COMMIT",
+        "IMPORT_FINDING_TYPE_INVALID_RANGE",
+        "IMPORT_FINDING_TYPE_INVALID_RECORD",
+        "IMPORT_FINDING_TYPE_INVALID_ALIASES",
+        "IMPORT_FINDING_TYPE_INVALID_UPSTREAM",
+        "IMPORT_FINDING_TYPE_INVALID_RELATED",
+        "IMPORT_FINDING_TYPE_BAD_ALIASED_CVE"
+      ],
+      "default": "IMPORT_FINDING_TYPE_NONE"
     },
     "osvPackage": {
       "type": "object",
@@ -250,7 +351,7 @@
         },
         "ecosystem": {
           "type": "string",
-          "description": "Required. The ecosystem for this package. \nFor the complete list of valid ecosystem names, see\n<https://ossf.github.io/osv-schema/#affectedpackage-field>."
+          "description": "Required. The ecosystem for this package.\nFor the complete list of valid ecosystem names, see\n<https://ossf.github.io/osv-schema/#affectedpackage-field>."
         },
         "purl": {
           "type": "string",
@@ -273,9 +374,14 @@
         "events": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvEvent"
           },
           "description": "Required. Version event information."
+        },
+        "database_specific": {
+          "type": "object",
+          "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
         }
       },
       "description": "Affected ranges."
@@ -309,15 +415,20 @@
       "type": "string",
       "enum": [
         "NONE",
-        "WEB",
         "ADVISORY",
-        "REPORT",
-        "FIX",
-        "PACKAGE",
         "ARTICLE",
-        "EVIDENCE"
+        "DETECTION",
+        "DISCUSSION",
+        "EVIDENCE",
+        "FIX",
+        "GIT",
+        "INTRODUCED",
+        "PACKAGE",
+        "REPORT",
+        "WEB"
       ],
-      "default": "NONE"
+      "default": "NONE",
+      "description": " - NONE: Next ID = 12."
     },
     "osvSeverity": {
       "type": "object",
@@ -329,6 +440,10 @@
         "score": {
           "type": "string",
           "description": "The quantitative score."
+        },
+        "source": {
+          "$ref": "#/definitions/SeveritySource",
+          "description": "Optional. The source of this severity assessment."
         }
       }
     },
@@ -336,9 +451,10 @@
       "type": "string",
       "enum": [
         "UNSPECIFIED",
-        "CVSS_V4",
         "CVSS_V3",
-        "CVSS_V2"
+        "CVSS_V2",
+        "CVSS_V4",
+        "Ubuntu"
       ],
       "default": "UNSPECIFIED",
       "description": "Type of the severity."
@@ -346,13 +462,13 @@
     "osvVulnerability": {
       "type": "object",
       "properties": {
-        "schemaVersion": {
+        "schema_version": {
           "type": "string",
           "description": "The OSV schema version."
         },
         "id": {
           "type": "string",
-          "description": "The `id` field is a unique identifier for the vulnerability entry. It is a\nstring of the format `<DB>-<ENTRYID>`, where `DB` names the database and\n`ENTRYID` is in the format used by the database. For example:\n\u201cOSV-2020-111\u201d, \u201cCVE-2021-3114\u201d, or \u201cGHSA-vp9c-fpxx-744v\u201d."
+          "description": "The `id` field is a unique identifier for the vulnerability entry. It is a\nstring of the format `<DB>-<ENTRYID>`, where `DB` names the database and\n`ENTRYID` is in the format used by the database. For example:\n“OSV-2020-111”, “CVE-2021-3114”, or “GHSA-vp9c-fpxx-744v”."
         },
         "published": {
           "type": "string",
@@ -383,6 +499,13 @@
           },
           "description": "Optional. List of IDs of closely related vulnerabilities, such as the same\nproblem in alternate ecosystems."
         },
+        "upstream": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. List of IDs of upstream vulnerabilities of a vulnerability."
+        },
         "summary": {
           "type": "string",
           "description": "Required. One line human readable summary for the vulnerability. It is\nrecommended to keep this under 120 characters."
@@ -394,6 +517,7 @@
         "affected": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvAffected"
           },
           "description": "Required. Affected commit ranges and versions."
@@ -401,17 +525,19 @@
         "references": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvReference"
           },
-          "description": "Optional. URLs to more information/advisories (including the\nscheme e.g \"https://\")."
+          "description": "Optional. URLs to more information/advisories (including the\nscheme e.g. \"https://\")."
         },
-        "databaseSpecific": {
+        "database_specific": {
           "type": "object",
           "description": "Optional. JSON object holding additional information about the\nvulnerability as defined by the database for which the record applies."
         },
         "severity": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvSeverity"
           },
           "description": "Optional. Severity of the vulnerability."
@@ -419,6 +545,7 @@
         "credits": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvCredit"
           },
           "description": "Optional. Credits for the vulnerability."
@@ -429,14 +556,11 @@
     "protobufAny": {
       "type": "object",
       "properties": {
-        "typeUrl": {
+        "@type": {
           "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
         }
-      }
+      },
+      "additionalProperties": {}
     },
     "protobufNullValue": {
       "type": "string",
@@ -444,7 +568,7 @@
         "NULL_VALUE"
       ],
       "default": "NULL_VALUE",
-      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+      "description": "Represents a JSON `null`.\n\n`NullValue` is a sentinel, using an enum with only one value to represent\nthe null value for the `Value` type union.\n\nA field of type `NullValue` with any value other than `0` is considered\ninvalid. Most ProtoJSON serializers will emit a Value with a `null_value` set\nas a JSON `null` regardless of the integer value, and so will round trip to\na `0` value.\n\n - NULL_VALUE: Null value."
     },
     "rpcStatus": {
       "type": "object",
@@ -459,6 +583,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }
@@ -470,6 +595,7 @@
         "queries": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1Query"
           },
           "description": "The queries that form this batch query."
@@ -483,6 +609,7 @@
         "results": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1VulnerabilityList"
           }
         }
@@ -492,12 +619,12 @@
     "v1FileHash": {
       "type": "object",
       "properties": {
-        "filePath": {
+        "file_path": {
           "type": "string",
           "description": "The file path inside the repository, relative to the repository root."
         },
-        "hashType": {
-          "type": "string"
+        "hash_type": {
+          "$ref": "#/definitions/FileHashHashType"
         },
         "hash": {
           "type": "string",
@@ -505,6 +632,19 @@
         }
       },
       "description": "Information about the files in the repository\nto identify the version."
+    },
+    "v1ImportFindingList": {
+      "type": "object",
+      "properties": {
+        "invalid_records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/osvImportFinding"
+          }
+        }
+      },
+      "description": "Result of ImportFindings."
     },
     "v1Query": {
       "type": "object",
@@ -521,7 +661,7 @@
           "$ref": "#/definitions/osvPackage",
           "description": "The package to query against. When a `commit` hash is given, this is\noptional."
         },
-        "pageToken": {
+        "page_token": {
           "type": "string"
         }
       },
@@ -539,13 +679,23 @@
           "$ref": "#/definitions/v1VersionRepositoryInformation",
           "description": "Information about the upstream repository."
         },
-        "osvIdentifier": {
+        "osv_identifier": {
           "$ref": "#/definitions/osvPackage",
           "description": "The OSV identifier."
         },
         "cpe23": {
           "type": "string",
           "description": "CPE 2.3."
+        },
+        "minimum_file_matches": {
+          "type": "string",
+          "format": "int64",
+          "description": "Definite number of files that have matched."
+        },
+        "estimated_diff_files": {
+          "type": "string",
+          "format": "int64",
+          "description": "Estimated number of files that are different."
         }
       },
       "description": "Match information for the provided VersionQuery."
@@ -556,6 +706,7 @@
         "matches": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1VersionMatch"
           }
         }
@@ -569,9 +720,10 @@
           "type": "string",
           "description": "The name of the dependency. Can be empty."
         },
-        "fileHashes": {
+        "file_hashes": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/v1FileHash"
           }
         }
@@ -588,11 +740,6 @@
           "type": "string",
           "description": "Source address of the repository."
         },
-        "commit": {
-          "type": "string",
-          "format": "byte",
-          "description": "Commit hash."
-        },
         "tag": {
           "type": "string",
           "title": "Commit tag"
@@ -600,6 +747,10 @@
         "version": {
           "type": "string",
           "title": "Parsed version from commit tag"
+        },
+        "commit": {
+          "type": "string",
+          "description": "Commit hash hex."
         }
       }
     },
@@ -617,10 +768,11 @@
         "vulns": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/osvVulnerability"
           }
         },
-        "nextPageToken": {
+        "next_page_token": {
           "type": "string"
         }
       },

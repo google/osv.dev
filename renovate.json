@@ -41,7 +41,7 @@
     },
     {
       "matchDepNames": [
-        "gcp/workers/worker/osv-test"
+        "gcp/workers/oss_fuzz_worker/osv-test"
       ],
       "enabled": false
     },
@@ -53,16 +53,6 @@
     },
     {
       "matchFileNames": [
-        "gcp/api/**"
-      ],
-      "matchPackageNames": [
-        "grpcio*"
-      ],
-      "enabled": false
-    },
-    {
-      "matchFileNames": [
-        "gcp/api/**",
         "gcp/functions/**",
         "gcp/workers/**"
       ],

@@ -4,6 +4,10 @@ resource "google_firestore_database" "datastore" {
   name        = var.datastore_name
   location_id = "us-west2"
   type        = "DATASTORE_MODE"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # GCP Bucket where protos and full JSON exports are stored
@@ -36,6 +40,18 @@ resource "google_storage_bucket" "osv_vulnerabilities_export" {
       with_state                 = "ANY"
     }
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  dynamic "logging" {
+    for_each = var.logs_bucket != "" ? [1] : []
+    content {
+      log_bucket        = var.logs_bucket
+      log_object_prefix = "osv-vulnerabilities"
+    }
+  }
 }
 
 # GCP bucket where affected commits are backed up.
@@ -51,5 +67,9 @@ resource "google_storage_bucket" "affected_commits_backups_bucket" {
     condition {
       age = var.affected_commits_backups_bucket_retention_days
     }
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }

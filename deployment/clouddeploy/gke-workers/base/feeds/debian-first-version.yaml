@@ -17,9 +17,6 @@ spec:
           - name: debian-first-version
             image: run_first_package_finder
             imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
             resources:
               requests:
                 cpu: "1"
@@ -28,7 +25,3 @@ spec:
                 cpu: "1"
                 memory: "2G"
           restartPolicy: OnFailure
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

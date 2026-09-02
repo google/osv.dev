@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/conversion/writer"
-	"github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/writer"
+	"github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -136,18 +136,18 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 }
 
 func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
-	var baseOSV *osvschema.Vulnerability
-	if cve5 != nil && nvd != nil {
-		baseOSV = combineTwoOSVRecords(cve5, nvd)
-	} else if cve5 != nil {
-		baseOSV = cve5
-	} else if nvd != nil {
-		baseOSV = nvd
-	} else {
+	if (cve5.GetWithdrawn() != nil) || (nvd.GetWithdrawn() != nil) {
 		return nil
 	}
 
-	return baseOSV
+	if cve5 != nil && nvd != nil {
+		return combineTwoOSVRecords(cve5, nvd)
+	}
+	if cve5 != nil {
+		return cve5
+	}
+
+	return nvd
 }
 
 func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability) {
@@ -367,6 +367,7 @@ func main() {
 // combineTwoOSVRecords takes two osv records and combines them into one
 func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
+
 	if baseOSV.GetDetails() == "" && nvd.GetDetails() != "" {
 		baseOSV.Details = nvd.GetDetails()
 	}

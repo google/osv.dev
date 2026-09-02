@@ -23,7 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-type mockRelationsStore struct{}
+type mockRelationsStore struct {
+	models.UnimplementedRelationsStore
+}
 
 func (m mockRelationsStore) GetAliases(_ context.Context, _ string) (*models.GetAliasResult, error) {
 	return nil, models.ErrNotFound

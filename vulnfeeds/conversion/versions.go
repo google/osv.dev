@@ -27,8 +27,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/knqyf263/go-cpe/naming"
 )
 
@@ -424,7 +424,7 @@ func repo(u string) (string, error) {
 }
 
 // Returns the commit ID from supported links.
-func Commit(u string) (string, string, models.VersionSource, error) {
+func Commit(u string, httpClient *http.Client) (string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return "", "", models.VersionSourceNone, err
@@ -499,7 +499,7 @@ func Commit(u string) (string, string, models.VersionSource, error) {
 	// Support for resolving a Github tag to a commit hash
 	// example: https://github.com/redis/redis/releases/tag/6.2.17
 	if parsedURL.Host == "github.com" {
-		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, gitSHA1Regex)
+		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
 		if possibleCommitHash != "" && err == nil {
 			return possibleCommitHash, originalTag, models.VersionSourceRefsTag, nil
 		}
@@ -508,7 +508,7 @@ func Commit(u string) (string, string, models.VersionSource, error) {
 	return "", "", models.VersionSourceNone, fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (string, string, error) {
+func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, string, error) {
 	directory, tag := path.Split(parsedURL.Path)
 	if !strings.HasSuffix(directory, "tag/") {
 		return "", "", errors.New("no tag found")
@@ -524,7 +524,7 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp) (s
 		return "", "", err
 	}
 
-	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil)
+	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil, httpClient)
 	if err != nil {
 		return "", "", err
 	}
@@ -587,7 +587,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 		return "", "", "", models.VersionSourceNone, err
 	}
 
-	c, tag, source, err := Commit(link)
+	c, tag, source, err := Commit(link, httpClient)
 	if err != nil {
 		return "", "", "", models.VersionSourceNone, err
 	}
@@ -1071,7 +1071,7 @@ func RefAcceptable(ref models.Reference, tagDenyList []string) bool {
 
 // Adds the repo to the cache for the Vendor/Product combination if not already present.
 // *** Does external calls to verify repos ***
-func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
+func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string, httpClient *http.Client) {
 	if vp == nil {
 		return
 	}
@@ -1082,7 +1082,7 @@ func (c *VPRepoCache) MaybeUpdate(vp *VendorProduct, repo string) {
 		return
 	}
 	// Avoid polluting the cache with existent-but-useless repos.
-	if valid, _ := git.ValidRepoAndHasUsableRefs(repo); valid {
+	if valid, _ := git.ValidRepoAndHasUsableRefs(repo, httpClient); valid {
 		c.m[*vp] = append(c.m[*vp], repo)
 	}
 }
@@ -1127,11 +1127,11 @@ func (c *VPRepoCache) Initialize(vpMap VendorProductToRepoMap) {
 // Takes a CVE ID string (for logging), VersionInfo with AffectedVersions and
 // typically no AffectedCommits and attempts to add AffectedCommits (including Fixed commits) where there aren't any.
 // Refuses to add the same commit to AffectedCommits more than once.
-func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics) {
+func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoTagsCache, metrics *models.ConversionMetrics, httpClient *http.Client) {
 	// versions is a VersionInfo with AffectedVersions and typically no AffectedCommits
 	// v is a VersionInfo with AffectedCommits (containing Fixed commits) included
 	for _, repo := range repos {
-		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache, httpClient)
 		if err != nil {
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
@@ -1250,13 +1250,13 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, _, _, err = Commit(ref.URL)
+		_, _, _, err = Commit(ref.URL, httpClient)
 		// Check if it was previously found to be bad:
 		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
 			continue
 		}
 		// If it's any other repo-shaped URL, it's only useful if it has tags.
-		if isValid, _ := validateRepo(repo, err == nil, repoTagsCache); !isValid {
+		if isValid, _ := validateRepo(repo, err == nil, repoTagsCache, httpClient); !isValid {
 			continue
 		}
 		repos = append(repos, repo)
@@ -1302,13 +1302,13 @@ func ReposFromReferencesCVEList(refs []models.Reference, tagDenyList []string, m
 	return repos
 }
 
-func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache) (bool, error) {
+func validateRepo(repo string, isCommit bool, cache git.RepoTagsCache, httpClient *http.Client) (bool, error) {
 	var valid bool
 	var err error
 	if isCommit {
-		valid, err = git.ValidRepo(repo)
+		valid, err = git.ValidRepo(repo, httpClient)
 	} else {
-		valid, err = git.ValidRepoAndHasUsableRefs(repo)
+		valid, err = git.ValidRepoAndHasUsableRefs(repo, httpClient)
 	}
 	if !valid && cache != nil {
 		if err != nil && git.IsRateLimit(err) {

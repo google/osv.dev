@@ -4,7 +4,6 @@ package metrics
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -25,7 +24,7 @@ type Server struct {
 func NewServer(addr string) *Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
@@ -47,7 +46,7 @@ func (s *Server) Handler() http.Handler {
 // Start runs the metrics server in a background goroutine and gracefully shuts down when ctx is done.
 func (s *Server) Start(ctx context.Context) {
 	go func() {
-		logger.InfoContext(ctx, fmt.Sprintf("Starting Prometheus metrics server on %s", s.httpServer.Addr))
+		logger.InfoContext(ctx, "Starting Prometheus metrics server on "+s.httpServer.Addr)
 		if err := s.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.ErrorContext(ctx, "Metrics server error", slog.Any("error", err))
 		}
@@ -55,7 +54,7 @@ func (s *Server) Start(ctx context.Context) {
 
 	go func() {
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
 			logger.ErrorContext(ctx, "Failed to gracefully shutdown metrics server", slog.Any("error", err))
@@ -72,5 +71,6 @@ func StartMetricsServer(ctx context.Context, port string) *Server {
 	addr := ":" + port
 	srv := NewServer(addr)
 	srv.Start(ctx)
+
 	return srv
 }

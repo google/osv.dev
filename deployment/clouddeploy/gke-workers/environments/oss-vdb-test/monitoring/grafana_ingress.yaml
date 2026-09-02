@@ -10,6 +10,14 @@ spec:
     enabled: true
     oauthclientCredentials:
       secretName: grafana-iap-oauth
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /api/health
+    port: 3000
 ---
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate

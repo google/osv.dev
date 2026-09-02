@@ -5,6 +5,7 @@ import (
 	"compress/flate"
 	"context"
 	"hash/crc32"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -20,15 +21,9 @@ import (
 
 var flateWriterPool = sync.Pool{
 	New: func() any {
-		fw, _ := flate.NewWriter(ioDiscard{}, flate.DefaultCompression)
+		fw, _ := flate.NewWriter(io.Discard, flate.DefaultCompression)
 		return fw
 	},
-}
-
-type ioDiscard struct{}
-
-func (ioDiscard) Write(p []byte) (int, error) {
-	return len(p), nil
 }
 
 // downloadThenProcessor is a worker that receives GCS object handles from inCh, downloads

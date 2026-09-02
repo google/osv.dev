@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"slices"
 	"sort"
 	"time"
 
 	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
@@ -153,7 +155,14 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 }
 
 // CVEToOSV converts a models.CVE5 object into an OSV Vulerability record and returns it along with its conversion metrics.
-func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models.ConversionMetrics) {
+func CVEToOSV(cve models.CVE5, sourceLink string, cache git.RepoTagsCache, httpClient *http.Client) (*vulns.Vulnerability, *models.ConversionMetrics) {
+	if httpClient == nil {
+		panic("http client not set")
+	}
+	if cache == nil {
+		panic("git cache not set")
+	}
+
 	cveID := cve.Metadata.CVEID
 	cnaAssigner := cve.Metadata.AssignerShortName
 	references := identifyPossibleURLs(cve)
@@ -181,7 +190,7 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 
 	// Add affected version information.
 	versionExtractor := GetVersionExtractor(cve.Metadata.AssignerShortName)
-	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos)
+	versionExtractor.ExtractVersions(cve, v, &metrics, metrics.Repos, cache, httpClient)
 
 	conversion.GroupAffectedRanges(v.Affected)
 
@@ -191,9 +200,9 @@ func CVEToOSV(cve models.CVE5, sourceLink string) (*vulns.Vulnerability, *models
 }
 
 // ConvertAndExportCVEToOSV is the main function for this file. It takes a CVE,
-// converts it into an OSV record, collects metrics, and writes both to sinks if provided.
-func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string) (*models.ConversionMetrics, error) {
-	v, metrics := CVEToOSV(cve, sourceLink)
+// converts it into an OSV record, collects metrics, and writes both to disk.
+func ConvertAndExportCVEToOSV(cve models.CVE5, vulnSink io.Writer, metricsSink io.Writer, sourceLink string, cache git.RepoTagsCache, httpClient *http.Client) (*models.ConversionMetrics, error) {
+	v, metrics := CVEToOSV(cve, sourceLink, cache, httpClient)
 
 	if vulnSink != nil {
 		if err := v.ToJSON(vulnSink); err != nil {

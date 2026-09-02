@@ -39,6 +39,8 @@ module "osv_pipeline" {
     "reimport",
     "cves",
   ]
+
+  cluster_location = "us-west2-b"
 }
 
 module "osv_test" {

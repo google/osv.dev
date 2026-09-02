@@ -4666,6 +4666,14 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-14457",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-18798",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-22795",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4766,7 +4774,31 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-54874",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-54876",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-63072",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-63073",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-63074",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-63075",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-63076",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -7893,6 +7925,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-cfqr-cjx5-5jcm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-f2ff-p2ww-7p4p",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -9142,6 +9178,10 @@
         },
         {
           "id": "GHSA-3496-9g83-7v6x",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cfqr-cjx5-5jcm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

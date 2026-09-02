@@ -275,14 +275,14 @@ cffi = {version = ">=1.17.0", markers = "python_version >= \"3.13\""}
 
 [[package]]
 name = "cachelib"
-version = "0.15.4"
+version = "0.17.0"
 description = "A collection of cache libraries in the same API interface."
 optional = false
 python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "cachelib-0.15.4-py3-none-any.whl", hash = "sha256:500f447d6ebf52654bcbb1b7ed1329daf890252227f09933870a01a84798687a"},
-    {file = "cachelib-0.15.4.tar.gz", hash = "sha256:66fb75f48f9077713c8a1ce2319f523d08418a1576f2cbdaad8aad15c884afa0"},
+    {file = "cachelib-0.17.0-py3-none-any.whl", hash = "sha256:f83909b6f78741c3a5d76d292d13bf24964ffb13e00ea1d18f92e20599766ce0"},
+    {file = "cachelib-0.17.0.tar.gz", hash = "sha256:f3c7dc8d3c1132ab699681ffdf8a52d341d9425ac1401c538cf0b1d87b1677c8"},
 ]
 
 [package.extras]
@@ -744,19 +744,19 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "flask-caching"
-version = "2.4.1"
+version = "2.5.0"
 description = "Adds caching support to Flask applications."
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.11"
 groups = ["main"]
 files = [
-    {file = "flask_caching-2.4.1-py3-none-any.whl", hash = "sha256:5f5555d610ec1f230c8200ae00c1c723ee562f657c22f896b806f4689513b952"},
-    {file = "flask_caching-2.4.1.tar.gz", hash = "sha256:ecef4ca80b9cb1fa01d461373a0fce441527cd57eecee1aa71c1f6d750d7ff77"},
+    {file = "flask_caching-2.5.0-py3-none-any.whl", hash = "sha256:8e625acd99759171a428ceb9b669ba6743c11dd9b37ace4e0ea7a3ee34097ccd"},
+    {file = "flask_caching-2.5.0.tar.gz", hash = "sha256:5a8779b54695f96e1b4a7a149dd8c6d863433ea66327cde4311ce7fd7b57391f"},
 ]
 
 [package.dependencies]
-cachelib = ">=0.9.0"
-flask = ">=2.0"
+cachelib = ">=0.17.0"
+flask = ">=3.0"
 
 [[package]]
 name = "flask-compress"
@@ -809,14 +809,14 @@ grpc = ["grpcio (>=1.59.0,<2.0.0)", "grpcio (>=1.75.1,<2.0.0) ; python_version >
 
 [[package]]
 name = "google-auth"
-version = "2.56.3"
+version = "2.57.0"
 description = "Google Authentication Library"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_auth-2.56.3-py3-none-any.whl", hash = "sha256:8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53"},
-    {file = "google_auth-2.56.3.tar.gz", hash = "sha256:40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c"},
+    {file = "google_auth-2.57.0-py3-none-any.whl", hash = "sha256:180dafe015cfb62193bea26b677500fab5b9fd51a1e825ebf3ad9b182047ae59"},
+    {file = "google_auth-2.57.0.tar.gz", hash = "sha256:9b4f96d6a1feb5f7201231f47cfb3de08d8f176f8a61f9e461555116e95a8789"},
 ]
 
 [package.dependencies]
@@ -921,14 +921,14 @@ protobuf = ">=6.33.5,<8.0.0"
 
 [[package]]
 name = "google-cloud-logging"
-version = "3.16.2"
+version = "3.16.3"
 description = "Google Cloud Logging API client library"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_logging-3.16.2-py3-none-any.whl", hash = "sha256:797d4d50dd1c0fea6a851a911bbaa092e3690b45786fd8ea438ef762eeeb8f35"},
-    {file = "google_cloud_logging-3.16.2.tar.gz", hash = "sha256:d65044004d3a2ae6eced1f0118f0c44dc551872ddb837ba815f75d159ca148c8"},
+    {file = "google_cloud_logging-3.16.3-py3-none-any.whl", hash = "sha256:6275384f21d4b142d25731de3107de38408e807742290a9939e19ea68de8c283"},
+    {file = "google_cloud_logging-3.16.3.tar.gz", hash = "sha256:5d7924bbb33c066bb43f70d33ba66749ff1c29b207de4c80b2bce1aacd53f676"},
 ]
 
 [package.dependencies]
@@ -948,14 +948,14 @@ protobuf = ">=6.33.5,<8.0.0"
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.5.1"
+version = "2.6.0"
 description = "NDB library for Google Cloud Datastore"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.5.1-py3-none-any.whl", hash = "sha256:d376a6671223a8fc3a264543a70fe1692ea0528c6234bb98676f25a148b4efee"},
-    {file = "google_cloud_ndb-2.5.1.tar.gz", hash = "sha256:2d3000904ac13af715cc8192b0bcb8c7b66f68027a9c64717a4587498c0b739b"},
+    {file = "google_cloud_ndb-2.6.0-py3-none-any.whl", hash = "sha256:90ea6f22d691adb3244956f609fcb4a905111230385060a8873a3194244ce205"},
+    {file = "google_cloud_ndb-2.6.0.tar.gz", hash = "sha256:379fb00e0414efc81f7f5a4d3ae71a87d4006bef09d22e98558dbb4d2cc06f63"},
 ]
 
 [package.dependencies]
@@ -1208,26 +1208,23 @@ protobuf = ">=6.33.5,<8.0.0"
 
 [[package]]
 name = "gunicorn"
-version = "26.0.0"
+version = "26.2.0"
 description = "WSGI HTTP Server for UNIX"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "gunicorn-26.0.0-py3-none-any.whl", hash = "sha256:40233d26a5f0d1872916188c276e21641155111c2853f0c2cd55260aec0d24fc"},
-    {file = "gunicorn-26.0.0.tar.gz", hash = "sha256:ca9346f85e3a4aeeb64d491045c16b9a35647abd37ea15efe53080eb8b090baf"},
+    {file = "gunicorn-26.2.0-py3-none-any.whl", hash = "sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3"},
+    {file = "gunicorn-26.2.0.tar.gz", hash = "sha256:62b864895d9ebff0b2f9867ba04fe811c93121596540830c9c916d0769668447"},
 ]
 
-[package.dependencies]
-packaging = "*"
-
 [package.extras]
-fast = ["gunicorn_h1c (>=0.6.5)"]
-gevent = ["gevent (>=24.10.1)"]
-http2 = ["h2 (>=4.1.0)"]
+fast = ["gunicorn_h1c (>=0.6.9)"]
+gevent = ["gevent (>=24.10.1)", "packaging"]
+http2 = ["h2 (>=4.4.1)"]
 setproctitle = ["setproctitle"]
-testing = ["coverage", "gevent (>=24.10.1)", "h2 (>=4.1.0)", "httpx[http2]", "pytest", "pytest-asyncio", "pytest-cov", "uvloop (>=0.19.0)"]
-tornado = ["tornado (>=6.5.0)"]
+testing = ["coverage", "gevent (>=24.10.1)", "h2 (>=4.4.1)", "httpx[http2] (>=0.23.0)", "inotify (>=0.2.10) ; sys_platform == \"linux\"", "packaging", "pytest (>=9.0.3)", "pytest-asyncio", "pytest-cov", "uvloop (>=0.19.0)"]
+tornado = ["tornado (>=6.5.7)"]
 
 [[package]]
 name = "idna"
@@ -2184,4 +2181,4 @@ platformdirs = ">=3.5.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "92409201c8194fe8852238a65e7126da07915013955f23b394ec35756c89982b"
+content-hash = "70fa5922cdfeee29bc030d6fc1bd16785210aba169e59e0d3b7a24945982b905"

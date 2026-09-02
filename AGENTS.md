@@ -87,25 +87,51 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
 ---
 
 ## Code Style & Formatting
-Always format and lint your code before proposing changes. The repository provides a unified script to check for style violations:
+Always format and lint your code before proposing changes. The repository provides a unified script to check for style violations with smart incremental checking:
 
-- **Run Linters & Format Checks**:
+- **Run Linters & Format Checks (Smart Auto-Detect)**:
+  By default, this automatically checks only the files and Go modules changed relative to `master` (or full repo if on clean master):
   ```bash
   poetry run tools/lint_and_format.sh
   ```
-  *Note: This script only checks for violations and does not automatically format code.*
+- **Run Full Check on Entire Repo**:
+  ```bash
+  poetry run tools/lint_and_format.sh --all
+  ```
+- **Run on Staged Changes Only**:
+  ```bash
+  poetry run tools/lint_and_format.sh --staged
+  ```
+- **Automatically Fix/Format Files**:
+  ```bash
+  poetry run tools/lint_and_format.sh --fix
+  ```
+- **Lint Specific Files**:
+  ```bash
+  poetry run tools/lint_and_format.sh osv/bug.py go/cmd/worker/main.go
+  ```
 
 ### Python Standards
-- Formatter: `yapf` (config: [`.style.yapf`](.style.yapf))
-- Linter: `pylint` (config: [`.pylintrc`](.pylintrc))
+- Formatter: `yapf` (config: [`.style.yapf`](.style.yapf), runs in parallel via `-p`)
+- Linter: `pylint` (config: [`.pylintrc`](.pylintrc), runs in parallel via `-j 0`)
 - **Formatting Command**: To automatically format Python files, run:
   ```bash
   poetry run yapf -i <path_to_file>.py
   ```
+  *(Or run `poetry run tools/lint_and_format.sh --fix`)*
 - **Rule**: When running Python scripts, always use `poetry run`.
 
 ### Go Standards
-- Linter: `golangci-lint` (run automatically by the lint script per module).
+- Linter: `golangci-lint`
+- **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
+  ```bash
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...
+  ```
+  *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
+- **Formatting Command**:
+  ```bash
+  cd go && gofmt -s -w .
+  ```
 - **Rule**: Go code must follow standard Go formatting guidelines.
 
 ### Git Commit Guidelines
@@ -153,12 +179,22 @@ Many tests use expected outputs saved directly in the source tree:
   ```
   Always inspect the resulting `git diff` to ensure the API query output changes are expected.
 
-### Local UI & Datastore Emulator
-- For local UI testing without GCP project credentials, run the website using a local mock dataset and a datastore emulator:
+### Local UI & Website Development
+- **Website DevServer (Go-native)**:
+  Run the local Go website development server against a live flat mock dataset with hot reloading (no GCP credentials or Datastore emulator required):
   ```bash
-  make run-website-emulator
+  make run-website-devserver
   ```
-  - Add custom mock testcases inside [`gcp/website/testdata/osv/`](gcp/website/testdata/osv/).
+  - Mock vulnerability records are located in [`go/cmd/website-devserver/testdata/`](go/cmd/website-devserver/testdata/). Add or edit `.json` records and `.meta.yaml` companion files to immediately see changes on page refresh.
+- **Run against Cloud Datastore**:
+  Run the Go website server against production Datastore:
+  ```bash
+  make run-website
+  ```
+  Or against staging Datastore:
+  ```bash
+  make run-website-staging
+  ```
 
 ### Local API Server Development (Go-native)
 - To run the public OSV API server locally using the native Go implementation alongside the ESPv2 proxy (which transcodes HTTP/JSON REST requests to gRPC):
@@ -193,30 +229,38 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Development orchestrator command for local testing.
    - Spawns the Go API server natively in a background thread while concurrently running the `osv-esp` (ESPv2) docker container to perform HTTP/JSON to gRPC transcoding.
 
-3. **`importer`**:
+3. **`website`**:
+   - The public OSV website server implemented in Go.
+   - Defined in `go/cmd/website` and deployed to Cloud Run.
+
+4. **`website-devserver`**:
+   - Local development server for the Go website frontend.
+   - Serves the website using a live flat mock dataset in `go/cmd/website-devserver/testdata/` with hot reloading (reads live from disk on every request without requiring GCP credentials or emulator).
+
+5. **`importer`**:
    - Run as a cron job.
    - Reads from each vulnerability data source (defined as `SourceRepository` in Datastore or mapped in [`source.yaml`](source.yaml) / [`source_test.yaml`](source_test.yaml)).
    - Detects new or deleted vulnerability records.
    - Dispatches processing tasks via **GCP Pub/Sub** to the worker.
 
-4. **`worker`**:
+6. **`worker`**:
    - Daemon that subscribes to Pub/Sub tasks.
    - Ingests and enriches vulnerability records.
    - Computes affected Git ranges for commit-based querying.
    - Writes the enriched records to the database (GCS/Datastore).
    - Powered by a modular processing pipeline defined in [`go/internal/worker/pipeline/`](go/internal/worker/pipeline/).
 
-5. **`exporter`**:
+7. **`exporter`**:
    - Exports the entire database to a public GCS bucket.
    - Generates a root `all.zip` file containing all records.
    - Generates ecosystem-specific `all.zip` files (e.g., `PyPI/all.zip`).
    - Outputs individual vulnerability JSON files in their respective ecosystem folders (e.g., `PyPI/GHSA-abcd-efgh.json`).
 
-6. **`relations`**:
+8. **`relations`**:
    - Populates relationships between vulnerabilities in the database.
    - Calculates transitive and reflective `aliases`, reflective `related` vulnerabilities, and transitive `upstream` fields.
 
-7. **`gitter`**:
+9. **`gitter`**:
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
@@ -226,6 +270,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
+- **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
@@ -257,9 +302,9 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
 - *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
-### 2. Website (`gcp/website/`)
-- **Status**: **Active**.
-- Contains frontend/website code. Uses Python backend, Hugo for blog rendering, and pnpm for modern JS dependencies.
+### 2. Website (`go/cmd/website/`, `gcp/website/`)
+- **Status**: **Active (Go / Python)**.
+- Migrated to Go backend under `go/cmd/website/` and `go/internal/website/`. Frontend assets (Hugo blog, pnpm frontend3) are located under `website/` (symlinked to `gcp/website/`).
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)

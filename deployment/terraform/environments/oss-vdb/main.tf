@@ -75,6 +75,34 @@ module "oss_fuzz" {
   subnetwork                   = module.osv_pipeline.oss_fuzz_subnet_self_link
 }
 
+# Cloud Router and NAT in us-central1 for private OSS-Fuzz workers cluster
+resource "google_compute_router" "oss_fuzz_router" {
+  project = "oss-vdb"
+  name    = "router"
+  network = "default"
+  region  = "us-central1"
+}
+
+resource "google_compute_router_nat" "oss_fuzz_nat" {
+  project                             = "oss-vdb"
+  name                                = "nat-config"
+  router                              = google_compute_router.oss_fuzz_router.name
+  source_subnetwork_ip_ranges_to_nat  = "LIST_OF_SUBNETWORKS"
+  nat_ip_allocate_option              = "AUTO_ONLY"
+  region                              = google_compute_router.oss_fuzz_router.region
+  enable_endpoint_independent_mapping = false
+
+  subnetwork {
+    name                    = module.osv_pipeline.oss_fuzz_subnet_self_link
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+
+  log_config {
+    enable = false
+    filter = "ALL"
+  }
+}
+
 module "k8s_cron_alert" {
   for_each                         = local.kube_manifests
   source                           = "../../modules/k8s_cron_alert"
@@ -87,6 +115,16 @@ module "k8s_cron_alert" {
 import {
   to = module.osv_pipeline.google_firestore_database.datastore
   id = "oss-vdb/(default)"
+}
+
+import {
+  to = google_compute_router.oss_fuzz_router
+  id = "projects/oss-vdb/regions/us-central1/routers/router"
+}
+
+import {
+  to = google_compute_router_nat.oss_fuzz_nat
+  id = "projects/oss-vdb/regions/us-central1/routers/router/nat-config"
 }
 
 output "website_dns_records" {

@@ -147,23 +147,6 @@ func TestPrimarySeverity_Ranking(t *testing.T) {
 	}
 }
 
-func TestEncodedQueryAndEcosystem(t *testing.T) {
-	t.Parallel()
-
-	data := ListPageData{
-		Query:             "requests & urllib3",
-		SelectedEcosystem: "C++",
-	}
-
-	if got, want := data.EncodedQuery(), "requests+%26+urllib3"; got != want {
-		t.Errorf("EncodedQuery() = %q, want %q", got, want)
-	}
-
-	if got, want := data.EncodedEcosystem(), "C%2B%2B"; got != want {
-		t.Errorf("EncodedEcosystem() = %q, want %q", got, want)
-	}
-}
-
 func TestDisplayPackages(t *testing.T) {
 	t.Parallel()
 

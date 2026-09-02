@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/logger"
 )
 
 type RelationsStore struct {
@@ -106,11 +108,23 @@ func (s *RelationsStore) GetUpstreamHierarchy(ctx context.Context, id string) (*
 	}
 
 	var rawHierarchy map[string][]string
-	if err := json.Unmarshal(upstreamGroup.UpstreamHierarchy, &rawHierarchy); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal upstream hierarchy JSON: %w", err)
+	if err = json.Unmarshal(upstreamGroup.UpstreamHierarchy, &rawHierarchy); err == nil {
+		return ComputeUpstreamHierarchy(id, rawHierarchy)
+	}
+	// For some reason, a few upstream hierarchy JSON blobs are strings containing JSON
+	// e.g. it contains literally "{\"CVE-123\": [\"CVE-124\"]}" (outer quotes included).
+	// Attempt to unmarshal it into a string, then into the map
+	var str string
+	err2 := json.Unmarshal(upstreamGroup.UpstreamHierarchy, &str)
+	if err2 == nil {
+		err3 := json.Unmarshal([]byte(str), &rawHierarchy)
+		if err3 == nil {
+			logger.WarnContext(ctx, "double unmarshal needed for upstream hierarchy", slog.String("id", id))
+			return ComputeUpstreamHierarchy(id, rawHierarchy)
+		}
 	}
 
-	return ComputeUpstreamHierarchy(id, rawHierarchy)
+	return nil, fmt.Errorf("failed to unmarshal upstream hierarchy JSON: %w", err)
 }
 
 func (s *RelationsStore) GetDownstreamHierarchy(ctx context.Context, id string) (*models.Hierarchy, error) {

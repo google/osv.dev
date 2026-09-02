@@ -186,7 +186,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), httpClient, cache)
 			if err != nil {
 				if git.IsRateLimit(err) {
-					metrics.Outcome = models.Error
+					metrics.SetError(err)
 					return nil, nil, nil
 				}
 			} else {
@@ -233,7 +233,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				canonicalVRepo, err := git.FindCanonicalLink(vRepo, httpClient, cache)
 				if err != nil {
 					if git.IsRateLimit(err) {
-						metrics.Outcome = models.Error
+						metrics.SetError(err)
 						return nil, nil, nil
 					}
 				} else {
@@ -813,7 +813,7 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 	}
 
 	if len(tagVersionRanges) > 0 {
-		r, un, sR := GitVersionsToCommits(tagVersionRanges, repos, metrics, cache)
+		r, un, sR := GitVersionsToCommits(tagVersionRanges, repos, metrics, cache, httpClient)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		successfulRepos = append(successfulRepos, sR...)

@@ -86,7 +86,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 
 	references := identifyPossibleURLs(cve)
-	commits, err := c.ExtractCommitsFromRefs(references, http.DefaultClient, repoTagsCache)
+	commits, err := c.ExtractCommitsFromRefs(references, httpClient, cache)
 	if err != nil {
 		metrics.AddNote("Failed to extract commits from references: %v", err)
 	}

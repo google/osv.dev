@@ -424,7 +424,7 @@ func repo(u string) (string, error) {
 }
 
 // Returns the commit ID from supported links.
-func Commit(u string, httpClient *http.Client) (string, models.VersionSource, error) {
+func Commit(u string, httpClient *http.Client) (string, string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return "", "", models.VersionSourceNone, err

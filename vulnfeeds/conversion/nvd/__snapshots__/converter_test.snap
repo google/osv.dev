@@ -2159,31 +2159,35 @@
         ],
         "extracted_events": [
           {
-            "introduced": "12.04"
-          },
-          {
-            "last_affected": "12.04"
-          },
-          {
-            "introduced": "14.04"
-          },
-          {
-            "last_affected": "14.04"
-          },
-          {
-            "introduced": "16.04"
-          },
-          {
-            "last_affected": "16.04"
-          },
-          {
-            "introduced": "18.04"
-          },
-          {
-            "last_affected": "18.04"
+            "range": [
+              {
+                "introduced": "12.04"
+              },
+              {
+                "last_affected": "12.04"
+              },
+              {
+                "introduced": "14.04"
+              },
+              {
+                "last_affected": "14.04"
+              },
+              {
+                "introduced": "16.04"
+              },
+              {
+                "last_affected": "16.04"
+              },
+              {
+                "introduced": "18.04"
+              },
+              {
+                "last_affected": "18.04"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "canonical:ubuntu_linux"
       },
       {
@@ -2192,13 +2196,17 @@
         ],
         "extracted_events": [
           {
-            "introduced": "9.0"
-          },
-          {
-            "last_affected": "9.0"
+            "range": [
+              {
+                "introduced": "9.0"
+              },
+              {
+                "last_affected": "9.0"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "debian:debian_linux"
       },
       {
@@ -2211,37 +2219,41 @@
         ],
         "extracted_events": [
           {
-            "introduced": "6.0"
-          },
-          {
-            "last_affected": "6.0"
-          },
-          {
-            "introduced": "7.0"
-          },
-          {
-            "last_affected": "7.0"
-          },
-          {
-            "introduced": "7.4"
-          },
-          {
-            "last_affected": "7.4"
-          },
-          {
-            "introduced": "7.5"
-          },
-          {
-            "last_affected": "7.5"
-          },
-          {
-            "introduced": "7.6"
-          },
-          {
-            "last_affected": "7.6"
+            "range": [
+              {
+                "introduced": "6.0"
+              },
+              {
+                "last_affected": "6.0"
+              },
+              {
+                "introduced": "7.0"
+              },
+              {
+                "last_affected": "7.0"
+              },
+              {
+                "introduced": "7.4"
+              },
+              {
+                "last_affected": "7.4"
+              },
+              {
+                "introduced": "7.5"
+              },
+              {
+                "last_affected": "7.5"
+              },
+              {
+                "introduced": "7.6"
+              },
+              {
+                "last_affected": "7.6"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "redhat:enterprise_linux"
       }
     ]
@@ -2317,25 +2329,29 @@
         ],
         "extracted_events": [
           {
-            "introduced": "36"
-          },
-          {
-            "last_affected": "36"
-          },
-          {
-            "introduced": "37"
-          },
-          {
-            "last_affected": "37"
-          },
-          {
-            "introduced": "38"
-          },
-          {
-            "last_affected": "38"
+            "range": [
+              {
+                "introduced": "36"
+              },
+              {
+                "last_affected": "36"
+              },
+              {
+                "introduced": "37"
+              },
+              {
+                "last_affected": "37"
+              },
+              {
+                "introduced": "38"
+              },
+              {
+                "last_affected": "38"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       },
       {
@@ -2347,31 +2363,35 @@
         ],
         "extracted_events": [
           {
-            "introduced": "11.5"
-          },
-          {
-            "last_affected": "11.5"
-          },
-          {
-            "introduced": "11.6"
-          },
-          {
-            "last_affected": "11.6"
-          },
-          {
-            "introduced": "12.0"
-          },
-          {
-            "last_affected": "12.0"
-          },
-          {
-            "introduced": "12.1"
-          },
-          {
-            "last_affected": "12.1"
+            "range": [
+              {
+                "introduced": "11.5"
+              },
+              {
+                "last_affected": "11.5"
+              },
+              {
+                "introduced": "11.6"
+              },
+              {
+                "last_affected": "11.6"
+              },
+              {
+                "introduced": "12.0"
+              },
+              {
+                "last_affected": "12.0"
+              },
+              {
+                "introduced": "12.1"
+              },
+              {
+                "last_affected": "12.1"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "redhat:directory_server"
       }
     ]
@@ -2547,35 +2567,24 @@
         ],
         "extracted_events": [
           {
-            "introduced": "35"
-          },
-          {
-            "last_affected": "35"
-          },
-          {
-            "introduced": "36"
-          },
-          {
-            "last_affected": "36"
+            "range": [
+              {
+                "introduced": "35"
+              },
+              {
+                "last_affected": "35"
+              },
+              {
+                "introduced": "36"
+              },
+              {
+                "last_affected": "36"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
-      },
-      {
-        "cpes": [
-          "cpe:2.3:a:harfbuzz_project:harfbuzz:4.3.0:*:*:*:*:*:*:*"
-        ],
-        "extracted_events": [
-          {
-            "introduced": "4.3.0"
-          },
-          {
-            "last_affected": "4.3.0"
-          }
-        ],
-        "source": "CPE_STRING",
-        "vendor_product": "harfbuzz_project:harfbuzz"
       }
     ]
   },
@@ -3717,13 +3726,17 @@
         ],
         "extracted_events": [
           {
-            "introduced": "12.04"
-          },
-          {
-            "last_affected": "12.04"
+            "range": [
+              {
+                "introduced": "12.04"
+              },
+              {
+                "last_affected": "12.04"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "canonical:ubuntu_linux"
       },
       {
@@ -3732,13 +3745,17 @@
         ],
         "extracted_events": [
           {
-            "introduced": "42.1"
-          },
-          {
-            "last_affected": "42.1"
+            "range": [
+              {
+                "introduced": "42.1"
+              },
+              {
+                "last_affected": "42.1"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "opensuse:leap"
       }
     ]
@@ -3920,13 +3937,17 @@
         ],
         "extracted_events": [
           {
-            "introduced": "40"
-          },
-          {
-            "last_affected": "40"
+            "range": [
+              {
+                "introduced": "40"
+              },
+              {
+                "last_affected": "40"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       },
       {
@@ -3936,19 +3957,23 @@
         ],
         "extracted_events": [
           {
-            "introduced": "7.0"
-          },
-          {
-            "last_affected": "7.0"
-          },
-          {
-            "introduced": "8.0"
-          },
-          {
-            "last_affected": "8.0"
+            "range": [
+              {
+                "introduced": "7.0"
+              },
+              {
+                "last_affected": "7.0"
+              },
+              {
+                "introduced": "8.0"
+              },
+              {
+                "last_affected": "8.0"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "redhat:enterprise_linux"
       }
     ]
@@ -3997,10 +4022,14 @@
         ],
         "extracted_events": [
           {
-            "fixed": "3.67.0"
+            "range": [
+              {
+                "fixed": "3.67.0"
+              }
+            ],
+            "source": "CPE_RANGE"
           }
         ],
-        "source": "CPE_RANGE",
         "vendor_product": "filezilla-project:filezilla_client"
       },
       {
@@ -4009,13 +4038,17 @@
         ],
         "extracted_events": [
           {
-            "introduced": "0.68"
-          },
-          {
-            "fixed": "0.81"
+            "range": [
+              {
+                "introduced": "0.68"
+              },
+              {
+                "fixed": "0.81"
+              }
+            ],
+            "source": "CPE_RANGE"
           }
         ],
-        "source": "CPE_RANGE",
         "vendor_product": "putty:putty"
       },
       {
@@ -4024,10 +4057,14 @@
         ],
         "extracted_events": [
           {
-            "fixed": "1.14.6"
+            "range": [
+              {
+                "fixed": "1.14.6"
+              }
+            ],
+            "source": "CPE_RANGE"
           }
         ],
-        "source": "CPE_RANGE",
         "vendor_product": "tigris:tortoisesvn"
       },
       {
@@ -4036,10 +4073,14 @@
         ],
         "extracted_events": [
           {
-            "fixed": "2.15.0.1"
+            "range": [
+              {
+                "fixed": "2.15.0.1"
+              }
+            ],
+            "source": "CPE_RANGE"
           }
         ],
-        "source": "CPE_RANGE",
         "vendor_product": "tortoisegit:tortoisegit"
       },
       {
@@ -4048,10 +4089,14 @@
         ],
         "extracted_events": [
           {
-            "fixed": "6.3.3"
+            "range": [
+              {
+                "fixed": "6.3.3"
+              }
+            ],
+            "source": "CPE_RANGE"
           }
         ],
-        "source": "CPE_RANGE",
         "vendor_product": "winscp:winscp"
       },
       {
@@ -4062,52 +4107,60 @@
         ],
         "extracted_events": [
           {
-            "introduced": "38"
-          },
-          {
-            "last_affected": "38"
-          },
-          {
-            "introduced": "39"
-          },
-          {
-            "last_affected": "39"
-          },
-          {
-            "introduced": "40"
-          },
-          {
-            "last_affected": "40"
+            "range": [
+              {
+                "introduced": "38"
+              },
+              {
+                "last_affected": "38"
+              },
+              {
+                "introduced": "39"
+              },
+              {
+                "last_affected": "39"
+              },
+              {
+                "introduced": "40"
+              },
+              {
+                "last_affected": "40"
+              }
+            ],
+            "source": "CPE_STRING"
           }
         ],
-        "source": "CPE_STRING",
         "vendor_product": "fedoraproject:fedora"
       },
       {
         "extracted_events": [
           {
-            "introduced": "0.68"
-          },
-          {
-            "fixed": "0.80"
-          },
-          {
-            "fixed": "0.81"
-          },
-          {
-            "fixed": "3.67.0"
-          },
-          {
-            "fixed": "6.3.3"
-          },
-          {
-            "fixed": "2.15.0.1"
-          },
-          {
-            "fixed": "1.14.6"
+            "range": [
+              {
+                "introduced": "0.68"
+              },
+              {
+                "fixed": "0.80"
+              },
+              {
+                "fixed": "0.81"
+              },
+              {
+                "fixed": "3.67.0"
+              },
+              {
+                "fixed": "6.3.3"
+              },
+              {
+                "fixed": "2.15.0.1"
+              },
+              {
+                "fixed": "1.14.6"
+              }
+            ],
+            "source": "DESCRIPTION"
           }
-        ],
-        "source": "DESCRIPTION"
+        ]
       }
     ]
   },

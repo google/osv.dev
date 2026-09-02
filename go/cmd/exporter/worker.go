@@ -1,8 +1,10 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"cmp"
+	"compress/flate"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -17,7 +19,6 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
-	kzip "github.com/klauspost/compress/zip"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -31,10 +32,13 @@ const (
 	ecosystemsFilename  = "ecosystems.txt"
 )
 
-// vulnMeta holds the ID and modified time for a vulnerability.
+// vulnMeta holds the ID, modified time, CRC32, and pre-compression sizes for a vulnerability.
 type vulnMeta struct {
-	id       string
-	modified time.Time
+	id         string
+	modified   time.Time
+	crc32      uint32
+	uncompSize uint64
+	compSize   uint64
 }
 
 // csvEntry holds the modified time and the relative entry path.
@@ -230,7 +234,7 @@ func writeModifiedIDCSV(ctx context.Context, path string, csvData []csvEntry, ou
 	write(ctx, path, buf.Bytes(), "text/csv", outCh)
 }
 
-// writeZIP constructs and writes a zip file by streaming from local files to a temporary zip file.
+// writeZIP constructs and writes a zip file by streaming pre-compressed local files via CreateRaw.
 func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<- writeMsg, scratchDir string) {
 	logger.InfoContext(ctx, "constructing zip file", slog.String("path", path))
 	slices.SortFunc(allVulns, func(a, b vulnMeta) int {
@@ -244,25 +248,28 @@ func writeZIP(ctx context.Context, path string, allVulns []vulnMeta, outCh chan<
 	}
 	defer tmpZip.Close()
 
-	wr := kzip.NewWriter(tmpZip)
+	wr := zip.NewWriter(tmpZip)
 	for _, vuln := range allVulns {
-		w, err := wr.CreateHeader(&kzip.FileHeader{
-			Name:     vuln.id + ".json",
-			Modified: vuln.modified,
-			Method:   kzip.Deflate,
+		w, err := wr.CreateRaw(&zip.FileHeader{
+			Name:               vuln.id + ".json",
+			Modified:           vuln.modified,
+			Method:             zip.Deflate,
+			CRC32:              vuln.crc32,
+			CompressedSize64:   vuln.compSize,
+			UncompressedSize64: vuln.uncompSize,
 		})
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to create vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to create raw vuln in zip file", slog.String("id", vuln.id), slog.Any("err", err))
 			continue
 		}
-		localPath := filepath.Join(scratchDir, vuln.id+".json")
+		localPath := filepath.Join(scratchDir, vuln.id+".deflate")
 		f, err := os.Open(localPath)
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to open local vuln json file", slog.String("path", localPath), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to open local vuln deflate file", slog.String("path", localPath), slog.Any("err", err))
 			continue
 		}
 		if _, err := io.Copy(w, f); err != nil {
-			logger.ErrorContext(ctx, "failed to write vuln json in zip file", slog.String("id", vuln.id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to write vuln deflate data to zip file", slog.String("id", vuln.id), slog.Any("err", err))
 		}
 		f.Close()
 	}
@@ -283,10 +290,18 @@ func writeVanir(ctx context.Context, vanirVulnIDs []string, outCh chan<- writeMs
 
 	vulns := make([]json.RawMessage, 0, len(vanirVulnIDs))
 	for _, id := range vanirVulnIDs {
-		localPath := filepath.Join(scratchDir, id+".json")
-		data, err := os.ReadFile(localPath)
+		localPath := filepath.Join(scratchDir, id+".deflate")
+		f, err := os.Open(localPath)
 		if err != nil {
-			logger.ErrorContext(ctx, "failed to read local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
+			logger.ErrorContext(ctx, "failed to open local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
+			continue
+		}
+		fr := flate.NewReader(f)
+		data, err := io.ReadAll(fr)
+		_ = fr.Close()
+		_ = f.Close()
+		if err != nil {
+			logger.ErrorContext(ctx, "failed to decompress local vuln file for vanir", slog.String("id", id), slog.Any("err", err))
 			continue
 		}
 		vulns = append(vulns, data)

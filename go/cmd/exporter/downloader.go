@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"compress/flate"
 	"context"
+	"hash/crc32"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,10 +18,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var flateWriterPool = sync.Pool{
+	New: func() any {
+		fw, _ := flate.NewWriter(ioDiscard{}, flate.DefaultCompression)
+		return fw
+	},
+}
+
+type ioDiscard struct{}
+
+func (ioDiscard) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
 // downloadThenProcessor is a worker that receives GCS object handles from inCh, downloads
 // the raw protobuf data, unmarshals it into a Vulnerability, marshals it to compact
-// JSON, saves it to scratch disk, queues individual JSON uploads, and sends the
-// metadata to routerCh.
+// JSON, saves pre-compressed Deflate data to scratch disk, queues individual JSON uploads,
+// and sends the metadata to routerCh.
 func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, client clients.CloudStorage, scratchDir string, inCh <-chan string, routerCh chan<- processedVuln, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for path := range inCh {
@@ -49,9 +65,32 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 			continue
 		}
 
-		// Cache to local scratch disk for later ZIP generation.
-		localPath := filepath.Join(scratchDir, vuln.GetId()+".json")
-		if err := os.WriteFile(localPath, b, 0600); err != nil {
+		// Pre-compress using Deflate for zero-copy CreateRaw ZIP generation.
+		var compBuf bytes.Buffer
+		fw := flateWriterPool.Get().(*flate.Writer)
+		fw.Reset(&compBuf)
+		if _, err := fw.Write(b); err != nil {
+			flateWriterPool.Put(fw)
+			logger.ErrorContext(ctx, "failed to compress vulnerability json", slog.String("id", vuln.GetId()), slog.Any("err", err))
+			cancel()
+
+			return
+		}
+		if err := fw.Close(); err != nil {
+			flateWriterPool.Put(fw)
+			logger.ErrorContext(ctx, "failed to close flate writer", slog.String("id", vuln.GetId()), slog.Any("err", err))
+			cancel()
+
+			return
+		}
+		flateWriterPool.Put(fw)
+
+		compressedBytes := compBuf.Bytes()
+		crc := crc32.ChecksumIEEE(b)
+
+		// Cache pre-compressed Deflate payload to local scratch disk.
+		localPath := filepath.Join(scratchDir, vuln.GetId()+".deflate")
+		if err := os.WriteFile(localPath, compressedBytes, 0600); err != nil {
 			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
 			// Cancel the exporter context if writing to the scratch disk fails (e.g. disk full)
 			// to fail fast rather than producing incomplete archives later.
@@ -101,8 +140,11 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 		select {
 		case routerCh <- processedVuln{
 			meta: vulnMeta{
-				id:       vuln.GetId(),
-				modified: vuln.GetModified().AsTime(),
+				id:         vuln.GetId(),
+				modified:   vuln.GetModified().AsTime(),
+				crc32:      crc,
+				uncompSize: uint64(len(b)),
+				compSize:   uint64(len(compressedBytes)),
 			},
 			ecosystems: ecoNames,
 			hasVanir:   hasVanir,

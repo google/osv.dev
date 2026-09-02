@@ -45,6 +45,7 @@ func main() {
 	numWorkers := flag.Int("workers", 1000, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
 	breakdownPrefixesStr := flag.String("breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel GCS object listing.")
 	scratchDirFlag := flag.String("scratch-dir", defaultScratchDir, "Directory to stage temporary JSON and zip files.")
+	cleanUpScratchDir := flag.Bool("cleanup-scratch-dir", false, "Whether to delete the temporary scratch directory on exit. Defaults to false.")
 
 	flag.Parse()
 
@@ -56,13 +57,16 @@ func main() {
 	if err != nil {
 		logger.FatalContext(ctx, "failed to create temp directory in scratch dir", slog.String("dir", scratchDir), slog.Any("err", err))
 	}
-	defer os.RemoveAll(scratchDir)
+	if *cleanUpScratchDir {
+		defer os.RemoveAll(scratchDir)
+	}
 
 	logger.InfoContext(ctx, "exporter starting",
 		slog.String("bucket", *outBucketName),
 		slog.String("osv-vulns-bucket", *vulnBucketName),
 		slog.Bool("upload-to-gcs", *uploadToGCS),
 		slog.Int("workers", *numWorkers),
+		slog.Bool("cleanup-scratch-dir", *cleanUpScratchDir),
 		slog.String("breakdown-prefixes", *breakdownPrefixesStr),
 		slog.String("scratch-dir", scratchDir))
 

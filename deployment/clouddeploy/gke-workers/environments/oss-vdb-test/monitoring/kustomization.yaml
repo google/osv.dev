@@ -3,7 +3,11 @@ resources:
 - grafana_service_account.yaml
 - grafana_datasources.yaml
 - grafana_dashboards_prov.yaml
-- grafana_dashboards.yaml
 - grafana_deployment.yaml
 - grafana_service.yaml
 - grafana_ingress.yaml
+
+configMapGenerator:
+- name: grafana-dashboards
+  files:
+  - executive-overview.json=dashboards/executive-overview.json

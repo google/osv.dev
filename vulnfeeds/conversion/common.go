@@ -285,14 +285,17 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				}
 				successfulRepos = append(successfulRepos, repo)
 				if len(vr.Range.GetEvents()) > 0 {
-					dbSpecificMap := map[string]any{
-						"extracted_events": vr.Range.GetEvents(),
+					extractedEventGroup := map[string]any{
+						"range": vr.Range.GetEvents(),
 					}
 					if vr.Metadata.CPE != "" {
-						dbSpecificMap["cpe"] = vr.Metadata.CPE
+						extractedEventGroup["cpe"] = vr.Metadata.CPE
 					}
 					if string(vr.Metadata.Source) != "" {
-						dbSpecificMap["source"] = string(vr.Metadata.Source)
+						extractedEventGroup["source"] = string(vr.Metadata.Source)
+					}
+					dbSpecificMap := map[string]any{
+						"extracted_events": []any{extractedEventGroup},
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
@@ -550,6 +553,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 	type key struct {
 		Source        string
 		VendorProduct string
+		OriginalTag   string
 	}
 
 	rangesByKey := make(map[key][]models.RangeWithMetadata)
@@ -564,7 +568,7 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 				vendorProduct = ur.Metadata.CPE
 			}
 		}
-		k := key{Source: string(ur.Metadata.Source), VendorProduct: vendorProduct}
+		k := key{Source: string(ur.Metadata.Source), VendorProduct: vendorProduct, OriginalTag: ur.Metadata.OriginalTag}
 		if _, ok := rangesByKey[k]; !ok {
 			keys = append(keys, k)
 		}
@@ -575,8 +579,11 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		if a.Source != b.Source {
 			return strings.Compare(a.Source, b.Source)
 		}
+		if a.VendorProduct != b.VendorProduct {
+			return strings.Compare(a.VendorProduct, b.VendorProduct)
+		}
 
-		return strings.Compare(a.VendorProduct, b.VendorProduct)
+		return strings.Compare(a.OriginalTag, b.OriginalTag)
 	})
 
 	listElements := make([]any, 0, len(keys))
@@ -617,14 +624,21 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		if k.VendorProduct != "" {
 			unresolvedRangesMap["vendor_product"] = k.VendorProduct
 		}
-		if k.Source != "" {
-			unresolvedRangesMap["source"] = k.Source
-		}
 		if len(cpes) > 0 {
 			unresolvedRangesMap["cpes"] = cpes
 		}
 
-		unresolvedRangesMap["extracted_events"] = events
+		extractedEventGroup := map[string]any{
+			"range": events,
+		}
+		if k.Source != "" {
+			extractedEventGroup["source"] = k.Source
+		}
+		if k.OriginalTag != "" {
+			extractedEventGroup["original_tag"] = k.OriginalTag
+		}
+
+		unresolvedRangesMap["extracted_events"] = []any{extractedEventGroup}
 		listElements = append(listElements, unresolvedRangesMap)
 	}
 

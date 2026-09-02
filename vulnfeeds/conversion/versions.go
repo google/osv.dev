@@ -424,10 +424,10 @@ func repo(u string) (string, error) {
 }
 
 // Returns the commit ID from supported links.
-func Commit(u string, httpClient *http.Client) (string, error) {
+func Commit(u string, httpClient *http.Client) (string, string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		return "", err
+		return "", "", models.VersionSourceNone, err
 	}
 
 	gitSHA1Regex := regexp.MustCompile("^[0-9a-f]{7,40}")
@@ -440,14 +440,14 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// Canonicalized git.kernel.org URLs lose /cgit in the path...
 	if parsedURL.Hostname() == "git.kernel.org" &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// GitWeb cgi-bin URLs are structured another way, e.g.
@@ -460,14 +460,14 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 				continue
 			}
 
-			return strings.Split(param, "=")[1], nil
+			return strings.Split(param, "=")[1], "", models.VersionSourceRefsCommit, nil
 		}
 	}
 
 	// FFMpeg's GitWeb seems to be it's own unique snowflake, e.g.
 	// https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/c94875471e3ba3dc396c6919ff3ec9b14539cd71
 	if strings.HasPrefix(parsedURL.Path, "/gitweb/") && len(strings.Split(parsedURL.Path, "/")) == 5 {
-		return strings.Split(parsedURL.Path, "/")[4], nil
+		return strings.Split(parsedURL.Path, "/")[4], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.
@@ -478,7 +478,7 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
 	if strings.HasSuffix(directory, "commit/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), "", models.VersionSourceRefsCommit, nil
 	}
 
 	// and Bitbucket.org commit URLs are similar yet slightly different:
@@ -490,7 +490,7 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 		directory, possibleCommitHash := path.Split(parsedURL.Path)
 		if strings.HasSuffix(directory, "commits/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-			return possibleCommitHash, nil
+			return possibleCommitHash, "", models.VersionSourceRefsCommit, nil
 		}
 	}
 
@@ -499,42 +499,43 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	// Support for resolving a Github tag to a commit hash
 	// example: https://github.com/redis/redis/releases/tag/6.2.17
 	if parsedURL.Host == "github.com" {
-		possibleCommitHash, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
+		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
 		if possibleCommitHash != "" && err == nil {
-			return possibleCommitHash, nil
+			return possibleCommitHash, originalTag, models.VersionSourceRefsTag, nil
 		}
 	}
 	// If we get to here, we've encountered an unsupported URL.
-	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
+	return "", "", models.VersionSourceNone, fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, error) {
+func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, string, error) {
 	directory, tag := path.Split(parsedURL.Path)
 	if !strings.HasSuffix(directory, "tag/") {
-		return "", errors.New("no tag found")
+		return "", "", errors.New("no tag found")
 	}
+	originalTag := tag
 	tag, err := git.NormalizeVersion(tag)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	maybeRepoURL, err := Repo(u)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil, httpClient)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	for t, nTag := range normalizedTags {
 		if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
-			return nTag.Commit, nil
+			return nTag.Commit, originalTag, nil
 		}
 	}
 
-	return "", errors.New("no tag found")
+	return "", "", errors.New("no tag found")
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
@@ -561,32 +562,34 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client, cache git.RepoTagsCache) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
-	c, r, err := ExtractGitCommit(link, httpClient, 0, cache)
+	c, r, tag, source, err := ExtractGitCommit(link, httpClient, 0, cache)
 	if err != nil {
 		return ac, err
 	}
 
 	ac.SetRepo(r)
+	ac.Source = source
+	ac.OriginalTag = tag
 
 	models.SetCommitByType(&ac, commitType, c)
 
 	return ac, nil
 }
 
-func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, error) {
+func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, string, models.VersionSource, error) {
 	if depth > 10 {
-		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
+		return "", "", "", models.VersionSourceNone, fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
 
 	var commit string
 	r, err := Repo(link)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
-	c, err := Commit(link, httpClient)
+	c, tag, source, err := Commit(link, httpClient)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
 	commit = c
@@ -594,7 +597,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 	// If URL doesn't validate, treat it as linkrot.
 	possiblyDifferentLink, err := git.FindCanonicalLink(link, httpClient, cache)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
 	// restart the entire extraction process when the URL changes (i.e. handle a
@@ -604,7 +607,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1, cache)
 	}
 
-	return commit, r, nil
+	return commit, r, tag, source, nil
 }
 
 func HasVersion(validVersions []string, version string) bool {
@@ -1247,7 +1250,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.URL, httpClient)
+		_, _, _, err = Commit(ref.URL, httpClient)
 		// Check if it was previously found to be bad:
 		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
 			continue

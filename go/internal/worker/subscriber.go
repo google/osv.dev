@@ -29,7 +29,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	if taskType := m.Attributes["type"]; taskType != "update" {
 		logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
-		metrics.RecordTaskProcessed("skipped", m.Attributes["source"])
+		metrics.RecordTaskProcessed("skipped")
 		m.Ack()
 
 		return
@@ -52,7 +52,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	task.Vuln, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
-		metrics.RecordTaskProcessed("error", task.SourceID)
+		metrics.RecordTaskProcessed("error")
 		m.Nack()
 
 		return
@@ -86,20 +86,12 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		task.SHA256 = m.Attributes["original_sha256"]
 	}
 
-	startTime := time.Now()
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
-		duration := time.Since(startTime).Seconds()
-		metrics.RecordTaskProcessed("error", task.SourceID)
-		metrics.RecordTaskDuration("error", task.SourceID, duration)
+		metrics.RecordTaskProcessed("error")
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
-		duration := time.Since(startTime).Seconds()
-		metrics.RecordTaskProcessed("success", task.SourceID)
-		metrics.RecordTaskDuration("success", task.SourceID, duration)
-		if task.SourceTime != nil {
-			metrics.RecordPipelinePublishedToAvailable(task.SourceID, time.Since(*task.SourceTime).Seconds())
-		}
+		metrics.RecordTaskProcessed("success")
 		logTaskLatency(taskCtx, task)
 		m.Ack()
 	}

@@ -3,6 +3,8 @@ version: "2"
 linters:
   default: all
   # prettier-ignore
+  enable:
+    - gomodguard_v2 # gomodguard is deprecated but it's still in the default
   disable:
     - forbidigo
     - paralleltest

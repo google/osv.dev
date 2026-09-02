@@ -3,6 +3,8 @@ version: "2"
 linters:
   default: all
   # prettier-ignore
+  enable:
+    - gomodguard_v2 # gomodguard is deprecated but it's still in the default
   disable:
     - forbidigo
     - paralleltest
@@ -35,6 +37,7 @@ linters:
     - wrapcheck        # too difficult, will re-add later (another-rex)
     - wsl              # disagree with, for now (g-rath)
     - wsl_v5           # disagree with, for now (g-rath)
+    - godoclint        # too noisy at the moment
   settings:
     exhaustive:
       default-signifies-exhaustive: true

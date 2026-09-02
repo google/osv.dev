@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go/cmd/tools/reimport-tui
 
-go 1.26.5
+go 1.27.0
 
 replace github.com/google/osv.dev/go => ../../../
 

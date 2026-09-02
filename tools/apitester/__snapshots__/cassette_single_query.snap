@@ -1253,6 +1253,108 @@
       ]
     },
     {
+      "id": "CURL-CVE-2026-13608",
+      "summary": "OpenLDAP SASL authentication bypass",
+      "details": "A flaw in the libcurl SASL negotiation for LDAP authentication allows an\nincomplete handshake sequence to be misinterpreted as a successful\ncryptographic verification. An attacker executing a Man-in-the-Middle (MITM)\nattack can inject a premature or shortcut response that bypasses complete peer\nvalidation.",
+      "aliases": ["CVE-2026-13608"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.82.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "eeca818b1e8d1e61c2d4d833aed56ce4c510a9d4"
+                },
+                {
+                  "fixed": "ea71c3b6b60e563651ea8596a975aef0c8199519"
+                }
+              ]
+            }
+          ],
+          "versions": 95,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Eunsoo Kim (Autonomous Code Security team at Microsoft)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Eunsoo Kim",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-18924",
+      "summary": "HTTP/2 server push UAF",
+      "details": "A flaw in libcurl's handling of HTTP/2 Server Push streams, when the parent\nhandle is set to share connections with other handles, can lead to\nuse-after-free in the cleanup process.",
+      "aliases": ["CVE-2026-18924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.44.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ea7134ac874a66107e54ff93657ac565cf2ec4aa"
+                },
+                {
+                  "fixed": "90325ff0444cbdff368bda5d26d6405a0bb6ee43"
+                }
+              ]
+            }
+          ],
+          "versions": 210,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stephan Zeisberg (Security Research Labs)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
       "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
@@ -1299,6 +1401,57 @@
         },
         {
           "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-19931",
+      "summary": "Negotiate ambient user conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an HTTP connection setup for a given\nhostname using Negotiate authentication, when the initial request is done\nusing empty credentials. This can make user B's request get sent over user A's\npreviously authenticated connection.",
+      "aliases": ["CVE-2026-19931"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.64.1"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6c6035532383e300c712e4c1cd9fdd749ed5cf59"
+                },
+                {
+                  "fixed": "7103a93b05bc69ea98ed9d05d02fa9eeba533f2f"
+                }
+              ]
+            }
+          ],
+          "versions": 147,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Martin Dukek",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
           "type": "REMEDIATION_DEVELOPER"
         }
       ]
@@ -1761,6 +1914,159 @@
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-80230",
+      "summary": "OpenSSL pinning bypass",
+      "details": "When `CURLOPT_PINNEDPUBLICKEY` is configured alongside options that disable\nstandard peer verification (`CURLOPT_SSL_VERIFYPEER = 0` and\n`CURLOPT_SSL_VERIFYHOST = 0`), libcurl fails to enforce public key pinning on\nconnections established without a presented server certificate. Bypassing the\npinning check under these disabled-verification conditions allows\nunauthenticated connections to succeed when they should be rejected.",
+      "aliases": ["CVE-2026-80230"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.45.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "8363656cb4e0c60a11d8531ead0ec43120b50591"
+                },
+                {
+                  "fixed": "5267ed859d545534d0c21675a2b70af5a3b6e3ef"
+                }
+              ]
+            }
+          ],
+          "versions": 210,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-80231",
+      "summary": "native CA store conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an existing HTTPS connection setup\nfor a given hostname even when using a different Native CA Store setting\n(`CURLSSLOPT_NATIVE_CA`) than when the connection was created.",
+      "aliases": ["CVE-2026-80231"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "148534db57dda611cf8516e92e4d6e35fc1e5074"
+                },
+                {
+                  "fixed": "7be1e70cb6bcd83e130ecfe8cb91b6a7dcdeff42"
+                }
+              ]
+            }
+          ],
+          "versions": 126,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-82209",
+      "summary": "domain-scoped PSL domain cookie",
+      "details": "When libpsl support is enabled, libcurl fails to enforce the Public Suffix\nList boundary check when processing a `Set-Cookie` header where the `Domain`\nattribute explicitly matches an origin host that is itself a public suffix\n(e.g., `Domain=co.uk` set by `co.uk`).\n\nInstead of coercing it into a strict host-only cookie, libcurl saves the\ncookie with wildcard domain scope (`.co.uk`). Consequently, the cookie is\ninappropriately included in subsequent outbound requests or HTTP redirects to\narbitrary sibling subdomains under the same public suffix (e.g.,\n`attacker.co.uk`).",
+      "aliases": ["CVE-2026-82209"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                },
+                {
+                  "fixed": "95c1e8915dce64606bd753fd47fc0bd236e31cd6"
+                }
+              ]
+            }
+          ],
+          "versions": 209,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
           "type": "FINDER"
         },
         {
@@ -5115,8 +5421,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-c4rq-3m3g-8wgx"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79770"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-redos-via-css-selector-tokenizer"
         }
       ],
       "affected": [
@@ -5331,8 +5645,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-v2fc-qm4h-8hqv"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79771"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-memory-leak-via-xslt-transform"
         }
       ],
       "affected": [
@@ -5523,8 +5845,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wx95-c6cv-8532"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79772"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-unchecked-return-value-canonicalize"
         }
       ],
       "affected": [

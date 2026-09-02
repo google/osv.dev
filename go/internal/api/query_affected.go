@@ -86,8 +86,7 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		estimatedSizeBytes,
 	)
 	if err != nil {
-		var panicErr *safe.PanicError
-		if errors.As(err, &panicErr) {
+		if panicErr, ok := errors.AsType[*safe.PanicError](err); ok {
 			logger.ErrorContext(ctx, "recovered panic in background worker",
 				slog.Any("panic", panicErr.Value),
 				slog.String("stack", string(panicErr.Stack)),
@@ -307,8 +306,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 		result := <-resultsChan
 		if result.err != nil {
 			cancelPipelines(result.err) // Abort all other running pipelines in the background
-			var panicErr *safe.PanicError
-			if errors.As(result.err, &panicErr) {
+			if panicErr, ok := errors.AsType[*safe.PanicError](result.err); ok {
 				logger.ErrorContext(ctx, "recovered panic in batch worker",
 					slog.Any("panic", panicErr.Value),
 					slog.String("stack", string(panicErr.Stack)),
@@ -692,8 +690,7 @@ func (s *server) collectAndSort(ctx context.Context,
 		if errors.Is(err, models.ErrInvalidCursor) {
 			return nil, status.Error(codes.InvalidArgument, "invalid cursor")
 		}
-		var panicErr *safe.PanicError
-		if errors.As(err, &panicErr) {
+		if _, ok := errors.AsType[*safe.PanicError](err); ok {
 			// Return the raw PanicError so the caller handlers can detect it,
 			// log the stack trace, and obscure it into a clean "internal server error".
 			return nil, err

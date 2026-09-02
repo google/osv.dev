@@ -123,11 +123,9 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := ListPageData{
-		BasePageData: BasePageData{
-			Title:             pageTitle,
-			ActiveSection:     "vulnerabilities",
-			DisableTurboCache: true,
-		},
+		Title:               pageTitle,
+		ActiveSection:       "vulnerabilities",
+		DisableTurboCache:   true,
 		Query:               q,
 		SelectedEcosystem:   ecosystem,
 		CurrentAfter:        afterStr,

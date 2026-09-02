@@ -98,8 +98,9 @@ affected:
 	}
 }
 
+//go:fix inline
 func strPtr(s string) *string {
-	return &s
+	return new(s)
 }
 
 func TestGeneratePyPIAffected(t *testing.T) {
@@ -115,13 +116,13 @@ func TestGeneratePyPIAffected(t *testing.T) {
 							{
 								Vulnerable:          true,
 								Criteria:            "cpe:2.3:a:google:tensorflow:*:*:*:*:*:*:*:*",
-								VersionEndExcluding: strPtr("2.6.4"),
+								VersionEndExcluding: new("2.6.4"),
 							},
 							{
 								Vulnerable:            true,
 								Criteria:              "cpe:2.3:a:google:tensorflow:*:*:*:*:*:*:*:*",
-								VersionStartIncluding: strPtr("2.7.0"),
-								VersionEndExcluding:   strPtr("2.7.2"),
+								VersionStartIncluding: new("2.7.0"),
+								VersionEndExcluding:   new("2.7.2"),
 							},
 						},
 					},

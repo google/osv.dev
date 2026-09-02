@@ -38,9 +38,7 @@ func main() {
 
 	// Start workers
 	for range numWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for file := range fileChan {
 				r, err := file.Open()
 				if err != nil {
@@ -80,7 +78,7 @@ func main() {
 					}
 				}
 			}
-		}()
+		})
 	}
 
 	// Collector

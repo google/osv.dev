@@ -37,9 +37,7 @@ func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := LinterPageData{
-		BasePageData: BasePageData{
-			ActiveSection: "linter",
-		},
+		ActiveSection: "linter",
 	}
 
 	s.renderStandalone(w, r, "linter.html", http.StatusOK, data)

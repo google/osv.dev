@@ -258,12 +258,12 @@ func TestGenerateAlpineOSV(t *testing.T) {
 							{
 								Criteria:              xzCPE,
 								Vulnerable:            true,
-								VersionStartIncluding: newString("5.6.0"),
+								VersionStartIncluding: new("5.6.0"),
 							},
 							{
 								Criteria:              fooCPE,
 								Vulnerable:            true,
-								VersionStartIncluding: newString("1.0.0"),
+								VersionStartIncluding: new("1.0.0"),
 							},
 						},
 					}},
@@ -328,6 +328,7 @@ func TestGenerateAlpineOSV(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func newString(s string) *string {
-	return &s
+	return new(s)
 }

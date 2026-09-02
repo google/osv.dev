@@ -234,8 +234,8 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 					continue
 				}
 				// Only keep tags
-				if strings.HasPrefix(ref, "tag: ") {
-					tags = append(tags, strings.TrimPrefix(ref, "tag: "))
+				if after, ok := strings.CutPrefix(ref, "tag: "); ok {
+					tags = append(tags, after)
 				}
 			}
 

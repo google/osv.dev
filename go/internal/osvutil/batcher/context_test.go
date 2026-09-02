@@ -46,8 +46,7 @@ func TestMergeContexts_AllCancelled(t *testing.T) {
 }
 
 func TestMergeContexts_ManualCancel(t *testing.T) {
-	ctx1, cancel1 := context.WithCancel(context.Background())
-	defer cancel1()
+	ctx1 := t.Context()
 
 	mergedCtx, cancelMerged := mergeContexts([]context.Context{ctx1})
 

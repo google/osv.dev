@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -431,9 +432,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
-			for k, v := range v1 {
-				merged[k] = v
-			}
+			maps.Copy(merged, v1)
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
 					mergedVal, err := MergeDatabaseSpecificValues(existing, v)

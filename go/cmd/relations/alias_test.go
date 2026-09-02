@@ -395,13 +395,7 @@ func TestUpdateAliasGroup(t *testing.T) {
 	foundGroup := false
 	expectedIDs := []string{"bbb-123", "bbb-234", "bbb-345", "bbb-456", "bbb-789"}
 	for _, g := range groups {
-		contains := false
-		for _, id := range g.VulnIDs {
-			if id == "bbb-123" {
-				contains = true
-				break
-			}
-		}
+		contains := slices.Contains(g.VulnIDs, "bbb-123")
 		if contains {
 			foundGroup = true
 			if len(g.VulnIDs) != len(expectedIDs) {
@@ -485,13 +479,7 @@ func TestCreateAliasGroup(t *testing.T) {
 	foundGroup := false
 	expectedIDs := []string{"test-123", "test-124", "test-222"}
 	for _, g := range groups {
-		contains := false
-		for _, id := range g.VulnIDs {
-			if id == "test-123" {
-				contains = true
-				break
-			}
-		}
+		contains := slices.Contains(g.VulnIDs, "test-123")
 		if contains {
 			foundGroup = true
 			if len(g.VulnIDs) != len(expectedIDs) {
@@ -727,13 +715,7 @@ func TestAllowList(t *testing.T) {
 	slices.Sort(expectedIDs)
 
 	for _, g := range groups {
-		contains := false
-		for _, id := range g.VulnIDs {
-			if id == "eee-123" {
-				contains = true
-				break
-			}
-		}
+		contains := slices.Contains(g.VulnIDs, "eee-123")
 		if contains {
 			foundGroup = true
 			if len(g.VulnIDs) != len(expectedIDs) {

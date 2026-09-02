@@ -9,7 +9,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-//nolint:recvcheck
 type ConversionOutcome int
 
 const (

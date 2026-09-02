@@ -33,7 +33,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -296,8 +296,7 @@ func runLinter(binaryPath, dataDir string) ([]byte, error) {
 	logger.Info("Executing linter", slog.String("cmd", cmd.String()))
 	output, err := cmd.Output() // err usually just indicates that there were findings
 	if err != nil {
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
+		if _, ok := errors.AsType[*exec.ExitError](err); !ok {
 			logger.Error("Linter execution failed unexpectedly", slog.Any("err", err))
 			return nil, err
 		}
@@ -373,9 +372,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 		for f := range uniqueFindings {
 			sortedFindings = append(sortedFindings, f)
 		}
-		sort.Slice(sortedFindings, func(i, j int) bool {
-			return sortedFindings[i] < sortedFindings[j]
-		})
+		slices.Sort(sortedFindings)
 
 		prefix := strings.Split(bugID, "-")[0] + "-"
 		source := prefixToSource[prefix]
@@ -396,10 +393,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 
 	// Fill channel
 	for i := 0; i < len(findingsToPut); i += batchSize {
-		end := i + batchSize
-		if end > len(findingsToPut) {
-			end = len(findingsToPut)
-		}
+		end := min(i+batchSize, len(findingsToPut))
 		batchChan <- findingsToPut[i:end]
 	}
 	close(batchChan)
@@ -441,10 +435,7 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 			deleteBatchChan := make(chan []string, len(idsToDelete)/batchSize+1)
 
 			for i := 0; i < len(idsToDelete); i += batchSize {
-				end := i + batchSize
-				if end > len(idsToDelete) {
-					end = len(idsToDelete)
-				}
+				end := min(i+batchSize, len(idsToDelete))
 				deleteBatchChan <- idsToDelete[i:end]
 			}
 			close(deleteBatchChan)

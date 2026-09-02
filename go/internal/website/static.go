@@ -20,10 +20,8 @@ func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request) {
 // RenderNotFoundWithVuln renders the 404 Not Found page with a failed import vulnerability ID.
 func (s *Server) RenderNotFoundWithVuln(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
 	data := NotFoundPageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "",
-			DisableTurboCache: false,
-		},
+		ActiveSection:      "",
+		DisableTurboCache:  false,
 		FailedImportVulnID: failedImportVulnID,
 	}
 
@@ -86,11 +84,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := HomePageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "home",
-			DisableTurboCache: false,
-		},
-		Ecosystems: computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
+		ActiveSection:     "home",
+		DisableTurboCache: false,
+		Ecosystems:        computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
 	}
 
 	s.render(w, r, "home.html", http.StatusOK, data)

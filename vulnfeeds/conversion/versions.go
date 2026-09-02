@@ -539,7 +539,7 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, ht
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client, cache git.RepoTagsCache) ([]models.AffectedCommit, error) {
-	var commits []models.AffectedCommit //nolint:prealloc
+	var commits []models.AffectedCommit
 
 	for _, ref := range references {
 		// (Potentially faulty) Assumption: All viable Git commit reference links are fix commits.

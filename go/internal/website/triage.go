@@ -14,10 +14,8 @@ var cveIDRegex = regexp.MustCompile(`^(?i)CVE-\d{4}-\d+$`)
 // handleTriagePage handles serving the vulnerability triage UI page.
 func (s *Server) handleTriagePage(w http.ResponseWriter, r *http.Request) {
 	data := TriagePageData{
-		BasePageData: BasePageData{
-			ActiveSection: "triage",
-		},
-		Columns: []int{1, 2, 3},
+		ActiveSection: "triage",
+		Columns:       []int{1, 2, 3},
 	}
 
 	s.render(w, r, "triage.html", http.StatusOK, data)

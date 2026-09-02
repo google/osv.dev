@@ -129,7 +129,7 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 		fixed = append(fixed, versionValue)
 		// Infer the next introduced version from the 'lessThanOrEqual' field.
 		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
-		minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
+		minorVers, _, _ := strings.Cut(vers.LessThanOrEqual, ".*")
 		parts := strings.Split(minorVers, ".")
 		if len(parts) > 1 {
 			if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {

@@ -1137,7 +1137,9 @@ func TestExtractVersions_NoReposEarlyExit(t *testing.T) {
 	}
 
 	extractor := GetVersionExtractor("mitre")
-	extractor.ExtractVersions(cve, &v, metrics, []string{})
+	r := testutils.SetupGitVCR(t)
+	cache := &git.InMemoryRepoTagsCache{}
+	extractor.ExtractVersions(cve, &v, metrics, []string{}, cache, r.GetDefaultClient())
 
 	if metrics.Outcome != models.NoRepos {
 		t.Errorf("expected outcome to be NoRepos, got %v", metrics.Outcome)

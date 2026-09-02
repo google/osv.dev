@@ -1003,63 +1003,6 @@ func TestExtractVersions(t *testing.T) {
 				}},
 		},
 		{
-			name:        "CVE-2026-1293",
-			cve:         loadTestData(t, "CVE-2026-1293"),
-			cnaAssigner: "Wordfence",
-			repos:       []string{},
-			expectedAffected: []*osvschema.Affected{{
-				Package: &osvschema.Package{
-					Ecosystem: "WordPress:Plugin",
-					Name:      "wordpress-seo",
-				},
-				Ranges: []*osvschema.Range{{
-					Type: osvschema.Range_ECOSYSTEM,
-					Events: []*osvschema.Event{
-						{Introduced: "0"},
-						{LastAffected: "26.8"},
-					},
-				}},
-			}},
-		},
-		{
-			name:        "CVE-2021-23209",
-			cve:         loadTestData(t, "CVE-2021-23209"),
-			cnaAssigner: "Patchstack",
-			repos:       []string{},
-			expectedAffected: []*osvschema.Affected{{
-				Package: &osvschema.Package{
-					Ecosystem: "WordPress:Plugin",
-					Name:      "accelerated-mobile-pages",
-				},
-				Ranges: []*osvschema.Range{{
-					Type: osvschema.Range_ECOSYSTEM,
-					Events: []*osvschema.Event{
-						{Introduced: "0"},
-						{Fixed: "1.0.77.33"},
-					},
-				}},
-			}},
-		},
-		{
-			name:        "CVE-2015-10001",
-			cve:         loadTestData(t, "CVE-2015-10001"),
-			cnaAssigner: "WPScan",
-			repos:       []string{},
-			expectedAffected: []*osvschema.Affected{{
-				Package: &osvschema.Package{
-					Ecosystem: "WordPress:Plugin",
-					Name:      "wp-stats",
-				},
-				Ranges: []*osvschema.Range{{
-					Type: osvschema.Range_ECOSYSTEM,
-					Events: []*osvschema.Event{
-						{Introduced: "0"},
-						{LastAffected: "2.52"},
-					},
-				}},
-			}},
-		},
-		{
 			name:        "CVE-2026-67185",
 			cve:         loadTestCVE(t, filepath.Join("..", "..", "cmd", "converters", "cve", "cve5", "bulk-converter", "cvelistV5", "cves", "2026", "67xxx", "CVE-2026-67185.json")),
 			cnaAssigner: "VulnCheck",

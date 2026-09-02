@@ -24,27 +24,6 @@ func GetVersionExtractor(cna string) VersionExtractor {
 				Strategies: LinuxStrategies(),
 			},
 		}
-	case "wordfence":
-		return &WordpressExtractor{
-			Handler: &WordfenceHandler{},
-			DefaultVersionExtractor: DefaultVersionExtractor{
-				Strategies: WordfenceStrategies(),
-			},
-		}
-	case "patchstack":
-		return &WordpressExtractor{
-			Handler: &PatchstackHandler{},
-			DefaultVersionExtractor: DefaultVersionExtractor{
-				Strategies: PatchstackStrategies(),
-			},
-		}
-	case "wpscan":
-		return &WordpressExtractor{
-			Handler: &WPScanHandler{},
-			DefaultVersionExtractor: DefaultVersionExtractor{
-				Strategies: WPScanStrategies(),
-			},
-		}
 	case "github_m", "github":
 		return &DefaultVersionExtractor{
 			Strategies: GitHubStrategies(),

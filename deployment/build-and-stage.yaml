@@ -268,11 +268,19 @@ steps:
   waitFor: ['build-recoverer', 'cloud-build-queue']
 
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb-test/staging-api-test:latest || exit 0']
+  id: 'pull-staging-api-test'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/staging_api_test'
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '--target', 'staging-api-test', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb-test/staging-api-test:latest', '--pull', '.']
+  dir: 'go'
   id: 'build-staging-api-test'
-  waitFor: ['build-worker']
+  waitFor: ['pull-staging-api-test', 'build-recoverer']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/staging-api-test']
   waitFor: ['build-staging-api-test', 'cloud-build-queue']

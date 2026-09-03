@@ -21,6 +21,8 @@ type FetchOptions struct {
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
 func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
+	//nolint: gosec // G702: The command arguments are mostly from within gitter
+	// The only user controlled input is the repoURL, which is still from internal services
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir

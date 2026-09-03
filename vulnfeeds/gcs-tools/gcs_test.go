@@ -299,3 +299,50 @@ func TestListObjectsFast(t *testing.T) {
 		t.Errorf("ListObjectsFast returned unexpected list.\ngot:  %v\nwant: %v", got, expected)
 	}
 }
+
+func TestParseGCSPath(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantBucket  string
+		wantObject  string
+		expectError bool
+	}{
+		{
+			input:       "gs://my-bucket/path/to/file.tar",
+			wantBucket:  "my-bucket",
+			wantObject:  "path/to/file.tar",
+			expectError: false,
+		},
+		{
+			input:       "gs://cve-osv-conversion/debian_copyright.tar",
+			wantBucket:  "cve-osv-conversion",
+			wantObject:  "debian_copyright.tar",
+			expectError: false,
+		},
+		{
+			input:       "/local/path/file.tar",
+			expectError: true,
+		},
+		{
+			input:       "gs://bucket-only",
+			expectError: true,
+		},
+		{
+			input:       "gs://",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		bucket, obj, err := ParseGCSPath(tt.input)
+		if (err != nil) != tt.expectError {
+			t.Errorf("ParseGCSPath(%q) error = %v, expectError = %v", tt.input, err, tt.expectError)
+			continue
+		}
+		if !tt.expectError {
+			if bucket != tt.wantBucket || obj != tt.wantObject {
+				t.Errorf("ParseGCSPath(%q) = (%q, %q), want (%q, %q)", tt.input, bucket, obj, tt.wantBucket, tt.wantObject)
+			}
+		}
+	}
+}

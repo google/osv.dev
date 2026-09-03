@@ -92,8 +92,8 @@ type ConversionMetrics struct {
 	ResolvedRangesCount   int                              `json:"resolved_ranges_count"`
 }
 
-// AddNote adds a formatted note to the ConversionMetrics.
-func (m *ConversionMetrics) AddNote(format string, a ...any) {
+// AddNotef adds a formatted note to the ConversionMetrics.
+func (m *ConversionMetrics) AddNotef(format string, a ...any) {
 	m.Notes = append(m.Notes, fmt.Sprintf(format, a...))
 	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }

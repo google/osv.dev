@@ -357,7 +357,7 @@ func MergeRangesAndCreateAffected(
 					var err error
 					mergedRange, err = MergeTwoRanges(mergedRange, vr)
 					if err != nil {
-						metrics.AddNote("Failed to merge ranges: %v", err)
+						metrics.AddNotef("Failed to merge ranges: %v", err)
 					}
 				}
 			}

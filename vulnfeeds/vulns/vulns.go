@@ -784,7 +784,7 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 	for _, c := range cpeApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
-				metrics.AddNote("Node found without OR operator")
+				metrics.AddNotef("Node found without OR operator")
 				continue
 			}
 			for _, match := range node.CPEMatch {

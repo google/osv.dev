@@ -46,7 +46,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
-			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
+			metrics.AddNotef("Could not marshal range to check for duplicates, adding anyway: %+v", r)
 			uniqueRanges = append(uniqueRanges, r)
 
 			continue
@@ -56,7 +56,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			uniqueRanges = append(uniqueRanges, r)
 			allExistingRanges[rangeStr] = struct{}{}
 		} else {
-			metrics.AddNote("Skipping duplicate range: %+v", r)
+			metrics.AddNotef("Skipping duplicate range: %+v", r)
 		}
 	}
 
@@ -207,7 +207,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		repo, err := git.FindCanonicalLink(repo, httpClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			metrics.AddNotef("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
@@ -222,7 +222,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}
-			metrics.AddNote("Failed to normalize tags - %s", repo)
+			metrics.AddNotef("Failed to normalize tags - %s", repo)
 
 			continue
 		}
@@ -264,16 +264,16 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			} else {
 				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
 				if err != nil {
-					metrics.AddNote("error resolving version to commit - %s - %s", introduced, err)
+					metrics.AddNotef("error resolving version to commit - %s - %s", introduced, err)
 				}
 			}
 			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", fixed, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", fixed, err)
 			}
 			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", lastAffected, err)
 			}
 
 			if fixedCommit != "" || lastAffectedCommit != "" {
@@ -297,7 +297,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
-						metrics.AddNote("failed to make database specific: %v", err)
+						metrics.AddNotef("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}

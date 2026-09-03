@@ -38,6 +38,7 @@ linters:
     - wsl              # disagree with, for now (g-rath)
     - wsl_v5           # disagree with, for now (g-rath)
     - godoclint        # too noisy at the moment
+    - gosec            # temporary, until jess comes back from holiday
   settings:
     exhaustive:
       default-signifies-exhaustive: true

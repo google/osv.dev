@@ -215,7 +215,7 @@ type PackageInfo struct {
 	PkgName           string             `json:"pkg_name,omitempty"           yaml:"pkg_name,omitempty"`
 	Ecosystem         string             `json:"ecosystem,omitempty"          yaml:"ecosystem,omitempty"`
 	PURL              string             `json:"purl,omitempty"               yaml:"purl,omitempty"`
-	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty"      yaml:"fixed_version,omitempty"`
+	VersionInfo       models.VersionInfo `json:"fixed_version"                yaml:"fixed_version"`
 	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 

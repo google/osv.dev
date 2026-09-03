@@ -85,14 +85,14 @@ type CVSS struct {
 type Metrics struct {
 	Format    string       `json:"format,omitempty"`
 	Scenarios []LangString `json:"scenarios,omitempty"`
-	CVSSv4_0  BaseCVSS     `json:"cvssV4_0,omitempty"`
-	CVSSv3_1  BaseCVSS     `json:"cvssV3_1,omitempty"`
-	CVSSv3_0  BaseCVSS     `json:"cvssV3_0,omitempty"`
-	CVSSv2_0  BaseCVSS     `json:"cvssV2_0,omitempty"`
+	CVSSv4_0  BaseCVSS     `json:"cvssV4_0"`
+	CVSSv3_1  BaseCVSS     `json:"cvssV3_1"`
+	CVSSv3_0  BaseCVSS     `json:"cvssV3_0"`
+	CVSSv2_0  BaseCVSS     `json:"cvssV2_0"`
 	Other     struct {
 		Type    string `json:"type,omitempty"`
 		Content any    `json:"content,omitempty"`
-	} `json:"other,omitempty"`
+	} `json:"other"`
 }
 
 type CNA struct {
@@ -112,7 +112,7 @@ type CNA struct {
 
 type ADP struct {
 	Title            string           `json:"title,omitempty"`
-	ProviderMetadata ProviderMetadata `json:"providerMetadata,omitempty"`
+	ProviderMetadata ProviderMetadata `json:"providerMetadata"`
 	ProblemTypes     ProblemTypes     `json:"problemTypes,omitempty"`
 	Metrics          []Metrics        `json:"metrics,omitempty"`
 	References       []Reference      `json:"references,omitempty"`
@@ -138,11 +138,11 @@ type Versions struct {
 type CVE5 struct {
 	DataType    string       `json:"dataType,omitempty"`
 	DataVersion string       `json:"dataVersion,omitempty"`
-	Metadata    CVE5Metadata `json:"cveMetadata,omitempty"`
+	Metadata    CVE5Metadata `json:"cveMetadata"`
 	Containers  struct {
 		CNA CNA   `json:"cna"`
 		ADP []CNA `json:"adp,omitempty"`
-	} `json:"containers,omitempty"`
+	} `json:"containers"`
 }
 
 func EnglishDescription(descriptions []LangString) string {

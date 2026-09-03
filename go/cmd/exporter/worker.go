@@ -291,6 +291,7 @@ func writeVanir(ctx context.Context, vanirVulnIDs []string, outCh chan<- writeMs
 	vulns := make([]json.RawMessage, 0, len(vanirVulnIDs))
 	for _, id := range vanirVulnIDs {
 		localPath := filepath.Join(scratchDir, id+".deflate")
+		//nolint:gosec // G703: Reading temporary local file in scratch directory
 		f, err := os.Open(localPath)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to open local vuln file for vanir", slog.String("id", id), slog.Any("err", err))

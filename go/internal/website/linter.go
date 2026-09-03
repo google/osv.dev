@@ -17,11 +17,13 @@ func (s *Server) redirectLinterToTest(w http.ResponseWriter, r *http.Request) bo
 	}
 
 	if host == "osv.dev" {
+		//nolint:gosec // G710: Hardcoded redirect target
 		http.Redirect(w, r, "https://test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
 
 		return true
 	}
 	if host == "api.osv.dev" {
+		//nolint:gosec // G710: Hardcoded redirect target
 		http.Redirect(w, r, "https://api.test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
 
 		return true

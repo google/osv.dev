@@ -108,6 +108,7 @@ func main() {
 	vers := slices.Sorted(maps.Keys(allVersions))
 
 	// Write to output file
+	//nolint:gosec // G703: Writing to CLI output file
 	f, err := os.Create(outputFile)
 	if err != nil {
 		panic(err)

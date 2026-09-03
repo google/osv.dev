@@ -925,6 +925,7 @@ func TestTriageEndpoints(t *testing.T) {
 			},
 		})
 		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		//nolint:gosec // G124: Synthetic cookie in test HTTP request
 		req.AddCookie(&http.Cookie{
 			Name:  "osv_session",
 			Value: "tampered-or-invalid-cookie",

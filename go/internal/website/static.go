@@ -133,6 +133,7 @@ func (s *Server) handleRobots(w http.ResponseWriter, r *http.Request) {
 	}
 	sitemapURL := fmt.Sprintf("%s://%s/sitemap_index.xml", scheme, r.Host)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	//nolint:gosec // G705: Response content type is text/plain
 	_, _ = fmt.Fprintf(w, "Sitemap: %s\n", sitemapURL)
 }
 

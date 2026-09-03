@@ -36,6 +36,7 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		if encoded := queryVals.Encode(); encoded != "" {
 			targetURL += "?" + encoded
 		}
+		//nolint:gosec // G710: Internal canonical redirect
 		http.Redirect(w, r, targetURL, http.StatusFound)
 
 		return

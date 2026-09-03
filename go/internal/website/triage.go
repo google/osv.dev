@@ -67,6 +67,7 @@ func (s *Server) handleTriageProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	//nolint:gosec // G705: Response content type is application/json
 	if _, err := w.Write(data); err != nil {
 		logger.ErrorContext(r.Context(), "failed to write triage file response", "source", source, "id", vulnID, "error", err)
 	}

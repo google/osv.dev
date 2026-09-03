@@ -585,7 +585,7 @@ google-cloud-audit-log = ">=0.3.2,<1.0.0"
 google-cloud-core = ">=2.0.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.14.2,<1.0.0"
 grpcio = [
-    {version = ">=1.59.0,<2.0.0", markers = "python_version < \"3.14\""},
+    {version = ">=1.59.0,<2.0.0"},
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
 ]
 opentelemetry-api = ">=1.16.0"
@@ -594,14 +594,14 @@ protobuf = ">=6.33.5,<8.0.0"
 
 [[package]]
 name = "google-cloud-ndb"
-version = "2.5.1"
+version = "2.6.0"
 description = "NDB library for Google Cloud Datastore"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_ndb-2.5.1-py3-none-any.whl", hash = "sha256:d376a6671223a8fc3a264543a70fe1692ea0528c6234bb98676f25a148b4efee"},
-    {file = "google_cloud_ndb-2.5.1.tar.gz", hash = "sha256:2d3000904ac13af715cc8192b0bcb8c7b66f68027a9c64717a4587498c0b739b"},
+    {file = "google_cloud_ndb-2.6.0-py3-none-any.whl", hash = "sha256:90ea6f22d691adb3244956f609fcb4a905111230385060a8873a3194244ce205"},
+    {file = "google_cloud_ndb-2.6.0.tar.gz", hash = "sha256:379fb00e0414efc81f7f5a4d3ae71a87d4006bef09d22e98558dbb4d2cc06f63"},
 ]
 
 [package.dependencies]
@@ -614,14 +614,14 @@ redis = ">=3.0.0,<8.0.0"
 
 [[package]]
 name = "google-cloud-pubsub"
-version = "2.39.1"
+version = "2.39.2"
 description = "Google Cloud Pub/Sub API client library"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_pubsub-2.39.1-py3-none-any.whl", hash = "sha256:b40347cff2df3c4b33747bfdf8a8d74942754c5a6752592acd51a20fec316b56"},
-    {file = "google_cloud_pubsub-2.39.1.tar.gz", hash = "sha256:dacead1fa0aca7b2015f1acc88d279cd4b12852087908f426fbecf71985940e8"},
+    {file = "google_cloud_pubsub-2.39.2-py3-none-any.whl", hash = "sha256:b1295c6641032aff1dabbddf495b10642a5b547f6783ee4c6bb3365682e71354"},
+    {file = "google_cloud_pubsub-2.39.2.tar.gz", hash = "sha256:934a3ab7496a6da09cd97d866bef3e47092e904688a66f60750895a7484bd585"},
 ]
 
 [package.dependencies]
@@ -629,7 +629,7 @@ google-api-core = {version = ">=2.25.0,<3.0.0", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.14.2,<1.0.0"
 grpcio = [
-    {version = ">=1.59.0,<2.0.0"},
+    {version = ">=1.59.0,<2.0.0", markers = "python_version < \"3.14\""},
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
 ]
 grpcio-status = [
@@ -1611,4 +1611,4 @@ platformdirs = ">=3.5.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "61928574bf83a01289ca034046bef2d6c1a64e86d688d758b6f665dcc2a3bfae"
+content-hash = "e80e1daaac6225012a2e6dd1a964b65e393e6e73191a9a3aadfa2955d9d9ba7f"

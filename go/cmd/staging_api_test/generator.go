@@ -218,10 +218,7 @@ func buildBatchPayload(rng *rand.Rand, requestIDs []string, vulnMap map[string]*
 		maxBatchQueries = 100
 	}
 
-	sampleSize := rng.IntN(maxBatchQueries) + 1
-	if sampleSize > len(requestIDs) {
-		sampleSize = len(requestIDs)
-	}
+	sampleSize := min(rng.IntN(maxBatchQueries)+1, len(requestIDs))
 
 	// Sample random IDs
 	perm := rng.Perm(len(requestIDs))
@@ -291,6 +288,8 @@ func newHTTPClient() *http.Client {
 }
 
 // executeRequest sends an HTTP request and updates stats.
+//
+//nolint:gosec // G704: Staging API load testing client
 func executeRequest(ctx context.Context, client *http.Client, req *http.Request, stats *GeneratorStats) {
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
@@ -344,6 +343,7 @@ func runVulnWorker(ctx context.Context, wg *sync.WaitGroup, client *http.Client,
 			reqID := pools.VulnQueryIDs[index%length]
 			index++
 			url := fmt.Sprintf("%s/%s", baseURL, reqID)
+			//nolint:gosec // G704: Staging test generator
 			req, err := http.NewRequest(http.MethodGet, url, nil)
 			if err != nil {
 				continue

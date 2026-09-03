@@ -234,10 +234,7 @@ func LoadQueryPoolsFromZip(ctx context.Context, zipReader *zip.Reader, rng *rand
 	})
 
 	const mostCommon = 5000
-	limit := mostCommon
-	if len(counts) < limit {
-		limit = len(counts)
-	}
+	limit := min(mostCommon, len(counts))
 
 	var largeBatchQueryIDs []string
 	for i := range limit {
@@ -277,6 +274,7 @@ func LoadQueryPools(ctx context.Context, gcsClient *storage.Client, bucket, zipP
 	}
 	if isTemp {
 		defer func() {
+			//nolint:gosec // G703: Cleaning up temporary zip file
 			_ = os.Remove(zipFilePath)
 		}()
 	}

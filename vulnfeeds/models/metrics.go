@@ -106,6 +106,14 @@ func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
 	}
 }
 
+// SetError sets the outcome to Error and logs the error to the metrics notes.
+func (m *ConversionMetrics) SetError(err error) {
+	m.Outcome = Error
+	if err != nil {
+		m.AddNote("Conversion error: %v", err)
+	}
+}
+
 // AddSource appends a source to the ConversionMetrics
 func (m *ConversionMetrics) AddSource(source VersionSource) {
 	m.VersionSources = append(m.VersionSources, source)

@@ -129,13 +129,11 @@ func run(ctx context.Context, env *appEnv) error {
 	// Start the worker pool
 	var workerWg sync.WaitGroup
 	for range env.numWorkers {
-		workerWg.Add(1)
-		go func() {
-			defer workerWg.Done()
+		workerWg.Go(func() {
 			for task := range tasksChan {
 				resultsChan <- checkRecord(ctx, env.ds, env.storage, task.id, task.vuln)
 			}
-		}()
+		})
 	}
 
 	// Queue all invalid records from the previous run.

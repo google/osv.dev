@@ -215,7 +215,7 @@ type PackageInfo struct {
 	PkgName           string             `json:"pkg_name,omitempty"           yaml:"pkg_name,omitempty"`
 	Ecosystem         string             `json:"ecosystem,omitempty"          yaml:"ecosystem,omitempty"`
 	PURL              string             `json:"purl,omitempty"               yaml:"purl,omitempty"`
-	VersionInfo       models.VersionInfo `json:"fixed_version,omitempty"      yaml:"fixed_version,omitempty"`
+	VersionInfo       models.VersionInfo `json:"fixed_version"                yaml:"fixed_version"`
 	EcosystemSpecific map[string]any     `json:"ecosystem_specific,omitempty" yaml:"ecosystem_specific,omitempty"`
 }
 
@@ -784,7 +784,7 @@ func GetCPEs(cpeApplicability []models.CPE, metrics *models.ConversionMetrics) [
 	for _, c := range cpeApplicability {
 		for _, node := range c.Nodes {
 			if node.Operator != "OR" {
-				metrics.AddNote("Node found without OR operator")
+				metrics.AddNotef("Node found without OR operator")
 				continue
 			}
 			for _, match := range node.CPEMatch {

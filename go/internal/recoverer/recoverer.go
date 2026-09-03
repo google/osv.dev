@@ -418,8 +418,8 @@ func (r *Recoverer) HandleGCSGenMismatch(ctx context.Context, m *pubsub.Message)
 		modified = dsVuln.Modified
 		vulnProto := proto.Clone(&baseProto).(*osvschema.Vulnerability)
 
-		fields := strings.Split(fieldStr, ",")
-		for _, f := range fields {
+		fields := strings.SplitSeq(fieldStr, ",")
+		for f := range fields {
 			switch strings.TrimSpace(f) {
 			case "aliases":
 				aliasResult, err := r.stores.Relations.GetAliases(ctx, vulnID)

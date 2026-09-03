@@ -1,4 +1,3 @@
-// Package worker contains the implementation for the vulnerability enrichment worker pipeline.
 package worker
 
 import (

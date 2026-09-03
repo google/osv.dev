@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/vulnfeeds
 
-go 1.26.5
+go 1.27.0
 
 require (
 	charm.land/lipgloss/v2 v2.0.6

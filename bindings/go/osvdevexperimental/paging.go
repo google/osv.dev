@@ -71,9 +71,9 @@ func BatchQueryPaging(ctx context.Context, c OSVClientInterface, queries []*api.
 	}
 	// --- Paging logic ---
 	var errToReturn error
-	//nolint:prealloc
+
 	var nextPageQueries []*api.Query
-	//nolint:prealloc
+
 	var nextPageIndexMap []int
 	for i, res := range batchResp.GetResults() {
 		if res.GetNextPageToken() == "" {

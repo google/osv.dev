@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -45,7 +46,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
-			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
+			metrics.AddNotef("Could not marshal range to check for duplicates, adding anyway: %+v", r)
 			uniqueRanges = append(uniqueRanges, r)
 
 			continue
@@ -55,7 +56,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			uniqueRanges = append(uniqueRanges, r)
 			allExistingRanges[rangeStr] = struct{}{}
 		} else {
-			metrics.AddNote("Skipping duplicate range: %+v", r)
+			metrics.AddNotef("Skipping duplicate range: %+v", r)
 		}
 	}
 
@@ -206,7 +207,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 
 		repo, err := git.FindCanonicalLink(repo, httpClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			metrics.AddNotef("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
@@ -221,7 +222,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}
-			metrics.AddNote("Failed to normalize tags - %s", repo)
+			metrics.AddNotef("Failed to normalize tags - %s", repo)
 
 			continue
 		}
@@ -263,16 +264,16 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			} else {
 				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
 				if err != nil {
-					metrics.AddNote("error resolving version to commit - %s - %s", introduced, err)
+					metrics.AddNotef("error resolving version to commit - %s - %s", introduced, err)
 				}
 			}
 			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", fixed, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", fixed, err)
 			}
 			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", lastAffected, err)
 			}
 
 			if fixedCommit != "" || lastAffectedCommit != "" {
@@ -296,7 +297,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
-						metrics.AddNote("failed to make database specific: %v", err)
+						metrics.AddNotef("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}
@@ -431,9 +432,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
-			for k, v := range v1 {
-				merged[k] = v
-			}
+			maps.Copy(merged, v1)
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
 					mergedVal, err := MergeDatabaseSpecificValues(existing, v)
@@ -681,7 +680,7 @@ func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []mo
 
 	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
 	for _, ur := range unresolved {
-		var eventStrings []string
+		eventStrings := make([]string, 0, len(ur.Range.GetEvents()))
 		for _, e := range ur.Range.GetEvents() {
 			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
 		}

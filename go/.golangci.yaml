@@ -3,6 +3,8 @@ version: "2"
 linters:
   default: all
   # prettier-ignore
+  enable:
+    - gomodguard_v2 # gomodguard is deprecated but it's still in the default
   disable:
     - forbidigo
     - paralleltest
@@ -12,6 +14,7 @@ linters:
     - depguard         # Too annoying
     - err113           # will re-add later (another-rex)
     - exhaustruct      # overkill (g-rath)
+    - exhaustruct_v5
     - forcetypeassert  # too hard (g-rath)
     - funlen           #
     - funcorder        #

@@ -51,6 +51,7 @@ func loadExisting(vulnsDir string) (map[string]bool, error) {
 			return nil
 		}
 
+		//nolint:gosec // G122: Local directory walk in CLI script
 		f, err := os.Open(path)
 		if err != nil {
 			return fmt.Errorf("failed to open %s: %w", path, err)

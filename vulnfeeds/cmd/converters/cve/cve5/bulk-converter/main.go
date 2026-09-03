@@ -102,7 +102,7 @@ func main() {
 	if *cnaDenyList != "" {
 		cnaList = strings.Split(*cnaDenyList, ",")
 	} else {
-		for _, cna := range strings.Split(string(cnaDenylistData), "\n") {
+		for cna := range strings.SplitSeq(string(cnaDenylistData), "\n") {
 			cna = strings.TrimSpace(cna)
 			if cna != "" {
 				cnaList = append(cnaList, cna)

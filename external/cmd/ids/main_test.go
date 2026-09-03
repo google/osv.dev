@@ -45,6 +45,7 @@ func TestAssignIDs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read existing ID: %v", err)
 			}
+			//nolint:gosec // G703: Writing to test temp directory
 			err = os.WriteFile(filepath.Join(tmpDir, tt.existingName), existingData, 0600)
 			if err != nil {
 				t.Fatalf("failed to copy existing ID: %v", err)
@@ -57,6 +58,7 @@ func TestAssignIDs(t *testing.T) {
 				t.Fatalf("failed to read template %s: %v", templatePath, err)
 			}
 			destPath := filepath.Join(tmpDir, tt.templateName)
+			//nolint:gosec // G703: Writing to test temp directory
 			if err := os.WriteFile(destPath, templateData, 0600); err != nil {
 				t.Fatalf("failed to setup unassigned vuln: %v", err)
 			}

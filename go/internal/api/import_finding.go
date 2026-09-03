@@ -39,7 +39,7 @@ func (s *server) ImportFindings(ctx context.Context, params *pb.ImportFindingsPa
 			if f > math.MaxInt32 || f < math.MinInt32 {
 				f = -1
 			}
-			//nolint:gosec // G115: f is checked to be within int32 range above
+
 			protoRecord.Findings[i] = pb.ImportFindingType(f)
 		}
 		result.InvalidRecords = append(result.InvalidRecords, protoRecord)

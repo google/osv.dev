@@ -80,18 +80,14 @@ func TestDownloadBucket(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		objects := []fakestorage.Object{
 			{
-				ObjectAttrs: fakestorage.ObjectAttrs{
-					BucketName: "test-bucket",
-					Name:       "folder/file1.txt",
-				},
-				Content: []byte("content 1"),
+				BucketName: "test-bucket",
+				Name:       "folder/file1.txt",
+				Content:    []byte("content 1"),
 			},
 			{
-				ObjectAttrs: fakestorage.ObjectAttrs{
-					BucketName: "test-bucket",
-					Name:       "folder/file2.txt",
-				},
-				Content: []byte("content 2"),
+				BucketName: "test-bucket",
+				Name:       "folder/file2.txt",
+				Content:    []byte("content 2"),
 			},
 			{
 				ObjectAttrs: fakestorage.ObjectAttrs{
@@ -101,11 +97,9 @@ func TestDownloadBucket(t *testing.T) {
 				Content: []byte(""),
 			},
 			{
-				ObjectAttrs: fakestorage.ObjectAttrs{
-					BucketName: "test-bucket",
-					Name:       "other-folder/file3.txt",
-				},
-				Content: []byte("content 3"),
+				BucketName: "test-bucket",
+				Name:       "other-folder/file3.txt",
+				Content:    []byte("content 3"),
 			},
 		}
 
@@ -149,11 +143,9 @@ func TestDownloadBucket(t *testing.T) {
 	t.Run("path traversal", func(t *testing.T) {
 		objects := []fakestorage.Object{
 			{
-				ObjectAttrs: fakestorage.ObjectAttrs{
-					BucketName: "test-bucket",
-					Name:       "../malicious.txt",
-				},
-				Content: []byte("malicious content"),
+				BucketName: "test-bucket",
+				Name:       "../malicious.txt",
+				Content:    []byte("malicious content"),
 			},
 		}
 
@@ -177,11 +169,9 @@ func TestDownloadBucket(t *testing.T) {
 	t.Run("relative dest dir", func(t *testing.T) {
 		objects := []fakestorage.Object{
 			{
-				ObjectAttrs: fakestorage.ObjectAttrs{
-					BucketName: "test-bucket",
-					Name:       "file.txt",
-				},
-				Content: []byte("content"),
+				BucketName: "test-bucket",
+				Name:       "file.txt",
+				Content:    []byte("content"),
 			},
 		}
 
@@ -213,28 +203,20 @@ func TestDownloadBucket(t *testing.T) {
 func TestListObjectsFast(t *testing.T) {
 	objects := []fakestorage.Object{
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-1999-0001.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-1999-0001.json",
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-2017-9999.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-2017-9999.json",
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-2018-0001.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-2018-0001.json",
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-2018-9999.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-2018-9999.json",
 		},
 		{
 			ObjectAttrs: fakestorage.ObjectAttrs{
@@ -243,22 +225,16 @@ func TestListObjectsFast(t *testing.T) {
 			},
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-2019-0001.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-2019-0001.json",
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/CVE-2020-0001.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/CVE-2020-0001.json",
 		},
 		{
-			ObjectAttrs: fakestorage.ObjectAttrs{
-				BucketName: "test-bucket",
-				Name:       "cve5/non-cve.json",
-			},
+			BucketName: "test-bucket",
+			Name:       "cve5/non-cve.json",
 		},
 		{
 			ObjectAttrs: fakestorage.ObjectAttrs{

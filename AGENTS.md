@@ -125,7 +125,7 @@ Always format and lint your code before proposing changes. The repository provid
 - Linter: `golangci-lint`
 - **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
   ```bash
-  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0 run ./...
   ```
   *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
 - **Formatting Command**:

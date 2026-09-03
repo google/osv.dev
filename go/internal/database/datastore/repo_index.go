@@ -117,8 +117,7 @@ func (s *RepoIndexStore) GetRepoIndexes(ctx context.Context, ids []string) ([]*m
 	dbIndexes := make([]*RepoIndex, len(ids))
 	err := s.client.GetMulti(ctx, keys, dbIndexes)
 	if err != nil {
-		var multiErr datastore.MultiError
-		if errors.As(err, &multiErr) {
+		if multiErr, ok := errors.AsType[datastore.MultiError](err); ok {
 			for i, e := range multiErr {
 				if errors.Is(e, datastore.ErrNoSuchEntity) {
 					dbIndexes[i] = nil

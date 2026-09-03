@@ -390,6 +390,7 @@ func main() {
 	if repoMaxCostUint > math.MaxInt64 {
 		logger.Fatal("Repo cache max cost too large", slog.Uint64("maxCost", repoMaxCostUint))
 	}
+	//nolint:gosec // G115: The check is right above us
 	repoCacheMaxCostBytes = int64(repoMaxCostUint)
 
 	loadLastFetchMap()

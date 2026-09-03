@@ -22,12 +22,12 @@ func GroupAffectedRanges(affected []*osvschema.Affected) {
 			continue
 		}
 
-		var rwms []models.RangeWithMetadata
+		rwms := make([]models.RangeWithMetadata, 0, len(aff.GetRanges()))
 		for _, r := range aff.GetRanges() {
 			rwms = append(rwms, models.RangeWithMetadata{Range: r})
 		}
 		grouped := GroupRanges(rwms)
-		var out []*osvschema.Range
+		out := make([]*osvschema.Range, 0, len(grouped))
 		for _, rwm := range grouped {
 			out = append(out, rwm.Range)
 		}
@@ -357,7 +357,7 @@ func MergeRangesAndCreateAffected(
 					var err error
 					mergedRange, err = MergeTwoRanges(mergedRange, vr)
 					if err != nil {
-						metrics.AddNote("Failed to merge ranges: %v", err)
+						metrics.AddNotef("Failed to merge ranges: %v", err)
 					}
 				}
 			}

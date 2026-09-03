@@ -180,7 +180,7 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 			if affected.Repo != "" {
 				vr.Repo = affected.Repo
 			}
-		}	
+		}
 	}
 
 	return c.ToRangeWithMetadata(versionRanges, models.VersionSourceAffected), currentVersionType, true
@@ -529,7 +529,7 @@ func (s *SplitRangeStrategy) Extract(vers models.Versions, affected models.Affec
 		if v.Version == vers.Version && v.LessThan == vers.LessThan && v.LessThanOrEqual == vers.LessThanOrEqual && v.Status == vers.Status && v.VersionType == vers.VersionType {
 			idx = i
 			break
-}
+		}
 	}
 
 	// Case A: Introduced-only entry (e.g. {version: "1.31.0", lessThan: "unspecified"})

@@ -680,7 +680,7 @@ func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []mo
 
 	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
 	for _, ur := range unresolved {
-		var eventStrings []string
+		eventStrings := make([]string, 0, len(ur.Range.GetEvents()))
 		for _, e := range ur.Range.GetEvents() {
 			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
 		}

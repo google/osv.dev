@@ -326,7 +326,7 @@ func (m model) updateSelectEnv(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) updateLoading(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(sourcesLoadedMsg); ok {
-		var items []list.Item
+		items := make([]list.Item, 0, len(msg.sources))
 		for _, r := range msg.sources {
 			items = append(items, &item{repo: r})
 		}

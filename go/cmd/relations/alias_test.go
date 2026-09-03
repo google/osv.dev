@@ -944,12 +944,10 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 	}
 
 	// Add one more bug that links to the group
-	vulns := []*models.Vulnerability{
-		{AliasRaw: []string{"iii-0"}},
-	}
-	keys := []*datastore.Key{
-		datastore.NameKey("Vulnerability", "iii-new", nil),
-	}
+	vulns := make([]*models.Vulnerability, 0, 1+len(bugIDs))
+	vulns = append(vulns, &models.Vulnerability{AliasRaw: []string{"iii-0"}})
+	keys := make([]*datastore.Key, 0, 1+len(bugIDs))
+	keys = append(keys, datastore.NameKey("Vulnerability", "iii-new", nil))
 
 	// Also create bugs for existing group members
 	for i, id := range bugIDs {

@@ -67,7 +67,7 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulner
 			logger.Warn("Error when extracting CPE versions")
 		}
 		if len(versionRanges) != 0 {
-			var ranges []*osvschema.Range
+			ranges := make([]*osvschema.Range, 0, len(versionRanges))
 			for _, r := range versionRanges {
 				ranges = append(ranges, r.Range)
 			}

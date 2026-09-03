@@ -3,6 +3,7 @@ package website
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -101,6 +102,9 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 			ecoCounts = counts
+			slices.SortFunc(ecoCounts, func(a, b models.EcosystemCount) int {
+				return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+			})
 
 			return nil
 		})

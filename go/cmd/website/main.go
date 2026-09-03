@@ -153,11 +153,18 @@ func run() error {
 		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
 	}
 
+	const (
+		readTimeout    = 15 * time.Second
+		writeTimeout   = 60 * time.Second
+		requestTimeout = writeTimeout - 2*time.Second
+	)
+
 	srv, err := website.NewServer(website.Config{
-		StaticFS: staticFiles,
-		DocsFS:   docsFiles,
-		Stores:   stores,
-		APIURL:   apiURL,
+		StaticFS:       staticFiles,
+		DocsFS:         docsFiles,
+		Stores:         stores,
+		APIURL:         apiURL,
+		RequestTimeout: requestTimeout,
 		Auth: website.AuthConfig{
 			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
@@ -174,8 +181,8 @@ func run() error {
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", *port),
 		Handler:      srv,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
 		IdleTimeout:  60 * time.Second,
 	}
 

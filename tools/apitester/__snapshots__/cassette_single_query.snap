@@ -2165,7 +2165,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",

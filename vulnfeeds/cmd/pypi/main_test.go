@@ -98,11 +98,6 @@ affected:
 	}
 }
 
-//go:fix inline
-func strPtr(s string) *string {
-	return new(s)
-}
-
 func TestGeneratePyPIAffected(t *testing.T) {
 	cve := models.NVDCVE{
 		ID:      "CVE-2022-29194",

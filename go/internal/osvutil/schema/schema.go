@@ -62,7 +62,7 @@ func Validate(data []byte) error {
 		var errs string
 		var errsSb63 strings.Builder
 		for _, desc := range result.Errors() {
-			errsSb63.WriteString(fmt.Sprintf("- %s\n", desc))
+			fmt.Fprintf(&errsSb63, "- %s\n", desc)
 		}
 		errs += errsSb63.String()
 

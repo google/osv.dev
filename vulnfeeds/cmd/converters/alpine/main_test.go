@@ -327,8 +327,3 @@ func TestGenerateAlpineOSV(t *testing.T) {
 		t.Errorf("Expected fixed 5.6.1 for xz (v3.19), got %s", fixed)
 	}
 }
-
-//go:fix inline
-func newString(s string) *string {
-	return new(s)
-}

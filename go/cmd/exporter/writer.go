@@ -130,7 +130,7 @@ func gcsFileUnchanged(ctx context.Context, client clients.CloudStorage, path str
 		return false
 	}
 	if attrs.CRC32C == h.Sum32() {
-		logger.InfoContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
+		logger.DebugContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
 
 		return true
 	}
@@ -152,7 +152,7 @@ func gcsContentUnchanged(ctx context.Context, client clients.CloudStorage, path 
 		return false
 	}
 	if attrs.CRC32C == crc32.Checksum(data, crc32cTable) {
-		logger.InfoContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
+		logger.DebugContext(ctx, "skipping upload, content unchanged", slog.String("path", path))
 
 		return true
 	}

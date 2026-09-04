@@ -202,7 +202,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 				continue
 			}
 
-			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg)
+			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg, verPkg.Ver)
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,
 				VersionInfo: models.VersionInfo{
@@ -259,27 +259,88 @@ func cpeMatchesAlpinePackage(parsed *models.CPEString, alpinePkg string) bool {
 }
 
 // findIntroducedVersion searches NVD CPE configurations for the introduced
-// version corresponding to the given Alpine package. Returns "0" if no
-// VersionStartIncluding match is found.
-func findIntroducedVersion(cve models.NVDCVE, alpinePkg string) string {
+// version corresponding to the given Alpine package, on the branch fixed at
+// fixedVersion. A CVE's CPE configuration can describe several independently
+// vulnerable branches (e.g. fixed separately in 5.26.x and 5.28.x), so a
+// candidate is only used when it sorts before fixedVersion; otherwise it
+// belongs to an unrelated branch and pairing it with fixedVersion would
+// produce an inverted, unsatisfiable range. When several candidates qualify,
+// the one closest to fixedVersion is used. Returns "0" if no match qualifies.
+func findIntroducedVersion(cve models.NVDCVE, alpinePkg string, fixedVersion string) string {
+	introduced := ""
 	for _, config := range cve.Configurations {
 		for _, node := range config.Nodes {
 			for _, match := range node.CPEMatch {
 				if !match.Vulnerable || match.VersionStartIncluding == nil {
 					continue
 				}
+				candidate := *match.VersionStartIncluding
+				if !versionLess(candidate, fixedVersion) {
+					continue
+				}
 				parsed, err := conversion.ParseCPE(match.Criteria)
 				if err != nil {
 					continue
 				}
-				if cpeMatchesAlpinePackage(parsed, alpinePkg) {
-					return *match.VersionStartIncluding
+				if !cpeMatchesAlpinePackage(parsed, alpinePkg) {
+					continue
+				}
+				if introduced == "" || versionLess(introduced, candidate) {
+					introduced = candidate
 				}
 			}
 		}
 	}
 
-	return "0"
+	if introduced == "" {
+		return "0"
+	}
+
+	return introduced
+}
+
+// versionLess reports whether a sorts before b, comparing dot-separated
+// numeric components in order and treating missing trailing components as 0.
+// It is intentionally approximate, ignoring any non-numeric suffix on a
+// component (e.g. Alpine's "-r0" revision, or the "a" in "1.0.2a"), since it
+// is only used to sanity-check that a candidate introduced version precedes
+// a fixed version rather than to order versions precisely.
+func versionLess(a, b string) bool {
+	aParts := numericVersionComponents(a)
+	bParts := numericVersionComponents(b)
+	for i := 0; i < len(aParts) || i < len(bParts); i++ {
+		var av, bv int
+		if i < len(aParts) {
+			av = aParts[i]
+		}
+		if i < len(bParts) {
+			bv = bParts[i]
+		}
+		if av != bv {
+			return av < bv
+		}
+	}
+
+	return false
+}
+
+// numericVersionComponents splits a version string on '.' and parses the
+// leading digits of each component, stopping at the first non-digit rune.
+func numericVersionComponents(version string) []int {
+	fields := strings.Split(version, ".")
+	components := make([]int, len(fields))
+	for i, field := range fields {
+		n := 0
+		for _, c := range field {
+			if c < '0' || c > '9' {
+				break
+			}
+			n = n*10 + int(c-'0')
+		}
+		components[i] = n
+	}
+
+	return components
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

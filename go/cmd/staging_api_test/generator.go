@@ -288,11 +288,9 @@ func newHTTPClient() *http.Client {
 }
 
 // executeRequest sends an HTTP request and updates stats.
-//
-//nolint:gosec // G704: Staging API load testing client
 func executeRequest(ctx context.Context, client *http.Client, req *http.Request, stats *GeneratorStats) {
 	req = req.WithContext(ctx)
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704: Staging API load testing client
 	if err != nil {
 		if ctx.Err() == nil {
 			logger.Warn("Failed to send HTTP request",

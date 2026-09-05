@@ -151,6 +151,26 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			},
 			wantRangeType: VersionRangeTypeGit,
 		},
+		{
+			name: "changes preferred over lessThanOrEqual with filler version",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:          "affected",
+						Version:         "n/a",
+						LessThanOrEqual: "1.0.32",
+						Changes: []models.Change{
+							{At: "1.0.33", Status: "unaffected"},
+						},
+						VersionType: "custom",
+					},
+				},
+			},
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "1.0.33"),
+			},
+			wantRangeType: VersionRangeTypeEcosystem,
+		},
 	}
 
 	for _, tt := range tests {
@@ -384,6 +404,15 @@ func TestGetVersionExtractor(t *testing.T) {
 			expectedType: reflect.TypeFor[*LinuxVersionExtractor](),
 		},
 		{
+			name: "Wordfence CVE",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "Wordfence",
+				},
+			},
+			expectedType: reflect.TypeOf(&WordpressExtractor{}),
+		},
+		{
 			name: "Default CVE",
 			cve: models.CVE5{
 				Metadata: models.CVE5Metadata{
@@ -615,6 +644,51 @@ func TestExtractVersions(t *testing.T) {
 					},
 				}},
 		},
+		{
+			name:        "CVE-2026-1293",
+			cve:         loadTestData(t, "CVE-2026-1293"),
+			cnaAssigner: "Wordfence",
+			repos:       []string{},
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "wordpress-seo",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "26.8"},
+					},
+				}},
+			}},
+		},
+		{
+			name:        "CVE-2021-23209",
+			cve:         loadTestData(t, "CVE-2021-23209"),
+			cnaAssigner: "Patchstack",
+			repos:       []string{},
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "accelerated-mobile-pages",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{Fixed: "1.0.77.33"},
+					},
+				}},
+			}},
+		},
+		{
+			name:             "CVE-2015-10001",
+			cve:              loadTestData(t, "CVE-2015-10001"),
+			cnaAssigner:      "WPScan",
+			repos:            []string{},
+			expectedAffected: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -622,7 +696,9 @@ func TestExtractVersions(t *testing.T) {
 			r := testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
-				Vulnerability: &osvschema.Vulnerability{},
+				Vulnerability: &osvschema.Vulnerability{
+					References: vulns.ClassifyReferences(identifyPossibleURLs(tc.cve)),
+				},
 			}
 			extractor := GetVersionExtractor(tc.cnaAssigner)
 			cache := &git.InMemoryRepoTagsCache{}

@@ -127,12 +127,18 @@ type Affected struct {
 	DefaultStatus string     `json:"defaultStatus,omitempty"`
 }
 
+type Change struct {
+	At     string `json:"at,omitempty"`
+	Status string `json:"status,omitempty"`
+}
+
 type Versions struct {
-	Version         string `json:"version,omitempty"`
-	Status          string `json:"status,omitempty"`
-	LessThanOrEqual string `json:"lessThanOrEqual,omitempty"`
-	LessThan        string `json:"lessThan,omitempty"`
-	VersionType     string `json:"versionType,omitempty"`
+	Version         string   `json:"version,omitempty"`
+	Status          string   `json:"status,omitempty"`
+	LessThanOrEqual string   `json:"lessThanOrEqual,omitempty"`
+	LessThan        string   `json:"lessThan,omitempty"`
+	VersionType     string   `json:"versionType,omitempty"`
+	Changes         []Change `json:"changes,omitempty"`
 }
 
 type CVE5 struct {

@@ -13,6 +13,7 @@ import (
 
 type trackingReadCloser struct {
 	io.Reader
+
 	closed bool
 }
 

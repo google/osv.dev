@@ -4,11 +4,28 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 )
+
+type trackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (r *trackingReadCloser) Close() error {
+	r.closed = true
+	return nil
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
 
 func TestRestSourceRecord_Open(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -37,6 +54,28 @@ func TestRestSourceRecord_Open(t *testing.T) {
 
 	if string(data) != "data" {
 		t.Errorf("Expected 'data', got '%s'", string(data))
+	}
+}
+
+func TestRestSourceRecord_OpenClosesBodyOnHTTPError(t *testing.T) {
+	body := &trackingReadCloser{Reader: strings.NewReader("error")}
+	record := restSourceRecord{
+		cl: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusInternalServerError,
+				Status:     "500 Internal Server Error",
+				Body:       body,
+			}, nil
+		})},
+		urlBase: "https://example.com",
+		urlPath: "/test",
+	}
+
+	if _, err := record.Open(t.Context()); err == nil {
+		t.Fatal("Open succeeded, want HTTP error")
+	}
+	if !body.closed {
+		t.Error("response body was not closed")
 	}
 }
 

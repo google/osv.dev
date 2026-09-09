@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/external
 
-go 1.27.0
+go 1.27.1
 
 require (
 	github.com/aquasecurity/go-pep440-version v0.0.1

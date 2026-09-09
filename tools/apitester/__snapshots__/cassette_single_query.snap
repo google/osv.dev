@@ -5140,7 +5140,8 @@
       "related": [
         "SUSE-SU-2026:2703-1",
         "SUSE-SU-2026:3798-1",
-        "openSUSE-SU-2026:10674-1"
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:21774-1"
       ],
       "database_specific": "<Any value>",
       "references": [
@@ -5423,7 +5424,11 @@
       "aliases": ["CURL-CVE-2026-7168"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:29:08.900Z",
-      "related": ["SUSE-SU-2026:3798-1", "SUSE-SU-2026:3814-1"],
+      "related": [
+        "SUSE-SU-2026:3798-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {

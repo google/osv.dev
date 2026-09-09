@@ -58,7 +58,19 @@ func initialNormalExtraction(vers models.Versions, metrics *models.ConversionMet
 			introduced = vers.Version
 			metrics.AddNotef("%s - Introduced from version value - %s", vQuality.String(), vers.Version)
 		}
-		if vLessThanQual.AtLeast(acceptableQuality) {
+		// Prefer changes for fixed version if available.
+		var fixedFromChanges string
+		for _, ch := range vers.Changes {
+			if ch.Status == "unaffected" && ch.At != "" {
+				fixedFromChanges = ch.At
+				break
+			}
+		}
+
+		if fixedFromChanges != "" {
+			fixed = fixedFromChanges
+			metrics.AddNote("Fixed from changes - %s", fixed)
+		} else if vLessThanQual.AtLeast(acceptableQuality) {
 			fixed = vers.LessThan
 			metrics.AddNotef("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan)
 		} else if vLTOEQual.AtLeast(acceptableQuality) {

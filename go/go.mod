@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go
 
-go 1.27.0
+go 1.27.1
 
 replace osv.dev/bindings/go => ../bindings/go
 
@@ -10,24 +10,24 @@ require (
 	cloud.google.com/go/datastore v1.26.0
 	cloud.google.com/go/monitoring v1.30.0
 	cloud.google.com/go/pubsub/v2 v2.7.0
-	cloud.google.com/go/storage v1.66.0
-	github.com/alicebob/miniredis/v2 v2.38.0
+	cloud.google.com/go/storage v1.67.0
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scalibr v0.5.2
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/klauspost/compress v1.19.2
+	github.com/klauspost/compress v1.20.0
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/nikolalohinski/gonja/v2 v2.9.0
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20260902031056-b388a18021a3
 	github.com/package-url/packageurl-go v0.1.7
 	github.com/pandatix/go-cvss v0.6.4
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/tidwall/gjson v1.19.0
 	github.com/xeipuuv/gojsonschema v1.2.0
-	github.com/yuin/goldmark v1.8.5
+	github.com/yuin/goldmark v1.8.6
 	go.opentelemetry.io/contrib/detectors/gcp v1.46.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.71.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.71.0
@@ -35,16 +35,16 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
-	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/oauth2 v0.37.0
+	golang.org/x/sync v0.23.0
 	golang.org/x/text v0.41.0
-	google.golang.org/api v0.294.0
+	google.golang.org/api v0.297.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.7
 	k8s.io/apimachinery v0.37.0
-	mvdan.cc/sh/v3 v3.13.1
+	mvdan.cc/sh/v3 v3.14.0
 	osv.dev/bindings/go v0.0.0-20260527044221-c1c72c1b0158
 	sigs.k8s.io/yaml v1.6.0
 )

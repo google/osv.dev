@@ -392,7 +392,6 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 							StructValue: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
 									"vendor_product": structpb.NewStringValue("another:app"),
-									"source":         structpb.NewStringValue(string(models.VersionSourceCPE)),
 									"cpes": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("cpe:2.3:a:another:app:*:*:*:*:*:*:*:*"),
@@ -406,7 +405,20 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 														Kind: &structpb.Value_StructValue{
 															StructValue: &structpb.Struct{
 																Fields: map[string]*structpb.Value{
-																	"fixed": structpb.NewStringValue("2.0"),
+																	"source": structpb.NewStringValue(string(models.VersionSourceCPE)),
+																	"range": structpb.NewListValue(&structpb.ListValue{
+																		Values: []*structpb.Value{
+																			{
+																				Kind: &structpb.Value_StructValue{
+																					StructValue: &structpb.Struct{
+																						Fields: map[string]*structpb.Value{
+																							"fixed": structpb.NewStringValue("2.0"),
+																						},
+																					},
+																				},
+																			},
+																		},
+																	}),
 																},
 															},
 														},
@@ -424,7 +436,6 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 							StructValue: &structpb.Struct{
 								Fields: map[string]*structpb.Value{
 									"vendor_product": structpb.NewStringValue("example:app"),
-									"source":         structpb.NewStringValue(string(models.VersionSourceDescription)),
 									"cpes": structpb.NewListValue(&structpb.ListValue{
 										Values: []*structpb.Value{
 											structpb.NewStringValue("cpe:2.3:a:example:app:*:*:*:*:*:*:*:*"),
@@ -438,7 +449,20 @@ func TestCreateUnresolvedRanges(t *testing.T) {
 														Kind: &structpb.Value_StructValue{
 															StructValue: &structpb.Struct{
 																Fields: map[string]*structpb.Value{
-																	"introduced": structpb.NewStringValue("1.0"),
+																	"source": structpb.NewStringValue(string(models.VersionSourceDescription)),
+																	"range": structpb.NewListValue(&structpb.ListValue{
+																		Values: []*structpb.Value{
+																			{
+																				Kind: &structpb.Value_StructValue{
+																					StructValue: &structpb.Struct{
+																						Fields: map[string]*structpb.Value{
+																							"introduced": structpb.NewStringValue("1.0"),
+																						},
+																					},
+																				},
+																			},
+																		},
+																	}),
 																},
 															},
 														},

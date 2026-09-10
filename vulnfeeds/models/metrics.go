@@ -123,6 +123,8 @@ const (
 	VersionSourceDescription VersionSource = "DESCRIPTION"
 	VersionSourceText        VersionSource = "TEXT_EXTRACTION"
 	VersionSourceRefs        VersionSource = "REFERENCES"
+	VersionSourceRefsCommit  VersionSource = "REFERENCES_COMMIT"
+	VersionSourceRefsTag     VersionSource = "REFERENCES_TAG"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {

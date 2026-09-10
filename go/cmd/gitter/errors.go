@@ -156,8 +156,17 @@ func isRefNotFoundError(err error) bool {
 	return errContainsAny(err,
 		"not found or invalid",
 		"failed to resolve target ref",
+		"failed to resolve target branch",
 		"failed to run git rev-parse",
 		"ref cannot be empty",
+	)
+}
+
+// isCommitNotAncestorError returns true if last_scan_commit is not found in the repository or is not an ancestor of HEAD.
+func isCommitNotAncestorError(err error) bool {
+	return errContainsAny(err,
+		"not an ancestor",
+		"failed to resolve last_scan_commit",
 	)
 }
 

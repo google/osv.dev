@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -1893,6 +1894,160 @@ func TestResolveCommit(t *testing.T) {
 				if tt.wantSha != "" && got != tt.wantSha {
 					t.Errorf("ResolveCommit(%q) got %q, want %q", tt.ref, got, tt.wantSha)
 				}
+			}
+		})
+	}
+}
+
+func TestListCommits(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-list-commits.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	commit1, err := r.resolveCommit(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v1.0.0: %v", err)
+	}
+	commit2, err := r.resolveCommit(ctx, "v2.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v2.0.0: %v", err)
+	}
+
+	tests := []struct {
+		name             string
+		targetBranch     string
+		lastScanCommit   string
+		lastScanTime     time.Time
+		newestFirst      bool
+		wantBranch       string
+		wantHead         string
+		wantCommitsCount int
+		wantErr          bool
+		check            func(t *testing.T, commits []*CommitDiff)
+	}{
+		{
+			name:             "Default branch resolution and range query",
+			targetBranch:     "",
+			lastScanTime:     time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 {
+					t.Errorf("expected commit %q, got %q", commit1, commits[0].Commit)
+				}
+			},
+		},
+		{
+			name:             "Specific branch with lastScanCommit",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				c := commits[0]
+				if c.Commit != commit2 {
+					t.Errorf("expected commit %q, got %q", commit2, c.Commit)
+				}
+				if !strings.Contains(c.Message, "commit 2: feature changes") {
+					t.Errorf("unexpected message: %q", c.Message)
+				}
+				if len(c.FilesChanged) == 0 {
+					t.Errorf("expected files changed, got 0")
+				}
+				if c.Patch == "" {
+					t.Errorf("expected non-empty patch")
+				}
+			},
+		},
+		{
+			name:             "Zero commits when lastScanCommit equals HEAD",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit2,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 0,
+		},
+		{
+			name:             "Empty boundaries queries full branch history",
+			targetBranch:     "feature-branch",
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+		},
+		{
+			name:           "Non-ancestor without lastScanTime returns error",
+			targetBranch:   "main",
+			lastScanCommit: commit2,
+			wantErr:        true,
+		},
+		{
+			name:             "Non-ancestor with lastScanTime falls back to lastScanTime",
+			targetBranch:     "main",
+			lastScanCommit:   commit2,
+			lastScanTime:     time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+		},
+		{
+			name:             "Ordering chronological (default oldest first)",
+			targetBranch:     "feature-branch",
+			lastScanTime:     time.Unix(1, 0),
+			newestFirst:      false,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 || commits[1].Commit != commit2 {
+					t.Errorf("expected chronological order [commit1, commit2], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+		{
+			name:             "Ordering newest_first",
+			targetBranch:     "feature-branch",
+			lastScanTime:     time.Unix(1, 0),
+			newestFirst:      true,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit2 || commits[1].Commit != commit1 {
+					t.Errorf("expected reverse chronological order [commit2, commit1], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastScanCommit, tt.lastScanTime, tt.newestFirst)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListCommits() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if branch != tt.wantBranch {
+				t.Errorf("branch = %q, want %q", branch, tt.wantBranch)
+			}
+			if head != tt.wantHead {
+				t.Errorf("head = %q, want %q", head, tt.wantHead)
+			}
+			if len(commits) != tt.wantCommitsCount {
+				t.Fatalf("len(commits) = %d, want %d", len(commits), tt.wantCommitsCount)
+			}
+			if tt.check != nil {
+				tt.check(t, commits)
 			}
 		})
 	}

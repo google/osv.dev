@@ -42,8 +42,8 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 }
 
 // runCmd executes a command with context cancellation handled by sending SIGINT.
-// It logs cancellation errors separately as requested.
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) error {
+// It logs cancellation errors separately as requested
+func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) ([]byte, error) {
 	cmd := prepareCmd(ctx, dir, env, name, args...)
 	out, err := cmd.CombinedOutput()
 
@@ -51,10 +51,10 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 		if ctx.Err() != nil {
 			// Log separately if cancelled
 			logger.DebugContext(ctx, "Command cancelled", slog.String("cmd", name), slog.Any("err", ctx.Err()))
-			return fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
+			return out, fmt.Errorf("command %s cancelled: %w", name, ctx.Err())
 		}
 
-		return fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
+		return out, fmt.Errorf("command %s failed: %w, output: %s", name, err, out)
 	}
 
 	logger.DebugContext(ctx, "Git command executed",
@@ -63,12 +63,13 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 		slog.String("output", string(out)),
 	)
 
-	return nil
+	return out, nil
 }
 
 // cloneRepo clones a git repository into repoPath.
 func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
-	return runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+	_, err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+	return err
 }
 
 // Attempt to recover from git fetch errors
@@ -82,7 +83,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	// We can try removing stale remote-tracking branches and retry
 	if isRefConflictError(err) {
 		logger.WarnContext(ctx, "Ref conflict detected, running git remote prune origin")
-		if err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
+		if _, err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
 			logger.WarnContext(ctx, "Failed to prune origin", slog.Any("err", err))
 			return false
 		}
@@ -101,13 +102,13 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 
 // fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
 func fetchRepo(ctx context.Context, repoPath string) error {
-	err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+	_, err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
 
 	// Make sure origin/HEAD points to the latest default branch from remotes
-	err = runCmd(ctx, repoPath, nil, "git", "remote", "set-head", "origin", "--auto")
+	_, err = runCmd(ctx, repoPath, nil, "git", "remote", "set-head", "origin", "--auto")
 	if err != nil {
 		logger.WarnContext(ctx, "git remote set-head failed", slog.Any("err", err))
 	}
@@ -297,14 +298,14 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 		startArchive := time.Now()
 
 		// Reset working tree to origin/HEAD before creating archive
-		if err := runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD"); err != nil {
+		if _, err := runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD"); err != nil {
 			return nil, fmt.Errorf("git reset failed: %w", err)
 		}
 
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
+		_, err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}

@@ -1,11 +1,11 @@
 module github.com/google/osv.dev/vulnfeeds
 
-go 1.27.0
+go 1.27.1
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
 	cloud.google.com/go/secretmanager v1.21.0
-	cloud.google.com/go/storage v1.66.0
+	cloud.google.com/go/storage v1.67.0
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/atombender/go-jsonschema v0.24.1
@@ -23,9 +23,9 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 	go.opentelemetry.io/otel/trace v1.46.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.23.0
 	golang.org/x/text v0.41.0
-	google.golang.org/api v0.294.0
+	google.golang.org/api v0.297.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.7

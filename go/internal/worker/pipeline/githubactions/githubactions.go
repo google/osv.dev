@@ -28,12 +28,12 @@ func ExtractGitHubRepoURL(actionName string) (string, error) {
 	trimmed := strings.TrimSpace(actionName)
 
 	// Strip common prefixes if present.
-	if strings.HasPrefix(trimmed, "https://github.com/") {
-		trimmed = strings.TrimPrefix(trimmed, "https://github.com/")
-	} else if strings.HasPrefix(trimmed, "http://github.com/") {
-		trimmed = strings.TrimPrefix(trimmed, "http://github.com/")
-	} else if strings.HasPrefix(trimmed, "github.com/") {
-		trimmed = strings.TrimPrefix(trimmed, "github.com/")
+	if after, ok := strings.CutPrefix(trimmed, "https://github.com/"); ok {
+		trimmed = after
+	} else if after, ok := strings.CutPrefix(trimmed, "http://github.com/"); ok {
+		trimmed = after
+	} else if after, ok := strings.CutPrefix(trimmed, "github.com/"); ok {
+		trimmed = after
 	}
 
 	trimmed = strings.Trim(trimmed, "/")
@@ -79,6 +79,7 @@ func (*Enricher) Enrich(ctx context.Context, vuln *osvschema.Vulnerability, _ *p
 				slog.String("name", pkg.GetName()),
 				slog.Any("error", err),
 			)
+
 			continue
 		}
 
@@ -134,5 +135,6 @@ func eventsEqual(a, b []*osvschema.Event) bool {
 			return false
 		}
 	}
+
 	return true
 }

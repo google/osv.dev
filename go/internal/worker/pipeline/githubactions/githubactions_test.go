@@ -173,29 +173,29 @@ func TestEnricher_Enrich(t *testing.T) {
 			t.Fatalf("Enrich() returned unexpected error: %v", err)
 		}
 
-		affected := vuln.Affected[0]
-		if len(affected.Ranges) != 2 {
-			t.Fatalf("expected 2 ranges (SEMVER + GIT), got %d", len(affected.Ranges))
+		affected := vuln.GetAffected()[0]
+		if len(affected.GetRanges()) != 2 {
+			t.Fatalf("expected 2 ranges (SEMVER + GIT), got %d", len(affected.GetRanges()))
 		}
 
 		// First range remains SEMVER
-		if affected.Ranges[0].Type != osvschema.Range_SEMVER {
-			t.Errorf("expected first range to be SEMVER, got %v", affected.Ranges[0].Type)
+		if affected.GetRanges()[0].GetType() != osvschema.Range_SEMVER {
+			t.Errorf("expected first range to be SEMVER, got %v", affected.GetRanges()[0].GetType())
 		}
 
 		// Injected range is GIT
-		gitRange := affected.Ranges[1]
-		if gitRange.Type != osvschema.Range_GIT {
-			t.Errorf("expected second range to be GIT, got %v", gitRange.Type)
+		gitRange := affected.GetRanges()[1]
+		if gitRange.GetType() != osvschema.Range_GIT {
+			t.Errorf("expected second range to be GIT, got %v", gitRange.GetType())
 		}
-		if gitRange.Repo != "https://github.com/actions/checkout" {
-			t.Errorf("expected repo https://github.com/actions/checkout, got %s", gitRange.Repo)
+		if gitRange.GetRepo() != "https://github.com/actions/checkout" {
+			t.Errorf("expected repo https://github.com/actions/checkout, got %s", gitRange.GetRepo())
 		}
-		if len(gitRange.Events) != 2 {
-			t.Fatalf("expected 2 events in GIT range, got %d", len(gitRange.Events))
+		if len(gitRange.GetEvents()) != 2 {
+			t.Fatalf("expected 2 events in GIT range, got %d", len(gitRange.GetEvents()))
 		}
-		if gitRange.Events[0].Introduced != "0" || gitRange.Events[1].Fixed != "4.1.0" {
-			t.Errorf("events in GIT range do not match expected introduced/fixed values: %+v", gitRange.Events)
+		if gitRange.GetEvents()[0].GetIntroduced() != "0" || gitRange.GetEvents()[1].GetFixed() != "4.1.0" {
+			t.Errorf("events in GIT range do not match expected introduced/fixed values: %+v", gitRange.GetEvents())
 		}
 	})
 
@@ -228,17 +228,17 @@ func TestEnricher_Enrich(t *testing.T) {
 			t.Fatalf("Enrich() returned error: %v", err)
 		}
 
-		affected := vuln.Affected[0]
-		if len(affected.Ranges) != 2 {
-			t.Fatalf("expected 2 ranges, got %d", len(affected.Ranges))
+		affected := vuln.GetAffected()[0]
+		if len(affected.GetRanges()) != 2 {
+			t.Fatalf("expected 2 ranges, got %d", len(affected.GetRanges()))
 		}
 
-		gitRange := affected.Ranges[1]
-		if gitRange.Type != osvschema.Range_GIT {
-			t.Errorf("expected GIT range type, got %v", gitRange.Type)
+		gitRange := affected.GetRanges()[1]
+		if gitRange.GetType() != osvschema.Range_GIT {
+			t.Errorf("expected GIT range type, got %v", gitRange.GetType())
 		}
-		if gitRange.Repo != "https://github.com/docker/build-push-action" {
-			t.Errorf("expected repo https://github.com/docker/build-push-action, got %s", gitRange.Repo)
+		if gitRange.GetRepo() != "https://github.com/docker/build-push-action" {
+			t.Errorf("expected repo https://github.com/docker/build-push-action, got %s", gitRange.GetRepo())
 		}
 	})
 
@@ -271,9 +271,9 @@ func TestEnricher_Enrich(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		affected := vuln.Affected[0]
-		if len(affected.Ranges) != 1 {
-			t.Errorf("expected exactly 1 range (unmodified), got %d", len(affected.Ranges))
+		affected := vuln.GetAffected()[0]
+		if len(affected.GetRanges()) != 1 {
+			t.Errorf("expected exactly 1 range (unmodified), got %d", len(affected.GetRanges()))
 		}
 	})
 
@@ -305,9 +305,9 @@ func TestEnricher_Enrich(t *testing.T) {
 			t.Fatalf("expected nil error on malformed package name, got %v", err)
 		}
 
-		affected := vuln.Affected[0]
-		if len(affected.Ranges) != 1 {
-			t.Errorf("expected ranges to remain unmodified, got %d", len(affected.Ranges))
+		affected := vuln.GetAffected()[0]
+		if len(affected.GetRanges()) != 1 {
+			t.Errorf("expected ranges to remain unmodified, got %d", len(affected.GetRanges()))
 		}
 	})
 
@@ -339,16 +339,16 @@ func TestEnricher_Enrich(t *testing.T) {
 		if err := enricher.Enrich(ctx, vuln, &pipeline.EnrichParams{}); err != nil {
 			t.Fatalf("first Enrich failed: %v", err)
 		}
-		if len(vuln.Affected[0].Ranges) != 2 {
-			t.Fatalf("expected 2 ranges after first enrich, got %d", len(vuln.Affected[0].Ranges))
+		if len(vuln.GetAffected()[0].GetRanges()) != 2 {
+			t.Fatalf("expected 2 ranges after first enrich, got %d", len(vuln.GetAffected()[0].GetRanges()))
 		}
 
 		// Second invocation
 		if err := enricher.Enrich(ctx, vuln, &pipeline.EnrichParams{}); err != nil {
 			t.Fatalf("second Enrich failed: %v", err)
 		}
-		if len(vuln.Affected[0].Ranges) != 2 {
-			t.Fatalf("expected still 2 ranges after second enrich (idempotency violated), got %d", len(vuln.Affected[0].Ranges))
+		if len(vuln.GetAffected()[0].GetRanges()) != 2 {
+			t.Fatalf("expected still 2 ranges after second enrich (idempotency violated), got %d", len(vuln.GetAffected()[0].GetRanges()))
 		}
 	})
 
@@ -381,11 +381,11 @@ func TestEnricher_Enrich(t *testing.T) {
 			t.Fatalf("Enrich failed: %v", err)
 		}
 
-		gitRange := vuln.Affected[0].Ranges[1]
+		gitRange := vuln.GetAffected()[0].GetRanges()[1]
 		// Mutating gitRange event must not affect semverEvents
-		gitRange.Events[0].Introduced = "mutated-sha"
-		if semverEvents[0].Introduced != "1.0.0" {
-			t.Errorf("SEMVER event was mutated through GIT range event: got %q, want '1.0.0'", semverEvents[0].Introduced)
+		gitRange.GetEvents()[0].Introduced = "mutated-sha"
+		if semverEvents[0].GetIntroduced() != "1.0.0" {
+			t.Errorf("SEMVER event was mutated through GIT range event: got %q, want '1.0.0'", semverEvents[0].GetIntroduced())
 		}
 	})
 }

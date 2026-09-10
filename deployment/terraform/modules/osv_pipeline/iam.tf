@@ -32,6 +32,7 @@ resource "google_project_iam_member" "worker_node_roles" {
     "roles/monitoring.metricWriter",
     "roles/monitoring.viewer",
     "roles/cloudtrace.agent",
+    "roles/telemetry.tracesWriter",
     "roles/artifactregistry.reader"
   ])
 

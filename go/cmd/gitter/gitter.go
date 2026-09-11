@@ -33,6 +33,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 )
@@ -56,6 +57,7 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /affected-commits": affectedCommitsHandler,
 	"POST /file-diffs":       fileDiffsHandler,
 	"POST /file-content":     fileContentHandler,
+	"POST /commit-diffs":     commitDiffsHandler,
 }
 
 var (
@@ -963,5 +965,112 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
+	}
+}
+
+func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := req.Context()
+	defer func() { logRequestCompletion(ctx, "/commit-diffs", start, statusCode) }()
+
+	body := &pb.CommitDiffsRequest{}
+	if err := unmarshalRequest(req, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(req, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	lastScanCommit := strings.TrimSpace(body.GetLastScanCommit())
+	branch := strings.TrimSpace(body.GetBranch())
+	var lastScanTime time.Time
+	if body.GetLastScanTime() != nil {
+		lastScanTime = body.GetLastScanTime().AsTime()
+	}
+
+	// Require at least one boundary (last_scan_commit or last_scan_time).
+	if lastScanCommit == "" && lastScanTime.IsZero() {
+		statusCode = http.StatusBadRequest
+		http.Error(w, "missing last_scan_commit and last_scan_time (must provide at least one)", statusCode)
+
+		return
+	}
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /commit-diffs",
+		slog.String("last_scan_commit", lastScanCommit),
+		slog.String("branch", branch),
+		slog.Time("last_scan_time", lastScanTime),
+		slog.Bool("newest_first", body.GetNewestFirst()),
+	)
+
+	// Always force update to get latest commits from the remote
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: false})
+	if err != nil {
+		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	resolvedBranch, headCommit, commits, err := repo.ListCommits(ctx, branch, lastScanCommit, lastScanTime, body.GetNewestFirst(), body.GetIncludePaths(), body.GetExcludePaths())
+	if err != nil {
+		// Distinguish missing refs - 404 Not Found (e.g. the commit hash is not a valid ancestor of HEAD - likely from git amend)
+		// From generic issues - 500
+		if isRefNotFoundError(err) || isCommitNotAncestorError(err) {
+			statusCode = http.StatusNotFound
+			http.Error(w, fmt.Sprintf("Commit or branch not found: %v", err), statusCode)
+
+			return
+		}
+		logger.ErrorContext(ctx, "Error listing commits", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error listing commits: %v", err), statusCode)
+
+		return
+	}
+
+	pbCommits := make([]*pb.CommitDiff, 0, len(commits))
+	for _, c := range commits {
+		filesChanged := make([]*pb.FileChange, 0, len(c.FilesChanged))
+		for _, f := range c.FilesChanged {
+			filesChanged = append(filesChanged, &pb.FileChange{
+				FromPath: f.From,
+				ToPath:   f.To,
+			})
+		}
+		pbCommits = append(pbCommits, &pb.CommitDiff{
+			Commit:         c.Commit,
+			Timestamp:      timestamppb.New(c.Timestamp),
+			Message:        c.Message,
+			Patch:          c.Patch,
+			FilesChanged:   filesChanged,
+			PatchTruncated: c.PatchTruncated,
+		})
+	}
+
+	resp := &pb.CommitDiffsResponse{
+		Url:        body.GetUrl(),
+		Branch:     resolvedBranch,
+		HeadCommit: headCommit,
+		//nolint:gosec // G115: len(commits) should safely fit in int32 (max is 2.14 billion)
+		NumCommits: int32(len(commits)),
+		Commits:    pbCommits,
+	}
+
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error writing commit diffs response: %v", err), statusCode)
 	}
 }

@@ -55,9 +55,27 @@ type Repository struct {
 	rootCommits []int
 }
 
-// %H commit hash; %P parent hashes; %D:refs (tab delimited)
-// We use \x09 (tab) as delimiter because it is disallowed in git refs and won't appear in hashes
-const gitLogFormat = "%H%x09%P%x09%D"
+const (
+	// gitLogGraphFormat formats commits for building the commit graph and patch IDs:
+	// %H commit hash; %P parent hashes; %D:refs (tab delimited)
+	// We use \x09 (tab) as delimiter because it is disallowed in git refs and won't appear in hashes
+	gitLogGraphFormat = "%H%x09%P%x09%D"
+
+	commitMetadataTag = "---COMMIT-METADATA---"
+	commitDiffTag     = "---COMMIT-DIFF---"
+
+	// gitLogCommitDiffsFormat formats commit records for ListCommits:
+	// Format goes like this:
+	// %x1e (record separator) ---COMMIT-METADATA---
+	// Metadata: %H (hash); %ct (commit timestamp); %B (raw commit message body)
+	// %x00 (NUL byte) ---COMMIT-DIFF---
+	// The file diffs output
+	gitLogCommitDiffsFormat = "%x1e" + commitMetadataTag + "%n%H%n%ct%n%B%x00" + commitDiffTag + "%n"
+
+	// Delimiters for metadata/diff extraction in ListCommits.
+	commitMetadataMarker = "\x1e" + commitMetadataTag + "\n"
+	commitDiffMarker     = "\x00" + commitDiffTag + "\n"
+)
 
 // Number of workers for patch ID calculation
 var workers = 16
@@ -188,7 +206,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	// --all: all branches
 	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
 	// Redirecting to a file is faster than git binary's own --output flag or streaming into memory.
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogFormat)
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogGraphFormat)
 	cmd.Stdout = tmpFile
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -1012,15 +1030,28 @@ type FileChange struct {
 	To   string
 }
 
+// DefaultMaxCommitPatchBytes is the default maximum size (5 MB) allowed for an individual commit's unified patch diff.
+// If a commit's patch exceeds this size, the patch is truncated to prevent excessive memory consumption.
+const DefaultMaxCommitPatchBytes = 5 * 1024 * 1024
+
+// CommitDiff represents a commit and its changes on a repository.
+type CommitDiff struct {
+	Commit         string
+	Timestamp      time.Time
+	Message        string
+	Patch          string
+	FilesChanged   []*FileChange
+	PatchTruncated bool
+}
+
 // resolveCommit resolves a branch or (abbreviated) commit SHA to its raw 20-byte SHA-1.
 func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, error) {
 	if strings.TrimSpace(ref) == "" {
 		return "", errors.New("ref cannot be empty")
 	}
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "rev-parse", "--verify", "--quiet", ref+"^{commit}")
-	out, err := cmd.CombinedOutput()
+	out, err := runCmd(ctx, r.repoPath, nil, "git", "rev-parse", "--verify", "--quiet", ref+"^{commit}")
 	if err != nil {
-		return "", fmt.Errorf("failed to run git rev-parse on %q: %w, output: %s", ref, err, out)
+		return "", fmt.Errorf("failed to run git rev-parse on %q: %w", ref, err)
 	}
 
 	return strings.TrimSpace(string(out)), nil
@@ -1194,4 +1225,261 @@ func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]by
 	}
 
 	return out, nil
+}
+
+// ListCommits returns commits on targetBranch since lastScanCommit (or the lastScanTime timestamp).
+// Optional includePaths and excludePaths to apply Git pathspec filtering.
+func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastScanCommit string, lastScanTime time.Time, newestFirst bool, includePaths, excludePaths []string) (string, string, []*CommitDiff, error) {
+	repoLock := GetRepoLock(r.URL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
+	logger.DebugContext(ctx, "Starting commits listing",
+		slog.String("target_branch", targetBranch),
+		slog.String("last_scan_commit", lastScanCommit),
+		slog.Time("last_scan_time", lastScanTime),
+		slog.Bool("newest_first", newestFirst),
+		slog.Any("include_paths", includePaths),
+		slog.Any("exclude_paths", excludePaths),
+	)
+	start := time.Now()
+
+	// Step 1: Resolve the target branch name and HEAD commit SHA.
+	var ref string
+	var resolvedBranch string
+	if targetBranch == "" {
+		// If targetBranch is empty, default to origin/HEAD, but still need to find the actual branch name
+		ref = "origin/HEAD"
+		if out, err := runCmd(ctx, r.repoPath, nil, "git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
+			resolvedBranch = strings.TrimPrefix(strings.TrimSpace(string(out)), "origin/")
+		}
+	} else {
+		resolvedBranch = targetBranch
+		if strings.HasPrefix(targetBranch, "origin/") {
+			ref = targetBranch
+		} else {
+			ref = "origin/" + targetBranch
+		}
+	}
+
+	toCommit, err := r.resolveCommit(ctx, ref)
+	if err != nil {
+		// Fallback for local test fixtures without origin/
+		toCommit, err = r.resolveCommit(ctx, targetBranch)
+		if err != nil {
+			return "", "", nil, fmt.Errorf("failed to resolve target branch %q: %w", targetBranch, err)
+		}
+	}
+
+	// Step 2: Validate lastScanCommit
+	var fromCommit string
+	if lastScanCommit != "" {
+		if lastScanCommit == toCommit || strings.HasPrefix(toCommit, lastScanCommit) {
+			// No new commits exist, return early.
+			return resolvedBranch, toCommit, []*CommitDiff{}, nil
+		}
+		// Validates last scan commit is an ancestor of the target HEAD commit
+		_, err := runCmd(ctx, r.repoPath, nil, "git", "merge-base", "--is-ancestor", lastScanCommit, toCommit)
+		if err == nil {
+			fromCommit = lastScanCommit
+		} else {
+			// Fall back to last scan time
+			if lastScanTime.IsZero() {
+				return "", "", nil, fmt.Errorf("last_scan_commit %s is not an ancestor of HEAD commit %s and last_scan_time is not provided", lastScanCommit, toCommit)
+			}
+			logger.WarnContext(ctx, "last_scan_commit is not an ancestor of HEAD, falling back to last_scan_time",
+				slog.String("last_scan_commit", lastScanCommit),
+				slog.Time("last_scan_time", lastScanTime),
+			)
+		}
+	}
+
+	// Step 3: Execute `git log` to extract commit metadata, file status changes, and code diffs.
+	// Command syntax:
+	// `git log [--since=<time>] --format=%x1e---COMMIT-METADATA---%n%H%n%ct%n%B%x00---COMMIT-DIFF---%n --raw -p -M --no-color [--reverse] <range> -- <pathspecs...>`
+	// Flags breakdown:
+	// --format: see comment for const gitLogCommitDiffsFormat for details
+	// --raw: output status and file paths (A|C|D|M|R|T) for parsing via parseNameStatusLine
+	// -p: output unified diff patch for each commit
+	// -M: detect renames and copies
+	// --no-color: plain-text diffs without ANSI escape codes
+	// --reverse: return commits in chronological order (oldest to newest) when newest_first is false
+	// TODO: Depending on the actual needs we might want to use one of the --diff-merges options, but let's not over-complicate things for now
+	args := []string{
+		"log",
+		"--format=" + gitLogCommitDiffsFormat,
+		"--raw",
+		"-p",
+		"-M",
+		"--no-color",
+	}
+
+	if !newestFirst {
+		args = append(args, "--reverse")
+	}
+
+	if fromCommit != "" {
+		args = append(args, fromCommit+".."+toCommit)
+	} else {
+		// Only add --since filter if revision range is not available
+		if !lastScanTime.IsZero() {
+			args = append(args, "--since="+lastScanTime.Format(time.RFC3339))
+		}
+		args = append(args, toCommit)
+	}
+
+	// End of flags
+	args = append(args, "--")
+
+	for _, inc := range includePaths {
+		inc = strings.TrimSpace(inc)
+		if inc != "" {
+			args = append(args, inc)
+		}
+	}
+
+	for _, exc := range excludePaths {
+		exc = strings.TrimSpace(exc)
+		if exc != "" {
+			if strings.HasPrefix(exc, ":(exclude)") || strings.HasPrefix(exc, ":!") {
+				args = append(args, exc)
+			} else {
+				args = append(args, ":(exclude)"+exc)
+			}
+		}
+	}
+
+	out, err := runCmd(ctx, r.repoPath, nil, "git", args...)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("git log failed: %w", err)
+	}
+
+	// Parse git log output into structured CommitDiff objects
+	commits := parseCommitsLog(ctx, out, DefaultMaxCommitPatchBytes)
+
+	logger.DebugContext(ctx, "Commits listing completed",
+		slog.Int("commits_count", len(commits)),
+		slog.Duration("duration", time.Since(start)),
+	)
+
+	return resolvedBranch, toCommit, commits, nil
+}
+
+// parseCommitsLog parses git log output into a slice of CommitDiff.
+func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*CommitDiff {
+	if maxPatchBytes <= 0 {
+		maxPatchBytes = DefaultMaxCommitPatchBytes
+	}
+
+	records := bytes.Split(output, []byte(commitMetadataMarker))
+	commits := make([]*CommitDiff, 0, len(records))
+
+	for _, r := range records {
+		r = bytes.TrimSpace(r)
+		if len(r) == 0 {
+			continue
+		}
+
+		parts := bytes.SplitN(r, []byte(commitDiffMarker), 2)
+		if len(parts) < 2 {
+			logger.WarnContext(ctx, "Malformed commit record in git log output")
+			continue
+		}
+
+		meta := bytes.TrimSpace(parts[0])
+		diffContent := parts[1]
+
+		// Split into 3 parts: [0] = Commit SHA, [1] = Commit Timestamp, [2] = Commit message (if exist).
+		metaLines := bytes.SplitN(meta, []byte("\n"), 3)
+		if len(metaLines) < 2 {
+			logger.WarnContext(ctx, "Malformed metadata in git log output")
+			continue
+		}
+
+		hash := string(metaLines[0])
+		timestampSec, err := strconv.ParseInt(string(metaLines[1]), 10, 64)
+		if err != nil {
+			logger.WarnContext(ctx, "Invalid timestamp in git log output", slog.Any("error", err))
+			continue
+		}
+
+		var msg string
+		if len(metaLines) == 3 {
+			msg = string(bytes.TrimSpace(metaLines[2]))
+		}
+
+		// diffContent contains two sequential sections from git log output:
+		// 1. File diff status entries (each line starts with ":") parsed into FileChange objects.
+		// 2. Unified diff patches (beginning with "diff --")
+		//
+		// Instead of splitting the entire diffContent with strings.Split (which allocates arrays of string pointers
+		// and copies for every single line in large diffs), we scan line-by-line using bytes.IndexByte to locate status
+		// lines, and then slice the remaining unified patch block in a single zero-allocation operation.
+		var filesChanged []*FileChange
+		var patch string
+		var patchTruncated bool
+
+		pos := 0
+		for pos < len(diffContent) {
+			nextNL := bytes.IndexByte(diffContent[pos:], '\n')
+			var line []byte
+			lineStart := pos
+
+			if nextNL == -1 {
+				line = diffContent[pos:]
+				pos = len(diffContent)
+			} else {
+				line = diffContent[pos : pos+nextNL]
+				pos += nextNL + 1
+			}
+
+			if bytes.HasPrefix(line, []byte(":")) {
+				// Section 1: Raw file diff (1 per line)
+				change, err := parseRawDiffLine(string(line))
+				if err != nil {
+					logger.WarnContext(ctx, "Failed to parse raw diff line", slog.String("line", string(line)), slog.Any("error", err))
+					continue
+				}
+				filesChanged = append(filesChanged, change)
+			} else if bytes.HasPrefix(line, []byte("diff --")) {
+				// Section 2: First line of the unified diff patch reached.
+				// Everything from lineStart to the end of diffContent belongs to the unified diff patch.
+				patchBytes := diffContent[lineStart:]
+				if len(patchBytes) > maxPatchBytes {
+					// Truncate the patch if it exceeds maxPatchBytes.
+					patch = string(patchBytes[:maxPatchBytes]) + fmt.Sprintf("\n\n[Diff truncated: exceeded max patch size of %d bytes]", maxPatchBytes)
+					patchTruncated = true
+				} else {
+					patch = strings.TrimSpace(string(patchBytes))
+				}
+
+				break
+			}
+		}
+
+		commits = append(commits, &CommitDiff{
+			Commit:         hash,
+			Timestamp:      time.Unix(timestampSec, 0).UTC(),
+			Message:        msg,
+			Patch:          patch,
+			FilesChanged:   filesChanged,
+			PatchTruncated: patchTruncated,
+		})
+	}
+
+	return commits
+}
+
+// parseRawDiffLine parses a single raw diff line from git log --raw:
+// Format: 	:<src-mode> <dst-mode> <src-sha> <dst-sha> <status>\t<path>[\t<dst-path>]
+// Example: :100644 100644 5be4a4a 0000000 R86 file1 file3
+// Ref: https://git-scm.com/docs/git-diff#_raw_output_format
+// We are only interested in the last part <status>\t<path>[\t<dst-path>] which is always the last field when separated by space
+func parseRawDiffLine(line string) (*FileChange, error) {
+	fields := strings.SplitN(line, " ", 5)
+	if len(fields) < 5 {
+		return nil, fmt.Errorf("invalid raw diff line format: %q", line)
+	}
+
+	return parseNameStatusLine(fields[4])
 }

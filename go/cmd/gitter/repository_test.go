@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -1895,5 +1896,233 @@ func TestResolveCommit(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListCommits(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-list-commits.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	commit1, err := r.resolveCommit(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v1.0.0: %v", err)
+	}
+	commit2, err := r.resolveCommit(ctx, "v2.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v2.0.0: %v", err)
+	}
+
+	tests := []struct {
+		name             string
+		targetBranch     string
+		lastScanCommit   string
+		lastScanTime     time.Time
+		newestFirst      bool
+		includePaths     []string
+		excludePaths     []string
+		wantBranch       string
+		wantHead         string
+		wantCommitsCount int
+		wantErr          bool
+		check            func(t *testing.T, commits []*CommitDiff)
+	}{
+		{
+			name:             "Default branch resolution and range query",
+			targetBranch:     "",
+			lastScanTime:     time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 {
+					t.Errorf("expected commit %q, got %q", commit1, commits[0].Commit)
+				}
+			},
+		},
+		{
+			name:             "Specific branch with lastScanCommit",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				c := commits[0]
+				if c.Commit != commit2 {
+					t.Errorf("expected commit %q, got %q", commit2, c.Commit)
+				}
+				if !strings.Contains(c.Message, "commit 2: feature changes") {
+					t.Errorf("unexpected message: %q", c.Message)
+				}
+				if len(c.FilesChanged) == 0 {
+					t.Errorf("expected files changed, got 0")
+				}
+				if c.Patch == "" {
+					t.Errorf("expected non-empty patch")
+				}
+			},
+		},
+		{
+			name:             "Zero commits when lastScanCommit equals HEAD",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit2,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 0,
+		},
+		{
+			name:             "Empty boundaries queries full branch history",
+			targetBranch:     "feature-branch",
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+		},
+		{
+			name:           "Non-ancestor without lastScanTime returns error",
+			targetBranch:   "main",
+			lastScanCommit: commit2,
+			wantErr:        true,
+		},
+		{
+			name:             "Non-ancestor with lastScanTime falls back to lastScanTime",
+			targetBranch:     "main",
+			lastScanCommit:   commit2,
+			lastScanTime:     time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+		},
+		{
+			name:             "Ordering chronological (default oldest first)",
+			targetBranch:     "feature-branch",
+			lastScanTime:     time.Unix(1, 0),
+			newestFirst:      false,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 || commits[1].Commit != commit2 {
+					t.Errorf("expected chronological order [commit1, commit2], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+		{
+			name:             "Ordering newest_first",
+			targetBranch:     "feature-branch",
+			lastScanTime:     time.Unix(1, 0),
+			newestFirst:      true,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit2 || commits[1].Commit != commit1 {
+					t.Errorf("expected reverse chronological order [commit2, commit1], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+		{
+			name:             "Path filtering with include_paths",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			includePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if len(commits[0].FilesChanged) != 1 {
+					t.Fatalf("expected exactly 1 file changed, got %d", len(commits[0].FilesChanged))
+				}
+				if commits[0].FilesChanged[0].To != "modified_file.txt" {
+					t.Errorf("expected modified_file.txt, got %q", commits[0].FilesChanged[0].To)
+				}
+			},
+		},
+		{
+			name:             "Path filtering with exclude_paths",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			excludePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				for _, fc := range commits[0].FilesChanged {
+					if fc.To == "modified_file.txt" || fc.From == "modified_file.txt" {
+						t.Errorf("expected modified_file.txt to be excluded, but found it in files changed")
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastScanCommit, tt.lastScanTime, tt.newestFirst, tt.includePaths, tt.excludePaths)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListCommits() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if branch != tt.wantBranch {
+				t.Errorf("branch = %q, want %q", branch, tt.wantBranch)
+			}
+			if head != tt.wantHead {
+				t.Errorf("head = %q, want %q", head, tt.wantHead)
+			}
+			if len(commits) != tt.wantCommitsCount {
+				t.Fatalf("len(commits) = %d, want %d", len(commits), tt.wantCommitsCount)
+			}
+			if tt.check != nil {
+				tt.check(t, commits)
+			}
+		})
+	}
+}
+
+func TestParseCommitsLogPatchTruncation(t *testing.T) {
+	ctx := t.Context()
+	sampleLog := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"feat: add large dataset\n" +
+		"\x00---COMMIT-DIFF---\n" +
+		":100644 100644 5be4a4a 0000000 M\tlarge_file.txt\n" +
+		"diff --git a/large_file.txt b/large_file.txt\n" +
+		"--- a/large_file.txt\n" +
+		"+++ b/large_file.txt\n" +
+		"@@ -1,3 +1,3 @@\n" +
+		"+Line 1: this is a huge patch hunk\n" +
+		"+Line 2: another line of data\n" +
+		"+Line 3: yet another line of data\n")
+
+	// Parse with a tiny limit (20 bytes) to force truncation for testing
+	commits := parseCommitsLog(ctx, sampleLog, 20)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit, got %d", len(commits))
+	}
+
+	c := commits[0]
+	if c.Commit != "abcd1234abcd1234abcd1234abcd1234abcd1234" {
+		t.Errorf("unexpected commit hash: %s", c.Commit)
+	}
+	if len(c.FilesChanged) != 1 || c.FilesChanged[0].To != "large_file.txt" {
+		t.Errorf("FilesChanged was lost or corrupted: %+v", c.FilesChanged)
+	}
+	if !c.PatchTruncated {
+		t.Errorf("expected PatchTruncated to be true")
+	}
+	if !strings.Contains(c.Patch, "[Diff truncated: exceeded max patch size of 20 bytes]") {
+		t.Errorf("expected truncation notice in patch, got: %s", c.Patch)
 	}
 }

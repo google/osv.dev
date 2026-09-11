@@ -18,7 +18,7 @@ RUN apt-get update && \
     apt-get install -y \
     wget \
     google-cloud-cli-firestore-emulator \
-    google-cloud-sdk-datastore-emulator \
+    google-cloud-cli-datastore-emulator \
     openjdk-21-jre  # Needed for Datastore emulator.
 
 # TODO(michaelkedar): remove datastore emulator after firestore changes are merged.

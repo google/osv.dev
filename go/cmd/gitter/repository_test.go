@@ -1920,6 +1920,8 @@ func TestListCommits(t *testing.T) {
 		lastScanCommit   string
 		lastScanTime     time.Time
 		newestFirst      bool
+		includePaths     []string
+		excludePaths     []string
 		wantBranch       string
 		wantHead         string
 		wantCommitsCount int
@@ -2026,11 +2028,46 @@ func TestListCommits(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:             "Path filtering with include_paths",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			includePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if len(commits[0].FilesChanged) != 1 {
+					t.Fatalf("expected exactly 1 file changed, got %d", len(commits[0].FilesChanged))
+				}
+				if commits[0].FilesChanged[0].To != "modified_file.txt" {
+					t.Errorf("expected modified_file.txt, got %q", commits[0].FilesChanged[0].To)
+				}
+			},
+		},
+		{
+			name:             "Path filtering with exclude_paths",
+			targetBranch:     "feature-branch",
+			lastScanCommit:   commit1,
+			excludePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				for _, fc := range commits[0].FilesChanged {
+					if fc.To == "modified_file.txt" || fc.From == "modified_file.txt" {
+						t.Errorf("expected modified_file.txt to be excluded, but found it in files changed")
+					}
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastScanCommit, tt.lastScanTime, tt.newestFirst)
+			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastScanCommit, tt.lastScanTime, tt.newestFirst, tt.includePaths, tt.excludePaths)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListCommits() error = %v, wantErr = %v", err, tt.wantErr)
 			}
@@ -2050,5 +2087,42 @@ func TestListCommits(t *testing.T) {
 				tt.check(t, commits)
 			}
 		})
+	}
+}
+
+func TestParseCommitsLogPatchTruncation(t *testing.T) {
+	ctx := t.Context()
+	sampleLog := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"feat: add large dataset\n" +
+		"\x00---COMMIT-DIFF---\n" +
+		":100644 100644 5be4a4a 0000000 M\tlarge_file.txt\n" +
+		"diff --git a/large_file.txt b/large_file.txt\n" +
+		"--- a/large_file.txt\n" +
+		"+++ b/large_file.txt\n" +
+		"@@ -1,3 +1,3 @@\n" +
+		"+Line 1: this is a huge patch hunk\n" +
+		"+Line 2: another line of data\n" +
+		"+Line 3: yet another line of data\n")
+
+	// Parse with a tiny limit (20 bytes) to force truncation for testing
+	commits := parseCommitsLog(ctx, sampleLog, 20)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit, got %d", len(commits))
+	}
+
+	c := commits[0]
+	if c.Commit != "abcd1234abcd1234abcd1234abcd1234abcd1234" {
+		t.Errorf("unexpected commit hash: %s", c.Commit)
+	}
+	if len(c.FilesChanged) != 1 || c.FilesChanged[0].To != "large_file.txt" {
+		t.Errorf("FilesChanged was lost or corrupted: %+v", c.FilesChanged)
+	}
+	if !c.PatchTruncated {
+		t.Errorf("expected PatchTruncated to be true")
+	}
+	if !strings.Contains(c.Patch, "[Diff truncated: exceeded max patch size of 20 bytes]") {
+		t.Errorf("expected truncation notice in patch, got: %s", c.Patch)
 	}
 }

@@ -1023,7 +1023,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resolvedBranch, headCommit, commits, err := repo.ListCommits(ctx, branch, lastScanCommit, lastScanTime, body.GetNewestFirst())
+	resolvedBranch, headCommit, commits, err := repo.ListCommits(ctx, branch, lastScanCommit, lastScanTime, body.GetNewestFirst(), body.GetIncludePaths(), body.GetExcludePaths())
 	if err != nil {
 		// Distinguish missing refs - 404 Not Found (e.g. the commit hash is not a valid ancestor of HEAD - likely from git amend)
 		// From generic issues - 500
@@ -1050,11 +1050,12 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 			})
 		}
 		pbCommits = append(pbCommits, &pb.CommitDiff{
-			Commit:       c.Commit,
-			Timestamp:    timestamppb.New(c.Timestamp),
-			Message:      c.Message,
-			Patch:        c.Patch,
-			FilesChanged: filesChanged,
+			Commit:         c.Commit,
+			Timestamp:      timestamppb.New(c.Timestamp),
+			Message:        c.Message,
+			Patch:          c.Patch,
+			FilesChanged:   filesChanged,
+			PatchTruncated: c.PatchTruncated,
 		})
 	}
 

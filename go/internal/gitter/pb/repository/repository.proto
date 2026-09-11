@@ -97,6 +97,7 @@ message CommitDiff {
     string message = 3;
     string patch = 4;
     repeated FileChange files_changed = 5;
+    bool patch_truncated = 6;
 }
 
 message CommitDiffsRequest {
@@ -105,6 +106,8 @@ message CommitDiffsRequest {
     string last_scan_commit = 3;                  // Optional, SHA of last scanned commit, preferred over last_scan_time when provided
     google.protobuf.Timestamp last_scan_time = 4; // Optional, timestamp of last scan. Used as fallback if last_scan_commit is not provided or is no longer on the branch.
     bool newest_first = 5;                        // Optional, if true, newest commits first. Defaults to false (chronological order).
+    repeated string include_paths = 6;            // Optional, paths/globs to include in diffs
+    repeated string exclude_paths = 7;            // Optional, paths/globs to exclude from diffs
 }
 
 message CommitDiffsResponse {

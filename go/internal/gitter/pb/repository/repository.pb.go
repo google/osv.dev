@@ -853,14 +853,15 @@ func (x *FileContentResponse) GetContent() []byte {
 }
 
 type CommitDiff struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commit        string                 `protobuf:"bytes,1,opt,name=commit,proto3" json:"commit,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	Patch         string                 `protobuf:"bytes,4,opt,name=patch,proto3" json:"patch,omitempty"`
-	FilesChanged  []*FileChange          `protobuf:"bytes,5,rep,name=files_changed,json=filesChanged,proto3" json:"files_changed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Commit         string                 `protobuf:"bytes,1,opt,name=commit,proto3" json:"commit,omitempty"`
+	Timestamp      *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Message        string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	Patch          string                 `protobuf:"bytes,4,opt,name=patch,proto3" json:"patch,omitempty"`
+	FilesChanged   []*FileChange          `protobuf:"bytes,5,rep,name=files_changed,json=filesChanged,proto3" json:"files_changed,omitempty"`
+	PatchTruncated bool                   `protobuf:"varint,6,opt,name=patch_truncated,json=patchTruncated,proto3" json:"patch_truncated,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CommitDiff) Reset() {
@@ -928,6 +929,13 @@ func (x *CommitDiff) GetFilesChanged() []*FileChange {
 	return nil
 }
 
+func (x *CommitDiff) GetPatchTruncated() bool {
+	if x != nil {
+		return x.PatchTruncated
+	}
+	return false
+}
+
 type CommitDiffsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Url            string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
@@ -935,6 +943,8 @@ type CommitDiffsRequest struct {
 	LastScanCommit string                 `protobuf:"bytes,3,opt,name=last_scan_commit,json=lastScanCommit,proto3" json:"last_scan_commit,omitempty"` // Optional, SHA of last scanned commit, preferred over last_scan_time when provided
 	LastScanTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_scan_time,json=lastScanTime,proto3" json:"last_scan_time,omitempty"`       // Optional, timestamp of last scan. Used as fallback if last_scan_commit is not provided or is no longer on the branch.
 	NewestFirst    bool                   `protobuf:"varint,5,opt,name=newest_first,json=newestFirst,proto3" json:"newest_first,omitempty"`           // Optional, if true, newest commits first. Defaults to false (chronological order).
+	IncludePaths   []string               `protobuf:"bytes,6,rep,name=include_paths,json=includePaths,proto3" json:"include_paths,omitempty"`         // Optional, paths/globs to include in diffs
+	ExcludePaths   []string               `protobuf:"bytes,7,rep,name=exclude_paths,json=excludePaths,proto3" json:"exclude_paths,omitempty"`         // Optional, paths/globs to exclude from diffs
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1002,6 +1012,20 @@ func (x *CommitDiffsRequest) GetNewestFirst() bool {
 		return x.NewestFirst
 	}
 	return false
+}
+
+func (x *CommitDiffsRequest) GetIncludePaths() []string {
+	if x != nil {
+		return x.IncludePaths
+	}
+	return nil
+}
+
+func (x *CommitDiffsRequest) GetExcludePaths() []string {
+	if x != nil {
+		return x.ExcludePaths
+	}
+	return nil
 }
 
 type CommitDiffsResponse struct {
@@ -1134,20 +1158,23 @@ const file_internal_gitter_pb_repository_repository_proto_rawDesc = "" +
 	"\x06commit\x18\x02 \x01(\tR\x06commit\x12\x12\n" +
 	"\x04path\x18\x03 \x01(\tR\x04path\"/\n" +
 	"\x13FileContentResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"\xc7\x01\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\"\xf0\x01\n" +
 	"\n" +
 	"CommitDiff\x12\x16\n" +
 	"\x06commit\x18\x01 \x01(\tR\x06commit\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\x12\x14\n" +
 	"\x05patch\x18\x04 \x01(\tR\x05patch\x127\n" +
-	"\rfiles_changed\x18\x05 \x03(\v2\x12.gitter.FileChangeR\ffilesChanged\"\xcd\x01\n" +
+	"\rfiles_changed\x18\x05 \x03(\v2\x12.gitter.FileChangeR\ffilesChanged\x12'\n" +
+	"\x0fpatch_truncated\x18\x06 \x01(\bR\x0epatchTruncated\"\x97\x02\n" +
 	"\x12CommitDiffsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
 	"\x06branch\x18\x02 \x01(\tR\x06branch\x12(\n" +
 	"\x10last_scan_commit\x18\x03 \x01(\tR\x0elastScanCommit\x12@\n" +
 	"\x0elast_scan_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\flastScanTime\x12!\n" +
-	"\fnewest_first\x18\x05 \x01(\bR\vnewestFirst\"\xaf\x01\n" +
+	"\fnewest_first\x18\x05 \x01(\bR\vnewestFirst\x12#\n" +
+	"\rinclude_paths\x18\x06 \x03(\tR\fincludePaths\x12#\n" +
+	"\rexclude_paths\x18\a \x03(\tR\fexcludePaths\"\xaf\x01\n" +
 	"\x13CommitDiffsResponse\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
 	"\x06branch\x18\x02 \x01(\tR\x06branch\x12\x1f\n" +

@@ -921,6 +921,7 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 
 	scanner := bufio.NewScanner(stdout)
 	tagsMap := make(map[string]SHA1)
+	peeled := make(map[string]struct{}) // Tracks tags that have been peeled (i.e. the associated hash is a commit object hash)
 
 	for scanner.Scan() {
 		// Both git ls-remote and show-ref return in the format:
@@ -951,7 +952,23 @@ func (r *Repository) runAndParseTags(ctx context.Context, cmd *exec.Cmd) (map[st
 			continue
 		}
 
-		tagsMap[tag] = SHA1(hashBytes)
+		// In Git, annotated tags produce two references when listed:
+		// 1) The tag object reference: "<tag_object_hash> refs/tags/<name>"
+		// 2) The peeled ref:           "<commit_hash> refs/tags/<name>^{}"
+		//
+		// We always want to map the tag to the underlying commit hash, so:
+		// - If a peeled entry ("<name>^{}") is encountered, we strip "^{}", store the commit hash, and mark it in the peeled set.
+		// - If an unpeeled entry ("<name>") is encountered, we only store it if it has not already been peeled.
+		if cleanTag, isPeeled := strings.CutSuffix(tag, "^{}"); isPeeled {
+			if len(cleanTag) > 0 {
+				tagsMap[cleanTag] = SHA1(hashBytes)
+				peeled[cleanTag] = struct{}{}
+			}
+		} else {
+			if _, ok := peeled[tag]; !ok {
+				tagsMap[tag] = SHA1(hashBytes)
+			}
+		}
 	}
 
 	if err := cmd.Wait(); err != nil {

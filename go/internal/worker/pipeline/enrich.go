@@ -4,6 +4,7 @@ package pipeline
 import (
 	"context"
 
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/osv/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -15,6 +16,7 @@ type EnrichParams struct {
 	EcosystemProvider *ecosystem.Provider
 	ExistingVuln      *osvschema.Vulnerability
 	RelationsStore    models.RelationsStore
+	GitterClient      gitter.Client
 }
 
 type Enricher interface {

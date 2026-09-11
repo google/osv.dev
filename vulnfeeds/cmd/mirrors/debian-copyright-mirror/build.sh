@@ -16,7 +16,9 @@ set -ex
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cd ../../..
+
 docker build \
   -t gcr.io/oss-vdb/debian-copyright-mirror:latest \
-  -f Dockerfile --pull . && \
+  -f cmd/mirrors/debian-copyright-mirror/Dockerfile --pull . && \
 gcloud docker -- push gcr.io/oss-vdb/debian-copyright-mirror:latest

@@ -66,6 +66,18 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		task.Type = TaskUpdate
 	}
 
+	// An update with no payload is not a deletion, and parseVuln only returns an
+	// empty vulnerability for empty data, so there is nothing here to process.
+	// publishUpdate produces these when a record is too large for a Pub/Sub
+	// message. The engine would just fail with "vuln not provided", so NACKing
+	// only puts the message back to fail again.
+	if task.Type == TaskUpdate && task.Vuln == nil {
+		logger.ErrorContext(taskCtx, "Dropping update with no vulnerability data, record is probably too large to publish", logInfo...)
+		m.Ack()
+
+		return
+	}
+
 	task.ReceivedTime, err = s.timeFromUnixSeconds(m.Attributes["req_timestamp"])
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse req_timestamp attribute, ignoring", append(logInfo, slog.Any("error", err))...)

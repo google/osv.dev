@@ -20,6 +20,9 @@ module.exports = {
     static: '../dist/static',
   },
   optimization: {
+    minimizeOptions: {
+      html: false,
+    },
     splitChunks: {
       cacheGroups: {
         vendorsJs: {
@@ -36,9 +39,9 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] }, info: { minimized: true } },
+        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         // TODO(michaelkedar): Remove this once the website is fully migrated.
-        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] }, info: { minimized: true } },
+        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),

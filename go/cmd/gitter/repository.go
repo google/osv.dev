@@ -1227,17 +1227,17 @@ func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]by
 	return out, nil
 }
 
-// ListCommits returns commits on targetBranch since lastScanCommit (or the lastScanTime timestamp).
+// ListCommits returns commits on targetBranch since lastSyncedCommit (or the lastSyncedTime timestamp).
 // Optional includePaths and excludePaths to apply Git pathspec filtering.
-func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastScanCommit string, lastScanTime time.Time, newestFirst bool, includePaths, excludePaths []string) (string, string, []*CommitDiff, error) {
+func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastSyncedCommit string, lastSyncedTime time.Time, newestFirst bool, includePaths, excludePaths []string) (string, string, []*CommitDiff, error) {
 	repoLock := GetRepoLock(r.URL)
 	repoLock.RLock()
 	defer repoLock.RUnlock()
 
 	logger.DebugContext(ctx, "Starting commits listing",
 		slog.String("target_branch", targetBranch),
-		slog.String("last_scan_commit", lastScanCommit),
-		slog.Time("last_scan_time", lastScanTime),
+		slog.String("last_synced_commit", lastSyncedCommit),
+		slog.Time("last_synced_time", lastSyncedTime),
 		slog.Bool("newest_first", newestFirst),
 		slog.Any("include_paths", includePaths),
 		slog.Any("exclude_paths", excludePaths),
@@ -1271,25 +1271,25 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastScanComm
 		}
 	}
 
-	// Step 2: Validate lastScanCommit
+	// Step 2: Validate lastSyncedCommit
 	var fromCommit string
-	if lastScanCommit != "" {
-		if lastScanCommit == toCommit || strings.HasPrefix(toCommit, lastScanCommit) {
+	if lastSyncedCommit != "" {
+		if lastSyncedCommit == toCommit {
 			// No new commits exist, return early.
 			return resolvedBranch, toCommit, []*CommitDiff{}, nil
 		}
-		// Validates last scan commit is an ancestor of the target HEAD commit
-		_, err := runCmd(ctx, r.repoPath, nil, "git", "merge-base", "--is-ancestor", lastScanCommit, toCommit)
+		// Validates last synced commit is an ancestor of the target HEAD commit
+		_, err := runCmd(ctx, r.repoPath, nil, "git", "merge-base", "--is-ancestor", lastSyncedCommit, toCommit)
 		if err == nil {
-			fromCommit = lastScanCommit
+			fromCommit = lastSyncedCommit
 		} else {
-			// Fall back to last scan time
-			if lastScanTime.IsZero() {
-				return "", "", nil, fmt.Errorf("last_scan_commit %s is not an ancestor of HEAD commit %s and last_scan_time is not provided", lastScanCommit, toCommit)
+			// Fall back to last sync time
+			if lastSyncedTime.IsZero() {
+				return "", "", nil, fmt.Errorf("last_synced_commit %s is not an ancestor of HEAD commit %s and last_synced_time is not provided", lastSyncedCommit, toCommit)
 			}
-			logger.WarnContext(ctx, "last_scan_commit is not an ancestor of HEAD, falling back to last_scan_time",
-				slog.String("last_scan_commit", lastScanCommit),
-				slog.Time("last_scan_time", lastScanTime),
+			logger.WarnContext(ctx, "last_synced_commit is not an ancestor of HEAD, falling back to last_synced_time",
+				slog.String("last_synced_commit", lastSyncedCommit),
+				slog.Time("last_synced_time", lastSyncedTime),
 			)
 		}
 	}
@@ -1322,8 +1322,8 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastScanComm
 		args = append(args, fromCommit+".."+toCommit)
 	} else {
 		// Only add --since filter if revision range is not available
-		if !lastScanTime.IsZero() {
-			args = append(args, "--since="+lastScanTime.Format(time.RFC3339))
+		if !lastSyncedTime.IsZero() {
+			args = append(args, "--since="+lastSyncedTime.Format(time.RFC3339))
 		}
 		args = append(args, toCommit)
 	}
@@ -1405,7 +1405,7 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 
 		var msg string
 		if len(metaLines) == 3 {
-			msg = string(bytes.TrimSpace(metaLines[2]))
+			msg = strings.TrimSpace(strings.ToValidUTF8(string(metaLines[2]), ""))
 		}
 
 		// diffContent contains two sequential sections from git log output:
@@ -1435,7 +1435,7 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 
 			if bytes.HasPrefix(line, []byte(":")) {
 				// Section 1: Raw file diff (1 per line)
-				change, err := parseRawDiffLine(string(line))
+				change, err := parseRawDiffLine(strings.ToValidUTF8(string(line), ""))
 				if err != nil {
 					logger.WarnContext(ctx, "Failed to parse raw diff line", slog.String("line", string(line)), slog.Any("error", err))
 					continue
@@ -1447,10 +1447,10 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 				patchBytes := diffContent[lineStart:]
 				if len(patchBytes) > maxPatchBytes {
 					// Truncate the patch if it exceeds maxPatchBytes.
-					patch = string(patchBytes[:maxPatchBytes]) + fmt.Sprintf("\n\n[Diff truncated: exceeded max patch size of %d bytes]", maxPatchBytes)
+					patch = strings.ToValidUTF8(string(patchBytes[:maxPatchBytes]), "") + fmt.Sprintf("\n\n[Diff truncated: exceeded max patch size of %d bytes]", maxPatchBytes)
 					patchTruncated = true
 				} else {
-					patch = strings.TrimSpace(string(patchBytes))
+					patch = strings.TrimSpace(strings.ToValidUTF8(string(patchBytes), ""))
 				}
 
 				break

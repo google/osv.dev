@@ -162,11 +162,11 @@ func isRefNotFoundError(err error) bool {
 	)
 }
 
-// isCommitNotAncestorError returns true if last_scan_commit is not found in the repository or is not an ancestor of HEAD.
+// isCommitNotAncestorError returns true if last_synced_commit is not found in the repository or is not an ancestor of HEAD.
 func isCommitNotAncestorError(err error) bool {
 	return errContainsAny(err,
 		"not an ancestor",
-		"failed to resolve last_scan_commit",
+		"failed to resolve last_synced_commit",
 	)
 }
 

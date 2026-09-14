@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -18,6 +19,7 @@ func runGit(t *testing.T, repoPath string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repoPath
+	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v failed: %v\nOutput: %s", args, err, out)
 	}
@@ -1917,8 +1919,8 @@ func TestListCommits(t *testing.T) {
 	tests := []struct {
 		name             string
 		targetBranch     string
-		lastScanCommit   string
-		lastScanTime     time.Time
+		lastSyncedCommit string
+		lastSyncedTime   time.Time
 		newestFirst      bool
 		includePaths     []string
 		excludePaths     []string
@@ -1931,7 +1933,7 @@ func TestListCommits(t *testing.T) {
 		{
 			name:             "Default branch resolution and range query",
 			targetBranch:     "",
-			lastScanTime:     time.Unix(1, 0),
+			lastSyncedTime:   time.Unix(1, 0),
 			wantBranch:       "main",
 			wantHead:         commit1,
 			wantCommitsCount: 1,
@@ -1943,9 +1945,9 @@ func TestListCommits(t *testing.T) {
 			},
 		},
 		{
-			name:             "Specific branch with lastScanCommit",
+			name:             "Specific branch with lastSyncedCommit",
 			targetBranch:     "feature-branch",
-			lastScanCommit:   commit1,
+			lastSyncedCommit: commit1,
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
 			wantCommitsCount: 1,
@@ -1967,9 +1969,9 @@ func TestListCommits(t *testing.T) {
 			},
 		},
 		{
-			name:             "Zero commits when lastScanCommit equals HEAD",
+			name:             "Zero commits when lastSyncedCommit equals HEAD",
 			targetBranch:     "feature-branch",
-			lastScanCommit:   commit2,
+			lastSyncedCommit: commit2,
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
 			wantCommitsCount: 0,
@@ -1982,16 +1984,16 @@ func TestListCommits(t *testing.T) {
 			wantCommitsCount: 2,
 		},
 		{
-			name:           "Non-ancestor without lastScanTime returns error",
-			targetBranch:   "main",
-			lastScanCommit: commit2,
-			wantErr:        true,
+			name:             "Non-ancestor without lastSyncedTime returns error",
+			targetBranch:     "main",
+			lastSyncedCommit: commit2,
+			wantErr:          true,
 		},
 		{
-			name:             "Non-ancestor with lastScanTime falls back to lastScanTime",
+			name:             "Non-ancestor with lastSyncedTime falls back to lastSyncedTime",
 			targetBranch:     "main",
-			lastScanCommit:   commit2,
-			lastScanTime:     time.Unix(1, 0),
+			lastSyncedCommit: commit2,
+			lastSyncedTime:   time.Unix(1, 0),
 			wantBranch:       "main",
 			wantHead:         commit1,
 			wantCommitsCount: 1,
@@ -1999,7 +2001,7 @@ func TestListCommits(t *testing.T) {
 		{
 			name:             "Ordering chronological (default oldest first)",
 			targetBranch:     "feature-branch",
-			lastScanTime:     time.Unix(1, 0),
+			lastSyncedTime:   time.Unix(1, 0),
 			newestFirst:      false,
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
@@ -2015,7 +2017,7 @@ func TestListCommits(t *testing.T) {
 		{
 			name:             "Ordering newest_first",
 			targetBranch:     "feature-branch",
-			lastScanTime:     time.Unix(1, 0),
+			lastSyncedTime:   time.Unix(1, 0),
 			newestFirst:      true,
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
@@ -2031,7 +2033,7 @@ func TestListCommits(t *testing.T) {
 		{
 			name:             "Path filtering with include_paths",
 			targetBranch:     "feature-branch",
-			lastScanCommit:   commit1,
+			lastSyncedCommit: commit1,
 			includePaths:     []string{"modified_file.txt"},
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
@@ -2049,7 +2051,7 @@ func TestListCommits(t *testing.T) {
 		{
 			name:             "Path filtering with exclude_paths",
 			targetBranch:     "feature-branch",
-			lastScanCommit:   commit1,
+			lastSyncedCommit: commit1,
 			excludePaths:     []string{"modified_file.txt"},
 			wantBranch:       "feature-branch",
 			wantHead:         commit2,
@@ -2067,7 +2069,7 @@ func TestListCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastScanCommit, tt.lastScanTime, tt.newestFirst, tt.includePaths, tt.excludePaths)
+			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastSyncedCommit, tt.lastSyncedTime, tt.newestFirst, tt.includePaths, tt.excludePaths)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListCommits() error = %v, wantErr = %v", err, tt.wantErr)
 			}
@@ -2124,5 +2126,33 @@ func TestParseCommitsLogPatchTruncation(t *testing.T) {
 	}
 	if !strings.Contains(c.Patch, "[Diff truncated: exceeded max patch size of 20 bytes]") {
 		t.Errorf("expected truncation notice in patch, got: %s", c.Patch)
+	}
+}
+
+func TestParseCommitsLogInvalidUTF8(t *testing.T) {
+	ctx := t.Context()
+	// Create a patch with a multi-byte UTF-8 emoji ("🚀" = 4 bytes: 0xF0, 0x9F, 0x99, 0x80)
+	// and truncate right in the middle of the rune bytes.
+	prefix := "diff --git a/a.txt b/a.txt\n+🚀"
+	rawBytes := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"feat: \xff\xfe non-utf8 commit msg\n" +
+		"\x00---COMMIT-DIFF---\n" +
+		prefix + " trailing content\n")
+
+	// Cut halfway through the 🚀 emoji
+	cutLimit := len("diff --git a/a.txt b/a.txt\n+") + 2
+	commits := parseCommitsLog(ctx, rawBytes, cutLimit)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit, got %d", len(commits))
+	}
+
+	// Verify both message and patch produce valid UTF-8 strings
+	if !utf8.ValidString(commits[0].Message) {
+		t.Errorf("commit message contains invalid UTF-8: %q", commits[0].Message)
+	}
+	if !utf8.ValidString(commits[0].Patch) {
+		t.Errorf("truncated patch contains invalid UTF-8: %q", commits[0].Patch)
 	}
 }

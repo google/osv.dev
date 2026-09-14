@@ -990,26 +990,26 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	lastScanCommit := strings.TrimSpace(body.GetLastScanCommit())
+	lastSyncedCommit := strings.TrimSpace(body.GetLastSyncedCommit())
 	branch := strings.TrimSpace(body.GetBranch())
-	var lastScanTime time.Time
-	if body.GetLastScanTime() != nil {
-		lastScanTime = body.GetLastScanTime().AsTime()
+	var lastSyncedTime time.Time
+	if body.GetLastSyncedTime() != nil {
+		lastSyncedTime = body.GetLastSyncedTime().AsTime()
 	}
 
-	// Require at least one boundary (last_scan_commit or last_scan_time).
-	if lastScanCommit == "" && lastScanTime.IsZero() {
+	// Require at least one boundary (last_synced_commit or last_synced_time).
+	if lastSyncedCommit == "" && lastSyncedTime.IsZero() {
 		statusCode = http.StatusBadRequest
-		http.Error(w, "missing last_scan_commit and last_scan_time (must provide at least one)", statusCode)
+		http.Error(w, "missing last_synced_commit and last_synced_time (must provide at least one)", statusCode)
 
 		return
 	}
 
 	ctx = context.WithValue(ctx, urlKey, repoURL)
 	logger.DebugContext(ctx, "Received request: /commit-diffs",
-		slog.String("last_scan_commit", lastScanCommit),
+		slog.String("last_synced_commit", lastSyncedCommit),
 		slog.String("branch", branch),
-		slog.Time("last_scan_time", lastScanTime),
+		slog.Time("last_synced_time", lastSyncedTime),
 		slog.Bool("newest_first", body.GetNewestFirst()),
 	)
 
@@ -1023,7 +1023,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resolvedBranch, headCommit, commits, err := repo.ListCommits(ctx, branch, lastScanCommit, lastScanTime, body.GetNewestFirst(), body.GetIncludePaths(), body.GetExcludePaths())
+	resolvedBranch, latestCommit, commits, err := repo.ListCommits(ctx, branch, lastSyncedCommit, lastSyncedTime, body.GetNewestFirst(), body.GetIncludePaths(), body.GetExcludePaths())
 	if err != nil {
 		// Distinguish missing refs - 404 Not Found (e.g. the commit hash is not a valid ancestor of HEAD - likely from git amend)
 		// From generic issues - 500
@@ -1060,9 +1060,9 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	resp := &pb.CommitDiffsResponse{
-		Url:        body.GetUrl(),
-		Branch:     resolvedBranch,
-		HeadCommit: headCommit,
+		Url:          body.GetUrl(),
+		Branch:       resolvedBranch,
+		LatestCommit: latestCommit,
 		//nolint:gosec // G115: len(commits) should safely fit in int32 (max is 2.14 billion)
 		NumCommits: int32(len(commits)),
 		Commits:    pbCommits,

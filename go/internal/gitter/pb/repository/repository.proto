@@ -103,8 +103,8 @@ message CommitDiff {
 message CommitDiffsRequest {
     string url = 1;
     string branch = 2;                            // Optional, defaults to remote default branch (origin/HEAD)
-    string last_scan_commit = 3;                  // Optional, SHA of last scanned commit, preferred over last_scan_time when provided
-    google.protobuf.Timestamp last_scan_time = 4; // Optional, timestamp of last scan. Used as fallback if last_scan_commit is not provided or is no longer on the branch.
+    string last_synced_commit = 3;                // Optional, SHA of last synced commit, preferred over last_synced_time when provided
+    google.protobuf.Timestamp last_synced_time = 4; // Optional, timestamp of last sync. Used as fallback if last_synced_commit is not provided or is no longer on the branch.
     bool newest_first = 5;                        // Optional, if true, newest commits first. Defaults to false (chronological order).
     repeated string include_paths = 6;            // Optional, paths/globs to include in diffs
     repeated string exclude_paths = 7;            // Optional, paths/globs to exclude from diffs
@@ -113,7 +113,7 @@ message CommitDiffsRequest {
 message CommitDiffsResponse {
     string url = 1;
     string branch = 2;
-    string head_commit = 3;
+    string latest_commit = 3;
     int32 num_commits = 4;
     repeated CommitDiff commits = 5;
 }

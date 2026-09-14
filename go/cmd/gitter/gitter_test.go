@@ -786,13 +786,13 @@ func TestCommitDiffsHandler(t *testing.T) {
 		{
 			name: "Missing repo URL",
 			reqBody: &pb.CommitDiffsRequest{
-				LastScanCommit: "1234567890123456789012345678901234567890",
+				LastSyncedCommit: "1234567890123456789012345678901234567890",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name: "Missing both last_scan_commit and last_scan_time",
+			name: "Missing both last_synced_commit and last_synced_time",
 			reqBody: &pb.CommitDiffsRequest{
 				Url: "https://github.com/oliverchang/osv-test.git",
 			},
@@ -802,8 +802,8 @@ func TestCommitDiffsHandler(t *testing.T) {
 		{
 			name: "Forbidden or non-existent repo",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:            "https://github.com/google/this-repo-does-not-exist-12345.git",
-				LastScanCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
+				Url:              "https://github.com/google/this-repo-does-not-exist-12345.git",
+				LastSyncedCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusForbidden,
@@ -811,15 +811,15 @@ func TestCommitDiffsHandler(t *testing.T) {
 		{
 			name: "Query commits with JSON",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:            "https://github.com/oliverchang/osv-test.git",
-				LastScanCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusOK,
 			verifyResp: func(t *testing.T, resp *pb.CommitDiffsResponse) {
 				t.Helper()
-				if resp.GetHeadCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
-					t.Errorf("unexpected head commit: %s", resp.GetHeadCommit())
+				if resp.GetLatestCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected latest commit: %s", resp.GetLatestCommit())
 				}
 				if resp.GetNumCommits() != 2 || len(resp.GetCommits()) != 2 {
 					t.Fatalf("expected 2 commits, got %d", resp.GetNumCommits())
@@ -840,16 +840,16 @@ func TestCommitDiffsHandler(t *testing.T) {
 		{
 			name: "Query commits with Protobuf wire format",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:            "https://github.com/oliverchang/osv-test.git",
-				LastScanCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
-				NewestFirst:    true,
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				NewestFirst:      true,
 			},
 			contentType:  "application/x-protobuf",
 			expectedCode: http.StatusOK,
 			verifyResp: func(t *testing.T, resp *pb.CommitDiffsResponse) {
 				t.Helper()
-				if resp.GetHeadCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
-					t.Errorf("unexpected head commit: %s", resp.GetHeadCommit())
+				if resp.GetLatestCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected latest commit: %s", resp.GetLatestCommit())
 				}
 				if resp.GetNumCommits() != 2 || len(resp.GetCommits()) != 2 {
 					t.Fatalf("expected 2 commits, got %d", resp.GetNumCommits())
@@ -862,10 +862,10 @@ func TestCommitDiffsHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Query commits using last_scan_time only",
+			name: "Query commits using last_synced_time only",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:          "https://github.com/oliverchang/osv-test.git",
-				LastScanTime: timestamppb.New(time.Unix(1, 0)),
+				Url:            "https://github.com/oliverchang/osv-test.git",
+				LastSyncedTime: timestamppb.New(time.Unix(1, 0)),
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusOK,
@@ -879,18 +879,18 @@ func TestCommitDiffsHandler(t *testing.T) {
 		{
 			name: "Non-existent branch name",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:            "https://github.com/oliverchang/osv-test.git",
-				Branch:         "non-existent-branch-12345",
-				LastScanCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				Branch:           "non-existent-branch-12345",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusNotFound,
 		},
 		{
-			name: "Invalid last_scan_commit without last_scan_time",
+			name: "Invalid last_synced_commit without last_synced_time",
 			reqBody: &pb.CommitDiffsRequest{
-				Url:            "https://github.com/oliverchang/osv-test.git",
-				LastScanCommit: "invalidhash123456",
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "invalidhash123456",
 			},
 			contentType:  "application/json",
 			expectedCode: http.StatusNotFound,

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.21.12
-// source: internal/gitter/pb/repository/repository.proto
+// source: repository.proto
 
 package repository
 
@@ -58,11 +58,11 @@ func (x EventType) String() string {
 }
 
 func (EventType) Descriptor() protoreflect.EnumDescriptor {
-	return file_internal_gitter_pb_repository_repository_proto_enumTypes[0].Descriptor()
+	return file_repository_proto_enumTypes[0].Descriptor()
 }
 
 func (EventType) Type() protoreflect.EnumType {
-	return &file_internal_gitter_pb_repository_repository_proto_enumTypes[0]
+	return &file_repository_proto_enumTypes[0]
 }
 
 func (x EventType) Number() protoreflect.EnumNumber {
@@ -71,7 +71,7 @@ func (x EventType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EventType.Descriptor instead.
 func (EventType) EnumDescriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{0}
+	return file_repository_proto_rawDescGZIP(), []int{0}
 }
 
 type CommitDetail struct {
@@ -84,7 +84,7 @@ type CommitDetail struct {
 
 func (x *CommitDetail) Reset() {
 	*x = CommitDetail{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[0]
+	mi := &file_repository_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -96,7 +96,7 @@ func (x *CommitDetail) String() string {
 func (*CommitDetail) ProtoMessage() {}
 
 func (x *CommitDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[0]
+	mi := &file_repository_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -109,7 +109,7 @@ func (x *CommitDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitDetail.ProtoReflect.Descriptor instead.
 func (*CommitDetail) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{0}
+	return file_repository_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CommitDetail) GetHash() []byte {
@@ -137,7 +137,7 @@ type RepositoryCache struct {
 
 func (x *RepositoryCache) Reset() {
 	*x = RepositoryCache{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[1]
+	mi := &file_repository_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +149,7 @@ func (x *RepositoryCache) String() string {
 func (*RepositoryCache) ProtoMessage() {}
 
 func (x *RepositoryCache) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[1]
+	mi := &file_repository_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +162,7 @@ func (x *RepositoryCache) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepositoryCache.ProtoReflect.Descriptor instead.
 func (*RepositoryCache) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{1}
+	return file_repository_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RepositoryCache) GetCommits() []*CommitDetail {
@@ -181,7 +181,7 @@ type Commit struct {
 
 func (x *Commit) Reset() {
 	*x = Commit{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[2]
+	mi := &file_repository_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +193,7 @@ func (x *Commit) String() string {
 func (*Commit) ProtoMessage() {}
 
 func (x *Commit) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[2]
+	mi := &file_repository_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +206,7 @@ func (x *Commit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Commit.ProtoReflect.Descriptor instead.
 func (*Commit) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{2}
+	return file_repository_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Commit) GetHash() []byte {
@@ -226,7 +226,7 @@ type Ref struct {
 
 func (x *Ref) Reset() {
 	*x = Ref{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[3]
+	mi := &file_repository_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -238,7 +238,7 @@ func (x *Ref) String() string {
 func (*Ref) ProtoMessage() {}
 
 func (x *Ref) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[3]
+	mi := &file_repository_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -251,7 +251,7 @@ func (x *Ref) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ref.ProtoReflect.Descriptor instead.
 func (*Ref) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{3}
+	return file_repository_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Ref) GetLabel() string {
@@ -279,7 +279,7 @@ type AffectedCommitsResponse struct {
 
 func (x *AffectedCommitsResponse) Reset() {
 	*x = AffectedCommitsResponse{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[4]
+	mi := &file_repository_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -291,7 +291,7 @@ func (x *AffectedCommitsResponse) String() string {
 func (*AffectedCommitsResponse) ProtoMessage() {}
 
 func (x *AffectedCommitsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[4]
+	mi := &file_repository_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -304,7 +304,7 @@ func (x *AffectedCommitsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommitsResponse.ProtoReflect.Descriptor instead.
 func (*AffectedCommitsResponse) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{4}
+	return file_repository_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AffectedCommitsResponse) GetCommits() []*Commit {
@@ -337,7 +337,7 @@ type TagsResponse struct {
 
 func (x *TagsResponse) Reset() {
 	*x = TagsResponse{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +349,7 @@ func (x *TagsResponse) String() string {
 func (*TagsResponse) ProtoMessage() {}
 
 func (x *TagsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[5]
+	mi := &file_repository_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +362,7 @@ func (x *TagsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagsResponse.ProtoReflect.Descriptor instead.
 func (*TagsResponse) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{5}
+	return file_repository_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *TagsResponse) GetTags() []*Ref {
@@ -382,7 +382,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -394,7 +394,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[6]
+	mi := &file_repository_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -407,7 +407,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{6}
+	return file_repository_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Event) GetEventType() EventType {
@@ -435,7 +435,7 @@ type CacheRequest struct {
 
 func (x *CacheRequest) Reset() {
 	*x = CacheRequest{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -447,7 +447,7 @@ func (x *CacheRequest) String() string {
 func (*CacheRequest) ProtoMessage() {}
 
 func (x *CacheRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[7]
+	mi := &file_repository_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -460,7 +460,7 @@ func (x *CacheRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CacheRequest.ProtoReflect.Descriptor instead.
 func (*CacheRequest) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{7}
+	return file_repository_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CacheRequest) GetUrl() string {
@@ -500,7 +500,7 @@ type AffectedCommitsRequest struct {
 
 func (x *AffectedCommitsRequest) Reset() {
 	*x = AffectedCommitsRequest{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[8]
+	mi := &file_repository_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -512,7 +512,7 @@ func (x *AffectedCommitsRequest) String() string {
 func (*AffectedCommitsRequest) ProtoMessage() {}
 
 func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[8]
+	mi := &file_repository_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +525,7 @@ func (x *AffectedCommitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AffectedCommitsRequest.ProtoReflect.Descriptor instead.
 func (*AffectedCommitsRequest) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{8}
+	return file_repository_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AffectedCommitsRequest) GetUrl() string {
@@ -594,7 +594,7 @@ type FileChange struct {
 
 func (x *FileChange) Reset() {
 	*x = FileChange{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[9]
+	mi := &file_repository_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -606,7 +606,7 @@ func (x *FileChange) String() string {
 func (*FileChange) ProtoMessage() {}
 
 func (x *FileChange) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[9]
+	mi := &file_repository_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +619,7 @@ func (x *FileChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileChange.ProtoReflect.Descriptor instead.
 func (*FileChange) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{9}
+	return file_repository_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *FileChange) GetFromPath() string {
@@ -647,7 +647,7 @@ type FileDiffsRequest struct {
 
 func (x *FileDiffsRequest) Reset() {
 	*x = FileDiffsRequest{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[10]
+	mi := &file_repository_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -659,7 +659,7 @@ func (x *FileDiffsRequest) String() string {
 func (*FileDiffsRequest) ProtoMessage() {}
 
 func (x *FileDiffsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[10]
+	mi := &file_repository_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -672,7 +672,7 @@ func (x *FileDiffsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileDiffsRequest.ProtoReflect.Descriptor instead.
 func (*FileDiffsRequest) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{10}
+	return file_repository_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FileDiffsRequest) GetUrl() string {
@@ -706,7 +706,7 @@ type FileDiffsResponse struct {
 
 func (x *FileDiffsResponse) Reset() {
 	*x = FileDiffsResponse{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[11]
+	mi := &file_repository_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -718,7 +718,7 @@ func (x *FileDiffsResponse) String() string {
 func (*FileDiffsResponse) ProtoMessage() {}
 
 func (x *FileDiffsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[11]
+	mi := &file_repository_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -731,7 +731,7 @@ func (x *FileDiffsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileDiffsResponse.ProtoReflect.Descriptor instead.
 func (*FileDiffsResponse) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{11}
+	return file_repository_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *FileDiffsResponse) GetLatestCommit() string {
@@ -759,7 +759,7 @@ type FileContentRequest struct {
 
 func (x *FileContentRequest) Reset() {
 	*x = FileContentRequest{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[12]
+	mi := &file_repository_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +771,7 @@ func (x *FileContentRequest) String() string {
 func (*FileContentRequest) ProtoMessage() {}
 
 func (x *FileContentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[12]
+	mi := &file_repository_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +784,7 @@ func (x *FileContentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileContentRequest.ProtoReflect.Descriptor instead.
 func (*FileContentRequest) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{12}
+	return file_repository_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *FileContentRequest) GetUrl() string {
@@ -817,7 +817,7 @@ type FileContentResponse struct {
 
 func (x *FileContentResponse) Reset() {
 	*x = FileContentResponse{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[13]
+	mi := &file_repository_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -829,7 +829,7 @@ func (x *FileContentResponse) String() string {
 func (*FileContentResponse) ProtoMessage() {}
 
 func (x *FileContentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[13]
+	mi := &file_repository_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -842,7 +842,7 @@ func (x *FileContentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileContentResponse.ProtoReflect.Descriptor instead.
 func (*FileContentResponse) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{13}
+	return file_repository_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *FileContentResponse) GetContent() []byte {
@@ -866,7 +866,7 @@ type CommitDiff struct {
 
 func (x *CommitDiff) Reset() {
 	*x = CommitDiff{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[14]
+	mi := &file_repository_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -878,7 +878,7 @@ func (x *CommitDiff) String() string {
 func (*CommitDiff) ProtoMessage() {}
 
 func (x *CommitDiff) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[14]
+	mi := &file_repository_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -891,7 +891,7 @@ func (x *CommitDiff) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitDiff.ProtoReflect.Descriptor instead.
 func (*CommitDiff) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{14}
+	return file_repository_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CommitDiff) GetCommit() string {
@@ -937,21 +937,21 @@ func (x *CommitDiff) GetPatchTruncated() bool {
 }
 
 type CommitDiffsRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Url            string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	Branch         string                 `protobuf:"bytes,2,opt,name=branch,proto3" json:"branch,omitempty"`                                         // Optional, defaults to remote default branch (origin/HEAD)
-	LastScanCommit string                 `protobuf:"bytes,3,opt,name=last_scan_commit,json=lastScanCommit,proto3" json:"last_scan_commit,omitempty"` // Optional, SHA of last scanned commit, preferred over last_scan_time when provided
-	LastScanTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_scan_time,json=lastScanTime,proto3" json:"last_scan_time,omitempty"`       // Optional, timestamp of last scan. Used as fallback if last_scan_commit is not provided or is no longer on the branch.
-	NewestFirst    bool                   `protobuf:"varint,5,opt,name=newest_first,json=newestFirst,proto3" json:"newest_first,omitempty"`           // Optional, if true, newest commits first. Defaults to false (chronological order).
-	IncludePaths   []string               `protobuf:"bytes,6,rep,name=include_paths,json=includePaths,proto3" json:"include_paths,omitempty"`         // Optional, paths/globs to include in diffs
-	ExcludePaths   []string               `protobuf:"bytes,7,rep,name=exclude_paths,json=excludePaths,proto3" json:"exclude_paths,omitempty"`         // Optional, paths/globs to exclude from diffs
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Url              string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Branch           string                 `protobuf:"bytes,2,opt,name=branch,proto3" json:"branch,omitempty"`                                               // Optional, defaults to remote default branch (origin/HEAD)
+	LastSyncedCommit string                 `protobuf:"bytes,3,opt,name=last_synced_commit,json=lastSyncedCommit,proto3" json:"last_synced_commit,omitempty"` // Optional, SHA of last synced commit, preferred over last_synced_time when provided
+	LastSyncedTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_synced_time,json=lastSyncedTime,proto3" json:"last_synced_time,omitempty"`       // Optional, timestamp of last sync. Used as fallback if last_synced_commit is not provided or is no longer on the branch.
+	NewestFirst      bool                   `protobuf:"varint,5,opt,name=newest_first,json=newestFirst,proto3" json:"newest_first,omitempty"`                 // Optional, if true, newest commits first. Defaults to false (chronological order).
+	IncludePaths     []string               `protobuf:"bytes,6,rep,name=include_paths,json=includePaths,proto3" json:"include_paths,omitempty"`               // Optional, paths/globs to include in diffs
+	ExcludePaths     []string               `protobuf:"bytes,7,rep,name=exclude_paths,json=excludePaths,proto3" json:"exclude_paths,omitempty"`               // Optional, paths/globs to exclude from diffs
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CommitDiffsRequest) Reset() {
 	*x = CommitDiffsRequest{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[15]
+	mi := &file_repository_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -963,7 +963,7 @@ func (x *CommitDiffsRequest) String() string {
 func (*CommitDiffsRequest) ProtoMessage() {}
 
 func (x *CommitDiffsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[15]
+	mi := &file_repository_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -976,7 +976,7 @@ func (x *CommitDiffsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitDiffsRequest.ProtoReflect.Descriptor instead.
 func (*CommitDiffsRequest) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{15}
+	return file_repository_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CommitDiffsRequest) GetUrl() string {
@@ -993,16 +993,16 @@ func (x *CommitDiffsRequest) GetBranch() string {
 	return ""
 }
 
-func (x *CommitDiffsRequest) GetLastScanCommit() string {
+func (x *CommitDiffsRequest) GetLastSyncedCommit() string {
 	if x != nil {
-		return x.LastScanCommit
+		return x.LastSyncedCommit
 	}
 	return ""
 }
 
-func (x *CommitDiffsRequest) GetLastScanTime() *timestamppb.Timestamp {
+func (x *CommitDiffsRequest) GetLastSyncedTime() *timestamppb.Timestamp {
 	if x != nil {
-		return x.LastScanTime
+		return x.LastSyncedTime
 	}
 	return nil
 }
@@ -1032,7 +1032,7 @@ type CommitDiffsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Branch        string                 `protobuf:"bytes,2,opt,name=branch,proto3" json:"branch,omitempty"`
-	HeadCommit    string                 `protobuf:"bytes,3,opt,name=head_commit,json=headCommit,proto3" json:"head_commit,omitempty"`
+	LatestCommit  string                 `protobuf:"bytes,3,opt,name=latest_commit,json=latestCommit,proto3" json:"latest_commit,omitempty"`
 	NumCommits    int32                  `protobuf:"varint,4,opt,name=num_commits,json=numCommits,proto3" json:"num_commits,omitempty"`
 	Commits       []*CommitDiff          `protobuf:"bytes,5,rep,name=commits,proto3" json:"commits,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1041,7 +1041,7 @@ type CommitDiffsResponse struct {
 
 func (x *CommitDiffsResponse) Reset() {
 	*x = CommitDiffsResponse{}
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[16]
+	mi := &file_repository_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1053,7 +1053,7 @@ func (x *CommitDiffsResponse) String() string {
 func (*CommitDiffsResponse) ProtoMessage() {}
 
 func (x *CommitDiffsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_gitter_pb_repository_repository_proto_msgTypes[16]
+	mi := &file_repository_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1066,7 +1066,7 @@ func (x *CommitDiffsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitDiffsResponse.ProtoReflect.Descriptor instead.
 func (*CommitDiffsResponse) Descriptor() ([]byte, []int) {
-	return file_internal_gitter_pb_repository_repository_proto_rawDescGZIP(), []int{16}
+	return file_repository_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CommitDiffsResponse) GetUrl() string {
@@ -1083,9 +1083,9 @@ func (x *CommitDiffsResponse) GetBranch() string {
 	return ""
 }
 
-func (x *CommitDiffsResponse) GetHeadCommit() string {
+func (x *CommitDiffsResponse) GetLatestCommit() string {
 	if x != nil {
-		return x.HeadCommit
+		return x.LatestCommit
 	}
 	return ""
 }
@@ -1104,11 +1104,11 @@ func (x *CommitDiffsResponse) GetCommits() []*CommitDiff {
 	return nil
 }
 
-var File_internal_gitter_pb_repository_repository_proto protoreflect.FileDescriptor
+var File_repository_proto protoreflect.FileDescriptor
 
-const file_internal_gitter_pb_repository_repository_proto_rawDesc = "" +
+const file_repository_proto_rawDesc = "" +
 	"\n" +
-	".internal/gitter/pb/repository/repository.proto\x12\x06gitter\x1a\x1fgoogle/protobuf/timestamp.proto\"=\n" +
+	"\x10repository.proto\x12\x06gitter\x1a\x1fgoogle/protobuf/timestamp.proto\"=\n" +
 	"\fCommitDetail\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\fR\x04hash\x12\x19\n" +
 	"\bpatch_id\x18\x02 \x01(\fR\apatchId\"A\n" +
@@ -1166,20 +1166,19 @@ const file_internal_gitter_pb_repository_repository_proto_rawDesc = "" +
 	"\amessage\x18\x03 \x01(\tR\amessage\x12\x14\n" +
 	"\x05patch\x18\x04 \x01(\tR\x05patch\x127\n" +
 	"\rfiles_changed\x18\x05 \x03(\v2\x12.gitter.FileChangeR\ffilesChanged\x12'\n" +
-	"\x0fpatch_truncated\x18\x06 \x01(\bR\x0epatchTruncated\"\x97\x02\n" +
+	"\x0fpatch_truncated\x18\x06 \x01(\bR\x0epatchTruncated\"\x9f\x02\n" +
 	"\x12CommitDiffsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
-	"\x06branch\x18\x02 \x01(\tR\x06branch\x12(\n" +
-	"\x10last_scan_commit\x18\x03 \x01(\tR\x0elastScanCommit\x12@\n" +
-	"\x0elast_scan_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\flastScanTime\x12!\n" +
+	"\x06branch\x18\x02 \x01(\tR\x06branch\x12,\n" +
+	"\x12last_synced_commit\x18\x03 \x01(\tR\x10lastSyncedCommit\x12D\n" +
+	"\x10last_synced_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x0elastSyncedTime\x12!\n" +
 	"\fnewest_first\x18\x05 \x01(\bR\vnewestFirst\x12#\n" +
 	"\rinclude_paths\x18\x06 \x03(\tR\fincludePaths\x12#\n" +
-	"\rexclude_paths\x18\a \x03(\tR\fexcludePaths\"\xaf\x01\n" +
+	"\rexclude_paths\x18\a \x03(\tR\fexcludePaths\"\xb3\x01\n" +
 	"\x13CommitDiffsResponse\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
-	"\x06branch\x18\x02 \x01(\tR\x06branch\x12\x1f\n" +
-	"\vhead_commit\x18\x03 \x01(\tR\n" +
-	"headCommit\x12\x1f\n" +
+	"\x06branch\x18\x02 \x01(\tR\x06branch\x12#\n" +
+	"\rlatest_commit\x18\x03 \x01(\tR\flatestCommit\x12\x1f\n" +
 	"\vnum_commits\x18\x04 \x01(\x05R\n" +
 	"numCommits\x12,\n" +
 	"\acommits\x18\x05 \x03(\v2\x12.gitter.CommitDiffR\acommits*D\n" +
@@ -1191,20 +1190,20 @@ const file_internal_gitter_pb_repository_repository_proto_rawDesc = "" +
 	"\x05LIMIT\x10\x03B\x0eZ\f./repositoryb\x06proto3"
 
 var (
-	file_internal_gitter_pb_repository_repository_proto_rawDescOnce sync.Once
-	file_internal_gitter_pb_repository_repository_proto_rawDescData []byte
+	file_repository_proto_rawDescOnce sync.Once
+	file_repository_proto_rawDescData []byte
 )
 
-func file_internal_gitter_pb_repository_repository_proto_rawDescGZIP() []byte {
-	file_internal_gitter_pb_repository_repository_proto_rawDescOnce.Do(func() {
-		file_internal_gitter_pb_repository_repository_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_gitter_pb_repository_repository_proto_rawDesc), len(file_internal_gitter_pb_repository_repository_proto_rawDesc)))
+func file_repository_proto_rawDescGZIP() []byte {
+	file_repository_proto_rawDescOnce.Do(func() {
+		file_repository_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)))
 	})
-	return file_internal_gitter_pb_repository_repository_proto_rawDescData
+	return file_repository_proto_rawDescData
 }
 
-var file_internal_gitter_pb_repository_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_internal_gitter_pb_repository_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
-var file_internal_gitter_pb_repository_repository_proto_goTypes = []any{
+var file_repository_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_repository_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_repository_proto_goTypes = []any{
 	(EventType)(0),                  // 0: gitter.EventType
 	(*CommitDetail)(nil),            // 1: gitter.CommitDetail
 	(*RepositoryCache)(nil),         // 2: gitter.RepositoryCache
@@ -1225,7 +1224,7 @@ var file_internal_gitter_pb_repository_repository_proto_goTypes = []any{
 	(*CommitDiffsResponse)(nil),     // 17: gitter.CommitDiffsResponse
 	(*timestamppb.Timestamp)(nil),   // 18: google.protobuf.Timestamp
 }
-var file_internal_gitter_pb_repository_repository_proto_depIdxs = []int32{
+var file_repository_proto_depIdxs = []int32{
 	1,  // 0: gitter.RepositoryCache.commits:type_name -> gitter.CommitDetail
 	3,  // 1: gitter.AffectedCommitsResponse.commits:type_name -> gitter.Commit
 	4,  // 2: gitter.AffectedCommitsResponse.tags:type_name -> gitter.Ref
@@ -1236,7 +1235,7 @@ var file_internal_gitter_pb_repository_repository_proto_depIdxs = []int32{
 	10, // 7: gitter.FileDiffsResponse.changes:type_name -> gitter.FileChange
 	18, // 8: gitter.CommitDiff.timestamp:type_name -> google.protobuf.Timestamp
 	10, // 9: gitter.CommitDiff.files_changed:type_name -> gitter.FileChange
-	18, // 10: gitter.CommitDiffsRequest.last_scan_time:type_name -> google.protobuf.Timestamp
+	18, // 10: gitter.CommitDiffsRequest.last_synced_time:type_name -> google.protobuf.Timestamp
 	15, // 11: gitter.CommitDiffsResponse.commits:type_name -> gitter.CommitDiff
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
@@ -1245,27 +1244,27 @@ var file_internal_gitter_pb_repository_repository_proto_depIdxs = []int32{
 	0,  // [0:12] is the sub-list for field type_name
 }
 
-func init() { file_internal_gitter_pb_repository_repository_proto_init() }
-func file_internal_gitter_pb_repository_repository_proto_init() {
-	if File_internal_gitter_pb_repository_repository_proto != nil {
+func init() { file_repository_proto_init() }
+func file_repository_proto_init() {
+	if File_repository_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_gitter_pb_repository_repository_proto_rawDesc), len(file_internal_gitter_pb_repository_repository_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_repository_proto_rawDesc), len(file_repository_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_internal_gitter_pb_repository_repository_proto_goTypes,
-		DependencyIndexes: file_internal_gitter_pb_repository_repository_proto_depIdxs,
-		EnumInfos:         file_internal_gitter_pb_repository_repository_proto_enumTypes,
-		MessageInfos:      file_internal_gitter_pb_repository_repository_proto_msgTypes,
+		GoTypes:           file_repository_proto_goTypes,
+		DependencyIndexes: file_repository_proto_depIdxs,
+		EnumInfos:         file_repository_proto_enumTypes,
+		MessageInfos:      file_repository_proto_msgTypes,
 	}.Build()
-	File_internal_gitter_pb_repository_repository_proto = out.File
-	file_internal_gitter_pb_repository_repository_proto_goTypes = nil
-	file_internal_gitter_pb_repository_repository_proto_depIdxs = nil
+	File_repository_proto = out.File
+	file_repository_proto_goTypes = nil
+	file_repository_proto_depIdxs = nil
 }

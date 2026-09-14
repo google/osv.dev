@@ -36,9 +36,9 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
+        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] }, info: { minimized: true } },
         // TODO(michaelkedar): Remove this once the website is fully migrated.
-        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
+        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] }, info: { minimized: true } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),

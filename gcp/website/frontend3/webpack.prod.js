@@ -20,6 +20,9 @@ module.exports = {
     static: '../dist/static',
   },
   optimization: {
+    minimizeOptions: {
+      html: false,
+    },
     splitChunks: {
       cacheGroups: {
         vendorsJs: {

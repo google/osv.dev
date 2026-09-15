@@ -1,10 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestTruncateLogOutput(t *testing.T) {
+	if got := truncateLogOutput([]byte("short")); got != "short" {
+		t.Errorf("got %q, want %q", got, "short")
+	}
+	long := bytes.Repeat([]byte("a"), maxLogOutputBytes+10)
+	if got := truncateLogOutput(long); !strings.HasSuffix(got, "... [truncated 10 bytes]") {
+		t.Errorf("expected truncation suffix, got %q", got)
+	}
+}
 
 func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 	if testing.Short() {

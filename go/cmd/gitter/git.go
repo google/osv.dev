@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -14,9 +15,22 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
+// maxLogOutputBytes is the maximum length of command output included in debug logs (4 KB),
+// preventing overwhelming log entries while preserving useful context.
+const maxLogOutputBytes = 4096
+
 type FetchOptions struct {
 	ForceUpdate                 bool
 	SkipReqConcurrencySemaphore bool
+}
+
+// truncateLogOutput truncates command output to maxLogOutputBytes for logging.
+func truncateLogOutput(out []byte) string {
+	if len(out) <= maxLogOutputBytes {
+		return string(out)
+	}
+
+	return strings.ToValidUTF8(string(out[:maxLogOutputBytes]), "") + fmt.Sprintf("... [truncated %d bytes]", len(out)-maxLogOutputBytes)
 }
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
@@ -60,7 +74,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 	logger.DebugContext(ctx, "Git command executed",
 		slog.String("cmd", name),
 		slog.Any("args", args),
-		slog.String("output", string(out)),
+		slog.String("output", truncateLogOutput(out)),
 	)
 
 	return out, nil

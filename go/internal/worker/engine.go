@@ -11,6 +11,7 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/logger"
@@ -44,10 +45,20 @@ func (e *Engine) RunTask(ctx context.Context, task Task) error {
 }
 
 func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
+	var gitterClient gitter.Client
+	if e.GitterHost != "" {
+		var err error
+		gitterClient, err = gitter.NewClient(e.GitterHost, e.GitterClient)
+		if err != nil {
+			logger.WarnContext(ctx, "Failed to create gitter client", slog.Any("error", err))
+		}
+	}
+
 	params := pipeline.EnrichParams{
 		PathInSource:      task.PathInSource,
 		EcosystemProvider: e.EcosystemProvider,
 		RelationsStore:    e.Stores.Relations,
+		GitterClient:      gitterClient,
 	}
 	var err error
 	params.SourceRepo, err = e.Stores.SourceRepo.Get(ctx, task.SourceID)

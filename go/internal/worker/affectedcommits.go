@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
@@ -92,7 +94,7 @@ func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost s
 		return nil, nil //nolint:nilnil // repository is inacessible - somewhat expected
 	}
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("gitter responded with %s", httpResp.Status)
+		return nil, unexpectedGitterStatusError(httpResp, aRange, refID, flags)
 	}
 	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
@@ -104,6 +106,95 @@ func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost s
 	}
 
 	return resp, nil
+}
+
+const maxGitterErrorBody = 1024
+
+// gitterUserinfoPattern matches http(s) URLs that embed user:password (or token) credentials.
+var gitterUserinfoPattern = regexp.MustCompile(`(?i)(https?://)[^/@\s]+:[^/@\s]+@`)
+
+func unexpectedGitterStatusError(httpResp *http.Response, aRange *osvschema.Range, refID string, flags models.RepoAllowListFlags) error {
+	status := "unknown status"
+	if httpResp != nil {
+		status = httpResp.Status
+	}
+	var repo string
+	if aRange != nil {
+		repo = redactGitterUserinfo(aRange.GetRepo())
+	}
+	body := redactGitterUserinfo(readTruncatedGitterErrorBody(httpResp))
+	events := gitRangeEventSummary(aRange)
+	msg := fmt.Sprintf("gitter responded with %s for repo %q ref_id %q", status, repo, refID)
+	if reqURL := redactGitterUserinfo(gitterRequestURL(httpResp)); reqURL != "" {
+		msg += " request_url " + reqURL
+	}
+	if events != "" {
+		msg += " events " + events
+	}
+	msg += fmt.Sprintf(" flags consider_all_branches=%t cherrypicks_introduced=%t cherrypicks_fixed=%t cherrypicks_limit=%t",
+		flags.ConsiderAllBranches, flags.CherrypicksIntroduced, flags.CherrypicksFixed, flags.CherrypicksLimit)
+	if body != "" {
+		msg += ": " + body
+	}
+
+	return errors.New(msg)
+}
+
+func gitterRequestURL(httpResp *http.Response) string {
+	if httpResp == nil || httpResp.Request == nil || httpResp.Request.URL == nil {
+		return ""
+	}
+
+	return httpResp.Request.URL.String()
+}
+
+func readTruncatedGitterErrorBody(httpResp *http.Response) string {
+	if httpResp == nil || httpResp.Body == nil {
+		return ""
+	}
+	bodyBytes, _ := io.ReadAll(io.LimitReader(httpResp.Body, maxGitterErrorBody+1))
+	truncated := len(bodyBytes) > maxGitterErrorBody
+	if truncated {
+		bodyBytes = bodyBytes[:maxGitterErrorBody]
+	}
+	body := strings.Join(strings.Fields(string(bodyBytes)), " ")
+	if truncated {
+		body += "...(truncated)"
+	}
+
+	return body
+}
+
+func redactGitterUserinfo(s string) string {
+	if s == "" {
+		return s
+	}
+
+	return gitterUserinfoPattern.ReplaceAllString(s, "${1}REDACTED@")
+}
+
+func gitRangeEventSummary(aRange *osvschema.Range) string {
+	if aRange == nil {
+		return ""
+	}
+	var parts []string
+	for _, event := range aRange.GetEvents() {
+		switch {
+		case event.GetIntroduced() != "":
+			parts = append(parts, "introduced="+event.GetIntroduced())
+		case event.GetFixed() != "":
+			parts = append(parts, "fixed="+event.GetFixed())
+		case event.GetLastAffected() != "":
+			parts = append(parts, "last_affected="+event.GetLastAffected())
+		case event.GetLimit() != "":
+			parts = append(parts, "limit="+event.GetLimit())
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 func applyAffectedCommitsAndTags(resp *gitterpb.AffectedCommitsResponse, affected *osvschema.Affected, aRange *osvschema.Range) {

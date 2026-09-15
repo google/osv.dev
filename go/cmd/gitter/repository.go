@@ -1349,9 +1349,34 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastSyncedCo
 		}
 	}
 
-	out, err := runCmd(ctx, r.repoPath, nil, "git", args...)
+	// Temp outFile for git log output
+	tmpFile, err := os.CreateTemp(r.repoPath, "git-log-diffs-*.out")
 	if err != nil {
-		return "", "", nil, fmt.Errorf("git log failed: %w", err)
+		return "", "", nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	// Safeguard for early returns / context cancellation
+	defer tmpFile.Close()
+
+	cmd := prepareCmd(ctx, r.repoPath, nil, "git", args...)
+	cmd.Stdout = tmpFile
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			logger.DebugContext(ctx, "Command cancelled", slog.String("cmd", "git log"), slog.Any("err", ctx.Err()))
+
+			return "", "", nil, fmt.Errorf("command git log cancelled: %w", ctx.Err())
+		}
+
+		return "", "", nil, fmt.Errorf("git log failed: %w, stderr: %s", err, stderr.String())
+	}
+	_ = tmpFile.Close()
+
+	// Read git log output from temp file
+	out, err := os.ReadFile(tmpFile.Name())
+	if err != nil {
+		return "", "", nil, fmt.Errorf("failed to read temp git log file: %w", err)
 	}
 
 	// Parse git log output into structured CommitDiff objects
@@ -1386,88 +1411,91 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 			continue
 		}
 
-		meta := bytes.TrimSpace(parts[0])
-		diffContent := parts[1]
-
-		// Split into 3 parts: [0] = Commit SHA, [1] = Commit Timestamp, [2] = Commit message (if exist).
-		metaLines := bytes.SplitN(meta, []byte("\n"), 3)
-		if len(metaLines) < 2 {
-			logger.WarnContext(ctx, "Malformed metadata in git log output")
-			continue
-		}
-
-		hash := string(metaLines[0])
-		timestampSec, err := strconv.ParseInt(string(metaLines[1]), 10, 64)
+		commit, err := parseCommitMetadata(parts[0])
 		if err != nil {
-			logger.WarnContext(ctx, "Invalid timestamp in git log output", slog.Any("error", err))
+			logger.WarnContext(ctx, "Malformed commit metadata in git log output", slog.Any("error", err))
 			continue
 		}
 
-		var msg string
-		if len(metaLines) == 3 {
-			msg = strings.TrimSpace(strings.ToValidUTF8(string(metaLines[2]), ""))
-		}
-
-		// diffContent contains two sequential sections from git log output:
-		// 1. File diff status entries (each line starts with ":") parsed into FileChange objects.
-		// 2. Unified diff patches (beginning with "diff --")
-		//
-		// Instead of splitting the entire diffContent with strings.Split (which allocates arrays of string pointers
-		// and copies for every single line in large diffs), we scan line-by-line using bytes.IndexByte to locate status
-		// lines, and then slice the remaining unified patch block in a single zero-allocation operation.
-		var filesChanged []*FileChange
-		var patch string
-		var patchTruncated bool
-
-		pos := 0
-		for pos < len(diffContent) {
-			nextNL := bytes.IndexByte(diffContent[pos:], '\n')
-			var line []byte
-			lineStart := pos
-
-			if nextNL == -1 {
-				line = diffContent[pos:]
-				pos = len(diffContent)
-			} else {
-				line = diffContent[pos : pos+nextNL]
-				pos += nextNL + 1
-			}
-
-			if bytes.HasPrefix(line, []byte(":")) {
-				// Section 1: Raw file diff (1 per line)
-				change, err := parseRawDiffLine(strings.ToValidUTF8(string(line), ""))
-				if err != nil {
-					logger.WarnContext(ctx, "Failed to parse raw diff line", slog.String("line", string(line)), slog.Any("error", err))
-					continue
-				}
-				filesChanged = append(filesChanged, change)
-			} else if bytes.HasPrefix(line, []byte("diff --")) {
-				// Section 2: First line of the unified diff patch reached.
-				// Everything from lineStart to the end of diffContent belongs to the unified diff patch.
-				patchBytes := diffContent[lineStart:]
-				if len(patchBytes) > maxPatchBytes {
-					// Truncate the patch if it exceeds maxPatchBytes.
-					patch = strings.ToValidUTF8(string(patchBytes[:maxPatchBytes]), "") + fmt.Sprintf("\n\n[Diff truncated: exceeded max patch size of %d bytes]", maxPatchBytes)
-					patchTruncated = true
-				} else {
-					patch = strings.TrimSpace(strings.ToValidUTF8(string(patchBytes), ""))
-				}
-
-				break
-			}
-		}
-
-		commits = append(commits, &CommitDiff{
-			Commit:         hash,
-			Timestamp:      time.Unix(timestampSec, 0).UTC(),
-			Message:        msg,
-			Patch:          patch,
-			FilesChanged:   filesChanged,
-			PatchTruncated: patchTruncated,
-		})
+		commit.FilesChanged, commit.Patch, commit.PatchTruncated = parseCommitDiff(parts[1], maxPatchBytes)
+		commits = append(commits, commit)
 	}
 
 	return commits
+}
+
+// parseCommitMetadata parses the metadata block (SHA, timestamp, commit message body).
+func parseCommitMetadata(meta []byte) (*CommitDiff, error) {
+	meta = bytes.TrimSpace(meta)
+	// Separated by \n into 3 parts: [0] = Commit SHA, [1] = Commit Timestamp, [2] = Commit message (if exists).
+	metaLines := bytes.SplitN(meta, []byte("\n"), 3)
+	if len(metaLines) < 2 {
+		return nil, fmt.Errorf("expected at least hash and timestamp lines, got %d lines", len(metaLines))
+	}
+
+	hash := string(metaLines[0])
+	timestampSec, err := strconv.ParseInt(string(metaLines[1]), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid timestamp %q: %w", string(metaLines[1]), err)
+	}
+
+	// Commit message is the rest of the metadata section
+	var msg string
+	if len(metaLines) == 3 {
+		msg = strings.TrimSpace(strings.ToValidUTF8(string(metaLines[2]), ""))
+	}
+
+	return &CommitDiff{
+		Commit:    hash,
+		Timestamp: time.Unix(timestampSec, 0).UTC(),
+		Message:   msg,
+	}, nil
+}
+
+// parseCommitDiff parses raw file status entries and unified diff patch.
+func parseCommitDiff(diffContent []byte, maxPatchBytes int) ([]*FileChange, string, bool) {
+	var filesChanged []*FileChange
+	var patch string
+	var patchTruncated bool
+
+	pos := 0
+	for pos < len(diffContent) {
+		nextNL := bytes.IndexByte(diffContent[pos:], '\n')
+		var line []byte
+		lineStart := pos
+
+		if nextNL == -1 {
+			line = diffContent[pos:]
+			pos = len(diffContent)
+		} else {
+			line = diffContent[pos : pos+nextNL]
+			pos += nextNL + 1
+		}
+
+		if bytes.HasPrefix(line, []byte(":")) {
+			// Section 1: Raw file diff (1 per line)
+			change, err := parseRawDiffLine(strings.ToValidUTF8(strings.TrimSpace(string(line)), ""))
+			if err != nil {
+				continue
+			}
+			filesChanged = append(filesChanged, change)
+		} else if bytes.HasPrefix(line, []byte("diff --")) {
+			// Section 2: First line of unified diff patch reached.
+			// Everything from lineStart to the end of diffContent belongs to the patch.
+			patchBytes := diffContent[lineStart:]
+			if len(patchBytes) > maxPatchBytes {
+				patch = strings.ToValidUTF8(string(patchBytes[:maxPatchBytes]), "")
+				patch += fmt.Sprintf("\n\n[Diff truncated: exceeded max patch size of %d bytes]", maxPatchBytes)
+				patchTruncated = true
+			} else {
+				patch = strings.TrimSpace(strings.ToValidUTF8(string(patchBytes), ""))
+			}
+
+			break
+		}
+	}
+
+	return filesChanged, patch, patchTruncated
 }
 
 // parseRawDiffLine parses a single raw diff line from git log --raw:

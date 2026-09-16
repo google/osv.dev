@@ -1015,6 +1015,15 @@ dl.vulnerability-details,
       font-weight: bold;
       user-select: none;
       padding: 2px 0;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $osv-accent-color;
+        outline-offset: 2px;
+      }
     }
 
     ul.aliases {

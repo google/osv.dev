@@ -4155,6 +4155,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-74860",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-86137",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -8003,6 +8007,10 @@
         {
           "id": "PYSEC-2026-3699",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-3923",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -9258,6 +9266,10 @@
         },
         {
           "id": "PYSEC-2026-3699",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-3923",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

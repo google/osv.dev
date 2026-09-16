@@ -5,8 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  mode: 'development',
-  devtool: 'source-map',
+  mode: 'production',
   entry: {
     main: './src/index.js',
     linter: './src/linter.js',
@@ -14,13 +13,16 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
-    filename: 'static/[name].js',
+    filename: 'static/[name].[contenthash].js',
     publicPath: '/',
   },
   devServer: {
     static: '../dist/static',
   },
   optimization: {
+    minimizeOptions: {
+      html: false,
+    },
     splitChunks: {
       cacheGroups: {
         vendorsJs: {
@@ -37,9 +39,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: './src/templates', to: '.', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
-        // TODO(michaelkedar): Remove this once the website is fully migrated.
-        { from: './src/go/templates', to: 'go/', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
+        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
@@ -60,30 +60,12 @@ module.exports = {
       template: './src/templates/triage.html',
       chunks: ['triage'],
       excludeChunks: ['main', 'linter'],
-    }),
-    // TODO(michaelkedar): Remove this once the website is fully migrated.
-    new HtmlWebpackPlugin({
-      filename: 'go/base.html',
-      template: './src/go/base.html',
-      chunks: ['main'],
-      excludeChunks: ['linter'],
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'go/linter.html',
-      template: './src/go/templates/linter/index.html',
-      chunks: ['linter'],
-      excludeChunks: ['main'],
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'go/triage.html',
-      template: './src/go/templates/triage.html',
-      chunks: ['triage'],
-      excludeChunks: ['main', 'linter'],
       inject: false,
     }),
     new MiniCssExtractPlugin({
-      filename: 'static/[name].css'
+      filename: 'static/[name].[contenthash].css'
     }),
+    // new BundleAnalyzerPlugin(),
   ],
   module: {
     rules: [

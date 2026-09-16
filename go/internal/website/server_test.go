@@ -134,10 +134,10 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
 		cfg.StaticFS = fstest.MapFS{
-			"go/base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
-			"go/404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
-			"go/linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
-			"go/triage.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}triage{{ end }}`)},
+			"base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
+			"404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
+			"linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
+			"triage.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}triage{{ end }}`)},
 		}
 	}
 	if cfg.DocsFS == nil {
@@ -403,7 +403,7 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to create static img dir: %v", err)
 	}
 
-	goDir := filepath.Join(tmpDir, "go")
+	goDir := tmpDir
 	if err := os.MkdirAll(goDir, 0755); err != nil {
 		t.Fatalf("failed to create go dir: %v", err)
 	}

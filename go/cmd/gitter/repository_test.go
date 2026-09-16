@@ -87,6 +87,40 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 	return url
 }
 
+// A test repository with 1 lightweight tag and 1 annotated tag.
+func setupAnnotatedTagsTestRepo(t *testing.T, url string) string {
+	t.Helper()
+	gitStorePath = t.TempDir()
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	if err := os.MkdirAll(repoPath, 0755); err != nil {
+		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
+	}
+
+	runGit(t, repoPath, "init", "-b", "main")
+	runGit(t, repoPath, "config", "user.email", "test@test.com")
+	runGit(t, repoPath, "config", "user.name", "Test Name")
+
+	// Commit 1 + Lightweight Tag
+	err := os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file1 for git repo setup: %v", err)
+	}
+	runGit(t, repoPath, "add", "file1")
+	runGit(t, repoPath, "commit", "-m", "commit 1")
+	runGit(t, repoPath, "tag", "v1.0.0")
+
+	// Commit 2 + Annotated Tag
+	err = os.WriteFile(filepath.Join(repoPath, "file2"), []byte("2"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file2 for git repo setup: %v", err)
+	}
+	runGit(t, repoPath, "add", "file2")
+	runGit(t, repoPath, "commit", "-m", "commit 2")
+	runGit(t, repoPath, "tag", "-a", "v2.0.0", "-m", "release v2.0.0")
+
+	return url
+}
+
 // setupFileDiffsTestRepo sets up a comprehensive test git repository containing:
 // - Multiple branches (main, feature-branch) and tags (v1.0.0, v2.0.0)
 // - Various git change types: addition (A), deletion (D), modification (M), rename (R), copy (C), type change (T)
@@ -1305,6 +1339,28 @@ func TestRunAndParseTags(t *testing.T) {
 			},
 		},
 		{
+			name: "Annotated tag resolves to peeled commit hash and omits ^{}",
+			cmd:  exec.Command("printf", "000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n000000000000000000000000000000000000bbbb refs/tags/v1.0.0^{}\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("bbbb"),
+			},
+		},
+		{
+			name: "Mixed lightweight and annotated tags",
+			cmd:  exec.Command("printf", "0000000000000000000000000000000000001111 refs/tags/v1.0.0\n0000000000000000000000000000000000002222 refs/tags/v2.0.0\n0000000000000000000000000000000000003333 refs/tags/v2.0.0^{}\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("1111"),
+				"v2.0.0": decodeSHA1("3333"),
+			},
+		},
+		{
+			name: "Annotated tag resolves to peeled commit hash regardless of output order (peeled ref first)",
+			cmd:  exec.Command("printf", "000000000000000000000000000000000000bbbb refs/tags/v1.0.0^{}\n000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("bbbb"),
+			},
+		},
+		{
 			// git show-ref returns exit code 1 when there are no tags, so make sure we don't throw error in this case
 			name: "Exit code 1 (no tags)",
 			cmd:  exec.Command("bash", "-c", "exit 1"),
@@ -1347,6 +1403,12 @@ func TestGetLocalTags(t *testing.T) {
 			wantCount: 2,
 		},
 		{
+			name:      "Repo with annotated and lightweight tags",
+			setupFunc: setupAnnotatedTagsTestRepo,
+			wantTags:  []string{"v1.0.0", "v2.0.0"},
+			wantCount: 2,
+		},
+		{
 			name:      "Empty repo (no tags)",
 			setupFunc: setupEmptyTestRepo,
 			wantTags:  []string{},
@@ -1374,6 +1436,23 @@ func TestGetLocalTags(t *testing.T) {
 					t.Errorf("expected tag %s to exist", wantTag)
 				}
 			}
+
+			// Ensure no tag contains ^{} suffix
+			for tag := range tags {
+				if strings.HasSuffix(tag, "^{}") {
+					t.Errorf("unexpected peeled tag suffix in tag: %s", tag)
+				}
+			}
+
+			if tt.name == "Repo with annotated and lightweight tags" {
+				commit2SHA, err := r.resolveCommit(ctx, "v2.0.0")
+				if err != nil {
+					t.Fatalf("failed to resolve commit for v2.0.0: %v", err)
+				}
+				if tags["v2.0.0"] != decodeSHA1(commit2SHA) {
+					t.Errorf("annotated tag v2.0.0 hash mismatch: got %x, want %s", tags["v2.0.0"], commit2SHA)
+				}
+			}
 		})
 	}
 }
@@ -1389,6 +1468,12 @@ func TestGetRemoteTags(t *testing.T) {
 			name:      "Repo with tags",
 			setupFunc: setupTagsTestRepo,
 			wantTags:  []string{"v1.0.0", "v1.1.0"},
+			wantCount: 2,
+		},
+		{
+			name:      "Repo with annotated and lightweight tags",
+			setupFunc: setupAnnotatedTagsTestRepo,
+			wantTags:  []string{"v1.0.0", "v2.0.0"},
 			wantCount: 2,
 		},
 		{
@@ -1420,6 +1505,23 @@ func TestGetRemoteTags(t *testing.T) {
 			for _, wantTag := range tt.wantTags {
 				if _, ok := tags[wantTag]; !ok {
 					t.Errorf("expected tag %s to exist", wantTag)
+				}
+			}
+
+			// Ensure no tag contains ^{} suffix
+			for tag := range tags {
+				if strings.HasSuffix(tag, "^{}") {
+					t.Errorf("unexpected peeled tag suffix in tag: %s", tag)
+				}
+			}
+
+			if tt.name == "Repo with annotated and lightweight tags" {
+				commit2SHA, err := r.resolveCommit(ctx, "v2.0.0")
+				if err != nil {
+					t.Fatalf("failed to resolve commit for v2.0.0: %v", err)
+				}
+				if tags["v2.0.0"] != decodeSHA1(commit2SHA) {
+					t.Errorf("annotated tag v2.0.0 hash mismatch: got %x, want %s", tags["v2.0.0"], commit2SHA)
 				}
 			}
 		})

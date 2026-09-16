@@ -3570,6 +3570,469 @@
       ]
     },
     {
+      "id": "CVE-2025-10966",
+      "summary": "missing SFTP host verification with wolfSSH",
+      "details": "curl's code for managing SSH connections when SFTP was done using the wolfSSH\npowered backend was flawed and missed host verification mechanisms.\n\nThis prevents curl from detecting MITM attackers and more.",
+      "aliases": ["CURL-CVE-2025-10966"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2025-11-07T07:26:30.351Z",
+      "related": ["openSUSE-SU-2025:15757-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2025/11/05/2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-253495.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-10966.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-10966.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3355218"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/10xxx/CVE-2025-10966.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-10966"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "11b991232fbcaa88e2b1faecac224416b0001e35"
+                },
+                {
+                  "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 54,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14017",
+      "summary": "broken TLS options for threaded LDAPS",
+      "details": "When doing multi-threaded LDAPS transfers (LDAP over TLS) with libcurl,\nchanging TLS options in one thread would inadvertently change them globally\nand therefore possibly also affect other concurrently setup transfers.\n\nDisabling certificate verification for a specific transfer could\nunintentionally disable the feature for other threads as well.",
+      "aliases": ["CURL-CVE-2025-14017"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:07:05.554Z",
+      "related": [
+        "SUSE-SU-2026:0077-1",
+        "SUSE-SU-2026:0078-1",
+        "SUSE-SU-2026:0119-1",
+        "SUSE-SU-2026:0221-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "SUSE-SU-2026:20347-1",
+        "SUSE-SU-2026:20358-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14017.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14017.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/14xxx/CVE-2025-14017.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14017"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 142,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:L/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14524",
+      "summary": "bearer token leak on cross-protocol redirect",
+      "details": "When an OAuth2 bearer token is used for an HTTP(S) transfer, and that transfer\nperforms a cross-protocol redirect to a second URL that uses an IMAP, LDAP,\nPOP3 or SMTP scheme, curl might wrongly pass on the bearer token to the new\ntarget host.",
+      "aliases": ["CURL-CVE-2025-14524"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:07:25.655Z",
+      "related": [
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/4"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14524.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14524.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3459417"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/14xxx/CVE-2025-14524.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14524"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f77e89c5d20db09eaebf378ec036a7e796932810"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 106,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-14819",
+      "summary": "OpenSSL partial chain store policy bypass",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "aliases": ["CURL-CVE-2025-14819"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:07:54.408Z",
+      "related": [
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/5"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14819.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-14819.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/14xxx/CVE-2025-14819.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14819"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "8fbc805864270a5a6baefb2cc6948b65e4bb5407"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 30,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15079",
+      "summary": "libssh global known_hosts override",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and setting the\nknown_hosts file, libcurl could still mistakenly accept connecting to hosts\n*not present* in the specified file if they were added as recognized in the\nlibssh *global* known_hosts file.",
+      "aliases": ["CURL-CVE-2025-15079"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:08:13.410Z",
+      "related": [
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0066-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/6"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-15079.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-15079.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3477116"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/15xxx/CVE-2025-15079.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-15079"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 69,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-15224",
+      "summary": "libssh key passphrase bypass without agent set",
+      "details": "When doing SSH-based transfers using either SCP or SFTP, and asked to do\npublic key authentication, curl would wrongly still ask and authenticate using\na locally running SSH agent.",
+      "aliases": ["CURL-CVE-2025-15224"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-01-08T10:08:27.516Z",
+      "related": [
+        "SUSE-SU-2026:0050-1",
+        "SUSE-SU-2026:0051-1",
+        "SUSE-SU-2026:0052-1",
+        "SUSE-SU-2026:0508-1",
+        "SUSE-SU-2026:20042-1",
+        "SUSE-SU-2026:20062-1",
+        "SUSE-SU-2026:20082-1",
+        "SUSE-SU-2026:20110-1",
+        "openSUSE-SU-2026:10017-1",
+        "openSUSE-SU-2026:20031-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/01/07/7"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-15224.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2025-15224.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3480925"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2025/15xxx/CVE-2025-15224.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-15224"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d6c21c8eec597a925d2b647cff3d58ac69de01a0"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 69,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N"
+        }
+      ]
+    },
+    {
       "id": "CVE-2025-5025",
       "summary": "No QUIC certificate pinning with wolfSSL",
       "details": "libcurl supports *pinning* of the server certificate public key for HTTPS transfers. Due to an omission, this check is not performed when connecting with QUIC for HTTP/3, when the TLS backend is wolfSSL. Documentation says the option works with wolfSSL, failing to specify that it does not for QUIC and HTTP/3. Since pinning makes the transfer succeed if the pin is fine, users could unwittingly connect to an impostor server without noticing.",
@@ -3638,6 +4101,219 @@
       ]
     },
     {
+      "id": "CVE-2026-10536",
+      "summary": "HTTP/2 stream-dependency tree UAF",
+      "details": "A use-after-free vulnerability exists in libcurl when an application\nconfigures an HTTP/2 stream-dependency tree via `CURLOPT_STREAM_DEPENDS` or\n`CURLOPT_STREAM_DEPENDS_E`, subsequently invokes `curl_easy_reset()`, and\nfinally terminates the handle with `curl_easy_cleanup()`. During this final\ncleanup phase, libcurl attempts to access and modify an internal structure\nthat was already freed during the reset operation.",
+      "aliases": ["CURL-CVE-2026-10536"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:11:15.378Z",
+      "related": [
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-10536.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-10536.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3751697"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/10xxx/CVE-2026-10536.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-10536"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 33,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-11856",
+      "summary": "cross-origin Digest auth state leak",
+      "details": "Successfully using libcurl to do a transfer to a specific HTTP origin\n(`hostA`) with **Digest** authentication and then changing the origin to a\ndifferent one (`hostB`) for a second transfer, reusing the same handle, makes\nlibcurl wrongly pass on the `Authorization:` header field meant for `hostA`,\nto `hostB`.",
+      "aliases": ["CURL-CVE-2026-11856"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:13:31.661Z",
+      "related": ["openSUSE-SU-2026:11230-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-11856.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-11856.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3793260"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/11xxx/CVE-2026-11856.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-11856"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 172,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-12064",
+      "summary": "proto-default skips SSH verification",
+      "details": "When a user invokes curl using a schemeless URL combined with\n`--proto-default` sftp (or scp), a disconnect occurs between the tool layer\nand libcurl. The tool layer incorrectly infers the URL scheme, which\nerroneously bypasses the initialization of critical SSH security options like\nCURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 and CURLOPT_SSH_KNOWNHOSTS. Conversely, the\nlibcurl runtime successfully honors CURLOPT_DEFAULT_PROTOCOL and establishes\nthe connection via SFTP/SCP as specified. Because the tool layer skipped the\nsecurity configuration, these SSH host verification options are silently\nomitted, causing curl to connect to an unverified SSH remote host without\nthrowing an error.",
+      "aliases": ["CURL-CVE-2026-12064"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:13:55.302Z",
+      "related": [
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-12064.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-12064.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3797526"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/12xxx/CVE-2026-12064.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-12064"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 41,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
       "id": "CVE-2026-13608",
       "summary": "OpenLDAP SASL authentication bypass",
       "details": "A flaw in the libcurl SASL negotiation for LDAP authentication allows an\nincomplete handshake sequence to be misinterpreted as a successful\ncryptographic verification. An attacker executing a Man-in-the-Middle (MITM)\nattack can inject a premature or shortcut response that bypasses complete peer\nvalidation.",
@@ -3675,6 +4351,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-13608"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3694,7 +4374,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 50,
+          "versions": 90,
           "database_specific": "<Any value>"
         }
       ],
@@ -3707,9 +4387,73 @@
       ]
     },
     {
+      "id": "CVE-2026-18924",
+      "summary": "HTTP/2 server push UAF",
+      "details": "A flaw in libcurl's handling of HTTP/2 Server Push streams, when the parent\nhandle is set to share connections with other handles, can lead to\nuse-after-free in the cleanup process.",
+      "aliases": ["CURL-CVE-2026-18924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:47:27.820Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-18924.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-18924.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3916059"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/18xxx/CVE-2026-18924.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-18924"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "da13804826793dac4105a3924152ec2a29662a5f"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 97,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H"
+        }
+      ]
+    },
+    {
       "id": "CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
-      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with  `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
       "aliases": ["CURL-CVE-2026-1965"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:08:52.431Z",
@@ -3747,6 +4491,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-1965"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3766,7 +4514,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 171,
+          "versions": 340,
           "database_specific": "<Any value>"
         }
       ],
@@ -3775,6 +4523,70 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-19931",
+      "summary": "Negotiate ambient user conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an HTTP connection setup for a given\nhostname using Negotiate authentication, when the initial request is done\nusing empty credentials. This can make user B's request get sent over user A's\npreviously authenticated connection.",
+      "aliases": ["CURL-CVE-2026-19931"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:47:43.523Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-19931.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-19931.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3923520"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/19xxx/CVE-2026-19931.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-19931"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "40279e7b8e777708dffaba8116bf350b36c02574"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 65,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -3824,6 +4636,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-3783"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3843,7 +4659,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 107,
+          "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
@@ -3852,6 +4668,1270 @@
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-3784",
+      "summary": "wrong proxy connection reuse with credentials",
+      "details": "curl would wrongly reuse an existing HTTP proxy connection doing CONNECT to a\nserver, even if the new request uses different credentials for the HTTP proxy.\nThe proper behavior is to create or use a separate connection.",
+      "aliases": ["CURL-CVE-2026-3784"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-03-11T10:09:21.418Z",
+      "related": [
+        "SUSE-SU-2026:0879-1",
+        "SUSE-SU-2026:0885-1",
+        "SUSE-SU-2026:0903-1",
+        "SUSE-SU-2026:0911-1",
+        "SUSE-SU-2026:0921-1",
+        "SUSE-SU-2026:20668-1",
+        "SUSE-SU-2026:20722-1",
+        "SUSE-SU-2026:20760-1",
+        "SUSE-SU-2026:20918-1",
+        "openSUSE-SU-2026:10371-1",
+        "openSUSE-SU-2026:20404-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/03/11/3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-253495.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-3784.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-3784.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3584903"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/3xxx/CVE-2026-3784.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-3784"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
+                },
+                {
+                  "fixed": "77e260ec0ea1dd9a30197b60773d42f19ff19005"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 190,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-4873",
+      "summary": "connection reuse ignores TLS requirement",
+      "details": "A vulnerability exists where a connection requiring TLS incorrectly reuses an\nexisting unencrypted connection from the same connection pool. If an initial\ntransfer is made in clear-text (via IMAP, SMTP, or POP3), a subsequent request\nto that same host bypasses the TLS requirement and instead transmit data\nunencrypted.",
+      "aliases": ["CURL-CVE-2026-4873"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:27:04.538Z",
+      "related": [
+        "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
+        "SUSE-SU-2026:21452-1",
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:2925-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/04/29/7"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-4873.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-4873.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3621851"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/4xxx/CVE-2026-4873.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-4873"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f2f07dad3451d1f63b56d3de0b43160c39d275d7"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 131,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-5545",
+      "summary": "wrong reuse of HTTP Negotiate connection",
+      "details": "libcurl might in some circumstances reuse the wrong connection when asked to\ndo an authenticated HTTP(S) request after a Negotiate-authenticated one, when\nboth use the same host.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials.\n\nAn application that first uses Negotiate authentication to a server with\n`user1:password1` and then does another operation to the same server asking\nfor any authentication method but for `user2:password2` (while the previous\nconnection is still alive) - the second request gets confused and wrongly\nreuses the same connection and sends the new request over that connection\nthinking it uses a mix of user1's and user2's credentials when it is in fact\nstill using the connection authenticated for user1...",
+      "aliases": ["CURL-CVE-2026-5545"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:27:26.065Z",
+      "related": [
+        "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
+        "SUSE-SU-2026:21452-1",
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-5545.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-5545.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3642555"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/5xxx/CVE-2026-5545.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-5545"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 170,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-5773",
+      "summary": "wrong reuse of SMB connection",
+      "details": "libcurl might in some circumstances reuse the wrong connection for SMB(S)\ntransfers.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a network transfer operation that was requested by an\napplication could wrongfully reuse an existing SMB connection to the same\nserver that was using a different \"share\" than the new subsequent transfer\nshould.\n\nThis could in unlucky situations lead to the download of the wrong file or the\nupload of a file to the wrong place. When this happens, the same credentials\nare used and the server name is the same.",
+      "aliases": ["CURL-CVE-2026-5773"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:27:42.342Z",
+      "related": [
+        "SUSE-SU-2026:23350-1",
+        "SUSE-SU-2026:23361-1",
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/04/29/9"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-5773.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-5773.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3650689"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/5xxx/CVE-2026-5773.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-5773"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "f171920af89ced4b1e08a648df74b6e9e6d2ae6c"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 100,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-6253",
+      "summary": "proxy credentials leak over redirect-to proxy",
+      "details": "curl might erroneously pass on credentials for a first proxy to a second\nproxy.\n\nThis can happen when the following conditions are true:\n\n1. curl is setup to use specific different proxies for different URL schemes\n2. the first proxy needs credentials\n3. the second proxy uses no credentials\n4. while using the first proxy (using say `http://`), curl is asked to follow\n   a redirect to a URL using another scheme (say `https://`), accessed using a\n   second, different, proxy",
+      "aliases": ["CURL-CVE-2026-6253"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:28:03.004Z",
+      "related": [
+        "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
+        "SUSE-SU-2026:21452-1",
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/04/29/11"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6253.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6253.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3669637"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/6xxx/CVE-2026-6253.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6253"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e1a986e0f35cf36618bd88f42e14ea856b6951b"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 156,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-6276",
+      "summary": "stale custom cookie host causes cookie leak",
+      "details": "Using libcurl, when a custom `Host:` header is first set for an HTTP request\nand a second request is subsequently done using the same *easy handle* but\nwithout the custom `Host:` header set, the second request would use stale\ninformation and pass on cookies meant for the first host in the second\nrequest. Leak them.",
+      "aliases": ["CURL-CVE-2026-6276"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:28:19.273Z",
+      "related": [
+        "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
+        "SUSE-SU-2026:21452-1",
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/04/29/13"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6276.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6276.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3671818"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/6xxx/CVE-2026-6276.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6276"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "ae8168a3c83b61a3a63342826290d4d17f6ab093"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 52,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-6429",
+      "summary": "netrc credential leak with reused proxy connection",
+      "details": "When asked to both use a `.netrc` file for credentials and to follow HTTP\nredirects, libcurl could leak the password used for the first host to the\nfollowed-to host under certain circumstances.",
+      "aliases": ["CURL-CVE-2026-6429"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:28:36.166Z",
+      "related": [
+        "SUSE-SU-2026:1717-1",
+        "SUSE-SU-2026:1940-1",
+        "SUSE-SU-2026:21452-1",
+        "SUSE-SU-2026:22146-1",
+        "SUSE-SU-2026:22156-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:20973-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6429.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-6429.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3677759"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/6xxx/CVE-2026-6429.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6429"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "55225106b6a0ecface0f129367e533736a874a91"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 157,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-7168",
+      "summary": "cross-proxy Digest auth state leak",
+      "details": "Successfully using libcurl to do a transfer over a specific HTTP proxy\n(`proxyA`) with **Digest** authentication and then changing the proxy host to\na second one (`proxyB`) for a second transfer, reusing the same handle, makes\nlibcurl wrongly pass on the `Proxy-Authorization:` header field meant for\n`proxyA`, to `proxyB`.",
+      "aliases": ["CURL-CVE-2026-7168"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-05-13T08:29:08.900Z",
+      "related": [
+        "SUSE-SU-2026:23350-1",
+        "SUSE-SU-2026:23361-1",
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:3798-1",
+        "SUSE-SU-2026:3814-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "http://www.openwall.com/lists/oss-security/2026/04/29/14"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-7168.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-7168.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3697719"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/7xxx/CVE-2026-7168.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-7168"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "39626d8cfdd8f858d2fa67ec18204ebc5913d532"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 164,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-80230",
+      "summary": "OpenSSL pinning bypass",
+      "details": "When `CURLOPT_PINNEDPUBLICKEY` is configured alongside options that disable\nstandard peer verification (`CURLOPT_SSL_VERIFYPEER = 0` and\n`CURLOPT_SSL_VERIFYHOST = 0`), libcurl fails to enforce public key pinning on\nconnections established without a presented server certificate. Bypassing the\npinning check under these disabled-verification conditions allows\nunauthenticated connections to succeed when they should be rejected.",
+      "aliases": ["CURL-CVE-2026-80230"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:48:16.262Z",
+      "related": [
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:23521-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "SUSE-SU-2026:4048-1",
+        "SUSE-SU-2026:4071-1",
+        "openSUSE-SU-2026:11696-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80230.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80230.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3969300"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/80xxx/CVE-2026-80230.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-80230"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "d3599bfc9be8e8781af095ef0a4b174578e5f39b"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 96,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-80231",
+      "summary": "native CA store conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an existing HTTPS connection setup\nfor a given hostname even when using a different Native CA Store setting\n(`CURLSSLOPT_NATIVE_CA`) than when the connection was created.",
+      "aliases": ["CURL-CVE-2026-80231"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:48:38.062Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80231.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80231.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3969368"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/80xxx/CVE-2026-80231.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-80231"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "ae8168a3c83b61a3a63342826290d4d17f6ab093"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 54,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-82209",
+      "summary": "domain-scoped PSL domain cookie",
+      "details": "When libpsl support is enabled, libcurl fails to enforce the Public Suffix\nList boundary check when processing a `Set-Cookie` header where the `Domain`\nattribute explicitly matches an origin host that is itself a public suffix\n(e.g., `Domain=co.uk` set by `co.uk`).\n\nInstead of coercing it into a strict host-only cookie, libcurl saves the\ncookie with wildcard domain scope (`.co.uk`). Consequently, the cookie is\ninappropriately included in subsequent outbound requests or HTTP redirects to\narbitrary sibling subdomains under the same public suffix (e.g.,\n`attacker.co.uk`).",
+      "aliases": ["CURL-CVE-2026-82209"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:49:35.050Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-82209.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-82209.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3972385"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/82xxx/CVE-2026-82209.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-82209"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "003bbb89271a89f0dab80d2e96fe7a8b1d0a3ae8"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 95,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-8286",
+      "summary": "wrong STARTTLS connection reuse",
+      "details": "A vulnerability exists where a new transfer that uses STARTTLS to upgrade the\nconnection might reuse an existing live connection even though the TLS\nconfiguration mismatches so it should not.",
+      "aliases": ["CURL-CVE-2026-8286"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:14:17.541Z",
+      "related": [
+        "ALSA-2026:55439",
+        "ALSA-2026:57462",
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8286.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8286.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3718195"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/8xxx/CVE-2026-8286.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8286"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 113,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-8458",
+      "summary": "wrong reuse for different services",
+      "details": "libcurl might in some circumstances reuse the wrong connection when asked to\ndo Negotiate-authenticated ones, even when they are set to use different\n\"services\".\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different services.",
+      "aliases": ["CURL-CVE-2026-8458"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:14:42.258Z",
+      "related": [
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8458.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8458.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3721183"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/8xxx/CVE-2026-8458.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8458"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 98,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-8924",
+      "summary": "trailing dot domain super cookie",
+      "details": "A flaw in curl’s cookie parsing logic allows a malicious HTTP server to set\n\"super cookies\" that bypass the Public Suffix List check. This enables an\nattacker-controlled origin to inject cookies that curl subsequently scopes and\ntransmits to unrelated third-party domains.",
+      "aliases": ["CURL-CVE-2026-8924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:15:04.646Z",
+      "related": [
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:11266-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8924.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8924.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3733905"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/8xxx/CVE-2026-8924.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8924"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 95,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-8927",
+      "summary": "env-set cross-proxy Digest auth state leak",
+      "details": "When reusing a libcurl handle for sequential transfers driven by\nenvironment-variable proxy configuration, libcurl fails to clear the proxy\nauthentication state between requests. Specifically, if the initial transfer\nauthenticates against `proxyA` using Digest auth, a subsequent transfer routed\nthrough `proxyB` erroneously leaks the `Proxy-Authorization:` header intended\nsolely for `proxyA`.",
+      "aliases": ["CURL-CVE-2026-8927"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:16:06.376Z",
+      "related": [
+        "ALSA-2026:55432",
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8927.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8927.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3744543"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/8xxx/CVE-2026-8927.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8927"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 166,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-8932",
+      "summary": "incomplete mTLS config matching in conn reuse",
+      "details": "libcurl would reuse a previously created connection even when some mTLS config\nrelated option had been changed that should have prohibited reuse.\n\nlibcurl keeps previously used connections in a connection pool for subsequent\ntransfers to reuse if one of them matches the setup. However, some TLS\nsettings related to client certificates were left out from the configuration\nmatch checks, making them match too easily. In particular options related to\nthe private key.",
+      "aliases": ["CURL-CVE-2026-8932"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:16:30.485Z",
+      "related": ["openSUSE-SU-2026:11230-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8932.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-8932.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3733910"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/8xxx/CVE-2026-8932.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8932"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 193,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-9547",
+      "summary": "SSH improper host validation",
+      "details": "When a libcurl-based application performs transfers via `SCP://` or `SFTP://`\nand utilizes the `CURLOPT_SSH_KEYFUNCTION` callback, it may silently accept an\nuntrusted server. This vulnerability occurs when a server presents a host key\ntype that does not match the specific key type already recorded for that host\nin the `known_hosts` file. Instead of rejecting the mismatch, the callback\nmechanism fails to properly enforce the restriction, allowing the connection\nto succeed without warning and risking a potential man-in-the-middle attack.",
+      "aliases": ["CURL-CVE-2026-9547"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-07-03T06:18:44.499Z",
+      "related": [
+        "ALSA-2026:55439",
+        "SUSE-SU-2026:22553-1",
+        "SUSE-SU-2026:22582-1",
+        "SUSE-SU-2026:22709-1",
+        "SUSE-SU-2026:22889-1",
+        "SUSE-SU-2026:2925-1",
+        "SUSE-SU-2026:2926-1",
+        "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
+        "openSUSE-SU-2026:11230-1",
+        "openSUSE-SU-2026:21272-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-9547.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-9547.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3751712"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/9xxx/CVE-2026-9547.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-9547"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "6e3f8dc1f173b47de9a68516ce4b95bf25598c2f"
+                },
+                {
+                  "fixed": "3f00a2f6fa97f7721b65606954aac979dcb6caac"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 57,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
         }
       ]
     }

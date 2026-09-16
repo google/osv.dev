@@ -1,10 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestTruncateLogOutput(t *testing.T) {
+	if got := truncateLogOutput([]byte("short")); got != "short" {
+		t.Errorf("got %q, want %q", got, "short")
+	}
+	long := bytes.Repeat([]byte("a"), maxLogOutputBytes+10)
+	if got := truncateLogOutput(long); !strings.HasSuffix(got, "... [truncated 10 bytes]") {
+		t.Errorf("expected truncation suffix, got %q", got)
+	}
+}
 
 func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 	if testing.Short() {
@@ -47,14 +59,14 @@ func TestRefreshRepo_DontRecloneOnRemoteError(t *testing.T) {
 	if err := os.MkdirAll(repoPath, 0755); err != nil {
 		t.Fatalf("failed to create repo dir: %v", err)
 	}
-	if err := runCmd(ctx, repoPath, nil, "git", "init"); err != nil {
+	if _, err := runCmd(ctx, repoPath, nil, "git", "init"); err != nil {
 		t.Fatalf("git init failed: %v", err)
 	}
 	// Configure dummy git user
-	_ = runCmd(ctx, repoPath, nil, "git", "config", "user.name", "Test")
-	_ = runCmd(ctx, repoPath, nil, "git", "config", "user.email", "test@example.com")
+	_, _ = runCmd(ctx, repoPath, nil, "git", "config", "user.name", "Test")
+	_, _ = runCmd(ctx, repoPath, nil, "git", "config", "user.email", "test@example.com")
 	// Add remote origin pointing to an unreachable port (connection refused)
-	if err := runCmd(ctx, repoPath, nil, "git", "remote", "add", "origin", "https://127.0.0.1:59999/repo.git"); err != nil {
+	if _, err := runCmd(ctx, repoPath, nil, "git", "remote", "add", "origin", "https://127.0.0.1:59999/repo.git"); err != nil {
 		t.Fatalf("git remote add failed: %v", err)
 	}
 
@@ -63,10 +75,10 @@ func TestRefreshRepo_DontRecloneOnRemoteError(t *testing.T) {
 	if err := os.WriteFile(dummyFile, []byte("hello"), 0600); err != nil {
 		t.Fatalf("write file failed: %v", err)
 	}
-	if err := runCmd(ctx, repoPath, nil, "git", "add", "dummy.txt"); err != nil {
+	if _, err := runCmd(ctx, repoPath, nil, "git", "add", "dummy.txt"); err != nil {
 		t.Fatalf("git add failed: %v", err)
 	}
-	if err := runCmd(ctx, repoPath, nil, "git", "commit", "-m", "initial commit"); err != nil {
+	if _, err := runCmd(ctx, repoPath, nil, "git", "commit", "-m", "initial commit"); err != nil {
 		t.Fatalf("git commit failed: %v", err)
 	}
 

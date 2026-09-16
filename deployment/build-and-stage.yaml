@@ -462,13 +462,13 @@ steps:
     corepack enable pnpm
     pnpm install --frozen-lockfile --ignore-scripts
     pnpm run build:prod
-  dir: 'gcp/website/frontend3'
+  dir: 'website/frontend3'
   id: 'build-frontend3'
   waitFor: ['setup']
 
 - name: 'gcr.io/oss-vdb/ci'
   args: ['hugo', '--buildFuture', '-d', '../dist/static/blog']
-  dir: 'gcp/website/blog'
+  dir: 'website/blog'
   id: 'build-hugo'
   waitFor: ['setup']
 
@@ -483,7 +483,7 @@ steps:
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
          '--target', 'website',
          '--build-context', 'bindings=../bindings',
-         '--build-context', 'website-dist=../gcp/website/dist',
+         '--build-context', 'website-dist=../website/dist',
          '--build-context', 'docs=../docs',
          '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   dir: 'go'

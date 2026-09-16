@@ -102,8 +102,7 @@ func repoGitWeb(parsedURL *url.URL) (string, error) {
 	// These repos seem to only be cloneable over git:// not https://
 	//
 	// The frontend code needs to be taught how to rewrite these back to
-	// something clickable for humans in
-	// https://github.com/google/osv.dev/blob/master/gcp/website/source_mapper.py
+	// something clickable for humans.
 	//
 	var gitProtocolHosts = []string{
 		"git.code-call-cc.org",

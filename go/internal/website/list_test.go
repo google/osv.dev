@@ -13,10 +13,10 @@ func TestList_RenderPage(t *testing.T) {
 	t.Parallel()
 
 	staticFS := fstest.MapFS{
-		"go/base.html": &fstest.MapFile{
+		"base.html": &fstest.MapFile{
 			Data: []byte(`<html>{{ template "content" . }}</html>`),
 		},
-		"go/list.html": &fstest.MapFile{
+		"list.html": &fstest.MapFile{
 			Data: []byte(`{{ define "content" }}<div>List Page {{ .Query }}</div>{{ end }}`),
 		},
 	}

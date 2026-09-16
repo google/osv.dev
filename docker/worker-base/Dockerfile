@@ -62,9 +62,9 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /
 RUN sed -i 's/^.*ulimit.*$/true/g' /etc/init.d/docker
 
 # Install gcloud
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
-    apt-get update && apt-get install -y google-cloud-sdk
+    apt-get update && apt-get install -y google-cloud-cli
 
 # Install gVisor.
 RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/gvisor.gpg && \

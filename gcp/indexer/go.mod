@@ -5,7 +5,7 @@ go 1.27.1
 require (
 	cloud.google.com/go/datastore v1.26.0
 	cloud.google.com/go/pubsub/v2 v2.7.0
-	cloud.google.com/go/storage v1.66.0
+	cloud.google.com/go/storage v1.67.1
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/golang/glog v1.2.5
 	github.com/google/go-cmp v0.7.0

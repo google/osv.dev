@@ -259,9 +259,6 @@ func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status 
 	}
 
 	templateDir := s.config.TemplateDir
-	if templateDir == "" {
-		templateDir = "go"
-	}
 
 	paths := make([]string, len(files))
 	for i, f := range files {

@@ -64,7 +64,13 @@ func TestNormalizePackageName(t *testing.T) {
 		{"PyPI", "flask", "flask"},
 		{"PyPI", "A_B-C.D", "a-b-c-d"},
 		{"PyPI", "A_._B", "a-b"},
-		{"npm", "Flask", "Flask"}, // No normalization
+		{"npm", "Flask", "flask"},
+		{"npm", "lodash", "lodash"},
+		{"NuGet", "Newtonsoft.Json", "newtonsoft.json"},
+		{"NuGet", "newtonsoft.json", "newtonsoft.json"},
+		{"Packagist", "GuzzleHttp/Guzzle", "guzzlehttp/guzzle"},
+		{"crates.io", "SmallVec", "smallvec"},
+		{"crates.io", "openssl_src", "openssl-src"},
 	}
 
 	p := NewProvider(nil)

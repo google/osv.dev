@@ -30,6 +30,14 @@ type packagistEcosystem struct {
 
 var _ Enumerable = packagistEcosystem{}
 
+// NormalizePackageName folds a Packagist name to lowercase. Composer resolves
+// vendor and package names case-insensitively.
+func (e packagistEcosystem) NormalizePackageName(name string) string {
+	return strings.ToLower(name)
+}
+
+var _ PackageNameNormalizer = packagistEcosystem{}
+
 func (e packagistEcosystem) Parse(version string) (Version, error) {
 	if strings.Contains(version, "#") {
 		// A quirk of packagist comparison is that to compare numbers against non-numbers, numbers are replaced with '#'

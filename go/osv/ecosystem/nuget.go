@@ -45,6 +45,15 @@ func (e nugetEcosystem) IsSemver() bool {
 	return false
 }
 
+// NormalizePackageName folds a NuGet package ID to lowercase. NuGet package
+// identifiers are case-insensitive; the client already lowercases the ID when
+// calling the registry (see nugetAPIURL), so matching must fold case too.
+func (e nugetEcosystem) NormalizePackageName(name string) string {
+	return strings.ToLower(name)
+}
+
+var _ PackageNameNormalizer = nugetEcosystem{}
+
 func nugetAPIURL(pkg string) string {
 	return fmt.Sprintf("https://api.nuget.org/v3/registration5-semver1/%s/index.json", url.PathEscape(strings.ToLower(pkg)))
 }

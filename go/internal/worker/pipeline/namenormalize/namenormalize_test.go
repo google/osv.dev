@@ -55,7 +55,7 @@ func TestEnricher_Enrich(t *testing.T) {
 		t.Errorf("Expected a-b-c-d, got %s", affected[1].GetPackage().GetName())
 	}
 
-	if affected[2].GetPackage().GetName() != "Flask" {
-		t.Errorf("Expected Flask, got %s", affected[2].GetPackage().GetName())
+	if affected[2].GetPackage().GetName() != "flask" {
+		t.Errorf("Expected flask, got %s", affected[2].GetPackage().GetName())
 	}
 }

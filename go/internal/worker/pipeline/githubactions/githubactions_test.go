@@ -55,6 +55,10 @@ func (m *mockGitterClient) GetFileContent(_ context.Context, _ *gitterpb.FileCon
 	return nil, errors.New("not implemented")
 }
 
+func (m *mockGitterClient) GetCommitDiffs(_ context.Context, _ *gitterpb.CommitDiffsRequest) (*gitterpb.CommitDiffsResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 func makeRef(t *testing.T, label string, hashHex string) *gitterpb.Ref {
 	t.Helper()
 	b, err := hex.DecodeString(hashHex)

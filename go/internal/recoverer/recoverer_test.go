@@ -72,6 +72,10 @@ func (m *mockGitterClient) GetFileContent(ctx context.Context, req *gitterpb.Fil
 	return &gitterpb.FileContentResponse{}, nil
 }
 
+func (m *mockGitterClient) GetCommitDiffs(_ context.Context, _ *gitterpb.CommitDiffsRequest) (*gitterpb.CommitDiffsResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 var _ gitter.Client = (*mockGitterClient)(nil)
 
 type mockStorageProvider struct {

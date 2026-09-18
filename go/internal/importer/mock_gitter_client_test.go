@@ -48,4 +48,8 @@ func (m *mockGitterClient) GetFileContent(ctx context.Context, req *pb.FileConte
 	return &pb.FileContentResponse{}, nil
 }
 
+func (m *mockGitterClient) GetCommitDiffs(_ context.Context, _ *pb.CommitDiffsRequest) (*pb.CommitDiffsResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 var _ gitter.Client = (*mockGitterClient)(nil)

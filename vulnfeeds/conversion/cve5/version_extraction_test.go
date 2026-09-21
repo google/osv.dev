@@ -462,7 +462,7 @@ func TestGetVersionExtractor(t *testing.T) {
 					AssignerShortName: "Linux",
 				},
 			},
-			expectedType: reflect.TypeOf(&LinuxVersionExtractor{}),
+			expectedType: reflect.TypeFor[*LinuxVersionExtractor](),
 		},
 		{
 			name: "Default CVE",
@@ -471,12 +471,12 @@ func TestGetVersionExtractor(t *testing.T) {
 					AssignerShortName: "Anything",
 				},
 			},
-			expectedType: reflect.TypeOf(&DefaultVersionExtractor{}),
+			expectedType: reflect.TypeFor[*DefaultVersionExtractor](),
 		},
 		{
 			name:         "Empty provider",
 			cve:          models.CVE5{},
-			expectedType: reflect.TypeOf(&DefaultVersionExtractor{}),
+			expectedType: reflect.TypeFor[*DefaultVersionExtractor](),
 		},
 	}
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/website"
@@ -133,10 +134,10 @@ func newTestServer(t *testing.T, cfg website.Config) *website.Server {
 	t.Helper()
 	if cfg.StaticFS == nil {
 		cfg.StaticFS = fstest.MapFS{
-			"go/base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
-			"go/404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
-			"go/linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
-			"go/triage.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}triage{{ end }}`)},
+			"base.html":   &fstest.MapFile{Data: []byte(`<html>{{ block "content" . }}{{ end }}</html>`)},
+			"404.html":    &fstest.MapFile{Data: []byte(`{{ define "content" }}404{{ end }}`)},
+			"linter.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}linter{{ end }}`)},
+			"triage.html": &fstest.MapFile{Data: []byte(`{{ define "content" }}triage{{ end }}`)},
 		}
 	}
 	if cfg.DocsFS == nil {
@@ -402,7 +403,7 @@ func TestStaticFiles(t *testing.T) {
 		t.Fatalf("failed to create static img dir: %v", err)
 	}
 
-	goDir := filepath.Join(tmpDir, "go")
+	goDir := tmpDir
 	if err := os.MkdirAll(goDir, 0755); err != nil {
 		t.Fatalf("failed to create go dir: %v", err)
 	}
@@ -924,6 +925,7 @@ func TestTriageEndpoints(t *testing.T) {
 			},
 		})
 		req := httptest.NewRequest(http.MethodGet, "/triage", nil)
+		//nolint:gosec // G124: Synthetic cookie in test HTTP request
 		req.AddCookie(&http.Cookie{
 			Name:  "osv_session",
 			Value: "tampered-or-invalid-cookie",
@@ -1134,4 +1136,43 @@ func TestLinterEndpoints(t *testing.T) {
 			t.Errorf("expected status 404 Not Found, got %d", rec.Code)
 		}
 	})
+}
+
+type slowVulnStore struct {
+	mockVulnStore
+
+	delay time.Duration
+}
+
+func (s slowVulnStore) GetWithMetadata(ctx context.Context, id string) (*osvschema.Vulnerability, *models.VulnSourceRef, error) {
+	select {
+	case <-time.After(s.delay):
+		return s.mockVulnStore.GetWithMetadata(ctx, id)
+	case <-ctx.Done():
+		return nil, nil, ctx.Err()
+	}
+}
+
+func TestServer_RequestTimeout(t *testing.T) {
+	t.Parallel()
+
+	cfg := website.Config{
+		RequestTimeout: 20 * time.Millisecond,
+		Stores: website.Stores{
+			Vuln: slowVulnStore{delay: 100 * time.Millisecond},
+		},
+	}
+	srv := newTestServer(t, cfg)
+
+	req := httptest.NewRequest(http.MethodGet, "/vulnerability/TEST-VULN", nil)
+	rec := httptest.NewRecorder()
+
+	srv.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected status 503 Service Unavailable, got %d", rec.Code)
+	}
+	if body := rec.Body.String(); body != "Request timed out" {
+		t.Errorf("expected body 'Request timed out', got %q", body)
+	}
 }

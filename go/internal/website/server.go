@@ -27,12 +27,13 @@ const goVanityMetadata = `<meta name="go-import" content="osv.dev git https://gi
 
 // Config holds configuration options for the website server.
 type Config struct {
-	StaticFS    fs.FS
-	DocsFS      fs.FS
-	TemplateDir string
-	Stores      Stores
-	APIURL      string
-	Auth        AuthConfig
+	StaticFS       fs.FS
+	DocsFS         fs.FS
+	TemplateDir    string
+	Stores         Stores
+	APIURL         string
+	Auth           AuthConfig
+	RequestTimeout time.Duration
 }
 
 type Stores struct {
@@ -129,8 +130,12 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 	s.registerRoutes()
 
-	// Middlewares: 404 Fallback -> Logging (if local/dev) -> ServeMux
+	// Middlewares: 404 Fallback -> Timeout (if set) -> Logging (if local/dev) -> ServeMux
 	h := s.notFoundMiddleware(s.mux)
+
+	if cfg.RequestTimeout > 0 {
+		h = http.TimeoutHandler(h, cfg.RequestTimeout, "Request timed out")
+	}
 
 	// Skip HTTP access logging in Cloud Run production to avoid duplicating Cloud Run infrastructure logs.
 	if os.Getenv("K_SERVICE") == "" {
@@ -254,9 +259,6 @@ func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status 
 	}
 
 	templateDir := s.config.TemplateDir
-	if templateDir == "" {
-		templateDir = "go"
-	}
 
 	paths := make([]string, len(files))
 	for i, f := range files {

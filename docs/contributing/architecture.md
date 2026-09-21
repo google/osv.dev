@@ -67,7 +67,6 @@ The [API server](../api/index.md) (hosted at `api.osv.dev`, source code in [`go/
 
 ## Website
 
-The [main web UI](https://osv.dev) (source code in [`gcp/website`](../../gcp/website)) also runs on [Cloud Run], and is served through [Cloud Load Balancing].
+The [main web UI](https://osv.dev) (server source code in [`go/cmd/website`](../../go/cmd/website) and frontend assets in [`website`](../../website)) also runs on [Cloud Run], and is served through [Cloud Load Balancing].
 
-[Cloud Run]: https://cloud.google.com/run
 [Cloud Load Balancing]: https://cloud.google.com/load-balancing

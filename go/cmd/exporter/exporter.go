@@ -50,6 +50,7 @@ func main() {
 	flag.Parse()
 
 	scratchDir := *scratchDirFlag
+	//nolint:gosec // G703: Creating scratch directory
 	if err := os.MkdirAll(scratchDir, 0755); err != nil {
 		logger.FatalContext(ctx, "failed to create scratch directory", slog.String("dir", scratchDir), slog.Any("err", err))
 	}

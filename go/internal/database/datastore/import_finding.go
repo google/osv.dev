@@ -68,8 +68,7 @@ func (s *ImportFindingsStore) GetMulti(ctx context.Context, bugIDs []string) ([]
 	entities := make([]*ImportFinding, len(bugIDs))
 	err := s.dsClient.GetMulti(ctx, keys, entities)
 	if err != nil {
-		var multiErr datastore.MultiError
-		if errors.As(err, &multiErr) {
+		if multiErr, ok := errors.AsType[datastore.MultiError](err); ok {
 			for i, e := range multiErr {
 				if errors.Is(e, datastore.ErrNoSuchEntity) {
 					entities[i] = nil

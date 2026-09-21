@@ -3,6 +3,7 @@ package website
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		if encoded := queryVals.Encode(); encoded != "" {
 			targetURL += "?" + encoded
 		}
+		//nolint:gosec // G710: Internal canonical redirect
 		http.Redirect(w, r, targetURL, http.StatusFound)
 
 		return
@@ -101,6 +103,9 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 			ecoCounts = counts
+			slices.SortFunc(ecoCounts, func(a, b models.EcosystemCount) int {
+				return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+			})
 
 			return nil
 		})
@@ -123,11 +128,9 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := ListPageData{
-		BasePageData: BasePageData{
-			Title:             pageTitle,
-			ActiveSection:     "vulnerabilities",
-			DisableTurboCache: true,
-		},
+		Title:               pageTitle,
+		ActiveSection:       "vulnerabilities",
+		DisableTurboCache:   true,
 		Query:               q,
 		SelectedEcosystem:   ecosystem,
 		CurrentAfter:        afterStr,

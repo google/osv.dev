@@ -268,11 +268,19 @@ steps:
   waitFor: ['build-recoverer', 'cloud-build-queue']
 
 # Build/push staging-api-test images to gcr.io/oss-vdb-test.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb-test/staging-api-test:latest || exit 0']
+  id: 'pull-staging-api-test'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/staging_api_test'
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/staging-api-test:latest', '-t', 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA', '--target', 'staging-api-test', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb-test/staging-api-test:latest', '--pull', '.']
+  dir: 'go'
   id: 'build-staging-api-test'
-  waitFor: ['build-worker']
+  waitFor: ['pull-staging-api-test', 'build-recoverer']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/staging-api-test']
   waitFor: ['build-staging-api-test', 'cloud-build-queue']
@@ -454,13 +462,13 @@ steps:
     corepack enable pnpm
     pnpm install --frozen-lockfile --ignore-scripts
     pnpm run build:prod
-  dir: 'gcp/website/frontend3'
+  dir: 'website/frontend3'
   id: 'build-frontend3'
   waitFor: ['setup']
 
 - name: 'gcr.io/oss-vdb/ci'
   args: ['hugo', '--buildFuture', '-d', '../dist/static/blog']
-  dir: 'gcp/website/blog'
+  dir: 'website/blog'
   id: 'build-hugo'
   waitFor: ['setup']
 
@@ -475,7 +483,7 @@ steps:
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
          '--target', 'website',
          '--build-context', 'bindings=../bindings',
-         '--build-context', 'website-dist=../gcp/website/dist',
+         '--build-context', 'website-dist=../website/dist',
          '--build-context', 'docs=../docs',
          '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   dir: 'go'

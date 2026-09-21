@@ -126,7 +126,7 @@ func buildGit(repoDir string) ([]*FileResult, error) {
 	log.Printf("Hashed %v files", len(fileResults))
 
 	b := strings.Builder{}
-	b.WriteString(fmt.Sprintf(`{"name":"%s", "file_hashes": [`, filepath.Base(repoDir)))
+	fmt.Fprintf(&b, `{"name":"%s", "file_hashes": [`, filepath.Base(repoDir))
 
 	for i, fr := range fileResults {
 		if i == len(fileResults)-1 {

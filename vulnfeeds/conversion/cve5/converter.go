@@ -37,7 +37,7 @@ func extractConversionMetrics(cve models.CVE5, refs []*osvschema.Reference, metr
 	}
 	metrics.RefTypesCount = refTypeCounts
 	for refType, count := range refTypeCounts {
-		metrics.AddNote("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count)
+		metrics.AddNotef("[%s]: Reference Type %s: %d", cve.Metadata.CVEID, refType, count)
 	}
 
 	// TODO(jesslowe): Add more analysis based on ADP containers, CVSS, KEV, CWE, etc.
@@ -63,7 +63,7 @@ func getCWEs(cna models.CNA, metrics *models.ConversionMetrics) []string {
 	slices.Sort(cwes)
 	cwes = slices.Compact(cwes)
 
-	metrics.AddNote("Extracted CWEIDs: %v", cwes)
+	metrics.AddNotef("Extracted CWEIDs: %v", cwes)
 
 	return cwes
 }
@@ -74,13 +74,13 @@ func getCWEs(cna models.CNA, metrics *models.ConversionMetrics) []string {
 func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.ConversionMetrics, sourceLink string) *vulns.Vulnerability {
 	published, err := models.ParseCVE5Timestamp(cve.Metadata.DatePublished)
 	if err != nil {
-		metrics.AddNote("[%s]: Published date failed to parse, falling back to Epoch", cve.Metadata.CVEID)
+		metrics.AddNotef("[%s]: Published date failed to parse, falling back to Epoch", cve.Metadata.CVEID)
 		published = time.Unix(0, 0).UTC()
 	}
 
 	modified, err := models.ParseCVE5Timestamp(cve.Metadata.DateUpdated)
 	if err != nil {
-		metrics.AddNote("[%s]: Modified date failed to parse, falling back to Published time", cve.Metadata.CVEID)
+		metrics.AddNotef("[%s]: Modified date failed to parse, falling back to Published time", cve.Metadata.CVEID)
 		modified = published
 	}
 
@@ -88,7 +88,7 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	if cve.Metadata.State == "REJECTED" {
 		withdrawn, err := models.ParseCVE5Timestamp(cve.Metadata.DateRejected)
 		if err != nil {
-			metrics.AddNote("[%s]: Rejected date failed to parse or missing, falling back to Modified time", cve.Metadata.CVEID)
+			metrics.AddNotef("[%s]: Rejected date failed to parse or missing, falling back to Modified time", cve.Metadata.CVEID)
 			withdrawn = modified
 		}
 		withdrawnTime = timestamppb.New(withdrawn)
@@ -120,7 +120,7 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 	if len(dbSpecific) > 0 {
 		databaseSpecific, err := utility.NewStructpbFromMap(dbSpecific)
 		if err != nil {
-			metrics.AddNote("Failed to convert database specific: %v", err)
+			metrics.AddNotef("Failed to convert database specific: %v", err)
 		} else {
 			v.DatabaseSpecific = databaseSpecific
 		}

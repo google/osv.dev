@@ -59,7 +59,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			successfulRepos[s] = true
 		}
 		if len(r) == 0 {
-			metrics.AddNote("Failed to convert git versions to commits")
+			metrics.AddNotef("Failed to convert git versions to commits")
 			return false
 		}
 
@@ -103,7 +103,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 
 	if !gotVersions {
-		metrics.AddNote("No versions in affected, attempting to extract from CPE")
+		metrics.AddNotef("No versions in affected, attempting to extract from CPE")
 		versionRanges, _ := strategies.CPEVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
@@ -114,10 +114,10 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 
 	if !gotVersions {
-		metrics.AddNote("No versions in CPEs so attempting extraction from description")
+		metrics.AddNotef("No versions in CPEs so attempting extraction from description")
 		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics, models.VersionSourceDescription)
 		if len(textRanges) > 0 {
-			metrics.AddNote("Extracted versions from description: %v", textRanges)
+			metrics.AddNotef("Extracted versions from description: %v", textRanges)
 		}
 		if len(textRanges) != 0 {
 			processRanges(textRanges)

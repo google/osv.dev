@@ -12,7 +12,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
-var validBlogName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+var validBlogName = regexp.MustCompile(`^[a-zA-Z0-9_+-]+$`)
 
 func (s *Server) loadBlogContent(filePath string) (template.HTML, error) {
 	fullPath := path.Join("static", "blog", filePath)
@@ -34,11 +34,9 @@ func (s *Server) handleBlogIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := BlogPageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "blog",
-			DisableTurboCache: false,
-		},
-		Index: indexHTML,
+		ActiveSection:     "blog",
+		DisableTurboCache: false,
+		Index:             indexHTML,
 	}
 
 	s.render(w, r, "blog.html", http.StatusOK, data)
@@ -78,11 +76,9 @@ func (s *Server) handleBlogPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := BlogPostPageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "blog",
-			DisableTurboCache: true,
-		},
-		Content: postHTML,
+		ActiveSection:     "blog",
+		DisableTurboCache: true,
+		Content:           postHTML,
 	}
 
 	s.render(w, r, "blog_post.html", http.StatusOK, data)

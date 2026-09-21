@@ -474,6 +474,46 @@ func TestRelationsStore_GetUpstreamHierarchy(t *testing.T) {
 		t.Errorf("GetUpstreamHierarchy() mismatch (-want +got):\n%s", diff)
 	}
 
+	// Double-encoded JSON string (JSON object serialized inside a JSON string)
+	upstreamGroupDouble := UpstreamGroup{
+		VulnID:            "VULN-2",
+		UpstreamIDs:       []string{"ROOT-2"},
+		UpstreamHierarchy: []byte(`"{\"VULN-2\": [\"ROOT-2\"]}"`),
+		Modified:          time.Now().Truncate(time.Second),
+	}
+	if _, err := dsClient.Put(ctx, datastore.IncompleteKey("UpstreamGroup", nil), &upstreamGroupDouble); err != nil {
+		t.Fatalf("Failed to setup double-encoded test data: %v", err)
+	}
+
+	gotDouble, err := store.GetUpstreamHierarchy(ctx, "VULN-2")
+	if err != nil {
+		t.Fatalf("GetUpstreamHierarchy() double-encoded unexpected error: %v", err)
+	}
+	wantDouble := &models.Hierarchy{
+		Roots: []string{"ROOT-2"},
+		Graph: map[string][]string{
+			"ROOT-2": {"VULN-2"},
+		},
+	}
+	if diff := cmp.Diff(wantDouble, gotDouble); diff != "" {
+		t.Errorf("GetUpstreamHierarchy() double-encoded mismatch (-want +got):\n%s", diff)
+	}
+
+	// Invalid JSON should return an error
+	upstreamGroupInvalid := UpstreamGroup{
+		VulnID:            "VULN-INVALID",
+		UpstreamIDs:       []string{"ROOT-3"},
+		UpstreamHierarchy: []byte(`"not-json-content"`),
+		Modified:          time.Now().Truncate(time.Second),
+	}
+	if _, err := dsClient.Put(ctx, datastore.IncompleteKey("UpstreamGroup", nil), &upstreamGroupInvalid); err != nil {
+		t.Fatalf("Failed to setup invalid JSON test data: %v", err)
+	}
+
+	if _, err := store.GetUpstreamHierarchy(ctx, "VULN-INVALID"); err == nil {
+		t.Errorf("expected error for invalid upstream hierarchy JSON, got nil")
+	}
+
 	// Missing entity should return ErrNotFound
 	missing, err := store.GetUpstreamHierarchy(ctx, "NON-EXISTENT")
 	if !errors.Is(err, models.ErrNotFound) || missing != nil {

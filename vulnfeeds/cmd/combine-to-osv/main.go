@@ -60,8 +60,8 @@ func cveIDFromPath(p string) models.CVEID {
 }
 
 func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([]string, error) {
-	if strings.HasPrefix(pathStr, "gs://") {
-		trimmed := strings.TrimPrefix(pathStr, "gs://")
+	if after, ok := strings.CutPrefix(pathStr, "gs://"); ok {
+		trimmed := after
 		bucketName, prefix, _ := strings.Cut(trimmed, "/")
 		bucket := client.Bucket(bucketName)
 
@@ -103,8 +103,8 @@ func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([
 }
 
 func readVulnerability(ctx context.Context, client *storage.Client, fullPath string) (*osvschema.Vulnerability, error) {
-	if strings.HasPrefix(fullPath, "gs://") {
-		trimmed := strings.TrimPrefix(fullPath, "gs://")
+	if after, ok := strings.CutPrefix(fullPath, "gs://"); ok {
+		trimmed := after
 		bucketName, objName, _ := strings.Cut(trimmed, "/")
 		rc, err := client.Bucket(bucketName).Object(objName).NewReader(ctx)
 		if err != nil {
@@ -157,25 +157,21 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 		var readVulnsWg sync.WaitGroup
 
 		if work.CVE5Path != "" {
-			readVulnsWg.Add(1)
-			go func() {
-				defer readVulnsWg.Done()
+			readVulnsWg.Go(func() {
 				cve5, cve5Err = readVulnerability(ctx, client, work.CVE5Path)
 				if cve5Err != nil {
 					logger.Error("Failed to read CVE5", slog.String("id", string(work.ID)), slog.Any("err", cve5Err))
 				}
-			}()
+			})
 		}
 
 		if work.NVDPath != "" {
-			readVulnsWg.Add(1)
-			go func() {
-				defer readVulnsWg.Done()
+			readVulnsWg.Go(func() {
 				nvd, nvdErr = readVulnerability(ctx, client, work.NVDPath)
 				if nvdErr != nil {
 					logger.Error("Failed to read NVD", slog.String("id", string(work.ID)), slog.Any("err", nvdErr))
 				}
-			}()
+			})
 		}
 
 		readVulnsWg.Wait()
@@ -299,11 +295,9 @@ func main() {
 	var uploadVulnsWg sync.WaitGroup
 	var successCount atomic.Uint64
 	for range *numWorkers {
-		uploadVulnsWg.Add(1)
-		go func() {
-			defer uploadVulnsWg.Done()
+		uploadVulnsWg.Go(func() {
 			writer.VulnWorker(ctx, uploadVulnsChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
-		}()
+		})
 	}
 
 	// Interpose Collector to gather valid IDs
@@ -330,11 +324,9 @@ func main() {
 	// Start ReadAndCombineWorkers (Read side)
 	var readAndCombineWg sync.WaitGroup
 	for range *numWorkers {
-		readAndCombineWg.Add(1)
-		go func() {
-			defer readAndCombineWg.Done()
+		readAndCombineWg.Go(func() {
 			readAndCombineWorker(ctx, client, workChan, vulnChan)
-		}()
+		})
 	}
 
 	// Feed Work

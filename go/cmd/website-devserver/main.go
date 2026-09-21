@@ -54,11 +54,11 @@ func run() error {
 
 	dataDir := *dataDirFlag
 	if _, err := os.Stat(dataDir); err != nil {
-		// Fallback to testdata or ../gcp/website/testdata/osv
+		// Fallback to testdata or ../website/testdata/osv
 		if _, err := os.Stat("testdata"); err == nil {
 			dataDir = "testdata"
-		} else if _, err := os.Stat("../gcp/website/testdata/osv"); err == nil {
-			dataDir = "../gcp/website/testdata/osv"
+		} else if _, err := os.Stat("../website/testdata/osv"); err == nil {
+			dataDir = "../website/testdata/osv"
 		}
 	}
 

@@ -725,12 +725,12 @@ func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
 
 func TestConvertAndExportCVEToOSV(t *testing.T) {
 	r := testutils.SetupGitVCR(t)
-	cve := loadTestData(t, "CVE-2025-1110")
+	cve := loadTestData(t, "CVE-2022-23651")
 	cache := &git.InMemoryRepoTagsCache{}
 
 	vWriter := bytes.NewBuffer(nil)
 	mWriter := bytes.NewBuffer(nil)
-	sourceLink := "https://example.com/CVE-2025-1110.json"
+	sourceLink := "https://example.com/CVE-2022-23651.json"
 
 	metrics, err := ConvertAndExportCVEToOSV(cve, vWriter, mWriter, sourceLink, cache, r.GetDefaultClient())
 	if err != nil {
@@ -740,8 +740,8 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 	if metrics == nil {
 		t.Fatal("Expected non-nil metrics")
 	}
-	if metrics.CVEID != "CVE-2025-1110" {
-		t.Errorf("metrics.CVEID = %q, want CVE-2025-1110", metrics.CVEID)
+	if metrics.CVEID != "CVE-2022-23651" {
+		t.Errorf("metrics.CVEID = %q, want CVE-2022-23651", metrics.CVEID)
 	}
 
 	// Verify vulnSink wrote valid JSON
@@ -749,8 +749,8 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 	if err := json.Unmarshal(vWriter.Bytes(), &parsedVuln); err != nil {
 		t.Fatalf("vulnSink did not contain valid JSON: %v", err)
 	}
-	if parsedVuln["id"] != "CVE-2025-1110" {
-		t.Errorf("parsedVuln id = %v, want CVE-2025-1110", parsedVuln["id"])
+	if parsedVuln["id"] != "CVE-2022-23651" {
+		t.Errorf("parsedVuln id = %v, want CVE-2022-23651", parsedVuln["id"])
 	}
 
 	// Verify sourceLink is present in database_specific
@@ -773,7 +773,7 @@ func TestConvertAndExportCVEToOSV(t *testing.T) {
 }
 
 func TestConvertAndExportCVEToOSV_NilSinks(t *testing.T) {
-	cve := loadTestData(t, "CVE-2025-1110")
+	cve := loadTestData(t, "CVE-2022-23651")
 	cache := &git.InMemoryRepoTagsCache{}
 	r := testutils.SetupGitVCR(t)
 
@@ -817,7 +817,7 @@ func (errWriter) Write(_ []byte) (int, error) {
 }
 
 func TestConvertAndExportCVEToOSV_WriterErrors(t *testing.T) {
-	cve := loadTestData(t, "CVE-2025-1110")
+	cve := loadTestData(t, "CVE-2022-23651")
 	cache := &git.InMemoryRepoTagsCache{}
 	r := testutils.SetupGitVCR(t)
 

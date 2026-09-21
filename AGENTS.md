@@ -18,7 +18,8 @@ This repository (`google/osv.dev`) contains the backend services, database model
 It is structured as a multi-language monorepo:
 - `go/`: Go services and utilities (importers, exporter, internal libraries). **This is the primary target for active migrations from Python.**
 - `osv/`: Core Python library containing models, repository helpers, and ecosystem-specific logic. *Note: Some parts are deprecated as we migrate logic to Go.*
-- `gcp/`: GCP deployment configurations, Cloud Functions, API server, and workers. (Website frontend uses `pnpm` and Hugo).
+- `gcp/`: GCP deployment configurations, Cloud Functions, and workers.
+- `website/`: Frontend assets for the osv.dev website (`frontend3` using `pnpm`) and blog posts (`blog` using Hugo).
 - `vulnfeeds/`: Vulnerability feed utilities (*independent Go module*).
 - `bindings/`: API bindings (*contains an independent Go module under `bindings/go`*).
 
@@ -73,7 +74,7 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   ```
 - **Install Website Dependencies** (for frontend development):
   ```bash
-  cd gcp/website/frontend3 && pnpm install
+  cd website/frontend3 && pnpm install
   ```
 - **Initialize Git Submodules**:
   ```bash
@@ -125,7 +126,7 @@ Always format and lint your code before proposing changes. The repository provid
 - Linter: `golangci-lint`
 - **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
   ```bash
-  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0 run ./...
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0 run ./...
   ```
   *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
 - **Formatting Command**:
@@ -302,9 +303,9 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
 - *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
-### 2. Website (`go/cmd/website/`, `gcp/website/`)
-- **Status**: **Active (Go / Python)**.
-- Migrated to Go backend under `go/cmd/website/` and `go/internal/website/`. Frontend assets (Hugo blog, pnpm frontend3) are located under `website/` (symlinked to `gcp/website/`).
+### 2. Website (`go/cmd/website/`, `website/`)
+- **Status**: **Active (Go)**.
+- Fully migrated to Go backend under `go/cmd/website/` and `go/internal/website/`. Frontend assets (Hugo blog, pnpm frontend3) are located under `website/`.
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)

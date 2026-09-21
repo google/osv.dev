@@ -85,6 +85,7 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 
 		// Cache pre-compressed Deflate payload to local scratch disk.
 		localPath := filepath.Join(scratchDir, vuln.GetId()+".deflate")
+		//nolint:gosec // G703: Staging temporary file in scratch directory
 		if err := os.WriteFile(localPath, compressedBytes, 0600); err != nil {
 			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
 			// Cancel the exporter context if writing to the scratch disk fails (e.g. disk full)

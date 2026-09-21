@@ -1,7 +1,6 @@
 package cve5
 
 import (
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -736,7 +735,7 @@ func TestExtractVersions(t *testing.T) {
 		},
 		{
 			name:        "CVE-2026-67185",
-			cve:         loadTestCVE(t, filepath.Join("..", "..", "cmd", "converters", "cve", "cve5", "bulk-converter", "cvelistV5", "cves", "2026", "67xxx", "CVE-2026-67185.json")),
+			cve:         loadTestData(t, "CVE-2026-67185"),
 			cnaAssigner: "VulnCheck",
 			repos:       []string{"https://github.com/GeneralSandman/TinyWeb"},
 			expectedAffected: []*osvschema.Affected{{

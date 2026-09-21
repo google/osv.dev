@@ -3,8 +3,6 @@ package githubactions
 import (
 	"context"
 	"encoding/hex"
-	"errors"
-	"io"
 	"testing"
 
 	"github.com/google/osv.dev/go/internal/gitter"
@@ -14,6 +12,8 @@ import (
 )
 
 type mockGitterClient struct {
+	gitter.Client
+
 	tagsByRepo map[string]*gitterpb.TagsResponse
 	errByRepo  map[string]error
 	callCount  map[string]int
@@ -33,26 +33,6 @@ func (m *mockGitterClient) GetTags(_ context.Context, repoURL string) (*gitterpb
 	}
 
 	return &gitterpb.TagsResponse{}, nil
-}
-
-func (m *mockGitterClient) GetGit(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) Cache(_ context.Context, _ string) error {
-	return errors.New("not implemented")
-}
-
-func (m *mockGitterClient) GetAffectedCommits(_ context.Context, _ *gitterpb.AffectedCommitsRequest) (*gitterpb.AffectedCommitsResponse, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) GetFileDiffs(_ context.Context, _ *gitterpb.FileDiffsRequest) (*gitterpb.FileDiffsResponse, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) GetFileContent(_ context.Context, _ *gitterpb.FileContentRequest) (*gitterpb.FileContentResponse, error) {
-	return nil, errors.New("not implemented")
 }
 
 func makeRef(t *testing.T, label string, hashHex string) *gitterpb.Ref {

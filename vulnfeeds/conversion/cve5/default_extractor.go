@@ -1,12 +1,12 @@
 package cve5
 
 import (
-	"cmp"
 	"maps"
 	"net/http"
 	"slices"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
@@ -16,22 +16,15 @@ import (
 
 // DefaultVersionExtractor provides version extraction logic using a configurable pipeline of strategies.
 type DefaultVersionExtractor struct {
-	Strategies []VersionStrategy
+	Strategies []strategies.VersionStrategy
 }
 
-func (d *DefaultVersionExtractor) getStrategies() []VersionStrategy {
-	var strategies []VersionStrategy
+func (d *DefaultVersionExtractor) getStrategies() []strategies.VersionStrategy {
 	if len(d.Strategies) > 0 {
-		strategies = slices.Clone(d.Strategies)
-	} else {
-		strategies = DefaultStrategies()
+		return d.Strategies
 	}
 
-	slices.SortStableFunc(strategies, func(a, b VersionStrategy) int {
-		return cmp.Compare(a.Priority(), b.Priority())
-	})
-
-	return strategies
+	return strategies.DefaultStrategies()
 }
 
 func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
@@ -111,7 +104,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 
 	if !gotVersions {
 		metrics.AddNote("No versions in affected, attempting to extract from CPE")
-		versionRanges, _ := cpeVersionExtraction(cve, metrics)
+		versionRanges, _ := strategies.CPEVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
 			if processRanges(versionRanges) {
@@ -142,10 +135,10 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
 	versionTypesCount := make(map[VersionRangeType]int)
 	var versionRanges []models.RangeWithMetadata
-	strategies := d.getStrategies()
+	strategyList := d.getStrategies()
 
 	for _, vers := range affected.Versions {
-		for _, strategy := range strategies {
+		for _, strategy := range strategyList {
 			ranges, currentVersionType, handled := strategy.Extract(vers, affected, metrics)
 			if handled {
 				if len(ranges) > 0 {

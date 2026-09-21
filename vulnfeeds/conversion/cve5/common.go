@@ -2,91 +2,25 @@ package cve5
 
 import (
 	"cmp"
-	"errors"
 	"strconv"
 	"strings"
 
-	c "github.com/google/osv.dev/vulnfeeds/conversion"
-	"github.com/google/osv.dev/vulnfeeds/models"
-	"github.com/google/osv.dev/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 )
 
 // VersionRangeType represents the type of versioning scheme for a range.
-type VersionRangeType int
-
-const acceptableQuality = vulns.Spaces
+type VersionRangeType = strategies.VersionRangeType
 
 const (
-	VersionRangeTypeUnknown VersionRangeType = iota
-	VersionRangeTypeGit
-	VersionRangeTypeSemver
-	VersionRangeTypeEcosystem
+	VersionRangeTypeUnknown   = strategies.VersionRangeTypeUnknown
+	VersionRangeTypeGit       = strategies.VersionRangeTypeGit
+	VersionRangeTypeSemver    = strategies.VersionRangeTypeSemver
+	VersionRangeTypeEcosystem = strategies.VersionRangeTypeEcosystem
 )
-
-// String returns the string representation of a VersionRangeType.
-func (vrt VersionRangeType) String() string {
-	switch vrt {
-	case VersionRangeTypeGit:
-		return "git"
-	case VersionRangeTypeEcosystem:
-		return "ecosystem"
-	case VersionRangeTypeSemver:
-		return "semver"
-	default:
-		return "unknown"
-	}
-}
 
 // toVersionRangeType converts a string to a VersionRangeType.
 func toVersionRangeType(s string) VersionRangeType {
-	switch strings.ToLower(s) {
-	case "git":
-		return VersionRangeTypeGit
-	case "semver":
-		return VersionRangeTypeSemver
-	default:
-		// Other version types like "semver" are treated as ecosystem ranges.
-		return VersionRangeTypeEcosystem
-	}
-}
-
-// findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
-// CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve models.CVE5) (versionRanges []models.RangeWithMetadata, cpes []string, err error) {
-	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
-	for _, cpe := range cve.Containers.CNA.CPEApplicability {
-		for _, node := range cpe.Nodes {
-			if node.Operator != "OR" {
-				continue
-			}
-			for _, match := range node.CPEMatch {
-				if !match.Vulnerable {
-					continue
-				}
-				cpes = append(cpes, match.Criteria)
-
-				// If no start version is given, assume the vulnerability starts from version "0".
-				if match.VersionStartIncluding == "" {
-					match.VersionStartIncluding = "0"
-				}
-				var nr []*osvschema.Range
-				if match.VersionEndExcluding != "" {
-					nr = append(nr, c.BuildVersionRange(match.VersionStartIncluding, "", match.VersionEndExcluding))
-				} else if match.VersionEndIncluding != "" {
-					nr = append(nr, c.BuildVersionRange(match.VersionStartIncluding, match.VersionEndIncluding, ""))
-				}
-				if nr != nil {
-					versionRanges = append(versionRanges, c.ToRangeWithMetadata(nr, models.VersionSourceCPE)...)
-				}
-			}
-		}
-	}
-	if len(versionRanges) == 0 {
-		return nil, nil, errors.New("no versions extracted from CPEs")
-	}
-
-	return versionRanges, cpes, nil
+	return strategies.ToVersionRangeType(s)
 }
 
 // compareSemverLike provides a custom comparison function for version strings that may not

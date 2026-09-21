@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
@@ -21,20 +22,20 @@ func GetVersionExtractor(cna string) VersionExtractor {
 	case "linux":
 		return &LinuxVersionExtractor{
 			DefaultVersionExtractor: DefaultVersionExtractor{
-				Strategies: LinuxStrategies(),
+				Strategies: strategies.LinuxStrategies(),
 			},
 		}
 	case "github_m", "github":
 		return &DefaultVersionExtractor{
-			Strategies: GitHubStrategies(),
+			Strategies: strategies.GitHubStrategies(),
 		}
 	case "mitre":
 		return &DefaultVersionExtractor{
-			Strategies: MITREStrategies(),
+			Strategies: strategies.MITREStrategies(),
 		}
 	default:
 		return &DefaultVersionExtractor{
-			Strategies: DefaultStrategies(),
+			Strategies: strategies.DefaultStrategies(),
 		}
 	}
 }

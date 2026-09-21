@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
@@ -26,7 +27,7 @@ var _ VersionExtractor = &LinuxVersionExtractor{}
 // handleAffected takes an array of models.Affected and handles how to extract them
 func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []models.Affected, metrics *models.ConversionMetrics) bool {
 	if len(l.Strategies) == 0 {
-		l.Strategies = LinuxStrategies()
+		l.Strategies = strategies.LinuxStrategies()
 	}
 
 	hasGit := false
@@ -66,7 +67,7 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulner
 
 	if !gotVersions {
 		metrics.AddNote("No versions in affected, attempting to extract from CPE")
-		versionRanges, err := cpeVersionExtraction(cve, metrics)
+		versionRanges, err := strategies.CPEVersionExtraction(cve, metrics)
 		if err != nil {
 			logger.Warn("Error when extracting CPE versions")
 		}

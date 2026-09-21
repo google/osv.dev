@@ -35,7 +35,7 @@ func (s *GitCommitStrategy) Extract(vers models.Versions, affected models.Affect
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Git commit version found %v", vers.Version)
+	metrics.AddNotef("Git commit version found %v", vers.Version)
 	vr := []*osvschema.Range{c.BuildGitVersionRange(vers.Version, vers.Version, "", affected.Repo)}
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceGit)
 	for i := range rwms {
@@ -73,7 +73,7 @@ func (s *GitCommitIntroducedOnlyStrategy) Extract(vers models.Versions, affected
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Git commit introduced found %v", vers.Version)
+	metrics.AddNotef("Git commit introduced found %v", vers.Version)
 	vr := []*osvschema.Range{c.BuildGitVersionRange(vers.Version, "", "", affected.Repo)}
 
 	return c.ToRangeWithMetadata(vr, models.VersionSourceGit), VersionRangeTypeGit, true

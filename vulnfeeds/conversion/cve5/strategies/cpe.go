@@ -59,7 +59,7 @@ func (s *AffectedCPEStrategy) Extract(vers models.Versions, affected models.Affe
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Extracted version %s from CPE %s", version, cpeStr)
+	metrics.AddNotef("Extracted version %s from CPE %s", version, cpeStr)
 	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange(version, version, "")}
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceCPE)
@@ -99,13 +99,13 @@ func (s *CPEVersionStrategy) Name() string {
 func (s *CPEVersionStrategy) Extract(cve models.CVE5, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
 	if err == nil && len(cpeRanges) > 0 {
-		metrics.AddNote("Strategy successful: %s", s.Name())
+		metrics.AddNotef("Strategy successful: %s", s.Name())
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
 		metrics.CPEs = vulns.Unique(cpeStrings)
 
 		return cpeRanges, nil
 	} else if err != nil {
-		metrics.AddNote("%s", err.Error())
+		metrics.AddNotef("%s", err.Error())
 	}
 
 	return nil, err

@@ -93,14 +93,14 @@ func (s *SplitRangeStrategy) Extract(vers models.Versions, affected models.Affec
 			}
 
 			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, lastAffected, fixed)}
-			metrics.AddNote("Parsed split range: introduced %s, upper bound %s%s", vers.Version, fixed, lastAffected)
+			metrics.AddNotef("Parsed split range: introduced %s, upper bound %s%s", vers.Version, fixed, lastAffected)
 
 			return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
 		}
 
 		// Standalone introduced entry without a following upper bound
 		vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
-		metrics.AddNote("Parsed standalone introduced version: %s", vers.Version)
+		metrics.AddNotef("Parsed standalone introduced version: %s", vers.Version)
 
 		return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
 	}
@@ -122,7 +122,7 @@ func (s *SplitRangeStrategy) Extract(vers models.Versions, affected models.Affec
 		}
 
 		vr := []*osvschema.Range{c.BuildVersionRange("0", lastAffected, fixed)}
-		metrics.AddNote("Parsed upper-bound range with introduced=0: %s%s", fixed, lastAffected)
+		metrics.AddNotef("Parsed upper-bound range with introduced=0: %s%s", fixed, lastAffected)
 
 		return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
 	}

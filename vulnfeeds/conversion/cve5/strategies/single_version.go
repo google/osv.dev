@@ -36,7 +36,7 @@ func (s *ZeroIntroducedSingleVersionStrategy) Extract(vers models.Versions, affe
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
+	metrics.AddNotef("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
 
@@ -67,7 +67,7 @@ func (s *StandaloneSingleVersionStrategy) Extract(vers models.Versions, _ models
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Single version found %v - Treating as standalone version", vers.Version)
+	metrics.AddNotef("Single version found %v - Treating as standalone version", vers.Version)
 	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, vers.Version, "")}
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceAffected)

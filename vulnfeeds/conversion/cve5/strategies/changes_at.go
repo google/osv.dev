@@ -33,11 +33,11 @@ func (s *ChangesAtStrategy) Extract(vers models.Versions, _ models.Affected, met
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Fixed from changes - %s", fixedFromChanges)
+	metrics.AddNotef("Fixed from changes - %s", fixedFromChanges)
 	var introduced string
 	if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
 		introduced = vers.Version
-		metrics.AddNote("Introduced from version value - %s", vers.Version)
+		metrics.AddNotef("Introduced from version value - %s", vers.Version)
 	}
 
 	currentVersionType := ToVersionRangeType(vers.VersionType)

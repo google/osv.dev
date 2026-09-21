@@ -26,7 +26,7 @@ func (s *VersionTextExtractionStrategy) Extract(vers models.Versions, _ models.A
 
 	possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics, models.VersionSourceAffected)
 	if possibleVersions != nil {
-		metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
+		metrics.AddNotef("Versions retrieved from text but not used CURRENTLY")
 	}
 
 	return nil, VersionRangeTypeUnknown, false

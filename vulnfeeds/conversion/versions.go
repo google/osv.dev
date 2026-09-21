@@ -1238,7 +1238,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		if err == nil {
 			repo = canonicalRepo
 		} else {
-			metrics.AddNote("Failed to find canonical link for %s: %v", repo, err)
+			metrics.AddNotef("Failed to find canonical link for %s: %v", repo, err)
 			if git.IsRateLimit(err) {
 				metrics.SetError(err)
 				return nil

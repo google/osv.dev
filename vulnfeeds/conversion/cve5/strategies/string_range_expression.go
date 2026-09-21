@@ -46,7 +46,7 @@ func (s *StringRangeExpressionStrategy) Extract(vers models.Versions, _ models.A
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Parsed range expression from version: %s", vers.Version)
+	metrics.AddNotef("Parsed range expression from version: %s", vers.Version)
 
 	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
 }

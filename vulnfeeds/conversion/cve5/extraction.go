@@ -21,9 +21,7 @@ func GetVersionExtractor(cna string) VersionExtractor {
 	switch strings.ToLower(cna) {
 	case "linux":
 		return &LinuxVersionExtractor{
-			DefaultVersionExtractor: DefaultVersionExtractor{
-				Strategies: strategies.LinuxStrategies(),
-			},
+			Strategies: strategies.LinuxStrategies(),
 		}
 	case "github_m", "github":
 		return &DefaultVersionExtractor{

@@ -34,7 +34,7 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 
 	vQuality := vulns.CheckQuality(vers.Version)
 	if !vQuality.AtLeast(acceptableQuality) {
-		metrics.AddNote("Version value is filler or empty")
+		metrics.AddNotef("Version value is filler or empty")
 	}
 	vLessThanQual := vulns.CheckQuality(vers.LessThan)
 	vLTOEQual := vulns.CheckQuality(vers.LessThanOrEqual)
@@ -43,11 +43,11 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 
 	// Handle cases where 'lessThan' or 'lessThanOrEqual' is mistakenly the same as 'version'.
 	if vers.LessThan != "" && vers.LessThan == vers.Version {
-		metrics.AddNote("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version)
+		metrics.AddNotef("Warning: lessThan (%s) is the same as introduced (%s)\n", vers.LessThan, vers.Version)
 		hasRange = false
 	}
 	if vers.LessThanOrEqual != "" && vers.LessThanOrEqual == vers.Version {
-		metrics.AddNote("Warning: lessThanOrEqual (%s) is the same as introduced (%s)\n", vers.LessThanOrEqual, vers.Version)
+		metrics.AddNotef("Warning: lessThanOrEqual (%s) is the same as introduced (%s)\n", vers.LessThanOrEqual, vers.Version)
 		hasRange = false
 	}
 
@@ -55,19 +55,19 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 		return nil, VersionRangeTypeUnknown, false
 	}
 
-	metrics.AddNote("Range detected: %v", hasRange)
+	metrics.AddNotef("Range detected: %v", hasRange)
 	var introduced, fixed, lastaffected string
 	if vQuality.AtLeast(acceptableQuality) {
 		introduced = vers.Version
-		metrics.AddNote("%s - Introduced from version value - %s", vQuality.String(), vers.Version)
+		metrics.AddNotef("%s - Introduced from version value - %s", vQuality.String(), vers.Version)
 	}
 
 	if vLessThanQual.AtLeast(acceptableQuality) {
 		fixed = vers.LessThan
-		metrics.AddNote("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan)
+		metrics.AddNotef("%s - Fixed from LessThan value - %s", vLessThanQual.String(), vers.LessThan)
 	} else if vLTOEQual.AtLeast(acceptableQuality) {
 		lastaffected = vers.LessThanOrEqual
-		metrics.AddNote("%s - LastAffected from LessThanOrEqual value - %s", vLTOEQual.String(), vers.LessThanOrEqual)
+		metrics.AddNotef("%s - LastAffected from LessThanOrEqual value - %s", vLTOEQual.String(), vers.LessThanOrEqual)
 	}
 
 	var versionRanges []*osvschema.Range

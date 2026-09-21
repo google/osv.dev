@@ -803,7 +803,7 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 				resolvedRanges = append(resolvedRanges, vr)
 				successfulRepos = append(successfulRepos, repo)
 			} else {
-				metrics.AddNote("no repository available for git commit range")
+				metrics.AddNotef("no repository available for git commit range")
 				unresolvedRanges = append(unresolvedRanges, vr)
 			}
 		} else {

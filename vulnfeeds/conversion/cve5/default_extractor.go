@@ -142,7 +142,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 			ranges, currentVersionType, handled := strategy.Extract(vers, affected, metrics)
 			if handled {
 				if len(ranges) > 0 {
-					metrics.AddNote("Strategy successful: %s", strategy.Name())
+					metrics.AddNotef("Strategy successful: %s", strategy.Name())
 					versionTypesCount[currentVersionType]++
 					versionRanges = append(versionRanges, ranges...)
 				}

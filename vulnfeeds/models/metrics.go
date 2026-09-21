@@ -109,7 +109,7 @@ func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
 func (m *ConversionMetrics) SetError(err error) {
 	m.Outcome = Error
 	if err != nil {
-		m.AddNote("Conversion error: %v", err)
+		m.AddNotef("Conversion error: %v", err)
 	}
 }
 

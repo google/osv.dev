@@ -6,6 +6,7 @@ linters:
   enable:
     - gomodguard_v2 # gomodguard is deprecated but it's still in the default
   disable:
+    - gomodguard       # deprecated in favor of gomodguard_v2
     - forbidigo
     - paralleltest
     - tparallel

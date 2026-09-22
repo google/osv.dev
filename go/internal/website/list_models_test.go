@@ -2,8 +2,10 @@ package website
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -162,5 +164,63 @@ func TestDisplayPackages(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("DisplayPackages() = %v, want %v", got, want)
+	}
+}
+
+func TestDescribe(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		text string
+		want string
+	}{
+		{
+			text: "",
+			want: "See record for full details",
+		},
+		{
+			text: " ",
+			want: " ",
+		},
+		{
+			text: "   ",
+			want: "   ",
+		},
+		{
+			text: "this is a short description",
+			want: "this is a short description",
+		},
+		{
+			text: strings.Repeat("!", 100),
+			want: strings.Repeat("!", 80) + "...",
+		},
+		{
+			text: strings.Repeat("\u754c", 100),
+			want: strings.Repeat("\u754c", 80) + "...",
+		},
+		{
+			text: strings.Repeat("\u754c", 30) + " " + strings.Repeat("\u8a9e", 60),
+			want: strings.Repeat("\u754c", 30) + "...",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			display := ListedVulnerabilityDisplay{
+				Details: tt.text,
+			}
+
+			got := display.Describe()
+
+			if got != tt.want {
+				t.Fatalf("Describe() = %q, want %q", got, tt.want)
+			}
+			if !utf8.ValidString(got) {
+				t.Fatalf("Describe() returned invalid UTF-8: %q", got)
+			}
+		})
 	}
 }

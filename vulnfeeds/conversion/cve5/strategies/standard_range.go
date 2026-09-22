@@ -25,9 +25,13 @@ func (s *StandardRangeStrategy) Name() string {
 	return "StandardRange"
 }
 
-func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *StandardRangeStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *StandardRangeStrategy) extractVersion(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	currentVersionType := ToVersionRangeType(vers.VersionType)
@@ -52,7 +56,7 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 	}
 
 	if !hasRange {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Range detected: %v", hasRange)
@@ -78,7 +82,7 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 	}
 
 	if len(versionRanges) == 0 {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	for _, vr := range versionRanges {
@@ -90,5 +94,5 @@ func (s *StandardRangeStrategy) Extract(vers models.Versions, affected models.Af
 		}
 	}
 
-	return c.ToRangeWithMetadata(versionRanges, models.VersionSourceAffected), currentVersionType, true
+	return c.ToRangeWithMetadata(versionRanges, models.VersionSourceAffected), true
 }

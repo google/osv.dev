@@ -25,22 +25,22 @@ func (s *ZeroIntroducedSingleVersionStrategy) Name() string {
 	return "ZeroIntroducedSingleVersion"
 }
 
-func (s *ZeroIntroducedSingleVersionStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
-	if vers.Status != "affected" || vers.Version == "" {
-		return nil, VersionRangeTypeUnknown, false
+func (s *ZeroIntroducedSingleVersionStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	if len(state.Affected.Versions) != 1 || state.IsConsumed(0) {
+		return
 	}
-	if len(affected.Versions) > 1 {
-		return nil, VersionRangeTypeUnknown, false
+
+	vers := state.Affected.Versions[0]
+	if vers.Status != "affected" || vers.Version == "" {
+		return
 	}
 	if !vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-		return nil, VersionRangeTypeUnknown, false
+		return
 	}
 
 	metrics.AddNotef("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
-	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
-
-	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
+	state.Emit(c.ToRangeWithMetadata(vr, models.VersionSourceAffected), 0)
 }
 
 // StandaloneSingleVersionStrategy treats a single version as an exact, standalone version (introduced == last_affected).
@@ -59,21 +59,24 @@ func (s *StandaloneSingleVersionStrategy) Name() string {
 	return "StandaloneSingleVersion"
 }
 
-func (s *StandaloneSingleVersionStrategy) Extract(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *StandaloneSingleVersionStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *StandaloneSingleVersionStrategy) extractVersion(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" || vers.Version == "" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 	if !vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Single version found %v - Treating as standalone version", vers.Version)
-	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, vers.Version, "")}
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceAffected)
 	for i := range rwms {
 		rwms[i].Metadata.Versions = []string{vers.Version}
 	}
 
-	return rwms, currentVersionType, true
+	return rwms, true
 }

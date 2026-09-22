@@ -24,17 +24,20 @@ func (s *StringRangeExpressionStrategy) Name() string {
 	return "StringRangeExpression"
 }
 
-func (s *StringRangeExpressionStrategy) Extract(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *StringRangeExpressionStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *StringRangeExpressionStrategy) extractVersion(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" || vers.Version == "" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	av, err := git.ParseVersionRange(vers.Version)
 	if err != nil || av.Introduced == "" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
-	currentVersionType := ToVersionRangeType(vers.VersionType)
 	var vr []*osvschema.Range
 	if av.Fixed != "" {
 		vr = append(vr, c.BuildVersionRange(av.Introduced, "", av.Fixed))
@@ -43,10 +46,10 @@ func (s *StringRangeExpressionStrategy) Extract(vers models.Versions, _ models.A
 	}
 
 	if len(vr) == 0 {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Parsed range expression from version: %s", vers.Version)
 
-	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
+	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), true
 }

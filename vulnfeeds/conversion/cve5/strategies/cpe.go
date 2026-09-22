@@ -10,44 +10,15 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-// AffectedCPEStrategy extracts version ranges from CPE strings specified in affected.Cpes or version strings formatted as CPEs.
-//
-// Example CVE Record:
-//
-//	"affected": [
-//	    {
-//	        "cpes": ["cpe:2.3:a:vendor:product:1.2.3:*:*:*:*:*:*:*"],
-//	        "versions": [{ "status": "affected" }]
-//	    }
-//	]
-//
-// Resulting OSV Range: [introduced: "1.2.3", last_affected: "1.2.3"]
-type AffectedCPEStrategy struct{}
-
-func (s *AffectedCPEStrategy) Name() string {
-	return "AffectedCPE"
-}
-
-func (s *AffectedCPEStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
-	cpeStr := ""
-	if strings.HasPrefix(vers.Version, "cpe:") {
-		cpeStr = vers.Version
-	} else if len(affected.Cpes) > 0 {
-		for _, cpe := range affected.Cpes {
-			if strings.HasPrefix(cpe, "cpe:") {
-				cpeStr = cpe
-				break
-			}
-		}
-	}
-
-	if cpeStr == "" {
-		return nil, VersionRangeTypeUnknown, false
+// extractRangeFromCPEString parses a single CPE string and builds a standalone OSV range if valid.
+func extractRangeFromCPEString(cpeStr string, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
+	if !strings.HasPrefix(cpeStr, "cpe:") {
+		return nil, false
 	}
 
 	parsedCPE, err := c.ParseCPE(cpeStr)
 	if err != nil || parsedCPE.Version == "" || parsedCPE.Version == "*" || parsedCPE.Version == "-" || parsedCPE.Version == "ANY" || parsedCPE.Version == "NA" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	version := parsedCPE.Version
@@ -56,11 +27,13 @@ func (s *AffectedCPEStrategy) Extract(vers models.Versions, affected models.Affe
 	}
 
 	if !vulns.CheckQuality(version).AtLeast(acceptableQuality) {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
-	metrics.AddNotef("Extracted version %s from CPE %s", version, cpeStr)
-	currentVersionType := ToVersionRangeType(vers.VersionType)
+	if metrics != nil {
+		metrics.AddNotef("Extracted version %s from CPE %s", version, cpeStr)
+	}
+
 	vr := []*osvschema.Range{c.BuildVersionRange(version, version, "")}
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceCPE)
 	for i := range rwms {
@@ -68,10 +41,27 @@ func (s *AffectedCPEStrategy) Extract(vers models.Versions, affected models.Affe
 		rwms[i].Metadata.Versions = []string{version}
 	}
 
-	return rwms, currentVersionType, true
+	return rwms, true
 }
 
-// CPEVersionStrategy extracts version ranges from the CVE's CPE applicability statements.
+// CPEVersionStringStrategy extracts version ranges from version entries where vers.Version is formatted as a CPE string.
+// Placed before single-version strategies so CPE strings are consumed without coupling single-version strategies to CPE prefixes.
+type CPEVersionStringStrategy struct{}
+
+func (s *CPEVersionStringStrategy) Name() string {
+	return "CPEVersionString"
+}
+
+func (s *CPEVersionStringStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *CPEVersionStringStrategy) extractVersion(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
+	return extractRangeFromCPEString(vers.Version, metrics)
+}
+
+// CPEVersionStrategy extracts version ranges from the CVE's CPE applicability statements
+// as well as any CPE lists attached to affected blocks (affected[].cpes).
 //
 // Example CVE Record:
 //
@@ -97,7 +87,7 @@ func (s *CPEVersionStrategy) Name() string {
 }
 
 func (s *CPEVersionStrategy) Extract(cve models.CVE5, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, error) {
-	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve)
+	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve, metrics)
 	if err == nil && len(cpeRanges) > 0 {
 		metrics.AddNotef("Strategy successful: %s", s.Name())
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
@@ -117,9 +107,8 @@ func CPEVersionExtraction(cve models.CVE5, metrics *models.ConversionMetrics) ([
 }
 
 // findCPEVersionRanges extracts version ranges and CPE strings from the CNA's
-// CPE applicability statements in a CVE record.
-func findCPEVersionRanges(cve models.CVE5) (versionRanges []models.RangeWithMetadata, cpes []string, err error) {
-	// TODO(jesslowe): Add logic to also extract CPEs from the 'affected' field (e.g., CVE-2025-1110).
+// CPE applicability statements and affected[].cpes lists in a CVE record.
+func findCPEVersionRanges(cve models.CVE5, metrics *models.ConversionMetrics) (versionRanges []models.RangeWithMetadata, cpes []string, err error) {
 	for _, cpe := range cve.Containers.CNA.CPEApplicability {
 		for _, node := range cpe.Nodes {
 			if node.Operator != "OR" {
@@ -147,6 +136,17 @@ func findCPEVersionRanges(cve models.CVE5) (versionRanges []models.RangeWithMeta
 			}
 		}
 	}
+
+	// Also extract from any CPE strings listed in cve.Containers.CNA.Affected[].Cpes
+	for _, affected := range cve.Containers.CNA.Affected {
+		for _, cpeStr := range affected.Cpes {
+			if rwms, ok := extractRangeFromCPEString(cpeStr, metrics); ok {
+				cpes = append(cpes, cpeStr)
+				versionRanges = append(versionRanges, rwms...)
+			}
+		}
+	}
+
 	if len(versionRanges) == 0 {
 		return nil, nil, errors.New("no versions extracted from CPEs")
 	}

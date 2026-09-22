@@ -65,67 +65,60 @@ func isSplitUpperBoundOnly(v models.Versions) bool {
 	return isExplicitUnspecified(v.Version) && (isValidSplitVersion(v.LessThan) || isValidSplitVersion(v.LessThanOrEqual))
 }
 
-func (s *SplitRangeStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
-	if vers.Status != "affected" {
-		return nil, VersionRangeTypeUnknown, false
-	}
+func (s *SplitRangeStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	affected := state.Affected
 
-	// Check for "unspecified" split or standalone ranges across affected.Versions
-	idx := -1
-	for i, v := range affected.Versions {
-		if v.Version == vers.Version && v.LessThan == vers.LessThan && v.LessThanOrEqual == vers.LessThanOrEqual && v.Status == vers.Status && v.VersionType == vers.VersionType {
-			idx = i
-			break
+	for i := 0; i < len(affected.Versions); i++ {
+		if state.IsConsumed(i) {
+			continue
 		}
-	}
 
-	// Case A: Introduced-only entry (e.g. {version: "1.31.0", lessThan: "unspecified"})
-	if isSplitIntroducedOnly(vers) {
-		currentVersionType := ToVersionRangeType(vers.VersionType)
-		// Check if the immediately following entry is an upper-bound entry
-		if idx >= 0 && idx+1 < len(affected.Versions) && isSplitUpperBoundOnly(affected.Versions[idx+1]) {
-			nextVers := affected.Versions[idx+1]
-			var fixed, lastAffected string
-			if isValidSplitVersion(nextVers.LessThan) {
-				fixed = nextVers.LessThan
-			} else if isValidSplitVersion(nextVers.LessThanOrEqual) {
-				lastAffected = nextVers.LessThanOrEqual
+		vers := affected.Versions[i]
+		if vers.Status != "affected" {
+			continue
+		}
+
+		// Case A: Introduced-only entry (e.g. {version: "1.31.0", lessThan: "unspecified"})
+		if isSplitIntroducedOnly(vers) {
+			// Check if the immediately following entry in the original Affected block is an unconsumed upper-bound entry
+			if i+1 < len(affected.Versions) && !state.IsConsumed(i+1) && affected.Versions[i+1].Status == "affected" && isSplitUpperBoundOnly(affected.Versions[i+1]) {
+				nextVers := affected.Versions[i+1]
+				var fixed, lastAffected string
+				if isValidSplitVersion(nextVers.LessThan) {
+					fixed = nextVers.LessThan
+				} else if isValidSplitVersion(nextVers.LessThanOrEqual) {
+					lastAffected = nextVers.LessThanOrEqual
+				}
+
+				vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, lastAffected, fixed)}
+				metrics.AddNotef("Parsed split range: introduced %s, upper bound %s%s", vers.Version, fixed, lastAffected)
+				state.Emit(c.ToRangeWithMetadata(vr, models.VersionSourceAffected), i, i+1)
+				i++ // Advance past the paired upper-bound entry
+
+				continue
 			}
 
-			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, lastAffected, fixed)}
-			metrics.AddNotef("Parsed split range: introduced %s, upper bound %s%s", vers.Version, fixed, lastAffected)
+			// Standalone introduced entry without a following upper bound
+			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
+			metrics.AddNotef("Parsed standalone introduced version: %s", vers.Version)
+			state.Emit(c.ToRangeWithMetadata(vr, models.VersionSourceAffected), i)
 
-			return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
+			continue
 		}
 
-		// Standalone introduced entry without a following upper bound
-		vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
-		metrics.AddNotef("Parsed standalone introduced version: %s", vers.Version)
+		// Case B: Upper-bound-only entry (e.g. {version: "unspecified", lessThan: "1.36.1"})
+		if isSplitUpperBoundOnly(vers) {
+			// Standalone upper bound starting from 0
+			var fixed, lastAffected string
+			if isValidSplitVersion(vers.LessThan) {
+				fixed = vers.LessThan
+			} else if isValidSplitVersion(vers.LessThanOrEqual) {
+				lastAffected = vers.LessThanOrEqual
+			}
 
-		return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
+			vr := []*osvschema.Range{c.BuildVersionRange("0", lastAffected, fixed)}
+			metrics.AddNotef("Parsed upper-bound range with introduced=0: %s%s", fixed, lastAffected)
+			state.Emit(c.ToRangeWithMetadata(vr, models.VersionSourceAffected), i)
+		}
 	}
-
-	// Case B: Upper-bound-only entry (e.g. {version: "unspecified", lessThan: "1.36.1"})
-	if isSplitUpperBoundOnly(vers) {
-		currentVersionType := ToVersionRangeType(vers.VersionType)
-		// If preceded by an introduced-only entry, it was already paired and consumed in Case A
-		if idx > 0 && isSplitIntroducedOnly(affected.Versions[idx-1]) {
-			return nil, currentVersionType, true
-		}
-
-		// Standalone upper bound starting from 0
-		var fixed, lastAffected string
-		if isValidSplitVersion(vers.LessThan) {
-			fixed = vers.LessThan
-		} else if isValidSplitVersion(vers.LessThanOrEqual) {
-			lastAffected = vers.LessThanOrEqual
-		}
-
-		vr := []*osvschema.Range{c.BuildVersionRange("0", lastAffected, fixed)}
-		metrics.AddNotef("Parsed upper-bound range with introduced=0: %s%s", fixed, lastAffected)
-
-		return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
-	}
-
-	return nil, VersionRangeTypeUnknown, false
 }

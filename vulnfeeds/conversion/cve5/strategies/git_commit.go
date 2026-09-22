@@ -24,15 +24,19 @@ func (s *GitCommitStrategy) Name() string {
 	return "GitCommit"
 }
 
-func (s *GitCommitStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *GitCommitStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *GitCommitStrategy) extractVersion(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 	if ToVersionRangeType(vers.VersionType) != VersionRangeTypeGit {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 	if !vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Git commit version found %v", vers.Version)
@@ -42,7 +46,7 @@ func (s *GitCommitStrategy) Extract(vers models.Versions, affected models.Affect
 		rwms[i].Metadata.Versions = []string{vers.Version}
 	}
 
-	return rwms, VersionRangeTypeGit, true
+	return rwms, true
 }
 
 // GitCommitIntroducedOnlyStrategy treats a git commit version as an introduced-only point (used by Linux kernel).
@@ -62,19 +66,23 @@ func (s *GitCommitIntroducedOnlyStrategy) Name() string {
 	return "GitCommitIntroducedOnly"
 }
 
-func (s *GitCommitIntroducedOnlyStrategy) Extract(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *GitCommitIntroducedOnlyStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *GitCommitIntroducedOnlyStrategy) extractVersion(vers models.Versions, affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 	if ToVersionRangeType(vers.VersionType) != VersionRangeTypeGit {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 	if !vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Git commit introduced found %v", vers.Version)
 	vr := []*osvschema.Range{c.BuildGitVersionRange(vers.Version, "", "", affected.Repo)}
 
-	return c.ToRangeWithMetadata(vr, models.VersionSourceGit), VersionRangeTypeGit, true
+	return c.ToRangeWithMetadata(vr, models.VersionSourceGit), true
 }

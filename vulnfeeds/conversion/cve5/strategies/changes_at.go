@@ -16,9 +16,13 @@ func (s *ChangesAtStrategy) Name() string {
 	return "ChangesAt"
 }
 
-func (s *ChangesAtStrategy) Extract(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *ChangesAtStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *ChangesAtStrategy) extractVersion(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	var fixedFromChanges string
@@ -30,7 +34,7 @@ func (s *ChangesAtStrategy) Extract(vers models.Versions, _ models.Affected, met
 	}
 
 	if fixedFromChanges == "" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	metrics.AddNotef("Fixed from changes - %s", fixedFromChanges)
@@ -40,8 +44,7 @@ func (s *ChangesAtStrategy) Extract(vers models.Versions, _ models.Affected, met
 		metrics.AddNotef("Introduced from version value - %s", vers.Version)
 	}
 
-	currentVersionType := ToVersionRangeType(vers.VersionType)
 	vr := []*osvschema.Range{c.BuildVersionRange(introduced, "", fixedFromChanges)}
 
-	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), currentVersionType, true
+	return c.ToRangeWithMetadata(vr, models.VersionSourceAffected), true
 }

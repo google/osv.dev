@@ -24,13 +24,13 @@ func (d *DefaultVersionExtractor) getStrategies() []strategies.VersionStrategy {
 		return d.Strategies
 	}
 
-	return strategies.DefaultStrategies()
+	return strategies.Default()
 }
 
 func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	var ranges []models.RangeWithMetadata
 	for _, cveAff := range affected {
-		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
+		versionRanges := ExtractAffectedRanges(cveAff, d.getStrategies(), metrics)
 
 		if len(versionRanges) == 0 {
 			continue
@@ -130,37 +130,4 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	v.Affected = append(v.Affected, affected...)
 
 	addUnresolvedRanges(unresolvedRanges)
-}
-
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
-	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []models.RangeWithMetadata
-	strategyList := d.getStrategies()
-
-	for _, vers := range affected.Versions {
-		for _, strategy := range strategyList {
-			ranges, currentVersionType, handled := strategy.Extract(vers, affected, metrics)
-			if handled {
-				if len(ranges) > 0 {
-					metrics.AddNotef("Strategy successful: %s", strategy.Name())
-					versionTypesCount[currentVersionType]++
-					versionRanges = append(versionRanges, ranges...)
-				}
-
-				break
-			}
-		}
-	}
-
-	// Determine the most frequent version type to return as the range type.
-	maxCount := 0
-	mostFrequentVersionType := VersionRangeTypeEcosystem
-	for versionType, count := range versionTypesCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentVersionType = versionType
-		}
-	}
-
-	return versionRanges, mostFrequentVersionType
 }

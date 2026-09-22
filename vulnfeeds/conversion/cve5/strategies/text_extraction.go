@@ -19,15 +19,19 @@ func (s *VersionTextExtractionStrategy) Name() string {
 	return "VersionTextExtraction"
 }
 
-func (s *VersionTextExtractionStrategy) Extract(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType, bool) {
+func (s *VersionTextExtractionStrategy) Extract(state *ExtractionState, metrics *models.ConversionMetrics) {
+	ExtractPerVersion(state, metrics, s.extractVersion)
+}
+
+func (s *VersionTextExtractionStrategy) extractVersion(vers models.Versions, _ models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, bool) {
 	if vers.Status != "affected" || vers.Version == "" {
-		return nil, VersionRangeTypeUnknown, false
+		return nil, false
 	}
 
 	possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics, models.VersionSourceAffected)
-	if possibleVersions != nil {
-		metrics.AddNotef("Versions retrieved from text but not used CURRENTLY")
+	if len(possibleVersions) > 0 {
+		return possibleVersions, true
 	}
 
-	return nil, VersionRangeTypeUnknown, false
+	return nil, false
 }

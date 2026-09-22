@@ -37,14 +37,20 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &StandardRangeStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "1.0.0",
-			LessThan:    "1.5.0",
-			VersionType: "semver",
+		affected := models.Affected{
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "1.0.0",
+					LessThan:    "1.5.0",
+					VersionType: "semver",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, models.Affected{}, metrics)
-		if !handled || vrt != VersionRangeTypeSemver || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("StandardRangeStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -57,16 +63,22 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &ChangesAtStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "1.0.0",
-			VersionType: "semver",
-			Changes: []models.Change{
-				{Status: "unaffected", At: "1.0.1"},
+		affected := models.Affected{
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "1.0.0",
+					VersionType: "semver",
+					Changes: []models.Change{
+						{Status: "unaffected", At: "1.0.1"},
+					},
+				},
 			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, models.Affected{}, metrics)
-		if !handled || vrt != VersionRangeTypeSemver || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("ChangesAtStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -79,13 +91,19 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &StringRangeExpressionStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     ">= 1.2.0, < 2.0.0",
-			VersionType: "semver",
+		affected := models.Affected{
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     ">= 1.2.0, < 2.0.0",
+					VersionType: "semver",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, models.Affected{}, metrics)
-		if !handled || vrt != VersionRangeTypeSemver || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("StringRangeExpressionStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -98,13 +116,19 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &ZeroIntroducedSingleVersionStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "2.52",
-			VersionType: "custom",
+		affected := models.Affected{
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "2.52",
+					VersionType: "custom",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, models.Affected{}, metrics)
-		if !handled || vrt != VersionRangeTypeEcosystem || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("ZeroIntroducedSingleVersionStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -112,16 +136,20 @@ func TestStrategies(t *testing.T) {
 			t.Errorf("unexpected events: %+v", events)
 		}
 
-		// Should not handle if multiple versions are listed
+		// Should not handle if multiple versions were originally listed in affected.Versions,
+		// even if only 1 unhandled version remains!
 		multiAffected := models.Affected{
 			Versions: []models.Versions{
-				{Status: "affected", Version: "3.0.0"},
-				{Status: "affected", Version: "3.1.0"},
+				{Status: "affected", Version: "1.0.0", LessThan: "1.5.0"},
+				{Status: "affected", Version: "2.0.0"},
 			},
 		}
-		_, _, handledMulti := strategy.Extract(multiAffected.Versions[0], multiAffected, metrics)
-		if handledMulti {
-			t.Errorf("ZeroIntroducedSingleVersionStrategy should not handle multiple versions")
+		multiState := NewExtractionState(multiAffected)
+		(&StandardRangeStrategy{}).Extract(multiState, metrics)
+		prevCount := len(multiState.Ranges())
+		strategy.Extract(multiState, metrics)
+		if len(multiState.Ranges()) != prevCount || multiState.IsConsumed(1) {
+			t.Errorf("ZeroIntroducedSingleVersionStrategy should not handle partially consumed multi-version block")
 		}
 	})
 
@@ -148,18 +176,15 @@ func TestStrategies(t *testing.T) {
 			},
 		}
 
-		ranges1, _, handled1 := strategy.Extract(affectedSplit.Versions[0], affectedSplit, metrics)
-		if !handled1 || len(ranges1) != 1 {
-			t.Fatalf("SplitRangeStrategy failed to extract first split entry: %+v", ranges1)
+		stateSplit := NewExtractionState(affectedSplit)
+		strategy.Extract(stateSplit, metrics)
+		rangesSplit := stateSplit.Ranges()
+		if !stateSplit.AllConsumed() || len(rangesSplit) != 1 {
+			t.Fatalf("SplitRangeStrategy failed to extract split pair: %+v", rangesSplit)
 		}
-		events1 := ranges1[0].Range.GetEvents()
+		events1 := rangesSplit[0].Range.GetEvents()
 		if events1[0].GetIntroduced() != "1.31.0" || events1[1].GetFixed() != "1.36.1" {
-			t.Errorf("unexpected events from first split entry: %+v", events1)
-		}
-
-		ranges2, _, handled2 := strategy.Extract(affectedSplit.Versions[1], affectedSplit, metrics)
-		if !handled2 || len(ranges2) != 0 {
-			t.Errorf("expected second split entry to be consumed, got: %+v", ranges2)
+			t.Errorf("unexpected events from split pair: %+v", events1)
 		}
 
 		// 2. Standalone upper bound (e.g., CVE-2022-25865)
@@ -173,8 +198,10 @@ func TestStrategies(t *testing.T) {
 				},
 			},
 		}
-		rangesUpper, _, handledUpper := strategy.Extract(affectedUpper.Versions[0], affectedUpper, metrics)
-		if !handledUpper || len(rangesUpper) != 1 {
+		stateUpper := NewExtractionState(affectedUpper)
+		strategy.Extract(stateUpper, metrics)
+		rangesUpper := stateUpper.Ranges()
+		if !stateUpper.AllConsumed() || len(rangesUpper) != 1 {
 			t.Fatalf("SplitRangeStrategy failed to extract standalone upper bound: %+v", rangesUpper)
 		}
 		eventsUpper := rangesUpper[0].Range.GetEvents()
@@ -187,16 +214,20 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &GitCommitStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "0b3b5fdb5a058f50248cd8547824936b8dd10351",
-			VersionType: "git",
-		}
 		affected := models.Affected{
 			Repo: "https://github.com/GeneralSandman/TinyWeb",
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "0b3b5fdb5a058f50248cd8547824936b8dd10351",
+					VersionType: "git",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, affected, metrics)
-		if !handled || vrt != VersionRangeTypeGit || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("GitCommitStrategy failed to extract range")
 		}
 		if ranges[0].Range.GetType() != osvschema.Range_GIT || ranges[0].Range.GetRepo() != "https://github.com/GeneralSandman/TinyWeb" {
@@ -208,16 +239,20 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &GitCommitIntroducedOnlyStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2",
-			VersionType: "git",
-		}
 		affected := models.Affected{
 			Repo: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2",
+					VersionType: "git",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, affected, metrics)
-		if !handled || vrt != VersionRangeTypeGit || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("GitCommitIntroducedOnlyStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -230,13 +265,19 @@ func TestStrategies(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
 		strategy := &StandaloneSingleVersionStrategy{}
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "1.0.0",
-			VersionType: "semver",
+		affected := models.Affected{
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "1.0.0",
+					VersionType: "semver",
+				},
+			},
 		}
-		ranges, vrt, handled := strategy.Extract(vers, models.Affected{}, metrics)
-		if !handled || vrt != VersionRangeTypeSemver || len(ranges) != 1 {
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
 			t.Fatalf("StandaloneSingleVersionStrategy failed to extract range")
 		}
 		events := ranges[0].Range.GetEvents()
@@ -247,14 +288,15 @@ func TestStrategies(t *testing.T) {
 
 	t.Run("PipelineOrderPrecedence", func(t *testing.T) {
 		t.Parallel()
-		vers := models.Versions{
-			Status:      "affected",
-			Version:     "1.0.0",
-			LessThan:    "1.5.0",
-			VersionType: "semver",
-		}
 		affected := models.Affected{
-			Versions: []models.Versions{vers},
+			Versions: []models.Versions{
+				{
+					Status:      "affected",
+					Version:     "1.0.0",
+					LessThan:    "1.5.0",
+					VersionType: "semver",
+				},
+			},
 		}
 
 		// When StandardRangeStrategy comes first:
@@ -262,13 +304,14 @@ func TestStrategies(t *testing.T) {
 			&StandardRangeStrategy{},
 			&StandaloneSingleVersionStrategy{},
 		}
-		var ranges1 []models.RangeWithMetadata
+		state1 := NewExtractionState(affected)
 		for _, s := range pipeline1 {
-			if r, _, handled := s.Extract(vers, affected, &models.ConversionMetrics{}); handled {
-				ranges1 = r
+			if state1.AllConsumed() {
 				break
 			}
+			s.Extract(state1, &models.ConversionMetrics{})
 		}
+		ranges1 := state1.Ranges()
 		if len(ranges1) != 1 || ranges1[0].Range.GetEvents()[1].GetFixed() != "1.5.0" {
 			t.Fatalf("expected StandardRangeStrategy to handle first, got: %+v", ranges1)
 		}
@@ -278,31 +321,36 @@ func TestStrategies(t *testing.T) {
 			&StandaloneSingleVersionStrategy{},
 			&StandardRangeStrategy{},
 		}
-		var ranges2 []models.RangeWithMetadata
+		state2 := NewExtractionState(affected)
 		for _, s := range pipeline2 {
-			if r, _, handled := s.Extract(vers, affected, &models.ConversionMetrics{}); handled {
-				ranges2 = r
+			if state2.AllConsumed() {
 				break
 			}
+			s.Extract(state2, &models.ConversionMetrics{})
 		}
+		ranges2 := state2.Ranges()
 		if len(ranges2) != 1 || ranges2[0].Range.GetEvents()[1].GetLastAffected() != "1.0.0" {
 			t.Fatalf("expected StandaloneSingleVersionStrategy to handle first when placed earlier, got: %+v", ranges2)
 		}
 	})
 
-	t.Run("AffectedCPEStrategy", func(t *testing.T) {
+	t.Run("CPEVersionStringStrategy", func(t *testing.T) {
 		t.Parallel()
 		metrics := &models.ConversionMetrics{}
-		strategy := &AffectedCPEStrategy{}
+		strategy := &CPEVersionStringStrategy{}
 		affected := models.Affected{
-			Cpes: []string{"cpe:2.3:a:vendor:product:1.2.3:*:*:*:*:*:*:*"},
+			Versions: []models.Versions{
+				{
+					Status:  "affected",
+					Version: "cpe:2.3:a:vendor:product:1.2.3:*:*:*:*:*:*:*",
+				},
+			},
 		}
-		vers := models.Versions{
-			Status: "affected",
-		}
-		ranges, _, handled := strategy.Extract(vers, affected, metrics)
-		if !handled || len(ranges) != 1 {
-			t.Fatalf("AffectedCPEStrategy failed to extract range")
+		state := NewExtractionState(affected)
+		strategy.Extract(state, metrics)
+		ranges := state.Ranges()
+		if !state.AllConsumed() || len(ranges) != 1 {
+			t.Fatalf("CPEVersionStringStrategy expected 1 range and all consumed, got %d ranges", len(ranges))
 		}
 		if ranges[0].Metadata.CPE != "cpe:2.3:a:vendor:product:1.2.3:*:*:*:*:*:*:*" {
 			t.Errorf("unexpected CPE metadata: %s", ranges[0].Metadata.CPE)
@@ -342,13 +390,23 @@ func TestStrategies(t *testing.T) {
 				},
 			},
 		}
-		ranges, err := strategy.Extract(cve, metrics)
-		if err != nil || len(ranges) != 1 {
-			t.Fatalf("CPEVersionStrategy failed to extract range: %v", err)
+		// Also include affected.Cpes to verify both cpeApplicability and affected.Cpes are extracted without duplicates
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Cpes: []string{"cpe:2.3:a:vendor:product:1.2.3:*:*:*:*:*:*:*"},
+			},
 		}
-		events := ranges[0].Range.GetEvents()
-		if events[0].GetIntroduced() != "1.0.0" || events[1].GetFixed() != "2.0.0" {
-			t.Errorf("unexpected events: %+v", events)
+		ranges, err := strategy.Extract(cve, metrics)
+		if err != nil || len(ranges) != 2 {
+			t.Fatalf("CPEVersionStrategy failed to extract ranges: %v (got %d ranges)", err, len(ranges))
+		}
+		events0 := ranges[0].Range.GetEvents()
+		if events0[0].GetIntroduced() != "1.0.0" || events0[1].GetFixed() != "2.0.0" {
+			t.Errorf("unexpected events[0]: %+v", events0)
+		}
+		events1 := ranges[1].Range.GetEvents()
+		if events1[0].GetIntroduced() != "1.2.3" || events1[1].GetLastAffected() != "1.2.3" {
+			t.Errorf("unexpected events[1]: %+v", events1)
 		}
 	})
 }

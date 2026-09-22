@@ -67,6 +67,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			DatabaseSpecific: aff.GetDatabaseSpecific(),
 		}
 		v.Affected = append(v.Affected, newAff)
+		metrics.ResolvedRangesCount += len(uniqueRanges)
 	}
 }
 
@@ -227,6 +228,26 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
+		resolvedVersions := make(map[string]string)
+		resolveVersion := func(ver string) string {
+			if ver == "" {
+				return ""
+			}
+			if ver == "0" {
+				return "0"
+			}
+			if commit, seen := resolvedVersions[ver]; seen {
+				return commit
+			}
+			commit, err := git.VersionToCommit(ver, normalizedTags)
+			if err != nil {
+				metrics.AddNotef("error resolving version to commit - %s - %s", ver, err)
+			}
+			resolvedVersions[ver] = commit
+
+			return commit
+		}
+
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
 			vRepo := vr.Range.GetRepo()
@@ -258,23 +279,9 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				}
 			}
 
-			var introducedCommit string
-			if introduced == "0" {
-				introducedCommit = "0"
-			} else {
-				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
-				if err != nil {
-					metrics.AddNotef("error resolving version to commit - %s - %s", introduced, err)
-				}
-			}
-			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
-			if err != nil {
-				metrics.AddNotef("error resolving version to commit - %s - %s", fixed, err)
-			}
-			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
-			if err != nil {
-				metrics.AddNotef("error resolving version to commit - %s - %s", lastAffected, err)
-			}
+			introducedCommit := resolveVersion(introduced)
+			fixedCommit := resolveVersion(fixed)
+			lastAffectedCommit := resolveVersion(lastAffected)
 
 			if fixedCommit != "" || lastAffectedCommit != "" {
 				var newVR *osvschema.Range

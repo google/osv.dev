@@ -9,14 +9,10 @@ func Default() []VersionStrategy {
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&VersionTextExtractionStrategy{},
 		&StandaloneSingleVersionStrategy{},
 	}
-}
-
-func DefaultStrategies() []VersionStrategy {
-	return Default()
 }
 
 func GitHub() []VersionStrategy {
@@ -26,13 +22,9 @@ func GitHub() []VersionStrategy {
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&StandaloneSingleVersionStrategy{},
 	}
-}
-
-func GitHubStrategies() []VersionStrategy {
-	return GitHub()
 }
 
 func WPScan() []VersionStrategy {
@@ -40,13 +32,9 @@ func WPScan() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
-}
-
-func WPScanStrategies() []VersionStrategy {
-	return WPScan()
 }
 
 func Wordfence() []VersionStrategy {
@@ -54,13 +42,9 @@ func Wordfence() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
-}
-
-func WordfenceStrategies() []VersionStrategy {
-	return Wordfence()
 }
 
 func Patchstack() []VersionStrategy {
@@ -68,13 +52,9 @@ func Patchstack() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
-}
-
-func PatchstackStrategies() []VersionStrategy {
-	return Patchstack()
 }
 
 func MITRE() []VersionStrategy {
@@ -84,24 +64,17 @@ func MITRE() []VersionStrategy {
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
-		&AffectedCPEStrategy{},
+		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 		&StandaloneSingleVersionStrategy{},
 	}
 }
 
-func MITREStrategies() []VersionStrategy {
-	return MITRE()
-}
-
 func Linux() []VersionStrategy {
 	return []VersionStrategy{
+		&InverseAffectedRangesStrategy{},
 		&StandardRangeStrategy{},
 		&GitCommitIntroducedOnlyStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
-}
-
-func LinuxStrategies() []VersionStrategy {
-	return Linux()
 }

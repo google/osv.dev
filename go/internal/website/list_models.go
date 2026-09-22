@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -113,48 +111,6 @@ func (v ListedVulnerabilityDisplay) DisplayPackages() []string {
 // RemainingPackageCount returns the number of additional packages beyond the first 5.
 func (v ListedVulnerabilityDisplay) RemainingPackageCount() int {
 	return max(0, len(v.Packages)-5)
-}
-
-// truncate ensures that the given string is shorter than 80 characters.
-//
-// If the string is longer than that limit, it's trimmed and suffixed with an ellipsis.
-// Ideally the string will be trimmed at the space that's closest to the limit to
-// preserve whole words; if a string has no spaces before the limit, it'll be forcefully truncated.
-func truncate(str string) string {
-	count := 0
-	truncateAt := -1
-
-	for i, c := range str {
-		if unicode.IsSpace(c) {
-			truncateAt = i
-		}
-
-		count++
-
-		if count >= 80 {
-			// ideally we want to keep words whole when truncating,
-			// but if we can't find a space just truncate at the limit
-			if truncateAt == -1 {
-				_, size := utf8.DecodeRuneInString(str[i:])
-				truncateAt = i + size
-			}
-
-			return str[:truncateAt] + "..."
-		}
-	}
-
-	return str
-}
-
-func (v ListedVulnerabilityDisplay) Describe() string {
-	builder := strings.Builder{}
-	if v.Details == "" {
-		builder.WriteString("See record for full details")
-	} else {
-		builder.WriteString(truncate(v.Details))
-	}
-
-	return builder.String()
 }
 
 func cvssRank(t osvschema.Severity_Type) int {

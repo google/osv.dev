@@ -79,7 +79,7 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 		}
 		flateWriterPool.Put(fw)
 
-		compressedBytes := bytes.Clone(compBuf.Bytes())
+		compressedBytes := compBuf.Bytes()
 		crc := crc32.ChecksumIEEE(b)
 
 		hasVanir := false

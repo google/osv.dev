@@ -1007,6 +1007,30 @@ dl.vulnerability-details,
     padding: 0;
   }
 
+  .prefix-group {
+    margin-bottom: 4px;
+
+    summary.prefix-header {
+      cursor: pointer;
+      font-weight: bold;
+      user-select: none;
+      padding: 2px 0;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $osv-accent-color;
+        outline-offset: 2px;
+      }
+    }
+
+    ul.aliases {
+      padding-inline-start: 20px;
+    }
+  }
+
   ul.substream {
     padding-bottom: 2px;
     padding-top: 2px;

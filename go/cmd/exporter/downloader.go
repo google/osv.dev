@@ -7,7 +7,6 @@ import (
 	"hash/crc32"
 	"io"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -28,9 +27,9 @@ var flateWriterPool = sync.Pool{
 
 // downloadThenProcessor is a worker that receives GCS object handles from inCh, downloads
 // the raw protobuf data, unmarshals it into a Vulnerability, marshals it to compact
-// JSON, saves pre-compressed Deflate data to scratch disk, queues individual JSON uploads,
-// and sends the metadata to routerCh.
-func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, client clients.CloudStorage, scratchDir string, inCh <-chan string, routerCh chan<- processedVuln, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
+// JSON, pre-compresses Deflate data in memory, queues individual JSON uploads,
+// and sends the metadata and compressed payload to routerCh.
+func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, client clients.CloudStorage, inCh <-chan string, routerCh chan<- processedVuln, writeCh chan<- writeMsg, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for path := range inCh {
 		// Process object.
@@ -80,20 +79,8 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 		}
 		flateWriterPool.Put(fw)
 
-		compressedBytes := compBuf.Bytes()
+		compressedBytes := bytes.Clone(compBuf.Bytes())
 		crc := crc32.ChecksumIEEE(b)
-
-		// Cache pre-compressed Deflate payload to local scratch disk.
-		localPath := filepath.Join(scratchDir, vuln.GetId()+".deflate")
-		//nolint:gosec // G703: Staging temporary file in scratch directory
-		if err := os.WriteFile(localPath, compressedBytes, 0600); err != nil {
-			logger.ErrorContext(ctx, "failed to write cached vulnerability to disk", slog.String("id", vuln.GetId()), slog.Any("err", err))
-			// Cancel the exporter context if writing to the scratch disk fails (e.g. disk full)
-			// to fail fast rather than producing incomplete archives later.
-			cancel()
-
-			return
-		}
 
 		hasVanir := false
 		// Check for Vanir signatures
@@ -136,11 +123,12 @@ func downloadThenProcessor(ctx context.Context, cancel context.CancelFunc, clien
 		select {
 		case routerCh <- processedVuln{
 			meta: vulnMeta{
-				id:         vuln.GetId(),
-				modified:   vuln.GetModified().AsTime(),
-				crc32:      crc,
-				uncompSize: uint64(len(b)),
-				compSize:   uint64(len(compressedBytes)),
+				id:          vuln.GetId(),
+				modified:    vuln.GetModified().AsTime(),
+				crc32:       crc,
+				uncompSize:  uint64(len(b)),
+				compSize:    uint64(len(compressedBytes)),
+				deflateData: compressedBytes,
 			},
 			ecosystems: ecoNames,
 			hasVanir:   hasVanir,

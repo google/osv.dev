@@ -299,11 +299,19 @@ steps:
   waitFor: ['build-osv-linter', 'cloud-build-queue']
 
 # Build/push vanir-signatures images to gcr.io/oss-vdb.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/vanir-signatures:latest || exit 0']
+  id: 'pull-vanir-signatures'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/vanir-signatures:latest', '-t', 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/vanir_signatures'
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/vanir-signatures:latest', '-t', 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA', '--target', 'vanir-signatures', '--build-context', 'bindings=../bindings', '--build-context', 'poetry=../docker/poetry', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/vanir-signatures:latest', '--pull', '.']
+  dir: 'go'
   id: 'build-vanir-signatures'
-  waitFor: ['build-worker']
+  waitFor: ['pull-vanir-signatures', 'build-staging-api-test']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-signatures']
   waitFor: ['build-vanir-signatures', 'cloud-build-queue']

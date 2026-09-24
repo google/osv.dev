@@ -38,6 +38,7 @@ func extractRangeFromCPEString(cpeStr string, metrics *models.ConversionMetrics)
 	rwms := c.ToRangeWithMetadata(vr, models.VersionSourceCPE)
 	for i := range rwms {
 		rwms[i].Metadata.CPE = cpeStr
+		rwms[i].Metadata.Strategy = "CPEVersionString"
 		rwms[i].Metadata.Versions = []string{version}
 	}
 
@@ -89,6 +90,11 @@ func (s *CPEVersionStrategy) Name() string {
 func (s *CPEVersionStrategy) Extract(cve models.CVE5, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, error) {
 	cpeRanges, cpeStrings, err := findCPEVersionRanges(cve, metrics)
 	if err == nil && len(cpeRanges) > 0 {
+		for i := range cpeRanges {
+			if cpeRanges[i].Metadata.Strategy == "" {
+				cpeRanges[i].Metadata.Strategy = s.Name()
+			}
+		}
 		metrics.AddNotef("Strategy successful: %s", s.Name())
 		metrics.VersionSources = append(metrics.VersionSources, models.VersionSourceCPE)
 		metrics.CPEs = vulns.Unique(cpeStrings)

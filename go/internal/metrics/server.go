@@ -1,4 +1,3 @@
-// Package metrics provides Prometheus metric definitions and exposition for OSV services.
 package metrics
 
 import (

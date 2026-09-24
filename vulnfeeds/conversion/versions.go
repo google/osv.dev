@@ -648,36 +648,77 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
-	// Match:
-	//  - x.x.x before x.x.x
-	//  - x.x.x through x.x.x
-	//  - through x.x.x
-	//  - before x.x.x
-	pattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before)\s+(?:version\s+)?([\w.+\-]+)`)
-	matches := pattern.FindAllStringSubmatch(text, -1)
-	if matches == nil {
-		metrics.AddNotef("Failed to parse versions from text")
-		return nil
+var (
+	textRangePattern             = regexp.MustCompile(`(?i)(?:([vV]?[0-9][\w.+\-]*)\s+)?(through|before|prior\s+to|earlier\s+than|up\s+to(?:\s+and\s+including)?|fixed\s+in|patched\s+in|resolved\s+in|versions?\s*<=?)\s+(?:versions?\s+)?[vV]?([0-9][\w.+\-]*)`)
+	textTrailingInclusivePattern = regexp.MustCompile(`(?i)\b[vV]?([0-9]+(?:\.[0-9a-zA-Z.+\-]+)+)\s+and\s+(?:earlier|before|below|prior|older)\b`)
+	textBeforeCommitPattern      = regexp.MustCompile(`(?i)\b(?:before|prior\s+to|fixed\s+in)\s+commits?\s+([0-9a-f]{7,40})\b`)
+	textThroughCommitPattern     = regexp.MustCompile(`(?i)\b(?:through|up\s+to|at|in)\s+commits?\s+([0-9a-f]{7,40})\b`)
+	textVulnerableCommitPattern  = regexp.MustCompile(`(?i)\b([0-9a-f]{7,40})\s+(?:is\s+vulnerable|l?contains\s+a\b|has\s+a\b)`)
+)
+
+func isInclusiveKeyword(kw string) bool {
+	kw = strings.ToLower(strings.TrimSpace(kw))
+	return kw == "through" || strings.HasPrefix(kw, "up to") || strings.HasSuffix(kw, "<=")
+}
+
+func isLikelyGitSHA(s string) bool {
+	if !isHexCommitPrefix(s) {
+		return false
 	}
 
-	versions := make([]models.RangeWithMetadata, 0, len(matches))
+	return strings.ContainsAny(s, "0123456789") && strings.ContainsAny(strings.ToLower(s), "abcdef")
+}
 
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
+	var versions []models.RangeWithMetadata
+
+	// 1. Check for explicit git commit references in prose (e.g., "before commit 6187a4e").
+	for _, m := range textBeforeCommitPattern.FindAllStringSubmatch(text, -1) {
+		sha := strings.Trim(m[1], ".")
+		if isLikelyGitSHA(sha) {
+			versions = append(versions, models.RangeWithMetadata{
+				Range:    BuildGitVersionRange("0", "", sha, ""),
+				Metadata: models.Metadata{Source: source},
+			})
+		}
+	}
+	for _, m := range textThroughCommitPattern.FindAllStringSubmatch(text, -1) {
+		sha := strings.Trim(m[1], ".")
+		if isLikelyGitSHA(sha) {
+			versions = append(versions, models.RangeWithMetadata{
+				Range:    BuildGitVersionRange("0", sha, "", ""),
+				Metadata: models.Metadata{Source: source},
+			})
+		}
+	}
+
+	// 2. Match leading/infix relative version phrases:
+	//  - x.x.x before/through x.x.x
+	//  - before/through/prior to/earlier than/up to/fixed in x.x.x
+	matches := textRangePattern.FindAllStringSubmatch(text, -1)
 	for _, match := range matches {
-		// Trim periods that are part of sentences.
-		introduced := processExtractedVersion(match[1])
-		fixed := processExtractedVersion(match[3])
+		introduced := processExtractedVersion(strings.TrimPrefix(strings.TrimPrefix(match[1], "v"), "V"))
+		target := processExtractedVersion(match[3])
+		if target == "" || isLikelyGitSHA(target) {
+			continue
+		}
+
+		fixed := ""
 		lastaffected := ""
-		if match[2] == "through" && validVersions != nil {
-			// "Through" implies inclusive range, so the fixed version is the one that comes after.
-			var err error
-			fixed, err = nextVersion(validVersions, fixed)
-			if err != nil {
-				metrics.AddNotef("Failed to determine next version after %s: %s", fixed, err.Error())
-				// if that inference failed, we know this version was definitely still vulnerable.
-				lastaffected = cleanVersion(match[3])
-				metrics.AddNotef("Using %s as last_affected version instead", cleanVersion(match[3]))
+		if isInclusiveKeyword(match[2]) {
+			if validVersions != nil {
+				var err error
+				fixed, err = nextVersion(validVersions, target)
+				if err != nil {
+					metrics.AddNotef("Failed to determine next version after %s: %s", target, err.Error())
+					lastaffected = cleanVersion(target)
+					metrics.AddNotef("Using %s as last_affected version instead", lastaffected)
+				}
+			} else {
+				lastaffected = cleanVersion(target)
 			}
+		} else {
+			fixed = cleanVersion(target)
 		}
 
 		if introduced == "" && fixed == "" && lastaffected == "" {
@@ -694,7 +735,6 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		if lastaffected != "" && !HasVersion(validVersions, lastaffected) {
 			metrics.AddNotef("Extracted last_affected version %s is not a valid version", lastaffected)
 		}
-		// Favour fixed over last_affected for schema compliance.
 		if fixed != "" && lastaffected != "" {
 			lastaffected = ""
 		}
@@ -705,8 +745,45 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			Metadata: models.Metadata{
 				Source: source,
 			},
-		},
-		)
+		})
+	}
+
+	// 3. Match trailing inclusive bounds (e.g., "25.11 and before", "3.0.1 and earlier").
+	for _, match := range textTrailingInclusivePattern.FindAllStringSubmatch(text, -1) {
+		target := cleanVersion(processExtractedVersion(match[1]))
+		if target == "" {
+			continue
+		}
+		fixed := ""
+		lastaffected := target
+		if validVersions != nil {
+			if nextVer, err := nextVersion(validVersions, target); err == nil {
+				fixed = nextVer
+				lastaffected = ""
+			}
+		}
+		versions = append(versions, models.RangeWithMetadata{
+			Range:    BuildVersionRange("0", lastaffected, fixed),
+			Metadata: models.Metadata{Source: source},
+		})
+	}
+
+	// 4. Fallback: commit hash immediately preceding "is vulnerable" / "contains a" (e.g. "stomper 5e2741e is vulnerable").
+	if len(versions) == 0 {
+		for _, m := range textVulnerableCommitPattern.FindAllStringSubmatch(text, -1) {
+			sha := strings.Trim(m[1], ".")
+			if isLikelyGitSHA(sha) {
+				versions = append(versions, models.RangeWithMetadata{
+					Range:    BuildGitVersionRange("0", sha, "", ""),
+					Metadata: models.Metadata{Source: source},
+				})
+			}
+		}
+	}
+
+	if len(versions) == 0 {
+		metrics.AddNotef("Failed to parse versions from text")
+		return nil
 	}
 
 	return versions

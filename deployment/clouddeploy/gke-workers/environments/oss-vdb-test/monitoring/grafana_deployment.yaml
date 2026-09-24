@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: osv-monitoring
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grafana
+        app.kubernetes.io/part-of: osv-monitoring
+    spec:
+      serviceAccountName: grafana-sa
+      containers:
+      - name: grafana
+        image: grafana/grafana:11.5.0@sha256:4a0808cf7ca4b2569e5d4cb05ef2222a27ffb2a0c6499318b76c8cb81a6c4b28
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3000
+        env:
+        - name: GF_SECURITY_ALLOW_EMBEDDING
+          value: "true"
+        - name: GF_AUTH_ANONYMOUS_ENABLED
+          value: "false"
+        - name: GF_AUTH_BASIC_ENABLED
+          value: "false"
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
+          value: "true"
+        - name: GF_AUTH_JWT_ENABLED
+          value: "true"
+        - name: GF_AUTH_JWT_HEADER_NAME
+          value: "X-Goog-IAP-JWT-Assertion"
+        - name: GF_AUTH_JWT_EMAIL_CLAIM
+          value: "email"
+        - name: GF_AUTH_JWT_USERNAME_CLAIM
+          value: "email"
+        - name: GF_AUTH_JWT_JWK_SET_URL
+          value: "https://www.gstatic.com/iap/verify/public_key-jwk"
+        - name: GF_AUTH_JWT_EXPECT_CLAIMS
+          value: '{"iss": "https://cloud.google.com/iap"}'
+        - name: GF_AUTH_JWT_AUTO_SIGN_UP
+          value: "true"
+        - name: GF_USERS_AUTO_ASSIGN_ORG
+          value: "true"
+        - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
+          value: "Admin"
+        - name: GF_SERVER_ROOT_URL
+          value: "https://monitoring.test.osv.dev"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        volumeMounts:
+        - name: datasources
+          mountPath: /etc/grafana/provisioning/datasources
+          readOnly: true
+        - name: dashboards-prov
+          mountPath: /etc/grafana/provisioning/dashboards
+          readOnly: true
+        - name: dashboards
+          mountPath: /etc/grafana/dashboards
+          readOnly: true
+        - name: storage
+          mountPath: /var/lib/grafana
+      - name: gmp-frontend
+        image: gke.gcr.io/prometheus-engine/frontend:v0.18.2-gke.1@sha256:35ab356d969255dd7694ae371bf0991b97907451b4c7e1574b58a096d3be5977
+        args:
+        - "--web.listen-address=127.0.0.1:9090"
+        - "--project-id=$(GOOGLE_CLOUD_PROJECT)"
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: oss-vdb-test
+        ports:
+        - name: gmp-proxy
+          containerPort: 9090
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      volumes:
+      - name: datasources
+        configMap:
+          name: grafana-datasources
+      - name: dashboards-prov
+        configMap:
+          name: grafana-dashboards-prov
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: storage
+        emptyDir: {}

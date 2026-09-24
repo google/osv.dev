@@ -41,6 +41,9 @@ spec:
             value: failed-tasks
           - name: NOTIFY_PYPI
             value: "false"
+        ports:
+        - name: metrics
+          containerPort: 9090
         resources:
           requests:
             cpu: 1

@@ -2,6 +2,7 @@ resources:
 - ../../base
 - staging-api-test.yaml
 - osv-linter.yaml
+- monitoring
 patches:
 - path: workers.yaml
 - path: scaler.yaml

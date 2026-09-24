@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: osv-monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: GMP (Prometheus)
+        uid: gmp
+        type: prometheus
+        access: proxy
+        url: http://127.0.0.1:9090
+        isDefault: true
+        editable: false
+        jsonData:
+          httpMethod: POST
+          timeInterval: 15s
+      - name: Cloud Monitoring
+        uid: cloud-monitoring
+        type: googlecloud-monitoring-datasource
+        access: proxy
+        editable: false
+        jsonData:
+          authenticationType: gce
+          defaultProject: oss-vdb-test

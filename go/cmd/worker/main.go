@@ -17,6 +17,7 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/worker"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/registry"
 	"github.com/google/osv.dev/go/logger"
@@ -59,6 +60,10 @@ func run() error {
 	vulnBucket := envOrDefault("OSV_VULNERABILITIES_BUCKET", "osv-test-vulnerabilities")
 	failTasksTopic := envOrDefault("FAILED_TASKS_TOPIC", "failed-tasks")
 	notifyPyPI, _ := strconv.ParseBool(envOrDefault("NOTIFY_PYPI", "false")) // returns false on error
+	metricsPort := envOrDefault("METRICS_PORT", "9090")
+
+	// Start Prometheus metrics server for GMP scraping
+	metrics.StartMetricsServer(ctx, metricsPort)
 
 	// Plug in all the connections to the engine
 	dsClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)

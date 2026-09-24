@@ -1,0 +1,19 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: worker-pod-monitoring
+  labels:
+    app.kubernetes.io/name: osv-worker
+    app.kubernetes.io/part-of: google-cloud-managed-prometheus
+spec:
+  selector:
+    matchExpressions:
+    - key: name
+      operator: In
+      values:
+      - worker-private
+      - workers-reimport
+      - workers-cves
+  endpoints:
+  - port: metrics
+    interval: 15s

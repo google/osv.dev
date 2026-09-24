@@ -49,7 +49,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			successfulRepos[s] = true
 		}
 		if len(r) == 0 {
-			metrics.AddNote("Failed to convert git versions to commits")
+			metrics.AddNotef("Failed to convert git versions to commits")
 			return false
 		}
 
@@ -64,7 +64,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 
 	if !gotVersions {
-		metrics.AddNote("No versions in affected, attempting to extract from CPE")
+		metrics.AddNotef("No versions in affected, attempting to extract from CPE")
 		versionRanges, _ := cpeVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
@@ -75,10 +75,10 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	}
 
 	if !gotVersions {
-		metrics.AddNote("No versions in CPEs so attempting extraction from description")
+		metrics.AddNotef("No versions in CPEs so attempting extraction from description")
 		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Containers.CNA.Descriptions), metrics, models.VersionSourceDescription)
 		if len(textRanges) > 0 {
-			metrics.AddNote("Extracted versions from description: %v", textRanges)
+			metrics.AddNotef("Extracted versions from description: %v", textRanges)
 		}
 		if len(textRanges) != 0 {
 			processRanges(textRanges)
@@ -113,7 +113,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		// In this case only vers.Version exists which either means that it is _only_ that version that is
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.AddNote("Only version exists")
+		metrics.AddNotef("Only version exists")
 
 		av, err := git.ParseVersionRange(vers.Version)
 		if err == nil {
@@ -138,7 +138,7 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 		possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics, models.VersionSourceAffected)
 
 		if possibleVersions != nil {
-			metrics.AddNote("Versions retrieved from text but not used CURRENTLY")
+			metrics.AddNotef("Versions retrieved from text but not used CURRENTLY")
 			continue
 		}
 
@@ -147,10 +147,10 @@ func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affec
 			var vr []*osvschema.Range
 			if strings.EqualFold(metrics.CNA, "mitre") && len(affected.Versions) == 1 {
 				vr = []*osvschema.Range{c.BuildVersionRange("", vers.Version, "")}
-				metrics.AddNote("Single version found %v for MITRE - Setting only last_affected", vers.Version)
+				metrics.AddNotef("Single version found %v for MITRE - Setting only last_affected", vers.Version)
 			} else {
 				vr = []*osvschema.Range{c.BuildVersionRange(vers.Version, vers.Version, "")}
-				metrics.AddNote("Single version found %v - Treating as standalone version", vers.Version)
+				metrics.AddNotef("Single version found %v - Treating as standalone version", vers.Version)
 			}
 			rwms := c.ToRangeWithMetadata(vr, models.VersionSourceAffected)
 			for i := range rwms {

@@ -369,7 +369,7 @@ def check_prerequisites(has_py: bool, has_go: bool, has_tf: bool) -> bool:
 
 
 GOLANGCI_LINT_PKG = (
-    'github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0')
+    'github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0')
 GOLANGCI_LINT_CMD = ['go', 'run', GOLANGCI_LINT_PKG]
 
 

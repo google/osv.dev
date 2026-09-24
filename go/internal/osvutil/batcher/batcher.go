@@ -157,6 +157,7 @@ func (b *Batcher[K, R]) Get(ctx context.Context, key K) (R, error) {
 
 	if isLeader {
 		// The leader spawns the background worker to process this batch.
+		//nolint:contextcheck // worker uses mergedCtx from queued requests
 		go b.runBatchLoop()
 	}
 

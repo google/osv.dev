@@ -426,7 +426,7 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 		}
 
 		// Build ListedVulnerability
-		var packages []models.Package
+		packages := make([]models.Package, 0, len(v.GetAffected()))
 		isFixed := false
 		for _, a := range v.GetAffected() {
 			pkg := models.Package{

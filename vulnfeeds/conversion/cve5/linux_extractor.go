@@ -61,13 +61,13 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulner
 	gotVersions := l.handleAffected(v, cve.Containers.CNA.Affected, metrics)
 
 	if !gotVersions {
-		metrics.AddNote("No versions in affected, attempting to extract from CPE")
+		metrics.AddNotef("No versions in affected, attempting to extract from CPE")
 		versionRanges, err := cpeVersionExtraction(cve, metrics)
 		if err != nil {
 			logger.Warn("Error when extracting CPE versions")
 		}
 		if len(versionRanges) != 0 {
-			var ranges []*osvschema.Range
+			ranges := make([]*osvschema.Range, 0, len(versionRanges))
 			for _, r := range versionRanges {
 				ranges = append(ranges, r.Range)
 			}
@@ -115,7 +115,7 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 			case 3:
 				introduced = append(introduced, versionValue)
 			default:
-				metrics.AddNote("Bad non-semver version given: %s", versionValue)
+				metrics.AddNotef("Bad non-semver version given: %s", versionValue)
 				continue
 			}
 		}
@@ -129,7 +129,7 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 		fixed = append(fixed, versionValue)
 		// Infer the next introduced version from the 'lessThanOrEqual' field.
 		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
-		minorVers := strings.Split(vers.LessThanOrEqual, ".*")[0]
+		minorVers, _, _ := strings.Cut(vers.LessThanOrEqual, ".*")
 		parts := strings.Split(minorVers, ".")
 		if len(parts) > 1 {
 			if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
@@ -150,15 +150,15 @@ func findInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 	for index, f := range fixed {
 		if index < len(introduced) {
 			ranges = append(ranges, c.BuildVersionRange(introduced[index], "", f))
-			metrics.AddNote("Introduced from version value - %s", introduced[index])
-			metrics.AddNote("Fixed from version value - %s", f)
+			metrics.AddNotef("Introduced from version value - %s", introduced[index])
+			metrics.AddNotef("Fixed from version value - %s", f)
 		}
 	}
 
 	if len(ranges) != 0 {
 		return ranges, VersionRangeTypeSemver
 	}
-	metrics.AddNote("no ranges found")
+	metrics.AddNotef("no ranges found")
 
 	return nil, VersionRangeTypeUnknown
 }
@@ -175,7 +175,7 @@ func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affecte
 		// In this case only vers.Version exists which either means that it is _only_ that version that is
 		// affected, but more likely, it affects up to that version. It could also mean that the range is given
 		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.AddNote("Only version exists")
+		metrics.AddNotef("Only version exists")
 
 		if currentVersionType == VersionRangeTypeGit {
 			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
@@ -188,7 +188,7 @@ func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affecte
 		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
 			vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
 			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-			metrics.AddNote("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
+			metrics.AddNotef("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
 		}
 	}
 

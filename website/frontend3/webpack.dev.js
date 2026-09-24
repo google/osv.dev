@@ -5,7 +5,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
+  devtool: 'source-map',
   entry: {
     main: './src/index.js',
     linter: './src/linter.js',
@@ -13,7 +14,7 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
-    filename: 'static/[name].[contenthash].js',
+    filename: 'static/[name].js',
     publicPath: '/',
   },
   devServer: {
@@ -37,8 +38,6 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
-        // TODO(michaelkedar): Remove this once the website is fully migrated.
-        { from: './src/go/templates/*.html', to: 'go/[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
         { from: './img/*', to: 'static/img/[name][ext]' },
       ],
     }),
@@ -59,31 +58,11 @@ module.exports = {
       template: './src/templates/triage.html',
       chunks: ['triage'],
       excludeChunks: ['main', 'linter'],
-    }),
-    // TODO(michaelkedar): Remove this once the website is fully migrated.
-    new HtmlWebpackPlugin({
-      filename: 'go/base.html',
-      template: './src/go/base.html',
-      chunks: ['main'],
-      excludeChunks: ['linter'],
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'go/linter.html',
-      template: './src/go/templates/linter/index.html',
-      chunks: ['linter'],
-      excludeChunks: ['main'],
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'go/triage.html',
-      template: './src/go/templates/triage.html',
-      chunks: ['triage'],
-      excludeChunks: ['main', 'linter'],
       inject: false,
     }),
     new MiniCssExtractPlugin({
-      filename: 'static/[name].[contenthash].css'
+      filename: 'static/[name].css'
     }),
-    // new BundleAnalyzerPlugin(),
   ],
   module: {
     rules: [

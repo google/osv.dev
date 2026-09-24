@@ -189,7 +189,7 @@ func TestCVEToOSV_TestJsonSnapshots(t *testing.T) {
 		gitCache.SetCanonicalLink(repo, repo)
 		tagMap := make(map[string]git.Tag)
 		normMap := make(map[string]git.NormalizedTag)
-		var keys []string
+		keys := make([]string, 0, len(tagCommits))
 		for k := range tagCommits {
 			keys = append(keys, k)
 		}

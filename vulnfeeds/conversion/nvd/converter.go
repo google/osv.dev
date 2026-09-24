@@ -46,7 +46,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	if len(CPEs) > 0 {
 		_, err := c.ParseCPE(CPEs[0]) // For naming the subdirectory used for output.
 		if err != nil {
-			metrics.AddNote("Can't generate an OSV record without valid CPE data")
+			metrics.AddNotef("Can't generate an OSV record without valid CPE data")
 			return nil, metrics, models.ConversionUnknown
 		}
 	}
@@ -55,7 +55,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	v := vulns.FromNVDCVE(cve.ID, cve)
 	databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
 	if err != nil {
-		metrics.AddNote("Failed to convert database specific: %v", err)
+		metrics.AddNotef("Failed to convert database specific: %v", err)
 	} else {
 		v.DatabaseSpecific = databaseSpecific
 	}
@@ -104,14 +104,14 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	// Extract Commits
 	commits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
 	if err != nil {
-		metrics.AddNote("Failed to extract commits from refs: %v", err)
+		metrics.AddNotef("Failed to extract commits from refs: %v", err)
 		if git.IsRateLimit(err) {
 			metrics.SetOutcome(models.Error)
 			return nil, metrics, models.Error
 		}
 	}
 	if len(commits) > 0 {
-		metrics.AddNote("Extracted commits from refs: %v", commits)
+		metrics.AddNotef("Extracted commits from refs: %v", commits)
 		for _, commit := range commits {
 			successfulRepos[commit.Repo] = true
 		}
@@ -123,7 +123,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	if len(resolvedRanges) == 0 {
 		textRanges := c.ExtractVersionsFromText(nil, models.EnglishDescription(cve.Descriptions), metrics, models.VersionSourceDescription)
 		if len(textRanges) > 0 {
-			metrics.AddNote("Extracted versions from description: %v", textRanges)
+			metrics.AddNotef("Extracted versions from description: %v", textRanges)
 		}
 		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache, httpClient)
 		if metrics.Outcome == models.Error {
@@ -137,7 +137,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	if len(resolvedRanges) == 0 && len(commits) == 0 {
-		metrics.AddNote("No ranges detected")
+		metrics.AddNotef("No ranges detected")
 		metrics.SetOutcome(models.NoRanges)
 	}
 
@@ -184,7 +184,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 	var reposForCVE []string
 
 	if len(refs) == 0 && len(CPEs) == 0 {
-		metrics.AddNote("Skipping due to lack of CPEs and lack of references")
+		metrics.AddNotef("Skipping due to lack of CPEs and lack of references")
 		// 100% of these in 2022 were rejected CVEs
 		metrics.SetOutcome(models.Rejected)
 
@@ -194,17 +194,17 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 	if len(refs) > 0 && len(CPEs) == 0 {
 		repos := c.ReposFromReferences(nil, nil, refs, c.RefTagDenyList, repoTagsCache, metrics, httpClient)
 		if len(repos) == 0 {
-			metrics.AddNote("Failed to derive any repos and there were no CPEs")
+			metrics.AddNotef("Failed to derive any repos and there were no CPEs")
 			return nil
 		}
-		metrics.AddNote("Derived repos for CVE with no CPEs: %v", repos)
+		metrics.AddNotef("Derived repos for CVE with no CPEs: %v", repos)
 		reposForCVE = repos
 	}
 	vendorProductCombinations := make(map[c.VendorProduct]bool)
 	for _, CPEstr := range CPEs {
 		CPE, err := c.ParseCPE(CPEstr)
 		if err != nil {
-			metrics.AddNote("Failed to parse CPE: %v", CPEstr)
+			metrics.AddNotef("Failed to parse CPE: %v", CPEstr)
 			continue
 		}
 		if CPE.Part != "a" { // only care about application CPEs
@@ -216,7 +216,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 	// If there wasn't a repo from the CPE Dictionary, try and derive one from the CVE references.
 	for vendorProductKey := range vendorProductCombinations {
 		if repos, ok := vpRepoCache.Get(vendorProductKey); ok {
-			metrics.AddNote("Pre-references, derived repos using cache: %v", repos)
+			metrics.AddNotef("Pre-references, derived repos using cache: %v", repos)
 			if len(reposForCVE) == 0 {
 				reposForCVE = repos
 				continue
@@ -233,10 +233,10 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 			}
 			repos := c.ReposFromReferences(vpRepoCache, &vendorProductKey, refs, c.RefTagDenyList, repoTagsCache, metrics, httpClient)
 			if len(repos) == 0 {
-				metrics.AddNote("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
+				metrics.AddNotef("Failed to derive any repos for %s/%s", vendorProductKey.Vendor, vendorProductKey.Product)
 				continue
 			}
-			metrics.AddNote("Derived repos: %v", repos)
+			metrics.AddNotef("Derived repos: %v", repos)
 			reposForCVE = append(reposForCVE, repos...)
 		}
 	}
@@ -244,7 +244,7 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 	filteredRepos := make([]string, 0, len(reposForCVE))
 	for _, repo := range reposForCVE {
 		if IsLinuxKernelURL(repo) {
-			metrics.AddNote("Disregarding Linux kernel repository: %s", repo)
+			metrics.AddNotef("Disregarding Linux kernel repository: %s", repo)
 			continue
 		}
 		filteredRepos = append(filteredRepos, repo)
@@ -253,12 +253,12 @@ func FindRepos(cve models.NVDCVE, vpRepoCache *c.VPRepoCache, repoTagsCache git.
 
 	if len(reposForCVE) == 0 {
 		// We have nothing useful to work with, so we'll assume it's out of scope
-		metrics.AddNote("Passing due to lack of viable repository")
+		metrics.AddNotef("Passing due to lack of viable repository")
 
 		return nil
 	}
 
-	metrics.AddNote("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
+	metrics.AddNotef("Found Repos for CVE %s: %v", string(CVEID), reposForCVE)
 
 	return reposForCVE
 }

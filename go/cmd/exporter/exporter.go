@@ -45,11 +45,12 @@ func main() {
 	numWorkers := flag.Int("workers", 1000, "The total number of concurrent workers to use for downloading from GCS and writing the output.")
 	breakdownPrefixesStr := flag.String("breakdown-prefixes", "", "Comma-separated list of prefix breakdowns for parallel GCS object listing.")
 	scratchDirFlag := flag.String("scratch-dir", defaultScratchDir, "Directory to stage temporary JSON and zip files.")
-	cleanUpScratchDir := flag.Bool("cleanup-scratch-dir", false, "Whether to delete the temporary scratch directory on exit. Defaults to false.")
+	cleanUpScratchDir := flag.Bool("cleanup-scratch-dir", true, "Whether to delete the temporary scratch directory on exit. Defaults to true.")
 
 	flag.Parse()
 
 	scratchDir := *scratchDirFlag
+	//nolint:gosec // G703: Creating scratch directory
 	if err := os.MkdirAll(scratchDir, 0755); err != nil {
 		logger.FatalContext(ctx, "failed to create scratch directory", slog.String("dir", scratchDir), slog.Any("err", err))
 	}
@@ -113,7 +114,7 @@ func main() {
 	var processorWg sync.WaitGroup
 	for range *numWorkers / 2 {
 		processorWg.Add(1)
-		go downloadThenProcessor(ctx, cancel, vulnClient, scratchDir, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
+		go downloadThenProcessor(ctx, cancel, vulnClient, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
 	}
 
 	var writerWg sync.WaitGroup
@@ -189,7 +190,7 @@ func ecosystemRouter(ctx context.Context, inCh <-chan processedVuln, outCh chan<
 	workers := make(map[string]*ecosystemWorker)
 	var workersWg sync.WaitGroup
 	vulnCounter := 0
-	var vanirVulnIDs []string
+	var vanirVulns []vanirVuln
 
 	allEcosystemWorker := newAllEcosystemWorker(ctx, scratchDir, outCh, &workersWg)
 
@@ -208,7 +209,7 @@ RouterLoop:
 		vulnCounter++
 
 		if vuln.hasVanir {
-			vanirVulnIDs = append(vanirVulnIDs, vuln.meta.id)
+			vanirVulns = append(vanirVulns, vanirVuln{id: vuln.meta.id, deflateData: vuln.meta.deflateData})
 		}
 
 		for _, eco := range vuln.ecosystems {
@@ -236,8 +237,8 @@ RouterLoop:
 	allEcosystemWorker.Finish()
 	workersWg.Wait()
 
-	if len(vanirVulnIDs) > 0 && ctx.Err() == nil {
-		writeVanir(ctx, vanirVulnIDs, outCh, scratchDir)
+	if len(vanirVulns) > 0 && ctx.Err() == nil {
+		writeVanir(ctx, vanirVulns, outCh)
 	}
 
 	if ctx.Err() == nil {

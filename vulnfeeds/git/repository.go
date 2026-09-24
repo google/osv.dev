@@ -62,8 +62,7 @@ func IsRateLimit(err error) bool {
 		return true
 	}
 
-	var gitterErr *GitterError
-	if errors.As(err, &gitterErr) {
+	if gitterErr, ok := errors.AsType[*GitterError](err); ok {
 		if gitterErr.StatusCode == http.StatusTooManyRequests || (gitterErr.StatusCode >= 500 && gitterErr.StatusCode < 600) {
 			return true
 		}

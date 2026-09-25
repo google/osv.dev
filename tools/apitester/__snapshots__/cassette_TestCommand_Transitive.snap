@@ -231,7 +231,7 @@
         },
         {
           "id": "GHSA-xc3p-ff3m-f46v",
-          "modified": "<RFC3339 date with the year 2024>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "PYSEC-2020-43",
@@ -463,7 +463,7 @@
       "vulns": [
         {
           "id": "GHSA-cm6r-892j-jv2g",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1263,7 +1263,7 @@
       "vulns": [
         {
           "id": "GHSA-cm6r-892j-jv2g",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

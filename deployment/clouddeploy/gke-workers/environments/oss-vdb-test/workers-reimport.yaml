@@ -5,12 +5,6 @@ metadata:
 spec:
   template:
     spec:
-      tolerations:
-      - key: workloadType
-        operator: Equal
-        value: worker-pool
-      nodeSelector:
-        workloadType: worker-pool
       containers:
       - name: workers-reimport
         env:

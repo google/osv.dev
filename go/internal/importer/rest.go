@@ -39,6 +39,7 @@ func (r restSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
+		resp.Body.Close()
 		return nil, fmt.Errorf("failed to fetch REST API: %d %s for %s", resp.StatusCode, resp.Status, u)
 	}
 

@@ -3,6 +3,7 @@ package testutils
 import (
 	"context"
 	"hash/crc32"
+	"io"
 	"iter"
 	"slices"
 	"strings"
@@ -55,8 +56,7 @@ func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error)
 	}
 
 	// Return copies to prevent race conditions if the caller modifies the slice.
-	dataCopy := make([]byte, len(obj.data))
-	copy(dataCopy, obj.data)
+	dataCopy := slices.Clone(obj.data)
 
 	return dataCopy, nil
 }
@@ -124,6 +124,15 @@ func (c *MockStorage) WriteObject(_ context.Context, path string, data []byte, o
 	}
 
 	return nil
+}
+
+func (c *MockStorage) WriteObjectStream(ctx context.Context, path string, r io.Reader, opts *clients.WriteOptions) error {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	return c.WriteObject(ctx, path, data, opts)
 }
 
 func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clients.Object, error] {

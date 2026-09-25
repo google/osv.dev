@@ -1,0 +1,87 @@
+const webpack = require('webpack');
+const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+module.exports = {
+  mode: 'development',
+  devtool: 'source-map',
+  entry: {
+    main: './src/index.js',
+    linter: './src/linter.js',
+    triage: './src/triage.js',
+  },
+  output: {
+    path: path.resolve(__dirname, '../dist'),
+    filename: 'static/[name].js',
+    publicPath: '/',
+  },
+  devServer: {
+    static: '../dist/static',
+  },
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        vendorsJs: {
+          test: /node_modules/,
+          chunks: 'initial',
+          name: 'vendors',
+          priority: 1,
+          maxInitialRequests: 2,
+          minChunks: 1,
+        },
+      }
+    }
+  },
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: './src/templates/*.html', to: '[name].html', globOptions: { ignore: ['**/base.html', '**/triage.html'] } },
+        { from: './img/*', to: 'static/img/[name][ext]' },
+      ],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'base.html',
+      template: './src/base.html',
+      chunks: ['main'],
+      excludeChunks: ['linter'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'linter.html',
+      template: './src/templates/linter/index.html',
+      chunks: ['linter'],
+      excludeChunks: ['main'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'triage.html',
+      template: './src/templates/triage.html',
+      chunks: ['triage'],
+      excludeChunks: ['main', 'linter'],
+      inject: false,
+    }),
+    new MiniCssExtractPlugin({
+      filename: 'static/[name].css'
+    }),
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.(s?)css$/i,
+        use: [
+          // Use mini-css-extract-plugin instead of webpacker suggested default
+          // `styleloader` so that CSS is in a separate file, not bundled with
+          // JS. Improves caching, performance (e.g. FOUC) concerns.
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              url: false
+            }
+          },
+          'sass-loader'
+        ],
+      },
+    ],
+  }
+};

@@ -14,6 +14,7 @@ import (
 
 func TestVersionToAffectedCommit(t *testing.T) {
 	cache := &InMemoryRepoTagsCache{}
+	r := testutils.SetupGitVCR(t)
 
 	tests := []struct {
 		description       string
@@ -33,15 +34,15 @@ func TestVersionToAffectedCommit(t *testing.T) {
 			expectedOk:     true,
 		},
 		{
-			description:    "A fuzzy version match",
-			inputRepoURL:   "https://gitlab.com/gitlab-org/gitlab",
+			description:    "A fuzzy version match (fallback to -0)",
+			inputRepoURL:   "https://github.com/urllib3/urllib3",
 			cache:          cache,
-			inputVersion:   "12.0",
-			expectedResult: "3b13818e8330f68625d80d9bf5d8049c41fbe197",
+			inputVersion:   "1.26",
+			expectedResult: "ddb8c96bd93f3a00fe9eba142e6739533c2b7164",
 			expectedOk:     true,
 		},
 		{
-			description:    "A fuzzy version match",
+			description:    "A fuzzy version match (stripped prefix)",
 			inputRepoURL:   "https://github.com/eclipse-openj9/openj9",
 			cache:          cache,
 			inputVersion:   "0.38.0",
@@ -100,14 +101,13 @@ func TestVersionToAffectedCommit(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: VersionToAffectedCommit(%q, %q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
 			if !tc.disableExpiryDate.IsZero() && time.Now().After(tc.disableExpiryDate) {
 				t.Logf("test %q: VersionToAffectedCommit(%q, %q) has been enabled on %s.", tc.description, tc.inputVersion, tc.inputRepoURL, tc.disableExpiryDate)
 			}
-			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+			normalizedTags, err := NormalizeRepoTags(tc.inputRepoURL, cache, r.GetDefaultClient())
 			if err != nil {
 				t.Errorf("test %q: unexpected failure normalizing repo tags: %#v", tc.description, err)
 			}
@@ -403,6 +403,11 @@ func TestValidateAndCanonicalizeLink_429(t *testing.T) {
 }
 
 func TestValidateAndCanonicalizeLink_Retries(t *testing.T) {
+	// Reduce the backoff delay so the test doesn't take too long - DO NOT USE t.Parallel with this!!!
+	oldDelay := BackoffBaseDelay
+	BackoffBaseDelay = 1 * time.Millisecond
+	defer func() { BackoffBaseDelay = oldDelay }()
+
 	requests := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		requests++

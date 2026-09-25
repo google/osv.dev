@@ -25,14 +25,27 @@ spec:
           - name: exporter
             image: exporter
             imagePullPolicy: Always
+            volumeMounts:
+            - mountPath: "/scratch"
+              name: "scratch-volume"
             resources:
               requests:
-                cpu: "12"
-                memory: "100Gi"
+                cpu: "8"
+                memory: "30G"
+                ephemeral-storage: "35G"
               limits:
-                cpu: "20"
-                memory: "150Gi"
+                cpu: "16"
+                memory: "60G"
+                ephemeral-storage: "50G"
             env:
               - name: TRACE_SAMPLE_RATE
                 value: "0.0"
+              - name: SCRATCH_DIR
+                value: "/scratch"
+              - name: GOMEMLIMIT
+                value: "50GiB"
+          volumes:
+          - name: "scratch-volume"
+            emptyDir:
+              sizeLimit: "50G"
           restartPolicy: Never

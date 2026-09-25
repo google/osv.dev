@@ -56,6 +56,7 @@ func TestRepoName(t *testing.T) {
 }
 
 func TestRepoTags(t *testing.T) {
+	r := testutils.SetupGitVCR(t)
 	cache := &InMemoryRepoTagsCache{}
 
 	tests := []struct {
@@ -89,6 +90,12 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
 				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
+				{Tag: "v1.7.4.3430", Commit: "a84e101fd4d70b6225086d862068c0d42c302880"},
+				{Tag: "v1.7.5.3500", Commit: "221e21bfca7ad6966760612217dc6447f4cea868"},
+				{Tag: "v1.7.5.3510", Commit: "5ddc6d1bdc2735940f6dfba2aeb9258e31f3353f"},
+				{Tag: "v1.7.5.3520", Commit: "36983e144ba0402b5577338ee239a8957b8d1208"},
+				{Tag: "v1.7.5.3530", Commit: "f46a2973e4ad32c49d09eb776443964c6263adb4"},
+				{Tag: "v1.7.5.3540", Commit: "4f980c0da629a05c34c8d46db25fb24b356dac40"},
 			},
 			expectedOk: true,
 		},
@@ -115,6 +122,12 @@ func TestRepoTags(t *testing.T) {
 				{Tag: "v1.7.1-2960", Commit: "44b73602ab5518a213e0128a04f57239988847cf"},
 				{Tag: "v1.7.2-3030", Commit: "302e57b5703d92d2f43bbfe86a8d4080647a4ba9"},
 				{Tag: "v1.7.3-3230", Commit: "96a5fcdc3c958268559ec63c8fbd0a60e3c7e1c8"},
+				{Tag: "v1.7.4.3430", Commit: "a84e101fd4d70b6225086d862068c0d42c302880"},
+				{Tag: "v1.7.5.3500", Commit: "221e21bfca7ad6966760612217dc6447f4cea868"},
+				{Tag: "v1.7.5.3510", Commit: "5ddc6d1bdc2735940f6dfba2aeb9258e31f3353f"},
+				{Tag: "v1.7.5.3520", Commit: "36983e144ba0402b5577338ee239a8957b8d1208"},
+				{Tag: "v1.7.5.3530", Commit: "f46a2973e4ad32c49d09eb776443964c6263adb4"},
+				{Tag: "v1.7.5.3540", Commit: "4f980c0da629a05c34c8d46db25fb24b356dac40"},
 			},
 			expectedOk: true,
 		},
@@ -180,7 +193,7 @@ func TestRepoTags(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
@@ -192,7 +205,7 @@ func TestRepoTags(t *testing.T) {
 					inMem.RUnlock()
 				}
 			}
-			got, err := RepoTags(tc.inputRepoURL, tc.cache)
+			got, err := RepoTags(tc.inputRepoURL, tc.cache, r.GetDefaultClient())
 			if err != nil && tc.expectedOk {
 				t.Errorf("test %q: RepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
 			}
@@ -280,6 +293,7 @@ func TestNormalizeRepoTag(t *testing.T) {
 }
 
 func TestNormalizeRepoTags(t *testing.T) {
+	r := testutils.SetupGitVCR(t)
 	tests := []struct {
 		description       string
 		inputRepoURL      string
@@ -310,11 +324,11 @@ func TestNormalizeRepoTags(t *testing.T) {
 	cache := &InMemoryRepoTagsCache{}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestNormalizeRepoTags(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputRepoURL, tc.disableExpiryDate)
 			}
-			normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache)
+			normalizedRepoTags, err := NormalizeRepoTags(tc.inputRepoURL, cache, r.GetDefaultClient())
 			if err != nil && tc.expectedOk {
 				t.Errorf("test %q: NormalizeRepoTags(%q) unexpectedly failed: %+v", tc.description, tc.inputRepoURL, err)
 			}
@@ -332,6 +346,7 @@ func TestNormalizeRepoTags(t *testing.T) {
 }
 
 func TestValidRepo(t *testing.T) {
+	r := testutils.SetupGitVCR(t)
 	tests := []struct {
 		description       string
 		repoURL           string
@@ -378,12 +393,12 @@ func TestValidRepo(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			t.Parallel()
 			// This tests against Internet hosts and may have intermittent failures.
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: TestValidRepo(%q) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.repoURL, tc.disableExpiryDate)
 			}
-			got, _ := ValidRepoAndHasUsableRefs(tc.repoURL)
+			got, _ := ValidRepoAndHasUsableRefs(tc.repoURL, r.GetDefaultClient())
 			if diff := cmp.Diff(got, tc.expectedResult); diff != "" {
 				t.Errorf("test %q: ValidRepo(%q) was incorrect: %s", tc.description, tc.repoURL, diff)
 				t.Logf("Confirm that %s is reachable with `git ls-remote %s`", tc.repoURL, tc.repoURL)
@@ -393,10 +408,10 @@ func TestValidRepo(t *testing.T) {
 }
 
 func TestInvalidRepos(t *testing.T) {
-	testutils.SetupGitVCR(t)
+	r := testutils.SetupGitVCR(t)
 	redundantRepos := []string{}
 	for _, repo := range models.InvalidRepos {
-		if valid, _ := ValidRepoAndHasUsableRefs(repo); !valid {
+		if valid, _ := ValidRepoAndHasUsableRefs(repo, r.GetDefaultClient()); !valid {
 			redundantRepos = append(redundantRepos, repo)
 		}
 	}
@@ -438,7 +453,7 @@ func TestRepoTagsWithGitter(t *testing.T) {
 
 	t.Setenv("GITTER_HOST", ts.URL)
 
-	tags, err := RepoTags("https://github.com/zblogcn/zblogphp", nil)
+	tags, err := RepoTags("https://github.com/zblogcn/zblogphp", nil, http.DefaultClient)
 	if err != nil {
 		t.Fatalf("RepoTags failed: %v", err)
 	}
@@ -482,6 +497,8 @@ func TestValidRepoWithGitter(t *testing.T) {
 	defer ts.Close()
 
 	t.Setenv("GITTER_HOST", ts.URL)
+
+	httpClient := http.DefaultClient
 
 	tests := []struct {
 		name                    string
@@ -537,10 +554,10 @@ func TestValidRepoWithGitter(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			responseStatus = tc.status
-			if got, _ := ValidRepo(tc.repo); got != tc.wantValidRepo {
+			if got, _ := ValidRepo(tc.repo, httpClient); got != tc.wantValidRepo {
 				t.Errorf("ValidRepo(%q) = %v, want %v", tc.repo, got, tc.wantValidRepo)
 			}
-			if got, _ := ValidRepoAndHasUsableRefs(tc.repo); got != tc.wantValidRepoAndHasRefs {
+			if got, _ := ValidRepoAndHasUsableRefs(tc.repo, httpClient); got != tc.wantValidRepoAndHasRefs {
 				t.Errorf("ValidRepoAndHasUsableRefs(%q) = %v, want %v", tc.repo, got, tc.wantValidRepoAndHasRefs)
 			}
 		})

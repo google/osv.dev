@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -1124,6 +1123,7 @@ func TestCommit(t *testing.T) {
 	type args struct {
 		u string
 	}
+	r := testutils.SetupGitVCR(t)
 	tests := []struct {
 		name              string
 		args              args
@@ -1177,7 +1177,7 @@ func TestCommit(t *testing.T) {
 			if time.Now().Before(tt.disableExpiryDate) {
 				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
 			}
-			got, err := Commit(tt.args.u)
+			got, err := Commit(tt.args.u, r.GetDefaultClient())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1281,10 +1281,10 @@ func TestReposFromReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
+			r := testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			repoTagsCache := &git.InMemoryRepoTagsCache{}
-			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, http.DefaultClient); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
+			if gotRepos := ReposFromReferences(tt.args.cache, tt.args.vp, tt.args.refs, tt.args.tagDenyList, repoTagsCache, metrics, r.GetDefaultClient()); !reflect.DeepEqual(gotRepos, tt.wantRepos) {
 				t.Errorf("ReposFromReferences() = %#v, want %#v", gotRepos, tt.wantRepos)
 			}
 		})
@@ -1391,6 +1391,7 @@ func Test_MaybeUpdate(t *testing.T) {
 		vp    *VendorProduct
 		repos []string
 	}
+	r := testutils.SetupGitVCR(t)
 	tests := []struct {
 		name      string
 		args      args
@@ -1446,13 +1447,13 @@ func Test_MaybeUpdate(t *testing.T) {
 			},
 		},
 	}
+
 	for i := range tests {
 		tt := &tests[i]
 		t.Run(tt.name, func(t *testing.T) {
-			testutils.SetupGitVCR(t)
 			cache := tt.args.cache
 			for _, repo := range tt.args.repos {
-				cache.MaybeUpdate(tt.args.vp, repo)
+				cache.MaybeUpdate(tt.args.vp, repo, r.GetDefaultClient())
 			}
 			if !reflect.DeepEqual(cache.m, tt.wantCache) {
 				t.Errorf("MaybeUpdate() have %#v, wanted %#v", cache.m, tt.wantCache)

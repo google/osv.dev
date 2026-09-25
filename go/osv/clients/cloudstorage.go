@@ -18,6 +18,7 @@ package clients
 import (
 	"context"
 	"errors"
+	"io"
 	"iter"
 	"time"
 )
@@ -72,6 +73,9 @@ type CloudStorage interface {
 
 	// WriteObject writes a complete byte slice to a storage object.
 	WriteObject(ctx context.Context, path string, data []byte, opts *WriteOptions) error
+
+	// WriteObjectStream streams data from an io.Reader to a storage object.
+	WriteObjectStream(ctx context.Context, path string, r io.Reader, opts *WriteOptions) error
 
 	// Objects returns an iterator over objects that match the prefix.
 	Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error]

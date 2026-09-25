@@ -16,9 +16,7 @@ package recoverer_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,27 +39,9 @@ import (
 )
 
 type mockGitterClient struct {
+	gitter.Client
+
 	fileContentFunc func(ctx context.Context, req *gitterpb.FileContentRequest) (*gitterpb.FileContentResponse, error)
-}
-
-func (m *mockGitterClient) GetGit(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) Cache(_ context.Context, _ string) error {
-	return nil
-}
-
-func (m *mockGitterClient) GetTags(_ context.Context, _ string) (*gitterpb.TagsResponse, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) GetAffectedCommits(_ context.Context, _ *gitterpb.AffectedCommitsRequest) (*gitterpb.AffectedCommitsResponse, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockGitterClient) GetFileDiffs(_ context.Context, _ *gitterpb.FileDiffsRequest) (*gitterpb.FileDiffsResponse, error) {
-	return nil, errors.New("not implemented")
 }
 
 func (m *mockGitterClient) GetFileContent(ctx context.Context, req *gitterpb.FileContentRequest) (*gitterpb.FileContentResponse, error) {

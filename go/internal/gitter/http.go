@@ -193,5 +193,15 @@ func (c *httpClient) GetFileContent(ctx context.Context, req *pb.FileContentRequ
 	return &fileContentResp, nil
 }
 
+// GetCommitDiffs handles POST /commit-diffs
+func (c *httpClient) GetCommitDiffs(ctx context.Context, req *pb.CommitDiffsRequest) (*pb.CommitDiffsResponse, error) {
+	var commitDiffsResp pb.CommitDiffsResponse
+	if err := c.doAndUnmarshal(ctx, http.MethodPost, "/commit-diffs", nil, req, &commitDiffsResp); err != nil {
+		return nil, err
+	}
+
+	return &commitDiffsResp, nil
+}
+
 // Verify interface compliance at compile time.
 var _ Client = (*httpClient)(nil)

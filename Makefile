@@ -21,9 +21,6 @@ lib-tests: ## Run core Python library tests
 vanir-signatures-tests: ## Run Vanir signatures tests
 	cd gcp/workers/vanir_signatures && ./run_tests.sh
 
-website-tests: ## Run legacy Python website tests
-	cd gcp/website && ./run_tests.sh
-
 vulnfeed-tests: ## Run Go vulnfeeds tests
 	cd vulnfeeds && ./run_tests.sh
 
@@ -39,8 +36,15 @@ api-server-tests: ## Run Go API server integration tests
 update-api-snapshots: ## Update API query snapshots
 	UPDATE_SNAPS=true ./tools/apitester/run_tests.sh
 
-lint: ## Run linters and format checks
+lint: ## Run linters and format checks (smart auto-detect: changed files)
 	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh
+
+lint-all: ## Run linters and format checks across all files
+	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh --all
+
+format: ## Automatically format files where supported
+	GOTOOLCHAIN=auto $(run-cmd) tools/lint_and_format.sh --fix
+
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
@@ -77,30 +81,21 @@ build-website-frontend:
 	cd website/frontend3 && pnpm install && pnpm run build
 	cd website/blog && hugo --buildFuture -d ../dist/static/blog
 
-run-website: build-website-frontend ## Run local Python website against prod Datastore
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities $(run-cmd) python main.py
-
-run-website-staging: build-website-frontend
-	cd gcp/website && $(install-cmd) && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities $(run-cmd) python main.py
-
-run-website-emulator: build-website-frontend ## Run local Python website against emulator
-	cd gcp/website && $(install-cmd) && DATASTORE_EMULATOR_PORT=5002 $(run-cmd) python frontend_emulator.py
-
-run-go-website: build-website-frontend ## Run local Go website against prod Datastore
+run-website: build-website-frontend ## Run local Go website against prod Datastore
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
-run-go-website-staging: build-website-frontend
+run-website-staging: build-website-frontend
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
 
-run-go-website-emulator: build-website-frontend ## Run local Go website against emulator
-	cd go && DATASTORE_EMULATOR_HOST=localhost:5002 go run ./cmd/website -static-dir ../website/dist -docs-dir ../docs
+run-website-devserver: build-website-frontend ## Run local Go website development server against local mock dataset
+	cd go && go run ./cmd/website-devserver -data-dir cmd/website-devserver/testdata -static-dir ../website/dist -docs-dir ../docs
 
 stage-website-assets: build-website-frontend
 	mkdir -p go/cmd/website/dist go/cmd/website/docs
 	cp -r website/dist/* go/cmd/website/dist/
 	cp docs/osv_service_v1.swagger.json go/cmd/website/docs/
 
-run-go-website-prod: stage-website-assets
+run-website-prod: stage-website-assets
 	cd go && GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities go run -tags embedstatic ./cmd/website
 
 
@@ -120,7 +115,7 @@ run-api-server-test:
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 # TODO: API integration tests.
-all-tests: lib-tests website-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
+all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 
 reimport-tui: ## Run the reimport TUI tool
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)

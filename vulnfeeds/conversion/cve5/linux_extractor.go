@@ -1,13 +1,10 @@
 package cve5
 
 import (
-	"fmt"
 	"net/http"
-	"slices"
-	"strconv"
-	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
@@ -18,37 +15,40 @@ import (
 
 // LinuxVersionExtractor provides the version extraction logic for Linux kernel CVEs.
 type LinuxVersionExtractor struct {
-	DefaultVersionExtractor
+	Strategies []strategies.VersionStrategy
 }
 
 var _ VersionExtractor = &LinuxVersionExtractor{}
 
 // handleAffected takes an array of models.Affected and handles how to extract them
 func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []models.Affected, metrics *models.ConversionMetrics) bool {
+	if len(l.Strategies) == 0 {
+		l.Strategies = strategies.Linux()
+	}
+
 	hasGit := false
 	gotVersions := false
 	for _, cveAff := range affected {
-		var versionRanges []*osvschema.Range
-		var versionType VersionRangeType
-		if cveAff.DefaultStatus == "affected" {
-			versionRanges, versionType = findInverseAffectedRanges(cveAff, metrics)
-		} else {
-			var versionRangesWithMetadata []models.RangeWithMetadata
-			versionRangesWithMetadata, versionType = l.FindNormalAffectedRanges(cveAff, metrics)
-			for _, r := range versionRangesWithMetadata {
-				versionRanges = append(versionRanges, r.Range)
-			}
+		versionRangesWithMetadata := ExtractAffectedRanges(cveAff, l.Strategies, metrics)
+		if len(versionRangesWithMetadata) == 0 {
+			continue
 		}
-		if (versionType == VersionRangeTypeGit && hasGit) || len(versionRanges) == 0 {
+
+		isGit := versionRangesWithMetadata[0].Range.GetType() == osvschema.Range_GIT
+		versionRanges := make([]*osvschema.Range, 0, len(versionRangesWithMetadata))
+		for _, r := range versionRangesWithMetadata {
+			versionRanges = append(versionRanges, r.Range)
+		}
+		if isGit && hasGit {
 			continue
 		}
 
 		gotVersions = true
 
-		if versionType == VersionRangeTypeGit {
+		if isGit {
 			hasGit = true
 		}
-		aff := createLinuxAffected(versionRanges, versionType, cveAff.Repo)
+		aff := createLinuxAffected(versionRanges, isGit, cveAff.Repo)
 		metrics.AddSource(models.VersionSourceAffected)
 		c.AddAffected(v, aff, metrics)
 	}
@@ -62,7 +62,7 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulner
 
 	if !gotVersions {
 		metrics.AddNotef("No versions in affected, attempting to extract from CPE")
-		versionRanges, err := cpeVersionExtraction(cve, metrics)
+		versionRanges, err := strategies.CPEVersionExtraction(cve, metrics)
 		if err != nil {
 			logger.Warn("Error when extracting CPE versions")
 		}
@@ -71,16 +71,16 @@ func (l *LinuxVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulner
 			for _, r := range versionRanges {
 				ranges = append(ranges, r.Range)
 			}
-			aff := createLinuxAffected(ranges, VersionRangeTypeEcosystem, "")
-			v.Affected = append(v.Affected, aff)
+			aff := createLinuxAffected(ranges, false, "")
+			c.AddAffected(v, aff, metrics)
 		}
 	}
 }
 
-func createLinuxAffected(versionRanges []*osvschema.Range, versionType VersionRangeType, repo string) *osvschema.Affected {
+func createLinuxAffected(versionRanges []*osvschema.Range, isGit bool, repo string) *osvschema.Affected {
 	var aff osvschema.Affected
 	for _, vr := range versionRanges {
-		if versionType == VersionRangeTypeGit {
+		if isGit {
 			vr.Type = osvschema.Range_GIT
 			vr.Repo = repo
 		} else {
@@ -88,7 +88,7 @@ func createLinuxAffected(versionRanges []*osvschema.Range, versionType VersionRa
 		}
 		aff.Ranges = append(aff.Ranges, vr)
 	}
-	if versionType != VersionRangeTypeGit {
+	if !isGit {
 		aff.Package = &osvschema.Package{
 			Ecosystem: string(osvconstants.EcosystemLinux),
 			Name:      "Kernel",
@@ -99,108 +99,7 @@ func createLinuxAffected(versionRanges []*osvschema.Range, versionType VersionRa
 }
 
 // findInverseAffectedRanges calculates the affected version ranges by analyzing a list
-// of 'unaffected' versions. This is common in Linux kernel CVEs where a product is
-// considered affected by default, and only unaffected versions are listed.
-// It sorts the introduced and fixed versions to create chronological ranges.
-func findInverseAffectedRanges(cveAff models.Affected, metrics *models.ConversionMetrics) (ranges []*osvschema.Range, versType VersionRangeType) {
-	var introduced []string
-	fixed := make([]string, 0, len(cveAff.Versions))
-	for _, vers := range cveAff.Versions {
-		versionValue := vers.Version
-		if vers.Status == "affected" {
-			numParts := len(strings.Split(versionValue, "."))
-			switch numParts {
-			case 2:
-				introduced = append(introduced, versionValue+".0")
-			case 3:
-				introduced = append(introduced, versionValue)
-			default:
-				metrics.AddNotef("Bad non-semver version given: %s", versionValue)
-				continue
-			}
-		}
-		if vers.Status != "unaffected" {
-			continue
-		}
-
-		if versionValue == "0" || toVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
-			continue
-		}
-		fixed = append(fixed, versionValue)
-		// Infer the next introduced version from the 'lessThanOrEqual' field.
-		// For example, if "5.10.*" is unaffected, the next introduced version is "5.11.0".
-		minorVers, _, _ := strings.Cut(vers.LessThanOrEqual, ".*")
-		parts := strings.Split(minorVers, ".")
-		if len(parts) > 1 {
-			if intMin, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
-				nextIntroduced := fmt.Sprintf("%s.%d.0", parts[0], intMin+1)
-				introduced = append(introduced, nextIntroduced)
-			}
-		}
-	}
-	slices.SortFunc(introduced, compareSemverLike)
-	slices.SortFunc(fixed, compareSemverLike)
-
-	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 && compareSemverLike(fixed[0], introduced[0]) < 0 {
-		introduced = append([]string{"0"}, introduced...)
-	}
-
-	// Create ranges by pairing sorted introduced and fixed versions.
-	for index, f := range fixed {
-		if index < len(introduced) {
-			ranges = append(ranges, c.BuildVersionRange(introduced[index], "", f))
-			metrics.AddNotef("Introduced from version value - %s", introduced[index])
-			metrics.AddNotef("Fixed from version value - %s", f)
-		}
-	}
-
-	if len(ranges) != 0 {
-		return ranges, VersionRangeTypeSemver
-	}
-	metrics.AddNotef("no ranges found")
-
-	return nil, VersionRangeTypeUnknown
-}
-
-func (l *LinuxVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
-	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []models.RangeWithMetadata
-	for _, vers := range affected.Versions {
-		ranges, currentVersionType, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
-		versionRanges = append(versionRanges, c.ToRangeWithMetadata(ranges, models.VersionSourceAffected)...)
-		if shouldContinue {
-			continue
-		}
-		// In this case only vers.Version exists which either means that it is _only_ that version that is
-		// affected, but more likely, it affects up to that version. It could also mean that the range is given
-		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.AddNotef("Only version exists")
-
-		if currentVersionType == VersionRangeTypeGit {
-			vr := []*osvschema.Range{c.BuildVersionRange(vers.Version, "", "")}
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceGit)...)
-
-			continue
-		}
-
-		// As a fallback, assume a single version means it's the last affected version.
-		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			vr := []*osvschema.Range{c.BuildVersionRange("0", vers.Version, "")}
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-			metrics.AddNotef("Single version found %v - Assuming introduced = 0 and last affected = %v", vers.Version, vers.Version)
-		}
-	}
-
-	// Determine the most frequent version type to return as the range type.
-	maxCount := 0
-	mostFrequentVersionType := VersionRangeTypeEcosystem
-	for versionType, count := range versionTypesCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentVersionType = versionType
-		}
-	}
-
-	return versionRanges, mostFrequentVersionType
+// of 'unaffected' versions.
+func findInverseAffectedRanges(cveAff models.Affected, metrics *models.ConversionMetrics) (ranges []*osvschema.Range, versType strategies.VersionRangeType) {
+	return strategies.FindInverseAffectedRanges(cveAff, metrics)
 }

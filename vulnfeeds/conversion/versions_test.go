@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -1663,5 +1664,99 @@ func TestVendorProduct_UnmarshalText(t *testing.T) {
 				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
 			}
 		})
+	}
+}
+
+func TestIsGitCommitSHA(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"0b3b5fdb5a058f50248cd8547824936b8dd10351", true},
+		{"a381da252fe8e873c8aff22703040426cc9b2ae0", true},
+		{"fc300780da21f4bb92c148bc90257201220cf174", true},
+		{"1da177e4c3f41524e886b7f1b8a0c1fc7321cac2", true},
+		{"0.0.8", false},
+		{"v1.2.3", false},
+		{"1.0.0-rc1", false},
+		{"", false},
+		{"0", false},
+		{"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", false},
+		{"0b3b5fdb5a058f50248cd8547824936b8dd1035", false}, // 39 chars
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			if got := IsGitCommitSHA(tt.input); got != tt.want {
+				t.Errorf("IsGitCommitSHA(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsDirectGitRange(t *testing.T) {
+	t.Run("Range_GIT with valid commit SHA", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildGitVersionRange("0", "", "fc300780da21f4bb92c148bc90257201220cf174", "https://github.com/foo/bar"),
+		}
+		if !IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be true for Range_GIT with commit SHA")
+		}
+	})
+
+	t.Run("Range_GIT with version tags", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildGitVersionRange("0.1.0", "", "0.9.2", "https://github.com/foo/bar"),
+		}
+		if IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be false for Range_GIT with tag versions")
+		}
+	})
+
+	t.Run("Valid SHAs without Range_GIT", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildVersionRange("0b3b5fdb5a058f50248cd8547824936b8dd10351", "a381da252fe8e873c8aff22703040426cc9b2ae0", ""),
+		}
+		if !IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be true for valid commit SHAs")
+		}
+	})
+
+	t.Run("Semver tags", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildVersionRange("1.0.0", "", "2.0.0"),
+		}
+		if IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be false for semver strings")
+		}
+	})
+}
+
+func TestProcessRanges_DirectGitRange(t *testing.T) {
+	metrics := &models.ConversionMetrics{}
+	gitRange := models.RangeWithMetadata{
+		Range: BuildVersionRange("0b3b5fdb5a058f50248cd8547824936b8dd10351", "a381da252fe8e873c8aff22703040426cc9b2ae0", ""),
+		Metadata: models.Metadata{
+			Source: models.VersionSourceAffected,
+		},
+	}
+	repos := []string{"https://github.com/GeneralSandman/TinyWeb"}
+	httpClient := &http.Client{}
+	resolved, unresolved, successfulRepos := ProcessRanges([]models.RangeWithMetadata{gitRange}, repos, metrics, git.NewRepoTagsCache(), httpClient)
+
+	if len(resolved) != 1 {
+		t.Fatalf("expected 1 resolved range, got %d", len(resolved))
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("expected 0 unresolved ranges, got %d", len(unresolved))
+	}
+	if len(successfulRepos) != 1 || successfulRepos[0] != "https://github.com/GeneralSandman/TinyWeb" {
+		t.Errorf("unexpected successful repos: %v", successfulRepos)
+	}
+	if resolved[0].Range.GetRepo() != "https://github.com/GeneralSandman/TinyWeb" {
+		t.Errorf("expected repo to be set to %s, got %s", "https://github.com/GeneralSandman/TinyWeb", resolved[0].Range.GetRepo())
+	}
+	if resolved[0].Range.GetType().String() != "GIT" {
+		t.Errorf("expected range type to be GIT, got %s", resolved[0].Range.GetType().String())
 	}
 }

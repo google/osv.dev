@@ -2010,14 +2010,6 @@
           }
         ],
         "source": "AFFECTED_FIELD"
-      },
-      {
-        "extracted_events": [
-          {
-            "fixed": "7.61.1"
-          }
-        ],
-        "source": "DESCRIPTION"
       }
     ]
   },
@@ -2312,13 +2304,18 @@
       {
         "extracted_events": [
           {
-            "introduced": "11 and 12"
-          },
-          {
-            "last_affected": "11 and 12"
+            "range": [
+              {
+                "introduced": "11 and 12"
+              },
+              {
+                "last_affected": "11 and 12"
+              }
+            ],
+            "source": "AFFECTED_FIELD",
+            "strategy": "StandaloneSingleVersion"
           }
-        ],
-        "source": "AFFECTED_FIELD"
+        ]
       }
     ]
   },
@@ -2356,21 +2353,18 @@
       {
         "extracted_events": [
           {
-            "introduced": "7.61.1"
-          },
-          {
-            "last_affected": "7.61.1"
+            "range": [
+              {
+                "introduced": "7.61.1"
+              },
+              {
+                "last_affected": "7.61.1"
+              }
+            ],
+            "source": "AFFECTED_FIELD",
+            "strategy": "StandaloneSingleVersion"
           }
-        ],
-        "source": "AFFECTED_FIELD"
-      },
-      {
-        "extracted_events": [
-          {
-            "fixed": "7.61.1"
-          }
-        ],
-        "source": "DESCRIPTION"
+        ]
       }
     ]
   },
@@ -2449,13 +2443,18 @@
       {
         "extracted_events": [
           {
-            "introduced": "0.1.0"
-          },
-          {
-            "last_affected": "0.1.0"
+            "range": [
+              {
+                "introduced": "0.1.0"
+              },
+              {
+                "last_affected": "0.1.0"
+              }
+            ],
+            "source": "AFFECTED_FIELD",
+            "strategy": "StandaloneSingleVersion"
           }
-        ],
-        "source": "AFFECTED_FIELD"
+        ]
       }
     ]
   },
@@ -2512,13 +2511,18 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "4.x"
-              },
-              {
-                "last_affected": "4.x"
+                "range": [
+                  {
+                    "introduced": "4.x"
+                  },
+                  {
+                    "last_affected": "4.x"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -2589,25 +2593,42 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "1.7.0"
+                "range": [
+                  {
+                    "introduced": "1.7.0"
+                  },
+                  {
+                    "fixed": "1.18.4"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               },
               {
-                "fixed": "1.18.4"
+                "range": [
+                  {
+                    "introduced": "1.19.0"
+                  },
+                  {
+                    "fixed": "1.20.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               },
               {
-                "introduced": "1.19.0"
-              },
-              {
-                "fixed": "1.20.3"
-              },
-              {
-                "introduced": "1.21.0"
-              },
-              {
-                "fixed": "1.23.1"
+                "range": [
+                  {
+                    "introduced": "1.21.0"
+                  },
+                  {
+                    "fixed": "1.23.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -2690,19 +2711,42 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "4.25.8"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandardRange"
               },
               {
-                "fixed": "4.25.8"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "5.29.5"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandardRange"
               },
               {
-                "fixed": "5.29.5"
-              },
-              {
-                "fixed": "6.31.1"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "6.31.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandardRange"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -2772,13 +2816,18 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
-              },
-              {
-                "fixed": "2.0.0-next.193"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "2.0.0-next.193"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -2844,577 +2893,1146 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "8.9.0"
-              },
-              {
-                "last_affected": "8.9.0"
-              },
-              {
-                "introduced": "8.8.0"
-              },
-              {
-                "last_affected": "8.8.0"
-              },
-              {
-                "introduced": "8.7.1"
-              },
-              {
-                "last_affected": "8.7.1"
-              },
-              {
-                "introduced": "8.7.0"
-              },
-              {
-                "last_affected": "8.7.0"
-              },
-              {
-                "introduced": "8.6.0"
-              },
-              {
-                "last_affected": "8.6.0"
-              },
-              {
-                "introduced": "8.5.0"
-              },
-              {
-                "last_affected": "8.5.0"
-              },
-              {
-                "introduced": "8.4.0"
-              },
-              {
-                "last_affected": "8.4.0"
-              },
-              {
-                "introduced": "8.3.0"
-              },
-              {
-                "last_affected": "8.3.0"
-              },
-              {
-                "introduced": "8.2.1"
-              },
-              {
-                "last_affected": "8.2.1"
-              },
-              {
-                "introduced": "8.2.0"
-              },
-              {
-                "last_affected": "8.2.0"
-              },
-              {
-                "introduced": "8.1.2"
-              },
-              {
-                "last_affected": "8.1.2"
-              },
-              {
-                "introduced": "8.1.1"
-              },
-              {
-                "last_affected": "8.1.1"
-              },
-              {
-                "introduced": "8.1.0"
-              },
-              {
-                "last_affected": "8.1.0"
-              },
-              {
-                "introduced": "8.0.1"
-              },
-              {
-                "last_affected": "8.0.1"
-              },
-              {
-                "introduced": "8.0.0"
-              },
-              {
-                "last_affected": "8.0.0"
-              },
-              {
-                "introduced": "7.88.1"
-              },
-              {
-                "last_affected": "7.88.1"
-              },
-              {
-                "introduced": "7.88.0"
-              },
-              {
-                "last_affected": "7.88.0"
-              },
-              {
-                "introduced": "7.87.0"
-              },
-              {
-                "last_affected": "7.87.0"
-              },
-              {
-                "introduced": "7.86.0"
-              },
-              {
-                "last_affected": "7.86.0"
-              },
-              {
-                "introduced": "7.85.0"
-              },
-              {
-                "last_affected": "7.85.0"
-              },
-              {
-                "introduced": "7.84.0"
-              },
-              {
-                "last_affected": "7.84.0"
-              },
-              {
-                "introduced": "7.83.1"
-              },
-              {
-                "last_affected": "7.83.1"
-              },
-              {
-                "introduced": "7.83.0"
-              },
-              {
-                "last_affected": "7.83.0"
-              },
-              {
-                "introduced": "7.82.0"
-              },
-              {
-                "last_affected": "7.82.0"
-              },
-              {
-                "introduced": "7.81.0"
-              },
-              {
-                "last_affected": "7.81.0"
-              },
-              {
-                "introduced": "7.80.0"
-              },
-              {
-                "last_affected": "7.80.0"
-              },
-              {
-                "introduced": "7.79.1"
-              },
-              {
-                "last_affected": "7.79.1"
-              },
-              {
-                "introduced": "7.79.0"
-              },
-              {
-                "last_affected": "7.79.0"
-              },
-              {
-                "introduced": "7.78.0"
-              },
-              {
-                "last_affected": "7.78.0"
-              },
-              {
-                "introduced": "7.77.0"
-              },
-              {
-                "last_affected": "7.77.0"
-              },
-              {
-                "introduced": "7.76.1"
-              },
-              {
-                "last_affected": "7.76.1"
-              },
-              {
-                "introduced": "7.76.0"
-              },
-              {
-                "last_affected": "7.76.0"
-              },
-              {
-                "introduced": "7.75.0"
-              },
-              {
-                "last_affected": "7.75.0"
-              },
-              {
-                "introduced": "7.74.0"
-              },
-              {
-                "last_affected": "7.74.0"
-              },
-              {
-                "introduced": "7.73.0"
-              },
-              {
-                "last_affected": "7.73.0"
-              },
-              {
-                "introduced": "7.72.0"
-              },
-              {
-                "last_affected": "7.72.0"
-              },
-              {
-                "introduced": "7.71.1"
-              },
-              {
-                "last_affected": "7.71.1"
-              },
-              {
-                "introduced": "7.71.0"
-              },
-              {
-                "last_affected": "7.71.0"
-              },
-              {
-                "introduced": "7.70.0"
-              },
-              {
-                "last_affected": "7.70.0"
-              },
-              {
-                "introduced": "7.69.1"
-              },
-              {
-                "last_affected": "7.69.1"
-              },
-              {
-                "introduced": "7.69.0"
-              },
-              {
-                "last_affected": "7.69.0"
-              },
-              {
-                "introduced": "7.68.0"
-              },
-              {
-                "last_affected": "7.68.0"
-              },
-              {
-                "introduced": "7.67.0"
-              },
-              {
-                "last_affected": "7.67.0"
-              },
-              {
-                "introduced": "7.66.0"
-              },
-              {
-                "last_affected": "7.66.0"
-              },
-              {
-                "introduced": "7.65.3"
-              },
-              {
-                "last_affected": "7.65.3"
-              },
-              {
-                "introduced": "7.65.2"
-              },
-              {
-                "last_affected": "7.65.2"
-              },
-              {
-                "introduced": "7.65.1"
-              },
-              {
-                "last_affected": "7.65.1"
-              },
-              {
-                "introduced": "7.65.0"
-              },
-              {
-                "last_affected": "7.65.0"
-              },
-              {
-                "introduced": "7.64.1"
-              },
-              {
-                "last_affected": "7.64.1"
-              },
-              {
-                "introduced": "7.64.0"
-              },
-              {
-                "last_affected": "7.64.0"
-              },
-              {
-                "introduced": "7.63.0"
-              },
-              {
-                "last_affected": "7.63.0"
-              },
-              {
-                "introduced": "7.62.0"
-              },
-              {
-                "last_affected": "7.62.0"
-              },
-              {
-                "introduced": "7.61.1"
-              },
-              {
-                "last_affected": "7.61.1"
-              },
-              {
-                "introduced": "7.61.0"
-              },
-              {
-                "last_affected": "7.61.0"
-              },
-              {
-                "introduced": "7.60.0"
-              },
-              {
-                "last_affected": "7.60.0"
-              },
-              {
-                "introduced": "7.59.0"
-              },
-              {
-                "last_affected": "7.59.0"
-              },
-              {
-                "introduced": "7.58.0"
-              },
-              {
-                "last_affected": "7.58.0"
-              },
-              {
-                "introduced": "7.57.0"
-              },
-              {
-                "last_affected": "7.57.0"
-              },
-              {
-                "introduced": "7.56.1"
-              },
-              {
-                "last_affected": "7.56.1"
-              },
-              {
-                "introduced": "7.56.0"
-              },
-              {
-                "last_affected": "7.56.0"
-              },
-              {
-                "introduced": "7.55.1"
-              },
-              {
-                "last_affected": "7.55.1"
-              },
-              {
-                "introduced": "7.55.0"
-              },
-              {
-                "last_affected": "7.55.0"
-              },
-              {
-                "introduced": "7.54.1"
-              },
-              {
-                "last_affected": "7.54.1"
-              },
-              {
-                "introduced": "7.54.0"
-              },
-              {
-                "last_affected": "7.54.0"
-              },
-              {
-                "introduced": "7.53.1"
-              },
-              {
-                "last_affected": "7.53.1"
-              },
-              {
-                "introduced": "7.53.0"
-              },
-              {
-                "last_affected": "7.53.0"
-              },
-              {
-                "introduced": "7.52.1"
-              },
-              {
-                "last_affected": "7.52.1"
-              },
-              {
-                "introduced": "7.52.0"
-              },
-              {
-                "last_affected": "7.52.0"
-              },
-              {
-                "introduced": "7.51.0"
-              },
-              {
-                "last_affected": "7.51.0"
-              },
-              {
-                "introduced": "7.50.3"
-              },
-              {
-                "last_affected": "7.50.3"
-              },
-              {
-                "introduced": "7.50.2"
-              },
-              {
-                "last_affected": "7.50.2"
-              },
-              {
-                "introduced": "7.50.1"
-              },
-              {
-                "last_affected": "7.50.1"
-              },
-              {
-                "introduced": "7.50.0"
-              },
-              {
-                "last_affected": "7.50.0"
-              },
-              {
-                "introduced": "7.49.1"
-              },
-              {
-                "last_affected": "7.49.1"
-              },
-              {
-                "introduced": "7.49.0"
-              },
-              {
-                "last_affected": "7.49.0"
-              },
-              {
-                "introduced": "7.48.0"
-              },
-              {
-                "last_affected": "7.48.0"
-              },
-              {
-                "introduced": "7.47.1"
-              },
-              {
-                "last_affected": "7.47.1"
-              },
-              {
-                "introduced": "7.47.0"
-              },
-              {
-                "last_affected": "7.47.0"
-              },
-              {
-                "introduced": "7.46.0"
-              },
-              {
-                "last_affected": "7.46.0"
-              },
-              {
-                "introduced": "7.45.0"
-              },
-              {
-                "last_affected": "7.45.0"
-              },
-              {
-                "introduced": "7.44.0"
-              },
-              {
-                "last_affected": "7.44.0"
-              },
-              {
-                "introduced": "7.43.0"
-              },
-              {
-                "last_affected": "7.43.0"
-              },
-              {
-                "introduced": "7.42.1"
-              },
-              {
-                "last_affected": "7.42.1"
-              },
-              {
-                "introduced": "7.42.0"
-              },
-              {
-                "last_affected": "7.42.0"
-              },
-              {
-                "introduced": "7.41.0"
-              },
-              {
-                "last_affected": "7.41.0"
-              },
-              {
-                "introduced": "7.40.0"
-              },
-              {
-                "last_affected": "7.40.0"
-              },
-              {
-                "introduced": "7.39.0"
-              },
-              {
-                "last_affected": "7.39.0"
-              },
-              {
-                "introduced": "7.38.0"
-              },
-              {
-                "last_affected": "7.38.0"
-              },
-              {
-                "introduced": "7.37.1"
-              },
-              {
-                "last_affected": "7.37.1"
-              },
-              {
-                "introduced": "7.37.0"
-              },
-              {
-                "last_affected": "7.37.0"
-              },
-              {
-                "introduced": "7.36.0"
-              },
-              {
-                "last_affected": "7.36.0"
-              },
-              {
-                "introduced": "7.35.0"
-              },
-              {
-                "last_affected": "7.35.0"
-              },
-              {
-                "introduced": "7.34.0"
-              },
-              {
-                "last_affected": "7.34.0"
-              },
-              {
-                "introduced": "7.33.0"
-              },
-              {
-                "last_affected": "7.33.0"
-              },
-              {
-                "introduced": "7.32.0"
-              },
-              {
-                "last_affected": "7.32.0"
+                "range": [
+                  {
+                    "introduced": "8.9.0"
+                  },
+                  {
+                    "last_affected": "8.9.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.8.0"
+                  },
+                  {
+                    "last_affected": "8.8.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.7.1"
+                  },
+                  {
+                    "last_affected": "8.7.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.7.0"
+                  },
+                  {
+                    "last_affected": "8.7.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.6.0"
+                  },
+                  {
+                    "last_affected": "8.6.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.5.0"
+                  },
+                  {
+                    "last_affected": "8.5.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.4.0"
+                  },
+                  {
+                    "last_affected": "8.4.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.3.0"
+                  },
+                  {
+                    "last_affected": "8.3.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.2.1"
+                  },
+                  {
+                    "last_affected": "8.2.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.2.0"
+                  },
+                  {
+                    "last_affected": "8.2.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.2"
+                  },
+                  {
+                    "last_affected": "8.1.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.1"
+                  },
+                  {
+                    "last_affected": "8.1.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.1.0"
+                  },
+                  {
+                    "last_affected": "8.1.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.0.1"
+                  },
+                  {
+                    "last_affected": "8.0.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "8.0.0"
+                  },
+                  {
+                    "last_affected": "8.0.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.88.1"
+                  },
+                  {
+                    "last_affected": "7.88.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.88.0"
+                  },
+                  {
+                    "last_affected": "7.88.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.87.0"
+                  },
+                  {
+                    "last_affected": "7.87.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.86.0"
+                  },
+                  {
+                    "last_affected": "7.86.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.85.0"
+                  },
+                  {
+                    "last_affected": "7.85.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.84.0"
+                  },
+                  {
+                    "last_affected": "7.84.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.83.1"
+                  },
+                  {
+                    "last_affected": "7.83.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.83.0"
+                  },
+                  {
+                    "last_affected": "7.83.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.82.0"
+                  },
+                  {
+                    "last_affected": "7.82.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.81.0"
+                  },
+                  {
+                    "last_affected": "7.81.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.80.0"
+                  },
+                  {
+                    "last_affected": "7.80.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.79.1"
+                  },
+                  {
+                    "last_affected": "7.79.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.79.0"
+                  },
+                  {
+                    "last_affected": "7.79.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.78.0"
+                  },
+                  {
+                    "last_affected": "7.78.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.77.0"
+                  },
+                  {
+                    "last_affected": "7.77.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.76.1"
+                  },
+                  {
+                    "last_affected": "7.76.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.76.0"
+                  },
+                  {
+                    "last_affected": "7.76.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.75.0"
+                  },
+                  {
+                    "last_affected": "7.75.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.74.0"
+                  },
+                  {
+                    "last_affected": "7.74.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.73.0"
+                  },
+                  {
+                    "last_affected": "7.73.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.72.0"
+                  },
+                  {
+                    "last_affected": "7.72.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.71.1"
+                  },
+                  {
+                    "last_affected": "7.71.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.71.0"
+                  },
+                  {
+                    "last_affected": "7.71.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.70.0"
+                  },
+                  {
+                    "last_affected": "7.70.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.69.1"
+                  },
+                  {
+                    "last_affected": "7.69.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.69.0"
+                  },
+                  {
+                    "last_affected": "7.69.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.68.0"
+                  },
+                  {
+                    "last_affected": "7.68.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.67.0"
+                  },
+                  {
+                    "last_affected": "7.67.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.66.0"
+                  },
+                  {
+                    "last_affected": "7.66.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.3"
+                  },
+                  {
+                    "last_affected": "7.65.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.2"
+                  },
+                  {
+                    "last_affected": "7.65.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.1"
+                  },
+                  {
+                    "last_affected": "7.65.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.65.0"
+                  },
+                  {
+                    "last_affected": "7.65.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.64.1"
+                  },
+                  {
+                    "last_affected": "7.64.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.64.0"
+                  },
+                  {
+                    "last_affected": "7.64.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.63.0"
+                  },
+                  {
+                    "last_affected": "7.63.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.62.0"
+                  },
+                  {
+                    "last_affected": "7.62.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.61.1"
+                  },
+                  {
+                    "last_affected": "7.61.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.61.0"
+                  },
+                  {
+                    "last_affected": "7.61.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.60.0"
+                  },
+                  {
+                    "last_affected": "7.60.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.59.0"
+                  },
+                  {
+                    "last_affected": "7.59.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.58.0"
+                  },
+                  {
+                    "last_affected": "7.58.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.57.0"
+                  },
+                  {
+                    "last_affected": "7.57.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.56.1"
+                  },
+                  {
+                    "last_affected": "7.56.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.56.0"
+                  },
+                  {
+                    "last_affected": "7.56.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.55.1"
+                  },
+                  {
+                    "last_affected": "7.55.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.55.0"
+                  },
+                  {
+                    "last_affected": "7.55.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.54.1"
+                  },
+                  {
+                    "last_affected": "7.54.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.54.0"
+                  },
+                  {
+                    "last_affected": "7.54.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.53.1"
+                  },
+                  {
+                    "last_affected": "7.53.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.53.0"
+                  },
+                  {
+                    "last_affected": "7.53.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.52.1"
+                  },
+                  {
+                    "last_affected": "7.52.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.52.0"
+                  },
+                  {
+                    "last_affected": "7.52.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.51.0"
+                  },
+                  {
+                    "last_affected": "7.51.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.3"
+                  },
+                  {
+                    "last_affected": "7.50.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.2"
+                  },
+                  {
+                    "last_affected": "7.50.2"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.1"
+                  },
+                  {
+                    "last_affected": "7.50.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.50.0"
+                  },
+                  {
+                    "last_affected": "7.50.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.49.1"
+                  },
+                  {
+                    "last_affected": "7.49.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.49.0"
+                  },
+                  {
+                    "last_affected": "7.49.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.48.0"
+                  },
+                  {
+                    "last_affected": "7.48.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.47.1"
+                  },
+                  {
+                    "last_affected": "7.47.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.47.0"
+                  },
+                  {
+                    "last_affected": "7.47.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.46.0"
+                  },
+                  {
+                    "last_affected": "7.46.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.45.0"
+                  },
+                  {
+                    "last_affected": "7.45.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.44.0"
+                  },
+                  {
+                    "last_affected": "7.44.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.43.0"
+                  },
+                  {
+                    "last_affected": "7.43.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.42.1"
+                  },
+                  {
+                    "last_affected": "7.42.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.42.0"
+                  },
+                  {
+                    "last_affected": "7.42.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.41.0"
+                  },
+                  {
+                    "last_affected": "7.41.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.40.0"
+                  },
+                  {
+                    "last_affected": "7.40.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.39.0"
+                  },
+                  {
+                    "last_affected": "7.39.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.38.0"
+                  },
+                  {
+                    "last_affected": "7.38.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.37.1"
+                  },
+                  {
+                    "last_affected": "7.37.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.37.0"
+                  },
+                  {
+                    "last_affected": "7.37.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.36.0"
+                  },
+                  {
+                    "last_affected": "7.36.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.35.0"
+                  },
+                  {
+                    "last_affected": "7.35.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.34.0"
+                  },
+                  {
+                    "last_affected": "7.34.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.33.0"
+                  },
+                  {
+                    "last_affected": "7.33.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
+              },
+              {
+                "range": [
+                  {
+                    "introduced": "7.32.0"
+                  },
+                  {
+                    "last_affected": "7.32.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -3592,13 +4210,18 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "0"
-              },
-              {
-                "last_affected": "1.25.3"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "last_affected": "1.25.3"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandardRange"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -3772,19 +4395,30 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "2.0.0"
+                "range": [
+                  {
+                    "introduced": "2.0.0"
+                  },
+                  {
+                    "fixed": "2.0.7"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               },
               {
-                "fixed": "2.0.7"
-              },
-              {
-                "introduced": "0"
-              },
-              {
-                "fixed": "1.26.18"
+                "range": [
+                  {
+                    "introduced": "0"
+                  },
+                  {
+                    "fixed": "1.26.18"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StringRangeExpression"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -3869,19 +4503,30 @@
           "database_specific": {
             "extracted_events": [
               {
-                "introduced": "5.6.0"
+                "range": [
+                  {
+                    "introduced": "5.6.0"
+                  },
+                  {
+                    "last_affected": "5.6.0"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
               },
               {
-                "last_affected": "5.6.0"
-              },
-              {
-                "introduced": "5.6.1"
-              },
-              {
-                "last_affected": "5.6.1"
+                "range": [
+                  {
+                    "introduced": "5.6.1"
+                  },
+                  {
+                    "last_affected": "5.6.1"
+                  }
+                ],
+                "source": "AFFECTED_FIELD",
+                "strategy": "StandaloneSingleVersion"
               }
-            ],
-            "source": "AFFECTED_FIELD"
+            ]
           },
           "events": [
             {
@@ -4160,5 +4805,77 @@
     }
   ],
   "summary": "Xz: malicious code in distributed source"
+}
+---
+
+[TestCVE5Snapshot/CVE-2026-67185.json - 1]
+{
+  "affected": [
+    {
+      "ranges": [
+        {
+          "events": [
+            {
+              "introduced": "0b3b5fdb5a058f50248cd8547824936b8dd10351"
+            },
+            {
+              "last_affected": "a381da252fe8e873c8aff22703040426cc9b2ae0"
+            }
+          ],
+          "repo": "https://github.com/GeneralSandman/TinyWeb",
+          "type": "GIT"
+        }
+      ]
+    }
+  ],
+  "database_specific": {
+    "cna_assigner": "VulnCheck",
+    "cwe_ids": [
+      "CWE-22"
+    ],
+    "osv_generated_from": "unknown",
+    "unresolved_ranges": [
+      {
+        "extracted_events": [
+          {
+            "introduced": "0.0.8"
+          },
+          {
+            "last_affected": "0.0.8"
+          }
+        ],
+        "source": "AFFECTED_FIELD"
+      }
+    ]
+  },
+  "details": "TinyWeb through 0.0.8 contains a path traversal vulnerability that allows unauthenticated attackers to read arbitrary files by submitting ../ sequences in the URL path, which are concatenated directly to the configured web root in HttpBuilder::buildResponse() without normalization, dot-segment removal, or boundary checks. Attackers can craft a single request with ../ sequences that pass through the URL parser unchanged and reach the filesystem call via HttpFile::setFile(), exposing sensitive files such as credential stores and private keys when the server process runs as root.",
+  "id": "CVE-2026-67185",
+  "modified": "2026-07-28T19:34:14.583Z",
+  "published": "2026-07-28T16:30:45.229Z",
+  "references": [
+    {
+      "type": "PACKAGE",
+      "url": "https://github.com/GeneralSandman/TinyWeb"
+    },
+    {
+      "type": "EVIDENCE",
+      "url": "https://github.com/theopaid/Unauthenticated-Path-Traversal-Allows-Arbitrary-File-Read-TinyWeb-"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-67185"
+    },
+    {
+      "type": "ADVISORY",
+      "url": "https://www.vulncheck.com/advisories/tinyweb-path-traversal-via-url-path-component"
+    }
+  ],
+  "severity": [
+    {
+      "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+      "type": "CVSS_V4"
+    }
+  ],
+  "summary": "TinyWeb 0.0.8 Path Traversal via URL Path Component"
 }
 ---

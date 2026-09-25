@@ -4,23 +4,33 @@ import (
 	"maps"
 	"net/http"
 	"slices"
-	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
-	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// DefaultVersionExtractor provides the default version extraction logic.
-type DefaultVersionExtractor struct{}
+// DefaultVersionExtractor provides version extraction logic using a configurable pipeline of strategies.
+type DefaultVersionExtractor struct {
+	Strategies []strategies.VersionStrategy
+}
+
+func (d *DefaultVersionExtractor) getStrategies() []strategies.VersionStrategy {
+	if len(d.Strategies) > 0 {
+		return d.Strategies
+	}
+
+	return strategies.Default()
+}
 
 func (d *DefaultVersionExtractor) handleAffected(affected []models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	var ranges []models.RangeWithMetadata
 	for _, cveAff := range affected {
-		versionRanges, _ := d.FindNormalAffectedRanges(cveAff, metrics)
+		versionRanges := ExtractAffectedRanges(cveAff, d.getStrategies(), metrics)
 
 		if len(versionRanges) == 0 {
 			continue
@@ -63,9 +73,38 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		}
 	}
 
+	addUnresolvedRanges := func(unRanges []models.RangeWithMetadata) {
+		if len(unRanges) == 0 {
+			return
+		}
+		if v.DatabaseSpecific == nil {
+			v.DatabaseSpecific = &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		} else if v.DatabaseSpecific.Fields == nil {
+			v.DatabaseSpecific.Fields = make(map[string]*structpb.Value)
+		}
+		unresolvedRangesList := c.CreateUnresolvedRanges(unRanges)
+		if err := c.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
+			logger.Warn("failed to make database specific: %v", err)
+		}
+	}
+
+	// Exit early if no repositories are available to resolve remaining versions.
+	if len(repos) == 0 && !gotVersions {
+		metrics.SetOutcome(models.NoRepos)
+		metrics.Outcome = models.NoRepos
+		if len(unresolvedRanges) > 0 {
+			addUnresolvedRanges(unresolvedRanges)
+		} else if len(ranges) > 0 {
+			metrics.UnresolvedRangesCount += len(ranges)
+			addUnresolvedRanges(ranges)
+		}
+
+		return
+	}
+
 	if !gotVersions {
 		metrics.AddNotef("No versions in affected, attempting to extract from CPE")
-		versionRanges, _ := cpeVersionExtraction(cve, metrics)
+		versionRanges, _ := strategies.CPEVersionExtraction(cve, metrics)
 
 		if len(versionRanges) != 0 {
 			if processRanges(versionRanges) {
@@ -85,90 +124,16 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		}
 	}
 
+	references := identifyPossibleURLs(cve)
+	commits, err := c.ExtractCommitsFromRefs(references, httpClient, cache)
+	if err != nil {
+		metrics.AddNotef("Failed to extract commits from references: %v", err)
+	}
+
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
-	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
+	affected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected...)
 
-	if len(unresolvedRanges) > 0 {
-		unresolvedRangesList := c.CreateUnresolvedRanges(unresolvedRanges)
-		if err := c.AddFieldToDatabaseSpecific(v.DatabaseSpecific, "unresolved_ranges", unresolvedRangesList); err != nil {
-			logger.Warn("failed to make database specific: %v", err)
-		}
-	}
-}
-
-func (d *DefaultVersionExtractor) FindNormalAffectedRanges(affected models.Affected, metrics *models.ConversionMetrics) ([]models.RangeWithMetadata, VersionRangeType) {
-	versionTypesCount := make(map[VersionRangeType]int)
-	var versionRanges []models.RangeWithMetadata
-	for _, vers := range affected.Versions {
-		ranges, _, shouldContinue := initialNormalExtraction(vers, metrics, versionTypesCount)
-		if len(ranges) > 0 {
-			versionRanges = append(versionRanges, c.ToRangeWithMetadata(ranges, models.VersionSourceAffected)...)
-		}
-
-		if shouldContinue {
-			continue
-		}
-		// In this case only vers.Version exists which either means that it is _only_ that version that is
-		// affected, but more likely, it affects up to that version. It could also mean that the range is given
-		// in one line instead - like "< 1.5.3" or "< 2.45.4, >= 2.0 " or just "before 1.4.7", so check for that.
-		metrics.AddNotef("Only version exists")
-
-		av, err := git.ParseVersionRange(vers.Version)
-		if err == nil {
-			if av.Introduced == "" {
-				continue
-			}
-
-			if av.Fixed != "" {
-				vr := []*osvschema.Range{c.BuildVersionRange(av.Introduced, "", av.Fixed)}
-				versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-
-				continue
-			} else if av.LastAffected != "" {
-				vr := []*osvschema.Range{c.BuildVersionRange(av.Introduced, av.LastAffected, "")}
-				versionRanges = append(versionRanges, c.ToRangeWithMetadata(vr, models.VersionSourceAffected)...)
-
-				continue
-			}
-		}
-
-		// Try to extract versions from text like "before 1.4.7".
-		possibleVersions := c.ExtractVersionsFromText(nil, vers.Version, metrics, models.VersionSourceAffected)
-
-		if possibleVersions != nil {
-			metrics.AddNotef("Versions retrieved from text but not used CURRENTLY")
-			continue
-		}
-
-		// As a fallback, treat a single version as a standalone version.
-		if vulns.CheckQuality(vers.Version).AtLeast(acceptableQuality) {
-			var vr []*osvschema.Range
-			if strings.EqualFold(metrics.CNA, "mitre") && len(affected.Versions) == 1 {
-				vr = []*osvschema.Range{c.BuildVersionRange("", vers.Version, "")}
-				metrics.AddNotef("Single version found %v for MITRE - Setting only last_affected", vers.Version)
-			} else {
-				vr = []*osvschema.Range{c.BuildVersionRange(vers.Version, vers.Version, "")}
-				metrics.AddNotef("Single version found %v - Treating as standalone version", vers.Version)
-			}
-			rwms := c.ToRangeWithMetadata(vr, models.VersionSourceAffected)
-			for i := range rwms {
-				rwms[i].Metadata.Versions = []string{vers.Version}
-			}
-			versionRanges = append(versionRanges, rwms...)
-		}
-	}
-
-	// Determine the most frequent version type to return as the range type.
-	maxCount := 0
-	mostFrequentVersionType := VersionRangeTypeEcosystem
-	for versionType, count := range versionTypesCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentVersionType = versionType
-		}
-	}
-
-	return versionRanges, mostFrequentVersionType
+	addUnresolvedRanges(unresolvedRanges)
 }

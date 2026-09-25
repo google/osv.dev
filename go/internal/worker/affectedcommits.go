@@ -31,7 +31,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 			if aRange.GetType() != osvschema.Range_GIT || repo == "" {
 				continue
 			}
-			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, sourceRepo.GitAnalysis, vuln.GetId())
+			flags := e.getGitAnalysisFlags(ctx, sourceRepo.GitAnalysis, repo)
+			resp, err := fetchAffectedCommits(ctx, e.GitterClient, e.GitterHost, aRange, vuln.GetId(), flags)
 			if err != nil {
 				return models.AffectedCommitsResult{}, err
 			}
@@ -54,8 +55,8 @@ func (e *Engine) populateAffectedCommitsAndTags(ctx context.Context, vuln *osvsc
 	}, nil
 }
 
-func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsResponse, error) {
-	req, err := newAffectedCommitsRequest(aRange, gitAnalysis, refID)
+func fetchAffectedCommits(ctx context.Context, client *http.Client, gitterHost string, aRange *osvschema.Range, refID string, flags models.RepoAllowListFlags) (*gitterpb.AffectedCommitsResponse, error) {
+	req, err := newAffectedCommitsRequest(aRange, flags, refID)
 	if err != nil {
 		return nil, fmt.Errorf("failed constructing gitter request: %w", err)
 	}
@@ -163,13 +164,13 @@ func applyAffectedCommitsAndTags(resp *gitterpb.AffectedCommitsResponse, affecte
 	}
 }
 
-func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *models.GitAnalysisConfig, refID string) (*gitterpb.AffectedCommitsRequest, error) {
+func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysisFlags models.RepoAllowListFlags, refID string) (*gitterpb.AffectedCommitsRequest, error) {
 	gitterReq := &gitterpb.AffectedCommitsRequest{
 		Url:                         affectedRange.GetRepo(),
-		ConsiderAllBranches:         gitAnalysis.ConsiderAllBranches,
-		DetectCherrypicksIntroduced: gitAnalysis.DetectCherrypicks,
-		DetectCherrypicksFixed:      gitAnalysis.DetectCherrypicks,
-		DetectCherrypicksLimit:      gitAnalysis.DetectCherrypicks,
+		ConsiderAllBranches:         gitAnalysisFlags.ConsiderAllBranches,
+		DetectCherrypicksIntroduced: gitAnalysisFlags.CherrypicksIntroduced,
+		DetectCherrypicksFixed:      gitAnalysisFlags.CherrypicksFixed,
+		DetectCherrypicksLimit:      gitAnalysisFlags.CherrypicksLimit,
 		Events:                      make([]*gitterpb.Event, 0, len(affectedRange.GetEvents())),
 		RefId:                       refID,
 	}
@@ -196,4 +197,30 @@ func newAffectedCommitsRequest(affectedRange *osvschema.Range, gitAnalysis *mode
 	}
 
 	return gitterReq, nil
+}
+
+// getGitAnalysisFlags determines the gitter flags for a given repo by combining the source repo level and allowlist configs
+func (e *Engine) getGitAnalysisFlags(ctx context.Context, sourceRepoGitConfig *models.GitAnalysisConfig, repo string) models.RepoAllowListFlags {
+	var flags models.RepoAllowListFlags
+
+	if sourceRepoGitConfig != nil {
+		flags.ConsiderAllBranches = sourceRepoGitConfig.ConsiderAllBranches
+		flags.CherrypicksIntroduced = sourceRepoGitConfig.DetectCherrypicks
+		flags.CherrypicksFixed = sourceRepoGitConfig.DetectCherrypicks
+		flags.CherrypicksLimit = sourceRepoGitConfig.DetectCherrypicks
+	}
+
+	if e.Stores.RepoAllowList != nil {
+		storeFlags, err := e.Stores.RepoAllowList.GetFlags(ctx, repo)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to check RepoAllowList", slog.String("repo", repo), slog.Any("error", err))
+		} else {
+			flags.ConsiderAllBranches = flags.ConsiderAllBranches || storeFlags.ConsiderAllBranches
+			flags.CherrypicksIntroduced = flags.CherrypicksIntroduced || storeFlags.CherrypicksIntroduced
+			flags.CherrypicksFixed = flags.CherrypicksFixed || storeFlags.CherrypicksFixed
+			flags.CherrypicksLimit = flags.CherrypicksLimit || storeFlags.CherrypicksLimit
+		}
+	}
+
+	return flags
 }

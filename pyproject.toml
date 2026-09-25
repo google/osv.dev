@@ -28,6 +28,7 @@ dependencies = [
 [tool.poetry.group.dev.dependencies]
 yapf = "*"
 pylint = "*"
+protobuf = ">=6.33.6,<7.0.0" # Vanir signatures in worker uses v6, which cannot use v7-compiled protos.
 grpcio-tools = "*"
 mypy-protobuf = "^5.0.0"
 vcrpy = "*"

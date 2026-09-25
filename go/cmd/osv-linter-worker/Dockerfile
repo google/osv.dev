@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +14,13 @@
 
 
 # Stage 1: Build the Go linter binary
-FROM golang:1.26.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS go_builder
+FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS go_builder
 
 RUN apk add --no-cache git
 WORKDIR /src
 
-# Using osv-schema v1.7.3+
-RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 447c7315b34e7f565538c667b532586ca76efe10
+# Using osv-schema v1.9.0
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout f3f826310aeca8e324baabd195632f2229952abe
 
 WORKDIR /src/osv-schema/tools/osv-linter
 

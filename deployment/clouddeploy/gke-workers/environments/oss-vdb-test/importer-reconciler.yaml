@@ -15,13 +15,3 @@ spec:
             - name: OSV_VULNERABILITIES_BUCKET
               value: osv-test-vulnerabilities
             args: ["--reconcile=true"]
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: importer-reconciler-git-cache-pv
-spec:
-  csi:
-    driver: pd.csi.storage.gke.io
-    volumeHandle: projects/oss-vdb-test/zones/us-central1-f/disks/importer-reconciler-git-cache
-    fsType: ext4

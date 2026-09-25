@@ -104,7 +104,8 @@ def _set_git_callback_env(git_callbacks):
   """Set the environment variable to set git callbacks for cli git"""
   env = {
       # Prevent prompting for username if we don't have an ssh key
-      'GIT_TERMINAL_PROMPT': '0'
+      'GIT_TERMINAL_PROMPT': '0',
+      'GIT_DEFAULT_REF_FORMAT': 'files',
   }
   if git_callbacks:
     env['GIT_SSH_COMMAND'] = (

@@ -17,7 +17,7 @@ metadata:
   name: staging-indexer
 description: oss-vdb-test worker cluster
 gke:
-  cluster: projects/oss-vdb-test/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb-test/locations/us-west2-b/clusters/workers
 executionConfigs:
 - usages:
   - RENDER
@@ -31,7 +31,7 @@ metadata:
   name: production-indexer
 description: oss-vdb worker cluster
 gke:
-  cluster: projects/oss-vdb/locations/us-central1-f/clusters/workers
+  cluster: projects/oss-vdb/locations/us-west2-c/clusters/workers
 executionConfigs:
 - usages:
   - RENDER

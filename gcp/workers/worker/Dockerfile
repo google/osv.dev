@@ -28,7 +28,3 @@ COPY osv /env/osv
 # Set virtualenv creation to false to install globally
 RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry install
 
-COPY gcp/workers/worker/oss_fuzz.py gcp/workers/worker/worker.py /usr/local/bin/
-RUN chmod 755 /usr/local/bin/worker.py
-
-ENTRYPOINT ["worker.py"]

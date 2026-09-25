@@ -33,14 +33,6 @@ steps:
   args: ['poetry', 'sync']
   waitFor: ['-']
 
-- name: 'gcr.io/oss-vdb/ci'
-  id: 'recoverer-tests'
-  dir: gcp/workers/recoverer
-  args: ['bash', '-ex', 'run_tests.sh']
-  env:
-    - DATASTORE_EMULATOR_PORT=8005
-    - GITTER_PORT=8891
-  waitFor: ['init', 'sync']
 
 - name: 'gcr.io/oss-vdb/ci'
   id: 'vanir-signatures-tests'

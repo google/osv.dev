@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
-	gcs "github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
+	gcs "github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"

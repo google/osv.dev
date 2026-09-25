@@ -60,8 +60,7 @@ func (av AffectedVersions) sortKey() string {
 	b.WriteString("\x1f")
 	b.WriteString(av.Name)
 	b.WriteString("\x1f")
-	sortedVersions := make([]string, len(av.Versions))
-	copy(sortedVersions, av.Versions)
+	sortedVersions := slices.Clone(av.Versions)
 	slices.Sort(sortedVersions)
 	b.WriteString(strings.Join(sortedVersions, ","))
 	b.WriteString("\x1f")
@@ -107,6 +106,17 @@ type AliasAllowListEntry struct {
 
 type AliasDenyListEntry struct {
 	VulnID string `datastore:"bug_id"`
+}
+
+// RepoAllowList holds repository URL or regex pattern and repo-based git enumeration flags.
+type RepoAllowList struct {
+	Type  string `datastore:"type"`  // `url` or `regex`
+	Value string `datastore:"value"` // normalized URL or regex pattern
+	// The following corresponds to git analysis flags for gitter's affected-commits endpoint.
+	ConsiderAllBranches   bool `datastore:"consider_all_branches"`
+	CherrypicksIntroduced bool `datastore:"cherrypicks_introduced"`
+	CherrypicksFixed      bool `datastore:"cherrypicks_fixed"`
+	CherrypicksLimit      bool `datastore:"cherrypicks_limit"`
 }
 
 type Severity struct {

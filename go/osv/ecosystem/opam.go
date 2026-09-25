@@ -54,8 +54,8 @@ func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 	seen := make(map[string]bool)
 
 	for _, name := range list1 {
-		if strings.HasPrefix(name, prefix) {
-			v := strings.TrimPrefix(name, prefix)
+		if after, ok := strings.CutPrefix(name, prefix); ok {
+			v := after
 			if !seen[v] {
 				versions = append(versions, v)
 				seen[v] = true
@@ -63,8 +63,8 @@ func (e opamEcosystem) getVersions(pkg string) ([]string, error) {
 		}
 	}
 	for _, name := range list2 {
-		if strings.HasPrefix(name, prefix) {
-			v := strings.TrimPrefix(name, prefix)
+		if after, ok := strings.CutPrefix(name, prefix); ok {
+			v := after
 			if !seen[v] {
 				versions = append(versions, v)
 				seen[v] = true

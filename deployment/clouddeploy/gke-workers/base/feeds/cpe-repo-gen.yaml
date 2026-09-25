@@ -28,7 +28,3 @@ spec:
               - name: WORK_DIR
                 value: /scratch
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

@@ -35,6 +35,8 @@ func (m *mockVulnerabilityStore) GetFull(_ context.Context, _ string) (*osvschem
 }
 
 type mockRelationsStore struct {
+	models.UnimplementedRelationsStore
+
 	aliases *models.GetAliasResult
 	err     error
 }
@@ -48,14 +50,6 @@ func (m *mockRelationsStore) GetAliases(_ context.Context, _ string) (*models.Ge
 	}
 
 	return m.aliases, nil
-}
-
-func (m *mockRelationsStore) GetRelated(_ context.Context, _ string) (*models.GetRelatedResult, error) {
-	panic("unimplemented")
-}
-
-func (m *mockRelationsStore) GetUpstream(_ context.Context, _ string) (*models.GetUpstreamResult, error) {
-	panic("unimplemented")
 }
 
 func TestGetVulnById(t *testing.T) {

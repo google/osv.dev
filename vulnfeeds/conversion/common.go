@@ -3,25 +3,29 @@
 package conversion
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/git"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
-	"github.com/google/osv/vulnfeeds/vulns"
+	gcs "github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/git"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -42,7 +46,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
-			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
+			metrics.AddNotef("Could not marshal range to check for duplicates, adding anyway: %+v", r)
 			uniqueRanges = append(uniqueRanges, r)
 
 			continue
@@ -52,7 +56,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			uniqueRanges = append(uniqueRanges, r)
 			allExistingRanges[rangeStr] = struct{}{}
 		} else {
-			metrics.AddNote("Skipping duplicate range: %+v", r)
+			metrics.AddNotef("Skipping duplicate range: %+v", r)
 		}
 	}
 
@@ -81,30 +85,39 @@ func DeduplicateRefs(refs []models.Reference) []models.Reference {
 
 // ConductAnalysis conducts an analysis of the conversion results after completion by reading
 // all of the .metrics.json files and extracting conversion outcomes.
-func ConductAnalysis(prefix string, year string, dir string) {
+func ConductAnalysis(prefix string, year string, metricsDir string, csvDir string) {
+	ConductAnalysisAndUpload(prefix, year, metricsDir, csvDir, nil, "")
+}
+
+// ConductAnalysisAndUpload conducts an analysis of the conversion results after completion by reading
+// all of the .metrics.json files, writing the outcomes CSV locally, and uploading it to GCS if a helper is provided.
+func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csvDir string, gcsHelper *gcs.Helper, gcsOutcomesPrefix string) string {
+	if csvDir == "" {
+		csvDir = metricsDir
+	}
 	// get the current time in minutes
 	currentTime := time.Now().Format("2006-01-02T15:04")
 	outcomesCSV := prefix + year + "-" + currentTime + ".csv"
+	csvPath := filepath.Join(csvDir, outcomesCSV)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(csvDir, 0755); err != nil {
 		logger.Fatal("Failed to create output directory for analysis CSV file", slog.Any("err", err))
 	}
 
-	csvFile, err := os.Create(filepath.Join(dir, outcomesCSV))
+	csvFile, err := os.Create(csvPath)
 	if err != nil {
 		logger.Fatal("Failed to create analysis CSV file", slog.Any("err", err))
 	}
 	defer csvFile.Close()
 
 	csvWriter := csv.NewWriter(csvFile)
-	defer csvWriter.Flush()
 
 	header := []string{"CVEID", "Outcome"}
 	if err := csvWriter.Write(header); err != nil {
 		logger.Fatal("Failed to write header to CSV", slog.Any("err", err))
 	}
 
-	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(metricsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -136,19 +149,50 @@ func ConductAnalysis(prefix string, year string, dir string) {
 	if err != nil {
 		logger.Error("Failed to walk directory for analysis", slog.Any("err", err))
 	}
+
+	csvWriter.Flush()
+	_ = csvFile.Sync()
+
+	if gcsHelper != nil {
+		csvData, err := os.ReadFile(csvPath)
+		if err != nil {
+			logger.Error("Failed to read outcome CSV for GCS upload", slog.Any("err", err))
+		} else {
+			gcsObjName := outcomesCSV
+			if gcsOutcomesPrefix != "" {
+				gcsObjName = path.Join(gcsOutcomesPrefix, outcomesCSV)
+			}
+			gcsHelper.Upload(gcsObjName, bytes.NewReader(csvData), "", "text/csv")
+			logger.Info("Queued outcome CSV upload to GCS", slog.String("object", gcsObjName))
+		}
+	}
+
+	return csvPath
 }
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
 
+	// claimedRepos tracks repositories explicitly specified in version ranges.
+	// This prevents generic version ranges (without a repo) from being processed
+	// against repositories that are explicitly targeted by other ranges.
 	claimedRepos := make(map[string]bool)
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
-			claimedRepos[vr.Range.GetRepo()] = true
+			claimedRepos[vr.Range.GetRepo()] = true // Always claim the raw repository URL.
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), httpClient, cache)
+			if err != nil {
+				if git.IsRateLimit(err) {
+					metrics.Outcome = models.Error
+					return nil, nil, nil
+				}
+			} else {
+				claimedRepos[canonicalRepo] = true // Also claim the canonical URL if different.
+			}
 		}
 	}
 
@@ -161,9 +205,9 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		repo, err := git.FindCanonicalLink(repo, httpClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			metrics.AddNotef("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
@@ -172,20 +216,32 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache, httpClient)
 		if err != nil {
 			if git.IsRateLimit(err) {
 				metrics.Outcome = models.Error
 				return nil, nil, nil
 			}
-			metrics.AddNote("Failed to normalize tags - %s", repo)
+			metrics.AddNotef("Failed to normalize tags - %s", repo)
 
 			continue
 		}
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
-			if (vr.Range.GetRepo() != "" && vr.Range.GetRepo() != repo) || (vr.Range.GetRepo() == "" && claimedRepos[repo]) {
+			vRepo := vr.Range.GetRepo()
+			if vRepo != "" {
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, httpClient, cache)
+				if err != nil {
+					if git.IsRateLimit(err) {
+						metrics.Outcome = models.Error
+						return nil, nil, nil
+					}
+				} else {
+					vRepo = canonicalVRepo
+				}
+			}
+			if (vRepo != "" && vRepo != repo) || (vRepo == "" && claimedRepos[repo]) {
 				stillUnresolvedRanges = append(stillUnresolvedRanges, vr)
 				continue
 			}
@@ -208,16 +264,16 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			} else {
 				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
 				if err != nil {
-					metrics.AddNote("error resolving version to commit - %s - %s", introduced, err)
+					metrics.AddNotef("error resolving version to commit - %s - %s", introduced, err)
 				}
 			}
 			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", fixed, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", fixed, err)
 			}
 			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
 			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
+				metrics.AddNotef("error resolving version to commit - %s - %s", lastAffected, err)
 			}
 
 			if fixedCommit != "" || lastAffectedCommit != "" {
@@ -241,7 +297,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
-						metrics.AddNote("failed to make database specific: %v", err)
+						metrics.AddNotef("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}
@@ -376,9 +432,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
-			for k, v := range v1 {
-				merged[k] = v
-			}
+			maps.Copy(merged, v1)
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
 					mergedVal, err := MergeDatabaseSpecificValues(existing, v)
@@ -626,7 +680,7 @@ func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []mo
 
 	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
 	for _, ur := range unresolved {
-		var eventStrings []string
+		eventStrings := make([]string, 0, len(ur.Range.GetEvents()))
 		for _, e := range ur.Range.GetEvents() {
 			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
 		}
@@ -674,12 +728,12 @@ func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) er
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
 
-	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache)
+	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache, httpClient)
 	if len(r) > 0 {
 		metrics.ResolvedRangesCount += len(r)
 		metrics.SetOutcome(models.Successful)

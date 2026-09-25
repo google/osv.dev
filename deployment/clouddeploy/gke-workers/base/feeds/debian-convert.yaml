@@ -17,9 +17,6 @@ spec:
           - name: debian-convert
             image: debian-convert
             imagePullPolicy: Always
-            volumeMounts:
-              - mountPath: "/work"
-                name: "ssd"
             resources:
               requests:
                 cpu: "1"
@@ -28,7 +25,3 @@ spec:
                 cpu: "1"
                 memory: "2G"
           restartPolicy: Never
-          volumes:
-            - name: "ssd"
-              hostPath:
-                path: "/mnt/disks/ssd0"

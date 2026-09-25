@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"cmp"
+	"fmt"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -269,6 +270,94 @@ func TestComputeAffectedVersions_GitAndSemverWithoutPackage(t *testing.T) {
 	}
 
 	if diff := gocmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestComputeAffectedVersions_Chunking(t *testing.T) {
+	// Generate 2500 versions: 1.0.0 through 1.0.2499
+	// This will be split into 3 chunks: [0..999], [1000..1999], [2000..2499]
+	versions := make([]string, 0, 2500)
+	for i := range 2500 {
+		versions = append(versions, fmt.Sprintf("1.0.%d", i))
+	}
+
+	vuln := &osvschema.Vulnerability{
+		Id: "CHUNK-TEST-1",
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Name:      "testchunk",
+					Ecosystem: "npm",
+				},
+				Versions: versions,
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_GIT,
+						Repo: "https://github.com/test/chunk",
+					},
+				},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+
+	want := []AffectedVersions{
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "npm",
+			Name:      "testchunk",
+			Versions:  versions[:1000],
+			CoarseMin: "00:00000001.00000000.00000000",
+			CoarseMax: "00:00000001.00000000.00000999",
+		},
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "npm",
+			Name:      "testchunk",
+			Versions:  versions[1000:2000],
+			CoarseMin: "00:00000001.00000000.00001000",
+			CoarseMax: "00:00000001.00000000.00001999",
+		},
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "npm",
+			Name:      "testchunk",
+			Versions:  versions[2000:],
+			CoarseMin: "00:00000001.00000000.00002000",
+			CoarseMax: "00:00000001.00000000.00002499",
+		},
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "GIT",
+			Name:      "github.com/test/chunk",
+			Versions:  versions[:1000],
+		},
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "GIT",
+			Name:      "github.com/test/chunk",
+			Versions:  versions[1000:2000],
+		},
+		{
+			VulnID:    "CHUNK-TEST-1",
+			Ecosystem: "GIT",
+			Name:      "github.com/test/chunk",
+			Versions:  versions[2000:],
+		},
+	}
+
+	sortOpt := cmpopts.SortSlices(func(a, b AffectedVersions) bool {
+		return cmp.Or(
+			cmp.Compare(a.Ecosystem, b.Ecosystem),
+			cmp.Compare(len(a.Versions), len(b.Versions)),
+			cmp.Compare(a.CoarseMin, b.CoarseMin),
+			cmp.Compare(a.CoarseMax, b.CoarseMax),
+		) < 0
+	})
+
+	if diff := gocmp.Diff(want, got, cmpopts.EquateEmpty(), sortOpt); diff != "" {
 		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
 	}
 }

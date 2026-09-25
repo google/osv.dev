@@ -12,15 +12,9 @@
 		{
 			"path": "go/cmd/tools/reimport-tui"
 		},
-	    {
-	      "path": "gcp/api"
-	    },
-	    {
-	      "path": "gcp/website"
-	    },
-	    {
-	      "path": "gcp/workers"
-	    }
+		{
+			"path": "gcp/workers"
+		}
 	],
 	"settings": {}
 }

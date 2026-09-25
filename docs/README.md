@@ -60,5 +60,5 @@ go mod download
 ### Generation
 
 ```bash
-python3 ./build_swagger.py
+./build_swagger.sh
 ```

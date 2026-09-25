@@ -12,8 +12,8 @@ import (
 	"time"
 
 	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -25,7 +25,7 @@ func TestClassifyReferenceLink(t *testing.T) {
 		refType osvschema.Reference_Type
 	}{
 		{"https://example.com", "", osvschema.Reference_WEB},
-		{"https://github.com/google/osv/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", osvschema.Reference_FIX},
+		{"https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5", "", osvschema.Reference_FIX},
 		{"https://github.com/advisories/GHSA-fr26-qjc8-mvjx", "", osvschema.Reference_ADVISORY},
 		{"https://github.com/dpgaspar/Flask-AppBuilder/security/advisories/GHSA-624f-cqvr-3qw4", "", osvschema.Reference_ADVISORY},
 		{"https://github.com/Netflix/lemur/issues/117", "", osvschema.Reference_REPORT},

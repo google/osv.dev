@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/osv/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -98,10 +98,6 @@ affected:
 	}
 }
 
-func strPtr(s string) *string {
-	return &s
-}
-
 func TestGeneratePyPIAffected(t *testing.T) {
 	cve := models.NVDCVE{
 		ID:      "CVE-2022-29194",
@@ -115,13 +111,13 @@ func TestGeneratePyPIAffected(t *testing.T) {
 							{
 								Vulnerable:          true,
 								Criteria:            "cpe:2.3:a:google:tensorflow:*:*:*:*:*:*:*:*",
-								VersionEndExcluding: strPtr("2.6.4"),
+								VersionEndExcluding: new("2.6.4"),
 							},
 							{
 								Vulnerable:            true,
 								Criteria:              "cpe:2.3:a:google:tensorflow:*:*:*:*:*:*:*:*",
-								VersionStartIncluding: strPtr("2.7.0"),
-								VersionEndExcluding:   strPtr("2.7.2"),
+								VersionStartIncluding: new("2.7.0"),
+								VersionEndExcluding:   new("2.7.2"),
 							},
 						},
 					},

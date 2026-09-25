@@ -18,7 +18,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 )
 

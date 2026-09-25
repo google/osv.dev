@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/conversion"
-	"github.com/google/osv/vulnfeeds/conversion/writer"
-	"github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/writer"
+	"github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -60,8 +60,8 @@ func cveIDFromPath(p string) models.CVEID {
 }
 
 func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([]string, error) {
-	if strings.HasPrefix(pathStr, "gs://") {
-		trimmed := strings.TrimPrefix(pathStr, "gs://")
+	if after, ok := strings.CutPrefix(pathStr, "gs://"); ok {
+		trimmed := after
 		bucketName, prefix, _ := strings.Cut(trimmed, "/")
 		bucket := client.Bucket(bucketName)
 
@@ -103,8 +103,8 @@ func listObjects(ctx context.Context, client *storage.Client, pathStr string) ([
 }
 
 func readVulnerability(ctx context.Context, client *storage.Client, fullPath string) (*osvschema.Vulnerability, error) {
-	if strings.HasPrefix(fullPath, "gs://") {
-		trimmed := strings.TrimPrefix(fullPath, "gs://")
+	if after, ok := strings.CutPrefix(fullPath, "gs://"); ok {
+		trimmed := after
 		bucketName, objName, _ := strings.Cut(trimmed, "/")
 		rc, err := client.Bucket(bucketName).Object(objName).NewReader(ctx)
 		if err != nil {
@@ -136,18 +136,18 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 }
 
 func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
-	var baseOSV *osvschema.Vulnerability
-	if cve5 != nil && nvd != nil {
-		baseOSV = combineTwoOSVRecords(cve5, nvd)
-	} else if cve5 != nil {
-		baseOSV = cve5
-	} else if nvd != nil {
-		baseOSV = nvd
-	} else {
+	if (cve5.GetWithdrawn() != nil) || (nvd.GetWithdrawn() != nil) {
 		return nil
 	}
 
-	return baseOSV
+	if cve5 != nil && nvd != nil {
+		return combineTwoOSVRecords(cve5, nvd)
+	}
+	if cve5 != nil {
+		return cve5
+	}
+
+	return nvd
 }
 
 func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability) {
@@ -157,25 +157,21 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 		var readVulnsWg sync.WaitGroup
 
 		if work.CVE5Path != "" {
-			readVulnsWg.Add(1)
-			go func() {
-				defer readVulnsWg.Done()
+			readVulnsWg.Go(func() {
 				cve5, cve5Err = readVulnerability(ctx, client, work.CVE5Path)
 				if cve5Err != nil {
 					logger.Error("Failed to read CVE5", slog.String("id", string(work.ID)), slog.Any("err", cve5Err))
 				}
-			}()
+			})
 		}
 
 		if work.NVDPath != "" {
-			readVulnsWg.Add(1)
-			go func() {
-				defer readVulnsWg.Done()
+			readVulnsWg.Go(func() {
 				nvd, nvdErr = readVulnerability(ctx, client, work.NVDPath)
 				if nvdErr != nil {
 					logger.Error("Failed to read NVD", slog.String("id", string(work.ID)), slog.Any("err", nvdErr))
 				}
-			}()
+			})
 		}
 
 		readVulnsWg.Wait()
@@ -299,11 +295,9 @@ func main() {
 	var uploadVulnsWg sync.WaitGroup
 	var successCount atomic.Uint64
 	for range *numWorkers {
-		uploadVulnsWg.Add(1)
-		go func() {
-			defer uploadVulnsWg.Done()
+		uploadVulnsWg.Go(func() {
 			writer.VulnWorker(ctx, uploadVulnsChan, outBkt, overridesBkt, gcsHelper, *osvOutputPath, &successCount)
-		}()
+		})
 	}
 
 	// Interpose Collector to gather valid IDs
@@ -330,11 +324,9 @@ func main() {
 	// Start ReadAndCombineWorkers (Read side)
 	var readAndCombineWg sync.WaitGroup
 	for range *numWorkers {
-		readAndCombineWg.Add(1)
-		go func() {
-			defer readAndCombineWg.Done()
+		readAndCombineWg.Go(func() {
 			readAndCombineWorker(ctx, client, workChan, vulnChan)
-		}()
+		})
 	}
 
 	// Feed Work
@@ -367,6 +359,7 @@ func main() {
 // combineTwoOSVRecords takes two osv records and combines them into one
 func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
 	baseOSV := cve5
+
 	if baseOSV.GetDetails() == "" && nvd.GetDetails() != "" {
 		baseOSV.Details = nvd.GetDetails()
 	}

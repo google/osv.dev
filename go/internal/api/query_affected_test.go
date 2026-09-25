@@ -170,6 +170,30 @@ func TestQueryAffected_Validation(t *testing.T) {
 			wantErrCode: codes.InvalidArgument,
 			wantErrMsg:  "name specified in a PURL query",
 		},
+		{
+			name: "Empty commit query",
+			params: &pb.QueryAffectedParameters{
+				Query: &pb.Query{
+					Param: &pb.Query_Commit{
+						Commit: "",
+					},
+				},
+			},
+			wantErrCode: codes.InvalidArgument,
+			wantErrMsg:  "invalid hash",
+		},
+		{
+			name: "Invalid commit hex query",
+			params: &pb.QueryAffectedParameters{
+				Query: &pb.Query{
+					Param: &pb.Query_Commit{
+						Commit: "not-a-valid-hex",
+					},
+				},
+			},
+			wantErrCode: codes.InvalidArgument,
+			wantErrMsg:  "invalid hash",
+		},
 	}
 
 	for _, tt := range tests {
@@ -575,38 +599,89 @@ func TestQueryAffectedBatch_ValidationError(t *testing.T) {
 		vulnStore: &mockQueryVulnStore{},
 	}
 
-	params := &pb.QueryAffectedBatchParameters{
-		Query: &pb.BatchQuery{
-			Queries: []*pb.Query{
-				{
-					Param:   &pb.Query_Version{Version: "1.0.0"},
-					Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
-				},
-				{
-					// Invalid query (empty)
-					Package: &osvschema.Package{},
+	tests := []struct {
+		name        string
+		params      *pb.QueryAffectedBatchParameters
+		wantErrCode codes.Code
+		wantErrMsg  string
+	}{
+		{
+			name: "Invalid empty package query",
+			params: &pb.QueryAffectedBatchParameters{
+				Query: &pb.BatchQuery{
+					Queries: []*pb.Query{
+						{
+							Param:   &pb.Query_Version{Version: "1.0.0"},
+							Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+						},
+						{
+							// Invalid query (empty)
+							Package: &osvschema.Package{},
+						},
+					},
 				},
 			},
+			wantErrCode: codes.InvalidArgument,
+			wantErrMsg:  "error in query at index 1: rpc error: code = InvalidArgument desc = invalid query",
+		},
+		{
+			name: "Invalid empty commit query",
+			params: &pb.QueryAffectedBatchParameters{
+				Query: &pb.BatchQuery{
+					Queries: []*pb.Query{
+						{
+							Param:   &pb.Query_Version{Version: "1.0.0"},
+							Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+						},
+						{
+							Param: &pb.Query_Commit{Commit: ""},
+						},
+					},
+				},
+			},
+			wantErrCode: codes.InvalidArgument,
+			wantErrMsg:  "error in query at index 1: rpc error: code = InvalidArgument desc = invalid hash",
+		},
+		{
+			name: "Invalid commit hex query",
+			params: &pb.QueryAffectedBatchParameters{
+				Query: &pb.BatchQuery{
+					Queries: []*pb.Query{
+						{
+							Param:   &pb.Query_Version{Version: "1.0.0"},
+							Package: &osvschema.Package{Name: "pkg-1", Ecosystem: "npm"},
+						},
+						{
+							Param: &pb.Query_Commit{Commit: "invalid-hex"},
+						},
+					},
+				},
+			},
+			wantErrCode: codes.InvalidArgument,
+			wantErrMsg:  "error in query at index 1: rpc error: code = InvalidArgument desc = invalid hash",
 		},
 	}
 
-	_, err := s.QueryAffectedBatch(ctx, params)
-	if err == nil {
-		t.Fatalf("QueryAffectedBatch() expected error, got nil")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := s.QueryAffectedBatch(ctx, tt.params)
+			if err == nil {
+				t.Fatalf("QueryAffectedBatch() expected error, got nil")
+			}
 
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatalf("Expected gRPC status error, got %v", err)
-	}
+			st, ok := status.FromError(err)
+			if !ok {
+				t.Fatalf("Expected gRPC status error, got %v", err)
+			}
 
-	if st.Code() != codes.InvalidArgument {
-		t.Errorf("Expected code InvalidArgument, got %v", st.Code())
-	}
+			if st.Code() != tt.wantErrCode {
+				t.Errorf("Expected code %v, got %v", tt.wantErrCode, st.Code())
+			}
 
-	expectedMsg := "error in query at index 1: rpc error: code = InvalidArgument desc = invalid query"
-	if !strings.Contains(st.Message(), expectedMsg) {
-		t.Errorf("Expected error message to contain %q, got %q", expectedMsg, st.Message())
+			if !strings.Contains(st.Message(), tt.wantErrMsg) {
+				t.Errorf("Expected error message to contain %q, got %q", tt.wantErrMsg, st.Message())
+			}
+		})
 	}
 }
 

@@ -326,7 +326,7 @@ func (m model) updateSelectEnv(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) updateLoading(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(sourcesLoadedMsg); ok {
-		var items []list.Item
+		items := make([]list.Item, 0, len(msg.sources))
 		for _, r := range msg.sources {
 			items = append(items, &item{repo: r})
 		}
@@ -478,19 +478,19 @@ func (m model) View() tea.View {
 					cursor = cursorStyle.Render("> ")
 					name = selectedItemStyle.Render(env.name)
 				}
-				s.WriteString(fmt.Sprintf("%s%s\n", cursor, name))
+				fmt.Fprintf(&s, "%s%s\n", cursor, name)
 			}
 			s.WriteString("\n" + helpStyle.Render("[Use up/down to navigate, Enter to select, ctrl+c to quit]") + "\n")
 
 		case stateLoading:
-			s.WriteString(fmt.Sprintf("Connecting to Datastore and loading sources for %s...\n", m.selectedEnv.name))
+			fmt.Fprintf(&s, "Connecting to Datastore and loading sources for %s...\n", m.selectedEnv.name)
 
 		case stateSelectSources:
 			s.WriteString(m.list.View())
 
 		case stateConfirm:
 			s.WriteString(headerStyle.Render("Confirm Reimport Triggering:") + "\n\n")
-			s.WriteString(fmt.Sprintf("You are about to trigger reimport for the following sources in %s:\n", m.selectedEnv.name))
+			fmt.Fprintf(&s, "You are about to trigger reimport for the following sources in %s:\n", m.selectedEnv.name)
 			var checked []*item
 			for _, li := range m.list.Items() {
 				if i, ok := li.(*item); ok && i.checked {
@@ -498,10 +498,7 @@ func (m model) View() tea.View {
 				}
 			}
 
-			maxItemsToPrint := contentHeight - 8
-			if maxItemsToPrint < 1 {
-				maxItemsToPrint = 1
-			}
+			maxItemsToPrint := max(contentHeight-8, 1)
 
 			printed := 0
 			for _, i := range checked {
@@ -535,19 +532,16 @@ func (m model) View() tea.View {
 				}
 			}
 
-			s.WriteString(fmt.Sprintf("Success: %d, Skipped: %d, Failed: %d\n", successes, skipped, len(failures)))
+			fmt.Fprintf(&s, "Success: %d, Skipped: %d, Failed: %d\n", successes, skipped, len(failures))
 			if len(failures) > 0 {
 				s.WriteString("\n" + errorStyle.Render("Failures:") + "\n")
 
-				maxFailuresToPrint := contentHeight - 10
-				if maxFailuresToPrint < 1 {
-					maxFailuresToPrint = 1
-				}
+				maxFailuresToPrint := max(contentHeight-10, 1)
 
 				printed := 0
 				for _, res := range failures {
 					if printed < maxFailuresToPrint {
-						s.WriteString(fmt.Sprintf(" - %-25s : %v\n", res.name, res.err))
+						fmt.Fprintf(&s, " - %-25s : %v\n", res.name, res.err)
 						printed++
 					}
 				}

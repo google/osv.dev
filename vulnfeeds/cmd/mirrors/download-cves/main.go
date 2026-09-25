@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/gcs-tools"
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/gcs-tools"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/sethvargo/go-retry"
 	"golang.org/x/sync/errgroup"
 )

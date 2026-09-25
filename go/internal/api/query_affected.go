@@ -86,8 +86,7 @@ func (s *server) QueryAffected(ctx context.Context, params *pb.QueryAffectedPara
 		estimatedSizeBytes,
 	)
 	if err != nil {
-		var panicErr *safe.PanicError
-		if errors.As(err, &panicErr) {
+		if panicErr, ok := errors.AsType[*safe.PanicError](err); ok {
 			logger.ErrorContext(ctx, "recovered panic in background worker",
 				slog.Any("panic", panicErr.Value),
 				slog.String("stack", string(panicErr.Stack)),
@@ -226,6 +225,16 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 				Cursor:    startTok,
 			})
 			packageIndices = append(packageIndices, i)
+		} else {
+			// The query was somehow successfully parsed, but is not a query we know about.
+			// Getting here is a bug - it should have been caught earlier by parseQuery.
+			var info []any
+			if s.verboseLogs {
+				info = append(info, slog.Any("query", queries[i]))
+			}
+			logger.ErrorContext(ctx, "internal error: unexpectedly parsed invalid query", info...)
+
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("error in query at index %d: unknown query type", i))
 		}
 	}
 
@@ -297,8 +306,7 @@ func (s *server) QueryAffectedBatch(ctx context.Context, params *pb.QueryAffecte
 		result := <-resultsChan
 		if result.err != nil {
 			cancelPipelines(result.err) // Abort all other running pipelines in the background
-			var panicErr *safe.PanicError
-			if errors.As(result.err, &panicErr) {
+			if panicErr, ok := errors.AsType[*safe.PanicError](result.err); ok {
 				logger.ErrorContext(ctx, "recovered panic in batch worker",
 					slog.Any("panic", panicErr.Value),
 					slog.String("stack", string(panicErr.Stack)),
@@ -402,7 +410,7 @@ func (s *server) parseQuery(query *pb.Query) (parsedQueryInfo, error) {
 	tok := query.GetPageToken()
 	if commitQuery, ok := query.GetParam().(*pb.Query_Commit); ok {
 		commit, err := hex.DecodeString(commitQuery.Commit)
-		if err != nil {
+		if commitQuery.Commit == "" || err != nil {
 			return parsedQueryInfo{}, status.Error(codes.InvalidArgument, "invalid hash")
 		}
 
@@ -682,8 +690,7 @@ func (s *server) collectAndSort(ctx context.Context,
 		if errors.Is(err, models.ErrInvalidCursor) {
 			return nil, status.Error(codes.InvalidArgument, "invalid cursor")
 		}
-		var panicErr *safe.PanicError
-		if errors.As(err, &panicErr) {
+		if _, ok := errors.AsType[*safe.PanicError](err); ok {
 			// Return the raw PanicError so the caller handlers can detect it,
 			// log the stack trace, and obscure it into a clean "internal server error".
 			return nil, err

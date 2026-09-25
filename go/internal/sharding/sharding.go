@@ -48,10 +48,13 @@ func ExpandBreakdownPrefixes(str string) []string {
 
 	var prefixes []string
 	printer := syntax.NewPrinter()
-	for _, word := range expand.Braces(w) {
+	for word, err := range expand.BracesSeq(nil, w) {
+		if err != nil {
+			break
+		}
 		var buf bytes.Buffer
 		_ = printer.Print(&buf, word)
-		for _, p := range strings.Split(buf.String(), ",") {
+		for p := range strings.SplitSeq(buf.String(), ",") {
 			p = strings.TrimSpace(p)
 			if p != "" {
 				prefixes = append(prefixes, p)

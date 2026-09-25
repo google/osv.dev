@@ -94,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.8.0",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -167,7 +167,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.8.0",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -765,6 +765,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -781,7 +803,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -816,6 +838,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.17.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.17.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -832,7 +876,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -867,6 +911,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -883,7 +949,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "anonymous237 on hackerone",
@@ -918,6 +984,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.87.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.87.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -934,7 +1022,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -969,6 +1057,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -985,7 +1095,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1020,6 +1130,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.58.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1036,7 +1168,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1122,6 +1254,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.88.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.88.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.88.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1138,7 +1303,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -1173,6 +1338,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1189,7 +1387,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "jjchuck on hackerone",
@@ -1224,6 +1422,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1240,10 +1471,178 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "alienowo on hackerone (AntAISecurityLab)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-13608",
+      "summary": "OpenLDAP SASL authentication bypass",
+      "details": "A flaw in the libcurl SASL negotiation for LDAP authentication allows an\nincomplete handshake sequence to be misinterpreted as a successful\ncryptographic verification. An attacker executing a Man-in-the-Middle (MITM)\nattack can inject a premature or shortcut response that bypasses complete peer\nvalidation.",
+      "aliases": ["CVE-2026-13608"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.82.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.82.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.82.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.82.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "eeca818b1e8d1e61c2d4d833aed56ce4c510a9d4"
+                },
+                {
+                  "fixed": "ea71c3b6b60e563651ea8596a975aef0c8199519"
+                }
+              ]
+            }
+          ],
+          "versions": 95,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Eunsoo Kim (Autonomous Code Security team at Microsoft)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Eunsoo Kim",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-18924",
+      "summary": "HTTP/2 server push UAF",
+      "details": "A flaw in libcurl's handling of HTTP/2 Server Push streams, when the parent\nhandle is set to share connections with other handles, can lead to\nuse-after-free in the cleanup process.",
+      "aliases": ["CVE-2026-18924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.44.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.44.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.44.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.44.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ea7134ac874a66107e54ff93657ac565cf2ec4aa"
+                },
+                {
+                  "fixed": "90325ff0444cbdff368bda5d26d6405a0bb6ee43"
+                }
+              ]
+            }
+          ],
+          "versions": 210,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stephan Zeisberg (Security Research Labs)",
           "type": "FINDER"
         },
         {
@@ -1275,6 +1674,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1291,7 +1712,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Zhicheng Chen",
@@ -1299,6 +1720,90 @@
         },
         {
           "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-19931",
+      "summary": "Negotiate ambient user conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an HTTP connection setup for a given\nhostname using Negotiate authentication, when the initial request is done\nusing empty credentials. This can make user B's request get sent over user A's\npreviously authenticated connection.",
+      "aliases": ["CVE-2026-19931"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.64.1"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.64.1"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.64.1"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.64.1"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6c6035532383e300c712e4c1cd9fdd749ed5cf59"
+                },
+                {
+                  "fixed": "7103a93b05bc69ea98ed9d05d02fa9eeba533f2f"
+                }
+              ]
+            }
+          ],
+          "versions": 147,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Martin Dukek",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
           "type": "REMEDIATION_DEVELOPER"
         }
       ]
@@ -1326,6 +1831,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.33.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1334,9 +1861,6 @@
                 },
                 {
                   "fixed": "e3d7401a32a46516c9e5ee877e613e62ed35bddc"
-                },
-                {
-                  "fixed": "a37b49154fe05ef66b06e09226d9da89e735bc03"
                 }
               ]
             }
@@ -1345,7 +1869,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "spectreglobalsec on hackerone",
@@ -1380,6 +1904,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1396,7 +1942,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati (HackerOne: nobcoder)",
@@ -1431,6 +1977,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.20.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.20.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1447,7 +2015,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Arkadi Vainbrand",
@@ -1482,6 +2050,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.6"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1498,7 +2088,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Quac Tran and Ngoc Hieu",
@@ -1533,6 +2123,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.40.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.40.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1549,7 +2161,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Osama Hamad",
@@ -1584,6 +2196,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.14.1"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.14.1"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1600,7 +2234,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Dwij Mehta (O2 Lab",
@@ -1639,6 +2273,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1655,7 +2311,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -1690,6 +2346,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.14.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.14.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1706,7 +2384,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -1741,6 +2419,28 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1757,10 +2457,262 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-80230",
+      "summary": "OpenSSL pinning bypass",
+      "details": "When `CURLOPT_PINNEDPUBLICKEY` is configured alongside options that disable\nstandard peer verification (`CURLOPT_SSL_VERIFYPEER = 0` and\n`CURLOPT_SSL_VERIFYHOST = 0`), libcurl fails to enforce public key pinning on\nconnections established without a presented server certificate. Bypassing the\npinning check under these disabled-verification conditions allows\nunauthenticated connections to succeed when they should be rejected.",
+      "aliases": ["CVE-2026-80230"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.45.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.45.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.45.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.45.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "8363656cb4e0c60a11d8531ead0ec43120b50591"
+                },
+                {
+                  "fixed": "5267ed859d545534d0c21675a2b70af5a3b6e3ef"
+                }
+              ]
+            }
+          ],
+          "versions": 210,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-80231",
+      "summary": "native CA store conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an existing HTTPS connection setup\nfor a given hostname even when using a different Native CA Store setting\n(`CURLSSLOPT_NATIVE_CA`) than when the connection was created.",
+      "aliases": ["CVE-2026-80231"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.71.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "148534db57dda611cf8516e92e4d6e35fc1e5074"
+                },
+                {
+                  "fixed": "7be1e70cb6bcd83e130ecfe8cb91b6a7dcdeff42"
+                }
+              ]
+            }
+          ],
+          "versions": 126,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-82209",
+      "summary": "domain-scoped PSL domain cookie",
+      "details": "When libpsl support is enabled, libcurl fails to enforce the Public Suffix\nList boundary check when processing a `Set-Cookie` header where the `Domain`\nattribute explicitly matches an origin host that is itself a public suffix\n(e.g., `Domain=co.uk` set by `co.uk`).\n\nInstead of coercing it into a strict host-only cookie, libcurl saves the\ncookie with wildcard domain scope (`.co.uk`). Consequently, the cookie is\ninappropriately included in subsequent outbound requests or HTTP redirects to\narbitrary sibling subdomains under the same public suffix (e.g.,\n`attacker.co.uk`).",
+      "aliases": ["CVE-2026-82209"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-02T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                },
+                {
+                  "fixed": "95c1e8915dce64606bd753fd47fc0bd236e31cd6"
+                }
+              ]
+            }
+          ],
+          "versions": 209,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
           "type": "FINDER"
         },
         {
@@ -1792,6 +2744,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.30.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.30.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.30.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1808,7 +2793,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Andrew Nesbitt (powered by Mythos)",
@@ -1843,6 +2828,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.43.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.43.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.43.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1859,7 +2877,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -1894,6 +2912,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.46.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1910,7 +2961,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "vegagent on hackerone",
@@ -1945,6 +2996,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.12.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -1961,7 +3045,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Ady Elouej",
@@ -1996,6 +3080,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.7"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -2012,7 +3129,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -2047,6 +3164,39 @@
               ]
             },
             {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.16.1"
+                }
+              ]
+            },
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.0"
+                },
+                {
+                  "fixed": "8.14.2"
+                }
+              ]
+            },
+            {
               "type": "GIT",
               "repo": "https://github.com/curl/curl.git",
               "events": [
@@ -2063,7 +3213,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -2139,7 +3289,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2226,7 +3376,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2334,7 +3484,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2444,7 +3594,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2540,7 +3690,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2634,7 +3784,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2713,7 +3863,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2821,7 +3971,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2891,7 +4041,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -2936,6 +4086,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-10966"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -2946,7 +4100,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
+                  "introduced": "11b991232fbcaa88e2b1faecac224416b0001e35"
                 },
                 {
                   "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
@@ -2955,11 +4109,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 53,
+          "versions": 54,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3008,6 +4162,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14017"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3027,11 +4185,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 142,
+          "versions": 284,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3084,6 +4242,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14524"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3103,11 +4265,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 106,
+          "versions": 212,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3118,7 +4280,7 @@
     {
       "id": "CVE-2025-14819",
       "summary": "OpenSSL partial chain store policy bypass",
-      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the  `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
+      "details": "When doing TLS related transfers with reused easy or multi handles and\naltering the `CURLSSLOPT_NO_PARTIALCHAIN` option, libcurl could accidentally\nreuse a CA store cached in memory for which the partial chain option was\nreversed. Contrary to the user's wishes and expectations. This could make\nlibcurl find and accept a trust chain that it otherwise would not.",
       "aliases": ["CURL-CVE-2025-14819"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-01-08T10:07:54.408Z",
@@ -3156,6 +4318,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-14819"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3175,11 +4341,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 31,
+          "versions": 61,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3232,6 +4398,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-15079"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3251,11 +4421,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 70,
+          "versions": 139,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3307,6 +4477,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-15224"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3326,11 +4500,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 70,
+          "versions": 139,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3398,7 +4572,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3421,6 +4595,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -3445,6 +4620,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-10536"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3455,7 +4634,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "3027611ca6d4cc5510d2d0fccc3e5a074e09a2fb"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -3464,11 +4643,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 39,
+          "versions": 37,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3479,11 +4658,11 @@
     {
       "id": "CVE-2026-11856",
       "summary": "cross-origin Digest auth state leak",
-      "details": "Successfully using libcurl to do a transfer to a specific HTTP origin\n(`hostA`) with **Digest** authentication and then changing the origin to a\ndifferent one (`hostB`) for a second transfer, reusing the same handle, makes\nlibcurl wrongly pass on the  `Authorization:` header field meant for `hostA`,\nto `hostB`.",
+      "details": "Successfully using libcurl to do a transfer to a specific HTTP origin\n(`hostA`) with **Digest** authentication and then changing the origin to a\ndifferent one (`hostB`) for a second transfer, reusing the same handle, makes\nlibcurl wrongly pass on the `Authorization:` header field meant for `hostA`,\nto `hostB`.",
       "aliases": ["CURL-CVE-2026-11856"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:31.661Z",
-      "related": ["openSUSE-SU-2026:11230-1"],
+      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -3505,6 +4684,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-11856"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3515,7 +4698,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -3524,11 +4707,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 179,
+          "versions": 176,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3575,6 +4758,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-12064"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3585,7 +4772,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "801bd5138ce31aa0d906fa4e2eabfc599d74e793"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -3594,11 +4781,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 47,
+          "versions": 45,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3607,13 +4794,151 @@
       ]
     },
     {
+      "id": "CVE-2026-13608",
+      "summary": "OpenLDAP SASL authentication bypass",
+      "details": "A flaw in the libcurl SASL negotiation for LDAP authentication allows an\nincomplete handshake sequence to be misinterpreted as a successful\ncryptographic verification. An attacker executing a Man-in-the-Middle (MITM)\nattack can inject a premature or shortcut response that bypasses complete peer\nvalidation.",
+      "aliases": ["CURL-CVE-2026-13608"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:47:01.951Z",
+      "related": [
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:23521-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "SUSE-SU-2026:4048-1",
+        "SUSE-SU-2026:4071-1",
+        "openSUSE-SU-2026:11696-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-13608.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-13608.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3822248"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/13xxx/CVE-2026-13608.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-13608"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "64db5c575d9c5536bd273a890f50777ad1ca7c13"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 90,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-18924",
+      "summary": "HTTP/2 server push UAF",
+      "details": "A flaw in libcurl's handling of HTTP/2 Server Push streams, when the parent\nhandle is set to share connections with other handles, can lead to\nuse-after-free in the cleanup process.",
+      "aliases": ["CURL-CVE-2026-18924"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:47:27.820Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-18924.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-18924.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3916059"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/18xxx/CVE-2026-18924.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-18924"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "1a7f66a3de2625d10f65415e6eb3e56067dc0555"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 204,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H"
+        }
+      ]
+    },
+    {
       "id": "CVE-2026-1965",
       "summary": "bad reuse of HTTP Negotiate connection",
-      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it just sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with  `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
+      "details": "libcurl can in some circumstances reuse the wrong connection when asked to do\nan Negotiate-authenticated HTTP or HTTPS request.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criterion must first be met. Due to a\nlogical error in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different credentials. One underlying reason being that\nNegotiate sometimes authenticates *connections* and not *requests*, contrary\nto how HTTP is designed to work.\n\nAn application that allows Negotiate authentication to a server (that responds\nwanting Negotiate) with `user1:password1` and then does another operation to\nthe same server also using Negotiate but with `user2:password2` (while the\nprevious connection is still alive) - the second request wrongly reused the\nsame connection and since it then sees that the Negotiate negotiation is\nalready made, it sends the request over that connection thinking it uses\nthe user2 credentials when it is in fact still using the connection\nauthenticated for user1...\n\nThe set of authentication methods to use is set with `CURLOPT_HTTPAUTH`.\n\nApplications can disable libcurl's reuse of connections and thus mitigate this\nproblem, by using one of the following libcurl options to alter how\nconnections are or are not reused: `CURLOPT_FRESH_CONNECT`,\n`CURLOPT_MAXCONNECTS` and `CURLMOPT_MAX_HOST_CONNECTIONS` (if using the\ncurl_multi API).",
       "aliases": ["CURL-CVE-2026-1965"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:08:52.431Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -3646,6 +4971,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-1965"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3665,15 +4994,79 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 171,
+          "versions": 340,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-19931",
+      "summary": "Negotiate ambient user conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an HTTP connection setup for a given\nhostname using Negotiate authentication, when the initial request is done\nusing empty credentials. This can make user B's request get sent over user A's\npreviously authenticated connection.",
+      "aliases": ["CURL-CVE-2026-19931"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:47:43.523Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-19931.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-19931.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3923520"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/19xxx/CVE-2026-19931.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-19931"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "521bbbe29928f9bc1c61306df612e856d45cbe5a"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 140,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
         }
       ]
     },
@@ -3685,6 +5078,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-03-11T10:09:08.746Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:0879-1",
         "SUSE-SU-2026:0885-1",
         "SUSE-SU-2026:0903-1",
@@ -3722,6 +5116,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-3783"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3741,11 +5139,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 107,
+          "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3802,6 +5200,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-3784"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3821,11 +5223,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 200,
+          "versions": 390,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3876,6 +5278,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-4873"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3895,11 +5301,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 133,
+          "versions": 264,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3921,6 +5327,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -3945,6 +5352,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-5545"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -3964,11 +5375,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 175,
+          "versions": 345,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3979,11 +5390,21 @@
     {
       "id": "CVE-2026-5773",
       "summary": "wrong reuse of SMB connection",
-      "details": "libcurl might in some circumstances reuse the wrong connection for SMB(S)\ntransfers.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a network transfer operation that was requested by an\napplication could wrongfully reuse an existing SMB connection to the same\nserver that was using a different 'share' than the new subsequent transfer\nshould.\n\nThis could in unlucky situations lead to the download of the wrong file or the\nupload of a file to the wrong place. When this happens, the same credentials\nare used and the server name is the same.",
+      "details": "libcurl might in some circumstances reuse the wrong connection for SMB(S)\ntransfers.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a network transfer operation that was requested by an\napplication could wrongfully reuse an existing SMB connection to the same\nserver that was using a different \"share\" than the new subsequent transfer\nshould.\n\nThis could in unlucky situations lead to the download of the wrong file or the\nupload of a file to the wrong place. When this happens, the same credentials\nare used and the server name is the same.",
       "aliases": ["CURL-CVE-2026-5773"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:27:42.342Z",
-      "related": ["SUSE-SU-2026:2703-1", "openSUSE-SU-2026:10674-1"],
+      "related": [
+        "SUSE-SU-2026:23350-1",
+        "SUSE-SU-2026:23361-1",
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "openSUSE-SU-2026:10674-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4009,6 +5430,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-5773"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4028,11 +5453,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 103,
+          "versions": 203,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4054,6 +5479,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4082,6 +5508,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6253"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4101,11 +5531,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 160,
+          "versions": 316,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4127,6 +5557,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4155,6 +5586,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6276"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4174,11 +5609,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 56,
+          "versions": 108,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4200,6 +5635,7 @@
         "SUSE-SU-2026:22146-1",
         "SUSE-SU-2026:22156-1",
         "SUSE-SU-2026:2703-1",
+        "SUSE-SU-2026:3798-1",
         "openSUSE-SU-2026:10674-1",
         "openSUSE-SU-2026:20973-1"
       ],
@@ -4224,6 +5660,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-6429"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4243,11 +5683,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 161,
+          "versions": 318,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4262,6 +5702,16 @@
       "aliases": ["CURL-CVE-2026-7168"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:29:08.900Z",
+      "related": [
+        "SUSE-SU-2026:23350-1",
+        "SUSE-SU-2026:23361-1",
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:3798-1",
+        "SUSE-SU-2026:3814-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4287,6 +5737,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-7168"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4306,15 +5760,215 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 169,
+          "versions": 333,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
           "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-80230",
+      "summary": "OpenSSL pinning bypass",
+      "details": "When `CURLOPT_PINNEDPUBLICKEY` is configured alongside options that disable\nstandard peer verification (`CURLOPT_SSL_VERIFYPEER = 0` and\n`CURLOPT_SSL_VERIFYHOST = 0`), libcurl fails to enforce public key pinning on\nconnections established without a presented server certificate. Bypassing the\npinning check under these disabled-verification conditions allows\nunauthenticated connections to succeed when they should be rejected.",
+      "aliases": ["CURL-CVE-2026-80230"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:48:16.262Z",
+      "related": [
+        "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:23521-1",
+        "SUSE-SU-2026:3958-1",
+        "SUSE-SU-2026:4047-1",
+        "SUSE-SU-2026:4048-1",
+        "SUSE-SU-2026:4071-1",
+        "openSUSE-SU-2026:11696-1",
+        "openSUSE-SU-2026:21774-1"
+      ],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80230.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80230.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3969300"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/80xxx/CVE-2026-80230.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-80230"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "2c000d91f3c423cee0af44e8afc79b9d25a9e714"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 202,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-80231",
+      "summary": "native CA store conn reuse",
+      "details": "A flaw in libcurl makes it wrongly reuse an existing HTTPS connection setup\nfor a given hostname even when using a different Native CA Store setting\n(`CURLSSLOPT_NATIVE_CA`) than when the connection was created.",
+      "aliases": ["CURL-CVE-2026-80231"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:48:38.062Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80231.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-80231.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3969368"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/80xxx/CVE-2026-80231.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-80231"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "e9db32a09af03f27e86d1251a9e68e9b7486d371"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 118,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-82209",
+      "summary": "domain-scoped PSL domain cookie",
+      "details": "When libpsl support is enabled, libcurl fails to enforce the Public Suffix\nList boundary check when processing a `Set-Cookie` header where the `Domain`\nattribute explicitly matches an origin host that is itself a public suffix\n(e.g., `Domain=co.uk` set by `co.uk`).\n\nInstead of coercing it into a strict host-only cookie, libcurl saves the\ncookie with wildcard domain scope (`.co.uk`). Consequently, the cookie is\ninappropriately included in subsequent outbound requests or HTTP redirects to\narbitrary sibling subdomains under the same public suffix (e.g.,\n`attacker.co.uk`).",
+      "aliases": ["CURL-CVE-2026-82209"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-09-06T17:49:35.050Z",
+      "related": ["openSUSE-SU-2026:11696-1"],
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-82209.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://curl.se/docs/CVE-2026-82209.json"
+        },
+        {
+          "type": "WEB",
+          "url": "https://hackerone.com/reports/3972385"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/CVEProject/cvelistV5/tree/main/cves/2026/82xxx/CVE-2026-82209.json"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-82209"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
+        }
+      ],
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl",
+              "events": [
+                {
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
+                },
+                {
+                  "fixed": "01346829096c61b372692f6dc43ffa778c6caccd"
+                }
+              ],
+              "database_specific": "<Any value>"
+            }
+          ],
+          "versions": 200,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.0",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:N"
         }
       ]
     },
@@ -4326,6 +5980,8 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:17.541Z",
       "related": [
+        "ALSA-2026:55439",
+        "ALSA-2026:57462",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4333,6 +5989,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4357,6 +6014,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8286"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4367,7 +6028,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "80d241046e404233537ff35efabb703a0668c7d5"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4376,11 +6037,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 118,
+          "versions": 117,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4391,11 +6052,13 @@
     {
       "id": "CVE-2026-8458",
       "summary": "wrong reuse for different services",
-      "details": "libcurl might in some circumstances reuse the wrong connection when asked to\ndo Negotiate-authenticated ones, even when they are set to use different\n'services'.\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different services.",
+      "details": "libcurl might in some circumstances reuse the wrong connection when asked to\ndo Negotiate-authenticated ones, even when they are set to use different\n\"services\".\n\nlibcurl features a pool of recent connections so that subsequent requests can\nreuse an existing connection to avoid overhead.\n\nWhen reusing a connection a range of criteria must be met. Due to a logical\nerror in the code, a request that was issued by an application could\nwrongfully reuse an existing connection to the same server that was\nauthenticated using different services.",
       "aliases": ["CURL-CVE-2026-8458"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:14:42.258Z",
       "related": [
+        "ALSA-2026:69125",
+        "ALSA-2026:69126",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4403,6 +6066,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4427,6 +6091,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8458"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4437,7 +6105,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
@@ -4446,11 +6114,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 97,
+          "versions": 98,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4461,11 +6129,12 @@
     {
       "id": "CVE-2026-8924",
       "summary": "trailing dot domain super cookie",
-      "details": "A flaw in curl’s cookie parsing logic allows a malicious HTTP server to set\n'super cookies' that bypass the Public Suffix List check. This enables an\nattacker-controlled origin to inject cookies that curl subsequently scopes and\ntransmits to unrelated third-party domains.",
+      "details": "A flaw in curl’s cookie parsing logic allows a malicious HTTP server to set\n\"super cookies\" that bypass the Public Suffix List check. This enables an\nattacker-controlled origin to inject cookies that curl subsequently scopes and\ntransmits to unrelated third-party domains.",
       "aliases": ["CURL-CVE-2026-8924"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:15:04.646Z",
       "related": [
+        "ALSA-2026:69125",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4473,6 +6142,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:11266-1",
         "openSUSE-SU-2026:21272-1"
@@ -4498,6 +6168,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8924"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4508,7 +6182,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4517,11 +6191,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 101,
+          "versions": 99,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4537,6 +6211,8 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:06.376Z",
       "related": [
+        "ALSA-2026:55432",
+        "ALSA-2026:69126",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4568,6 +6244,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8927"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4578,7 +6258,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "39626d8cfdd8f858d2fa67ec18204ebc5913d532"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4587,11 +6267,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 173,
+          "versions": 170,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4606,7 +6286,7 @@
       "aliases": ["CURL-CVE-2026-8932"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:30.485Z",
-      "related": ["openSUSE-SU-2026:11230-1"],
+      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4628,6 +6308,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8932"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4638,7 +6322,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4647,11 +6331,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 209,
+          "versions": 197,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4667,6 +6351,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:18:44.499Z",
       "related": [
+        "ALSA-2026:55439",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4674,6 +6359,7 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:3814-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4698,6 +6384,10 @@
         {
           "type": "ADVISORY",
           "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-9547"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/curl/curl.git"
         }
       ],
       "affected": [
@@ -4708,7 +6398,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
+                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4717,11 +6407,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 63,
+          "versions": 61,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4823,7 +6513,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-5prr-v3j2-97mh",
@@ -4867,7 +6557,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4917,7 +6607,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -4929,6 +6619,7 @@
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
+      "aliases": ["CVE-2025-71346"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-04-21T21:55:56Z",
       "database_specific": "<Any value>",
@@ -4978,7 +6669,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-8678-w3jw-xfc2",
@@ -5022,7 +6713,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5072,7 +6763,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5084,6 +6775,7 @@
       "id": "GHSA-c4rq-3m3g-8wgx",
       "summary": "Nokogiri CSS selector tokenizer has regular expression backtracking",
       "details": "## Summary\n\nNokogiri's CSS selector tokenizer contains regular expressions whose construction may result in exponential regex backtracking on adversarial selectors. Three ReDoS vectors are addressed in this release:\n\n1. String-literal tokenization on certain unterminated quoted-string input.\n2. String-literal tokenization on a separate class of hex-escape-rich input.\n3. Identifier tokenization on hex-escape-rich input.\n\nThe public CSS selector methods that funnel through the affected tokenizer are `Nokogiri::CSS.xpath_for`, `Node#css`, `Node#at_css`, `Searchable#search`, and `CSS::Parser#parse`.\n\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.3`.\n\nIf users are unable to upgrade, two options are available:\n\n- Avoid the use of attacker-controlled text in CSS selectors. Applications that only pass developer-authored selectors to Nokogiri are not directly exposed.\n- Set global `Regexp.timeout` (Ruby 3.2+, JRuby 9.4+) to bound parse time.\n\n## Severity\n\nThe Nokogiri maintainers have evaluated this as **High Severity** (CVSS 7.5, `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H`).\n\nAn attacker able to inject user-supplied text into a CSS selector parse method can cause exponential backtracking, resulting in a potential denial of service.\n\n\n## Resources\n\n- [CWE-1333: Inefficient Regular Expression Complexity](https://cwe.mitre.org/data/definitions/1333.html)\n\n\n## Credit\n\nVector 1 was responsibly reported by @colby-swandale. Vectors 2 and 3 were discovered by @flavorjones during the response to the original report.",
+      "aliases": ["CVE-2026-79770"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-06T18:24:18Z",
       "database_specific": "<Any value>",
@@ -5093,8 +6785,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-c4rq-3m3g-8wgx"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79770"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-redos-via-css-selector-tokenizer"
         }
       ],
       "affected": [
@@ -5121,7 +6821,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5133,6 +6833,7 @@
       "id": "GHSA-mrxw-mxhj-p664",
       "summary": "Nokogiri updates packaged libxslt to v1.1.43 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.4 upgrades its dependency libxslt to [v1.1.43](https://gitlab.gnome.org/GNOME/libxslt/-/releases/v1.1.43).\n\nlibxslt v1.1.43 resolves:\n\n- CVE-2025-24855: Fix use-after-free of XPath context node\n- CVE-2024-55549: Fix UAF related to excluded namespaces\n\n## Impact\n\n### CVE-2025-24855\n\n- \"Use-after-free due to xsltEvalXPathStringNs leaking xpathCtxt-\u003enode\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/128\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-24855\n\n### CVE-2024-55549\n\n- \"Use-after-free related to excluded result prefixes\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/127\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2024-55549",
+      "aliases": ["CVE-2025-71406"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-14T18:51:37Z",
       "database_specific": "<Any value>",
@@ -5186,7 +6887,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5236,7 +6937,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5286,7 +6987,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5298,6 +6999,7 @@
       "id": "GHSA-v2fc-qm4h-8hqv",
       "summary": "Nokogiri XSLT transform has a memory leak",
       "details": "## Summary\n\nNokogiri's `Nokogiri::XSLT::Stylesheet#transform` leaks a small heap allocation when passed a Ruby string parameter containing a null byte.\n\nFor applications that pass attacker-controlled input through `XSLT.transform` parameters, this may be a vector for a denial of service attack against long-running processes.\n\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.3`.\n\nUsers may also be able to mitigate this issue without upgrading by validating untrusted transform parameters before passing them to `Nokogiri::XSLT::Stylesheet#transform`.\n\n\n## Severity\n\nThe Nokogiri maintainers have evaluated this as **Moderate Severity**, CVSS 5.3.\n\nEach leaked allocation is approximately 24–32 bytes, so meaningful memory growth requires sustained attacker-controlled traffic at high call rates. The bug does not cause memory corruption, information disclosure, or any change in the behavior of the transform itself, and the string-handling exception is raised as expected.\n\nApplications that do not pass raw attacker-controlled bytes to XSLT parameters are unlikely to be affected in practice.\n\n\n## Resources\n\n- [CWE-401: Missing Release of Memory after Effective Lifetime](https://cwe.mitre.org/data/definitions/401.html)\n\n\n## Credit\n\nThis vulnerability was responsibly reported by @Captainjack-kor.",
+      "aliases": ["CVE-2026-79771"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-06T18:27:38Z",
       "database_specific": "<Any value>",
@@ -5307,8 +7009,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-v2fc-qm4h-8hqv"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79771"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-memory-leak-via-xslt-transform"
         }
       ],
       "affected": [
@@ -5335,7 +7045,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5347,6 +7057,7 @@
       "id": "GHSA-vvfq-8hwr-qm4m",
       "summary": "Nokogiri updates packaged libxml2 to 2.13.6 to resolve CVE-2025-24928 and CVE-2024-56171",
       "details": "## Summary\n\nNokogiri v1.18.3 upgrades its dependency libxml2 to [v2.13.6](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.6).\n\nlibxml2 v2.13.6 addresses:\n\n- CVE-2025-24928\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/847\n- CVE-2024-56171\n   - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/828\n\n## Impact\n\n### CVE-2025-24928\n\nStack-buffer overflow is possible when reporting DTD validation errors if the input contains a long (~3kb) QName prefix.\n\n### CVE-2024-56171\n\nUse-after-free is possible during validation against untrusted XML Schemas (.xsd) and, potentially, validation of untrusted documents against trusted Schemas if they make use of `xsd:keyref` in combination with recursively defined types that have additional identity constraints.",
+      "aliases": ["CVE-2025-71407"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-18T22:36:03Z",
       "database_specific": "<Any value>",
@@ -5388,7 +7099,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wfpw-mmfh-qq69",
@@ -5432,7 +7143,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5"
+      "schema_version": "1.9.0"
     },
     {
       "id": "GHSA-wjv4-x9w8-wm3h",
@@ -5476,7 +7187,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5488,6 +7199,7 @@
       "id": "GHSA-wx95-c6cv-8532",
       "summary": "Nokogiri does not check the return value from xmlC14NExecute",
       "details": "## Summary\n\nNokogiri's CRuby extension fails to check the return value from `xmlC14NExecute` in the method `Nokogiri::XML::Document#canonicalize` and `Nokogiri::XML::Node#canonicalize`. When canonicalization fails, an empty string is returned instead of raising an exception. This incorrect return value may allow downstream libraries to accept invalid or incomplete canonicalized XML, which has been demonstrated to enable signature validation bypass in SAML libraries.\n\nJRuby is not affected, as the Java implementation correctly raises `RuntimeError` on canonicalization failure.\n\n## Mitigation\n\nUpgrade to Nokogiri `\u003e= 1.19.1`.\n\n## Severity\n\nThe maintainers have assessed this as **Medium** severity. Nokogiri itself is a parsing library without a clear security boundary related to canonicalization, so the direct impact is that a method returns incorrect data on invalid input. However, this behavior was exploited in practice to bypass SAML signature validation in downstream libraries (see References).\n\n## Credit\n\nThis vulnerability was responsibly reported by HackerOne researcher `d4d`.",
+      "aliases": ["CVE-2026-79772"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-02-18T21:57:38Z",
       "database_specific": "<Any value>",
@@ -5497,8 +7209,16 @@
           "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-wx95-c6cv-8532"
         },
         {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-79772"
+        },
+        {
           "type": "PACKAGE",
           "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/nokogiri-before-unchecked-return-value-canonicalize"
         }
       ],
       "affected": [
@@ -5525,7 +7245,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.3",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5606,7 +7326,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -5672,7 +7392,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5742,7 +7462,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6052,7 +7772,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6118,7 +7838,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6188,7 +7908,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6499,7 +8219,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -6565,7 +8285,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6635,7 +8355,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.0",
       "severity": [
         {
           "type": "CVSS_V3",

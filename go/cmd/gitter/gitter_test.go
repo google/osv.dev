@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestGetRepoDirName(t *testing.T) {
@@ -24,6 +24,8 @@ func TestGetRepoDirName(t *testing.T) {
 		{"https://github.com/google/osv.dev.git", "osv.dev"},
 		{"https://github.com/google/osv.dev", "osv.dev"},
 		{"https://gitlab.com/gitlab-org/gitlab.git", "gitlab"},
+		{"http://some-domain.com/special_char-!@#$%^&*().,><;:?.git", "special_char-%21%40%23%24%25%5E%26%2A%28%29.%2C%3E%3C%3B%3A%3F"},
+		{"http://some-domain.com/repo with spaces.git", "repo+with+spaces"},
 	}
 
 	for _, tt := range tests {
@@ -118,6 +120,18 @@ func TestPrepareURL(t *testing.T) {
 			expected:  "",
 			expectErr: true,
 		},
+		{
+			name:      "URL with newline control character",
+			url:       "https://github.com/google/osv.dev\n.git",
+			expected:  "",
+			expectErr: true,
+		},
+		{
+			name:      "URL with null byte control character",
+			url:       "https://github.com/google/osv.dev\x00.git",
+			expected:  "",
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -137,61 +151,6 @@ func TestPrepareURL(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestIsAuthError(t *testing.T) {
-	tests := []struct {
-		err      error
-		expected bool
-	}{
-		{errors.New("fatal: Authentication failed for 'https://github.com/google/this-repo-does-not-exist-12345.git/'"), true},
-		{errors.New("remote: Repository not found"), false},
-		{errors.New("fatal: could not read Username for 'https://github.com': terminal prompts disabled"), true},
-		{errors.New("some other error"), false},
-		{errors.New("git clone failed: exit status 128"), false},
-		{nil, false},
-	}
-
-	for _, tt := range tests {
-		if result := isAuthError(tt.err); result != tt.expected {
-			t.Errorf("isAuthError(%v) = %v, expected %v", tt.err, result, tt.expected)
-		}
-	}
-}
-
-func TestIsForbiddenError(t *testing.T) {
-	tests := []struct {
-		err      error
-		expected bool
-	}{
-		{errors.New("fatal: unable to access 'https://github.com/composer/composer/': The requested URL returned error: 403"), true},
-		{errors.New("some other error"), false},
-		{nil, false},
-	}
-
-	for _, tt := range tests {
-		if result := isForbiddenError(tt.err); result != tt.expected {
-			t.Errorf("isForbiddenError(%v) = %v, expected %v", tt.err, result, tt.expected)
-		}
-	}
-}
-
-func TestIsNotFoundError(t *testing.T) {
-	tests := []struct {
-		err      error
-		expected bool
-	}{
-		{errors.New("remote: Repository not found"), true},
-		{errors.New("repository not found"), true},
-		{errors.New("some other error"), false},
-		{nil, false},
-	}
-
-	for _, tt := range tests {
-		if result := isNotFoundError(tt.err); result != tt.expected {
-			t.Errorf("isNotFoundError(%v) = %v, expected %v", tt.err, result, tt.expected)
-		}
 	}
 }
 
@@ -808,6 +767,185 @@ func TestFileContentHandler(t *testing.T) {
 				if diff := cmp.Diff(tt.expectedResponse, resp, protocmp.Transform()); diff != "" {
 					t.Errorf("fileContentHandler returned wrong response: -want +got:\n%s", diff)
 				}
+			}
+		})
+	}
+}
+
+func TestCommitDiffsHandler(t *testing.T) {
+	setupTest(t)
+
+	tests := []struct {
+		name         string
+		reqBody      *pb.CommitDiffsRequest
+		rawBody      []byte
+		contentType  string
+		expectedCode int
+		verifyResp   func(t *testing.T, resp *pb.CommitDiffsResponse)
+	}{
+		{
+			name: "Missing repo URL",
+			reqBody: &pb.CommitDiffsRequest{
+				LastSyncedCommit: "1234567890123456789012345678901234567890",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing both last_synced_commit and last_synced_time",
+			reqBody: &pb.CommitDiffsRequest{
+				Url: "https://github.com/oliverchang/osv-test.git",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "Forbidden or non-existent repo",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/google/this-repo-does-not-exist-12345.git",
+				LastSyncedCommit: "ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusForbidden,
+		},
+		{
+			name: "Query commits with JSON",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			verifyResp: func(t *testing.T, resp *pb.CommitDiffsResponse) {
+				t.Helper()
+				if resp.GetLatestCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected latest commit: %s", resp.GetLatestCommit())
+				}
+				if resp.GetNumCommits() != 2 || len(resp.GetCommits()) != 2 {
+					t.Fatalf("expected 2 commits, got %d", resp.GetNumCommits())
+				}
+				// Default order is oldest first, so the latest commit (HEAD) is the second commit
+				c := resp.GetCommits()[1]
+				if c.GetCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected commit sha: %s", c.GetCommit())
+				}
+				if c.GetPatch() == "" {
+					t.Errorf("expected non-empty patch")
+				}
+				if len(c.GetFilesChanged()) == 0 {
+					t.Errorf("expected non-empty files changed")
+				}
+			},
+		},
+		{
+			name: "Query commits with Protobuf wire format",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+				NewestFirst:      true,
+			},
+			contentType:  "application/x-protobuf",
+			expectedCode: http.StatusOK,
+			verifyResp: func(t *testing.T, resp *pb.CommitDiffsResponse) {
+				t.Helper()
+				if resp.GetLatestCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected latest commit: %s", resp.GetLatestCommit())
+				}
+				if resp.GetNumCommits() != 2 || len(resp.GetCommits()) != 2 {
+					t.Fatalf("expected 2 commits, got %d", resp.GetNumCommits())
+				}
+				// Newest first, so first commit is HEAD
+				c := resp.GetCommits()[0]
+				if c.GetCommit() != "b9b3fd4732695b83c3068b7b6a14bb372ec31f98" {
+					t.Errorf("unexpected commit sha: %s", c.GetCommit())
+				}
+			},
+		},
+		{
+			name: "Query commits using last_synced_time only",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:            "https://github.com/oliverchang/osv-test.git",
+				LastSyncedTime: timestamppb.New(time.Unix(1, 0)),
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusOK,
+			verifyResp: func(t *testing.T, resp *pb.CommitDiffsResponse) {
+				t.Helper()
+				if resp.GetNumCommits() == 0 {
+					t.Errorf("expected non-empty commits")
+				}
+			},
+		},
+		{
+			name: "Non-existent branch name",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				Branch:           "non-existent-branch-12345",
+				LastSyncedCommit: "b1c95a196f22d06fcf80df8c6691cd113d8fefff",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name: "Invalid last_synced_commit without last_synced_time",
+			reqBody: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "invalidhash123456",
+			},
+			contentType:  "application/json",
+			expectedCode: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bodyBytes []byte
+			if tt.rawBody != nil {
+				bodyBytes = tt.rawBody
+			} else if tt.reqBody != nil {
+				var err error
+				if tt.contentType == "application/json" {
+					bodyBytes, err = protojson.Marshal(tt.reqBody)
+				} else {
+					bodyBytes, err = proto.Marshal(tt.reqBody)
+				}
+				if err != nil {
+					t.Fatalf("failed to marshal request: %v", err)
+				}
+			}
+
+			req, err := http.NewRequest(http.MethodPost, "/commit-diffs", bytes.NewReader(bodyBytes))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			rr := httptest.NewRecorder()
+			commitDiffsHandler(rr, req)
+
+			// Non-existent repos on github may return 403 or 502 depending on network latency/timeouts
+			if tt.name == "Forbidden or non-existent repo" {
+				if rr.Code != http.StatusForbidden && rr.Code != http.StatusBadGateway {
+					t.Errorf("commitDiffsHandler returned wrong status code: got %v want 403 or 502", rr.Code)
+				}
+			} else if status := rr.Code; status != tt.expectedCode {
+				t.Errorf("commitDiffsHandler returned wrong status code: got %v want %v", status, tt.expectedCode)
+			}
+
+			if tt.verifyResp != nil && rr.Code == http.StatusOK {
+				resp := &pb.CommitDiffsResponse{}
+				var err error
+				if tt.contentType == "application/json" {
+					err = protojson.Unmarshal(rr.Body.Bytes(), resp)
+				} else {
+					err = proto.Unmarshal(rr.Body.Bytes(), resp)
+				}
+				if err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				tt.verifyResp(t, resp)
 			}
 		})
 	}

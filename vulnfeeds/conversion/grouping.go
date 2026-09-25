@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/google/osv/vulnfeeds/models"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/models"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -22,12 +22,12 @@ func GroupAffectedRanges(affected []*osvschema.Affected) {
 			continue
 		}
 
-		var rwms []models.RangeWithMetadata
+		rwms := make([]models.RangeWithMetadata, 0, len(aff.GetRanges()))
 		for _, r := range aff.GetRanges() {
 			rwms = append(rwms, models.RangeWithMetadata{Range: r})
 		}
 		grouped := GroupRanges(rwms)
-		var out []*osvschema.Range
+		out := make([]*osvschema.Range, 0, len(grouped))
 		for _, rwm := range grouped {
 			out = append(out, rwm.Range)
 		}
@@ -357,7 +357,7 @@ func MergeRangesAndCreateAffected(
 					var err error
 					mergedRange, err = MergeTwoRanges(mergedRange, vr)
 					if err != nil {
-						metrics.AddNote("Failed to merge ranges: %v", err)
+						metrics.AddNotef("Failed to merge ranges: %v", err)
 					}
 				}
 			}

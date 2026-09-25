@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-//nolint:recvcheck
 type ConversionOutcome int
 
 const (
@@ -50,6 +49,15 @@ func (c ConversionOutcome) String() string {
 	return conversionOutcomeStrings[ConversionUnknown]
 }
 
+// ShouldEmit returns true if the record should be emitted based on its outcome and the rejectFailed flag.
+func (c ConversionOutcome) ShouldEmit(rejectFailed bool) bool {
+	if !rejectFailed {
+		return true
+	}
+
+	return c == Successful || c == Rejected
+}
+
 func (c ConversionOutcome) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.String())
 }
@@ -84,8 +92,8 @@ type ConversionMetrics struct {
 	ResolvedRangesCount   int                              `json:"resolved_ranges_count"`
 }
 
-// AddNote adds a formatted note to the ConversionMetrics.
-func (m *ConversionMetrics) AddNote(format string, a ...any) {
+// AddNotef adds a formatted note to the ConversionMetrics.
+func (m *ConversionMetrics) AddNotef(format string, a ...any) {
 	m.Notes = append(m.Notes, fmt.Sprintf(format, a...))
 	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }

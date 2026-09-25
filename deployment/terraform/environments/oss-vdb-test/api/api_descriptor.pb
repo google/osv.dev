@@ -1,1 +1,1 @@
-../../../../../gcp/api/v1/api_descriptor.pb
+../../../../../proto/v1/api_descriptor.pb

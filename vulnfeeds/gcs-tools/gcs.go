@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/osv/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
 )

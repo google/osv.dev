@@ -216,12 +216,14 @@ class VanirSignaturesTest(unittest.TestCase):
     vuln_entity.put()
     initial_modified = vuln_entity.modified
 
-    result, failed_ids = vanir_signatures.process_batch([vuln_id],
-                                                        'fake_git_working_dir')
+    with self.assertLogs(level='ERROR') as cm:
+      result, failed_ids = vanir_signatures.process_batch(
+          [vuln_id], 'fake_git_working_dir')
 
     # Result should be 0 because upload failed
     self.assertEqual(result, 0)
     self.assertEqual(failed_ids, [vuln_id])
+    self.assertTrue(any('Failed upload for VULN-1' in log for log in cm.output))
 
     # Verify Datastore was NOT updated
     updated_vuln = osv.Vulnerability.get_by_id(vuln_id, use_cache=False)

@@ -41,7 +41,7 @@ from . import semver_index
 from . import sources
 from . import vulnerability_pb2
 
-SCHEMA_VERSION = '1.8.0'
+SCHEMA_VERSION = '1.9.0'
 
 _MAX_GIT_VERSIONS_TO_INDEX = 5000
 

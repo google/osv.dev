@@ -18,6 +18,7 @@ import re
 from .debian import DPKG
 from .ecosystems_base import OrderedEcosystem
 from .maven import Maven
+from .nuget import NuGet
 from .pypi import PyPI
 from .semver_ecosystem_helper import SemverLike
 
@@ -39,9 +40,11 @@ class Echo(OrderedEcosystem):
   - Echo:PyPI   - Python packages (PyPI/PEP 440 versioning)
   - Echo:Maven  - Maven packages (Maven versioning)
   - Echo:npm    - npm packages (SemVer versioning, +echo.N aware)
+  - Echo:NuGet  - NuGet packages (NuGet versioning, +echo.N aware)
   """
 
   def _delegate(self) -> OrderedEcosystem:
+    """The ecosystem helper for this ecosystem's suffix (dpkg if none)."""
     suffix = self.suffix.lower() if self.suffix else ''
     if suffix == 'pypi':
       return PyPI()
@@ -49,16 +52,18 @@ class Echo(OrderedEcosystem):
       return Maven()
     if suffix == 'npm':
       return SemverLike()
+    if suffix == 'nuget':
+      return NuGet()
     return DPKG()
 
   def _sort_key(self, version: str):
     delegate = self._delegate()
     key = delegate._sort_key(version)  # pylint: disable=protected-access
-    if isinstance(delegate, SemverLike):
+    if isinstance(delegate, (SemverLike, NuGet)):
       # SemVer excludes build metadata from precedence, so `1.2.3`,
       # `1.2.3+echo.1` and `1.2.3+echo.2` would all compare equal. PyPI and
-      # Maven order `+echo.N` natively (local versions / qualifiers); npm does
-      # not, so tie-break on the build number to keep
+      # Maven order `+echo.N` natively (local versions / qualifiers); npm and
+      # NuGet do not, so tie-break on the build number to keep
       # `1.2.3 < 1.2.3+echo.1 < 1.2.3+echo.2 < 1.2.4`.
       return (key, _echo_build_number(version))
     return key

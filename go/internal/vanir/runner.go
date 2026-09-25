@@ -120,6 +120,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		close(outcomeCh)
 	}()
 
+	var fatalErr error
 	go func() {
 		defer close(batchCh)
 		seenIDs := make(map[string]struct{})
@@ -155,7 +156,9 @@ func (r *Runner) Run(ctx context.Context) error {
 		for v, err := range r.VulnStore.ListModifiedSince(ctx, lastRun) {
 			if err != nil {
 				logger.ErrorContext(ctx, "Error streaming modified vulnerabilities", slog.Any("error", err))
-				break
+				fatalErr = err
+
+				return
 			}
 			enqueue(v)
 		}
@@ -171,7 +174,8 @@ func (r *Runner) Run(ctx context.Context) error {
 					if errors.Is(err, models.ErrNotFound) {
 						logger.WarnContext(ctx, "Retry vulnerability not found in store", slog.String("id", id))
 					} else {
-						logger.ErrorContext(ctx, "Failed to fetch retry vulnerability", slog.String("id", id), slog.Any("error", err))
+						logger.ErrorContext(ctx, "Failed to fetch retry vulnerability, keeping in retry list", slog.String("id", id), slog.Any("error", err))
+						outcomeCh <- batchOutcome{failedIDs: []string{id}}
 					}
 
 					continue
@@ -193,6 +197,10 @@ func (r *Runner) Run(ctx context.Context) error {
 		totalProcessed += outcome.processed
 		totalGenerated += outcome.generated
 		allFailedIDs = append(allFailedIDs, outcome.failedIDs...)
+	}
+
+	if fatalErr != nil {
+		return fatalErr
 	}
 
 	logger.InfoContext(ctx, "Finished Vanir signature generation",
@@ -234,14 +242,24 @@ func (r *Runner) processBatch(ctx context.Context, batch []*osvschema.Vulnerabil
 	batchTempDir, err := os.MkdirTemp("", "vanir-batch-*")
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create temporary directory for batch", slog.Any("error", err))
-		return 0, nil
+		ids := make([]string, 0, len(batch))
+		for _, v := range batch {
+			ids = append(ids, v.GetId())
+		}
+
+		return 0, ids
 	}
 	defer os.RemoveAll(batchTempDir)
 
 	sigMap, err := r.Generator.GenerateBatch(ctx, batch, batchTempDir)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to generate Vanir signatures for batch", slog.Int("count", len(batch)), slog.Any("error", err))
-		return 0, nil
+		ids := make([]string, 0, len(batch))
+		for _, v := range batch {
+			ids = append(ids, v.GetId())
+		}
+
+		return 0, ids
 	}
 
 	updatedCount := 0

@@ -77,6 +77,7 @@ def main():
   except Exception as e:  # pylint: disable=broad-exception-caught
     logging.exception('Failed to generate Vanir signatures for batch of %d: %s',
                       len(vuln_dicts), e)
+    sys.exit(1)
 
   with open(args.output, 'w', encoding='utf-8') as f:
     json.dump(results, f)

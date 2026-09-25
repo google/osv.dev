@@ -61,16 +61,21 @@ func NewPythonGenerator(pythonBin, scriptPath string) *PythonGenerator {
 	}
 }
 
-func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.Vulnerability, gitWorkingDir string) (SignatureMap, error) {
+func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.Vulnerability, workingDir string) (SignatureMap, error) {
 	if len(vulns) == 0 {
 		return SignatureMap{}, nil
 	}
 
-	ipcDir, err := os.MkdirTemp(gitWorkingDir, "vanir-ipc-*")
+	ipcDir, err := os.MkdirTemp(workingDir, "vanir-ipc-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create IPC temp dir: %w", err)
 	}
 	defer os.RemoveAll(ipcDir)
+	gitDir, err := os.MkdirTemp(workingDir, "vanir-git-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create git temp dir: %w", err)
+	}
+	defer os.RemoveAll(gitDir)
 
 	inputPath := filepath.Join(ipcDir, "input.json")
 	outputPath := filepath.Join(ipcDir, "output.json")
@@ -101,7 +106,7 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		g.ScriptPath,
 		"--input", inputPath,
 		"--output", outputPath,
-		"--git-working-dir", gitWorkingDir,
+		"--git-working-dir", gitDir,
 	)
 	var stderr bytes.Buffer
 	cmd.Stdout = &stderr

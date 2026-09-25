@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"slices"
@@ -1661,6 +1662,188 @@ func TestVendorProduct_UnmarshalText(t *testing.T) {
 			}
 			if !tt.wantErr && vp != tt.want {
 				t.Errorf("VendorProduct.UnmarshalText() = %v, want %v", vp, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsGitCommitSHA(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"0b3b5fdb5a058f50248cd8547824936b8dd10351", true},
+		{"a381da252fe8e873c8aff22703040426cc9b2ae0", true},
+		{"fc300780da21f4bb92c148bc90257201220cf174", true},
+		{"1da177e4c3f41524e886b7f1b8a0c1fc7321cac2", true},
+		{"0.0.8", false},
+		{"v1.2.3", false},
+		{"1.0.0-rc1", false},
+		{"", false},
+		{"0", false},
+		{"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", false},
+		{"0b3b5fdb5a058f50248cd8547824936b8dd1035", false}, // 39 chars
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			if got := IsGitCommitSHA(tt.input); got != tt.want {
+				t.Errorf("IsGitCommitSHA(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsDirectGitRange(t *testing.T) {
+	t.Run("Range_GIT with valid commit SHA", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildGitVersionRange("0", "", "fc300780da21f4bb92c148bc90257201220cf174", "https://github.com/foo/bar"),
+		}
+		if !IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be true for Range_GIT with commit SHA")
+		}
+	})
+
+	t.Run("Range_GIT with version tags", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildGitVersionRange("0.1.0", "", "0.9.2", "https://github.com/foo/bar"),
+		}
+		if IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be false for Range_GIT with tag versions")
+		}
+	})
+
+	t.Run("Valid SHAs without Range_GIT", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildVersionRange("0b3b5fdb5a058f50248cd8547824936b8dd10351", "a381da252fe8e873c8aff22703040426cc9b2ae0", ""),
+		}
+		if !IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be true for valid commit SHAs")
+		}
+	})
+
+	t.Run("Semver tags", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildVersionRange("1.0.0", "", "2.0.0"),
+		}
+		if IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be false for semver strings")
+		}
+	})
+}
+
+func TestProcessRanges_DirectGitRange(t *testing.T) {
+	metrics := &models.ConversionMetrics{}
+	gitRange := models.RangeWithMetadata{
+		Range: BuildVersionRange("0b3b5fdb5a058f50248cd8547824936b8dd10351", "a381da252fe8e873c8aff22703040426cc9b2ae0", ""),
+		Metadata: models.Metadata{
+			Source: models.VersionSourceAffected,
+		},
+	}
+	repos := []string{"https://github.com/GeneralSandman/TinyWeb"}
+	httpClient := &http.Client{}
+	resolved, unresolved, successfulRepos := ProcessRanges([]models.RangeWithMetadata{gitRange}, repos, metrics, git.NewRepoTagsCache(), httpClient)
+
+	if len(resolved) != 1 {
+		t.Fatalf("expected 1 resolved range, got %d", len(resolved))
+	}
+	if len(unresolved) != 0 {
+		t.Errorf("expected 0 unresolved ranges, got %d", len(unresolved))
+	}
+	if len(successfulRepos) != 1 || successfulRepos[0] != "https://github.com/GeneralSandman/TinyWeb" {
+		t.Errorf("unexpected successful repos: %v", successfulRepos)
+	}
+	if resolved[0].Range.GetRepo() != "https://github.com/GeneralSandman/TinyWeb" {
+		t.Errorf("expected repo to be set to %s, got %s", "https://github.com/GeneralSandman/TinyWeb", resolved[0].Range.GetRepo())
+	}
+	if resolved[0].Range.GetType().String() != "GIT" {
+		t.Errorf("expected range type to be GIT, got %s", resolved[0].Range.GetType().String())
+	}
+}
+
+func TestExtractVersionsFromText(t *testing.T) {
+	tests := []struct {
+		name         string
+		text         string
+		wantIntro    string
+		wantFixed    string
+		wantLastAff  string
+		wantRangeTyp string
+	}{
+		{
+			name:         "trailing and before (CVE-2026-26377)",
+			text:         "Cross Site Scripting vulnerability in Koha 25.11 and before allows a remote attacker to execute arbitrary code.",
+			wantIntro:    "0",
+			wantLastAff:  "25.11",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "versions up to (CVE-2026-26379)",
+			text:         "Koha versions up to 25.11 contain a Server-Side Request Forgery (SSRF) vulnerability.",
+			wantIntro:    "0",
+			wantLastAff:  "25.11",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "prior to version (CVE-2026-26399)",
+			text:         "A stack-use-after-return issue exists in the Arduino_Core_STM32 library prior to version 1.7.0.",
+			wantIntro:    "0",
+			wantFixed:    "1.7.0",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "trailing and earlier (CVE-2026-26483)",
+			text:         "Mettle SendPortal 3.0.1 and earlier contains a stored cross-site scripting (XSS) vulnerability.",
+			wantIntro:    "0",
+			wantLastAff:  "3.0.1",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "before commit short SHA (CVE-2026-26514)",
+			text:         "An Argument Injection vulnerability exists in bird-lg-go before commit 6187a4e.",
+			wantIntro:    "0",
+			wantFixed:    "6187a4e",
+			wantRangeTyp: "GIT",
+		},
+		{
+			name:         "vulnerable commit short SHA (CVE-2026-26445)",
+			text:         "stomper 5e2741e is vulnerable to Denial of Service.",
+			wantIntro:    "0",
+			wantLastAff:  "5e2741e",
+			wantRangeTyp: "GIT",
+		},
+		{
+			name:         "contains commit 40-char SHA (CVE-2026-26452)",
+			text:         "ccoap 77f55c4b466e99327c24ace8a2913d3ba7e2ccd5 lcontains a vulnerability in the option parsing logic.",
+			wantIntro:    "0",
+			wantLastAff:  "77f55c4b466e99327c24ace8a2913d3ba7e2ccd5",
+			wantRangeTyp: "GIT",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			metrics := &models.ConversionMetrics{}
+			got := ExtractVersionsFromText(nil, tc.text, metrics, models.VersionSourceDescription)
+			if len(got) == 0 {
+				t.Fatalf("ExtractVersionsFromText(%q) returned no ranges", tc.text)
+			}
+			r := got[0].Range
+			if r.GetType().String() != tc.wantRangeTyp {
+				t.Errorf("Range.Type = %s, want %s", r.GetType().String(), tc.wantRangeTyp)
+			}
+			events := r.GetEvents()
+			if len(events) < 2 {
+				t.Fatalf("expected at least 2 events, got %+v", events)
+			}
+			if events[0].GetIntroduced() != tc.wantIntro {
+				t.Errorf("Introduced = %q, want %q", events[0].GetIntroduced(), tc.wantIntro)
+			}
+			if events[1].GetFixed() != tc.wantFixed {
+				t.Errorf("Fixed = %q, want %q", events[1].GetFixed(), tc.wantFixed)
+			}
+			if events[1].GetLastAffected() != tc.wantLastAff {
+				t.Errorf("LastAffected = %q, want %q", events[1].GetLastAffected(), tc.wantLastAff)
 			}
 		})
 	}

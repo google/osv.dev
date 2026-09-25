@@ -100,8 +100,16 @@ func (m *ConversionMetrics) AddNotef(format string, a ...any) {
 
 // SetOutcome sets the outcome of the conversion only if it's not already set, or has become successful.
 func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
-	if m.Outcome == ConversionUnknown { // TODO DOUBLE CHECK
+	if m.Outcome == ConversionUnknown || outcome == Successful {
 		m.Outcome = outcome
+	}
+}
+
+// SetError sets the outcome to Error and logs the error to the metrics notes.
+func (m *ConversionMetrics) SetError(err error) {
+	m.Outcome = Error
+	if err != nil {
+		m.AddNotef("Conversion error: %v", err)
 	}
 }
 

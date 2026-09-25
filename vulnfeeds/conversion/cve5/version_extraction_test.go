@@ -3,10 +3,12 @@ package cve5
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/vulnfeeds/conversion"
+	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
 	"github.com/google/osv.dev/vulnfeeds/git"
 	"github.com/google/osv.dev/vulnfeeds/internal/testutils"
 	"github.com/google/osv.dev/vulnfeeds/models"
@@ -20,20 +22,20 @@ func TestToVersionRangeType(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  VersionRangeType
+		want  strategies.VersionRangeType
 	}{
-		{"git", "git", VersionRangeTypeGit},
-		{"semver", "semver", VersionRangeTypeSemver},
-		{"ecosystem", "ecosystem", VersionRangeTypeEcosystem},
-		{"other", "custom", VersionRangeTypeEcosystem},
-		{"empty", "", VersionRangeTypeEcosystem},
-		{"case insensitive", "GiT", VersionRangeTypeGit},
+		{"git", "git", strategies.VersionRangeTypeGit},
+		{"semver", "semver", strategies.VersionRangeTypeSemver},
+		{"ecosystem", "ecosystem", strategies.VersionRangeTypeEcosystem},
+		{"other", "custom", strategies.VersionRangeTypeEcosystem},
+		{"empty", "", strategies.VersionRangeTypeEcosystem},
+		{"case insensitive", "GiT", strategies.VersionRangeTypeGit},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := toVersionRangeType(tt.input); got != tt.want {
-				t.Errorf("toVersionRangeType() = %v, want %v", got, tt.want)
+			if got := strategies.ToVersionRangeType(tt.input); got != tt.want {
+				t.Errorf("ToVersionRangeType() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -41,11 +43,10 @@ func TestToVersionRangeType(t *testing.T) {
 
 func TestFindNormalAffectedRanges(t *testing.T) {
 	tests := []struct {
-		name          string
-		affected      models.Affected
-		cnaAssigner   string
-		wantRanges    []*osvschema.Range
-		wantRangeType VersionRangeType
+		name        string
+		affected    models.Affected
+		cnaAssigner string
+		wantRanges  []*osvschema.Range
 	}{
 		{
 			name: "simple range",
@@ -62,7 +63,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			wantRanges: []*osvschema.Range{
 				conversion.BuildVersionRange("1.0", "", "1.5"),
 			},
-			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "single version fallback",
@@ -78,7 +78,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			wantRanges: []*osvschema.Range{
 				conversion.BuildVersionRange("2.0", "2.0", ""),
 			},
-			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "mitre single version fallback",
@@ -95,7 +94,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			wantRanges: []*osvschema.Range{
 				conversion.BuildVersionRange("", "3.0", ""),
 			},
-			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "mitre multiple versions fallback",
@@ -118,7 +116,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				conversion.BuildVersionRange("3.0", "3.0", ""),
 				conversion.BuildVersionRange("3.1", "3.1", ""),
 			},
-			wantRangeType: VersionRangeTypeSemver,
 		},
 		{
 			name: "github range",
@@ -133,7 +130,6 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 			wantRanges: []*osvschema.Range{
 				conversion.BuildVersionRange("2.0", "", "2.5"),
 			},
-			wantRangeType: VersionRangeTypeEcosystem,
 		},
 		{
 			name: "git commit",
@@ -147,25 +143,101 @@ func TestFindNormalAffectedRanges(t *testing.T) {
 				},
 			},
 			wantRanges: []*osvschema.Range{
-				conversion.BuildVersionRange("deadbeef", "deadbeef", ""),
+				conversion.BuildGitVersionRange("deadbeef", "deadbeef", "", ""),
 			},
-			wantRangeType: VersionRangeTypeGit,
+		},
+		{
+			name: "changes preferred over lessThanOrEqual with filler version",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:          "affected",
+						Version:         "n/a",
+						LessThanOrEqual: "1.0.32",
+						Changes: []models.Change{
+							{At: "1.0.33", Status: "unaffected"},
+						},
+						VersionType: "custom",
+					},
+				},
+			},
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "1.0.33"),
+			},
+		},
+		{
+			name: "split range pair (CVE-2022-25929)",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:      "affected",
+						Version:     "1.31.0",
+						LessThan:    "unspecified",
+						VersionType: "custom",
+					},
+					{
+						Status:      "affected",
+						Version:     "unspecified",
+						LessThan:    "1.36.1",
+						VersionType: "custom",
+					},
+				},
+			},
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("1.31.0", "", "1.36.1"),
+			},
+		},
+		{
+			name: "multi split range (CVE-2022-25761)",
+			affected: models.Affected{
+				Versions: []models.Versions{
+					{
+						Status:      "affected",
+						Version:     "unspecified",
+						LessThan:    "1.2.5",
+						VersionType: "custom",
+					},
+					{
+						Status:      "affected",
+						Version:     "1.3-rc1",
+						LessThan:    "unspecified",
+						VersionType: "custom",
+					},
+					{
+						Status:      "affected",
+						Version:     "unspecified",
+						LessThan:    "1.3.1",
+						VersionType: "custom",
+					},
+				},
+			},
+			wantRanges: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "1.2.5"),
+				conversion.BuildVersionRange("1.3-rc1", "", "1.3.1"),
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			versionExtractor := &DefaultVersionExtractor{}
-			gotRangesWithMeta, gotRangeType := versionExtractor.FindNormalAffectedRanges(tt.affected, &models.ConversionMetrics{CNA: tt.cnaAssigner})
+			var strategyList []strategies.VersionStrategy
+			switch strings.ToLower(tt.cnaAssigner) {
+			case "linux":
+				strategyList = strategies.Linux()
+			case "github_m", "github":
+				strategyList = strategies.GitHub()
+			case "mitre":
+				strategyList = strategies.MITRE()
+			default:
+				strategyList = strategies.Default()
+			}
+			gotRangesWithMeta := ExtractAffectedRanges(tt.affected, strategyList, &models.ConversionMetrics{CNA: tt.cnaAssigner})
 			var gotRanges []*osvschema.Range
 			for _, r := range gotRangesWithMeta {
 				gotRanges = append(gotRanges, r.Range)
 			}
 			if diff := cmp.Diff(tt.wantRanges, gotRanges, protocmp.Transform()); diff != "" {
-				t.Errorf("findNormalAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
-			}
-			if gotRangeType != tt.wantRangeType {
-				t.Errorf("findNormalAffectedRanges() range type = %v, want %v", gotRangeType, tt.wantRangeType)
+				t.Errorf("ExtractAffectedRanges() ranges mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -186,8 +258,8 @@ func TestCompareSemverLike(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := compareSemverLike(tt.a, tt.b); got != tt.want {
-				t.Errorf("compareSemverLike() = %v, want %v", got, tt.want)
+			if got := strategies.CompareSemverLike(tt.a, tt.b); got != tt.want {
+				t.Errorf("CompareSemverLike() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -197,7 +269,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 	tests := []struct {
 		name        string
 		affected    models.Affected
-		versionType VersionRangeType
+		versionType strategies.VersionRangeType
 		cnaAssigner string
 		want        []*osvschema.Range
 	}{
@@ -218,7 +290,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			versionType: VersionRangeTypeSemver,
+			versionType: strategies.VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
 				conversion.BuildVersionRange("5.0.0", "", "5.10.1"),
@@ -236,7 +308,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			versionType: VersionRangeTypeUnknown,
+			versionType: strategies.VersionRangeTypeUnknown,
 			cnaAssigner: "NotLinux",
 			want:        nil,
 		},
@@ -257,7 +329,7 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 					},
 				},
 			},
-			versionType: VersionRangeTypeSemver,
+			versionType: strategies.VersionRangeTypeSemver,
 			cnaAssigner: "Linux",
 			want: []*osvschema.Range{
 				conversion.BuildVersionRange("4.0.0", "", "4.5.2"),
@@ -406,6 +478,40 @@ func TestGetVersionExtractor(t *testing.T) {
 				t.Errorf("GetVersionExtractor() returned type %v, want %v", reflect.TypeOf(extractor), tc.expectedType)
 			}
 		})
+	}
+}
+
+func TestDefaultVersionExtractor_SliceOrderPrecedence(t *testing.T) {
+	t.Parallel()
+	affected := models.Affected{
+		Versions: []models.Versions{
+			{
+				Status:      "affected",
+				Version:     "1.0.0",
+				LessThan:    "1.5.0",
+				VersionType: "semver",
+			},
+		},
+	}
+
+	// When StandardRangeStrategy is first in slice order:
+	pipeline1 := []strategies.VersionStrategy{
+		&strategies.StandardRangeStrategy{},
+		&strategies.StandaloneSingleVersionStrategy{},
+	}
+	ranges1 := ExtractAffectedRanges(affected, pipeline1, &models.ConversionMetrics{})
+	if len(ranges1) != 1 || ranges1[0].Range.GetEvents()[1].GetFixed() != "1.5.0" {
+		t.Fatalf("expected StandardRangeStrategy to match first, got: %+v", ranges1)
+	}
+
+	// When StandaloneSingleVersionStrategy is first in slice order:
+	pipeline2 := []strategies.VersionStrategy{
+		&strategies.StandaloneSingleVersionStrategy{},
+		&strategies.StandardRangeStrategy{},
+	}
+	ranges2 := ExtractAffectedRanges(affected, pipeline2, &models.ConversionMetrics{})
+	if len(ranges2) != 1 || ranges2[0].Range.GetEvents()[1].GetLastAffected() != "1.0.0" {
+		t.Fatalf("expected StandaloneSingleVersionStrategy to match first when placed earlier, got: %+v", ranges2)
 	}
 }
 
@@ -615,6 +721,22 @@ func TestExtractVersions(t *testing.T) {
 					},
 				}},
 		},
+		{
+			name:        "CVE-2026-67185",
+			cve:         loadTestData(t, "CVE-2026-67185"),
+			cnaAssigner: "VulnCheck",
+			repos:       []string{"https://github.com/GeneralSandman/TinyWeb"},
+			expectedAffected: []*osvschema.Affected{{
+				Ranges: []*osvschema.Range{{
+					Repo: "https://github.com/GeneralSandman/TinyWeb",
+					Type: osvschema.Range_GIT,
+					Events: []*osvschema.Event{
+						{Introduced: "0b3b5fdb5a058f50248cd8547824936b8dd10351"},
+						{LastAffected: "a381da252fe8e873c8aff22703040426cc9b2ae0"},
+					},
+				}},
+			}},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -632,5 +754,72 @@ func TestExtractVersions(t *testing.T) {
 				t.Errorf("ExtractVersions() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestExtractVersions_NoReposEarlyExit(t *testing.T) {
+	cve := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID:             "CVE-2026-0001",
+			AssignerShortName: "mitre",
+		},
+		Containers: struct {
+			CNA models.CNA   `json:"cna"`
+			ADP []models.CNA `json:"adp,omitempty"`
+		}{
+			CNA: models.CNA{
+				Affected: []models.Affected{
+					{
+						Vendor:  "Vendor",
+						Product: "Product",
+						Versions: []models.Versions{
+							{
+								Status:   "affected",
+								Version:  "1.0.0",
+								LessThan: "1.2.0",
+							},
+						},
+					},
+				},
+				Descriptions: []models.LangString{
+					{
+						Lang:  "en",
+						Value: "Vulnerability in Product before 1.2.0 allows attackers to execute code.",
+					},
+				},
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{CVEID: "CVE-2026-0001", CNA: "mitre"}
+	v := vulns.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: "CVE-2026-0001",
+		},
+	}
+
+	extractor := GetVersionExtractor("mitre")
+	r := testutils.SetupGitVCR(t)
+	cache := &git.InMemoryRepoTagsCache{}
+	extractor.ExtractVersions(cve, &v, metrics, []string{}, cache, r.GetDefaultClient())
+
+	if metrics.Outcome != models.NoRepos {
+		t.Errorf("expected outcome to be NoRepos, got %v", metrics.Outcome)
+	}
+
+	// Should not have attempted fallback to description
+	for _, note := range metrics.Notes {
+		if strings.Contains(note, "attempting extraction from description") || strings.Contains(note, "attempting to extract from CPE") {
+			t.Errorf("unexpected fallback note present when repos is empty: %s", note)
+		}
+	}
+
+	if v.DatabaseSpecific == nil {
+		t.Fatalf("expected DatabaseSpecific to be populated with unresolved_ranges")
+	}
+
+	fields := v.DatabaseSpecific.GetFields()
+	if _, ok := fields["unresolved_ranges"]; !ok {
+		t.Errorf("expected unresolved_ranges in DatabaseSpecific")
 	}
 }

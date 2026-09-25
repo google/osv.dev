@@ -240,7 +240,8 @@ func main() {
 		logger.Fatal("Failed to generate curl configuration", slog.Any("err", err))
 	}
 
-	if err := ExecuteCurl(ctx, cfgPath, workDir); err != nil {
+	downloadDir := filepath.Join(workDir, "metadata.ftp-master.debian.org", "changelogs")
+	if err := ExecuteCurl(ctx, cfgPath, downloadDir); err != nil {
 		logger.Fatal("Curl download failed", slog.Any("err", err))
 	}
 

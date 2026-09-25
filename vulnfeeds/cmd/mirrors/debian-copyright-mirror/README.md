@@ -39,22 +39,17 @@ The `Source:` field provides a canonical, maintainer-verified URL to the upstrea
 graph TD
     A["Debian FTP Master<br/>(filelist.yaml.xz)"] -->|HTTP Stream & xz -dc| B["debian-copyright-mirror<br/>(Go binary)"]
     B -->|Streaming YAML Parser| C["Extract ~44k+ main/<br/>unstable_copyright paths"]
-    C -->|Channel-based Worker Pool| D["Download copyright files<br/>to local directory"]
-    D -->|Validate failure rate & count| E["Native Tar Streaming"]
+    C -->|Generate curl config & run curl --parallel| D["Download copyright files<br/>to local directory"]
+    D -->|tar -C workDir -cf tarPath .| E["Create Tar Archive"]
     E -->|GCS Client Writer| F["GCS Bucket<br/>(gs://cve-osv-conversion/...)"]
     F -->|tar -xf| G["cpe-repo-gen<br/>(CPE to Repo Mapping)"]
 ```
 
-1. **Manifest Streaming & Decompression**: Fetches `filelist.yaml.xz` from `https://metadata.ftp-master.debian.org/changelogs/filelist.yaml.xz` over HTTP and streams it directly through `xz -dc` stdin without intermediate disk roundtrips.
-2. **Manifest Parsing**: Parses the YAML manifest to discover all packages containing an `unstable_copyright` entry under the `unstable` suite in the `main` archive section.
+1. **Manifest Streaming & Decompression**: Fetches `filelist.yaml.xz` from `https://metadata.ftp-master.debian.org/changelogs/filelist.yaml.xz` over HTTP and streams it through `xz -dc` stdin.
+2. **Manifest Parsing**: Parses the YAML manifest line-by-line to discover all packages containing an `unstable_copyright` entry under the `unstable` suite in the `main` archive section.
 3. **Validation**: Asserts that the number of discovered files meets a sanity threshold (by default, at least 40,000 files) to ensure upstream feeds were not corrupted or truncated.
-4. **Optimized Concurrent Downloads**:
-   - Spawns a channel-based worker pool (default 50 workers) with HTTP/2 keep-alive connection reuse and exponential backoff retries.
-   - Optimized file and directory creation (avoids redundant `MkdirAll` calls on existing directories).
-   - Tracks success/failure metrics and enforces a maximum failure threshold (`-max-failure-rate`) to prevent false-positive completions on network or CDN outages.
-   - Supports incremental runs with `-skip-existing` to skip re-downloading unchanged files.
-   - Optional: Delegated download via `curl --parallel` using generated curl configuration files (`-use-curl`).
-5. **Native Archival & GCS Streaming**: Packages the downloaded mirror into a `.tar` archive and streams it directly to Google Cloud Storage (e.g. `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`) using the Cloud Storage client.
+4. **Parallel Downloads via Curl**: Generates a configuration file and executes `curl --parallel --create-dirs --config <config>` to download all copyright files into `<workDir>/metadata.ftp-master.debian.org/changelogs/`.
+5. **Archiving & GCS Upload**: Uses `tar` to archive `<workDir>` (producing `./metadata.ftp-master.debian.org/changelogs/main/...` entries expected by `cpe-repo-gen`) and uploads the resulting `.tar` archive directly to Google Cloud Storage (e.g. `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`).
 
 ---
 
@@ -70,19 +65,16 @@ go run ./cmd/mirrors/debian-copyright-mirror [flags] [work_dir]
 Examples:
 
 ```bash
-# Download copyright files into ./debian_copyright (relative to current directory) using 50 workers
-go run ./cmd/mirrors/debian-copyright-mirror -workers 50
+# Download copyright files into ./debian_copyright (relative to current directory)
+go run ./cmd/mirrors/debian-copyright-mirror
 
 # Specify a custom relative output directory
 go run ./cmd/mirrors/debian-copyright-mirror -out-dir debian_copyright
 
-# Incremental run skipping already downloaded files
-go run ./cmd/mirrors/debian-copyright-mirror -skip-existing
-
 # Download and create a local tar archive
 go run ./cmd/mirrors/debian-copyright-mirror -tar-path debian_copyright.tar
 
-# Download and stream directly to GCS
+# Download and upload directly to GCS
 go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_copyright.tar
 ```
 
@@ -90,21 +82,14 @@ go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_cop
 
 | Flag | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `-out-dir` | string | `debian_copyright` | Target directory (relative or absolute) to save downloaded copyright files. |
+| `-out-dir` | string | `debian_copyright` | Target directory to save downloaded copyright files (defaults to `$WORK_DIR` if set). |
 | `-work-dir` | string | `""` | Alias for `-out-dir` (can also be passed as the first positional argument). |
-| `-workers` | int | `50` | Number of concurrent download workers. |
-| `-skip-existing` | bool | `false` | Skip downloading files that already exist on disk with non-zero size. |
-| `-max-failure-rate` | float | `0.05` | Maximum allowable fraction of failed downloads (e.g. `0.05` = 5%) before failing the job. |
-| `-gcs-path` | string | `""` | Destination GCS path for the tarball archive (e.g. `gs://bucket/debian_copyright.tar`). Defaults to `$GCS_PATH` if unset. |
 | `-tar-path` | string | `""` | Optional local destination path for tarball archive (e.g. `debian_copyright.tar`). |
+| `-gcs-path` | string | `""` | Destination GCS path for the tarball archive (defaults to `$GCS_PATH` if unset). |
 | `-filelist-url` | string | `https://metadata.ftp-master.debian.org/changelogs/filelist.yaml.xz` | URL of the Debian filelist YAML archive. |
 | `-url-base` | string | `https://metadata.ftp-master.debian.org/changelogs` | Base URL for downloading individual copyright files. |
 | `-prefix-filter` | string | `main/` | Archive section prefix to filter (e.g., `main/`). |
 | `-min-expected-files` | int | `40000` | Minimum expected number of copyright files; fails if fewer are found. |
-| `-use-curl` | bool | `false` | Delegate downloads to `curl --parallel` instead of Go worker pool. |
-| `-curl-config-file` | string | `""` | Optional path to output the generated curl configuration file. |
-| `-curl-config-only` | bool | `false` | Generate the curl configuration file and exit immediately without downloading. |
-
 
 ---
 
@@ -123,4 +108,4 @@ docker build -t gcr.io/oss-vdb/debian-copyright-mirror:latest -f cmd/mirrors/deb
 In production, this mirror runs as a scheduled Kubernetes `CronJob` in GKE (defined in `deployment/clouddeploy/gke-workers/base/feeds/debian-copyright-mirror.yaml` and environment overlays):
 
 - **Schedule**: Runs daily (`0 5 * * *` Sydney time).
-- **Entrypoint**: Runs the `debian-copyright-mirror` Go binary directly, which reads `WORK_DIR` (e.g. `/scratch`) and `GCS_PATH` (e.g. `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`) from the environment and streams the archive directly to Cloud Storage.
+- **Entrypoint**: Runs the `debian-copyright-mirror` Go binary directly, which reads `WORK_DIR` (e.g. `/scratch`) and `GCS_PATH` (e.g. `gs://cve-osv-conversion/debian_copyright/debian_copyright.tar`) from the environment, downloads with `curl`, packages with `tar`, and uploads the archive to Cloud Storage.

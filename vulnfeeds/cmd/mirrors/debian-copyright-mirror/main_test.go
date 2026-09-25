@@ -15,8 +15,11 @@
 package main
 
 import (
+	"archive/tar"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -140,6 +143,7 @@ func TestGenerateCurlConfiguration(t *testing.T) {
 }
 
 func TestExecuteCurl(t *testing.T) {
+	t.Setenv("NO_PROXY", "127.0.0.1,localhost")
 	fileMap := map[string]string{
 		"main/a/pkg1/unstable_copyright": "Copyright pkg1\n",
 		"main/b/pkg2/unstable_copyright": "Copyright pkg2\n",
@@ -189,7 +193,7 @@ func TestExecuteCurl(t *testing.T) {
 func TestCreateTarArchive(t *testing.T) {
 	tempDir := t.TempDir()
 	workDir := filepath.Join(tempDir, "work")
-	subDir := filepath.Join(workDir, "main", "a", "pkg1")
+	subDir := filepath.Join(workDir, "metadata.ftp-master.debian.org", "changelogs", "main", "a", "pkg1")
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
@@ -209,5 +213,38 @@ func TestCreateTarArchive(t *testing.T) {
 	}
 	if fi.Size() == 0 {
 		t.Errorf("Expected non-empty tar archive")
+	}
+
+	f, err := os.Open(tarPath)
+	if err != nil {
+		t.Fatalf("Failed to open tar archive: %v", err)
+	}
+	defer f.Close()
+
+	tr := tar.NewReader(f)
+	var entries []string
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("Error reading tar archive: %v", err)
+		}
+		entries = append(entries, hdr.Name)
+	}
+
+	wantEntry := "./metadata.ftp-master.debian.org/changelogs/main/a/pkg1/unstable_copyright"
+	found := false
+	for _, entry := range entries {
+		if entry == wantEntry {
+			found = true
+		}
+		if strings.HasSuffix(entry, "test_archive.tar") {
+			t.Errorf("Tar archive should not contain itself, found entry: %s", entry)
+		}
+	}
+	if !found {
+		t.Errorf("Expected tar entry %q not found in archive; entries = %v", wantEntry, entries)
 	}
 }

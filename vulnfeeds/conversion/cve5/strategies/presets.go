@@ -33,8 +33,6 @@ func GitHub() []VersionStrategy {
 	}
 }
 
-
-
 // MITRE returns the strategy pipeline for MITRE advisories.
 // Example: test_data/cvelistV5/cves/2021/26xxx/CVE-2021-26917.json,
 // test_data/cve5/CVE-2016-1897.json

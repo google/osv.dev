@@ -156,6 +156,7 @@ func TestParseRepoTarget(t *testing.T) {
 				if err == nil {
 					t.Fatalf("ParseRepoTarget(%q) expected error, got nil", tc.input)
 				}
+
 				return
 			}
 
@@ -240,21 +241,22 @@ func TestGitHubClient_FetchAdvisories_Pagination(t *testing.T) {
 		if r.Header.Get("Accept") != "application/vnd.github+json" {
 			t.Errorf("expected Accept header for github+json, got %q", r.Header.Get("Accept"))
 		}
-		if r.Header.Get("X-GitHub-Api-Version") != "2022-11-28" {
-			t.Errorf("expected API version header, got %q", r.Header.Get("X-GitHub-Api-Version"))
+		if r.Header.Get("X-Github-Api-Version") != "2022-11-28" {
+			t.Errorf("expected API version header, got %q", r.Header.Get("X-Github-Api-Version"))
 		}
 
 		cursor := r.URL.Query().Get("after")
 		w.Header().Set("Content-Type", "application/json")
 
-		if cursor == "" {
+		switch cursor {
+		case "":
 			// Page 1: return page1 and next link
 			w.Header().Set("Link", `<`+serverURL+`/repos/test-owner/test-repo/security-advisories?per_page=100&after=page2cursor>; rel="next"`)
 			_ = json.NewEncoder(w).Encode(page1Advisories)
-		} else if cursor == "page2cursor" {
+		case "page2cursor":
 			// Page 2: return page2 without next link
 			_ = json.NewEncoder(w).Encode(page2Advisories)
-		} else {
+		default:
 			http.NotFound(w, r)
 		}
 	}))
@@ -301,10 +303,11 @@ func TestGitHubClient_FetchAdvisories_RetryOn429(t *testing.T) {
 	t.Parallel()
 
 	var attempts atomic.Int32
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if attempts.Add(1) == 1 {
 			w.WriteHeader(http.StatusTooManyRequests)
 			_, _ = w.Write([]byte(`{"message": "rate limit exceeded"}`))
+
 			return
 		}
 
@@ -343,7 +346,8 @@ func TestCollectRepos(t *testing.T) {
 	reposCSV := "repo/from-csv-1, repo/from-csv-2"
 	positional := []string{"repo/positional", "repo/from-file-1"}
 
-	repos, err := collectRepos(reposCSV, filePath, positional)
+	ctx := context.Background()
+	repos, err := collectRepos(ctx, reposCSV, filePath, "", positional, nil)
 	if err != nil {
 		t.Fatalf("collectRepos failed: %v", err)
 	}
@@ -361,7 +365,7 @@ func TestCollectRepos(t *testing.T) {
 	}
 
 	// Test non-existent file returns error
-	_, err = collectRepos("", filepath.Join(tmpDir, "does-not-exist.txt"), nil)
+	_, err = collectRepos(ctx, "", filepath.Join(tmpDir, "does-not-exist.txt"), "", nil, nil)
 	if err == nil {
 		t.Errorf("collectRepos with non-existent file expected error, got nil")
 	}

@@ -4,6 +4,7 @@ go 1.27.0
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
+	cloud.google.com/go/datastore v1.25.0
 	cloud.google.com/go/secretmanager v1.21.0
 	cloud.google.com/go/storage v1.66.0
 	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2

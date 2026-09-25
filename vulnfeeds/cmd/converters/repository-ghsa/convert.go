@@ -100,7 +100,7 @@ func ConvertAdvisoryToOSV(advisory GHSAAdvisory, repoTarget RepoTarget, normaliz
 	}
 	if advisory.CVEID != nil && *advisory.CVEID != "" {
 		rawRefs = append(rawRefs, models.Reference{
-			URL:  fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", *advisory.CVEID),
+			URL:  "https://nvd.nist.gov/vuln/detail/" + *advisory.CVEID,
 			Tags: []string{"advisory"},
 		})
 	}
@@ -110,6 +110,9 @@ func ConvertAdvisoryToOSV(advisory GHSAAdvisory, repoTarget RepoTarget, normaliz
 		}
 	}
 	references := vulns.ClassifyReferences(rawRefs)
+
+	// Process affected items and resolve version ranges to Git commits
+	affectedList, unresolvedRanges := buildAffectedList(advisory, repoTarget, normalizedTags)
 
 	// Build database_specific map
 	dbSpecificMap := map[string]any{
@@ -125,13 +128,13 @@ func ConvertAdvisoryToOSV(advisory GHSAAdvisory, repoTarget RepoTarget, normaliz
 	if advisory.URL != "" {
 		dbSpecificMap["url"] = advisory.URL
 	}
+	if len(unresolvedRanges) > 0 {
+		dbSpecificMap["unresolved_ranges"] = unresolvedRanges
+	}
 	dbSpecificStruct, err := utility.NewStructpbFromMap(dbSpecificMap)
 	if err != nil {
 		logger.Warn("Failed to construct database_specific structpb", slog.String("id", advisory.GHSAID), slog.Any("error", err))
 	}
-
-	// Process affected items and resolve version ranges to Git commits
-	affectedList := buildAffectedList(advisory, repoTarget, normalizedTags)
 
 	v := &vulns.Vulnerability{
 		Vulnerability: &osvschema.Vulnerability{
@@ -153,84 +156,87 @@ func ConvertAdvisoryToOSV(advisory GHSAAdvisory, repoTarget RepoTarget, normaliz
 	return v, nil
 }
 
+// toExtractedEvents converts an AffectedVersion into a slice of raw version osvschema.Event objects,
+// mirroring the behavior of vulnfeeds CVE conversion.
+func toExtractedEvents(av models.AffectedVersion) []*osvschema.Event {
+	var events []*osvschema.Event
+	intro := av.Introduced
+	if intro == "" {
+		intro = "0"
+	}
+	events = append(events, &osvschema.Event{Introduced: intro})
+	if av.Fixed != "" {
+		events = append(events, &osvschema.Event{Fixed: av.Fixed})
+	} else if av.LastAffected != "" {
+		events = append(events, &osvschema.Event{LastAffected: av.LastAffected})
+	}
+
+	return events
+}
+
 // buildAffectedList processes each vulnerability item in the advisory, resolving version ranges to Git commits.
-func buildAffectedList(advisory GHSAAdvisory, repoTarget RepoTarget, normalizedTags map[string]git.NormalizedTag) []*osvschema.Affected {
-	var affectedList []*osvschema.Affected
+// Package and ecosystem fields are omitted as repository-specific advisories represent Git repository records.
+// Returns the affected list and any unresolved range records for top-level database_specific.
+func buildAffectedList(advisory GHSAAdvisory, repoTarget RepoTarget, normalizedTags map[string]git.NormalizedTag) ([]*osvschema.Affected, []map[string]any) {
+	var gitRanges []*osvschema.Range
+	var unresolvedRanges []map[string]any
+	var allParsedRanges []models.AffectedVersion
 
 	for _, vuln := range advisory.Vulnerabilities {
-		var pkg *osvschema.Package
-		if vuln.Package != nil && vuln.Package.Name != nil && *vuln.Package.Name != "" {
-			pkg = &osvschema.Package{
-				Name:      *vuln.Package.Name,
-				Ecosystem: mapGHSAToOSVEcosystem(vuln.Package.Ecosystem),
-			}
-		}
-
 		vRangeStr := derefString(vuln.VulnerableVersionRange)
 		patchedVersionsStr := derefString(vuln.PatchedVersions)
 
 		parsedRanges := ParseAdvisoryVersionRanges(vRangeStr, patchedVersionsStr)
+		allParsedRanges = append(allParsedRanges, parsedRanges...)
 
-		var gitRanges []*osvschema.Range
 		for _, pr := range parsedRanges {
 			gitRange := resolveRangeToGit(pr, repoTarget.CanonicalURL, normalizedTags, advisory.GHSAID)
 			if gitRange != nil {
 				gitRanges = append(gitRanges, gitRange)
+			} else {
+				unresolvedRanges = append(unresolvedRanges, map[string]any{
+					"extracted_events": toExtractedEvents(pr),
+					"source":           string(models.VersionSourceAffected),
+				})
 			}
-		}
-
-		// Also preserve raw ecosystem range if git range couldn't be resolved or as supplementary info
-		var allRanges []*osvschema.Range
-		allRanges = append(allRanges, gitRanges...)
-
-		if len(allRanges) == 0 && (vRangeStr != "" || patchedVersionsStr != "") {
-			// Fallback: if no git tags matched, keep an ECOSYSTEM range with version text so information isn't lost
-			ecoRange := &osvschema.Range{
-				Type: osvschema.Range_ECOSYSTEM,
-			}
-			for _, pr := range parsedRanges {
-				if pr.Introduced != "" {
-					ecoRange.Events = append(ecoRange.Events, &osvschema.Event{Introduced: pr.Introduced})
-				}
-				if pr.Fixed != "" {
-					ecoRange.Events = append(ecoRange.Events, &osvschema.Event{Fixed: pr.Fixed})
-				} else if pr.LastAffected != "" {
-					ecoRange.Events = append(ecoRange.Events, &osvschema.Event{LastAffected: pr.LastAffected})
-				}
-			}
-			if len(ecoRange.Events) > 0 {
-				allRanges = append(allRanges, ecoRange)
-			}
-		}
-
-		if len(allRanges) > 0 || pkg != nil {
-			aff := &osvschema.Affected{
-				Package: pkg,
-				Ranges:  allRanges,
-			}
-			affectedList = append(affectedList, aff)
 		}
 	}
 
-	// If no vulnerabilities were declared on the advisory, create a default affected entry for the repository
-	if len(affectedList) == 0 {
-		affectedList = append(affectedList, &osvschema.Affected{
-			Ranges: []*osvschema.Range{
-				{
-					Type: osvschema.Range_GIT,
-					Repo: repoTarget.CanonicalURL,
-					Events: []*osvschema.Event{
-						{Introduced: "0"},
-					},
-				},
+	// If no git ranges could be resolved, fall back to default Range_GIT introduced at dawn of time ("0")
+	if len(gitRanges) == 0 {
+		fallbackRange := &osvschema.Range{
+			Type: osvschema.Range_GIT,
+			Repo: repoTarget.CanonicalURL,
+			Events: []*osvschema.Event{
+				{Introduced: "0"},
 			},
-		})
+		}
+		fallbackEvents := make([]*osvschema.Event, 0, len(allParsedRanges)*2)
+		for _, pr := range allParsedRanges {
+			fallbackEvents = append(fallbackEvents, toExtractedEvents(pr)...)
+		}
+		if len(fallbackEvents) > 0 {
+			dbSpecificMap := map[string]any{
+				"extracted_events": fallbackEvents,
+				"source":           string(models.VersionSourceAffected),
+			}
+			if dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap); err == nil {
+				fallbackRange.DatabaseSpecific = dbSpecific
+			}
+		}
+		gitRanges = append(gitRanges, fallbackRange)
 	}
 
-	// Group and deduplicate ranges
+	affectedList := []*osvschema.Affected{
+		{
+			Ranges: gitRanges,
+		},
+	}
+
+	// Group and deduplicate ranges (merging database_specific.extracted_events)
 	conversion.GroupAffectedRanges(affectedList)
 
-	return affectedList
+	return affectedList, unresolvedRanges
 }
 
 // resolveRangeToGit resolves introduced and fixed/last_affected version strings to commit hashes using normalizedTags.
@@ -292,6 +298,19 @@ func resolveRangeToGit(av models.AffectedVersion, repoURL string, normalizedTags
 		gitRange.Events = append(gitRange.Events, &osvschema.Event{LastAffected: lastAffCommit})
 	}
 
+	extractedEvents := toExtractedEvents(av)
+	if len(extractedEvents) > 0 {
+		dbSpecificMap := map[string]any{
+			"extracted_events": extractedEvents,
+			"source":           string(models.VersionSourceAffected),
+		}
+		if dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap); err == nil {
+			gitRange.DatabaseSpecific = dbSpecific
+		} else {
+			logger.Warn("Failed to create database_specific for git range", slog.String("id", ghsaID), slog.Any("error", err))
+		}
+	}
+
 	return gitRange
 }
 
@@ -317,7 +336,7 @@ func ParseAdvisoryVersionRanges(vRange string, patchedVersions string) []models.
 
 	// If no ranges could be parsed from vRange but patchedVersions is available
 	if len(results) == 0 && patchedVersions != "" {
-		for _, pv := range strings.Split(patchedVersions, ",") {
+		for pv := range strings.SplitSeq(patchedVersions, ",") {
 			pv = strings.TrimSpace(pv)
 			if pv != "" {
 				results = append(results, models.AffectedVersion{
@@ -351,8 +370,8 @@ func parseSingleRange(r string) (models.AffectedVersion, error) {
 	}
 
 	// Exact version: "= 1.2.3" or "=1.2.3"
-	if strings.HasPrefix(r, "=") {
-		v := strings.TrimSpace(strings.TrimPrefix(r, "="))
+	if rest, ok := strings.CutPrefix(r, "="); ok {
+		v := strings.TrimSpace(rest)
 		if v != "" {
 			return models.AffectedVersion{
 				Introduced:   v,
@@ -431,37 +450,6 @@ func collectCWEs(advisory GHSAAdvisory) []string {
 	slices.Sort(cwes)
 
 	return slices.Compact(cwes)
-}
-
-func mapGHSAToOSVEcosystem(ecosystem string) string {
-	switch strings.ToLower(ecosystem) {
-	case "rubygems":
-		return "RubyGems"
-	case "npm":
-		return "npm"
-	case "pip":
-		return "PyPI"
-	case "maven":
-		return "Maven"
-	case "nuget":
-		return "NuGet"
-	case "composer":
-		return "Packagist"
-	case "go":
-		return "Go"
-	case "rust":
-		return "crates.io"
-	case "erlang":
-		return "Hex"
-	case "actions":
-		return "GitHub Actions"
-	case "pub":
-		return "Pub"
-	case "swift":
-		return "SwiftURL"
-	default:
-		return ecosystem
-	}
 }
 
 var urlRegex = regexp.MustCompile(`https?://[^\s)\]>"']+`)

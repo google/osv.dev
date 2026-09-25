@@ -174,7 +174,7 @@ func (c *GitHubClient) SetBaseURL(baseURL string) {
 func (c *GitHubClient) FetchAdvisories(ctx context.Context, owner, repo, state string) ([]GHSAAdvisory, error) {
 	reqURL := fmt.Sprintf("%s/repos/%s/%s/security-advisories?per_page=100", c.baseURL, url.PathEscape(owner), url.PathEscape(repo))
 	if state != "" && state != "all" {
-		reqURL += fmt.Sprintf("&state=%s", url.QueryEscape(state))
+		reqURL += "&state=" + url.QueryEscape(state)
 	}
 
 	var allAdvisories []GHSAAdvisory
@@ -208,7 +208,7 @@ func (c *GitHubClient) fetchAdvisoriesPage(ctx context.Context, requestURL strin
 		}
 
 		req.Header.Set("Accept", "application/vnd.github+json")
-		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+		req.Header.Set("X-Github-Api-Version", "2022-11-28")
 		if c.token != "" {
 			req.Header.Set("Authorization", "Bearer "+c.token)
 		}
@@ -263,7 +263,7 @@ func parseNextLink(linkHeader string) string {
 		return ""
 	}
 
-	for _, part := range strings.Split(linkHeader, ",") {
+	for part := range strings.SplitSeq(linkHeader, ",") {
 		subparts := strings.Split(part, ";")
 		if len(subparts) < 2 {
 			continue
@@ -282,6 +282,7 @@ func parseNextLink(linkHeader string) string {
 			urlPart := strings.TrimSpace(subparts[0])
 			urlPart = strings.TrimPrefix(urlPart, "<")
 			urlPart = strings.TrimSuffix(urlPart, ">")
+
 			return urlPart
 		}
 	}

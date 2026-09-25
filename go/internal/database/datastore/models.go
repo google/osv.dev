@@ -136,6 +136,21 @@ type ListedVulnerability struct {
 	SearchIndices    []string       `datastore:"search_indices"`
 }
 
+func (l *ListedVulnerability) equal(other *ListedVulnerability) bool {
+	if l == nil || other == nil {
+		return l == other
+	}
+
+	return l.Published.Equal(other.Published) &&
+		l.Summary == other.Summary &&
+		l.IsFixed == other.IsFixed &&
+		slices.Equal(l.Ecosystems, other.Ecosystems) &&
+		slices.Equal(l.Packages, other.Packages) &&
+		slices.Equal(l.Severities, other.Severities) &&
+		slices.Equal(l.AutocompleteTags, other.AutocompleteTags) &&
+		slices.Equal(l.SearchIndices, other.SearchIndices)
+}
+
 type SourceRepository struct {
 	Type                    models.SourceRepositoryType `datastore:"type"`
 	Name                    string                      `datastore:"name"`

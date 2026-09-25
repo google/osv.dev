@@ -265,15 +265,19 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
-8. **`recoverer`**:
+10. **`recoverer`**:
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
+
+11. **`vanir_signatures`**:
+   - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
+- **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
   - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
   - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
@@ -309,10 +313,9 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)
-- **`worker` (`gcp/workers/worker/`)**: **Base Environment**. Retains shared Poetry dependencies and base Dockerfile for Python workers (`vanir_signatures`); legacy worker daemon replaced by Go worker under `go/cmd/worker/`.
+- **`worker` (`gcp/workers/worker/`)**: **Base Environment**. Retains shared Poetry dependencies and base Dockerfile for legacy Python workers; legacy worker daemon replaced by Go worker under `go/cmd/worker/`.
 - **ClusterFuzz Worker (`gcp/workers/oss_fuzz_worker/`, `gcp/workers/oss_fuzz_importer/`)**: **Barely Maintained**. Siloed workloads for OSS-Fuzz integration.
   - **Deployment Target**: **GKE** (managed via Cloud Deploy pipeline `oss-fuzz-workers`).
-- **`vanir_signatures`**: **Active (Python)**. Used for signature generation/verification.
 
 ### 4. Indexer (`gcp/indexer/`)
 - **Status**: **Active (Go)**.

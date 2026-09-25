@@ -136,7 +136,7 @@ type ListedVulnerability struct {
 	SearchIndices    []string       `datastore:"search_indices"`
 }
 
-func (l *ListedVulnerability) Equal(other *ListedVulnerability) bool {
+func (l *ListedVulnerability) equal(other *ListedVulnerability) bool {
 	if l == nil || other == nil {
 		return l == other
 	}

@@ -41,22 +41,10 @@ func TestExtractBinaryMappings(t *testing.T) {
 				"binary_name":    "libglib2.0-bin",
 				"binary_version": "2.40.2",
 			},
-			"simple-string-bin",
 		},
 	})
 	if err != nil {
 		t.Fatalf("failed to create ecoStruct: %v", err)
-	}
-
-	dbStruct, err := structpb.NewStruct(map[string]any{
-		"binaries": []any{
-			map[string]any{
-				"name": "db-specific-bin",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf("failed to create dbStruct: %v", err)
 	}
 
 	vuln := &osvschema.Vulnerability{
@@ -68,7 +56,6 @@ func TestExtractBinaryMappings(t *testing.T) {
 					Ecosystem: "Ubuntu:22.04:LTS",
 				},
 				EcosystemSpecific: ecoStruct,
-				DatabaseSpecific:  dbStruct,
 			},
 			{
 				Package: &osvschema.Package{
@@ -81,19 +68,9 @@ func TestExtractBinaryMappings(t *testing.T) {
 
 	got := ExtractBinaryMappings(vuln)
 
-	expected := map[string]map[string]struct{}{
-		"libglib2.0-0": {
-			"glib2.0": struct{}{},
-		},
-		"libglib2.0-bin": {
-			"glib2.0": struct{}{},
-		},
-		"simple-string-bin": {
-			"glib2.0": struct{}{},
-		},
-		"db-specific-bin": {
-			"glib2.0": struct{}{},
-		},
+	expected := map[string][]string{
+		"libglib2.0-0":   {"glib2.0"},
+		"libglib2.0-bin": {"glib2.0"},
 	}
 
 	if diff := cmp.Diff(expected, got); diff != "" {
@@ -113,13 +90,13 @@ func TestFindModifiedUbuntuIDs(t *testing.T) {
 		t.Fatalf("failed writing modified_id.csv: %v", err)
 	}
 
-	// 1. Nil lastRun should return all 3 IDs
-	allIDs, err := findModifiedUbuntuIDs(ctx, memGCS, nil)
+	// 1. Zero lastRun should return all 3 IDs
+	allIDs, err := findModifiedUbuntuIDs(ctx, memGCS, time.Time{})
 	if err != nil {
-		t.Fatalf("findModifiedUbuntuIDs(nil) failed: %v", err)
+		t.Fatalf("findModifiedUbuntuIDs(zero) failed: %v", err)
 	}
 	if diff := cmp.Diff([]string{"USN-3-1", "USN-2-1", "USN-1-1"}, allIDs); diff != "" {
-		t.Errorf("findModifiedUbuntuIDs(nil) mismatch (-want +got):\n%s", diff)
+		t.Errorf("findModifiedUbuntuIDs(zero) mismatch (-want +got):\n%s", diff)
 	}
 
 	// 2. lastRun at 2026-09-21T00:00:00Z should return USN-3-1 and USN-2-1
@@ -127,7 +104,7 @@ func TestFindModifiedUbuntuIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed parsing cutoff: %v", err)
 	}
-	filteredIDs, err := findModifiedUbuntuIDs(ctx, memGCS, &cutoff)
+	filteredIDs, err := findModifiedUbuntuIDs(ctx, memGCS, cutoff)
 	if err != nil {
 		t.Fatalf("findModifiedUbuntuIDs(cutoff) failed: %v", err)
 	}
@@ -169,7 +146,10 @@ func createZipArchive(t *testing.T, files map[string][]byte) []byte {
 func TestRun_EndToEnd(t *testing.T) {
 	ctx := context.Background()
 	memGCS := testutils.NewMockStorage()
-	ubuntuStore := jsonstore.NewInMemory()
+	ubuntuStore, err := jsonstore.New("")
+	if err != nil {
+		t.Fatalf("jsonstore.New failed: %v", err)
+	}
 
 	ecoStruct1, err := structpb.NewStruct(map[string]any{
 		"binaries": []any{
@@ -256,12 +236,12 @@ func TestRun_EndToEnd(t *testing.T) {
 		t.Errorf("initial mappings mismatch (-want +got):\n%s", diff)
 	}
 
-	// 2. Incremental run with localLastRun set so only 1 record (USN-2-1) matches, using individual file download path
+	// 2. Incremental run with lastRun set so only 1 record (USN-2-1) matches, using individual file download path
 	if err := memGCS.WriteObject(ctx, ubuntuModifiedCSVPath, []byte("2026-09-22T12:00:00Z,USN-2-1\n2026-09-20T12:00:00Z,USN-1-1\n"), nil); err != nil {
 		t.Fatalf("failed updating modified_id.csv: %v", err)
 	}
 	lastRun, _ := time.Parse(time.RFC3339, "2026-09-21T00:00:00Z")
-	env.localLastRun = &lastRun
+	env.lastRun = lastRun
 	env.zipThreshold = 10
 
 	if err := run(ctx, env); err != nil {

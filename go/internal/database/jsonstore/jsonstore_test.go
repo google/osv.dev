@@ -25,7 +25,10 @@ import (
 
 func TestJSONStore_InMemory(t *testing.T) {
 	ctx := context.Background()
-	store := NewInMemory()
+	store, err := New("")
+	if err != nil {
+		t.Fatalf("New(\"\") failed: %v", err)
+	}
 
 	// Initial GetMulti should return empty SourceNames
 	initial, err := store.GetMulti(ctx, []string{"pkg-a", "pkg-b"})

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
@@ -49,46 +50,38 @@ func NewUbuntuPackageMappingStore(client *datastore.Client) *UbuntuPackageMappin
 // GetMulti retrieves mappings for a slice of binary package names.
 // Any binary not found in Datastore will return an UbuntuPackageMapping with an empty SourceNames slice.
 func (s *UbuntuPackageMappingStore) GetMulti(ctx context.Context, binaryNames []string) ([]*models.UbuntuPackageMapping, error) {
-	if len(binaryNames) == 0 {
-		return []*models.UbuntuPackageMapping{}, nil
-	}
+	results := make([]*models.UbuntuPackageMapping, 0, len(binaryNames))
 
-	results := make([]*models.UbuntuPackageMapping, len(binaryNames))
-
-	for i := 0; i < len(binaryNames); i += maxDatastoreGetMultiBatchSize {
-		end := min(i+maxDatastoreGetMultiBatchSize, len(binaryNames))
-		chunkNames := binaryNames[i:end]
-
+	for chunkNames := range slices.Chunk(binaryNames, maxDatastoreGetMultiBatchSize) {
 		keys := make([]*datastore.Key, len(chunkNames))
 		entities := make([]*ubuntuPackageMappingEntity, len(chunkNames))
 		for j, name := range chunkNames {
 			keys[j] = datastore.NameKey(UbuntuPackageMappingKind, name, nil)
 		}
 
-		err := s.client.GetMulti(ctx, keys, entities)
-		if err != nil {
-			if multiErr, ok := errors.AsType[datastore.MultiError](err); ok {
-				for j, e := range multiErr {
-					if errors.Is(e, datastore.ErrNoSuchEntity) {
-						entities[j] = nil
-					} else if e != nil {
-						return nil, fmt.Errorf("failed to get multi UbuntuPackageMapping: %w", err)
-					}
-				}
-			} else {
+		if err := s.client.GetMulti(ctx, keys, entities); err != nil {
+			multiErr, ok := errors.AsType[datastore.MultiError](err)
+			if !ok {
 				return nil, fmt.Errorf("failed to get multi UbuntuPackageMapping: %w", err)
+			}
+			for j, e := range multiErr {
+				if errors.Is(e, datastore.ErrNoSuchEntity) {
+					entities[j] = nil
+				} else if e != nil {
+					return nil, fmt.Errorf("failed to get multi UbuntuPackageMapping: %w", err)
+				}
 			}
 		}
 
 		for j, name := range chunkNames {
-			mapping := &models.UbuntuPackageMapping{
+			sourceNames := []string{}
+			if entities[j] != nil && len(entities[j].SourceNames) > 0 {
+				sourceNames = entities[j].SourceNames
+			}
+			results = append(results, &models.UbuntuPackageMapping{
 				BinaryName:  name,
-				SourceNames: []string{},
-			}
-			if j < len(entities) && entities[j] != nil && len(entities[j].SourceNames) > 0 {
-				mapping.SourceNames = entities[j].SourceNames
-			}
-			results[i+j] = mapping
+				SourceNames: sourceNames,
+			})
 		}
 	}
 
@@ -97,24 +90,13 @@ func (s *UbuntuPackageMappingStore) GetMulti(ctx context.Context, binaryNames []
 
 // PutMulti creates or updates package mappings for multiple binary package names.
 func (s *UbuntuPackageMappingStore) PutMulti(ctx context.Context, mappings []*models.UbuntuPackageMapping) error {
-	if len(mappings) == 0 {
-		return nil
-	}
-
-	for i := 0; i < len(mappings); i += maxDatastorePutMultiBatchSize {
-		end := min(i+maxDatastorePutMultiBatchSize, len(mappings))
-		chunk := mappings[i:end]
-
+	for chunk := range slices.Chunk(mappings, maxDatastorePutMultiBatchSize) {
 		keys := make([]*datastore.Key, len(chunk))
 		entities := make([]*ubuntuPackageMappingEntity, len(chunk))
 		for j, m := range chunk {
 			keys[j] = datastore.NameKey(UbuntuPackageMappingKind, m.BinaryName, nil)
-			sourceNames := m.SourceNames
-			if sourceNames == nil {
-				sourceNames = []string{}
-			}
 			entities[j] = &ubuntuPackageMappingEntity{
-				SourceNames: sourceNames,
+				SourceNames: m.SourceNames,
 			}
 		}
 

@@ -77,13 +77,6 @@ func New(filePath string) (*JSONStore, error) {
 	return store, nil
 }
 
-// NewInMemory creates an in-memory store without file persistence.
-func NewInMemory() *JSONStore {
-	store, _ := New("")
-
-	return store
-}
-
 // GetMulti retrieves package mappings for multiple binary names.
 func (s *JSONStore) GetMulti(_ context.Context, binaryNames []string) ([]*models.UbuntuPackageMapping, error) {
 	s.mu.RLock()
@@ -118,22 +111,6 @@ func (s *JSONStore) PutMulti(_ context.Context, mappings []*models.UbuntuPackage
 		s.mappings[item.BinaryName] = slices.Compact(srcs)
 	}
 
-	if s.filePath != "" {
-		return s.saveLocked()
-	}
-
-	return nil
-}
-
-// Save writes the in-memory state out to the JSON file.
-func (s *JSONStore) Save() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.saveLocked()
-}
-
-func (s *JSONStore) saveLocked() error {
 	if s.filePath == "" {
 		return nil
 	}

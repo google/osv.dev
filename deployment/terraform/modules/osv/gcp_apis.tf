@@ -103,3 +103,15 @@ resource "google_project_service" "certificate_manager" {
   service            = "certificatemanager.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "cloud_trace" {
+  project            = var.project_id
+  service            = "cloudtrace.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "telemetry" {
+  project            = var.project_id
+  service            = "telemetry.googleapis.com"
+  disable_on_destroy = false
+}

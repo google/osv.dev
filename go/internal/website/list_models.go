@@ -2,7 +2,6 @@ package website
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -11,10 +10,7 @@ import (
 )
 
 // EcosystemCount represents an ecosystem filter option and its vulnerability count.
-type EcosystemCount struct {
-	Name  string
-	Count int
-}
+type EcosystemCount = models.EcosystemCount
 
 // ListedVulnerabilityDisplay wraps models.ListedVulnerability with website presentation methods.
 type ListedVulnerabilityDisplay models.ListedVulnerability
@@ -42,10 +38,7 @@ func formatRelativeTime(value, now time.Time) string {
 		return ""
 	}
 
-	diff := now.Sub(value)
-	if diff < 0 {
-		diff = 0
-	}
+	diff := max(now.Sub(value), 0)
 
 	diffSeconds := int64(diff.Seconds())
 	diffMinutes := diffSeconds / 60
@@ -83,8 +76,8 @@ func formatRelativeTime(value, now time.Time) string {
 }
 
 func stripScheme(rawURL string) string {
-	if idx := strings.Index(rawURL, "://"); idx != -1 {
-		return rawURL[idx+3:]
+	if _, after, ok := strings.Cut(rawURL, "://"); ok {
+		return after
 	}
 
 	return rawURL
@@ -96,10 +89,7 @@ func (v ListedVulnerabilityDisplay) DisplayPackages() []string {
 		return nil
 	}
 
-	limit := len(v.Packages)
-	if limit > 5 {
-		limit = 5
-	}
+	limit := min(len(v.Packages), 5)
 
 	result := make([]string, 0, limit)
 	for i := range limit {
@@ -160,19 +150,9 @@ type ListPageData struct {
 
 	Query               string
 	SelectedEcosystem   string
-	Page                int
-	TotalPages          int
+	CurrentAfter        string
+	NextAfter           string
 	EcosystemCounts     []EcosystemCount
 	TotalEcosystemCount int
 	Vulnerabilities     []ListedVulnerabilityDisplay
-}
-
-// EncodedQuery returns the URL query-escaped search query string.
-func (d ListPageData) EncodedQuery() string {
-	return url.QueryEscape(d.Query)
-}
-
-// EncodedEcosystem returns the URL query-escaped ecosystem filter string.
-func (d ListPageData) EncodedEcosystem() string {
-	return url.QueryEscape(d.SelectedEcosystem)
 }

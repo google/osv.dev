@@ -3,8 +3,14 @@ package website
 
 import (
 	"bytes"
+	"crypto/hkdf"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -13,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 )
 
@@ -20,16 +27,31 @@ const goVanityMetadata = `<meta name="go-import" content="osv.dev git https://gi
 
 // Config holds configuration options for the website server.
 type Config struct {
-	StaticFS    fs.FS
-	DocsFS      fs.FS
-	TemplateDir string
+	StaticFS       fs.FS
+	DocsFS         fs.FS
+	TemplateDir    string
+	Stores         Stores
+	APIURL         string
+	Auth           AuthConfig
+	RequestTimeout time.Duration
+}
+
+type Stores struct {
+	Vuln       models.VulnerabilityStore
+	Relations  models.RelationsStore
+	SourceRepo models.SourceRepositoryStore
+	VulnSearch models.VulnerabilitySearchStore
+	Linter     models.LinterStore
+	Triage     models.TriageStore
 }
 
 // Server handles website routing and HTTP requests.
 type Server struct {
-	config  Config
-	mux     *http.ServeMux
-	handler http.Handler
+	config    Config
+	mux       *http.ServeMux
+	handler   http.Handler
+	stores    Stores
+	secretKey []byte
 }
 
 type responseLogger struct {
@@ -55,7 +77,7 @@ func (r *responseLogger) Write(b []byte) (int, error) {
 }
 
 // NewServer creates and initializes a new website Server.
-// It returns an error if cfg.StaticFS or cfg.DocsFS is nil.
+// It returns an error if cfg.StaticFS, cfg.DocsFS, or any of the cfg.Stores are nil.
 func NewServer(cfg Config) (*Server, error) {
 	if cfg.StaticFS == nil {
 		return nil, errors.New("StaticFS is required")
@@ -63,15 +85,57 @@ func NewServer(cfg Config) (*Server, error) {
 	if cfg.DocsFS == nil {
 		return nil, errors.New("DocsFS is required")
 	}
+	if cfg.Stores.Vuln == nil {
+		return nil, errors.New("Stores.Vuln is required")
+	}
+	if cfg.Stores.Relations == nil {
+		return nil, errors.New("Stores.Relations is required")
+	}
+	if cfg.Stores.SourceRepo == nil {
+		return nil, errors.New("Stores.SourceRepo is required")
+	}
+	if cfg.Stores.VulnSearch == nil {
+		return nil, errors.New("Stores.VulnSearch is required")
+	}
+	if cfg.Stores.Linter == nil {
+		return nil, errors.New("Stores.Linter is required")
+	}
+	if cfg.Stores.Triage == nil {
+		return nil, errors.New("Stores.Triage is required")
+	}
+
+	if cfg.APIURL == "" {
+		cfg.APIURL = "api.osv.dev"
+	}
+
+	var secretKey []byte
+	if cfg.Auth.SecretKey != "" {
+		var err error
+		secretKey, err = hkdf.Key(sha256.New, []byte(cfg.Auth.SecretKey), nil, "osv-cookie-encryption", 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive secret key: %w", err)
+		}
+	} else {
+		secretKey = make([]byte, 32)
+		if _, err := io.ReadFull(rand.Reader, secretKey); err != nil {
+			return nil, fmt.Errorf("failed to generate secret key: %w", err)
+		}
+	}
 
 	s := &Server{
-		config: cfg,
-		mux:    http.NewServeMux(),
+		config:    cfg,
+		mux:       http.NewServeMux(),
+		stores:    cfg.Stores,
+		secretKey: secretKey,
 	}
 	s.registerRoutes()
 
-	// Middlewares: 404 Fallback -> Logging (if local/dev) -> ServeMux
+	// Middlewares: 404 Fallback -> Timeout (if set) -> Logging (if local/dev) -> ServeMux
 	h := s.notFoundMiddleware(s.mux)
+
+	if cfg.RequestTimeout > 0 {
+		h = http.TimeoutHandler(h, cfg.RequestTimeout, "Request timed out")
+	}
 
 	// Skip HTTP access logging in Cloud Run production to avoid duplicating Cloud Run infrastructure logs.
 	if os.Getenv("K_SERVICE") == "" {
@@ -99,6 +163,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		logger.InfoContext(r.Context(), "HTTP Request",
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
+			slog.String("query", r.URL.RawQuery),
 			slog.Int("status", rw.statusCode),
 			slog.Duration("duration", time.Since(start)),
 			slog.Int64("bytes", rw.bytesWritten),
@@ -170,10 +235,10 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /linter-findings/", s.handleLinterSources)
 	s.mux.HandleFunc("GET /linter-findings/{source}", s.handleLinterFindings)
 
-	// Triage workflow
-	// TODO: auth stuff
-	s.mux.HandleFunc("GET /triage", s.handleTriagePage)
-	s.mux.HandleFunc("/triage/proxy", s.handleTriageProxy)
+	// Triage workflow (protected by Google OAuth account authentication)
+	s.mux.HandleFunc("GET /triage", s.requireGoogleAccount(s.handleTriagePage))
+	s.mux.HandleFunc("GET /triage/", s.requireGoogleAccount(s.handleTriagePage))
+	s.mux.HandleFunc("GET /triage/proxy", s.requireGoogleAccount(s.handleTriageProxy))
 
 	// Google OAuth authentication
 	s.mux.HandleFunc("GET /login", s.handleLogin)
@@ -194,9 +259,6 @@ func (s *Server) renderTemplates(w http.ResponseWriter, r *http.Request, status 
 	}
 
 	templateDir := s.config.TemplateDir
-	if templateDir == "" {
-		templateDir = "go"
-	}
 
 	paths := make([]string, len(files))
 	for i, f := range files {
@@ -238,4 +300,12 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, pageFile string,
 
 func (s *Server) renderStandalone(w http.ResponseWriter, r *http.Request, pageFile string, status int, data any) {
 	s.renderTemplates(w, r, status, data, pageFile)
+}
+
+func (s *Server) renderJSON(w http.ResponseWriter, r *http.Request, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		logger.ErrorContext(r.Context(), "failed to encode JSON response", "error", err)
+	}
 }

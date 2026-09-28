@@ -115,6 +115,32 @@ func (c *GCSClient) WriteObject(ctx context.Context, path string, data []byte, o
 	return err
 }
 
+func (c *GCSClient) WriteObjectStream(ctx context.Context, path string, r io.Reader, opts *WriteOptions) error {
+	var err error
+	for i := range numRetries {
+		if i > 0 {
+			// Exponential backoff: 1s, 2s, 4s
+			time.Sleep(time.Duration(1<<(i-1)) * time.Second)
+		}
+		if seeker, ok := r.(io.Seeker); ok && i > 0 {
+			if _, seekErr := seeker.Seek(0, io.SeekStart); seekErr != nil {
+				return seekErr
+			}
+		}
+		err = c.writeObjectStreamOnce(ctx, path, r, opts)
+		if err == nil {
+			return nil
+		}
+		// Check if error is not transient and should not be retried
+		var apiErr *googleapi.Error
+		if !errors.As(err, &apiErr) || (apiErr.Code < 500 && apiErr.Code != 429) {
+			return err
+		}
+	}
+
+	return err
+}
+
 func (c *GCSClient) writeObjectOnce(ctx context.Context, path string, data []byte, opts *WriteOptions) error {
 	obj := c.bucket.Object(path)
 
@@ -140,6 +166,35 @@ func (c *GCSClient) writeObjectOnce(ctx context.Context, path string, data []byt
 	}
 
 	if _, err := writer.Write(data); err != nil {
+		return err
+	}
+
+	return writer.Close()
+}
+
+func (c *GCSClient) writeObjectStreamOnce(ctx context.Context, path string, r io.Reader, opts *WriteOptions) error {
+	obj := c.bucket.Object(path)
+
+	if opts != nil && opts.IfGenerationMatches != nil {
+		conds := storage.Conditions{GenerationMatch: *opts.IfGenerationMatches}
+		if *opts.IfGenerationMatches == 0 {
+			conds = storage.Conditions{DoesNotExist: true}
+		}
+		obj = obj.If(conds)
+	}
+
+	writer := obj.NewWriter(ctx)
+	if opts != nil {
+		if opts.CustomTime != nil {
+			writer.CustomTime = *opts.CustomTime
+		}
+		if opts.ContentType != "" {
+			writer.ContentType = opts.ContentType
+		}
+	}
+
+	if _, err := io.Copy(writer, r); err != nil {
+		_ = writer.Close()
 		return err
 	}
 

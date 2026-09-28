@@ -7,6 +7,10 @@ resource "google_pubsub_topic" "tasks" {
   labels = {
     goog-dm = "pubsub"
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_pubsub_topic" "failed_tasks" {
@@ -108,4 +112,11 @@ resource "google_pubsub_subscription" "recovery" {
   expiration_policy {
     ttl = "" # never expires
   }
+}
+
+resource "google_pubsub_subscription_iam_member" "recovery_service_subscriber" {
+  project      = var.project_id
+  subscription = google_pubsub_subscription.recovery.name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:${google_project_service_identity.pubsub.email}"
 }

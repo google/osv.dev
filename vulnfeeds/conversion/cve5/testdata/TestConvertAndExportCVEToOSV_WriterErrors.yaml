@@ -1,0 +1,90 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        host: gitlab.com
+        headers:
+            Accept:
+                - text/html
+        url: https://gitlab.com/gitlab-org/gitlab
+        method: HEAD
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        content_length: 0
+        body: ""
+        headers:
+            Cache-Control:
+                - max-age=0, private, must-revalidate
+            Cf-Cache-Status:
+                - BYPASS
+            Cf-Ray:
+                - a2d66c64ac49df62-SYD
+            Content-Length:
+                - "0"
+            Content-Security-Policy:
+                - 'base-uri ''self''; child-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ ''self'' blob: data: https://embed.figma.com https://www.figma.com https://www.youtube.com; connect-src ''self'' https://gitlab.com wss://gitlab.com https://sentry.gitlab.net https://new-sentry.gitlab.net https://customers.gitlab.com https://snowplow.trx.gitlab.net https://sourcegraph.com https://collector.prd-278964.gl-product-analytics.com https://analytics.gitlab.com snowplowprd.trx.gitlab.net https://sourcegraph.com/.api/; default-src ''self''; font-src ''self''; form-action ''self'' https: http:; frame-ancestors ''self''; frame-src https://www.google.com/recaptcha/ https://www.recaptcha.net/ https://www.googletagmanager.com/ns.html https://*.zuora.com/apps/PublicHostedPageLite.do https://gitlab.com/admin/ https://gitlab.com/assets/ https://gitlab.com/-/speedscope/index.html https://gitlab.com/-/sandbox/ https://embed.figma.com https://www.figma.com https://www.youtube.com; img-src ''self'' data: blob: http: https:; manifest-src ''self''; media-src ''self'' data: blob: http: https:; object-src ''none''; report-uri https://new-sentry.gitlab.net/api/4/security/?sentry_key=f5573e26de8f4293b285e556c35dfd6e&sentry_environment=gprd; script-src ''strict-dynamic'' ''self'' ''unsafe-inline'' ''unsafe-eval'' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.recaptcha.net/ https://apis.google.com https://*.zuora.com/apps/PublicHostedPageLite.do ''nonce-asdn9RF3Pvzxu45Er9upHg==''; style-src ''self'' ''unsafe-inline''; worker-src ''self'' https://gitlab.com/assets/ blob: data:'
+            Content-Type:
+                - text/html; charset=utf-8
+            Date:
+                - Wed, 19 Aug 2026 04:30:31 GMT
+            Etag:
+                - W/"0a6549c45e453e56c4da7617f932b766"
+            Gitlab-Lb:
+                - haproxy-main-60-lb-gprd
+            Gitlab-Sv:
+                - web-gke-us-east1-d
+            Nel:
+                - '{"max_age": 0}'
+            Permissions-Policy:
+                - interest-cohort=()
+            Ratelimit-Limit:
+                - "500"
+            Ratelimit-Name:
+                - throttle_unauthenticated_web
+            Ratelimit-Observed:
+                - "1"
+            Ratelimit-Remaining:
+                - "499"
+            Ratelimit-Reset:
+                - "1787113860"
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Server:
+                - cloudflare
+            Set-Cookie:
+                - event_filter=all; path=/; Secure; SameSite=None
+                - _gitlab_session=cell-1-4c81ec43063c18ffce3caaac6203ab4e; path=/; secure; HttpOnly; SameSite=None
+            Strict-Transport-Security:
+                - max-age=31536000
+            Vary:
+                - Accept
+            X-Content-Type-Options:
+                - nosniff
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Gitlab-Meta:
+                - '{"correlation_id":"a2d66c64ac49df62-SYD","version":"1"}'
+            X-Gitlab-Namespace:
+                - gitlab-org
+            X-Gitlab-Score-Gitaly:
+                - "2"
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - a2d66c64ac49df62-SYD
+            X-Runtime:
+                - "0.265966"
+            X-Ua-Compatible:
+                - IE=edge
+            X-Xss-Protection:
+                - 1; mode=block
+        status: 200 OK
+        code: 200
+        duration: 660.818973ms

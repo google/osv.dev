@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+	"unicode/utf8"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -17,6 +19,7 @@ func runGit(t *testing.T, repoPath string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repoPath
+	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_NOSYSTEM=1")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v failed: %v\nOutput: %s", args, err, out)
 	}
@@ -83,6 +86,40 @@ func setupEmptyTestRepo(t *testing.T, url string) string {
 	}
 	runGit(t, repoPath, "add", "file1")
 	runGit(t, repoPath, "commit", "-m", "commit 1")
+
+	return url
+}
+
+// A test repository with 1 lightweight tag and 1 annotated tag.
+func setupAnnotatedTagsTestRepo(t *testing.T, url string) string {
+	t.Helper()
+	gitStorePath = t.TempDir()
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	if err := os.MkdirAll(repoPath, 0755); err != nil {
+		t.Fatalf("failed to create repo path %s: %v", repoPath, err)
+	}
+
+	runGit(t, repoPath, "init", "-b", "main")
+	runGit(t, repoPath, "config", "user.email", "test@test.com")
+	runGit(t, repoPath, "config", "user.name", "Test Name")
+
+	// Commit 1 + Lightweight Tag
+	err := os.WriteFile(filepath.Join(repoPath, "file1"), []byte("1"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file1 for git repo setup: %v", err)
+	}
+	runGit(t, repoPath, "add", "file1")
+	runGit(t, repoPath, "commit", "-m", "commit 1")
+	runGit(t, repoPath, "tag", "v1.0.0")
+
+	// Commit 2 + Annotated Tag
+	err = os.WriteFile(filepath.Join(repoPath, "file2"), []byte("2"), 0600)
+	if err != nil {
+		t.Fatalf("failed to write file2 for git repo setup: %v", err)
+	}
+	runGit(t, repoPath, "add", "file2")
+	runGit(t, repoPath, "commit", "-m", "commit 2")
+	runGit(t, repoPath, "tag", "-a", "v2.0.0", "-m", "release v2.0.0")
 
 	return url
 }
@@ -1305,6 +1342,28 @@ func TestRunAndParseTags(t *testing.T) {
 			},
 		},
 		{
+			name: "Annotated tag resolves to peeled commit hash and omits ^{}",
+			cmd:  exec.Command("printf", "000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n000000000000000000000000000000000000bbbb refs/tags/v1.0.0^{}\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("bbbb"),
+			},
+		},
+		{
+			name: "Mixed lightweight and annotated tags",
+			cmd:  exec.Command("printf", "0000000000000000000000000000000000001111 refs/tags/v1.0.0\n0000000000000000000000000000000000002222 refs/tags/v2.0.0\n0000000000000000000000000000000000003333 refs/tags/v2.0.0^{}\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("1111"),
+				"v2.0.0": decodeSHA1("3333"),
+			},
+		},
+		{
+			name: "Annotated tag resolves to peeled commit hash regardless of output order (peeled ref first)",
+			cmd:  exec.Command("printf", "000000000000000000000000000000000000bbbb refs/tags/v1.0.0^{}\n000000000000000000000000000000000000aaaa refs/tags/v1.0.0\n"),
+			want: map[string]SHA1{
+				"v1.0.0": decodeSHA1("bbbb"),
+			},
+		},
+		{
 			// git show-ref returns exit code 1 when there are no tags, so make sure we don't throw error in this case
 			name: "Exit code 1 (no tags)",
 			cmd:  exec.Command("bash", "-c", "exit 1"),
@@ -1347,6 +1406,12 @@ func TestGetLocalTags(t *testing.T) {
 			wantCount: 2,
 		},
 		{
+			name:      "Repo with annotated and lightweight tags",
+			setupFunc: setupAnnotatedTagsTestRepo,
+			wantTags:  []string{"v1.0.0", "v2.0.0"},
+			wantCount: 2,
+		},
+		{
 			name:      "Empty repo (no tags)",
 			setupFunc: setupEmptyTestRepo,
 			wantTags:  []string{},
@@ -1374,6 +1439,23 @@ func TestGetLocalTags(t *testing.T) {
 					t.Errorf("expected tag %s to exist", wantTag)
 				}
 			}
+
+			// Ensure no tag contains ^{} suffix
+			for tag := range tags {
+				if strings.HasSuffix(tag, "^{}") {
+					t.Errorf("unexpected peeled tag suffix in tag: %s", tag)
+				}
+			}
+
+			if tt.name == "Repo with annotated and lightweight tags" {
+				commit2SHA, err := r.resolveCommit(ctx, "v2.0.0")
+				if err != nil {
+					t.Fatalf("failed to resolve commit for v2.0.0: %v", err)
+				}
+				if tags["v2.0.0"] != decodeSHA1(commit2SHA) {
+					t.Errorf("annotated tag v2.0.0 hash mismatch: got %x, want %s", tags["v2.0.0"], commit2SHA)
+				}
+			}
 		})
 	}
 }
@@ -1389,6 +1471,12 @@ func TestGetRemoteTags(t *testing.T) {
 			name:      "Repo with tags",
 			setupFunc: setupTagsTestRepo,
 			wantTags:  []string{"v1.0.0", "v1.1.0"},
+			wantCount: 2,
+		},
+		{
+			name:      "Repo with annotated and lightweight tags",
+			setupFunc: setupAnnotatedTagsTestRepo,
+			wantTags:  []string{"v1.0.0", "v2.0.0"},
 			wantCount: 2,
 		},
 		{
@@ -1420,6 +1508,23 @@ func TestGetRemoteTags(t *testing.T) {
 			for _, wantTag := range tt.wantTags {
 				if _, ok := tags[wantTag]; !ok {
 					t.Errorf("expected tag %s to exist", wantTag)
+				}
+			}
+
+			// Ensure no tag contains ^{} suffix
+			for tag := range tags {
+				if strings.HasSuffix(tag, "^{}") {
+					t.Errorf("unexpected peeled tag suffix in tag: %s", tag)
+				}
+			}
+
+			if tt.name == "Repo with annotated and lightweight tags" {
+				commit2SHA, err := r.resolveCommit(ctx, "v2.0.0")
+				if err != nil {
+					t.Fatalf("failed to resolve commit for v2.0.0: %v", err)
+				}
+				if tags["v2.0.0"] != decodeSHA1(commit2SHA) {
+					t.Errorf("annotated tag v2.0.0 hash mismatch: got %x, want %s", tags["v2.0.0"], commit2SHA)
 				}
 			}
 		})
@@ -1793,5 +1898,261 @@ func TestResolveCommit(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestListCommits(t *testing.T) {
+	url := setupFileDiffsTestRepo(t, "git://test-repo-list-commits.git")
+	repoPath := filepath.Join(gitStorePath, getRepoDirName(url))
+	r := NewRepository(url)
+	ctx := context.WithValue(t.Context(), urlKey, repoPath)
+
+	commit1, err := r.resolveCommit(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v1.0.0: %v", err)
+	}
+	commit2, err := r.resolveCommit(ctx, "v2.0.0")
+	if err != nil {
+		t.Fatalf("resolve commit v2.0.0: %v", err)
+	}
+
+	tests := []struct {
+		name             string
+		targetBranch     string
+		lastSyncedCommit string
+		lastSyncedTime   time.Time
+		newestFirst      bool
+		includePaths     []string
+		excludePaths     []string
+		wantBranch       string
+		wantHead         string
+		wantCommitsCount int
+		wantErr          bool
+		check            func(t *testing.T, commits []*CommitDiff)
+	}{
+		{
+			name:             "Default branch resolution and range query",
+			targetBranch:     "",
+			lastSyncedTime:   time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 {
+					t.Errorf("expected commit %q, got %q", commit1, commits[0].Commit)
+				}
+			},
+		},
+		{
+			name:             "Specific branch with lastSyncedCommit",
+			targetBranch:     "feature-branch",
+			lastSyncedCommit: commit1,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				c := commits[0]
+				if c.Commit != commit2 {
+					t.Errorf("expected commit %q, got %q", commit2, c.Commit)
+				}
+				if !strings.Contains(c.Message, "commit 2: feature changes") {
+					t.Errorf("unexpected message: %q", c.Message)
+				}
+				if len(c.FilesChanged) == 0 {
+					t.Errorf("expected files changed, got 0")
+				}
+				if c.Patch == "" {
+					t.Errorf("expected non-empty patch")
+				}
+			},
+		},
+		{
+			name:             "Zero commits when lastSyncedCommit equals HEAD",
+			targetBranch:     "feature-branch",
+			lastSyncedCommit: commit2,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 0,
+		},
+		{
+			name:             "Empty boundaries queries full branch history",
+			targetBranch:     "feature-branch",
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+		},
+		{
+			name:             "Non-ancestor without lastSyncedTime returns error",
+			targetBranch:     "main",
+			lastSyncedCommit: commit2,
+			wantErr:          true,
+		},
+		{
+			name:             "Non-ancestor with lastSyncedTime falls back to lastSyncedTime",
+			targetBranch:     "main",
+			lastSyncedCommit: commit2,
+			lastSyncedTime:   time.Unix(1, 0),
+			wantBranch:       "main",
+			wantHead:         commit1,
+			wantCommitsCount: 1,
+		},
+		{
+			name:             "Ordering chronological (default oldest first)",
+			targetBranch:     "feature-branch",
+			lastSyncedTime:   time.Unix(1, 0),
+			newestFirst:      false,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit1 || commits[1].Commit != commit2 {
+					t.Errorf("expected chronological order [commit1, commit2], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+		{
+			name:             "Ordering newest_first",
+			targetBranch:     "feature-branch",
+			lastSyncedTime:   time.Unix(1, 0),
+			newestFirst:      true,
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 2,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if commits[0].Commit != commit2 || commits[1].Commit != commit1 {
+					t.Errorf("expected reverse chronological order [commit2, commit1], got [%s, %s]",
+						commits[0].Commit, commits[1].Commit)
+				}
+			},
+		},
+		{
+			name:             "Path filtering with include_paths",
+			targetBranch:     "feature-branch",
+			lastSyncedCommit: commit1,
+			includePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				if len(commits[0].FilesChanged) != 1 {
+					t.Fatalf("expected exactly 1 file changed, got %d", len(commits[0].FilesChanged))
+				}
+				if commits[0].FilesChanged[0].To != "modified_file.txt" {
+					t.Errorf("expected modified_file.txt, got %q", commits[0].FilesChanged[0].To)
+				}
+			},
+		},
+		{
+			name:             "Path filtering with exclude_paths",
+			targetBranch:     "feature-branch",
+			lastSyncedCommit: commit1,
+			excludePaths:     []string{"modified_file.txt"},
+			wantBranch:       "feature-branch",
+			wantHead:         commit2,
+			wantCommitsCount: 1,
+			check: func(t *testing.T, commits []*CommitDiff) {
+				t.Helper()
+				for _, fc := range commits[0].FilesChanged {
+					if fc.To == "modified_file.txt" || fc.From == "modified_file.txt" {
+						t.Errorf("expected modified_file.txt to be excluded, but found it in files changed")
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			branch, head, commits, err := r.ListCommits(ctx, tt.targetBranch, tt.lastSyncedCommit, tt.lastSyncedTime, tt.newestFirst, tt.includePaths, tt.excludePaths)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ListCommits() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if branch != tt.wantBranch {
+				t.Errorf("branch = %q, want %q", branch, tt.wantBranch)
+			}
+			if head != tt.wantHead {
+				t.Errorf("head = %q, want %q", head, tt.wantHead)
+			}
+			if len(commits) != tt.wantCommitsCount {
+				t.Fatalf("len(commits) = %d, want %d", len(commits), tt.wantCommitsCount)
+			}
+			if tt.check != nil {
+				tt.check(t, commits)
+			}
+		})
+	}
+}
+
+func TestParseCommitsLogPatchTruncation(t *testing.T) {
+	ctx := t.Context()
+	sampleLog := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"feat: add large dataset\n" +
+		"\x00---COMMIT-DIFF---\n" +
+		":100644 100644 5be4a4a 0000000 M\tlarge_file.txt\n" +
+		"diff --git a/large_file.txt b/large_file.txt\n" +
+		"--- a/large_file.txt\n" +
+		"+++ b/large_file.txt\n" +
+		"@@ -1,3 +1,3 @@\n" +
+		"+Line 1: this is a huge patch hunk\n" +
+		"+Line 2: another line of data\n" +
+		"+Line 3: yet another line of data\n")
+
+	// Parse with a tiny limit (20 bytes) to force truncation for testing
+	commits := parseCommitsLog(ctx, sampleLog, 20)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit, got %d", len(commits))
+	}
+
+	c := commits[0]
+	if c.Commit != "abcd1234abcd1234abcd1234abcd1234abcd1234" {
+		t.Errorf("unexpected commit hash: %s", c.Commit)
+	}
+	if len(c.FilesChanged) != 1 || c.FilesChanged[0].To != "large_file.txt" {
+		t.Errorf("FilesChanged was lost or corrupted: %+v", c.FilesChanged)
+	}
+	if !c.PatchTruncated {
+		t.Errorf("expected PatchTruncated to be true")
+	}
+	if !strings.Contains(c.Patch, "[Diff truncated: exceeded max patch size of 20 bytes]") {
+		t.Errorf("expected truncation notice in patch, got: %s", c.Patch)
+	}
+}
+
+func TestParseCommitsLogInvalidUTF8(t *testing.T) {
+	ctx := t.Context()
+	// Create a patch with a multi-byte UTF-8 emoji ("🚀" = 4 bytes: 0xF0, 0x9F, 0x99, 0x80)
+	// and truncate right in the middle of the rune bytes.
+	prefix := "diff --git a/a.txt b/a.txt\n+🚀"
+	rawBytes := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"feat: \xff\xfe non-utf8 commit msg\n" +
+		"\x00---COMMIT-DIFF---\n" +
+		prefix + " trailing content\n")
+
+	// Cut halfway through the 🚀 emoji
+	cutLimit := len("diff --git a/a.txt b/a.txt\n+") + 2
+	commits := parseCommitsLog(ctx, rawBytes, cutLimit)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit, got %d", len(commits))
+	}
+
+	// Verify both message and patch produce valid UTF-8 strings
+	if !utf8.ValidString(commits[0].Message) {
+		t.Errorf("commit message contains invalid UTF-8: %q", commits[0].Message)
+	}
+	if !utf8.ValidString(commits[0].Patch) {
+		t.Errorf("truncated patch contains invalid UTF-8: %q", commits[0].Patch)
 	}
 }

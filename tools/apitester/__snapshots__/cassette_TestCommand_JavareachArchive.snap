@@ -33,7 +33,7 @@
       "vulns": [
         {
           "id": "GHSA-c28r-hw5m-5gv3",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -511,7 +511,7 @@
       "vulns": [
         {
           "id": "GHSA-c28r-hw5m-5gv3",
-          "modified": "<RFC3339 date with the year 2023>"
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },

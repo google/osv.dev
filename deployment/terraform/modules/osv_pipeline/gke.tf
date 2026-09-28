@@ -37,7 +37,23 @@ resource "google_container_cluster" "workers" {
     ]
   }
 
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
   monitoring_config {
+    enable_components = [
+      "SYSTEM_COMPONENTS",
+      "APISERVER",
+      "SCHEDULER",
+      "CONTROLLER_MANAGER",
+      "STORAGE",
+      "HPA",
+      "POD",
+      "DAEMONSET",
+      "DEPLOYMENT",
+      "STATEFULSET",
+      "CADVISOR",
+      "KUBELET"
+    ]
+
     managed_prometheus {
       enabled = true
     }
@@ -69,18 +85,17 @@ resource "google_container_node_pool" "default_pool" {
     service_account = google_service_account.worker_sa.email
     machine_type    = "n4-standard-8"
     disk_type       = "hyperdisk-balanced"
-    disk_size_gb    = 64
+    disk_size_gb    = 128
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 }
 
 resource "google_container_node_pool" "highend" {
-  project        = var.project_id
-  name           = "highend"
-  cluster        = google_container_cluster.workers.name
-  location       = google_container_cluster.workers.location
-  node_locations = var.node_pool_node_locations
+  project  = var.project_id
+  name     = "highend"
+  cluster  = google_container_cluster.workers.name
+  location = google_container_cluster.workers.location
   # For using the ephemeral storage local ssd config
   provider = google-beta
 
@@ -92,7 +107,7 @@ resource "google_container_node_pool" "highend" {
   }
 
   autoscaling {
-    min_node_count  = 0
+    min_node_count  = 1
     max_node_count  = 100
     location_policy = "BALANCED"
   }
@@ -119,44 +134,6 @@ resource "google_container_node_pool" "highend" {
   }
 }
 
-resource "google_container_node_pool" "worker_pool" {
-  project  = var.project_id
-  name     = "worker-pool"
-  cluster  = google_container_cluster.workers.name
-  location = google_container_cluster.workers.location
-
-  lifecycle {
-    replace_triggered_by = [
-      google_container_cluster.workers.id,
-    ]
-  }
-
-  autoscaling {
-    min_node_count  = 0
-    max_node_count  = 250
-    location_policy = "BALANCED"
-  }
-
-  node_config {
-    service_account = google_service_account.worker_sa.email
-    machine_type    = "n4-highcpu-8"
-    disk_type       = "hyperdisk-balanced"
-
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-
-    labels = {
-      workloadType = "worker-pool"
-    }
-    taint {
-      effect = "NO_EXECUTE"
-      key    = "workloadType"
-      value  = "worker-pool"
-    }
-  }
-}
-
-
-
 # 6TiB SSD disk used by the gitter caching service
 resource "google_compute_disk" "gitter_disk" {
   project = var.project_id
@@ -164,4 +141,42 @@ resource "google_compute_disk" "gitter_disk" {
   type    = "hyperdisk-balanced"
   zone    = google_container_cluster.workers.location
   size    = var.gitter_disk_size_gb
+
+  lifecycle {
+    ignore_changes = [
+      type,
+      snapshot,
+    ]
+  }
+}
+
+# Reservations for N4 VMs so our infra can keep running in case of capacity issues
+resource "google_compute_reservation" "default_pool_res" {
+  project = var.project_id
+  name    = "n4-standard-8-res"
+  zone    = var.cluster_location
+  reservation_sharing_policy {
+    service_share_type = "ALLOW_ALL"
+  }
+  specific_reservation {
+    count = var.default_pool_res_size
+    instance_properties {
+      machine_type = "n4-standard-8"
+    }
+  }
+}
+
+resource "google_compute_reservation" "highend_pool_res" {
+  project = var.project_id
+  name    = "n4-highmem-32-res"
+  zone    = var.cluster_location
+  reservation_sharing_policy {
+    service_share_type = "ALLOW_ALL"
+  }
+  specific_reservation {
+    count = var.highend_pool_res_size
+    instance_properties {
+      machine_type = "n4-highmem-32"
+    }
+  }
 }

@@ -24,5 +24,5 @@ metadata:
 spec:
   csi:
     driver: pd.csi.storage.gke.io
-    volumeHandle: projects/private-osv/zones/us-central1-f/disks/gitter-disk
+    volumeHandle: projects/private-osv/zones/us-west2-c/disks/gitter-disk
     fsType: ext4

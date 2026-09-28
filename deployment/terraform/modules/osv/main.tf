@@ -1,18 +1,5 @@
 # osv.dev terraform configuration
 
-# Datastore
-resource "google_firestore_database" "datastore" {
-  project     = var.project_id
-  name        = "(default)"
-  location_id = "us-west2"
-  type        = "DATASTORE_MODE"
-
-  lifecycle {
-    # Destroying the resource doesn't seem to delete the database
-    prevent_destroy = true
-  }
-}
-
 # MemoryStore
 resource "google_redis_instance" "frontend" {
   project            = var.project_id
@@ -97,46 +84,6 @@ resource "google_storage_bucket" "osv_public_import_logs" {
   }
 }
 
-resource "google_storage_bucket" "osv_vulnerabilities_export" {
-  project                     = var.project_id
-  name                        = var.vulnerabilities_export_bucket
-  location                    = "US"
-  uniform_bucket_level_access = true
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      num_newer_versions = 673
-      with_state         = "ARCHIVED"
-    }
-  }
-
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      days_since_noncurrent_time = 7
-      with_state                 = "ANY"
-    }
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  logging {
-    log_bucket        = var.logs_bucket
-    log_object_prefix = "osv-vulnerabilities"
-  }
-}
-
 resource "google_storage_bucket" "cve_osv_conversion" {
   project                     = var.project_id
   name                        = var.cve_osv_conversion_bucket
@@ -188,24 +135,6 @@ resource "google_storage_bucket" "backups_bucket" {
   }
 }
 
-resource "google_storage_bucket" "affected_commits_backups_bucket" {
-  project                     = var.project_id
-  name                        = var.affected_commits_backups_bucket
-  location                    = "US"
-  uniform_bucket_level_access = true
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      age = var.affected_commits_backups_bucket_retention_days
-    }
-  }
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "google_storage_bucket" "osv_dev_sitemap_bucket" {
   project                     = var.project_id
   name                        = var.osv_dev_sitemap_bucket
@@ -217,7 +146,29 @@ resource "google_storage_bucket" "osv_dev_sitemap_bucket" {
   }
 }
 
+# Pub/Sub topics specific to public OSV
+resource "google_pubsub_topic" "pypi_bridge" {
+  project = var.project_id
+  name    = "pypi-bridge"
+}
+
 # Service account permissions
+data "google_compute_default_service_account" "default" {
+  project = var.project_id
+}
+
+resource "google_project_iam_member" "compute_service" {
+  project = var.project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "compute_service_datastore" {
+  project = var.project_id
+  role    = "roles/datastore.importExportAdmin"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
 resource "google_service_account" "deployment_service" {
   project      = var.project_id
   account_id   = "deployment"

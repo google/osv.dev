@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/google/osv.dev/go/logger"
 )
 
 // RenderNotFound renders the standard 404 Not Found page.
@@ -18,10 +20,8 @@ func (s *Server) RenderNotFound(w http.ResponseWriter, r *http.Request) {
 // RenderNotFoundWithVuln renders the 404 Not Found page with a failed import vulnerability ID.
 func (s *Server) RenderNotFoundWithVuln(w http.ResponseWriter, r *http.Request, failedImportVulnID string) {
 	data := NotFoundPageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "",
-			DisableTurboCache: false,
-		},
+		ActiveSection:      "",
+		DisableTurboCache:  false,
 		FailedImportVulnID: failedImportVulnID,
 	}
 
@@ -59,15 +59,20 @@ func computeEcosystemDisplays(counts map[string]int) []EcosystemDisplay {
 	return displays
 }
 
-func (s *Server) getEcosystemCounts(_ context.Context) map[string]int {
-	// Stub for ecosystem count fetch (Datastore or cache integration)
-	return map[string]int{
-		"PyPI": 23174,
-		"npm":  222222,
-		"Go":   8010,
-		"GIT":  943411,
-		"Pub":  11,
+func (s *Server) getEcosystemCounts(ctx context.Context) map[string]int {
+	res, err := s.stores.VulnSearch.EcosystemCounts(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to get ecosystem counts", "error", err)
+
+		return map[string]int{}
 	}
+
+	counts := make(map[string]int, len(res))
+	for _, eco := range res {
+		counts[eco.Name] = eco.Count
+	}
+
+	return counts
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -79,11 +84,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := HomePageData{
-		BasePageData: BasePageData{
-			ActiveSection:     "home",
-			DisableTurboCache: false,
-		},
-		Ecosystems: computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
+		ActiveSection:     "home",
+		DisableTurboCache: false,
+		Ecosystems:        computeEcosystemDisplays(s.getEcosystemCounts(r.Context())),
 	}
 
 	s.render(w, r, "home.html", http.StatusOK, data)
@@ -130,6 +133,7 @@ func (s *Server) handleRobots(w http.ResponseWriter, r *http.Request) {
 	}
 	sitemapURL := fmt.Sprintf("%s://%s/sitemap_index.xml", scheme, r.Host)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	//nolint:gosec // G705: Response content type is text/plain
 	_, _ = fmt.Fprintf(w, "Sitemap: %s\n", sitemapURL)
 }
 

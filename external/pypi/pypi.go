@@ -351,9 +351,9 @@ func (p *PyPI) packageExists(pkg string) bool {
 func (p *PyPI) finalPkgCheck(cve models.NVDCVE, pkg string, falsePositives *triage.FalsePositives) bool {
 	// To avoid false positives, check that the pkg name is mentioned in the description.
 	desc := strings.ToLower(models.EnglishDescription(cve.Descriptions))
-	pkgNameParts := strings.Split(pkg, "-")
+	pkgNameParts := strings.SplitSeq(pkg, "-")
 
-	for _, part := range pkgNameParts {
+	for part := range pkgNameParts {
 		// Python packages can commonly be py<name> or <name>-py.
 		// Remove this to be a bit more lenient when matching against the description.
 		part = strings.TrimPrefix(part, "py")

@@ -206,7 +206,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 	}
 
 	var wg sync.WaitGroup
-	//nolint:prealloc // Size is unknown since All() returns an iterator
+
 	var sourceRepos []*models.SourceRepository
 	gitBranches := make(map[string]string) // url -> branch
 

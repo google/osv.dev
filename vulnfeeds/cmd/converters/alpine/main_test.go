@@ -258,12 +258,12 @@ func TestGenerateAlpineOSV(t *testing.T) {
 							{
 								Criteria:              xzCPE,
 								Vulnerable:            true,
-								VersionStartIncluding: newString("5.6.0"),
+								VersionStartIncluding: new("5.6.0"),
 							},
 							{
 								Criteria:              fooCPE,
 								Vulnerable:            true,
-								VersionStartIncluding: newString("1.0.0"),
+								VersionStartIncluding: new("1.0.0"),
 							},
 						},
 					}},
@@ -326,8 +326,4 @@ func TestGenerateAlpineOSV(t *testing.T) {
 	if fixed != "5.6.1" {
 		t.Errorf("Expected fixed 5.6.1 for xz (v3.19), got %s", fixed)
 	}
-}
-
-func newString(s string) *string {
-	return &s
 }

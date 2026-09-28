@@ -137,6 +137,7 @@ func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool
 	}
 	// Use a custom transport to add OpenTelemetry tracing.
 	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	//nolint:gosec // G704: Request to internal gitter service
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, getGitURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -148,6 +149,7 @@ func gitterGet(ctx context.Context, gitterHost, repoURL string, forceUpdate bool
 	}
 	req.URL.RawQuery = vals.Encode()
 	logger.Info("Getting repo from gitter", slog.String("url", req.URL.String()))
+	//nolint:gosec // G704: Request to internal gitter service
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get repo from gitter: %w", err)

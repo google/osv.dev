@@ -47,7 +47,7 @@
     },
     {
       "matchFileNames": [
-        "gcp/website/**"
+        "website/**"
       ],
       "groupName": "website"
     },

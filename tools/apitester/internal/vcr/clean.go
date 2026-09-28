@@ -39,7 +39,7 @@ func indent(str string, level int) string {
 	// at least the size of the string being indented and one indent level
 	s.Grow(len(str) + len(indenting))
 
-	for _, line := range strings.Split(str, "\n") {
+	for line := range strings.SplitSeq(str, "\n") {
 		s.WriteString(indenting)
 		s.WriteString(line)
 		s.WriteString("\n")

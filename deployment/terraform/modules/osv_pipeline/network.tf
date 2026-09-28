@@ -8,7 +8,7 @@ resource "google_compute_subnetwork" "my_subnet_0" {
   network                  = "default"
   ip_cidr_range            = var.subnet_cidr
   private_ip_google_access = true
-  region                   = "us-central1"
+  region                   = "us-west2"
 
   lifecycle {
     ignore_changes = [
@@ -23,7 +23,17 @@ resource "google_compute_router" "router" {
   project = var.project_id
   name    = var.router_name
   network = "default"
-  region  = "us-central1"
+  region  = "us-west2"
+}
+
+resource "google_compute_subnetwork" "oss_fuzz_subnet" {
+  count                    = var.create_oss_fuzz_subnet ? 1 : 0
+  project                  = var.project_id
+  name                     = "oss-fuzz-subnet"
+  network                  = "default"
+  ip_cidr_range            = "10.45.36.0/22"
+  private_ip_google_access = true
+  region                   = "us-central1"
 }
 
 # Cloud NAT

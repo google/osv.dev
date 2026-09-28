@@ -60,9 +60,11 @@ func Validate(data []byte) error {
 
 	if !result.Valid() {
 		var errs string
+		var errsSb63 strings.Builder
 		for _, desc := range result.Errors() {
-			errs += fmt.Sprintf("- %s\n", desc)
+			fmt.Fprintf(&errsSb63, "- %s\n", desc)
 		}
+		errs += errsSb63.String()
 
 		return fmt.Errorf("schema validation failed:\n%s", errs)
 	}

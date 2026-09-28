@@ -3,7 +3,10 @@ version: "2"
 linters:
   default: all
   # prettier-ignore
+  enable:
+    - gomodguard_v2 # gomodguard is deprecated but it's still in the default
   disable:
+    - gomodguard       # deprecated in favor of gomodguard_v2
     - forbidigo
     - paralleltest
     - tparallel
@@ -11,6 +14,7 @@ linters:
     - depguard         # Too annoying
     - err113           # will re-add later (another-rex)
     - exhaustruct      # overkill (g-rath)
+    - exhaustruct_v5
     - forcetypeassert  # too hard (g-rath)
     - funlen           #
     - funcorder        #
@@ -34,6 +38,8 @@ linters:
     - wrapcheck        # too difficult, will re-add later (another-rex)
     - wsl              # disagree with, for now (g-rath)
     - wsl_v5           # disagree with, for now (g-rath)
+    - godoclint        # too noisy at the moment
+    - gosec            # temporary, until jess comes back from holiday
   settings:
     exhaustive:
       default-signifies-exhaustive: true

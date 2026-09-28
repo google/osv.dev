@@ -14,21 +14,15 @@ spec:
       activeDeadlineSeconds: 7200
       template:
         spec:
-          tolerations:
-          - key: workloadType
-            operator: Equal
-            value: highend
           containers:
           - name: combine-to-osv
             image: combine-to-osv
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "30"
-                memory: "16G"
+                cpu: "4"
+                memory: "4G"
               limits:
-                cpu: "30"
-                memory: "24G"
-          nodeSelector:
-            cloud.google.com/gke-nodepool: highend
+                cpu: "7"
+                memory: "8G"
           restartPolicy: Never # on the assumption that the next scheduled run is soon enough

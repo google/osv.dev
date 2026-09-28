@@ -18,11 +18,11 @@ spec:
             imagePullPolicy: Always
             resources:
               requests:
-                cpu: "4"
-                memory: "63G"
+                cpu: "12"
+                memory: "100Gi"
               limits:
-                cpu: "4"
-                memory: "64G"
+                cpu: "28"
+                memory: "220Gi"
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
           tolerations:

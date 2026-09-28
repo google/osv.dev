@@ -1,5 +1,0 @@
-dist/
-requirements.txt
-app.yaml
-cron-service.yaml
-testing-app.yaml

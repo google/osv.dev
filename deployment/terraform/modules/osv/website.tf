@@ -102,6 +102,7 @@ module "gclb" {
   create_ipv6_address = true
   ssl                 = true
   certificate_map     = google_certificate_manager_certificate_map.website.id
+  https_redirect      = true
 
   load_balancing_scheme = "EXTERNAL_MANAGED"
 

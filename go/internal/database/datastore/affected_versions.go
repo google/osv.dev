@@ -89,7 +89,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 				_ = osvutil.SortEvents(eHelper, events)
 			}
 
-			var rangeEvents []AffectedEvent
+			rangeEvents := make([]AffectedEvent, 0, len(events))
 			for _, e := range events {
 				rangeEvents = append(rangeEvents, AffectedEvent{Type: e.Type.String(), Value: e.Version})
 			}

@@ -9,7 +9,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
-//nolint:recvcheck
 type ConversionOutcome int
 
 const (
@@ -93,8 +92,8 @@ type ConversionMetrics struct {
 	ResolvedRangesCount   int                              `json:"resolved_ranges_count"`
 }
 
-// AddNote adds a formatted note to the ConversionMetrics.
-func (m *ConversionMetrics) AddNote(format string, a ...any) {
+// AddNotef adds a formatted note to the ConversionMetrics.
+func (m *ConversionMetrics) AddNotef(format string, a ...any) {
 	m.Notes = append(m.Notes, fmt.Sprintf(format, a...))
 	logger.Debug(fmt.Sprintf(format, a...), slog.String("cna", m.CNA), slog.String("cve", string(m.CVEID)))
 }
@@ -103,6 +102,14 @@ func (m *ConversionMetrics) AddNote(format string, a ...any) {
 func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
 	if m.Outcome == ConversionUnknown { // TODO DOUBLE CHECK
 		m.Outcome = outcome
+	}
+}
+
+// SetError sets the outcome to Error and logs the error to the metrics notes.
+func (m *ConversionMetrics) SetError(err error) {
+	m.Outcome = Error
+	if err != nil {
+		m.AddNotef("Conversion error: %v", err)
 	}
 }
 

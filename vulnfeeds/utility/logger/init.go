@@ -10,13 +10,16 @@ import (
 	"strings"
 	"sync"
 
-	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/oauth"
 )
 
 var (
@@ -72,20 +75,39 @@ func Close() {
 }
 
 func initTracing(ctx context.Context, projectID, serviceName string) {
-	exporter, err := texporter.New(texporter.WithProjectID(projectID))
+	creds, err := oauth.NewApplicationDefault(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create Cloud Trace exporter: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to load application default credentials: %v\n", err)
 		return
+	}
+
+	opts := []otlptracegrpc.Option{
+		otlptracegrpc.WithDialOption(grpc.WithPerRPCCredentials(creds)),
+	}
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
+		opts = append(opts, otlptracegrpc.WithEndpoint("telemetry.googleapis.com:443"))
+	}
+
+	exporter, err := otlptracegrpc.New(ctx, opts...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create OTLP trace exporter: %v\n", err)
+		return
+	}
+
+	resAttrs := []attribute.KeyValue{
+		semconv.ServiceNameKey.String(serviceName),
+		attribute.String("gcp.project_id", projectID),
 	}
 
 	res, err := resource.New(ctx,
 		resource.WithDetectors(gcp.NewDetector()),
 		resource.WithTelemetrySDK(),
-		resource.WithAttributes(semconv.ServiceNameKey.String(serviceName)),
+		resource.WithFromEnv(),
+		resource.WithAttributes(resAttrs...),
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to detect resource attributes: %v\n", err)
-		res = resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(serviceName))
+		res = resource.NewWithAttributes(semconv.SchemaURL, resAttrs...)
 	}
 
 	// If TRACE_SAMPLE_RATE is unset, default to 5% to prevent unintentional cost and performance impact on high-traffic services.

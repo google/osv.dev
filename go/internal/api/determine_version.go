@@ -68,8 +68,8 @@ func shouldSkipBucket(path string) bool {
 	if path == "" {
 		return false
 	}
-	components := strings.Split(path, "/")
-	for _, c := range components {
+	components := strings.SplitSeq(path, "/")
+	for c := range components {
 		if _, ok := vendoredLibNames[strings.ToLower(c)]; ok {
 			return true
 		}

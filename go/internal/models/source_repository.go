@@ -1,4 +1,3 @@
-// Package models contains the domain types for the OSV database.
 package models
 
 import (
@@ -20,6 +19,23 @@ type SourceRepositoryStore interface {
 
 	// All returns an iterator over all source repositories.
 	All(ctx context.Context) iter.Seq2[*SourceRepository, error]
+}
+
+// UnimplementedSourceRepositoryStore provides a default unimplemented stub for SourceRepositoryStore.
+type UnimplementedSourceRepositoryStore struct{}
+
+var _ SourceRepositoryStore = UnimplementedSourceRepositoryStore{}
+
+func (UnimplementedSourceRepositoryStore) Get(_ context.Context, _ string) (*SourceRepository, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedSourceRepositoryStore) Update(_ context.Context, _ string, _ *SourceRepository) error {
+	panic("not implemented")
+}
+
+func (UnimplementedSourceRepositoryStore) All(_ context.Context) iter.Seq2[*SourceRepository, error] {
+	panic("not implemented")
 }
 
 type SourceRepositoryType int

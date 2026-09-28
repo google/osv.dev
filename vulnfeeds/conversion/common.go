@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -45,7 +46,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 	for _, r := range aff.GetRanges() {
 		rangeBytes, err := json.Marshal(r)
 		if err != nil {
-			metrics.AddNote("Could not marshal range to check for duplicates, adding anyway: %+v", r)
+			metrics.AddNotef("Could not marshal range to check for duplicates, adding anyway: %+v", r)
 			uniqueRanges = append(uniqueRanges, r)
 
 			continue
@@ -55,7 +56,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			uniqueRanges = append(uniqueRanges, r)
 			allExistingRanges[rangeStr] = struct{}{}
 		} else {
-			metrics.AddNote("Skipping duplicate range: %+v", r)
+			metrics.AddNotef("Skipping duplicate range: %+v", r)
 		}
 	}
 
@@ -66,6 +67,7 @@ func AddAffected(v *vulns.Vulnerability, aff *osvschema.Affected, metrics *model
 			DatabaseSpecific: aff.GetDatabaseSpecific(),
 		}
 		v.Affected = append(v.Affected, newAff)
+		metrics.ResolvedRangesCount += len(uniqueRanges)
 	}
 }
 
@@ -171,7 +173,7 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
@@ -183,10 +185,10 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	for _, vr := range versionRanges {
 		if vr.Range.GetRepo() != "" {
 			claimedRepos[vr.Range.GetRepo()] = true // Always claim the raw repository URL.
-			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), http.DefaultClient, cache)
+			canonicalRepo, err := git.FindCanonicalLink(vr.Range.GetRepo(), httpClient, cache)
 			if err != nil {
 				if git.IsRateLimit(err) {
-					metrics.Outcome = models.Error
+					metrics.SetError(err)
 					return nil, nil, nil
 				}
 			} else {
@@ -204,36 +206,56 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 			continue
 		}
 
-		repo, err := git.FindCanonicalLink(repo, http.DefaultClient, cache)
+		repo, err := git.FindCanonicalLink(repo, httpClient, cache)
 		if err != nil {
-			metrics.AddNote("Failed to find canonical link - %s %v", repo, err)
+			metrics.AddNotef("Failed to find canonical link - %s %v", repo, err)
 			if git.IsRateLimit(err) {
-				metrics.Outcome = models.Error
+				metrics.SetError(err)
 				return nil, nil, nil
 			}
 
 			continue
 		}
 
-		normalizedTags, err := git.NormalizeRepoTags(repo, cache)
+		normalizedTags, err := git.NormalizeRepoTags(repo, cache, httpClient)
 		if err != nil {
+			metrics.AddNotef("Failed to normalize tags - %s: %v", repo, err)
 			if git.IsRateLimit(err) {
-				metrics.Outcome = models.Error
+				metrics.SetError(err)
 				return nil, nil, nil
 			}
-			metrics.AddNote("Failed to normalize tags - %s", repo)
 
 			continue
+		}
+
+		resolvedVersions := make(map[string]string)
+		resolveVersion := func(ver string) string {
+			if ver == "" {
+				return ""
+			}
+			if ver == "0" {
+				return "0"
+			}
+			if commit, seen := resolvedVersions[ver]; seen {
+				return commit
+			}
+			commit, err := git.VersionToCommit(ver, normalizedTags)
+			if err != nil {
+				metrics.AddNotef("error resolving version to commit - %s - %s", ver, err)
+			}
+			resolvedVersions[ver] = commit
+
+			return commit
 		}
 
 		var stillUnresolvedRanges []models.RangeWithMetadata
 		for _, vr := range unresolvedRanges {
 			vRepo := vr.Range.GetRepo()
 			if vRepo != "" {
-				canonicalVRepo, err := git.FindCanonicalLink(vRepo, http.DefaultClient, cache)
+				canonicalVRepo, err := git.FindCanonicalLink(vRepo, httpClient, cache)
 				if err != nil {
 					if git.IsRateLimit(err) {
-						metrics.Outcome = models.Error
+						metrics.SetError(err)
 						return nil, nil, nil
 					}
 				} else {
@@ -257,23 +279,9 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				}
 			}
 
-			var introducedCommit string
-			if introduced == "0" {
-				introducedCommit = "0"
-			} else {
-				introducedCommit, err = git.VersionToCommit(introduced, normalizedTags)
-				if err != nil {
-					metrics.AddNote("error resolving version to commit - %s - %s", introduced, err)
-				}
-			}
-			fixedCommit, err := git.VersionToCommit(fixed, normalizedTags)
-			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", fixed, err)
-			}
-			lastAffectedCommit, err := git.VersionToCommit(lastAffected, normalizedTags)
-			if err != nil {
-				metrics.AddNote("error resolving version to commit - %s - %s", lastAffected, err)
-			}
+			introducedCommit := resolveVersion(introduced)
+			fixedCommit := resolveVersion(fixed)
+			lastAffectedCommit := resolveVersion(lastAffected)
 
 			if fixedCommit != "" || lastAffectedCommit != "" {
 				var newVR *osvschema.Range
@@ -296,7 +304,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 					}
 					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
 					if err != nil {
-						metrics.AddNote("failed to make database specific: %v", err)
+						metrics.AddNotef("failed to make database specific: %v", err)
 					} else {
 						newVR.DatabaseSpecific = databaseSpecific
 					}
@@ -431,9 +439,7 @@ func MergeDatabaseSpecificValues(val1, val2 any) (any, error) {
 	case map[string]any:
 		if v2, ok := val2.(map[string]any); ok {
 			merged := make(map[string]any)
-			for k, v := range v1 {
-				merged[k] = v
-			}
+			maps.Copy(merged, v1)
 			for k, v := range v2 {
 				if existing, ok := merged[k]; ok {
 					mergedVal, err := MergeDatabaseSpecificValues(existing, v)
@@ -681,7 +687,7 @@ func FilterUnresolvedRanges(resolved []models.RangeWithMetadata, unresolved []mo
 
 	filtered := make([]models.RangeWithMetadata, 0, len(unresolved))
 	for _, ur := range unresolved {
-		var eventStrings []string
+		eventStrings := make([]string, 0, len(ur.Range.GetEvents()))
 		for _, e := range ur.Range.GetEvents() {
 			eventStrings = append(eventStrings, fmt.Sprintf("%s|%s|%s", e.GetIntroduced(), e.GetFixed(), e.GetLastAffected()))
 		}
@@ -728,21 +734,105 @@ func AddFieldToDatabaseSpecific(ds *structpb.Struct, field string, value any) er
 	return nil
 }
 
+// IsGitCommitSHA checks whether a string is a valid 40-character (SHA-1) or 64-character (SHA-256) hexadecimal Git commit hash.
+func IsGitCommitSHA(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) != 40 && len(s) != 64 {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// IsDirectGitRange determines if a range is already composed of Git commit hashes rather than tag/version names.
+func IsDirectGitRange(vr models.RangeWithMetadata) bool {
+	if vr.Range == nil {
+		return false
+	}
+	events := vr.Range.GetEvents()
+	if len(events) == 0 {
+		return false
+	}
+
+	hasCommit := false
+	for _, e := range events {
+		intro := e.GetIntroduced()
+		if intro != "" && intro != "0" {
+			if !IsGitCommitSHA(intro) {
+				return false
+			}
+			hasCommit = true
+		}
+		fixed := e.GetFixed()
+		if fixed != "" {
+			if !IsGitCommitSHA(fixed) {
+				return false
+			}
+			hasCommit = true
+		}
+		lastAffected := e.GetLastAffected()
+		if lastAffected != "" {
+			if !IsGitCommitSHA(lastAffected) {
+				return false
+			}
+			hasCommit = true
+		}
+	}
+
+	return hasCommit
+}
+
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
 
-	r, un, sR := GitVersionsToCommits(ranges, repos, metrics, cache)
-	if len(r) > 0 {
-		metrics.ResolvedRangesCount += len(r)
+	var resolvedRanges []models.RangeWithMetadata
+	var unresolvedRanges []models.RangeWithMetadata
+	var successfulRepos []string
+	var tagVersionRanges []models.RangeWithMetadata
+
+	for _, vr := range ranges {
+		if IsDirectGitRange(vr) {
+			repo := vr.Range.GetRepo()
+			if repo == "" && len(repos) > 0 {
+				repo = repos[0]
+			}
+			if repo != "" {
+				vr.Range.Repo = repo
+				vr.Range.Type = osvschema.Range_GIT
+				resolvedRanges = append(resolvedRanges, vr)
+				successfulRepos = append(successfulRepos, repo)
+			} else {
+				metrics.AddNotef("no repository available for git commit range")
+				unresolvedRanges = append(unresolvedRanges, vr)
+			}
+		} else {
+			tagVersionRanges = append(tagVersionRanges, vr)
+		}
+	}
+
+	if len(tagVersionRanges) > 0 {
+		r, un, sR := GitVersionsToCommits(tagVersionRanges, repos, metrics, cache, httpClient)
+		resolvedRanges = append(resolvedRanges, r...)
+		unresolvedRanges = append(unresolvedRanges, un...)
+		successfulRepos = append(successfulRepos, sR...)
+	}
+
+	if len(resolvedRanges) > 0 {
+		metrics.ResolvedRangesCount += len(resolvedRanges)
 		metrics.SetOutcome(models.Successful)
 	}
 
-	if len(un) > 0 {
-		metrics.UnresolvedRangesCount += len(un)
-		if len(r) == 0 {
+	if len(unresolvedRanges) > 0 {
+		metrics.UnresolvedRangesCount += len(unresolvedRanges)
+		if len(resolvedRanges) == 0 {
 			hasRepo := len(repos) > 0
 			if !hasRepo {
 				for _, ra := range ranges {
@@ -772,7 +862,7 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 		}
 	}
 
-	return r, un, sR
+	return resolvedRanges, unresolvedRanges, successfulRepos
 }
 
 func LoadCPEDictionary(productToRepo *VPRepoCache, f string) error {

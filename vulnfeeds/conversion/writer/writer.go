@@ -287,11 +287,9 @@ func UploadVulnsToGCS(
 	vulnChan := make(chan *osvschema.Vulnerability, numWorkers)
 
 	for range numWorkers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			VulnWorker(ctx, vulnChan, outBkt, overridesBkt, gcsHelper, osvOutputPath, &successCount)
-		}()
+		})
 	}
 
 	for _, v := range vulnerabilities {

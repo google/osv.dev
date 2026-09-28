@@ -40,12 +40,14 @@ func packagistParser(purl packageurl.PackageURL) (packageName string, ecosystem 
 		return "", "", err
 	}
 
+	var ecosystemSb43 strings.Builder
 	for _, qualifier := range purl.Qualifiers {
 		if qualifier.Key == repositoryURLQualifier && qualifier.Value != "" {
-			ecosystem += ":" + qualifier.Value
+			ecosystemSb43.WriteString(":" + qualifier.Value)
 			break
 		}
 	}
+	ecosystem += ecosystemSb43.String()
 
 	return packageName, ecosystem, nil
 }

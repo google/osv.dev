@@ -150,8 +150,8 @@ func parseSecurityTrackerFile(advisories Advisories, securityTrackerRepo, securi
 
 			line = strings.TrimLeft(line, " \t")
 			if strings.HasPrefix(line, "{") {
-				upstreams := strings.Fields(strings.Trim(line, "{}"))
-				for _, u := range upstreams {
+				upstreams := strings.FieldsSeq(strings.Trim(line, "{}"))
+				for u := range upstreams {
 					// This is not ideal, in the cases that there are missing
 					// Debian Security Tracker CVEs, but it's better than not having them
 					advisories[currentAdvisory].Upstream = append(advisories[currentAdvisory].Upstream, "DEBIAN-"+u)
@@ -294,7 +294,7 @@ func parseWebwmlFiles(advisories Advisories, webwmlRepoPath, wmlFileSubPath stri
 			// This is accounted for with the modified timestamp with git
 			// below though, so we don't need to parse them here
 			if len(reportDateMatches) > 0 {
-				reportDateStr := strings.Split(reportDateMatches[0][1], ",")[0]
+				reportDateStr, _, _ := strings.Cut(reportDateMatches[0][1], ",")
 				parsedDate, err := time.Parse("2006-1-02", reportDateStr)
 				if err == nil {
 					advisory.Published = parsedDate

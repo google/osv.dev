@@ -59,9 +59,23 @@ func TestExtractBinaryMappings(t *testing.T) {
 			},
 			{
 				Package: &osvschema.Package{
+					Name:      "glib2.0",
+					Ecosystem: "Ubuntu:24.04:LTS",
+				},
+				EcosystemSpecific: ecoStruct,
+			},
+			{
+				Package: &osvschema.Package{
 					Name:      "empty-pkg",
 					Ecosystem: "Ubuntu:22.04:LTS",
 				},
+			},
+			{
+				Package: &osvschema.Package{
+					Name:      "debian-pkg",
+					Ecosystem: "Debian:12",
+				},
+				EcosystemSpecific: ecoStruct,
 			},
 		},
 	}
@@ -165,7 +179,7 @@ func TestRun_EndToEnd(t *testing.T) {
 		Id: "USN-1-1",
 		Affected: []*osvschema.Affected{
 			{
-				Package:           &osvschema.Package{Name: "curl"},
+				Package:           &osvschema.Package{Name: "curl", Ecosystem: "Ubuntu:22.04:LTS"},
 				EcosystemSpecific: ecoStruct1,
 			},
 		},
@@ -185,7 +199,7 @@ func TestRun_EndToEnd(t *testing.T) {
 		Id: "USN-2-1",
 		Affected: []*osvschema.Affected{
 			{
-				Package:           &osvschema.Package{Name: "curl-esm-src"},
+				Package:           &osvschema.Package{Name: "curl-esm-src", Ecosystem: "Ubuntu:22.04:LTS"},
 				EcosystemSpecific: ecoStruct2,
 			},
 		},

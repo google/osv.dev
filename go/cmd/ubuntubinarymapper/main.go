@@ -46,7 +46,6 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/api/option"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -132,6 +131,9 @@ func findModifiedUbuntuIDs(ctx context.Context, gcsStorage clients.CloudStorage,
 func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
 	mappings := make(map[string][]string)
 	for _, affected := range vuln.GetAffected() {
+		if !strings.HasPrefix(affected.GetPackage().GetEcosystem(), "Ubuntu") {
+			continue
+		}
 		sourceName := affected.GetPackage().GetName()
 		if sourceName == "" {
 			continue
@@ -140,7 +142,7 @@ func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
 		binaries := affected.GetEcosystemSpecific().GetFields()["binaries"].GetListValue().GetValues()
 		for _, item := range binaries {
 			binName := strings.TrimSpace(item.GetStructValue().GetFields()["binary_name"].GetStringValue())
-			if binName != "" {
+			if binName != "" && !slices.Contains(mappings[binName], sourceName) {
 				mappings[binName] = append(mappings[binName], sourceName)
 			}
 		}
@@ -169,7 +171,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 	numWorkers := flag.Int("num-workers", defaultNumWorkers, "Number of worker goroutines")
 	flag.Parse()
 
-	storageClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create storage client: %w", err)
 	}
@@ -212,7 +214,7 @@ func setup(ctx context.Context) (*appEnv, error) {
 		return nil, errors.New("GOOGLE_CLOUD_PROJECT or -project must be set when not running with -output-json")
 	}
 
-	dsClient, err := datastore.NewClientWithDatabase(ctx, *projectID, *datastoreID)
+	dsClient, err := datastore.NewClientWithDatabase(ctx, *projectID, *datastoreID, datastore.WithIgnoreFieldMismatch())
 	if err != nil {
 		storageClient.Close()
 
@@ -253,13 +255,14 @@ func run(ctx context.Context, env *appEnv) error {
 	logger.InfoContext(ctx, "discovered vulnerabilities to process", slog.Int("count", len(vulnIDs)))
 	if len(vulnIDs) > 0 {
 		threshold := cmp.Or(env.zipThreshold, zipDownloadThreshold)
+		workers := max(cmp.Or(env.numWorkers, defaultNumWorkers), 1)
 		var allMappings map[string][]string
 		if len(vulnIDs) > threshold {
 			logger.InfoContext(ctx, "downloading Ubuntu/all.zip for bulk processing", slog.Int("count", len(vulnIDs)), slog.Int("threshold", threshold))
-			allMappings, err = extractMappingsFromAllZip(ctx, env.gcsStorage, vulnIDs, env.numWorkers)
+			allMappings, err = extractMappingsFromAllZip(ctx, env.gcsStorage, vulnIDs, workers)
 		} else {
 			logger.InfoContext(ctx, "downloading individual Ubuntu JSON records", slog.Int("count", len(vulnIDs)))
-			allMappings, err = extractMappingsFromIndividualFiles(ctx, env.gcsStorage, vulnIDs, env.numWorkers)
+			allMappings, err = extractMappingsFromIndividualFiles(ctx, env.gcsStorage, vulnIDs, workers)
 		}
 		if err != nil {
 			return err
@@ -301,10 +304,13 @@ func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStor
 	var mu sync.Mutex
 	allMappings := make(map[string][]string)
 
-	g, _ := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(numWorkers)
 
 	for _, zf := range zr.File {
+		if gCtx.Err() != nil {
+			break
+		}
 		if zf.FileInfo().IsDir() || !strings.HasSuffix(zf.Name, ".json") {
 			continue
 		}
@@ -381,7 +387,11 @@ func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings m
 	mu.Lock()
 	defer mu.Unlock()
 	for bin, sources := range recordMappings {
-		allMappings[bin] = append(allMappings[bin], sources...)
+		for _, src := range sources {
+			if !slices.Contains(allMappings[bin], src) {
+				allMappings[bin] = append(allMappings[bin], src)
+			}
+		}
 	}
 
 	return nil

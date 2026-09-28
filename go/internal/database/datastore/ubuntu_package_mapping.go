@@ -32,7 +32,7 @@ const (
 )
 
 type ubuntuPackageMappingEntity struct {
-	SourceNames []string `datastore:"source_names"`
+	SourceNames []string `datastore:"source_names,noindex"`
 }
 
 // UbuntuPackageMappingStore implements models.UbuntuPackageMappingStore using Cloud Datastore.

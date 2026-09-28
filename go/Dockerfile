@@ -25,7 +25,7 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, staging-api-test, website).
+# api, recoverer, ubuntubinarymapper, staging-api-test, website).
 # ====================================================================================
 
 # ========================================================

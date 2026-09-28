@@ -24,12 +24,15 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+const defaultBatchTimeout = 30 * time.Minute
 
 // SignatureMap maps vulnerability ID -> affected[] index -> list of Vanir signature objects.
 type SignatureMap map[string]map[int][]*structpb.Value
@@ -43,6 +46,7 @@ type SignatureGenerator interface {
 type PythonGenerator struct {
 	PythonBin  string
 	ScriptPath string
+	Timeout    time.Duration
 }
 
 var _ SignatureGenerator = (*PythonGenerator)(nil)
@@ -58,6 +62,7 @@ func NewPythonGenerator(pythonBin, scriptPath string) *PythonGenerator {
 	return &PythonGenerator{
 		PythonBin:  pythonBin,
 		ScriptPath: scriptPath,
+		Timeout:    defaultBatchTimeout,
 	}
 }
 
@@ -99,15 +104,23 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		return nil, fmt.Errorf("failed to write input JSON file: %w", err)
 	}
 
+	timeout := g.Timeout
+	if timeout <= 0 {
+		timeout = defaultBatchTimeout
+	}
+	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	//nolint:gosec // G204: PythonBin and ScriptPath are trusted service configuration paths.
 	cmd := exec.CommandContext(
-		ctx,
+		cmdCtx,
 		g.PythonBin,
 		g.ScriptPath,
 		"--input", inputPath,
 		"--output", outputPath,
 		"--git-working-dir", gitDir,
 	)
+	cmd.WaitDelay = 10 * time.Second
 	var stderr bytes.Buffer
 	cmd.Stdout = &stderr
 	cmd.Stderr = &stderr

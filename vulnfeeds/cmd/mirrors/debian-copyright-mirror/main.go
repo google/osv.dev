@@ -18,6 +18,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -114,9 +115,14 @@ func fetchCopyrightFiles(ctx context.Context, filelistURL, prefixFilter string) 
 	}
 
 	files, err := ExtractUnstableCopyright(stdout, prefixFilter)
-	_ = cmd.Wait()
+	if waitErr := cmd.Wait(); waitErr != nil {
+		err = errors.Join(err, fmt.Errorf("xz decompression failed: %w", waitErr))
+	}
+	if err != nil {
+		return nil, err
+	}
 
-	return files, err
+	return files, nil
 }
 
 // GenerateCurlConfiguration generates a curl config file for parallel downloads.

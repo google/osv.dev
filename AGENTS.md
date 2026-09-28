@@ -265,9 +265,13 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
-8. **`recoverer`**:
+10. **`recoverer`**:
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
+
+11. **`ubuntubinarymapper`**:
+   - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
+   - Iterates through Ubuntu vulnerability records, extracts binary-to-source package name mappings from `ecosystem_specific` and `database_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint.
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.

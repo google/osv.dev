@@ -8,4 +8,6 @@ resources:
 - record-checker.yaml
 - recoverer.yaml
 - scaler.yaml
+- ubuntubinarymapper.yaml
 - workers.yaml
+

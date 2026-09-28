@@ -181,3 +181,14 @@ RUN CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
 FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS website
 COPY --from=website-build /app/website /
 ENTRYPOINT ["/website"]
+
+# ========================================================
+# Target: Ubuntu Binary Mapper
+# ========================================================
+FROM builder AS ubuntubinarymapper-build
+RUN CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
+
+FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS ubuntubinarymapper
+COPY --from=ubuntubinarymapper-build /app/ubuntubinarymapper /
+ENTRYPOINT ["/ubuntubinarymapper"]
+

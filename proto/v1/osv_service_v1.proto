@@ -143,6 +143,21 @@ message VersionRepositoryInformation {
   string commit = 6;
 }
 
+// Parameters for QueryUbuntuPackageMapping.
+message UbuntuPackageMappingParameters {
+  repeated string binary_names = 1 [json_name="binary_names"];
+}
+
+// Wrapper for repeated source package names within a map.
+message SourcePackages {
+  repeated string source_names = 1 [json_name="source_names"];
+}
+
+// Response for QueryUbuntuPackageMapping.
+message UbuntuPackageMappingResponse {
+  map<string, SourcePackages> mappings = 1;
+}
+
 // Open source vulnerability database.
 service OSV {
   // Return a `Vulnerability` object for a given OSV ID.
@@ -186,4 +201,13 @@ service OSV {
       get: "/v1experimental/importfindings/{source}"
     };
   }
+
+  // Map Ubuntu binary package names to their corresponding source package names.
+  rpc QueryUbuntuPackageMapping(UbuntuPackageMappingParameters) returns (UbuntuPackageMappingResponse) {
+    option (google.api.http) = {
+      post: "/v1experimental/ubuntu/binary-to-source"
+      body: "*"
+    };
+  }
 }
+

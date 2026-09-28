@@ -33,6 +33,42 @@ func GitHub() []VersionStrategy {
 	}
 }
 
+// WPScan returns the strategy pipeline for WPScan advisories.
+// Example: test_data/cvelistV5/cves/2015/10xxx/CVE-2015-10001.json
+func WPScan() []VersionStrategy {
+	return []VersionStrategy{
+		&ChangesAtStrategy{},
+		&StandardRangeStrategy{},
+		&StringRangeExpressionStrategy{},
+		&CPEVersionStringStrategy{},
+		&ZeroIntroducedSingleVersionStrategy{},
+	}
+}
+
+// Wordfence returns the strategy pipeline for Wordfence advisories.
+// Example: test_data/cvelistV5/cves/2026/1xxx/CVE-2026-1293.json
+func Wordfence() []VersionStrategy {
+	return []VersionStrategy{
+		&ChangesAtStrategy{},
+		&StandardRangeStrategy{},
+		&StringRangeExpressionStrategy{},
+		&CPEVersionStringStrategy{},
+		&ZeroIntroducedSingleVersionStrategy{},
+	}
+}
+
+// Patchstack returns the strategy pipeline for Patchstack advisories.
+// Example: test_data/cvelistV5/cves/2021/23xxx/CVE-2021-23209.json
+func Patchstack() []VersionStrategy {
+	return []VersionStrategy{
+		&ChangesAtStrategy{},
+		&StandardRangeStrategy{},
+		&StringRangeExpressionStrategy{},
+		&CPEVersionStringStrategy{},
+		&ZeroIntroducedSingleVersionStrategy{},
+	}
+}
+
 // MITRE returns the strategy pipeline for MITRE advisories.
 // Example: test_data/cvelistV5/cves/2021/26xxx/CVE-2021-26917.json,
 // test_data/cve5/CVE-2016-1897.json

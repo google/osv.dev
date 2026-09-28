@@ -16,10 +16,8 @@ package datastore
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
@@ -153,34 +151,5 @@ func TestUbuntuPackageMappingStore_BatchChunking(t *testing.T) {
 		if len(queried[i].SourceNames) != 1 || queried[i].SourceNames[0] != fmt.Sprintf("src-%d", i) {
 			t.Errorf("index %d: unexpected source names: %v", i, queried[i].SourceNames)
 		}
-	}
-}
-
-func TestJobDataStore_LastRun(t *testing.T) {
-	ctx := context.Background()
-	dsClient := testutils.MustNewDatastoreClientForTesting(t)
-	store := NewJobDataStore(dsClient)
-
-	jobID := "test_ubuntu_binary_mapper_last_run"
-
-	// Initial fetch should be ErrNotFound
-	_, err := store.GetLastRun(ctx, jobID)
-	if !errors.Is(err, models.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound initially, got %v", err)
-	}
-
-	// Set last run
-	now := time.Now().UTC().Truncate(time.Millisecond)
-	if err := store.SetLastRun(ctx, jobID, now); err != nil {
-		t.Fatalf("SetLastRun failed: %v", err)
-	}
-
-	// Fetch again
-	fetched, err := store.GetLastRun(ctx, jobID)
-	if err != nil {
-		t.Fatalf("GetLastRun failed after SetLastRun: %v", err)
-	}
-	if !fetched.Equal(now) {
-		t.Errorf("lastRun mismatch: want %v, got %v", now, fetched)
 	}
 }

@@ -271,7 +271,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 
 11. **`ubuntubinarymapper`**:
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
-   - Iterates through Ubuntu vulnerability records, extracts binary-to-source package name mappings from `ecosystem_specific` and `database_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint.
+   - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`), downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific` and `database_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.

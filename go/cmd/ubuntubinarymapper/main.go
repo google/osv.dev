@@ -13,18 +13,22 @@
 // limitations under the License.
 
 // Package main implements the ubuntubinarymapper service that discovers Ubuntu
-// vulnerability records, extracts binary-to-source package name mappings,
-// and saves them to Datastore.
+// vulnerability records from the exported GCS bucket, extracts binary-to-source
+// package name mappings, and saves them to Datastore or a local JSON store.
 package main
 
 import (
+	"archive/zip"
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -40,87 +44,85 @@ import (
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
-	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
-	jobDataLastRunKey = "ubuntu_binary_mapper_last_run"
-	defaultNumWorkers = 20
+	jobDataKind           = "JobData"
+	jobDataLastRunKey     = "ubuntu_binary_mapper_last_run"
+	defaultBucketName     = "osv-vulnerabilities"
+	ubuntuPrefix          = "Ubuntu"
+	ubuntuModifiedCSVPath = "Ubuntu/modified_id.csv"
+	ubuntuAllZipPath      = "Ubuntu/all.zip"
+	zipDownloadThreshold  = 1000
+	defaultNumWorkers     = 20
 )
 
-var ubuntuSources = []string{
-	"ubuntu-usn",
-	"ubuntu-cve",
-	"ubuntu-lsn",
+type jobDataEntity struct {
+	Value *time.Time `datastore:"value,noindex"`
 }
 
-// UbuntuFinder finds vulnerability IDs that need processing.
-type UbuntuFinder interface {
-	FindUbuntuVulnerabilities(ctx context.Context, lastRun *time.Time) ([]string, error)
-}
-
-type datastoreUbuntuFinder struct {
-	dsClient  *datastore.Client
-	vulnStore models.VulnerabilityStore
-}
-
-func (f *datastoreUbuntuFinder) FindUbuntuVulnerabilities(ctx context.Context, lastRun *time.Time) ([]string, error) {
-	if lastRun == nil {
-		// Initial full run: list records from all Ubuntu sources.
-		var allIDs []string
-		for _, source := range ubuntuSources {
-			logger.InfoContext(ctx, "listing vulnerabilities from source", slog.String("source", source))
-			for ref, err := range f.vulnStore.ListBySource(ctx, source, false) {
-				if err != nil {
-					return nil, fmt.Errorf("failed listing source %s: %w", source, err)
-				}
-				allIDs = append(allIDs, ref.ID)
-			}
-		}
-		slices.Sort(allIDs)
-
-		return slices.Compact(allIDs), nil
+func getLastRunFromDatastore(ctx context.Context, dsClient *datastore.Client) (time.Time, error) {
+	key := datastore.NameKey(jobDataKind, jobDataLastRunKey, nil)
+	var e jobDataEntity
+	if err := dsClient.Get(ctx, key, &e); err != nil {
+		return time.Time{}, fmt.Errorf("failed to get JobData for %q: %w", jobDataLastRunKey, err)
+	}
+	if e.Value == nil {
+		return time.Time{}, datastore.ErrNoSuchEntity
 	}
 
-	// Incremental run: query Vulnerability where modified > lastRun.
-	logger.InfoContext(ctx, "querying modified vulnerabilities", slog.Time("lastRun", *lastRun))
-	q := datastore.NewQuery("Vulnerability").FilterField("modified", ">", *lastRun)
-	it := f.dsClient.Run(ctx, q)
+	return *e.Value, nil
+}
 
-	var matchedIDs []string
-	for {
-		var v db.Vulnerability
-		key, err := it.Next(&v)
-		if errors.Is(err, iterator.Done) {
+func setLastRunInDatastore(ctx context.Context, dsClient *datastore.Client, t time.Time) error {
+	key := datastore.NameKey(jobDataKind, jobDataLastRunKey, nil)
+	utcTime := t.UTC()
+	e := jobDataEntity{Value: &utcTime}
+	if _, err := dsClient.Put(ctx, key, &e); err != nil {
+		return fmt.Errorf("failed to put JobData for %q: %w", jobDataLastRunKey, err)
+	}
+
+	return nil
+}
+
+// findModifiedUbuntuIDs reads Ubuntu/modified_id.csv from the GCS bucket and returns all
+// vulnerability IDs modified after lastRun. If lastRun is nil, all IDs in the CSV are returned.
+func findModifiedUbuntuIDs(ctx context.Context, gcsStorage clients.CloudStorage, lastRun *time.Time) ([]string, error) {
+	csvBytes, err := gcsStorage.ReadObject(ctx, ubuntuModifiedCSVPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading %s: %w", ubuntuModifiedCSVPath, err)
+	}
+
+	var ids []string
+	scanner := bufio.NewScanner(bytes.NewReader(csvBytes))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		tsStr, id, ok := strings.Cut(line, ",")
+		if !ok || id == "" {
+			continue
+		}
+		modTime, err := time.Parse(time.RFC3339Nano, tsStr)
+		if err != nil {
+			logger.WarnContext(ctx, "invalid timestamp in modified_id.csv", slog.String("line", line), slog.Any("err", err))
+			continue
+		}
+		// Ubuntu/modified_id.csv is sorted by modified date descending.
+		if lastRun != nil && !modTime.After(*lastRun) {
 			break
 		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to query modified vulnerabilities: %w", err)
-		}
-
-		if isUbuntuRecord(v.SourceID, key.Name) {
-			matchedIDs = append(matchedIDs, key.Name)
-		}
+		ids = append(ids, id)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning %s: %w", ubuntuModifiedCSVPath, err)
 	}
 
-	slices.Sort(matchedIDs)
-
-	return slices.Compact(matchedIDs), nil
-}
-
-func isUbuntuRecord(sourceID, id string) bool {
-	if strings.HasPrefix(sourceID, "ubuntu-") {
-		return true
-	}
-	for _, source := range ubuntuSources {
-		if strings.HasPrefix(sourceID, source+":") {
-			return true
-		}
-	}
-
-	return strings.HasPrefix(id, "USN-") || strings.HasPrefix(id, "UBUNTU-") || strings.HasPrefix(id, "LSN-")
+	return ids, nil
 }
 
 // ExtractBinaryMappings extracts a map of binary_name -> set of source_names from a Vulnerability record.
@@ -190,52 +192,19 @@ func extractBinaryNames(s *structpb.Struct) []string {
 
 // appEnv holds configured services and dependencies.
 type appEnv struct {
-	finder       UbuntuFinder
-	vulnStore    models.VulnerabilityStore
+	gcsStorage   clients.CloudStorage
 	ubuntuStore  models.UbuntuPackageMappingStore
-	jobDataStore models.JobDataStore
+	dsClient     *datastore.Client
+	localLastRun *time.Time
 	numWorkers   int
+	zipThreshold int
 	closer       func()
 }
 
-type localFileVulnStore struct {
-	models.UnimplementedVulnerabilityStore
-
-	files map[string]string
-}
-
-func (s *localFileVulnStore) GetFull(_ context.Context, id string) (*osvschema.Vulnerability, error) {
-	path, ok := s.files[id]
-	if !ok {
-		return nil, models.ErrNotFound
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading %s: %w", path, err)
-	}
-
-	var vuln osvschema.Vulnerability
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := unmarshaler.Unmarshal(data, &vuln); err != nil {
-		return nil, fmt.Errorf("failed unmarshaling %s: %w", path, err)
-	}
-
-	return &vuln, nil
-}
-
-type localFinder struct {
-	ids []string
-}
-
-func (f *localFinder) FindUbuntuVulnerabilities(_ context.Context, _ *time.Time) ([]string, error) {
-	return f.ids, nil
-}
-
 func setup(ctx context.Context) (*appEnv, error) {
-	outputJSON := flag.String("output-json", "", "Path to local JSON file for writing/storing mappings and checkpoint (bypasses Datastore)")
-	inputFile := flag.String("input-file", "", "Path to local OSV vulnerability JSON file to process (bypasses Datastore/GCS)")
-	inputDir := flag.String("input-dir", "", "Path to local directory containing OSV vulnerability JSON files to process (bypasses Datastore/GCS)")
+	outputJSON := flag.String("output-json", "", "Path to local JSON file for writing/storing mappings (enables local mode, bypassing Datastore)")
+	lastRunFlag := flag.String("last-run", "", "Last job run time in RFC3339 format (used in local mode when -output-json is set)")
+	bucketFlag := flag.String("bucket", "", "GCS bucket name containing exported OSV vulnerabilities (defaults to OSV_VULNERABILITIES_BUCKET or osv-vulnerabilities)")
 	numWorkersFlag := flag.Int("num-workers", defaultNumWorkers, "Number of worker goroutines")
 	flag.Parse()
 
@@ -246,94 +215,53 @@ func setup(ctx context.Context) (*appEnv, error) {
 		}
 	}
 
-	// Local file input mode
-	if *inputFile != "" || *inputDir != "" {
-		files := make(map[string]string)
-		var ids []string
-		unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-
-		if *inputFile != "" {
-			data, err := os.ReadFile(*inputFile)
-			if err != nil {
-				return nil, fmt.Errorf("failed reading input file %s: %w", *inputFile, err)
-			}
-			var vuln osvschema.Vulnerability
-			id := filepath.Base(*inputFile)
-			id = strings.TrimSuffix(id, filepath.Ext(id))
-			if err := unmarshaler.Unmarshal(data, &vuln); err == nil && vuln.GetId() != "" {
-				id = vuln.GetId()
-			}
-			files[id] = *inputFile
-			ids = append(ids, id)
-		}
-
-		if *inputDir != "" {
-			entries, err := os.ReadDir(*inputDir)
-			if err != nil {
-				return nil, fmt.Errorf("failed reading input dir %s: %w", *inputDir, err)
-			}
-			for _, entry := range entries {
-				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-					continue
-				}
-				filePath := filepath.Join(*inputDir, entry.Name())
-				data, err := os.ReadFile(filePath)
-				if err != nil {
-					continue
-				}
-				var vuln osvschema.Vulnerability
-				id := strings.TrimSuffix(entry.Name(), ".json")
-				if err := unmarshaler.Unmarshal(data, &vuln); err == nil && vuln.GetId() != "" {
-					id = vuln.GetId()
-				}
-				files[id] = filePath
-				ids = append(ids, id)
-			}
-		}
-
-		slices.Sort(ids)
-		ids = slices.Compact(ids)
-
-		storePath := *outputJSON
-		if storePath == "" {
-			storePath = "ubuntu_package_mappings.json"
-		}
-		jsonStore, err := jsonstore.New(storePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed creating JSON store %s: %w", storePath, err)
-		}
-
-		return &appEnv{
-			finder:       &localFinder{ids: ids},
-			vulnStore:    &localFileVulnStore{files: files},
-			ubuntuStore:  jsonStore,
-			jobDataStore: jsonStore,
-			numWorkers:   numWorkers,
-			closer:       func() {},
-		}, nil
+	bucketName := *bucketFlag
+	if bucketName == "" {
+		bucketName = os.Getenv("OSV_VULNERABILITIES_BUCKET")
+	}
+	if bucketName == "" {
+		bucketName = defaultBucketName
 	}
 
-	// Production Datastore/GCS mode
-	var ubuntuStore models.UbuntuPackageMappingStore
-	var jobDataStore models.JobDataStore
-
+	// Local mode when -output-json is provided
 	if *outputJSON != "" {
+		var localLastRun *time.Time
+		if *lastRunFlag != "" {
+			t, err := time.Parse(time.RFC3339Nano, *lastRunFlag)
+			if err != nil {
+				return nil, fmt.Errorf("invalid -last-run timestamp %q (expected RFC3339): %w", *lastRunFlag, err)
+			}
+			utcTime := t.UTC()
+			localLastRun = &utcTime
+		}
+
 		jsonStore, err := jsonstore.New(*outputJSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed creating JSON store %s: %w", *outputJSON, err)
 		}
-		ubuntuStore = jsonStore
-		jobDataStore = jsonStore
+
+		storageClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create storage client: %w", err)
+		}
+
+		return &appEnv{
+			gcsStorage:   clients.NewGCSClient(storageClient, bucketName),
+			ubuntuStore:  jsonStore,
+			dsClient:     nil,
+			localLastRun: localLastRun,
+			numWorkers:   numWorkers,
+			zipThreshold: zipDownloadThreshold,
+			closer: func() {
+				storageClient.Close()
+			},
+		}, nil
 	}
 
+	// Production Datastore/GCS mode
 	projectID, ok := os.LookupEnv("GOOGLE_CLOUD_PROJECT")
 	if !ok {
-		return nil, errors.New("GOOGLE_CLOUD_PROJECT must be set")
-	}
-
-	bucketName, ok := os.LookupEnv("OSV_VULNERABILITIES_BUCKET")
-	if !ok {
-		return nil, errors.New("OSV_VULNERABILITIES_BUCKET must be set")
+		return nil, errors.New("GOOGLE_CLOUD_PROJECT must be set when not running with -output-json")
 	}
 
 	storageClient, err := storage.NewClient(ctx)
@@ -349,29 +277,13 @@ func setup(ctx context.Context) (*appEnv, error) {
 		return nil, fmt.Errorf("failed to create datastore client: %w", err)
 	}
 
-	vulnStore := db.NewVulnerabilityStore(db.VulnStoreConfig{
-		Client: dbClientWrapper(dsClient),
-		GCS:    clients.NewGCSClient(storageClient, bucketName),
-	})
-
-	if ubuntuStore == nil {
-		ubuntuStore = db.NewUbuntuPackageMappingStore(dsClient)
-	}
-	if jobDataStore == nil {
-		jobDataStore = db.NewJobDataStore(dsClient)
-	}
-
-	finder := &datastoreUbuntuFinder{
-		dsClient:  dsClient,
-		vulnStore: vulnStore,
-	}
-
 	return &appEnv{
-		finder:       finder,
-		vulnStore:    vulnStore,
-		ubuntuStore:  ubuntuStore,
-		jobDataStore: jobDataStore,
+		gcsStorage:   clients.NewGCSClient(storageClient, bucketName),
+		ubuntuStore:  db.NewUbuntuPackageMappingStore(dsClient),
+		dsClient:     dsClient,
+		localLastRun: nil,
 		numWorkers:   numWorkers,
+		zipThreshold: zipDownloadThreshold,
 		closer: func() {
 			dsClient.Close()
 			storageClient.Close()
@@ -379,71 +291,206 @@ func setup(ctx context.Context) (*appEnv, error) {
 	}, nil
 }
 
-func dbClientWrapper(cl *datastore.Client) *datastore.Client {
-	return cl
-}
-
 func run(ctx context.Context, env *appEnv) error {
 	runStartTime := time.Now().UTC()
 
 	var lastRun *time.Time
-	lastRunTime, err := env.jobDataStore.GetLastRun(ctx, jobDataLastRunKey)
-	if err != nil && !errors.Is(err, models.ErrNotFound) {
-		return fmt.Errorf("failed to get last run time: %w", err)
-	}
-	if err == nil {
-		lastRun = &lastRunTime
+	if env.dsClient != nil {
+		t, err := getLastRunFromDatastore(ctx, env.dsClient)
+		if err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
+			return fmt.Errorf("failed to get last run time: %w", err)
+		}
+		if err == nil {
+			lastRun = &t
+		}
+	} else {
+		lastRun = env.localLastRun
 	}
 
-	vulnIDs, err := env.finder.FindUbuntuVulnerabilities(ctx, lastRun)
+	if lastRun != nil {
+		logger.InfoContext(ctx, "checking for Ubuntu vulnerabilities modified after last run", slog.Time("lastRun", *lastRun))
+	} else {
+		logger.InfoContext(ctx, "no previous run timestamp set, processing all Ubuntu vulnerabilities")
+	}
+
+	vulnIDs, err := findModifiedUbuntuIDs(ctx, env.gcsStorage, lastRun)
 	if err != nil {
-		return fmt.Errorf("failed finding vulnerabilities: %w", err)
+		return fmt.Errorf("failed finding modified vulnerabilities: %w", err)
 	}
 
 	logger.InfoContext(ctx, "discovered vulnerabilities to process", slog.Int("count", len(vulnIDs)))
 	if len(vulnIDs) == 0 {
-		logger.InfoContext(ctx, "no vulnerabilities to process, updating last run time")
+		if env.dsClient != nil {
+			logger.InfoContext(ctx, "no vulnerabilities to process, updating last run time in Datastore")
 
-		return env.jobDataStore.SetLastRun(ctx, jobDataLastRunKey, runStartTime)
+			return setLastRunInDatastore(ctx, env.dsClient, runStartTime)
+		}
+		logger.InfoContext(ctx, "no vulnerabilities to process")
+
+		return nil
+	}
+
+	threshold := env.zipThreshold
+	if threshold <= 0 {
+		threshold = zipDownloadThreshold
+	}
+
+	var allMappings map[string]map[string]struct{}
+	if len(vulnIDs) > threshold {
+		logger.InfoContext(ctx, "downloading Ubuntu/all.zip for bulk processing", slog.Int("count", len(vulnIDs)), slog.Int("threshold", threshold))
+		allMappings, err = extractMappingsFromAllZip(ctx, env.gcsStorage, vulnIDs, env.numWorkers)
+		if err != nil {
+			return fmt.Errorf("failed processing Ubuntu/all.zip: %w", err)
+		}
+	} else {
+		logger.InfoContext(ctx, "downloading individual Ubuntu JSON records", slog.Int("count", len(vulnIDs)))
+		allMappings, err = extractMappingsFromIndividualFiles(ctx, env.gcsStorage, vulnIDs, env.numWorkers)
+		if err != nil {
+			return fmt.Errorf("failed processing individual Ubuntu files: %w", err)
+		}
+	}
+
+	logger.InfoContext(ctx, "extracted binary package mappings", slog.Int("unique_binaries", len(allMappings)))
+
+	if len(allMappings) > 0 {
+		if err := saveMappings(ctx, env.ubuntuStore, allMappings); err != nil {
+			return fmt.Errorf("failed saving mappings: %w", err)
+		}
+	}
+
+	if env.dsClient != nil {
+		if err := setLastRunInDatastore(ctx, env.dsClient, runStartTime); err != nil {
+			return fmt.Errorf("failed recording last run checkpoint: %w", err)
+		}
+		logger.InfoContext(ctx, "successfully completed ubuntu binary mapper run", slog.Time("checkpoint", runStartTime))
+	} else {
+		logger.InfoContext(ctx, "successfully completed local ubuntu binary mapper run")
+	}
+
+	return nil
+}
+
+func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[string]map[string]struct{}, error) {
+	zipBytes, err := gcsStorage.ReadObject(ctx, ubuntuAllZipPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading %s: %w", ubuntuAllZipPath, err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
+	if err != nil {
+		return nil, fmt.Errorf("failed opening zip archive %s: %w", ubuntuAllZipPath, err)
+	}
+
+	targetSet := make(map[string]struct{}, len(vulnIDs))
+	for _, id := range vulnIDs {
+		targetSet[id] = struct{}{}
 	}
 
 	var mu sync.Mutex
 	allMappings := make(map[string]map[string]struct{})
 
-	jobsChan := make(chan string, env.numWorkers*2)
-	errChan := make(chan error, env.numWorkers)
+	filesChan := make(chan *zip.File, numWorkers*2)
+	errChan := make(chan error, numWorkers)
 
 	var wg sync.WaitGroup
-	for range env.numWorkers {
+	for range numWorkers {
 		wg.Go(func() {
-			for id := range jobsChan {
-				vuln, err := env.vulnStore.GetFull(ctx, id)
+			unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+			for zf := range filesChan {
+				rc, err := zf.Open()
 				if err != nil {
-					if errors.Is(err, models.ErrNotFound) {
-						logger.WarnContext(ctx, "vulnerability not found in storage", slog.String("id", id))
-						continue
-					}
 					select {
-					case errChan <- fmt.Errorf("failed fetching %s: %w", id, err):
+					case errChan <- fmt.Errorf("failed opening %s in zip: %w", zf.Name, err):
+					default:
+					}
+
+					return
+				}
+				data, err := io.ReadAll(rc)
+				rc.Close()
+				if err != nil {
+					select {
+					case errChan <- fmt.Errorf("failed reading %s in zip: %w", zf.Name, err):
 					default:
 					}
 
 					return
 				}
 
-				recordMappings := ExtractBinaryMappings(vuln)
-				if len(recordMappings) > 0 {
-					mu.Lock()
-					for bin, sources := range recordMappings {
-						if allMappings[bin] == nil {
-							allMappings[bin] = make(map[string]struct{})
-						}
-						for src := range sources {
-							allMappings[bin][src] = struct{}{}
-						}
+				var vuln osvschema.Vulnerability
+				if err := unmarshaler.Unmarshal(data, &vuln); err != nil {
+					select {
+					case errChan <- fmt.Errorf("failed unmarshaling %s in zip: %w", zf.Name, err):
+					default:
 					}
-					mu.Unlock()
+
+					return
 				}
+
+				mergeRecordMappings(&mu, allMappings, ExtractBinaryMappings(&vuln))
+			}
+		})
+	}
+
+	for _, zf := range zr.File {
+		if zf.FileInfo().IsDir() || !strings.HasSuffix(zf.Name, ".json") {
+			continue
+		}
+		id := strings.TrimSuffix(path.Base(zf.Name), ".json")
+		if _, ok := targetSet[id]; !ok {
+			continue
+		}
+		filesChan <- zf
+	}
+	close(filesChan)
+	wg.Wait()
+	close(errChan)
+
+	if len(errChan) > 0 {
+		return nil, <-errChan
+	}
+
+	return allMappings, nil
+}
+
+func extractMappingsFromIndividualFiles(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[string]map[string]struct{}, error) {
+	var mu sync.Mutex
+	allMappings := make(map[string]map[string]struct{})
+
+	jobsChan := make(chan string, numWorkers*2)
+	errChan := make(chan error, numWorkers)
+
+	var wg sync.WaitGroup
+	for range numWorkers {
+		wg.Go(func() {
+			unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+			for id := range jobsChan {
+				objPath := fmt.Sprintf("%s/%s.json", ubuntuPrefix, id)
+				data, err := gcsStorage.ReadObject(ctx, objPath)
+				if err != nil {
+					if errors.Is(err, clients.ErrNotFound) {
+						logger.WarnContext(ctx, "vulnerability JSON not found in GCS bucket", slog.String("path", objPath))
+						continue
+					}
+					select {
+					case errChan <- fmt.Errorf("failed reading %s: %w", objPath, err):
+					default:
+					}
+
+					return
+				}
+
+				var vuln osvschema.Vulnerability
+				if err := unmarshaler.Unmarshal(data, &vuln); err != nil {
+					select {
+					case errChan <- fmt.Errorf("failed unmarshaling %s: %w", objPath, err):
+					default:
+					}
+
+					return
+				}
+
+				mergeRecordMappings(&mu, allMappings, ExtractBinaryMappings(&vuln))
 			}
 		})
 	}
@@ -456,24 +503,26 @@ func run(ctx context.Context, env *appEnv) error {
 	close(errChan)
 
 	if len(errChan) > 0 {
-		return <-errChan
+		return nil, <-errChan
 	}
 
-	logger.InfoContext(ctx, "extracted binary package mappings", slog.Int("unique_binaries", len(allMappings)))
+	return allMappings, nil
+}
 
-	if len(allMappings) > 0 {
-		if err := saveMappings(ctx, env.ubuntuStore, allMappings); err != nil {
-			return fmt.Errorf("failed saving mappings: %w", err)
+func mergeRecordMappings(mu *sync.Mutex, allMappings, recordMappings map[string]map[string]struct{}) {
+	if len(recordMappings) == 0 {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for bin, sources := range recordMappings {
+		if allMappings[bin] == nil {
+			allMappings[bin] = make(map[string]struct{})
+		}
+		for src := range sources {
+			allMappings[bin][src] = struct{}{}
 		}
 	}
-
-	if err := env.jobDataStore.SetLastRun(ctx, jobDataLastRunKey, runStartTime); err != nil {
-		return fmt.Errorf("failed recording last run checkpoint: %w", err)
-	}
-
-	logger.InfoContext(ctx, "successfully completed ubuntu binary mapper run", slog.Time("checkpoint", runStartTime))
-
-	return nil
 }
 
 func saveMappings(ctx context.Context, store models.UbuntuPackageMappingStore, newMappings map[string]map[string]struct{}) error {
@@ -481,44 +530,39 @@ func saveMappings(ctx context.Context, store models.UbuntuPackageMappingStore, n
 	for bin := range newMappings {
 		binaryNames = append(binaryNames, bin)
 	}
+	slices.Sort(binaryNames)
 
-	const chunkSize = 500
-	for i := 0; i < len(binaryNames); i += chunkSize {
-		end := min(i+chunkSize, len(binaryNames))
-		chunk := binaryNames[i:end]
+	existing, err := store.GetMulti(ctx, binaryNames)
+	if err != nil {
+		return fmt.Errorf("failed getting existing mappings: %w", err)
+	}
 
-		existing, err := store.GetMulti(ctx, chunk)
-		if err != nil {
-			return fmt.Errorf("failed getting existing mappings: %w", err)
-		}
-
-		toPut := make([]*models.UbuntuPackageMapping, len(chunk))
-		for j, bin := range chunk {
-			srcSet := make(map[string]struct{})
-			if j < len(existing) && existing[j] != nil {
-				for _, src := range existing[j].SourceNames {
-					srcSet[src] = struct{}{}
-				}
-			}
-			for src := range newMappings[bin] {
+	toPut := make([]*models.UbuntuPackageMapping, len(binaryNames))
+	for i, bin := range binaryNames {
+		srcSet := make(map[string]struct{})
+		if i < len(existing) && existing[i] != nil {
+			for _, src := range existing[i].SourceNames {
 				srcSet[src] = struct{}{}
 			}
-
-			merged := make([]string, 0, len(srcSet))
-			for src := range srcSet {
-				merged = append(merged, src)
-			}
-			slices.Sort(merged)
-
-			toPut[j] = &models.UbuntuPackageMapping{
-				BinaryName:  bin,
-				SourceNames: merged,
-			}
+		}
+		for src := range newMappings[bin] {
+			srcSet[src] = struct{}{}
 		}
 
-		if err := store.PutMulti(ctx, toPut); err != nil {
-			return fmt.Errorf("failed writing merged mappings: %w", err)
+		merged := make([]string, 0, len(srcSet))
+		for src := range srcSet {
+			merged = append(merged, src)
 		}
+		slices.Sort(merged)
+
+		toPut[i] = &models.UbuntuPackageMapping{
+			BinaryName:  bin,
+			SourceNames: merged,
+		}
+	}
+
+	if err := store.PutMulti(ctx, toPut); err != nil {
+		return fmt.Errorf("failed writing merged mappings: %w", err)
 	}
 
 	return nil

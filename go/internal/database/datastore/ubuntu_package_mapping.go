@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
@@ -26,7 +25,6 @@ import (
 
 const (
 	UbuntuPackageMappingKind = "UbuntuPackageMapping"
-	JobDataKind              = "JobData"
 
 	maxDatastoreGetMultiBatchSize = 1000
 	maxDatastorePutMultiBatchSize = 500
@@ -123,54 +121,6 @@ func (s *UbuntuPackageMappingStore) PutMulti(ctx context.Context, mappings []*mo
 		if _, err := s.client.PutMulti(ctx, keys, entities); err != nil {
 			return fmt.Errorf("failed to put multi UbuntuPackageMapping: %w", err)
 		}
-	}
-
-	return nil
-}
-
-type jobDataEntity struct {
-	Value *time.Time `datastore:"value,noindex"`
-}
-
-// JobDataStore implements models.JobDataStore using Cloud Datastore.
-type JobDataStore struct {
-	client *datastore.Client
-}
-
-var _ models.JobDataStore = (*JobDataStore)(nil)
-
-// NewJobDataStore creates a new JobDataStore.
-func NewJobDataStore(client *datastore.Client) *JobDataStore {
-	return &JobDataStore{client: client}
-}
-
-// GetLastRun returns the last execution time for a job ID, or models.ErrNotFound if not found.
-func (s *JobDataStore) GetLastRun(ctx context.Context, jobID string) (time.Time, error) {
-	key := datastore.NameKey(JobDataKind, jobID, nil)
-	var e jobDataEntity
-	err := s.client.Get(ctx, key, &e)
-	if err != nil {
-		if errors.Is(err, datastore.ErrNoSuchEntity) {
-			return time.Time{}, models.ErrNotFound
-		}
-
-		return time.Time{}, fmt.Errorf("failed to get JobData for %q: %w", jobID, err)
-	}
-
-	if e.Value == nil {
-		return time.Time{}, models.ErrNotFound
-	}
-
-	return *e.Value, nil
-}
-
-// SetLastRun stores the execution time for a job ID.
-func (s *JobDataStore) SetLastRun(ctx context.Context, jobID string, t time.Time) error {
-	key := datastore.NameKey(JobDataKind, jobID, nil)
-	utcTime := t.UTC()
-	e := jobDataEntity{Value: &utcTime}
-	if _, err := s.client.Put(ctx, key, &e); err != nil {
-		return fmt.Errorf("failed to put JobData for %q: %w", jobID, err)
 	}
 
 	return nil

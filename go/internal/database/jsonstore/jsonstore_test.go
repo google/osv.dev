@@ -16,10 +16,8 @@ package jsonstore
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/models"
@@ -39,12 +37,6 @@ func TestJSONStore_InMemory(t *testing.T) {
 	}
 	if len(initial[0].SourceNames) != 0 || len(initial[1].SourceNames) != 0 {
 		t.Errorf("expected empty source names, got %v, %v", initial[0].SourceNames, initial[1].SourceNames)
-	}
-
-	// Initial GetLastRun should return ErrNotFound
-	_, err = store.GetLastRun(ctx, "job1")
-	if !errors.Is(err, models.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 
 	// Put mappings
@@ -70,20 +62,6 @@ func TestJSONStore_InMemory(t *testing.T) {
 	if diff := cmp.Diff(expected, queried); diff != "" {
 		t.Errorf("GetMulti mismatch (-want +got):\n%s", diff)
 	}
-
-	// Set and get last run
-	now := time.Now().UTC().Truncate(time.Second)
-	if err := store.SetLastRun(ctx, "job1", now); err != nil {
-		t.Fatalf("SetLastRun failed: %v", err)
-	}
-
-	lastRun, err := store.GetLastRun(ctx, "job1")
-	if err != nil {
-		t.Fatalf("GetLastRun failed: %v", err)
-	}
-	if !lastRun.Equal(now) {
-		t.Errorf("expected %v, got %v", now, lastRun)
-	}
 }
 
 func TestJSONStore_FilePersistence(t *testing.T) {
@@ -96,11 +74,6 @@ func TestJSONStore_FilePersistence(t *testing.T) {
 		t.Fatalf("New failed: %v", err)
 	}
 
-	now := time.Now().UTC().Truncate(time.Second)
-	if err := store1.SetLastRun(ctx, "jobA", now); err != nil {
-		t.Fatalf("SetLastRun failed: %v", err)
-	}
-
 	if err := store1.PutMulti(ctx, []*models.UbuntuPackageMapping{
 		{BinaryName: "libcurl4", SourceNames: []string{"curl"}},
 	}); err != nil {
@@ -111,14 +84,6 @@ func TestJSONStore_FilePersistence(t *testing.T) {
 	store2, err := New(filePath)
 	if err != nil {
 		t.Fatalf("New on existing file failed: %v", err)
-	}
-
-	lastRun, err := store2.GetLastRun(ctx, "jobA")
-	if err != nil {
-		t.Fatalf("store2 GetLastRun failed: %v", err)
-	}
-	if !lastRun.Equal(now) {
-		t.Errorf("store2 expected last run %v, got %v", now, lastRun)
 	}
 
 	queried, err := store2.GetMulti(ctx, []string{"libcurl4"})

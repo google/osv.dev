@@ -16,7 +16,6 @@ package models
 
 import (
 	"context"
-	"time"
 )
 
 // UbuntuPackageMapping represents the mapping from an Ubuntu binary package name
@@ -35,14 +34,4 @@ type UbuntuPackageMappingStore interface {
 
 	// PutMulti creates or updates package mappings for multiple binary package names.
 	PutMulti(ctx context.Context, mappings []*UbuntuPackageMapping) error
-}
-
-// JobDataStore abstracts storage operations for job execution metadata and checkpoints.
-type JobDataStore interface {
-	// GetLastRun retrieves the last execution time for a given job ID.
-	// If no prior execution record exists, returns time.Time{} and ErrNotFound.
-	GetLastRun(ctx context.Context, jobID string) (time.Time, error)
-
-	// SetLastRun records the execution time for a given job ID.
-	SetLastRun(ctx context.Context, jobID string, t time.Time) error
 }

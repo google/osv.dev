@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package jsonstore provides an in-memory implementation of models.UbuntuPackageMappingStore
-// and models.JobDataStore that optionally persists state to and loads from a JSON file.
+// that optionally persists state to and loads from a JSON file.
 package jsonstore
 
 import (
@@ -25,29 +25,18 @@ import (
 	"path/filepath"
 	"slices"
 	"sync"
-	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 )
-
-// Data represents the on-disk JSON structure for persisted store data.
-type Data struct {
-	JobData  map[string]time.Time `json:"job_data,omitempty"`
-	Mappings map[string][]string  `json:"mappings,omitempty"`
-}
 
 // JSONStore is an in-memory store backed by an optional JSON file on disk.
 type JSONStore struct {
 	mu       sync.RWMutex
 	filePath string
 	mappings map[string][]string
-	jobData  map[string]time.Time
 }
 
-var (
-	_ models.UbuntuPackageMappingStore = (*JSONStore)(nil)
-	_ models.JobDataStore              = (*JSONStore)(nil)
-)
+var _ models.UbuntuPackageMappingStore = (*JSONStore)(nil)
 
 // New creates a new JSONStore. If filePath is non-empty and the file exists,
 // it loads existing data from the file into memory. If the file does not exist,
@@ -57,7 +46,6 @@ func New(filePath string) (*JSONStore, error) {
 	store := &JSONStore{
 		filePath: filePath,
 		mappings: make(map[string][]string),
-		jobData:  make(map[string]time.Time),
 	}
 
 	if filePath == "" {
@@ -77,16 +65,13 @@ func New(filePath string) (*JSONStore, error) {
 		return store, nil
 	}
 
-	var data Data
-	if err := json.Unmarshal(dataBytes, &data); err != nil {
+	var mappings map[string][]string
+	if err := json.Unmarshal(dataBytes, &mappings); err != nil {
 		return nil, fmt.Errorf("failed unmarshaling JSON store file %s: %w", filePath, err)
 	}
 
-	if data.Mappings != nil {
-		store.mappings = data.Mappings
-	}
-	if data.JobData != nil {
-		store.jobData = data.JobData
+	if mappings != nil {
+		store.mappings = mappings
 	}
 
 	return store, nil
@@ -140,33 +125,6 @@ func (s *JSONStore) PutMulti(_ context.Context, mappings []*models.UbuntuPackage
 	return nil
 }
 
-// GetLastRun retrieves the last execution time for a job ID.
-func (s *JSONStore) GetLastRun(_ context.Context, jobID string) (time.Time, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	t, ok := s.jobData[jobID]
-	if !ok {
-		return time.Time{}, models.ErrNotFound
-	}
-
-	return t, nil
-}
-
-// SetLastRun records the execution time for a job ID.
-func (s *JSONStore) SetLastRun(_ context.Context, jobID string, t time.Time) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.jobData[jobID] = t
-
-	if s.filePath != "" {
-		return s.saveLocked()
-	}
-
-	return nil
-}
-
 // Save writes the in-memory state out to the JSON file.
 func (s *JSONStore) Save() error {
 	s.mu.Lock()
@@ -185,12 +143,7 @@ func (s *JSONStore) saveLocked() error {
 		return fmt.Errorf("failed creating directory %s: %w", dir, err)
 	}
 
-	data := Data{
-		JobData:  s.jobData,
-		Mappings: s.mappings,
-	}
-
-	bytes, err := json.MarshalIndent(data, "", "  ")
+	bytes, err := json.MarshalIndent(s.mappings, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed marshaling JSON store: %w", err)
 	}

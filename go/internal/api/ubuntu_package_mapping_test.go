@@ -74,6 +74,11 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 		ubuntuPackageMappingStore: mockStore,
 	}
 
+	tooManyNames := make([]string, maxBinaryNames+1)
+	for i := range tooManyNames {
+		tooManyNames[i] = "pkg"
+	}
+
 	tests := []struct {
 		name      string
 		params    *pb.UbuntuPackageMappingParameters
@@ -83,9 +88,9 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 		wantError string
 	}{
 		{
-			name: "Success with existing and non-existing binaries",
+			name: "Success with existing, duplicate, and non-existing binaries",
 			params: &pb.UbuntuPackageMappingParameters{
-				BinaryNames: []string{"libglib2.0-0", "unknown-binary", "shared-bin"},
+				BinaryNames: []string{"libglib2.0-0", "unknown-binary", "shared-bin", "libglib2.0-0"},
 			},
 			wantResp: &pb.UbuntuPackageMappingResponse{
 				Mappings: map[string]*pb.SourcePackages{
@@ -113,6 +118,18 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 			params:    nil,
 			wantCode:  codes.InvalidArgument,
 			wantError: "binary_names is required",
+		},
+		{
+			name:      "Empty string in binary names",
+			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: []string{"libglib2.0-0", ""}},
+			wantCode:  codes.InvalidArgument,
+			wantError: "invalid binary package name",
+		},
+		{
+			name:      "Too many binary names",
+			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: tooManyNames},
+			wantCode:  codes.InvalidArgument,
+			wantError: "too many binary_names",
 		},
 		{
 			name: "Store failure propagates as internal error",
@@ -148,11 +165,8 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 				if st.Code() != tc.wantCode {
 					t.Errorf("expected status code %v, got %v", tc.wantCode, st.Code())
 				}
-				if tc.wantError != "" && !errors.Is(err, status.Error(st.Code(), st.Message())) && !cmp.Equal(st.Message(), tc.wantError) && !testing.Short() {
-					// verify error message contains substring
-					if !strings.Contains(st.Message(), tc.wantError) {
-						t.Errorf("expected error message to contain %q, got %q", tc.wantError, st.Message())
-					}
+				if tc.wantError != "" && !strings.Contains(st.Message(), tc.wantError) {
+					t.Errorf("expected error message to contain %q, got %q", tc.wantError, st.Message())
 				}
 			}
 		})

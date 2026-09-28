@@ -17,6 +17,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"slices"
 
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/grpc/codes"
@@ -24,17 +25,40 @@ import (
 	pb "osv.dev/bindings/go/api"
 )
 
+const (
+	maxBinaryNames   = 1000
+	maxBinaryNameLen = 256
+)
+
 // QueryUbuntuPackageMapping handles querying Ubuntu binary package names to retrieve their corresponding source package names.
 func (s *server) QueryUbuntuPackageMapping(ctx context.Context, params *pb.UbuntuPackageMappingParameters) (*pb.UbuntuPackageMappingResponse, error) {
-	if params == nil || len(params.GetBinaryNames()) == 0 {
+	if s.ubuntuPackageMappingStore == nil {
+		return nil, status.Error(codes.Internal, "ubuntu package mapping store is not configured")
+	}
+
+	binaryNames := params.GetBinaryNames()
+	if len(binaryNames) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "binary_names is required")
 	}
-
-	if s.verboseLogs {
-		logger.InfoContext(ctx, "querying ubuntu package mapping", slog.Any("binary_names", params.GetBinaryNames()))
+	if len(binaryNames) > maxBinaryNames {
+		return nil, status.Errorf(codes.InvalidArgument, "too many binary_names (max %d)", maxBinaryNames)
 	}
 
-	mappings, err := s.ubuntuPackageMappingStore.GetMulti(ctx, params.GetBinaryNames())
+	for _, name := range binaryNames {
+		if name == "" || len(name) > maxBinaryNameLen {
+			return nil, status.Error(codes.InvalidArgument, "invalid binary package name")
+		}
+	}
+
+	uniqueNames := slices.Clone(binaryNames)
+	slices.Sort(uniqueNames)
+	uniqueNames = slices.Compact(uniqueNames)
+
+	if s.verboseLogs {
+		logger.InfoContext(ctx, "querying ubuntu package mapping", slog.Any("binary_names", uniqueNames))
+	}
+
+	mappings, err := s.ubuntuPackageMappingStore.GetMulti(ctx, uniqueNames)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get ubuntu package mappings: %v", err)
 	}

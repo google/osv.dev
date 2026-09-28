@@ -59,6 +59,7 @@ const (
 	ubuntuAllZipPath      = "Ubuntu/all.zip"
 	zipDownloadThreshold  = 1000
 	defaultNumWorkers     = 20
+	lookbackWindow        = time.Hour
 )
 
 type jobDataEntity struct {
@@ -89,11 +90,17 @@ func setLastRunInDatastore(ctx context.Context, dsClient *datastore.Client, t ti
 }
 
 // findModifiedUbuntuIDs reads Ubuntu/modified_id.csv from the GCS bucket and returns all
-// vulnerability IDs modified after lastRun (if lastRun is zero, all IDs in the CSV are returned).
+// vulnerability IDs modified after lastRun minus a 1-hour lookback window
+// (if lastRun is zero, all IDs in the CSV are returned).
 func findModifiedUbuntuIDs(ctx context.Context, gcsStorage clients.CloudStorage, lastRun time.Time) ([]string, error) {
 	csvBytes, err := gcsStorage.ReadObject(ctx, ubuntuModifiedCSVPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading %s: %w", ubuntuModifiedCSVPath, err)
+	}
+
+	var cutoff time.Time
+	if !lastRun.IsZero() {
+		cutoff = lastRun.Add(-lookbackWindow)
 	}
 
 	var ids []string
@@ -109,7 +116,7 @@ func findModifiedUbuntuIDs(ctx context.Context, gcsStorage clients.CloudStorage,
 			continue
 		}
 		// Ubuntu/modified_id.csv is sorted by modified date descending.
-		if !modTime.After(lastRun) {
+		if !modTime.After(cutoff) {
 			break
 		}
 		ids = append(ids, id)

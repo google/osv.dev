@@ -99,17 +99,17 @@ func TestFindModifiedUbuntuIDs(t *testing.T) {
 		t.Errorf("findModifiedUbuntuIDs(zero) mismatch (-want +got):\n%s", diff)
 	}
 
-	// 2. lastRun at 2026-09-21T00:00:00Z should return USN-3-1 and USN-2-1
-	cutoff, err := time.Parse(time.RFC3339, "2026-09-21T00:00:00Z")
+	// 2. lastRun at 2026-09-21T10:30:00Z (with 1h lookback -> cutoff 09:30:00Z) should still include USN-2-1 (modified at 10:00:00Z)
+	lastRun, err := time.Parse(time.RFC3339, "2026-09-21T10:30:00Z")
 	if err != nil {
-		t.Fatalf("failed parsing cutoff: %v", err)
+		t.Fatalf("failed parsing lastRun: %v", err)
 	}
-	filteredIDs, err := findModifiedUbuntuIDs(ctx, memGCS, cutoff)
+	filteredIDs, err := findModifiedUbuntuIDs(ctx, memGCS, lastRun)
 	if err != nil {
-		t.Fatalf("findModifiedUbuntuIDs(cutoff) failed: %v", err)
+		t.Fatalf("findModifiedUbuntuIDs(lastRun) failed: %v", err)
 	}
 	if diff := cmp.Diff([]string{"USN-3-1", "USN-2-1"}, filteredIDs); diff != "" {
-		t.Errorf("findModifiedUbuntuIDs(cutoff) mismatch (-want +got):\n%s", diff)
+		t.Errorf("findModifiedUbuntuIDs(lastRun) mismatch (-want +got):\n%s", diff)
 	}
 }
 

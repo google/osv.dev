@@ -1130,7 +1130,7 @@ func VersionInfoToCommits(v *models.VersionInfo, repos []string, cache git.RepoT
 		normalizedTags, err := git.NormalizeRepoTags(repo, cache, httpClient)
 		if err != nil {
 			if git.IsRateLimit(err) {
-				metrics.Outcome = models.Error
+				metrics.SetError(err)
 				return
 			}
 			metrics.AddNotef("Failed to normalize tags %s %s", repo, err)
@@ -1237,9 +1237,12 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 		canonicalRepo, err := git.FindCanonicalLink(repo, httpClient, repoTagsCache)
 		if err == nil {
 			repo = canonicalRepo
-		} else if git.IsRateLimit(err) {
-			metrics.Outcome = models.Error
-			return nil
+		} else {
+			metrics.AddNotef("Failed to find canonical link for %s: %v", repo, err)
+			if git.IsRateLimit(err) {
+				metrics.SetError(err)
+				return nil
+			}
 		}
 
 		if slices.Contains(repos, repo) {

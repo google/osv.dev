@@ -1,0 +1,15 @@
+[project]
+name = "vanir-signatures"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "vanir (==1.1.0)"
+]
+
+[tool.poetry]
+package-mode = false  
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

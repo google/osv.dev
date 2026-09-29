@@ -28,8 +28,8 @@ git remote add "$UPSTREAM_REMOTE_NAME" "$UPSTREAM_URL"
 git fetch "$UPSTREAM_REMOTE_NAME" --quiet
 
 tag_name="$1"
-commit_sha="$(git rev-parse --verify $tag_name)"
-short_sha="$(git rev-parse --short=7 $tag_name)"
+commit_sha="$(git rev-parse --verify $tag_name^{commit})"
+short_sha="$(git rev-parse --short=7 $tag_name^{commit})"
 
 git remote remove "$UPSTREAM_REMOTE_NAME"
 

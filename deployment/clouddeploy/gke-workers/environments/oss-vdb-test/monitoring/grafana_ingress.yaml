@@ -1,0 +1,54 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: grafana-backend-config
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: osv-monitoring
+spec:
+  iap:
+    enabled: true
+    oauthclientCredentials:
+      secretName: grafana-iap-oauth
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /api/health
+    port: 3000
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: grafana-managed-cert
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: osv-monitoring
+spec:
+  domains:
+    - monitoring.test.osv.dev
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: osv-monitoring
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: grafana-managed-cert
+spec:
+  rules:
+  - host: monitoring.test.osv.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000

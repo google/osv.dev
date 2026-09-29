@@ -132,6 +132,45 @@ class EcosystemTest(unittest.TestCase):
     self.assertLess(
         echo_npm.sort_key('19.0.0-next.3+echo.1'), echo_npm.sort_key('19.0.0'))
 
+  def test_echo_nuget_ecosystem(self):
+    """Test that Echo:NuGet uses NuGet ordering and is +echo.N aware"""
+    self.assertTrue(ecosystems.is_known('Echo:NuGet'))
+
+    echo_nuget = ecosystems.get('Echo:NuGet')
+    self.assertIsNotNone(echo_nuget)
+
+    # Base NuGet ordering (including prereleases and four-part versions).
+    self.assertLess(echo_nuget.sort_key('1.0.0'), echo_nuget.sort_key('1.0.1'))
+    self.assertLess(
+        echo_nuget.sort_key('1.0.0-rc.0'), echo_nuget.sort_key('1.0.0'))
+    self.assertLess(
+        echo_nuget.sort_key('4.3.0'), echo_nuget.sort_key('4.3.0.1'))
+
+    # NuGet follows SemVer precedence (build metadata ignored), but Echo's
+    # +echo.N builds must still order: 12.0.3 < 12.0.3+echo.1 < ... < 12.0.4.
+    self.assertLess(
+        echo_nuget.sort_key('12.0.3'), echo_nuget.sort_key('12.0.3+echo.1'))
+    self.assertLess(
+        echo_nuget.sort_key('12.0.3+echo.1'),
+        echo_nuget.sort_key('12.0.3+echo.2'))
+    self.assertLess(
+        echo_nuget.sort_key('12.0.3+echo.2'),
+        echo_nuget.sort_key('12.0.3+echo.10'))
+    self.assertLess(
+        echo_nuget.sort_key('12.0.3+echo.1'), echo_nuget.sort_key('12.0.4'))
+    self.assertLess(
+        echo_nuget.sort_key('4.3.0.1+echo.1'),
+        echo_nuget.sort_key('4.3.0.1+echo.2'))
+    self.assertLess(
+        echo_nuget.sort_key('4.3.0.1+echo.2'), echo_nuget.sort_key('4.3.0.2'))
+
+    # A +echo.N build of a prerelease still sorts before the final release.
+    self.assertLess(
+        echo_nuget.sort_key('8.0.0-rc.1'),
+        echo_nuget.sort_key('8.0.0-rc.1+echo.1'))
+    self.assertLess(
+        echo_nuget.sort_key('8.0.0-rc.1+echo.1'), echo_nuget.sort_key('8.0.0'))
+
   def test_echo_base_ecosystem(self):
     """Test that plain Echo uses Debian version ordering"""
     echo = ecosystems.get('Echo')

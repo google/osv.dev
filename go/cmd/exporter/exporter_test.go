@@ -137,7 +137,7 @@ func TestExporterPipeline_EndToEnd(t *testing.T) {
 
 	var processorWg sync.WaitGroup
 	processorWg.Add(1)
-	go downloadThenProcessor(ctx, cancel, vulnStorage, scratchDir, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
+	go downloadThenProcessor(ctx, cancel, vulnStorage, gcsPathToProcessorCh, processorToRouterCh, writeCh, &processorWg)
 
 	var writerWg sync.WaitGroup
 	writerWg.Add(1)

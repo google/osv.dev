@@ -46,13 +46,8 @@ These services run as native Go workloads inside the GKE cluster:
 - **[relations](../../go/cmd/relations)**: A scheduled CronJob that calculates and populates transitive and reflective relationships (aliases, related, and upstream fields) between vulnerability records.
 - **[recoverer](../../go/cmd/recoverer)**: A daemon Deployment that processes failed tasks (e.g., failed GCS writes, git push failures) sent to a recovery queue, attempting to heal/repair their state.
 - **[indexer](../../gcp/indexer)**: A Deployment that manages git index mapping and version determination.
+- **[vanir_signatures](../../go/cmd/vanir_signatures)**: A scheduled CronJob that generates Vanir signatures for modified vulnerabilities.
 - **[vulnfeeds](../../vulnfeeds)**: Scheduled CronJobs that mirror and convert external vulnerability advisory feeds (e.g. NVD, Debian, Alpine) into OSV schema format.
-
-### Auxiliary Services (Python-based)
-
-These run as Python workloads inside GKE:
-
-- **[vanir_signatures](../../gcp/workers/vanir_signatures)**: A scheduled CronJob that generates Vanir signatures for modified vulnerabilities.
 
 ### OSS-Fuzz Integration
 

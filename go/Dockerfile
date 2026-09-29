@@ -181,3 +181,28 @@ RUN CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
 FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS website
 COPY --from=website-build /app/website /
 ENTRYPOINT ["/website"]
+
+# ========================================================
+# Target: Vanir Signatures
+# ========================================================
+FROM builder AS vanir-signatures-build
+RUN CGO_ENABLED=0 go build -o /app/vanir_signatures ./cmd/vanir_signatures/
+
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-python-deps
+ENV POETRY_HOME="/opt/poetry"
+COPY --from=poetry requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --no-cache-dir --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+WORKDIR /app
+COPY cmd/vanir_signatures/pyproject.toml cmd/vanir_signatures/poetry.lock ./
+RUN POETRY_VIRTUALENVS_IN_PROJECT=true poetry install --only main --no-interaction --no-ansi
+
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-signatures
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=vanir-python-deps /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+COPY --from=vanir-signatures-build /app/vanir_signatures /usr/local/bin/vanir_signatures
+COPY cmd/vanir_signatures/generate_signatures.py /usr/local/bin/generate_signatures.py
+RUN chmod 755 /usr/local/bin/generate_signatures.py
+ENTRYPOINT ["/usr/local/bin/vanir_signatures"]

@@ -43,7 +43,7 @@ consists of:
 | `gcp/datastore` | The datastore index file (`index.yaml`) |
 | `gcp/functions` | The Cloud Function for publishing PyPI vulnerabilities (maintained, but not developed) |
 | `gcp/indexer`   | The determine version `indexer` |
-| `gcp/workers/`  | Python workers (`vanir_signatures` and `oss_fuzz_worker`) |
+| `gcp/workers/`  | Legacy Python workers (i.e. `oss_fuzz_worker`) |
 | `go/`           | Go module for shared libraries and commands (`cmd/api`, `cmd/website`, `cmd/importer`, `cmd/worker`, `cmd/exporter`, `cmd/recoverer`, `cmd/relations`, etc.) |
 | `osv/`          | The core OSV Python library, used in basically all Python services <br /> OSV ecosystem package versioning helpers in `ecosystems/` <br /> Datastore model definitions in `models.py` |
 | `tools/`        | Misc scripts/tools, mostly intended for development (datastore stuff, linting) <br /> The `indexer-api-caller` for indexer calling |

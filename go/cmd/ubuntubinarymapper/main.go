@@ -14,7 +14,7 @@
 
 // Package main implements the ubuntubinarymapper service that discovers Ubuntu
 // vulnerability records from the exported GCS bucket, extracts binary-to-source
-// package name mappings, and saves them to a local JSON store.
+// package name mappings, and saves them to Datastore or a local JSON store.
 package main
 
 import (
@@ -38,7 +38,9 @@ import (
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
+	db "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/database/jsonstore"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
@@ -50,6 +52,8 @@ import (
 )
 
 const (
+	jobDataKind           = "JobData"
+	jobDataLastRunKey     = "ubuntu_binary_mapper_last_run"
 	defaultBucketName     = "osv-vulnerabilities"
 	ubuntuPrefix          = "Ubuntu"
 	ubuntuModifiedCSVPath = "Ubuntu/modified_id.csv"
@@ -58,6 +62,33 @@ const (
 	defaultNumWorkers     = 20
 	lookbackWindow        = time.Hour
 )
+
+type jobDataEntity struct {
+	Value time.Time `datastore:"value,noindex"`
+}
+
+func getLastRunFromDatastore(ctx context.Context, dsClient *datastore.Client) (time.Time, error) {
+	key := datastore.NameKey(jobDataKind, jobDataLastRunKey, nil)
+	var e jobDataEntity
+	if err := dsClient.Get(ctx, key, &e); err != nil {
+		if errors.Is(err, datastore.ErrNoSuchEntity) {
+			return time.Time{}, nil
+		}
+
+		return time.Time{}, fmt.Errorf("failed to get JobData for %q: %w", jobDataLastRunKey, err)
+	}
+
+	return e.Value, nil
+}
+
+func setLastRunInDatastore(ctx context.Context, dsClient *datastore.Client, t time.Time) error {
+	key := datastore.NameKey(jobDataKind, jobDataLastRunKey, nil)
+	if _, err := dsClient.Put(ctx, key, &jobDataEntity{Value: t.UTC()}); err != nil {
+		return fmt.Errorf("failed to put JobData for %q: %w", jobDataLastRunKey, err)
+	}
+
+	return nil
+}
 
 // findModifiedUbuntuIDs reads Ubuntu/modified_id.csv from the GCS bucket and returns all
 // vulnerability IDs modified after lastRun minus a 1-hour lookback window
@@ -128,6 +159,7 @@ func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
 type appEnv struct {
 	gcsStorage   clients.CloudStorage
 	ubuntuStore  models.UbuntuPackageMappingStore
+	dsClient     *datastore.Client
 	lastRun      time.Time
 	numWorkers   int
 	zipThreshold int
@@ -135,15 +167,13 @@ type appEnv struct {
 }
 
 func setup(ctx context.Context) (*appEnv, error) {
-	outputJSON := flag.String("output-json", "", "Path to local JSON file for writing/storing mappings")
-	lastRunFlag := flag.String("last-run", "", "Last job run time in RFC3339 format")
+	outputJSON := flag.String("output-json", "", "Path to local JSON file for writing/storing mappings (enables local mode, bypassing Datastore)")
+	lastRunFlag := flag.String("last-run", "", "Last job run time in RFC3339 format (used in local mode when -output-json is set)")
 	bucketName := flag.String("bucket", cmp.Or(os.Getenv("OSV_VULNERABILITIES_BUCKET"), defaultBucketName), "GCS bucket name containing exported OSV vulnerabilities")
+	projectID := flag.String("project", os.Getenv("GOOGLE_CLOUD_PROJECT"), "Google Cloud project ID")
+	datastoreID := flag.String("datastore-id", os.Getenv("DATASTORE_DATABASE_ID"), "Datastore database ID")
 	numWorkers := flag.Int("num-workers", defaultNumWorkers, "Number of worker goroutines")
 	flag.Parse()
-
-	if *outputJSON == "" {
-		return nil, errors.New("-output-json must be set")
-	}
 
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
@@ -151,35 +181,75 @@ func setup(ctx context.Context) (*appEnv, error) {
 	}
 	gcsStorage := clients.NewGCSClient(storageClient, *bucketName)
 
-	var lastRun time.Time
-	if *lastRunFlag != "" {
-		lastRun, err = time.Parse(time.RFC3339Nano, *lastRunFlag)
+	// Local mode when -output-json is provided
+	if *outputJSON != "" {
+		var lastRun time.Time
+		if *lastRunFlag != "" {
+			lastRun, err = time.Parse(time.RFC3339Nano, *lastRunFlag)
+			if err != nil {
+				storageClient.Close()
+
+				return nil, fmt.Errorf("invalid -last-run timestamp %q (expected RFC3339): %w", *lastRunFlag, err)
+			}
+			lastRun = lastRun.UTC()
+		}
+
+		jsonStore, err := jsonstore.New(*outputJSON)
 		if err != nil {
 			storageClient.Close()
 
-			return nil, fmt.Errorf("invalid -last-run timestamp %q (expected RFC3339): %w", *lastRunFlag, err)
+			return nil, fmt.Errorf("failed creating JSON store %s: %w", *outputJSON, err)
 		}
-		lastRun = lastRun.UTC()
+
+		return &appEnv{
+			gcsStorage:   gcsStorage,
+			ubuntuStore:  jsonStore,
+			lastRun:      lastRun,
+			numWorkers:   *numWorkers,
+			zipThreshold: zipDownloadThreshold,
+			closer:       func() { storageClient.Close() },
+		}, nil
 	}
 
-	jsonStore, err := jsonstore.New(*outputJSON)
+	// Production Datastore/GCS mode
+	if *projectID == "" {
+		storageClient.Close()
+
+		return nil, errors.New("GOOGLE_CLOUD_PROJECT or -project must be set when not running with -output-json")
+	}
+
+	dsClient, err := datastore.NewClientWithDatabase(ctx, *projectID, *datastoreID, datastore.WithIgnoreFieldMismatch())
 	if err != nil {
 		storageClient.Close()
 
-		return nil, fmt.Errorf("failed creating JSON store %s: %w", *outputJSON, err)
+		return nil, fmt.Errorf("failed to create datastore client: %w", err)
+	}
+
+	lastRun, err := getLastRunFromDatastore(ctx, dsClient)
+	if err != nil {
+		dsClient.Close()
+		storageClient.Close()
+
+		return nil, err
 	}
 
 	return &appEnv{
 		gcsStorage:   gcsStorage,
-		ubuntuStore:  jsonStore,
+		ubuntuStore:  db.NewUbuntuPackageMappingStore(dsClient),
+		dsClient:     dsClient,
 		lastRun:      lastRun,
 		numWorkers:   *numWorkers,
 		zipThreshold: zipDownloadThreshold,
-		closer:       func() { storageClient.Close() },
+		closer: func() {
+			dsClient.Close()
+			storageClient.Close()
+		},
 	}, nil
 }
 
 func run(ctx context.Context, env *appEnv) error {
+	runStartTime := time.Now().UTC()
+
 	logger.InfoContext(ctx, "finding modified Ubuntu vulnerabilities", slog.Time("lastRun", env.lastRun))
 	vulnIDs, err := findModifiedUbuntuIDs(ctx, env.gcsStorage, env.lastRun)
 	if err != nil {
@@ -207,6 +277,12 @@ func run(ctx context.Context, env *appEnv) error {
 			if err := saveMappings(ctx, env.ubuntuStore, allMappings); err != nil {
 				return fmt.Errorf("failed saving mappings: %w", err)
 			}
+		}
+	}
+
+	if env.dsClient != nil {
+		if err := setLastRunInDatastore(ctx, env.dsClient, runStartTime); err != nil {
+			return fmt.Errorf("failed recording last run checkpoint: %w", err)
 		}
 	}
 

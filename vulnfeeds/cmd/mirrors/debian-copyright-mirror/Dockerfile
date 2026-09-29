@@ -12,11 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:be40864452bd6d7be21632a1dc18adf03d423de0bf2595f4a287c22400c484bb
+FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS GO_BUILD
 
-RUN apk add py3-yaml
+RUN mkdir /src
+WORKDIR /src
 
-COPY ./debian-copyright-mirror.sh /
-COPY ./debian-copyright-mirror.py /
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download
 
-ENTRYPOINT ["/debian-copyright-mirror.sh"]
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o debian-copyright-mirror ./cmd/mirrors/debian-copyright-mirror
+
+FROM alpine:3.21@sha256:ce64758a109eb420d874a118f87920e625e12d3634e03b4a5573fd9f6e5d3507
+
+RUN apk add --no-cache xz curl tar ca-certificates
+
+COPY --from=GO_BUILD /src/debian-copyright-mirror /usr/local/bin/debian-copyright-mirror
+
+ENTRYPOINT ["/usr/local/bin/debian-copyright-mirror"]

@@ -72,6 +72,34 @@ func TestEchoEcosystem_NPM(t *testing.T) {
 	runEchoTest(t, e, tests)
 }
 
+// NuGet also follows SemVer precedence (build metadata ignored), so Echo:NuGet
+// tie-breaks on +echo.N too, on top of NuGet's own four-part versions and
+// case-insensitive prereleases.
+func TestEchoEcosystem_NuGet(t *testing.T) {
+	e := echoFactory(nil, "nuget")
+	tests := []echoTestCase{
+		// Base NuGet ordering (unchanged).
+		{"1.0.1", "1.0.0", 1},
+		{"1.0.0", "1.0.0-rc.0", 1},
+		{"4.3.0.1", "4.3.0", 1},
+		{"4.3.0.0", "4.3.0", 0},
+		{"1.0.0-BETA", "1.0.0-beta", 0},
+		// +echo.N ordering: base < echo.1 < echo.2 < echo.10 < next patch.
+		{"12.0.3+echo.1", "12.0.3", 1},
+		{"12.0.3+echo.2", "12.0.3+echo.1", 1},
+		{"12.0.3+echo.10", "12.0.3+echo.2", 1},
+		{"12.0.4", "12.0.3+echo.1", 1},
+		{"12.0.3+echo.1", "12.0.3+echo.1", 0},
+		// Four-part versions.
+		{"4.3.0.1+echo.2", "4.3.0.1+echo.1", 1},
+		{"4.3.0.2", "4.3.0.1+echo.1", 1},
+		// A +echo.N build of a prerelease still sorts before the final release.
+		{"8.0.0-rc.1+echo.1", "8.0.0-rc.1", 1},
+		{"8.0.0", "8.0.0-rc.1+echo.1", 1},
+	}
+	runEchoTest(t, e, tests)
+}
+
 func TestEchoEcosystem_Maven(t *testing.T) {
 	e := echoFactory(nil, "maven")
 	tests := []echoTestCase{

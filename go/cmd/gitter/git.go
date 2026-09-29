@@ -116,15 +116,9 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 
 // fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
 func fetchRepo(ctx context.Context, repoPath string) error {
-	_, err := runCmd(ctx, repoPath, nil, "git", "fetch", "origin")
+	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
-	}
-
-	// Make sure origin/HEAD points to the latest default branch from remotes
-	_, err = runCmd(ctx, repoPath, nil, "git", "remote", "set-head", "origin", "--auto")
-	if err != nil {
-		logger.WarnContext(ctx, "git remote set-head failed", slog.Any("err", err))
 	}
 
 	return nil
@@ -178,6 +172,8 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 				if err != nil {
 					var reason string
 					switch {
+					case isAuthError(err):
+						reason = "401 Unauthorized / auth error"
 					case isForbiddenError(err):
 						reason = "403 Forbidden"
 					case isRateLimitError(err):

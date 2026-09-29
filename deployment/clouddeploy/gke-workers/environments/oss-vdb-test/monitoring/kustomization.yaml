@@ -1,0 +1,13 @@
+resources:
+- worker_pod_monitoring.yaml
+- grafana_service_account.yaml
+- configmaps/grafana_datasources.yaml
+- configmaps/grafana_dashboards_prov.yaml
+- grafana_deployment.yaml
+- grafana_service.yaml
+- grafana_ingress.yaml
+
+configMapGenerator:
+- name: grafana-dashboards
+  files:
+  - executive-overview.json=dashboards/executive-overview.json

@@ -142,6 +142,8 @@ func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
 		binaries := affected.GetEcosystemSpecific().GetFields()["binaries"].GetListValue().GetValues()
 		for _, item := range binaries {
 			binName := strings.TrimSpace(item.GetStructValue().GetFields()["binary_name"].GetStringValue())
+			// A binary typically maps to only 1-2 unique source packages, so slices.Contains
+			// avoids duplicate appends across releases without per-binary map overhead.
 			if binName != "" && !slices.Contains(mappings[binName], sourceName) {
 				mappings[binName] = append(mappings[binName], sourceName)
 			}
@@ -388,6 +390,8 @@ func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings m
 	defer mu.Unlock()
 	for bin, sources := range recordMappings {
 		for _, src := range sources {
+			// A binary only has 1-2 source packages, so slices.Contains keeps the slice bounded
+			// across thousands of records without allocating nested maps.
 			if !slices.Contains(allMappings[bin], src) {
 				allMappings[bin] = append(allMappings[bin], src)
 			}

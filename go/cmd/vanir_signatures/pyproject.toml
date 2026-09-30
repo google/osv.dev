@@ -3,11 +3,15 @@ name = "vanir-signatures"
 version = "0.1.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "vanir (==1.1.0)"
+    "vanir (==1.1.0)",
+    "osv"
 ]
 
 [tool.poetry]
 package-mode = false  
+
+[tool.poetry.dependencies]
+osv = { path = "./osv"}
 
 
 [build-system]

@@ -196,6 +196,7 @@ RUN python3 -m venv $POETRY_HOME && \
     ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
 WORKDIR /app
 COPY cmd/vanir_signatures/pyproject.toml cmd/vanir_signatures/poetry.lock ./
+COPY cmd/vanir_signatures/osv/pyproject.toml cmd/vanir_signatures/osv/README.md cmd/vanir_signatures/osv/vulnerability_pb2.py ./osv/
 RUN POETRY_VIRTUALENVS_IN_PROJECT=true poetry install --only main --no-interaction --no-ansi
 
 FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-signatures

@@ -94,7 +94,7 @@ spec:
         image: gke.gcr.io/prometheus-engine/frontend:v0.18.2-gke.1@sha256:35ab356d969255dd7694ae371bf0991b97907451b4c7e1574b58a096d3be5977
         args:
         - "--web.listen-address=127.0.0.1:9090"
-        - "--project-id=$(GOOGLE_CLOUD_PROJECT)"
+        - "--query.project-id=$(GOOGLE_CLOUD_PROJECT)"
         env:
         - name: GOOGLE_CLOUD_PROJECT
           value: oss-vdb-test

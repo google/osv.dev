@@ -58,6 +58,7 @@ func (s *server) QueryUbuntuPackageMapping(ctx context.Context, params *pb.Ubunt
 		logger.InfoContext(ctx, "querying ubuntu package mapping", slog.Any("binary_names", uniqueNames))
 	}
 
+	// GetMulti returns a 1:1 slice matching uniqueNames.
 	mappings, err := s.ubuntuPackageMappingStore.GetMulti(ctx, uniqueNames)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get ubuntu package mappings: %v", err)

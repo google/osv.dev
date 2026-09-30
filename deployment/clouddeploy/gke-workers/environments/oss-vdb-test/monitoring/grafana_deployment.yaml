@@ -21,7 +21,7 @@ spec:
       serviceAccountName: grafana-sa
       containers:
       - name: grafana
-        image: grafana/grafana:11.5.0@sha256:4a0808cf7ca4b2569e5d4cb05ef2222a27ffb2a0c6499318b76c8cb81a6c4b28
+        image: grafana/grafana:11.5.10@sha256:4d1b2146de6488324c4e880be2028620259c414406e36a9ac2160485f8fd3259
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

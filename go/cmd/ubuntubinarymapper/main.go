@@ -30,10 +30,12 @@ import (
 	"log/slog"
 	"maps"
 	"os"
+	"os/signal"
 	"path"
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -328,6 +330,7 @@ func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings m
 func saveMappings(ctx context.Context, store models.UbuntuPackageMappingStore, newMappings map[string][]string) error {
 	binaryNames := slices.Sorted(maps.Keys(newMappings))
 
+	// GetMulti returns a 1:1 slice matching binaryNames.
 	existing, err := store.GetMulti(ctx, binaryNames)
 	if err != nil {
 		return fmt.Errorf("failed getting existing mappings: %w", err)
@@ -355,7 +358,10 @@ func main() {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("ubuntubinarymapper").Start(context.Background(), "ubuntubinarymapper")
+	ctx, stopSignal := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignal()
+
+	ctx, span := otel.Tracer("ubuntubinarymapper").Start(ctx, "ubuntubinarymapper")
 	defer span.End()
 
 	env, err := setup(ctx)

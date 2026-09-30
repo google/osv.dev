@@ -30,6 +30,7 @@ type UbuntuPackageMapping struct {
 type UbuntuPackageMappingStore interface {
 	// GetMulti retrieves mappings for a slice of binary package names.
 	// For any binary package not found, the returned UbuntuPackageMapping has an empty SourceNames slice.
+	// This results in a 1:1 mapping of input binaryNames to the returned SourceNames.
 	GetMulti(ctx context.Context, binaryNames []string) ([]*UbuntuPackageMapping, error)
 
 	// PutMulti creates or updates package mappings for multiple binary package names.

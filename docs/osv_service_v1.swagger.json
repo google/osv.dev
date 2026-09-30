@@ -720,7 +720,7 @@
           }
         }
       },
-      "description": "Wrapper for repeated source package names within a map."
+      "description": "Source package names corresponding to a queried binary package name."
     },
     "v1UbuntuPackageMappingParameters": {
       "type": "object",
@@ -737,9 +737,10 @@
     "v1UbuntuPackageMappingResponse": {
       "type": "object",
       "properties": {
-        "mappings": {
-          "type": "object",
-          "additionalProperties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
             "$ref": "#/definitions/v1SourcePackages"
           }
         }

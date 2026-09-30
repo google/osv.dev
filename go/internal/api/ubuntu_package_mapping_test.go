@@ -93,15 +93,18 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 				BinaryNames: []string{"libglib2.0-0", "unknown-binary", "shared-bin", "libglib2.0-0"},
 			},
 			wantResp: &pb.UbuntuPackageMappingResponse{
-				Mappings: map[string]*pb.SourcePackages{
-					"libglib2.0-0": {
+				Results: []*pb.SourcePackages{
+					{
 						SourceNames: []string{"glib2.0"},
 					},
-					"unknown-binary": {
+					{
 						SourceNames: []string{},
 					},
-					"shared-bin": {
+					{
 						SourceNames: []string{"src-1", "src-2"},
+					},
+					{
+						SourceNames: []string{"glib2.0"},
 					},
 				},
 			},
@@ -123,7 +126,7 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 			name:      "Empty string in binary names",
 			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: []string{"libglib2.0-0", ""}},
 			wantCode:  codes.InvalidArgument,
-			wantError: "invalid binary package name",
+			wantError: "invalid binary package name at index 1",
 		},
 		{
 			name:      "Too many binary names",
@@ -201,14 +204,14 @@ func TestQueryUbuntuPackageMapping_JSONStore(t *testing.T) {
 	}
 
 	wantResp := &pb.UbuntuPackageMappingResponse{
-		Mappings: map[string]*pb.SourcePackages{
-			"libglib2.0-0": {
+		Results: []*pb.SourcePackages{
+			{
 				SourceNames: []string{"glib2.0"},
 			},
-			"libcurl4": {
+			{
 				SourceNames: []string{"curl"},
 			},
-			"nonexistent": {
+			{
 				SourceNames: []string{},
 			},
 		},

@@ -17,7 +17,6 @@ package api
 import (
 	"context"
 	"log/slog"
-	"slices"
 
 	"github.com/google/osv.dev/go/logger"
 	"google.golang.org/grpc/codes"
@@ -44,36 +43,32 @@ func (s *server) QueryUbuntuPackageMapping(ctx context.Context, params *pb.Ubunt
 		return nil, status.Errorf(codes.InvalidArgument, "too many binary_names (max %d)", maxBinaryNames)
 	}
 
-	for _, name := range binaryNames {
+	for i, name := range binaryNames {
 		if name == "" || len(name) > maxBinaryNameLen {
-			return nil, status.Error(codes.InvalidArgument, "invalid binary package name")
+			return nil, status.Errorf(codes.InvalidArgument, "invalid binary package name at index %d", i)
 		}
 	}
 
-	uniqueNames := slices.Clone(binaryNames)
-	slices.Sort(uniqueNames)
-	uniqueNames = slices.Compact(uniqueNames)
-
 	if s.verboseLogs {
-		logger.InfoContext(ctx, "querying ubuntu package mapping", slog.Any("binary_names", uniqueNames))
+		logger.InfoContext(ctx, "querying ubuntu package mapping", slog.Any("binary_names", binaryNames))
 	}
 
-	// GetMulti returns a 1:1 slice matching uniqueNames.
-	mappings, err := s.ubuntuPackageMappingStore.GetMulti(ctx, uniqueNames)
+	// GetMulti returns a 1:1 slice matching binaryNames.
+	mappings, err := s.ubuntuPackageMappingStore.GetMulti(ctx, binaryNames)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get ubuntu package mappings: %v", err)
 	}
 
 	response := &pb.UbuntuPackageMappingResponse{
-		Mappings: make(map[string]*pb.SourcePackages, len(mappings)),
+		Results: make([]*pb.SourcePackages, len(mappings)),
 	}
 
-	for _, m := range mappings {
+	for i, m := range mappings {
 		sourceNames := m.SourceNames
 		if sourceNames == nil {
 			sourceNames = []string{}
 		}
-		response.Mappings[m.BinaryName] = &pb.SourcePackages{
+		response.Results[i] = &pb.SourcePackages{
 			SourceNames: sourceNames,
 		}
 	}

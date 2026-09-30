@@ -148,14 +148,14 @@ message UbuntuPackageMappingParameters {
   repeated string binary_names = 1 [json_name="binary_names"];
 }
 
-// Wrapper for repeated source package names within a map.
+// Source package names corresponding to a queried binary package name.
 message SourcePackages {
   repeated string source_names = 1 [json_name="source_names"];
 }
 
 // Response for QueryUbuntuPackageMapping.
 message UbuntuPackageMappingResponse {
-  map<string, SourcePackages> mappings = 1;
+  repeated SourcePackages results = 1;
 }
 
 // Open source vulnerability database.

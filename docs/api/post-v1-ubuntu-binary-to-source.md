@@ -69,22 +69,23 @@ EOF
 
 ## Example 200 response
 
-Binary package names that have known source package mappings are included in the
-`mappings` object:
+The response `results` array is guaranteed to match the ordering of the input
+`binary_names` (with an empty object `{}` for binary package names that have no
+known source package mappings):
 
 ```json
 {
-  "mappings": {
-    "libcurl4": {
+  "results": [
+    {
       "source_names": [
         "curl"
       ]
     },
-    "libglib2.0-0": {
+    {
       "source_names": [
         "glib2.0"
       ]
     }
-  }
+  ]
 }
 ```

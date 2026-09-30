@@ -1022,7 +1022,7 @@ func (x *UbuntuPackageMappingParameters) GetBinaryNames() []string {
 	return nil
 }
 
-// Wrapper for repeated source package names within a map.
+// Source package names corresponding to a queried binary package name.
 type SourcePackages struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SourceNames   []string               `protobuf:"bytes,1,rep,name=source_names,proto3" json:"source_names,omitempty"`
@@ -1069,8 +1069,8 @@ func (x *SourcePackages) GetSourceNames() []string {
 
 // Response for QueryUbuntuPackageMapping.
 type UbuntuPackageMappingResponse struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Mappings      map[string]*SourcePackages `protobuf:"bytes,1,rep,name=mappings,proto3" json:"mappings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Results       []*SourcePackages      `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1105,9 +1105,9 @@ func (*UbuntuPackageMappingResponse) Descriptor() ([]byte, []int) {
 	return file_osv_service_v1_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *UbuntuPackageMappingResponse) GetMappings() map[string]*SourcePackages {
+func (x *UbuntuPackageMappingResponse) GetResults() []*SourcePackages {
 	if x != nil {
-		return x.Mappings
+		return x.Results
 	}
 	return nil
 }
@@ -1175,12 +1175,9 @@ const file_osv_service_v1_proto_rawDesc = "" +
 	"\x1eUbuntuPackageMappingParameters\x12\"\n" +
 	"\fbinary_names\x18\x01 \x03(\tR\fbinary_names\"4\n" +
 	"\x0eSourcePackages\x12\"\n" +
-	"\fsource_names\x18\x01 \x03(\tR\fsource_names\"\xc3\x01\n" +
-	"\x1cUbuntuPackageMappingResponse\x12N\n" +
-	"\bmappings\x18\x01 \x03(\v22.osv.v1.UbuntuPackageMappingResponse.MappingsEntryR\bmappings\x1aS\n" +
-	"\rMappingsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
-	"\x05value\x18\x02 \x01(\v2\x16.osv.v1.SourcePackagesR\x05value:\x028\x012\xe5\x05\n" +
+	"\fsource_names\x18\x01 \x03(\tR\fsource_names\"P\n" +
+	"\x1cUbuntuPackageMappingResponse\x120\n" +
+	"\aresults\x18\x01 \x03(\v2\x16.osv.v1.SourcePackagesR\aresults2\xe5\x05\n" +
 	"\x03OSV\x12X\n" +
 	"\vGetVulnById\x12\x1d.osv.v1.GetVulnByIdParameters\x1a\x12.osv.Vulnerability\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/vulns/{id}\x12e\n" +
 	"\rQueryAffected\x12\x1f.osv.v1.QueryAffectedParameters\x1a\x19.osv.v1.VulnerabilityList\"\x18\x82\xd3\xe4\x93\x02\x12:\x05query\"\t/v1/query\x12y\n" +
@@ -1202,7 +1199,7 @@ func file_osv_service_v1_proto_rawDescGZIP() []byte {
 }
 
 var file_osv_service_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_osv_service_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_osv_service_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_osv_service_v1_proto_goTypes = []any{
 	(FileHash_HashType)(0),                     // 0: osv.v1.FileHash.HashType
 	(VersionRepositoryInformation_RepoType)(0), // 1: osv.v1.VersionRepositoryInformation.RepoType
@@ -1224,15 +1221,14 @@ var file_osv_service_v1_proto_goTypes = []any{
 	(*UbuntuPackageMappingParameters)(nil),     // 17: osv.v1.UbuntuPackageMappingParameters
 	(*SourcePackages)(nil),                     // 18: osv.v1.SourcePackages
 	(*UbuntuPackageMappingResponse)(nil),       // 19: osv.v1.UbuntuPackageMappingResponse
-	nil,                                        // 20: osv.v1.UbuntuPackageMappingResponse.MappingsEntry
-	(*osvschema.Vulnerability)(nil),            // 21: osv.Vulnerability
-	(*osvschema.Package)(nil),                  // 22: osv.Package
-	(*ImportFinding)(nil),                      // 23: osv.ImportFinding
+	(*osvschema.Vulnerability)(nil),            // 20: osv.Vulnerability
+	(*osvschema.Package)(nil),                  // 21: osv.Package
+	(*ImportFinding)(nil),                      // 22: osv.ImportFinding
 }
 var file_osv_service_v1_proto_depIdxs = []int32{
-	21, // 0: osv.v1.VulnerabilityList.vulns:type_name -> osv.Vulnerability
+	20, // 0: osv.v1.VulnerabilityList.vulns:type_name -> osv.Vulnerability
 	2,  // 1: osv.v1.BatchVulnerabilityList.results:type_name -> osv.v1.VulnerabilityList
-	22, // 2: osv.v1.Query.package:type_name -> osv.Package
+	21, // 2: osv.v1.Query.package:type_name -> osv.Package
 	4,  // 3: osv.v1.BatchQuery.queries:type_name -> osv.v1.Query
 	4,  // 4: osv.v1.QueryAffectedParameters.query:type_name -> osv.v1.Query
 	5,  // 5: osv.v1.QueryAffectedBatchParameters.query:type_name -> osv.v1.BatchQuery
@@ -1240,29 +1236,28 @@ var file_osv_service_v1_proto_depIdxs = []int32{
 	12, // 7: osv.v1.VersionQuery.file_hashes:type_name -> osv.v1.FileHash
 	0,  // 8: osv.v1.FileHash.hash_type:type_name -> osv.v1.FileHash.HashType
 	15, // 9: osv.v1.VersionMatchList.matches:type_name -> osv.v1.VersionMatch
-	23, // 10: osv.v1.ImportFindingList.invalid_records:type_name -> osv.ImportFinding
+	22, // 10: osv.v1.ImportFindingList.invalid_records:type_name -> osv.ImportFinding
 	16, // 11: osv.v1.VersionMatch.repo_info:type_name -> osv.v1.VersionRepositoryInformation
-	22, // 12: osv.v1.VersionMatch.osv_identifier:type_name -> osv.Package
+	21, // 12: osv.v1.VersionMatch.osv_identifier:type_name -> osv.Package
 	1,  // 13: osv.v1.VersionRepositoryInformation.type:type_name -> osv.v1.VersionRepositoryInformation.RepoType
-	20, // 14: osv.v1.UbuntuPackageMappingResponse.mappings:type_name -> osv.v1.UbuntuPackageMappingResponse.MappingsEntry
-	18, // 15: osv.v1.UbuntuPackageMappingResponse.MappingsEntry.value:type_name -> osv.v1.SourcePackages
-	6,  // 16: osv.v1.OSV.GetVulnById:input_type -> osv.v1.GetVulnByIdParameters
-	7,  // 17: osv.v1.OSV.QueryAffected:input_type -> osv.v1.QueryAffectedParameters
-	8,  // 18: osv.v1.OSV.QueryAffectedBatch:input_type -> osv.v1.QueryAffectedBatchParameters
-	9,  // 19: osv.v1.OSV.DetermineVersion:input_type -> osv.v1.DetermineVersionParameters
-	10, // 20: osv.v1.OSV.ImportFindings:input_type -> osv.v1.ImportFindingsParameters
-	17, // 21: osv.v1.OSV.QueryUbuntuPackageMapping:input_type -> osv.v1.UbuntuPackageMappingParameters
-	21, // 22: osv.v1.OSV.GetVulnById:output_type -> osv.Vulnerability
-	2,  // 23: osv.v1.OSV.QueryAffected:output_type -> osv.v1.VulnerabilityList
-	3,  // 24: osv.v1.OSV.QueryAffectedBatch:output_type -> osv.v1.BatchVulnerabilityList
-	13, // 25: osv.v1.OSV.DetermineVersion:output_type -> osv.v1.VersionMatchList
-	14, // 26: osv.v1.OSV.ImportFindings:output_type -> osv.v1.ImportFindingList
-	19, // 27: osv.v1.OSV.QueryUbuntuPackageMapping:output_type -> osv.v1.UbuntuPackageMappingResponse
-	22, // [22:28] is the sub-list for method output_type
-	16, // [16:22] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	18, // 14: osv.v1.UbuntuPackageMappingResponse.results:type_name -> osv.v1.SourcePackages
+	6,  // 15: osv.v1.OSV.GetVulnById:input_type -> osv.v1.GetVulnByIdParameters
+	7,  // 16: osv.v1.OSV.QueryAffected:input_type -> osv.v1.QueryAffectedParameters
+	8,  // 17: osv.v1.OSV.QueryAffectedBatch:input_type -> osv.v1.QueryAffectedBatchParameters
+	9,  // 18: osv.v1.OSV.DetermineVersion:input_type -> osv.v1.DetermineVersionParameters
+	10, // 19: osv.v1.OSV.ImportFindings:input_type -> osv.v1.ImportFindingsParameters
+	17, // 20: osv.v1.OSV.QueryUbuntuPackageMapping:input_type -> osv.v1.UbuntuPackageMappingParameters
+	20, // 21: osv.v1.OSV.GetVulnById:output_type -> osv.Vulnerability
+	2,  // 22: osv.v1.OSV.QueryAffected:output_type -> osv.v1.VulnerabilityList
+	3,  // 23: osv.v1.OSV.QueryAffectedBatch:output_type -> osv.v1.BatchVulnerabilityList
+	13, // 24: osv.v1.OSV.DetermineVersion:output_type -> osv.v1.VersionMatchList
+	14, // 25: osv.v1.OSV.ImportFindings:output_type -> osv.v1.ImportFindingList
+	19, // 26: osv.v1.OSV.QueryUbuntuPackageMapping:output_type -> osv.v1.UbuntuPackageMappingResponse
+	21, // [21:27] is the sub-list for method output_type
+	15, // [15:21] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_osv_service_v1_proto_init() }
@@ -1281,7 +1276,7 @@ func file_osv_service_v1_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_osv_service_v1_proto_rawDesc), len(file_osv_service_v1_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   19,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

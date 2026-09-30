@@ -91,13 +91,19 @@ func (s *UbuntuPackageMappingStore) GetMulti(ctx context.Context, binaryNames []
 // PutMulti creates or updates package mappings for multiple binary package names.
 func (s *UbuntuPackageMappingStore) PutMulti(ctx context.Context, mappings []*models.UbuntuPackageMapping) error {
 	for chunk := range slices.Chunk(mappings, maxDatastorePutMultiBatchSize) {
-		keys := make([]*datastore.Key, len(chunk))
-		entities := make([]*ubuntuPackageMappingEntity, len(chunk))
-		for j, m := range chunk {
-			keys[j] = datastore.NameKey(UbuntuPackageMappingKind, m.BinaryName, nil)
-			entities[j] = &ubuntuPackageMappingEntity{
-				SourceNames: m.SourceNames,
+		keys := make([]*datastore.Key, 0, len(chunk))
+		entities := make([]*ubuntuPackageMappingEntity, 0, len(chunk))
+		for _, m := range chunk {
+			if m == nil {
+				continue
 			}
+			keys = append(keys, datastore.NameKey(UbuntuPackageMappingKind, m.BinaryName, nil))
+			entities = append(entities, &ubuntuPackageMappingEntity{
+				SourceNames: m.SourceNames,
+			})
+		}
+		if len(keys) == 0 {
+			continue
 		}
 
 		if _, err := s.client.PutMulti(ctx, keys, entities); err != nil {

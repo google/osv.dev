@@ -2,7 +2,7 @@ resources:
 - custommetrics.yaml
 - generate-sitemap.yaml
 - relations.yaml
-- ubuntubinarymapper.yaml
+- ubuntu-binary-mapper.yaml
 - vanir-signatures.yaml
 - workers-cves.yaml
 - workers-reimport.yaml

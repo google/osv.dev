@@ -1,14 +1,14 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: ubuntubinarymapper
+  name: ubuntu-binary-mapper
 spec:
   jobTemplate:
     spec:
       template:
         spec:
           containers:
-          - name: ubuntubinarymapper
+          - name: ubuntu-binary-mapper
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb-test

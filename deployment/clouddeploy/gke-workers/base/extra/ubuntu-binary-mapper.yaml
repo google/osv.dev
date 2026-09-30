@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: ubuntubinarymapper
+  name: ubuntu-binary-mapper
   labels:
     cronLastSuccessfulTimeMins: "420"
 spec:
@@ -13,8 +13,8 @@ spec:
       template:
         spec:
           containers:
-          - name: ubuntubinarymapper
-            image: ubuntubinarymapper
+          - name: ubuntu-binary-mapper
+            image: ubuntu-binary-mapper
             imagePullPolicy: Always
             resources:
               requests:

@@ -30,4 +30,4 @@ patches:
 - path: custommetrics.yaml
 - path: gitter.yaml
 - path: vanir-signatures.yaml
-- path: ubuntubinarymapper.yaml
+- path: ubuntu-binary-mapper.yaml

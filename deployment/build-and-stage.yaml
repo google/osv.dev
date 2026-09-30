@@ -287,20 +287,20 @@ steps:
 
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
-  args: ['-c', 'docker pull gcr.io/oss-vdb/ubuntubinarymapper:latest || exit 0']
-  id: 'pull-ubuntubinarymapper'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/ubuntu-binary-mapper:latest || exit 0']
+  id: 'pull-ubuntu-binary-mapper'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/ubuntubinarymapper:latest', '-t', 'gcr.io/oss-vdb/ubuntubinarymapper:$COMMIT_SHA', '--target', 'ubuntubinarymapper', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/ubuntubinarymapper:latest', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/ubuntu-binary-mapper:latest', '-t', 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA', '--target', 'ubuntubinarymapper', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/ubuntu-binary-mapper:latest', '--pull', '.']
   dir: 'go'
-  id: 'build-ubuntubinarymapper'
-  waitFor: ['pull-ubuntubinarymapper', 'build-staging-api-test']
+  id: 'build-ubuntu-binary-mapper'
+  waitFor: ['pull-ubuntu-binary-mapper', 'build-staging-api-test']
   volumes:
   - name: 'docker-config'
     path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/ubuntubinarymapper']
-  waitFor: ['build-ubuntubinarymapper', 'cloud-build-queue']
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/ubuntu-binary-mapper']
+  waitFor: ['build-ubuntu-binary-mapper', 'cloud-build-queue']
 
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
@@ -568,7 +568,7 @@ steps:
      generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA,\
      gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA,\
      vanir-signatures=gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA,\
-     ubuntubinarymapper=gcr.io/oss-vdb/ubuntubinarymapper:$COMMIT_SHA,\
+     ubuntu-binary-mapper=gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA,\
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
@@ -638,4 +638,4 @@ images:
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/ubuntubinarymapper:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA'

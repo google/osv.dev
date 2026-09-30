@@ -1,3 +1,8 @@
+---
+name: dependency-review-plan
+description: Review open dependency update pull requests in google/osv.dev and report which need manual review, without approving or merging them.
+---
+
 # Dependency Update Review Plan - google/osv.dev
 
 This document outlines the workflow for reviewing and managing dependency update Pull Requests in the `google/osv.dev` repository.

@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: repository-ghsa-convert
+  labels:
+    cronLastSuccessfulTimeMins: "420"
+spec:
+  timeZone: Australia/Sydney
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 7200
+      template:
+        spec:
+          containers:
+          - name: repository-ghsa-convert
+            image: repository-ghsa-convert
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "1"
+                memory: "2G"
+              limits:
+                cpu: "2"
+                memory: "4G"
+            env:
+              - name: GITTER_HOST
+                value: http://gitter-service:8888
+          restartPolicy: Never

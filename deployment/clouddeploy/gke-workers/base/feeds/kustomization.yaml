@@ -9,3 +9,4 @@ resources:
 - debian-first-version.yaml
 - nvd-cve-osv.yaml
 - nvd-mirror.yaml
+- repository-ghsa-convert.yaml

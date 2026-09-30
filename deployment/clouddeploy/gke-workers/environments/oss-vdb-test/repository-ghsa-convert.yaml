@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: repository-ghsa-convert
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: repository-ghsa-convert
+            env:
+              - name: GOOGLE_CLOUD_PROJECT
+                value: oss-vdb-test
+              - name: OUTPUT_BUCKET
+                value: osv-test-ghsa-repo-conversion
+              - name: REPOS_GCS_PATH
+                value: gs://oss-vdb-test-repos/monitored_repositories.json
+              - name: NUM_WORKERS
+                value: "8"

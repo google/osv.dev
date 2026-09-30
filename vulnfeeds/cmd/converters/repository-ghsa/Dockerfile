@@ -1,0 +1,35 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS go_build
+
+RUN mkdir /src
+WORKDIR /src
+
+COPY ./go.mod /src/go.mod
+COPY ./go.sum /src/go.sum
+RUN go mod download && go mod verify
+
+COPY ./ /src/
+RUN CGO_ENABLED=0 go build -o repository-ghsa ./cmd/converters/repository-ghsa/
+
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:be40864452bd6d7be21632a1dc18adf03d423de0bf2595f4a287c22400c484bb
+RUN apk --no-cache add ca-certificates git
+
+WORKDIR /root/
+COPY --from=go_build /src/repository-ghsa ./
+COPY ./cmd/converters/repository-ghsa/run_repository_ghsa.sh ./
+RUN chmod +x /root/run_repository_ghsa.sh
+
+ENTRYPOINT ["/root/run_repository_ghsa.sh"]

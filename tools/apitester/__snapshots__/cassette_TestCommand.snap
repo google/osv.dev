@@ -1803,6 +1803,10 @@
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2205,6 +2209,10 @@
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2267,6 +2275,10 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -9602,6 +9614,10 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

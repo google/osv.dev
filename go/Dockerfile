@@ -31,7 +31,7 @@
 # ========================================================
 # Shared Builder Stage
 # ========================================================
-FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS builder
+FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS builder
 
 WORKDIR /workspace
 
@@ -50,7 +50,7 @@ RUN go mod download && go mod verify
 FROM builder AS importer-build
 RUN CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS importer
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS importer
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache git zstd tar
 COPY --from=importer-build /app/importer /
@@ -122,7 +122,7 @@ ENTRYPOINT ["/custommetrics"]
 FROM builder AS gitter-build
 RUN CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS gitter
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS gitter
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache bash git zstd tar
 # Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
@@ -136,7 +136,7 @@ ENTRYPOINT ["/gitter"]
 FROM builder AS first_package_finder-build
 RUN CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS first_package_finder
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS first_package_finder
 COPY --from=first_package_finder-build /app/first_package_finder /
 ENTRYPOINT ["/first_package_finder"]
 

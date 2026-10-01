@@ -65,6 +65,9 @@ func TestNormalizePackageName(t *testing.T) {
 		{"PyPI", "A_B-C.D", "a-b-c-d"},
 		{"PyPI", "A_._B", "a-b"},
 		{"npm", "Flask", "Flask"}, // No normalization
+		// NuGet and crates.io names are only folded for matching.
+		{"NuGet", "Newtonsoft.Json", "Newtonsoft.Json"},
+		{"crates.io", "Serde_Json", "Serde_Json"},
 	}
 
 	p := NewProvider(nil)
@@ -77,6 +80,43 @@ func TestNormalizePackageName(t *testing.T) {
 		actual := NormalizePackageName(e, test.name)
 		if actual != test.expected {
 			t.Errorf("NormalizePackageName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
+		}
+	}
+}
+
+func TestMatchPackageName(t *testing.T) {
+	tests := []struct {
+		ecosystem string
+		name      string
+		expected  string
+	}{
+		{"PyPI", "A_B-C.D", "a-b-c-d"},
+		{"npm", "jQuery-QueryBuilder", "jQuery-QueryBuilder"},
+		{"NuGet", "Newtonsoft.Json", "newtonsoft.json"},
+		{"NuGet", "newtonsoft.json", "newtonsoft.json"},
+		{"NuGet", "Foo_Bar-Baz", "foo_bar-baz"},
+		// Only ASCII letters are folded, so lookalike IDs stay distinct and
+		// invalid UTF-8 is kept as is.
+		{"NuGet", "Ser\u0130log", "ser\u0130log"},
+		{"NuGet", "\u212Aestrel", "\u212Aestrel"},
+		{"NuGet", "A\xffB", "a\xffb"},
+		{"crates.io", "Serde_Json", "serde-json"},
+		{"crates.io", "openssl-src", "openssl-src"},
+	}
+
+	p := NewProvider(nil)
+	for _, test := range tests {
+		e, ok := p.Get(test.ecosystem)
+		if !ok {
+			t.Fatalf("%s ecosystem not found", test.ecosystem)
+		}
+
+		actual := MatchPackageName(e, test.name)
+		if actual != test.expected {
+			t.Errorf("MatchPackageName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
+		}
+		if again := MatchPackageName(e, actual); again != actual {
+			t.Errorf("MatchPackageName(%s, %q) is not idempotent: got %q", test.ecosystem, actual, again)
 		}
 	}
 }

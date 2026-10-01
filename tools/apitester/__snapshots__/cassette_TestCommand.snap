@@ -2668,7 +2668,16 @@
         },
         "version": "0.5.8-2.4"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2026-102473",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-102474",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -8148,6 +8157,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-vxq7-64xx-v4gw",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-wqvq-5m8c-6g24",
           "modified": "<RFC3339 date with the year 2024>"
         },
@@ -8228,6 +8241,10 @@
         },
         {
           "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-vxq7-64xx-v4gw",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -9408,6 +9425,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-vxq7-64xx-v4gw",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-wqvq-5m8c-6g24",
           "modified": "<RFC3339 date with the year 2024>"
         },
@@ -9488,6 +9509,10 @@
         },
         {
           "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-vxq7-64xx-v4gw",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

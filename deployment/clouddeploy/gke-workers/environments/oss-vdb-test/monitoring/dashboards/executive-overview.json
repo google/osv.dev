@@ -16,41 +16,35 @@
   },
   "editable": false,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Service Level Objectives (SLOs) & Key Performance Indicators",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
+              { "color": "blue", "value": null }
             ]
           },
           "unit": "none"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "colorMode": "value",
@@ -58,9 +52,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -69,14 +61,12 @@
       "pluginVersion": "11.5.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
+          "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "sum(osv_worker_tasks_processed_total)",
+          "expr": "sum(increase(osv_worker_tasks_processed_total[$__range]))",
+          "instant": true,
           "legendFormat": "Total Tasks",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],
@@ -84,55 +74,191 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "datasource": { "type": "prometheus", "uid": "gmp" },
       "fieldConfig": {
         "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "(sum(increase(osv_worker_tasks_processed_total{status=\"success\"}[$__range])) / sum(increase(osv_worker_tasks_processed_total[$__range]))) * 100",
+          "instant": true,
+          "legendFormat": "Success Rate",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Worker Success Rate (Target: > 99%)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 99.0 },
+              { "color": "green", "value": 99.95 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "(sum(rate(run_googleapis_com:request_count{response_code_class=\"2xx\"}[30d])) / sum(rate(run_googleapis_com:request_count[30d]))) * 100",
+          "instant": true,
+          "legendFormat": "30d Availability",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "API Availability SLO (30d Target: 99.95%)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.100 },
+              { "color": "red", "value": 0.150 }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket[5m]))) / 1000",
+          "instant": true,
+          "legendFormat": "p99 Latency",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "API p99 Latency (Target: <= 150ms)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "Worker Ingestion Pipeline Throughput",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
           "custom": {
+            "axisCenteredZero": false,
             "drawStyle": "line",
+            "fillOpacity": 15,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            }
+            "stacking": { "group": "A", "mode": "none" }
           },
           "unit": "ops"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 6,
-        "w": 16,
-        "x": 8,
-        "y": 0
-      },
-      "id": 2,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 5,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull"
-          ],
+          "calcs": ["mean", "lastNotNull", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
+      "pluginVersion": "11.5.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
+          "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
           "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) by (status)",
           "legendFormat": "{{status}}",
@@ -142,20 +268,256 @@
       ],
       "title": "Worker Task Processing Rate",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "sum(increase(osv_worker_tasks_processed_total[1h])) by (status)",
+          "legendFormat": "{{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Hourly Task Volume by Status",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 102,
+      "title": "Public API Serving & Error Budget Burn Rate",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "sum by (response_code_class) (rate(run_googleapis_com:request_count[1m]))",
+          "legendFormat": "{{response_code_class}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cloud Run Request Rate (QPS by Status Class)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(run_googleapis_com:request_latencies_bucket[5m]))) / 1000",
+          "legendFormat": "p50 Latency",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(run_googleapis_com:request_latencies_bucket[5m]))) / 1000",
+          "legendFormat": "p95 Latency",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket[5m]))) / 1000",
+          "legendFormat": "p99 Latency",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "Cloud Run API Latency Percentiles",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 103,
+      "title": "Ingestion Latency & Dataset Volume",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 7200 }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by(le, source) (rate(osv_worker_published_to_available_seconds_bucket[1h])))",
+          "legendFormat": "{{source}} (p95)",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Published-to-Available Lag by Source (Target: < 2h)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "gmp" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "gmp" },
+          "editorMode": "code",
+          "expr": "topk(10, osv_dataset_total_vulnerabilities)",
+          "legendFormat": "{{ecosystem}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Dataset Volume by Top Ecosystems",
+      "type": "timeseries"
     }
   ],
-  "refresh": "10s",
+  "refresh": "30s",
   "schemaVersion": 39,
   "tags": [
     "osv",
-    "gmp",
+    "executive",
+    "slas",
     "worker"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {
@@ -164,11 +526,13 @@
       "10s",
       "30s",
       "1m",
-      "5m"
+      "5m",
+      "15m",
+      "1h"
     ]
   },
-  "timezone": "utc",
-  "title": "OSV Worker - Test Dashboard",
-  "uid": "osv-worker-test",
+  "timezone": "browser",
+  "title": "1. Executive Overview & SLAs",
+  "uid": "osv-exec-overview",
   "version": 1
 }

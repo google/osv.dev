@@ -74,9 +74,10 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum(osv_worker_tasks_processed_total)",
+          "expr": "sum(increase(osv_worker_tasks_processed_total[$__range]))",
+          "instant": true,
           "legendFormat": "Total Tasks",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],

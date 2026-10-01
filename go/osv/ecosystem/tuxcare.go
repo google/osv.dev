@@ -79,8 +79,8 @@ func (e tuxcareEcosystem) IsSemver() bool {
 	return false
 }
 
-// unwrap strips the wrapper added by Provider.Get, so callers that wrap us
-// again don't produce a doubly-wrapped Version.
+// unwrap strips the wrapper added by Provider.Get, so callers can reach the
+// ecosystem's own methods and don't produce a doubly-wrapped Version.
 func unwrap(e Ecosystem) Ecosystem {
 	switch w := e.(type) {
 	case *ecosystemWrapper:

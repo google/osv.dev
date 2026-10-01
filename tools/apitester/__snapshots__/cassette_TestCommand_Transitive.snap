@@ -74,11 +74,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -973,11 +981,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -1985,11 +2001,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

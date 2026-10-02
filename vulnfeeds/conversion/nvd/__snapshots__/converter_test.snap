@@ -1944,7 +1944,18 @@
   "aliases": [
     "GHSA-j7xp-4mg9-x28r"
   ],
-  "database_specific": {},
+  "database_specific": {
+    "unresolved_ranges": [
+      {
+        "extracted_events": [
+          {
+            "fixed": "2.0.0-next.193"
+          }
+        ],
+        "source": "DESCRIPTION"
+      }
+    ]
+  },
   "details": "LobeChat is an open source chat application platform. Prior to version 2.0.0-next.193, `knowledgeBase.removeFilesFromKnowledgeBase` tRPC ep allows authenticated users to delete files from any knowledge base without verifying ownership. `userId` filter in the database query is commented out, so it's enabling attackers to delete other users' KB files if they know the knowledge base ID and file ID. While the vulnerability is confirmed, practical exploitation requires knowing target's KB ID and target's file ID. These IDs are random and not easily enumerable. However, IDs may leak through shared links, logs, referrer headers and so on. Missing authorization check is a critical security flaw regardless. Users should upgrade to version 2.0.0-next.193 to receive a patch.",
   "id": "CVE-2026-23522",
   "modified": "2026-01-26T15:05:39.840Z",
@@ -3588,7 +3599,7 @@
             "introduced": "0.68"
           },
           {
-            "fixed": "0.80"
+            "last_affected": "0.80"
           },
           {
             "fixed": "0.81"
@@ -3603,7 +3614,7 @@
             "fixed": "2.15.0.1"
           },
           {
-            "fixed": "1.14.6"
+            "last_affected": "1.14.6"
           }
         ],
         "source": "DESCRIPTION"

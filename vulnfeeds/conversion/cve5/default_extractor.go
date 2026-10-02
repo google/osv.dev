@@ -120,13 +120,38 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			metrics.AddNotef("Extracted versions from description: %v", textRanges)
 		}
 		if len(textRanges) != 0 {
-			processRanges(textRanges)
+			if processRanges(textRanges) {
+				gotVersions = true
+			}
+		}
+	}
+
+	var commits []models.AffectedCommit
+	if !gotVersions && httpClient != nil {
+		refs := slices.Clone(cve.Containers.CNA.References)
+		for _, adp := range cve.Containers.ADP {
+			refs = append(refs, adp.References...)
+		}
+		refs = c.DeduplicateRefs(refs)
+		extractedCommits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
+		if err != nil {
+			metrics.AddNotef("Failed to extract commits from refs: %v", err)
+		}
+		if len(extractedCommits) > 0 {
+			commits = extractedCommits
+			metrics.AddNotef("Extracted commits from refs: %v", commits)
+			for _, commit := range commits {
+				successfulRepos[commit.Repo] = true
+			}
+			metrics.ResolvedRangesCount += len(commits)
+			metrics.SetOutcome(models.Successful)
+			metrics.AddSource(models.VersionSourceRefs)
 		}
 	}
 
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
-	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
+	affected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected...)
 
 	addUnresolvedRanges(unresolvedRanges)

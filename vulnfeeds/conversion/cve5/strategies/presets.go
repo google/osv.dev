@@ -15,6 +15,7 @@ func Default() []VersionStrategy {
 		&CPEVersionStringStrategy{},
 		&VersionTextExtractionStrategy{},
 		&StandaloneSingleVersionStrategy{},
+		&InverseAffectedRangesStrategy{},
 	}
 }
 
@@ -44,8 +45,10 @@ func MITRE() []VersionStrategy {
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
+		&VersionTextExtractionStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 		&StandaloneSingleVersionStrategy{},
+		&InverseAffectedRangesStrategy{},
 	}
 }
 

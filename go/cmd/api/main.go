@@ -103,6 +103,7 @@ func run() error {
 	relationsStore := db.NewRelationsStore(dbClient)
 	importFindingsStore := db.NewImportFindingsStore(dbClient, nil, "", "") // The API does not need to talk to GCS, so we can ignore those fields.
 	repoIndexStore := db.NewRepoIndexStore(dbClient)
+	ubuntuPackageMappingStore := db.NewUbuntuPackageMappingStore(dbClient)
 	verboseLogs := strings.EqualFold(os.Getenv("OSV_VERBOSE_LOGGING"), "true")
 
 	var recovererPublisher clients.Publisher
@@ -135,15 +136,16 @@ func run() error {
 	}
 
 	return api.RunServer(ctx, api.ServerOptions{
-		Port:                 *port,
-		Local:                *local,
-		VerboseLogs:          verboseLogs,
-		VulnStore:            vulnStore,
-		RelationsStore:       relationsStore,
-		ImportFindingsStore:  importFindingsStore,
-		RepoIndexStore:       repoIndexStore,
-		RecovererPublisher:   recovererPublisher,
-		HealthCheckInterval:  healthInterval,
-		HealthCheckThreshold: healthThreshold,
+		Port:                      *port,
+		Local:                     *local,
+		VerboseLogs:               verboseLogs,
+		VulnStore:                 vulnStore,
+		RelationsStore:            relationsStore,
+		ImportFindingsStore:       importFindingsStore,
+		RepoIndexStore:            repoIndexStore,
+		UbuntuPackageMappingStore: ubuntuPackageMappingStore,
+		RecovererPublisher:        recovererPublisher,
+		HealthCheckInterval:       healthInterval,
+		HealthCheckThreshold:      healthThreshold,
 	})
 }

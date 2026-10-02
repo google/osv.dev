@@ -50,6 +50,7 @@ func ExtractAffectedRanges(affected models.Affected, strategyList []strategies.V
 		prevCount := len(state.Ranges())
 		strategy.Extract(state, metrics)
 		if len(state.Ranges()) > prevCount {
+			state.SetStrategyFrom(prevCount, strategy.Name())
 			metrics.AddNotef("Strategy successful: %s", strategy.Name())
 		}
 	}

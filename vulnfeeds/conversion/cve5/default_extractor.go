@@ -124,9 +124,15 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 		}
 	}
 
+	references := identifyPossibleURLs(cve)
+	commits, err := c.ExtractCommitsFromRefs(references, httpClient, cache)
+	if err != nil {
+		metrics.AddNotef("Failed to extract commits from references: %v", err)
+	}
+
 	keys := slices.Collect(maps.Keys(successfulRepos))
 	groupedRanges := c.GroupRanges(resolvedRanges)
-	affected := c.MergeRangesAndCreateAffected(groupedRanges, nil, keys, metrics)
+	affected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
 	v.Affected = append(v.Affected, affected...)
 
 	addUnresolvedRanges(unresolvedRanges)

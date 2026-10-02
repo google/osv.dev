@@ -833,7 +833,20 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 	if len(unresolvedRanges) > 0 {
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 		if len(resolvedRanges) == 0 {
-			metrics.SetOutcome(models.NoCommitRanges)
+			hasRepo := len(repos) > 0
+			if !hasRepo {
+				for _, ra := range ranges {
+					if ra.Range.GetRepo() != "" {
+						hasRepo = true
+						break
+					}
+				}
+			}
+			if !hasRepo {
+				metrics.SetOutcome(models.NoRepos)
+			} else {
+				metrics.SetOutcome(models.NoCommitRanges)
+			}
 		}
 	}
 

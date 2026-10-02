@@ -58,6 +58,11 @@ These models are defined in Python ([`osv/models.py`](osv/models.py)) and mirror
    * **Fields**: Contains summary, ecosystems, packages, severities, and search indices.
    * **Rule**: This entity is **only** used by the website and should not be used for API matching logic.
 
+5. **`UbuntuPackageMapping` (Kind: `UbuntuPackageMapping`)**
+   * **Purpose**: Used by the experimental `POST /v1experimental/ubuntu/binary-to-source` API endpoint to resolve Ubuntu binary package names to their corresponding source package names.
+   * **Fields**: Keyed by binary package name; stores `source_names` (unindexed list of corresponding Ubuntu source package names).
+   * **Note**: Defined in Go ([`go/internal/database/datastore/ubuntu_package_mapping.go`](go/internal/database/datastore/ubuntu_package_mapping.go)) and populated by `ubuntubinarymapper`.
+
 ---
 
 ## Setup Commands
@@ -271,6 +276,10 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 
 11. **`vanir_signatures`**:
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
+
+12. **`ubuntubinarymapper`**:
+   - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
+   - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.

@@ -100,6 +100,10 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1006,6 +1010,10 @@
         },
         {
           "id": "PYSEC-2026-3717",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -2027,6 +2035,10 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2250,6 +2262,10 @@
         },
         {
           "id": "PYSEC-2026-1999",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4177",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

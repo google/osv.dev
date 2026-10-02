@@ -102,6 +102,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:hex/acme/foo',
                      purl_helpers.package_to_purl('Hex', 'acme/foo'))
 
+    self.assertEqual('pkg:brew/openssl%403',
+                     purl_helpers.package_to_purl('Homebrew', 'openssl@3'))
+
     # Root ecosystem does not generate PURLs
     # Root packages are not published to public registries
     self.assertIsNone(
@@ -243,6 +246,9 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Hex', 'acme/foo', '2.3.'),
                      purl_helpers.parse_purl('pkg:hex/acme/foo@2.3.'))
+
+    self.assertEqual(('Homebrew', 'openssl@3', '3.5.0'),
+                     purl_helpers.parse_purl('pkg:brew/openssl%403@3.5.0'))
 
     self.assertEqual(('Julia', 'Example', None),
                      purl_helpers.parse_purl('pkg:julia/Example'))

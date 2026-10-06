@@ -14,6 +14,7 @@ import (
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -515,6 +516,15 @@ func TestDefaultVersionExtractor_SliceOrderPrecedence(t *testing.T) {
 	}
 }
 
+func mustParseDBSpecific(t *testing.T, jsonStr string) *structpb.Struct {
+	t.Helper()
+	var s structpb.Struct
+	if err := protojson.Unmarshal([]byte(jsonStr), &s); err != nil {
+		t.Fatalf("failed to unmarshal database_specific JSON: %v", err)
+	}
+	return &s
+}
+
 func TestExtractVersions(t *testing.T) {
 	testCases := []struct {
 		name             string
@@ -537,90 +547,26 @@ func TestExtractVersions(t *testing.T) {
 						{Introduced: "0"},
 						{Fixed: "9c2c2307dd1d6af504e09aac0326d86ee3597a0b"},
 					},
-					DatabaseSpecific: &structpb.Struct{
-						Fields: map[string]*structpb.Value{
-							"extracted_events": {
-								Kind: &structpb.Value_ListValue{
-									ListValue: &structpb.ListValue{
-										Values: []*structpb.Value{
-											{
-												Kind: &structpb.Value_StructValue{
-													StructValue: &structpb.Struct{
-														Fields: map[string]*structpb.Value{
-															"source":   structpb.NewStringValue("AFFECTED_FIELD"),
-															"strategy": structpb.NewStringValue("StringRangeExpression"),
-															"range": {
-																Kind: &structpb.Value_ListValue{
-																	ListValue: &structpb.ListValue{
-																		Values: []*structpb.Value{
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"introduced": structpb.NewStringValue("2.0.0"),
-																						},
-																					},
-																				},
-																			},
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"fixed": structpb.NewStringValue("2.0.7"),
-																						},
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-											{
-												Kind: &structpb.Value_StructValue{
-													StructValue: &structpb.Struct{
-														Fields: map[string]*structpb.Value{
-															"source":   structpb.NewStringValue("AFFECTED_FIELD"),
-															"strategy": structpb.NewStringValue("StringRangeExpression"),
-															"range": {
-																Kind: &structpb.Value_ListValue{
-																	ListValue: &structpb.ListValue{
-																		Values: []*structpb.Value{
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"introduced": structpb.NewStringValue("0"),
-																						},
-																					},
-																				},
-																			},
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"fixed": structpb.NewStringValue("1.26.18"),
-																						},
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
+					DatabaseSpecific: mustParseDBSpecific(t, `{
+						"extracted_events": [
+							{
+								"source": "AFFECTED_FIELD",
+								"strategy": "StringRangeExpression",
+								"range": [
+									{"introduced": "2.0.0"},
+									{"fixed": "2.0.7"}
+								]
 							},
-						},
-					},
+							{
+								"source": "AFFECTED_FIELD",
+								"strategy": "StringRangeExpression",
+								"range": [
+									{"introduced": "0"},
+									{"fixed": "1.26.18"}
+								]
+							}
+						]
+					}`),
 				}},
 			}},
 		},
@@ -636,54 +582,18 @@ func TestExtractVersions(t *testing.T) {
 						{Introduced: "0"},
 						{Fixed: "019a6117fb99131f74f92ecf462169613234abbf"},
 					},
-					DatabaseSpecific: &structpb.Struct{
-						Fields: map[string]*structpb.Value{
-							"extracted_events": {
-								Kind: &structpb.Value_ListValue{
-									ListValue: &structpb.ListValue{
-										Values: []*structpb.Value{
-											{
-												Kind: &structpb.Value_StructValue{
-													StructValue: &structpb.Struct{
-														Fields: map[string]*structpb.Value{
-															"source":   structpb.NewStringValue("AFFECTED_FIELD"),
-															"strategy": structpb.NewStringValue("StringRangeExpression"),
-															"range": {
-																Kind: &structpb.Value_ListValue{
-																	ListValue: &structpb.ListValue{
-																		Values: []*structpb.Value{
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"introduced": structpb.NewStringValue("0"),
-																						},
-																					},
-																				},
-																			},
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"fixed": structpb.NewStringValue("1.10.5"),
-																						},
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
+					DatabaseSpecific: mustParseDBSpecific(t, `{
+						"extracted_events": [
+							{
+								"source": "AFFECTED_FIELD",
+								"strategy": "StringRangeExpression",
+								"range": [
+									{"introduced": "0"},
+									{"fixed": "1.10.5"}
+								]
+							}
+						]
+					}`),
 				}},
 			}},
 		},
@@ -786,54 +696,18 @@ func TestExtractVersions(t *testing.T) {
 						{Introduced: "0b3b5fdb5a058f50248cd8547824936b8dd10351"},
 						{LastAffected: "a381da252fe8e873c8aff22703040426cc9b2ae0"},
 					},
-					DatabaseSpecific: &structpb.Struct{
-						Fields: map[string]*structpb.Value{
-							"extracted_events": {
-								Kind: &structpb.Value_ListValue{
-									ListValue: &structpb.ListValue{
-										Values: []*structpb.Value{
-											{
-												Kind: &structpb.Value_StructValue{
-													StructValue: &structpb.Struct{
-														Fields: map[string]*structpb.Value{
-															"source":   structpb.NewStringValue("AFFECTED_FIELD"),
-															"strategy": structpb.NewStringValue("StandardRange"),
-															"range": {
-																Kind: &structpb.Value_ListValue{
-																	ListValue: &structpb.ListValue{
-																		Values: []*structpb.Value{
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"introduced": structpb.NewStringValue("0b3b5fdb5a058f50248cd8547824936b8dd10351"),
-																						},
-																					},
-																				},
-																			},
-																			{
-																				Kind: &structpb.Value_StructValue{
-																					StructValue: &structpb.Struct{
-																						Fields: map[string]*structpb.Value{
-																							"last_affected": structpb.NewStringValue("a381da252fe8e873c8aff22703040426cc9b2ae0"),
-																						},
-																					},
-																				},
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
+					DatabaseSpecific: mustParseDBSpecific(t, `{
+						"extracted_events": [
+							{
+								"source": "AFFECTED_FIELD",
+								"strategy": "StandardRange",
+								"range": [
+									{"introduced": "0b3b5fdb5a058f50248cd8547824936b8dd10351"},
+									{"last_affected": "a381da252fe8e873c8aff22703040426cc9b2ae0"}
+								]
+							}
+						]
+					}`),
 				}},
 			}},
 		},

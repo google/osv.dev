@@ -4,6 +4,7 @@ package conversion
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -599,17 +600,12 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 	}
 
 	slices.SortFunc(keys, func(a, b key) int {
-		if a.Source != b.Source {
-			return strings.Compare(a.Source, b.Source)
-		}
-		if a.Strategy != b.Strategy {
-			return strings.Compare(a.Strategy, b.Strategy)
-		}
-		if a.VendorProduct != b.VendorProduct {
-			return strings.Compare(a.VendorProduct, b.VendorProduct)
-		}
-
-		return strings.Compare(a.OriginalTag, b.OriginalTag)
+		return cmp.Or(
+			cmp.Compare(a.Source, b.Source),
+			cmp.Compare(a.Strategy, b.Strategy),
+			cmp.Compare(a.VendorProduct, b.VendorProduct),
+			cmp.Compare(a.OriginalTag, b.OriginalTag),
+		)
 	})
 
 	listElements := make([]any, 0, len(keys))

@@ -6,7 +6,8 @@
   },
   "tags": [
     {
-      "name": "OSV"
+      "name": "OSV",
+      "description": "Open source vulnerability database."
     }
   ],
   "consumes": [
@@ -176,6 +177,40 @@
           "OSV"
         ]
       }
+    },
+    "/v1experimental/ubuntu/binary-to-source": {
+      "post": {
+        "summary": "Map Ubuntu binary package names to their corresponding source package names.",
+        "operationId": "OSV_QueryUbuntuPackageMapping",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UbuntuPackageMappingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Parameters for QueryUbuntuPackageMapping.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UbuntuPackageMappingParameters"
+            }
+          }
+        ],
+        "tags": [
+          "OSV"
+        ]
+      }
     }
   },
   "definitions": {
@@ -196,6 +231,14 @@
       ],
       "default": "SOURCE_UNSPECIFIED",
       "description": "Source of the severity."
+    },
+    "VersionRepositoryInformationRepoType": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "GIT"
+      ],
+      "default": "UNSPECIFIED"
     },
     "osvAffected": {
       "type": "object",
@@ -568,7 +611,7 @@
         "NULL_VALUE"
       ],
       "default": "NULL_VALUE",
-      "description": "Represents a JSON `null`.\n\n`NullValue` is a sentinel, using an enum with only one value to represent\nthe null value for the `Value` type union.\n\nA field of type `NullValue` with any value other than `0` is considered\ninvalid. Most ProtoJSON serializers will emit a Value with a `null_value` set\nas a JSON `null` regardless of the integer value, and so will round trip to\na `0` value.\n\n - NULL_VALUE: Null value."
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\n The JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
     },
     "rpcStatus": {
       "type": "object",
@@ -667,6 +710,43 @@
       },
       "description": "Query format."
     },
+    "v1SourcePackages": {
+      "type": "object",
+      "properties": {
+        "source_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Source package names corresponding to a queried binary package name."
+    },
+    "v1UbuntuPackageMappingParameters": {
+      "type": "object",
+      "properties": {
+        "binary_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Parameters for QueryUbuntuPackageMapping."
+    },
+    "v1UbuntuPackageMappingResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1SourcePackages"
+          }
+        }
+      },
+      "description": "Response for QueryUbuntuPackageMapping."
+    },
     "v1VersionMatch": {
       "type": "object",
       "properties": {
@@ -734,7 +814,7 @@
       "type": "object",
       "properties": {
         "type": {
-          "$ref": "#/definitions/v1VersionRepositoryInformationRepoType"
+          "$ref": "#/definitions/VersionRepositoryInformationRepoType"
         },
         "address": {
           "type": "string",
@@ -753,14 +833,6 @@
           "description": "Commit hash hex."
         }
       }
-    },
-    "v1VersionRepositoryInformationRepoType": {
-      "type": "string",
-      "enum": [
-        "UNSPECIFIED",
-        "GIT"
-      ],
-      "default": "UNSPECIFIED"
     },
     "v1VulnerabilityList": {
       "type": "object",

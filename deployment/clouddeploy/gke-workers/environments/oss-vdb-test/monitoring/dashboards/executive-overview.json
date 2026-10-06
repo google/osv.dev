@@ -161,7 +161,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "(1 - (sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\",response_code_class=\"5xx\"}[$__range])) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\"}[$__range])))) * 100",
+          "expr": "(1 - (sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\",response_code_class=\"5xx\", monitored_resource=\"cloud_run_revision\"}[$__range])) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[$__range])))) * 100",
           "instant": true,
           "legendFormat": "Availability",
           "range": false,
@@ -208,7 +208,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\"}[5m]))) / 1000",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
           "instant": true,
           "legendFormat": "p99 Latency",
           "range": false,
@@ -350,7 +350,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "sum by (response_code_class) (rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\"}[5m]))",
+          "expr": "sum by (response_code_class) (rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))",
           "legendFormat": "{{response_code_class}}",
           "range": true,
           "refId": "A"
@@ -389,7 +389,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\"}[5m]))) / 1000",
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
           "legendFormat": "p50 Latency",
           "range": true,
           "refId": "A"
@@ -397,7 +397,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\"}[5m]))) / 1000",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
           "legendFormat": "p95 Latency",
           "range": true,
           "refId": "B"
@@ -405,7 +405,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "gmp" },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\"}[5m]))) / 1000",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
           "legendFormat": "p99 Latency",
           "range": true,
           "refId": "C"

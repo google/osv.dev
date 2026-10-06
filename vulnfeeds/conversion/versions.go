@@ -422,7 +422,8 @@ func repo(u string) (string, error) {
 	return "", fmt.Errorf("Repo(): unsupported URL: %s", u)
 }
 
-// Returns the commit ID from supported links.
+// Commit returns the commit ID, the original tag (if resolved from a release tag URL),
+// and the version source from supported links.
 func Commit(u string, httpClient *http.Client) (string, string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {

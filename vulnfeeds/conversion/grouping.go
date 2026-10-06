@@ -390,10 +390,10 @@ func MergeRangesAndCreateAffected(
 								"extracted_events": []any{extractedEventGroup},
 							}
 							dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
-							if err == nil {
-								mergeDatabaseSpecific(mergedRange, dbSpecific)
-							} else {
+							if err != nil {
 								metrics.AddNotef("failed to make database specific for commit: %v", err)
+							} else {
+								mergeDatabaseSpecific(mergedRange, dbSpecific)
 							}
 						}
 					}
@@ -445,11 +445,11 @@ func MergeRangesAndCreateAffected(
 					"extracted_events": []any{extractedEventGroup},
 				}
 				dbSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
-				if err == nil {
+				if err != nil {
+					metrics.AddNotef("failed to make database specific for commit: %v", err)
+				} else {
 					// mergeDatabaseSpecific handles nil DatabaseSpecific in target
 					mergeDatabaseSpecific(repoToRange[repo], dbSpecific)
-				} else {
-					metrics.AddNotef("failed to make database specific for commit: %v", err)
 				}
 			}
 		}

@@ -522,6 +522,7 @@ func mustParseDBSpecific(t *testing.T, jsonStr string) *structpb.Struct {
 	if err := protojson.Unmarshal([]byte(jsonStr), &s); err != nil {
 		t.Fatalf("failed to unmarshal database_specific JSON: %v", err)
 	}
+
 	return &s
 }
 

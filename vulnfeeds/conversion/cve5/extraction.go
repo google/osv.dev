@@ -30,6 +30,10 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &DefaultVersionExtractor{
 			Strategies: strategies.MITRE(),
 		}
+	case "curl":
+		return &CurlVersionExtractor{
+			Strategies: strategies.Curl(),
+		}
 	default:
 		return &DefaultVersionExtractor{
 			Strategies: strategies.Default(),

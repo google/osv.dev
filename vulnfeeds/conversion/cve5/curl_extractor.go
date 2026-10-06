@@ -16,6 +16,13 @@ import (
 )
 
 // CurlVersionExtractor provides the version extraction logic for curl CVE records.
+//
+// A dedicated extractor is used rather than strategy presets alone because VersionStrategy
+// implementations are scoped to individual models.Affected blocks and can only emit ranges.
+// Curl advisories split information across separate blocks (semver ranges, Git commit ranges,
+// and enumerated version lists); this extractor correlates across blocks to detect Git ranges,
+// suppress redundant semver range expansion, and attach enumerated versions directly to
+// affected[].versions rather than converting them into Git tag lookups.
 type CurlVersionExtractor struct {
 	Strategies []strategies.VersionStrategy
 }

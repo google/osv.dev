@@ -281,6 +281,11 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
    - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
+13. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+   - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
+   - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore.
+   - `repo-allowlist-sync`: CLI tool to synchronize repository allowlist YAML files (`repo_allowlist.yaml`) to `RepoAllowList` entities in Datastore.
+
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.

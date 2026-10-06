@@ -469,6 +469,15 @@ func TestGetVersionExtractor(t *testing.T) {
 			cve:          models.CVE5{},
 			expectedType: reflect.TypeFor[*DefaultVersionExtractor](),
 		},
+		{
+			name: "Curl CVE",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "curl",
+				},
+			},
+			expectedType: reflect.TypeFor[*CurlVersionExtractor](),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -821,5 +830,152 @@ func TestExtractVersions_NoReposEarlyExit(t *testing.T) {
 	fields := v.DatabaseSpecific.GetFields()
 	if _, ok := fields["unresolved_ranges"]; !ok {
 		t.Errorf("expected unresolved_ranges in DatabaseSpecific")
+	}
+}
+
+func TestExtractVersions_Curl_WithGitRanges(t *testing.T) {
+	cve := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID:             "CVE-2026-8926",
+			AssignerShortName: "curl",
+		},
+		Containers: struct {
+			CNA models.CNA   `json:"cna"`
+			ADP []models.CNA `json:"adp,omitempty"`
+		}{
+			CNA: models.CNA{
+				Affected: []models.Affected{
+					{
+						Vendor:  "curl",
+						Product: "curl",
+						Versions: []models.Versions{
+							{
+								Version:     "8.11.1",
+								Status:      "affected",
+								VersionType: "semver",
+								LessThan:    "8.14.2",
+							},
+							{
+								Version:     "8.15.0",
+								Status:      "affected",
+								VersionType: "semver",
+								LessThan:    "8.16.1",
+							},
+						},
+					},
+					{
+						Vendor:  "curl",
+						Product: "curl",
+						Repo:    "https://github.com/curl/curl.git",
+						Versions: []models.Versions{
+							{
+								Version:     "e9b9bbac22c26cf67316fa8e6c6b9e831af31949",
+								Status:      "affected",
+								VersionType: "git",
+								LessThan:    "4ae1d7cc2643e4773a136395f12bc02fc6867854",
+							},
+						},
+					},
+					{
+						Vendor:  "curl",
+						Product: "curl",
+						Versions: []models.Versions{
+							{Version: "8.14.1", Status: "affected"},
+							{Version: "8.14.0", Status: "affected"},
+							{Version: "8.13.0", Status: "affected"},
+							{Version: "8.12.0", Status: "affected"},
+							{Version: "8.11.1", Status: "affected"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{CVEID: "CVE-2026-8926", CNA: "curl"}
+	v := vulns.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: "CVE-2026-8926",
+		},
+	}
+
+	extractor := GetVersionExtractor("curl")
+	r := testutils.SetupGitVCR(t)
+	cache := &git.InMemoryRepoTagsCache{}
+	extractor.ExtractVersions(cve, &v, metrics, []string{"https://github.com/curl/curl.git"}, cache, r.GetDefaultClient())
+
+	if metrics.Outcome != models.Successful {
+		t.Errorf("expected outcome to be Successful, got %v", metrics.Outcome)
+	}
+
+	if len(v.Affected) != 1 {
+		t.Fatalf("expected 1 affected block, got %d", len(v.Affected))
+	}
+
+	aff := v.Affected[0]
+	// Verify that ONLY the provided Git range is added (no semver ranges, no individual version ranges)
+	if len(aff.GetRanges()) != 1 {
+		t.Fatalf("expected 1 range (Git only), got %d", len(aff.GetRanges()))
+	}
+	if aff.GetRanges()[0].GetType() != osvschema.Range_GIT {
+		t.Errorf("expected Range_GIT, got %v", aff.GetRanges()[0].GetType())
+	}
+	if aff.GetRanges()[0].GetRepo() != "https://github.com/curl/curl.git" {
+		t.Errorf("expected repo https://github.com/curl/curl.git, got %s", aff.GetRanges()[0].GetRepo())
+	}
+	events := aff.GetRanges()[0].GetEvents()
+	if len(events) != 2 || events[0].GetIntroduced() != "e9b9bbac22c26cf67316fa8e6c6b9e831af31949" || events[1].GetFixed() != "4ae1d7cc2643e4773a136395f12bc02fc6867854" {
+		t.Errorf("unexpected events: %+v", events)
+	}
+
+	// Verify that the enumerated versions are in the versions array (sorted semver-like)
+	wantVersions := []string{"8.11.1", "8.12.0", "8.13.0", "8.14.0", "8.14.1"}
+	if diff := cmp.Diff(wantVersions, aff.GetVersions()); diff != "" {
+		t.Errorf("versions mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestExtractVersions_Curl_WithoutGitRanges(t *testing.T) {
+	cve := models.CVE5{
+		Metadata: models.CVE5Metadata{
+			CVEID:             "CVE-2024-0001",
+			AssignerShortName: "curl",
+		},
+		Containers: struct {
+			CNA models.CNA   `json:"cna"`
+			ADP []models.CNA `json:"adp,omitempty"`
+		}{
+			CNA: models.CNA{
+				Affected: []models.Affected{
+					{
+						Vendor:  "curl",
+						Product: "curl",
+						Versions: []models.Versions{
+							{
+								Version:  "8.5.0",
+								Status:   "affected",
+								LessThan: "8.6.0",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	metrics := &models.ConversionMetrics{CVEID: "CVE-2024-0001", CNA: "curl"}
+	v := vulns.Vulnerability{
+		Vulnerability: &osvschema.Vulnerability{
+			Id: "CVE-2024-0001",
+		},
+	}
+
+	extractor := GetVersionExtractor("curl")
+	r := testutils.SetupGitVCR(t)
+	cache := &git.InMemoryRepoTagsCache{}
+	extractor.ExtractVersions(cve, &v, metrics, []string{"https://github.com/curl/curl"}, cache, r.GetDefaultClient())
+
+	if len(metrics.Notes) == 0 {
+		t.Errorf("expected notes to be populated from default extractor")
 	}
 }

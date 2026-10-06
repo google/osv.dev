@@ -1,3 +1,0 @@
-[[IgnoredVulns]]
-id = "GO-2026-5932"
-reason = "This only affects the openpgp part of the library, and we don't use that."

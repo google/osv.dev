@@ -25,7 +25,7 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, staging-api-test, website).
+# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website).
 # ====================================================================================
 
 # ========================================================
@@ -207,3 +207,14 @@ COPY --from=vanir-signatures-build /app/vanir_signatures /usr/local/bin/vanir_si
 COPY cmd/vanir_signatures/generate_signatures.py /usr/local/bin/generate_signatures.py
 RUN chmod 755 /usr/local/bin/generate_signatures.py
 ENTRYPOINT ["/usr/local/bin/vanir_signatures"]
+
+# ========================================================
+# Target: Ubuntu Binary Mapper
+# ========================================================
+FROM builder AS ubuntubinarymapper-build
+RUN CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
+
+FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS ubuntubinarymapper
+COPY --from=ubuntubinarymapper-build /app/ubuntubinarymapper /
+ENTRYPOINT ["/ubuntubinarymapper"]
+

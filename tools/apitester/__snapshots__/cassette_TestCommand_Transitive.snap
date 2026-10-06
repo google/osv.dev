@@ -100,6 +100,10 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -889,7 +893,7 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
@@ -1006,6 +1010,10 @@
         },
         {
           "id": "PYSEC-2026-3717",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1697,7 +1705,7 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
@@ -1802,7 +1810,7 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
@@ -1874,7 +1882,7 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
@@ -2026,6 +2034,10 @@
         },
         {
           "id": "PYSEC-2026-3717",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -2251,6 +2263,10 @@
         {
           "id": "PYSEC-2026-1999",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4177",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2269,6 +2285,10 @@
         },
         {
           "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g6x2-hccm-hh4m",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

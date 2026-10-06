@@ -951,6 +951,22 @@ func TestLimit(t *testing.T) {
 			},
 			expected: []SHA1{hA, hB, hF},
 		},
+		{
+			name: "Multiple limits on same branch: A introduced, (C,E) limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Limit:      []string{encodeSHA1(hC), encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB},
+		},
+		{
+			name: "Re-introduced with multiple limits on same branch: (A,D) introduced, (C,E) limit",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA), encodeSHA1(hD)},
+				Limit:      []string{encodeSHA1(hC), encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB, hD},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1299,6 +1315,49 @@ func TestAffectedSingleBranch(t *testing.T) {
 				LastAffected: []string{encodeSHA1(hE)},
 			},
 			expected: []SHA1{hA, hB, hC, hD, hE},
+		},
+		{
+			name: "Multiple fixes on same branch: A introduced, (C,E) fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA)},
+				Fixed:      []string{encodeSHA1(hC), encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB},
+		},
+		{
+			name: "Re-introduced on same branch: (A,D) introduced, (C,E) fixed",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(hA), encodeSHA1(hD)},
+				Fixed:      []string{encodeSHA1(hC), encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB, hD},
+		},
+		{
+			name: "Two bounding events (fixed -> lastAffected): A introduced, B fixed, E lastAffected",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				Fixed:        []string{encodeSHA1(hB)},
+				LastAffected: []string{encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA},
+		},
+		{
+			name: "Two bounding events (lastAffected -> fixed): A introduced, B lastAffected, E fixed",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				LastAffected: []string{encodeSHA1(hB)},
+				Fixed:        []string{encodeSHA1(hE)},
+			},
+			expected: []SHA1{hA, hB},
+		},
+		{
+			name: "Fixed=lastAffected: Stop at fix, lastAffected no effect",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(hA)},
+				Fixed:        []string{encodeSHA1(hB)},
+				LastAffected: []string{encodeSHA1(hB)},
+			},
+			expected: []SHA1{hA},
 		},
 	}
 

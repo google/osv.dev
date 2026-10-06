@@ -203,14 +203,16 @@ func runBackend(ctx context.Context, port int) {
 	relationsStore := db.NewRelationsStore(dbClient)
 	importFindingsStore := db.NewImportFindingsStore(dbClient, nil, "", "")
 	repoIndexStore := db.NewRepoIndexStore(dbClient)
+	ubuntuPackageMappingStore := db.NewUbuntuPackageMappingStore(dbClient)
 	if err := api.RunServer(ctx, api.ServerOptions{
-		Port:                port,
-		Local:               true,
-		VerboseLogs:         true,
-		VulnStore:           vulnStore,
-		RelationsStore:      relationsStore,
-		ImportFindingsStore: importFindingsStore,
-		RepoIndexStore:      repoIndexStore,
+		Port:                      port,
+		Local:                     true,
+		VerboseLogs:               true,
+		VulnStore:                 vulnStore,
+		RelationsStore:            relationsStore,
+		ImportFindingsStore:       importFindingsStore,
+		RepoIndexStore:            repoIndexStore,
+		UbuntuPackageMappingStore: ubuntuPackageMappingStore,
 	}); err != nil {
 		logger.ErrorContext(ctx, "Go API server exited", "error", err)
 	}

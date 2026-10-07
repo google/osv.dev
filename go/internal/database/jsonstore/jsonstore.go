@@ -33,7 +33,7 @@ import (
 type JSONStore struct {
 	mu       sync.RWMutex
 	filePath string
-	mappings map[string][]string
+	mappings map[string]map[string][]string
 }
 
 var _ models.UbuntuPackageMappingStore = (*JSONStore)(nil)
@@ -45,7 +45,7 @@ var _ models.UbuntuPackageMappingStore = (*JSONStore)(nil)
 func New(filePath string) (*JSONStore, error) {
 	store := &JSONStore{
 		filePath: filePath,
-		mappings: make(map[string][]string),
+		mappings: make(map[string]map[string][]string),
 	}
 
 	if filePath == "" {
@@ -65,7 +65,7 @@ func New(filePath string) (*JSONStore, error) {
 		return store, nil
 	}
 
-	var mappings map[string][]string
+	var mappings map[string]map[string][]string
 	if err := json.Unmarshal(dataBytes, &mappings); err != nil {
 		return nil, fmt.Errorf("failed unmarshaling JSON store file %s: %w", filePath, err)
 	}
@@ -77,19 +77,24 @@ func New(filePath string) (*JSONStore, error) {
 	return store, nil
 }
 
-// GetMulti retrieves package mappings for multiple binary names.
-func (s *JSONStore) GetMulti(_ context.Context, binaryNames []string) ([]*models.UbuntuPackageMapping, error) {
+// GetMulti retrieves package mappings for multiple (ecosystem, binary_name) keys.
+func (s *JSONStore) GetMulti(_ context.Context, keys []models.UbuntuPackageKey) ([]*models.UbuntuPackageMapping, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	results := make([]*models.UbuntuPackageMapping, len(binaryNames))
-	for i, name := range binaryNames {
-		srcs, ok := s.mappings[name]
-		if !ok || srcs == nil {
+	results := make([]*models.UbuntuPackageMapping, len(keys))
+	for i, k := range keys {
+		eco := models.NormalizeUbuntuEcosystem(k.Ecosystem)
+		var srcs []string
+		if ecoMap, ok := s.mappings[eco]; ok {
+			srcs = ecoMap[k.BinaryName]
+		}
+		if srcs == nil {
 			srcs = []string{}
 		}
 		results[i] = &models.UbuntuPackageMapping{
-			BinaryName:  name,
+			Ecosystem:   eco,
+			BinaryName:  k.BinaryName,
 			SourceNames: slices.Clone(srcs),
 		}
 	}
@@ -97,7 +102,7 @@ func (s *JSONStore) GetMulti(_ context.Context, binaryNames []string) ([]*models
 	return results, nil
 }
 
-// PutMulti stores or updates mappings for multiple binary package names.
+// PutMulti stores or updates mappings for multiple (ecosystem, binary_name) pairs.
 func (s *JSONStore) PutMulti(_ context.Context, mappings []*models.UbuntuPackageMapping) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -106,9 +111,13 @@ func (s *JSONStore) PutMulti(_ context.Context, mappings []*models.UbuntuPackage
 		if item == nil {
 			continue
 		}
+		eco := models.NormalizeUbuntuEcosystem(item.Ecosystem)
+		if s.mappings[eco] == nil {
+			s.mappings[eco] = make(map[string][]string)
+		}
 		srcs := slices.Clone(item.SourceNames)
 		slices.Sort(srcs)
-		s.mappings[item.BinaryName] = slices.Compact(srcs)
+		s.mappings[eco][item.BinaryName] = slices.Compact(srcs)
 	}
 
 	if s.filePath == "" {

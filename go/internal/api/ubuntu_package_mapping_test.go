@@ -31,23 +31,25 @@ import (
 )
 
 type mockUbuntuPackageMappingStore struct {
-	mappings map[string][]string
+	mappings map[models.UbuntuPackageKey][]string
 	err      error
 }
 
-func (m *mockUbuntuPackageMappingStore) GetMulti(_ context.Context, binaryNames []string) ([]*models.UbuntuPackageMapping, error) {
+func (m *mockUbuntuPackageMappingStore) GetMulti(_ context.Context, keys []models.UbuntuPackageKey) ([]*models.UbuntuPackageMapping, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
 
-	results := make([]*models.UbuntuPackageMapping, len(binaryNames))
-	for i, name := range binaryNames {
-		sources, ok := m.mappings[name]
+	results := make([]*models.UbuntuPackageMapping, len(keys))
+	for i, k := range keys {
+		eco := models.NormalizeUbuntuEcosystem(k.Ecosystem)
+		sources, ok := m.mappings[models.UbuntuPackageKey{Ecosystem: eco, BinaryName: k.BinaryName}]
 		if !ok {
 			sources = []string{}
 		}
 		results[i] = &models.UbuntuPackageMapping{
-			BinaryName:  name,
+			Ecosystem:   eco,
+			BinaryName:  k.BinaryName,
 			SourceNames: sources,
 		}
 	}
@@ -63,10 +65,10 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 	ctx := context.Background()
 
 	mockStore := &mockUbuntuPackageMappingStore{
-		mappings: map[string][]string{
-			"libglib2.0-0":   {"glib2.0"},
-			"libglib2.0-bin": {"glib2.0"},
-			"shared-bin":     {"src-1", "src-2"},
+		mappings: map[models.UbuntuPackageKey][]string{
+			{Ecosystem: "Ubuntu:22.04", BinaryName: "libglib2.0-0"}:   {"glib2.0"},
+			{Ecosystem: "Ubuntu:22.04", BinaryName: "libglib2.0-bin"}: {"glib2.0"},
+			{Ecosystem: "Ubuntu:22.04", BinaryName: "shared-bin"}:     {"src-1", "src-2"},
 		},
 	}
 
@@ -90,6 +92,7 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 		{
 			name: "Success with existing, duplicate, and non-existing binaries",
 			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:22.04:LTS",
 				BinaryNames: []string{"libglib2.0-0", "unknown-binary", "shared-bin", "libglib2.0-0"},
 			},
 			wantResp: &pb.UbuntuPackageMappingResponse{
@@ -111,8 +114,59 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 			wantCode: codes.OK,
 		},
 		{
-			name:      "Empty binary names",
-			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: []string{}},
+			name: "Success with normalized Pro and bare release ecosystem",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:Pro:22.04:LTS",
+				BinaryNames: []string{"libglib2.0-0"},
+			},
+			wantResp: &pb.UbuntuPackageMappingResponse{
+				Results: []*pb.SourcePackages{
+					{
+						SourceNames: []string{"glib2.0"},
+					},
+				},
+			},
+			wantCode: codes.OK,
+		},
+		{
+			name:      "Missing ecosystem",
+			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: []string{"libglib2.0-0"}},
+			wantCode:  codes.InvalidArgument,
+			wantError: "ecosystem is required",
+		},
+		{
+			name: "Bare Ubuntu ecosystem without release suffix",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu",
+				BinaryNames: []string{"libglib2.0-0"},
+			},
+			wantCode:  codes.InvalidArgument,
+			wantError: "invalid ubuntu ecosystem",
+		},
+		{
+			name: "Ubuntu ecosystem with only LTS or Pro modifier and no version",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:Pro:LTS",
+				BinaryNames: []string{"libglib2.0-0"},
+			},
+			wantCode:  codes.InvalidArgument,
+			wantError: "invalid ubuntu ecosystem",
+		},
+		{
+			name: "Non-Ubuntu ecosystem",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Debian:12",
+				BinaryNames: []string{"libglib2.0-0"},
+			},
+			wantCode:  codes.InvalidArgument,
+			wantError: "invalid ubuntu ecosystem",
+		},
+		{
+			name: "Empty binary names",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:22.04",
+				BinaryNames: []string{},
+			},
 			wantCode:  codes.InvalidArgument,
 			wantError: "binary_names is required",
 		},
@@ -120,23 +174,30 @@ func TestQueryUbuntuPackageMapping(t *testing.T) {
 			name:      "Nil parameters",
 			params:    nil,
 			wantCode:  codes.InvalidArgument,
-			wantError: "binary_names is required",
+			wantError: "ecosystem is required",
 		},
 		{
-			name:      "Empty string in binary names",
-			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: []string{"libglib2.0-0", ""}},
+			name: "Empty string in binary names",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:22.04",
+				BinaryNames: []string{"libglib2.0-0", ""},
+			},
 			wantCode:  codes.InvalidArgument,
 			wantError: "invalid binary package name at index 1",
 		},
 		{
-			name:      "Too many binary names",
-			params:    &pb.UbuntuPackageMappingParameters{BinaryNames: tooManyNames},
+			name: "Too many binary names",
+			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:22.04",
+				BinaryNames: tooManyNames,
+			},
 			wantCode:  codes.InvalidArgument,
 			wantError: "too many binary_names",
 		},
 		{
 			name: "Store failure propagates as internal error",
 			params: &pb.UbuntuPackageMappingParameters{
+				Ecosystem:   "Ubuntu:22.04",
 				BinaryNames: []string{"libglib2.0-0"},
 			},
 			storeErr:  errors.New("connection failed"),
@@ -186,8 +247,8 @@ func TestQueryUbuntuPackageMapping_JSONStore(t *testing.T) {
 	}
 
 	if err := store.PutMulti(ctx, []*models.UbuntuPackageMapping{
-		{BinaryName: "libglib2.0-0", SourceNames: []string{"glib2.0"}},
-		{BinaryName: "libcurl4", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:24.04:LTS", BinaryName: "libglib2.0-0", SourceNames: []string{"glib2.0"}},
+		{Ecosystem: "Ubuntu:24.04:LTS", BinaryName: "libcurl4", SourceNames: []string{"curl"}},
 	}); err != nil {
 		t.Fatalf("PutMulti failed: %v", err)
 	}
@@ -197,6 +258,7 @@ func TestQueryUbuntuPackageMapping_JSONStore(t *testing.T) {
 	}
 
 	resp, err := srv.QueryUbuntuPackageMapping(ctx, &pb.UbuntuPackageMappingParameters{
+		Ecosystem:   "Ubuntu:24.04",
 		BinaryNames: []string{"libglib2.0-0", "libcurl4", "nonexistent"},
 	})
 	if err != nil {

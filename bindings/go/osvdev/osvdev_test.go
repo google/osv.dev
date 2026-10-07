@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -455,6 +456,8 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 func TestOSVClient_ExperimentalQueryUbuntuPackageMapping(t *testing.T) {
 	t.Parallel()
 
+	var chunkedRequests atomic.Int32
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != osvdev.UbuntuBinaryToSourceEndpoint {
 			http.Error(w, "unexpected path", http.StatusNotFound)
@@ -488,6 +491,9 @@ func TestOSVClient_ExperimentalQueryUbuntuPackageMapping(t *testing.T) {
 			_, _ = w.Write([]byte(`{"code":3,"message":"too many binary_names"}`))
 
 			return
+		}
+		if params.GetEcosystem() == "Ubuntu:22.04" {
+			chunkedRequests.Add(1)
 		}
 
 		resp := &api.UbuntuPackageMappingResponse{
@@ -562,12 +568,30 @@ func TestOSVClient_ExperimentalQueryUbuntuPackageMapping(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ExperimentalQueryUbuntuPackageMapping chunked failed: %v", err)
 		}
+		if gotReqs := chunkedRequests.Load(); gotReqs != 2 {
+			t.Errorf("expected 2 chunked requests for %d packages, got %d", total, gotReqs)
+		}
 
 		want := &api.UbuntuPackageMappingResponse{
 			Results: wantResults,
 		}
 		if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
 			t.Errorf("ExperimentalQueryUbuntuPackageMapping chunked mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("nil params error", func(t *testing.T) {
+		t.Parallel()
+
+		c := osvdev.DefaultClient()
+		c.BaseHostURL = server.URL
+
+		_, err := c.ExperimentalQueryUbuntuPackageMapping(context.Background(), nil)
+		wantErr := testhelper.ErrContainsStr{
+			Str: "params cannot be nil",
+		}
+		if diff := cmp.Diff(wantErr, err, cmpopts.EquateErrors()); diff != "" {
+			t.Errorf("Unexpected error (-want +got):\n%s", diff)
 		}
 	})
 

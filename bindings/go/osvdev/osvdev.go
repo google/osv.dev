@@ -199,6 +199,10 @@ func (c *OSVClient) ExperimentalQueryUbuntuPackageMapping(
 	ctx context.Context,
 	params *api.UbuntuPackageMappingParameters,
 ) (*api.UbuntuPackageMappingResponse, error) {
+	if params == nil {
+		return nil, errors.New("params cannot be nil")
+	}
+
 	if len(params.GetBinaryNames()) <= MaxPackagesPerUbuntuMappingRequest {
 		var result api.UbuntuPackageMappingResponse
 		if err := c.makeRequest(ctx, UbuntuBinaryToSourceEndpoint, params, &result); err != nil {
@@ -212,7 +216,9 @@ func (c *OSVClient) ExperimentalQueryUbuntuPackageMapping(
 	batchedResults := make([][]*api.SourcePackages, len(nameChunks))
 
 	g, errGrpCtx := errgroup.WithContext(ctx)
-	g.SetLimit(c.Config.MaxConcurrentBatchRequests)
+	if c.Config.MaxConcurrentBatchRequests > 0 {
+		g.SetLimit(c.Config.MaxConcurrentBatchRequests)
+	}
 	for batchIndex, chunk := range nameChunks {
 		g.Go(func() error {
 			if errGrpCtx.Err() != nil {

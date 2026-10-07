@@ -7205,12 +7205,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -7220,12 +7215,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -7235,12 +7225,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -7250,12 +7235,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -8529,12 +8509,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -8544,12 +8519,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -8559,12 +8529,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {
@@ -8574,12 +8539,7 @@
         },
         "version": "8.3.0"
       },
-      "vulns": [
-        {
-          "id": "PYSEC-2026-2132",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
+      "vulns": []
     },
     {
       "query": {

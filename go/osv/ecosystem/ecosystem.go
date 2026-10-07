@@ -70,6 +70,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemPub:                        func(p *Provider, _ string) Ecosystem { return pubEcosystem{p: p} },
 	osvconstants.EcosystemPyPI:                       func(p *Provider, _ string) Ecosystem { return pypiEcosystem{p: p} },
 	osvconstants.EcosystemRedHat:                     statelessFactory[rpmEcosystem],
+	osvconstants.EcosystemRedHatLightwell:            redHatLightwellFactory,
 	osvconstants.EcosystemRockyLinux:                 statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemRoot:                       rootEcosystemFactory,
 	osvconstants.EcosystemRubyGems:                   func(p *Provider, _ string) Ecosystem { return rubyGemsEcosystem{p: p} },

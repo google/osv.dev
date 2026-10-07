@@ -36,7 +36,7 @@ func NormalizeUbuntuEcosystem(ecosystem string) string {
 func IsValidUbuntuReleaseEcosystem(ecosystem string) bool {
 	normalized := NormalizeUbuntuEcosystem(ecosystem)
 	suffix, ok := strings.CutPrefix(normalized, "Ubuntu:")
-	if !ok || suffix == "" {
+	if !ok || suffix == "" || strings.ContainsAny(suffix, " \t\n\r") {
 		return false
 	}
 

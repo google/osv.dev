@@ -2,6 +2,10 @@ package osvdev_test
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -9,6 +13,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 	"osv.dev/bindings/go/api"
 	"osv.dev/bindings/go/internal/testhelper"
 	"osv.dev/bindings/go/osvdev"
@@ -444,4 +450,141 @@ func TestOSVClient_ExperimentalDetermineVersion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOSVClient_ExperimentalQueryUbuntuPackageMapping(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != osvdev.UbuntuBinaryToSourceEndpoint {
+			http.Error(w, "unexpected path", http.StatusNotFound)
+			return
+		}
+		if r.Method != http.MethodPost {
+			http.Error(w, "unexpected method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var params api.UbuntuPackageMappingParameters
+		if err := protojson.Unmarshal(body, &params); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if params.GetEcosystem() == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"code":3,"message":"ecosystem is required"}`))
+
+			return
+		}
+		if len(params.GetBinaryNames()) > osvdev.MaxPackagesPerUbuntuMappingRequest {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"code":3,"message":"too many binary_names"}`))
+
+			return
+		}
+
+		resp := &api.UbuntuPackageMappingResponse{
+			Results: make([]*api.SourcePackages, len(params.GetBinaryNames())),
+		}
+		for i, bin := range params.GetBinaryNames() {
+			if bin == "unknown" {
+				resp.Results[i] = &api.SourcePackages{}
+			} else {
+				resp.Results[i] = &api.SourcePackages{
+					SourceNames: []string{"src-" + bin},
+				}
+			}
+		}
+
+		out, err := protojson.Marshal(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(out)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Run("single batch request", func(t *testing.T) {
+		t.Parallel()
+
+		c := osvdev.DefaultClient()
+		c.BaseHostURL = server.URL
+
+		got, err := c.ExperimentalQueryUbuntuPackageMapping(context.Background(), &api.UbuntuPackageMappingParameters{
+			Ecosystem:   "Ubuntu:24.04:LTS",
+			BinaryNames: []string{"libcurl4", "unknown"},
+		})
+		if err != nil {
+			t.Fatalf("ExperimentalQueryUbuntuPackageMapping failed: %v", err)
+		}
+
+		want := &api.UbuntuPackageMappingResponse{
+			Results: []*api.SourcePackages{
+				{SourceNames: []string{"src-libcurl4"}},
+				{},
+			},
+		}
+		if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
+			t.Errorf("ExperimentalQueryUbuntuPackageMapping mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("automatic chunking over 1000 packages", func(t *testing.T) {
+		t.Parallel()
+
+		c := osvdev.DefaultClient()
+		c.BaseHostURL = server.URL
+
+		const total = 1250
+		binaryNames := make([]string, total)
+		wantResults := make([]*api.SourcePackages, total)
+		for i := range total {
+			name := fmt.Sprintf("pkg-%d", i)
+			binaryNames[i] = name
+			wantResults[i] = &api.SourcePackages{
+				SourceNames: []string{"src-" + name},
+			}
+		}
+
+		got, err := c.ExperimentalQueryUbuntuPackageMapping(context.Background(), &api.UbuntuPackageMappingParameters{
+			Ecosystem:   "Ubuntu:22.04",
+			BinaryNames: binaryNames,
+		})
+		if err != nil {
+			t.Fatalf("ExperimentalQueryUbuntuPackageMapping chunked failed: %v", err)
+		}
+
+		want := &api.UbuntuPackageMappingResponse{
+			Results: wantResults,
+		}
+		if diff := cmp.Diff(want, got, protocmp.Transform()); diff != "" {
+			t.Errorf("ExperimentalQueryUbuntuPackageMapping chunked mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("invalid request error propagation", func(t *testing.T) {
+		t.Parallel()
+
+		c := osvdev.DefaultClient()
+		c.BaseHostURL = server.URL
+
+		_, err := c.ExperimentalQueryUbuntuPackageMapping(context.Background(), &api.UbuntuPackageMappingParameters{
+			BinaryNames: []string{"libcurl4"},
+		})
+		wantErr := testhelper.ErrContainsStr{
+			Str: `client error: status="400 Bad Request" body={"code":3,"message":"ecosystem is required"}`,
+		}
+		if diff := cmp.Diff(wantErr, err, cmpopts.EquateErrors()); diff != "" {
+			t.Errorf("Unexpected error (-want +got):\n%s", diff)
+		}
+	})
 }

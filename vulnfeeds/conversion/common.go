@@ -749,6 +749,21 @@ func IsGitCommitSHA(s string) bool {
 	return true
 }
 
+// isHexCommitPrefix checks whether a string is a 7-to-64 character hexadecimal Git commit hash/prefix.
+func isHexCommitPrefix(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) < 7 || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+
+	return true
+}
+
 // IsDirectGitRange determines if a range is already composed of Git commit hashes rather than tag/version names.
 func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 	if vr.Range == nil {
@@ -759,25 +774,30 @@ func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 		return false
 	}
 
+	checkSHA := IsGitCommitSHA
+	if vr.Range.GetType() == osvschema.Range_GIT {
+		checkSHA = isHexCommitPrefix
+	}
+
 	hasCommit := false
 	for _, e := range events {
 		intro := e.GetIntroduced()
 		if intro != "" && intro != "0" {
-			if !IsGitCommitSHA(intro) {
+			if !checkSHA(intro) {
 				return false
 			}
 			hasCommit = true
 		}
 		fixed := e.GetFixed()
 		if fixed != "" {
-			if !IsGitCommitSHA(fixed) {
+			if !checkSHA(fixed) {
 				return false
 			}
 			hasCommit = true
 		}
 		lastAffected := e.GetLastAffected()
 		if lastAffected != "" {
-			if !IsGitCommitSHA(lastAffected) {
+			if !checkSHA(lastAffected) {
 				return false
 			}
 			hasCommit = true

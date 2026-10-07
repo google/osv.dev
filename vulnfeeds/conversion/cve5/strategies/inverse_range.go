@@ -57,7 +57,7 @@ func FindInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 			continue
 		}
 
-		if versionValue == "0" || ToVersionRangeType(vers.VersionType) != VersionRangeTypeSemver {
+		if versionValue == "0" || (ToVersionRangeType(vers.VersionType) != VersionRangeTypeSemver && (cveAff.DefaultStatus != "affected" || vers.LessThan != "*")) {
 			continue
 		}
 		fixed = append(fixed, versionValue)
@@ -76,8 +76,8 @@ func FindInverseAffectedRanges(cveAff models.Affected, metrics *models.Conversio
 	slices.SortFunc(introduced, CompareSemverLike)
 	slices.SortFunc(fixed, CompareSemverLike)
 
-	// If the first fixed version is earlier than the first introduced, assume introduction from "0".
-	if len(fixed) > 0 && len(introduced) > 0 && CompareSemverLike(fixed[0], introduced[0]) < 0 {
+	// If the first fixed version is earlier than the first introduced (or no introduced was listed while defaultStatus is affected), assume introduction from "0".
+	if len(fixed) > 0 && ((len(introduced) == 0 && cveAff.DefaultStatus == "affected") || (len(introduced) > 0 && CompareSemverLike(fixed[0], introduced[0]) < 0)) {
 		introduced = append([]string{"0"}, introduced...)
 	}
 

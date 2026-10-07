@@ -129,13 +129,15 @@ func findModifiedUbuntuIDs(ctx context.Context, gcsStorage clients.CloudStorage,
 	return ids, nil
 }
 
-// ExtractBinaryMappings extracts a map of binary_name -> slice of source_names from a Vulnerability record.
-func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
-	mappings := make(map[string][]string)
+// ExtractBinaryMappings extracts a map of (ecosystem, binary_name) -> slice of source_names from a Vulnerability record.
+func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[models.UbuntuPackageKey][]string {
+	mappings := make(map[models.UbuntuPackageKey][]string)
 	for _, affected := range vuln.GetAffected() {
-		if !strings.HasPrefix(affected.GetPackage().GetEcosystem(), "Ubuntu") {
+		rawEco := affected.GetPackage().GetEcosystem()
+		if !models.IsValidUbuntuReleaseEcosystem(rawEco) {
 			continue
 		}
+		eco := models.NormalizeUbuntuEcosystem(rawEco)
 		sourceName := affected.GetPackage().GetName()
 		if sourceName == "" {
 			continue
@@ -144,10 +146,17 @@ func ExtractBinaryMappings(vuln *osvschema.Vulnerability) map[string][]string {
 		binaries := affected.GetEcosystemSpecific().GetFields()["binaries"].GetListValue().GetValues()
 		for _, item := range binaries {
 			binName := strings.TrimSpace(item.GetStructValue().GetFields()["binary_name"].GetStringValue())
+			if binName == "" {
+				continue
+			}
+			key := models.UbuntuPackageKey{
+				Ecosystem:  eco,
+				BinaryName: binName,
+			}
 			// A binary typically maps to only 1-2 unique source packages, so slices.Contains
-			// avoids duplicate appends across releases without per-binary map overhead.
-			if binName != "" && !slices.Contains(mappings[binName], sourceName) {
-				mappings[binName] = append(mappings[binName], sourceName)
+			// avoids duplicate appends without per-binary map overhead.
+			if !slices.Contains(mappings[key], sourceName) {
+				mappings[key] = append(mappings[key], sourceName)
 			}
 		}
 	}
@@ -260,7 +269,7 @@ func run(ctx context.Context, env *appEnv) error {
 	if len(vulnIDs) > 0 {
 		threshold := cmp.Or(env.zipThreshold, zipDownloadThreshold)
 		workers := max(cmp.Or(env.numWorkers, defaultNumWorkers), 1)
-		var allMappings map[string][]string
+		var allMappings map[models.UbuntuPackageKey][]string
 		if len(vulnIDs) > threshold {
 			logger.InfoContext(ctx, "downloading Ubuntu/all.zip for bulk processing", slog.Int("count", len(vulnIDs)), slog.Int("threshold", threshold))
 			allMappings, err = extractMappingsFromAllZip(ctx, env.gcsStorage, vulnIDs, workers)
@@ -272,7 +281,7 @@ func run(ctx context.Context, env *appEnv) error {
 			return err
 		}
 
-		logger.InfoContext(ctx, "extracted binary package mappings", slog.Int("unique_binaries", len(allMappings)))
+		logger.InfoContext(ctx, "extracted binary package mappings", slog.Int("unique_keys", len(allMappings)))
 		if len(allMappings) > 0 {
 			if err := saveMappings(ctx, env.ubuntuStore, allMappings); err != nil {
 				return fmt.Errorf("failed saving mappings: %w", err)
@@ -289,7 +298,7 @@ func run(ctx context.Context, env *appEnv) error {
 	return nil
 }
 
-func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[string][]string, error) {
+func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[models.UbuntuPackageKey][]string, error) {
 	zipBytes, err := gcsStorage.ReadObject(ctx, ubuntuAllZipPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed reading %s: %w", ubuntuAllZipPath, err)
@@ -306,7 +315,7 @@ func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStor
 	}
 
 	var mu sync.Mutex
-	allMappings := make(map[string][]string)
+	allMappings := make(map[models.UbuntuPackageKey][]string)
 
 	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(numWorkers)
@@ -345,9 +354,9 @@ func extractMappingsFromAllZip(ctx context.Context, gcsStorage clients.CloudStor
 	return allMappings, nil
 }
 
-func extractMappingsFromIndividualFiles(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[string][]string, error) {
+func extractMappingsFromIndividualFiles(ctx context.Context, gcsStorage clients.CloudStorage, vulnIDs []string, numWorkers int) (map[models.UbuntuPackageKey][]string, error) {
 	var mu sync.Mutex
-	allMappings := make(map[string][]string)
+	allMappings := make(map[models.UbuntuPackageKey][]string)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(numWorkers)
@@ -377,7 +386,7 @@ func extractMappingsFromIndividualFiles(ctx context.Context, gcsStorage clients.
 	return allMappings, nil
 }
 
-func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings map[string][]string) error {
+func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings map[models.UbuntuPackageKey][]string) error {
 	var vuln osvschema.Vulnerability
 	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(data, &vuln); err != nil {
 		return fmt.Errorf("failed unmarshaling %s: %w", source, err)
@@ -390,12 +399,12 @@ func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings m
 
 	mu.Lock()
 	defer mu.Unlock()
-	for bin, sources := range recordMappings {
+	for key, sources := range recordMappings {
 		for _, src := range sources {
 			// A binary only has 1-2 source packages, so slices.Contains keeps the slice bounded
 			// across thousands of records without allocating nested maps.
-			if !slices.Contains(allMappings[bin], src) {
-				allMappings[bin] = append(allMappings[bin], src)
+			if !slices.Contains(allMappings[key], src) {
+				allMappings[key] = append(allMappings[key], src)
 			}
 		}
 	}
@@ -403,26 +412,29 @@ func unmarshalAndMerge(data []byte, source string, mu *sync.Mutex, allMappings m
 	return nil
 }
 
-func saveMappings(ctx context.Context, store models.UbuntuPackageMappingStore, newMappings map[string][]string) error {
-	binaryNames := slices.Sorted(maps.Keys(newMappings))
+func saveMappings(ctx context.Context, store models.UbuntuPackageMappingStore, newMappings map[models.UbuntuPackageKey][]string) error {
+	keys := slices.SortedFunc(maps.Keys(newMappings), func(a, b models.UbuntuPackageKey) int {
+		return cmp.Or(cmp.Compare(a.Ecosystem, b.Ecosystem), cmp.Compare(a.BinaryName, b.BinaryName))
+	})
 
-	// GetMulti returns a 1:1 slice matching binaryNames.
-	existing, err := store.GetMulti(ctx, binaryNames)
+	// GetMulti returns a 1:1 slice matching keys.
+	existing, err := store.GetMulti(ctx, keys)
 	if err != nil {
 		return fmt.Errorf("failed getting existing mappings: %w", err)
 	}
 
-	toPut := make([]*models.UbuntuPackageMapping, len(binaryNames))
-	for i, bin := range binaryNames {
+	toPut := make([]*models.UbuntuPackageMapping, len(keys))
+	for i, key := range keys {
 		var existingSources []string
 		if i < len(existing) && existing[i] != nil {
 			existingSources = existing[i].SourceNames
 		}
-		merged := slices.Concat(existingSources, newMappings[bin])
+		merged := slices.Concat(existingSources, newMappings[key])
 		slices.Sort(merged)
 
 		toPut[i] = &models.UbuntuPackageMapping{
-			BinaryName:  bin,
+			Ecosystem:   key.Ecosystem,
+			BinaryName:  key.BinaryName,
 			SourceNames: slices.Compact(merged),
 		}
 	}

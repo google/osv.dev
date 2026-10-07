@@ -730,6 +730,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "ecosystem": {
+          "type": "string"
         }
       },
       "description": "Parameters for QueryUbuntuPackageMapping."

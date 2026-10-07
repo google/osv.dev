@@ -31,7 +31,10 @@ func TestJSONStore_InMemory(t *testing.T) {
 	}
 
 	// Initial GetMulti should return empty SourceNames
-	initial, err := store.GetMulti(ctx, []string{"pkg-a", "pkg-b"})
+	initial, err := store.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "pkg-a"},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "pkg-b"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti failed: %v", err)
 	}
@@ -44,23 +47,27 @@ func TestJSONStore_InMemory(t *testing.T) {
 
 	// Put mappings
 	err = store.PutMulti(ctx, []*models.UbuntuPackageMapping{
-		{BinaryName: "pkg-a", SourceNames: []string{"src-1"}},
-		{BinaryName: "pkg-b", SourceNames: []string{"src-2", "src-1"}},
+		{Ecosystem: "Ubuntu:24.04:LTS", BinaryName: "pkg-a", SourceNames: []string{"src-1"}},
+		{Ecosystem: "Ubuntu:Pro:22.04:LTS", BinaryName: "pkg-b", SourceNames: []string{"src-2", "src-1"}},
 	})
 	if err != nil {
 		t.Fatalf("PutMulti failed: %v", err)
 	}
 
-	// Verify GetMulti returns sorted, deduplicated sources
-	queried, err := store.GetMulti(ctx, []string{"pkg-b", "pkg-a", "unknown"})
+	// Verify GetMulti returns sorted, deduplicated sources with normalized ecosystems
+	queried, err := store.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "pkg-b"},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "pkg-a"},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "unknown"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti failed: %v", err)
 	}
 
 	expected := []*models.UbuntuPackageMapping{
-		{BinaryName: "pkg-b", SourceNames: []string{"src-1", "src-2"}},
-		{BinaryName: "pkg-a", SourceNames: []string{"src-1"}},
-		{BinaryName: "unknown", SourceNames: []string{}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "pkg-b", SourceNames: []string{"src-1", "src-2"}},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "pkg-a", SourceNames: []string{"src-1"}},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "unknown", SourceNames: []string{}},
 	}
 	if diff := cmp.Diff(expected, queried); diff != "" {
 		t.Errorf("GetMulti mismatch (-want +got):\n%s", diff)
@@ -78,7 +85,7 @@ func TestJSONStore_FilePersistence(t *testing.T) {
 	}
 
 	if err := store1.PutMulti(ctx, []*models.UbuntuPackageMapping{
-		{BinaryName: "libcurl4", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:24.04:LTS", BinaryName: "libcurl4", SourceNames: []string{"curl"}},
 	}); err != nil {
 		t.Fatalf("PutMulti failed: %v", err)
 	}
@@ -89,12 +96,14 @@ func TestJSONStore_FilePersistence(t *testing.T) {
 		t.Fatalf("New on existing file failed: %v", err)
 	}
 
-	queried, err := store2.GetMulti(ctx, []string{"libcurl4"})
+	queried, err := store2.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "libcurl4"},
+	})
 	if err != nil {
 		t.Fatalf("store2 GetMulti failed: %v", err)
 	}
 	expected := []*models.UbuntuPackageMapping{
-		{BinaryName: "libcurl4", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "libcurl4", SourceNames: []string{"curl"}},
 	}
 	if diff := cmp.Diff(expected, queried); diff != "" {
 		t.Errorf("store2 mismatch (-want +got):\n%s", diff)

@@ -709,3 +709,19 @@
   editable: False
   repo_username: 'git'
   strict_validation: True
+
+- name: 'lightwell'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: ['^(?!RHLW-).*$']
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/project-lightwell/lightwell-osv.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['RHLW-']
+  accepted_ecosystems: ['Red Hat Lightwell']
+  ignore_git: False
+  human_link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/advisories/{{ BUG_ID }}.json'
+  link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/'
+  editable: False
+  strict_validation: False

@@ -71,3 +71,13 @@ func Curl() []VersionStrategy {
 		&StandaloneSingleVersionStrategy{},
 	}
 }
+
+// Package returns the strategy pipeline for extracting ECOSYSTEM ranges from affected blocks
+// that identify a package through a purl. Git ranges are not handled here.
+// Example: test_data/cvelistV5/cves/2025/68xxx/CVE-2025-68161.json
+func Package() []VersionStrategy {
+	return []VersionStrategy{
+		&StandardRangeStrategy{},
+		&StandaloneSingleVersionStrategy{},
+	}
+}

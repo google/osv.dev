@@ -16,6 +16,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
+	github.com/package-url/packageurl-go v0.1.7
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/sethvargo/go-retry v0.4.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.46.0

@@ -478,6 +478,21 @@ func TestGetVersionExtractor(t *testing.T) {
 			},
 			expectedType: reflect.TypeFor[*CurlVersionExtractor](),
 		},
+		{
+			name:         "Apache CVE",
+			cve:          models.CVE5{Metadata: models.CVE5Metadata{AssignerShortName: "apache"}},
+			expectedType: reflect.TypeFor[*PackageVersionExtractor](),
+		},
+		{
+			name:         "Bouncy Castle CVE",
+			cve:          models.CVE5{Metadata: models.CVE5Metadata{AssignerShortName: "bcorg"}},
+			expectedType: reflect.TypeFor[*PackageVersionExtractor](),
+		},
+		{
+			name:         "OpenJS CVE",
+			cve:          models.CVE5{Metadata: models.CVE5Metadata{AssignerShortName: "OpenJS"}},
+			expectedType: reflect.TypeFor[*PackageVersionExtractor](),
+		},
 	}
 
 	for _, tc := range testCases {

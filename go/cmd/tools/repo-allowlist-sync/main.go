@@ -115,6 +115,10 @@ func normalizeRepo(repoURL string) (string, error) {
 func parseYAMLEntries(data []byte, collectAllErrors bool) ([]models.RepoAllowList, error) {
 	var rawEntries []rawYAMLEntry
 	if err := yaml.Load(data, &rawEntries, yaml.WithKnownFields()); err != nil {
+		if strings.Contains(err.Error(), "no documents in stream") {
+			return nil, nil
+		}
+
 		return nil, fmt.Errorf("failed parsing YAML: %w", err)
 	}
 

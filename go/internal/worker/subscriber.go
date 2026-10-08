@@ -151,6 +151,7 @@ func logTaskLatency(ctx context.Context, task Task) {
 	if task.SourceTime != nil {
 		srcLatency := now.Sub(*task.SourceTime)
 		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
+		metrics.RecordPublishedToAvailableLag(task.SourceID, srcLatency)
 	}
 	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)
 }

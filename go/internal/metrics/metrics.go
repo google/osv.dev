@@ -2,6 +2,8 @@
 package metrics
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -14,6 +16,16 @@ var (
 			Help: "Total number of tasks processed by the worker.",
 		},
 		[]string{"status"},
+	)
+
+	// WorkerPublishedToAvailableSeconds tracks the lag between publication and availability.
+	WorkerPublishedToAvailableSeconds = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "osv_worker_published_to_available_seconds",
+			Help:    "Lag between publication and availability in seconds.",
+			Buckets: prometheus.ExponentialBuckets(1, 2, 15),
+		},
+		[]string{"source"},
 	)
 )
 
@@ -33,4 +45,9 @@ func RecordTaskProcessed(status TaskStatus) {
 		status = TaskStatusUnknown
 	}
 	WorkerTasksProcessedTotal.WithLabelValues(string(status)).Inc()
+}
+
+// RecordPublishedToAvailableLag records the lag between publication and availability.
+func RecordPublishedToAvailableLag(source string, lag time.Duration) {
+	WorkerPublishedToAvailableSeconds.WithLabelValues(source).Observe(lag.Seconds())
 }

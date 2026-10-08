@@ -280,3 +280,81 @@ func TestPackageVersionExtractor_Outcome(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractVersions_PackageCNAs(t *testing.T) {
+	tests := []struct {
+		cveID string
+		cna   string
+		want  []*osvschema.Affected
+	}{
+		{
+			cveID: "CVE-2025-68161",
+			cna:   "apache",
+			want: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "Maven",
+					Name:      "org.apache.logging.log4j:log4j-core",
+					Purl:      "pkg:maven/org.apache.logging.log4j/log4j-core",
+				},
+				Ranges: []*osvschema.Range{
+					ecosystemRange(introduced("2.0-beta9"), fixed("2.25.3")),
+					ecosystemRange(introduced("3.0.0-alpha1"), lastAffected("3.0.0-beta3")),
+				},
+			}},
+		},
+		{
+			// Two artifacts in one record, each with its own range.
+			cveID: "CVE-2026-97873",
+			cna:   "bcorg",
+			want: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "Maven",
+						Name:      "org.bouncycastle:bcprov-jdk18on",
+						Purl:      "pkg:maven/org.bouncycastle/bcprov-jdk18on",
+					},
+					Ranges: []*osvschema.Range{ecosystemRange(introduced("0"), fixed("1.86"))},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "Maven",
+						Name:      "org.bouncycastle:bcprov-lts8on",
+						Purl:      "pkg:maven/org.bouncycastle/bcprov-lts8on",
+					},
+					Ranges: []*osvschema.Range{ecosystemRange(introduced("2.73.0"), fixed("2.73.13"))},
+				},
+			},
+		},
+		{
+			// A scoped npm package, with a literal "@" in the purl.
+			cveID: "CVE-2026-15631",
+			cna:   "OpenJS",
+			want: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "npm",
+					Name:      "@fastify/http-proxy",
+					Purl:      "pkg:npm/%40fastify/http-proxy",
+				},
+				Ranges: []*osvschema.Range{ecosystemRange(introduced("9.4.0"), fixed("11.6.0"))},
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.cveID, func(t *testing.T) {
+			v := &vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{Id: tt.cveID}}
+			// No repos, so only the package ranges are produced and no Git access is needed.
+			GetVersionExtractor(tt.cna).ExtractVersions(loadTestData(t, tt.cveID), v, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, http.DefaultClient)
+
+			var got []*osvschema.Affected
+			for _, a := range v.Affected {
+				if a.GetPackage() != nil {
+					got = append(got, a)
+				}
+			}
+			if diff := cmp.Diff(tt.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("package affected mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -4,6 +4,7 @@ package conversion
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -293,16 +294,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				}
 				successfulRepos = append(successfulRepos, repo)
 				if len(vr.Range.GetEvents()) > 0 {
-					dbSpecificMap := map[string]any{
-						"extracted_events": vr.Range.GetEvents(),
-					}
-					if vr.Metadata.CPE != "" {
-						dbSpecificMap["cpe"] = vr.Metadata.CPE
-					}
-					if string(vr.Metadata.Source) != "" {
-						dbSpecificMap["source"] = string(vr.Metadata.Source)
-					}
-					databaseSpecific, err := utility.NewStructpbFromMap(dbSpecificMap)
+					databaseSpecific, err := buildRangeDatabaseSpecific(vr)
 					if err != nil {
 						metrics.AddNotef("failed to make database specific: %v", err)
 					} else {
@@ -322,6 +314,29 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 	}
 
 	return newVersionRanges, unresolvedRanges, successfulRepos
+}
+
+func buildRangeDatabaseSpecific(vr models.RangeWithMetadata) (*structpb.Struct, error) {
+	extractedEventGroup := map[string]any{
+		"range": vr.Range.GetEvents(),
+	}
+	if vr.Metadata.CPE != "" {
+		extractedEventGroup["cpe"] = vr.Metadata.CPE
+	}
+	if string(vr.Metadata.Source) != "" {
+		extractedEventGroup["source"] = string(vr.Metadata.Source)
+	}
+	if vr.Metadata.Strategy != "" {
+		extractedEventGroup["strategy"] = vr.Metadata.Strategy
+	}
+	if vr.Metadata.OriginalTag != "" {
+		extractedEventGroup["original_tag"] = vr.Metadata.OriginalTag
+	}
+	dbSpecificMap := map[string]any{
+		"extracted_events": []any{extractedEventGroup},
+	}
+
+	return utility.NewStructpbFromMap(dbSpecificMap)
 }
 
 // BuildVersionRange is a helper function that adds 'introduced', 'fixed', or 'last_affected'
@@ -555,7 +570,9 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 
 	type key struct {
 		Source        string
+		Strategy      string
 		VendorProduct string
+		OriginalTag   string
 	}
 
 	rangesByKey := make(map[key][]models.RangeWithMetadata)
@@ -570,7 +587,12 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 				vendorProduct = ur.Metadata.CPE
 			}
 		}
-		k := key{Source: string(ur.Metadata.Source), VendorProduct: vendorProduct}
+		k := key{
+			Source:        string(ur.Metadata.Source),
+			Strategy:      ur.Metadata.Strategy,
+			VendorProduct: vendorProduct,
+			OriginalTag:   ur.Metadata.OriginalTag,
+		}
 		if _, ok := rangesByKey[k]; !ok {
 			keys = append(keys, k)
 		}
@@ -578,11 +600,12 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 	}
 
 	slices.SortFunc(keys, func(a, b key) int {
-		if a.Source != b.Source {
-			return strings.Compare(a.Source, b.Source)
-		}
-
-		return strings.Compare(a.VendorProduct, b.VendorProduct)
+		return cmp.Or(
+			cmp.Compare(a.Source, b.Source),
+			cmp.Compare(a.Strategy, b.Strategy),
+			cmp.Compare(a.VendorProduct, b.VendorProduct),
+			cmp.Compare(a.OriginalTag, b.OriginalTag),
+		)
 	})
 
 	listElements := make([]any, 0, len(keys))
@@ -623,14 +646,24 @@ func CreateUnresolvedRanges(unresolvedRanges []models.RangeWithMetadata) *struct
 		if k.VendorProduct != "" {
 			unresolvedRangesMap["vendor_product"] = k.VendorProduct
 		}
-		if k.Source != "" {
-			unresolvedRangesMap["source"] = k.Source
-		}
 		if len(cpes) > 0 {
 			unresolvedRangesMap["cpes"] = cpes
 		}
 
-		unresolvedRangesMap["extracted_events"] = events
+		extractedEventGroup := map[string]any{
+			"range": events,
+		}
+		if k.Source != "" {
+			extractedEventGroup["source"] = k.Source
+		}
+		if k.Strategy != "" {
+			extractedEventGroup["strategy"] = k.Strategy
+		}
+		if k.OriginalTag != "" {
+			extractedEventGroup["original_tag"] = k.OriginalTag
+		}
+
+		unresolvedRangesMap["extracted_events"] = []any{extractedEventGroup}
 		listElements = append(listElements, unresolvedRangesMap)
 	}
 
@@ -807,6 +840,13 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 			if repo != "" {
 				vr.Range.Repo = repo
 				vr.Range.Type = osvschema.Range_GIT
+				if len(vr.Range.GetEvents()) > 0 && vr.Range.GetDatabaseSpecific() == nil {
+					if databaseSpecific, err := buildRangeDatabaseSpecific(vr); err != nil {
+						metrics.AddNotef("failed to make database specific: %v", err)
+					} else {
+						vr.Range.DatabaseSpecific = databaseSpecific
+					}
+				}
 				resolvedRanges = append(resolvedRanges, vr)
 				successfulRepos = append(successfulRepos, repo)
 			} else {

@@ -760,29 +760,19 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.17.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.17.0"
                 }
               ]
             },
@@ -833,29 +823,19 @@
                   "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.17.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -906,29 +886,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -979,29 +949,19 @@
                   "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.87.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1052,29 +1012,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1125,29 +1075,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1249,40 +1189,25 @@
                   "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1333,40 +1258,25 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1417,40 +1327,25 @@
                   "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1501,40 +1396,25 @@
                   "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1585,40 +1465,25 @@
                   "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1669,29 +1534,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1742,40 +1597,25 @@
                   "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1826,29 +1666,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1899,29 +1729,19 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1972,29 +1792,19 @@
                   "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.20.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2045,29 +1855,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2118,29 +1918,19 @@
                   "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.40.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2191,29 +1981,19 @@
                   "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2268,29 +2048,19 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2341,29 +2111,19 @@
                   "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2414,29 +2174,19 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2487,40 +2237,25 @@
                   "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2571,40 +2306,25 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2655,40 +2375,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2739,40 +2444,25 @@
                   "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2823,40 +2513,25 @@
                   "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2907,40 +2582,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2991,40 +2651,25 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3075,40 +2720,25 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3159,40 +2789,25 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },

@@ -70,3 +70,30 @@ go run . [flags]
 | `--dry-run`  | `true`                | When `true`, previews sync operations without modifying Datastore |
 | `--validate` | `false`               | Validates YAML file and prints summary report without Datastore   |
 | `--verbose`  | `true`                | Enables detailed logging of create/update/delete operations       |
+
+### Examples
+
+```bash
+# Validate a YAML configuration file locally without touching Datastore
+go run . --file=repo_allowlist.yaml --validate
+
+# Preview changes (dry-run) against staging Datastore
+go run . --project=oss-vdb-test --file=repo_allowlist_test.yaml --dry-run=true
+
+# Apply changes (live sync) to production Datastore
+go run . --project=oss-vdb --file=repo_allowlist.yaml --dry-run=false
+```
+
+## Configuration Files
+
+| File | Target Environment | GCP Project |
+| :--- | :--- | :--- |
+| [`repo_allowlist.yaml`](repo_allowlist.yaml) | Production | `oss-vdb` |
+| [`repo_allowlist_test.yaml`](repo_allowlist_test.yaml) | Staging | `oss-vdb-test` |
+
+## Automation & CI/CD
+
+Synchronization of `repo_allowlist.yaml` and `repo_allowlist_test.yaml` with Cloud Datastore is automated via Cloud Build:
+
+- **Validation**: Run [`run_validate.sh`](run_validate.sh) to validate both `repo_allowlist.yaml` and `repo_allowlist_test.yaml` without touching Datastore.
+- **Post-Merge Sync**: Pushing changes to `repo_allowlist.yaml` or `repo_allowlist_test.yaml` on `master` triggers [`repo_allowlist_build.yaml`](repo_allowlist_build.yaml), which runs [`run_update.sh`](run_update.sh) to sync `repo_allowlist.yaml` (to `oss-vdb`) and `repo_allowlist_test.yaml` (to `oss-vdb-test`).

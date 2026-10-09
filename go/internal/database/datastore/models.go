@@ -48,6 +48,9 @@ type AffectedVersions struct {
 	Events    []AffectedEvent `datastore:"events"`
 	CoarseMin string          `datastore:"coarse_min"`
 	CoarseMax string          `datastore:"coarse_max"`
+	// MatchOnly marks a copy of a package's rows under its match name, see
+	// ecosystem.MatchPackageName. Only queries that fold the name use it.
+	MatchOnly bool `datastore:"match_only,noindex,omitempty"`
 }
 
 func (av AffectedVersions) sortKey() string {
@@ -69,6 +72,9 @@ func (av AffectedVersions) sortKey() string {
 		b.WriteString(":")
 		b.WriteString(e.Value)
 		b.WriteString(",")
+	}
+	if av.MatchOnly {
+		b.WriteString("\x1fmatch_only")
 	}
 
 	return b.String()

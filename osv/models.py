@@ -1021,10 +1021,14 @@ class AffectedVersions(ndb.Model):
   coarse_min: str = ndb.StringProperty()
   coarse_max: str = ndb.StringProperty()
 
+  # Whether this is a copy of the package's entries under its match name,
+  # written by the Go worker. Only queries that fold the name use it.
+  match_only: bool = ndb.BooleanProperty(default=False, indexed=False)
+
   def sort_key(self):
     """Key function for comparison and deduplication."""
     return (self.vuln_id, self.ecosystem, self.name, tuple(self.versions),
-            tuple((e.type, e.value) for e in self.events))
+            tuple((e.type, e.value) for e in self.events), self.match_only)
 
 
 # --- Website search / list entity ---

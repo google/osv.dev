@@ -62,6 +62,8 @@ Invalid (400 Bad Request):
 
 Case Sensitivity: API requests are case-sensitive. Please ensure that you use the correct case for parameter names and values. For example, use 'PyPI' instead of 'pypi'.
 
+Package names are matched as written, except when `ecosystem` is given for an ecosystem whose registry treats other spellings as the same package: PyPI names are normalized as described in PEP 503, NuGet names are matched case-insensitively, and crates.io names are matched case-insensitively with '-' and '_' treated as equivalent.
+
 ### Queries for Git records
 You can also query for git tags via this API. To do so, set the `ecosystem` to `GIT`, enter the full URL of the repository to the `name` field, and the tag into the `version` field. See below for an example.
 

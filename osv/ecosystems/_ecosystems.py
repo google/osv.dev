@@ -23,6 +23,7 @@ from .debian import Debian
 from .echo import Echo
 from .haskell import Hackage, GHC
 from .hex import Hex
+from .homebrew import Homebrew
 from .maven import Maven
 from .nuget import NuGet
 from .opam import Opam
@@ -57,6 +58,7 @@ _ecosystems = {
     'Go': SemverEcosystem,
     'Hackage': Hackage,
     'Hex': Hex,
+    'Homebrew': Homebrew,
     'Julia': SemverEcosystem,
     'Mageia': RPM,
     'Maven': Maven,
@@ -118,6 +120,7 @@ package_urls = {
     'Go': 'https://',
     'Hackage': 'https://hackage.haskell.org/package/',
     'Hex': 'https://hex.pm/packages/',
+    'Homebrew': 'https://formulae.brew.sh/formula/',
     'Mageia': 'https://madb.mageia.org/show?rpm=',
     'npm': 'https://www.npmjs.com/package/',
     'NuGet': 'https://www.nuget.org/packages/',

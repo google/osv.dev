@@ -981,6 +981,7 @@ func (x *VersionRepositoryInformation) GetCommit() string {
 type UbuntuPackageMappingParameters struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BinaryNames   []string               `protobuf:"bytes,1,rep,name=binary_names,proto3" json:"binary_names,omitempty"`
+	Ecosystem     string                 `protobuf:"bytes,2,opt,name=ecosystem,proto3" json:"ecosystem,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1020,6 +1021,13 @@ func (x *UbuntuPackageMappingParameters) GetBinaryNames() []string {
 		return x.BinaryNames
 	}
 	return nil
+}
+
+func (x *UbuntuPackageMappingParameters) GetEcosystem() string {
+	if x != nil {
+		return x.Ecosystem
+	}
+	return ""
 }
 
 // Source package names corresponding to a queried binary package name.
@@ -1171,9 +1179,10 @@ const file_osv_service_v1_proto_rawDesc = "" +
 	"\x06commit\x18\x06 \x01(\tR\x06commit\"$\n" +
 	"\bRepoType\x12\x0f\n" +
 	"\vUNSPECIFIED\x10\x00\x12\a\n" +
-	"\x03GIT\x10\x01\"D\n" +
+	"\x03GIT\x10\x01\"b\n" +
 	"\x1eUbuntuPackageMappingParameters\x12\"\n" +
-	"\fbinary_names\x18\x01 \x03(\tR\fbinary_names\"4\n" +
+	"\fbinary_names\x18\x01 \x03(\tR\fbinary_names\x12\x1c\n" +
+	"\tecosystem\x18\x02 \x01(\tR\tecosystem\"4\n" +
 	"\x0eSourcePackages\x12\"\n" +
 	"\fsource_names\x18\x01 \x03(\tR\fsource_names\"P\n" +
 	"\x1cUbuntuPackageMappingResponse\x120\n" +

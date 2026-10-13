@@ -60,7 +60,7 @@ func TestExtractBinaryMappings(t *testing.T) {
 			{
 				Package: &osvschema.Package{
 					Name:      "glib2.0",
-					Ecosystem: "Ubuntu:24.04:LTS",
+					Ecosystem: "Ubuntu:Pro:24.04:LTS",
 				},
 				EcosystemSpecific: ecoStruct,
 			},
@@ -69,6 +69,13 @@ func TestExtractBinaryMappings(t *testing.T) {
 					Name:      "empty-pkg",
 					Ecosystem: "Ubuntu:22.04:LTS",
 				},
+			},
+			{
+				Package: &osvschema.Package{
+					Name:      "bare-ubuntu-pkg",
+					Ecosystem: "Ubuntu",
+				},
+				EcosystemSpecific: ecoStruct,
 			},
 			{
 				Package: &osvschema.Package{
@@ -82,9 +89,11 @@ func TestExtractBinaryMappings(t *testing.T) {
 
 	got := ExtractBinaryMappings(vuln)
 
-	expected := map[string][]string{
-		"libglib2.0-0":   {"glib2.0"},
-		"libglib2.0-bin": {"glib2.0"},
+	expected := map[models.UbuntuPackageKey][]string{
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libglib2.0-0"}:   {"glib2.0"},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libglib2.0-bin"}: {"glib2.0"},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "libglib2.0-0"}:   {"glib2.0"},
+		{Ecosystem: "Ubuntu:24.04", BinaryName: "libglib2.0-bin"}: {"glib2.0"},
 	}
 
 	if diff := cmp.Diff(expected, got); diff != "" {
@@ -199,7 +208,7 @@ func TestRun_EndToEnd(t *testing.T) {
 		Id: "USN-2-1",
 		Affected: []*osvschema.Affected{
 			{
-				Package:           &osvschema.Package{Name: "curl-esm-src", Ecosystem: "Ubuntu:22.04:LTS"},
+				Package:           &osvschema.Package{Name: "curl-esm-src", Ecosystem: "Ubuntu:Pro:22.04:LTS"},
 				EcosystemSpecific: ecoStruct2,
 			},
 		},
@@ -238,13 +247,16 @@ func TestRun_EndToEnd(t *testing.T) {
 		t.Fatalf("initial run failed: %v", err)
 	}
 
-	got, err := ubuntuStore.GetMulti(ctx, []string{"curl", "libcurl4"})
+	got, err := ubuntuStore.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl"},
+		{Ecosystem: "Ubuntu:22.04:LTS", BinaryName: "libcurl4"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti failed: %v", err)
 	}
 	wantInitial := []*models.UbuntuPackageMapping{
-		{BinaryName: "curl", SourceNames: []string{"curl"}},
-		{BinaryName: "libcurl4", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libcurl4", SourceNames: []string{"curl"}},
 	}
 	if diff := cmp.Diff(wantInitial, got); diff != "" {
 		t.Errorf("initial mappings mismatch (-want +got):\n%s", diff)
@@ -262,14 +274,18 @@ func TestRun_EndToEnd(t *testing.T) {
 		t.Fatalf("incremental run failed: %v", err)
 	}
 
-	gotAfter, err := ubuntuStore.GetMulti(ctx, []string{"curl", "libcurl4", "curl-esm"})
+	gotAfter, err := ubuntuStore.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl"},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libcurl4"},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl-esm"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti after incremental run failed: %v", err)
 	}
 	wantAfter := []*models.UbuntuPackageMapping{
-		{BinaryName: "curl", SourceNames: []string{"curl"}},
-		{BinaryName: "libcurl4", SourceNames: []string{"curl", "curl-esm-src"}},
-		{BinaryName: "curl-esm", SourceNames: []string{"curl-esm-src"}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl", SourceNames: []string{"curl"}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libcurl4", SourceNames: []string{"curl", "curl-esm-src"}},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "curl-esm", SourceNames: []string{"curl-esm-src"}},
 	}
 	if diff := cmp.Diff(wantAfter, gotAfter); diff != "" {
 		t.Errorf("mappings mismatch after incremental merge (-want +got):\n%s", diff)

@@ -46,14 +46,17 @@ func TestUbuntuPackageMappingStore_GetAndPutMulti(t *testing.T) {
 	// Insert initial mappings
 	initialMappings := []*models.UbuntuPackageMapping{
 		{
+			Ecosystem:   "Ubuntu:22.04:LTS",
 			BinaryName:  "libglib2.0-0",
 			SourceNames: []string{"glib2.0"},
 		},
 		{
+			Ecosystem:   "Ubuntu:24.04",
 			BinaryName:  "libglib2.0-bin",
 			SourceNames: []string{"glib2.0"},
 		},
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "shared-bin",
 			SourceNames: []string{"src-a", "src-b"},
 		},
@@ -63,22 +66,29 @@ func TestUbuntuPackageMappingStore_GetAndPutMulti(t *testing.T) {
 		t.Fatalf("PutMulti failed: %v", err)
 	}
 
-	// Query existing and non-existing binaries
-	queried, err := store.GetMulti(ctx, []string{"libglib2.0-0", "nonexistent-pkg", "shared-bin"})
+	// Query existing and non-existing binaries across normalized variants
+	queried, err := store.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "libglib2.0-0"},
+		{Ecosystem: "Ubuntu:22.04", BinaryName: "nonexistent-pkg"},
+		{Ecosystem: "Ubuntu:Pro:22.04:LTS", BinaryName: "shared-bin"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti failed: %v", err)
 	}
 
 	expected := []*models.UbuntuPackageMapping{
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "libglib2.0-0",
 			SourceNames: []string{"glib2.0"},
 		},
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "nonexistent-pkg",
 			SourceNames: []string{},
 		},
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "shared-bin",
 			SourceNames: []string{"src-a", "src-b"},
 		},
@@ -91,6 +101,7 @@ func TestUbuntuPackageMappingStore_GetAndPutMulti(t *testing.T) {
 	// Test update
 	updateMappings := []*models.UbuntuPackageMapping{
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "libglib2.0-0",
 			SourceNames: []string{"glib2.0", "glib2.0-esm"},
 		},
@@ -99,12 +110,15 @@ func TestUbuntuPackageMappingStore_GetAndPutMulti(t *testing.T) {
 		t.Fatalf("PutMulti update failed: %v", err)
 	}
 
-	updated, err := store.GetMulti(ctx, []string{"libglib2.0-0"})
+	updated, err := store.GetMulti(ctx, []models.UbuntuPackageKey{
+		{Ecosystem: "Ubuntu:22.04:LTS", BinaryName: "libglib2.0-0"},
+	})
 	if err != nil {
 		t.Fatalf("GetMulti after update failed: %v", err)
 	}
 	expectedUpdate := []*models.UbuntuPackageMapping{
 		{
+			Ecosystem:   "Ubuntu:22.04",
 			BinaryName:  "libglib2.0-0",
 			SourceNames: []string{"glib2.0", "glib2.0-esm"},
 		},
@@ -122,11 +136,15 @@ func TestUbuntuPackageMappingStore_BatchChunking(t *testing.T) {
 	// Create 550 entries to verify chunking (> 500 maxDatastorePutMultiBatchSize)
 	total := 550
 	mappings := make([]*models.UbuntuPackageMapping, total)
-	names := make([]string, total)
+	keys := make([]models.UbuntuPackageKey, total)
 	for i := range total {
 		name := fmt.Sprintf("pkg-batch-%d", i)
-		names[i] = name
+		keys[i] = models.UbuntuPackageKey{
+			Ecosystem:  "Ubuntu:24.04",
+			BinaryName: name,
+		}
 		mappings[i] = &models.UbuntuPackageMapping{
+			Ecosystem:   "Ubuntu:24.04",
 			BinaryName:  name,
 			SourceNames: []string{fmt.Sprintf("src-%d", i)},
 		}
@@ -136,7 +154,7 @@ func TestUbuntuPackageMappingStore_BatchChunking(t *testing.T) {
 		t.Fatalf("PutMulti chunking failed: %v", err)
 	}
 
-	queried, err := store.GetMulti(ctx, names)
+	queried, err := store.GetMulti(ctx, keys)
 	if err != nil {
 		t.Fatalf("GetMulti chunking failed: %v", err)
 	}
@@ -145,8 +163,8 @@ func TestUbuntuPackageMappingStore_BatchChunking(t *testing.T) {
 		t.Fatalf("expected %d queried mappings, got %d", total, len(queried))
 	}
 	for i := range total {
-		if queried[i].BinaryName != names[i] {
-			t.Errorf("index %d: expected name %q, got %q", i, names[i], queried[i].BinaryName)
+		if queried[i].BinaryName != keys[i].BinaryName {
+			t.Errorf("index %d: expected name %q, got %q", i, keys[i].BinaryName, queried[i].BinaryName)
 		}
 		if len(queried[i].SourceNames) != 1 || queried[i].SourceNames[0] != fmt.Sprintf("src-%d", i) {
 			t.Errorf("index %d: unexpected source names: %v", i, queried[i].SourceNames)

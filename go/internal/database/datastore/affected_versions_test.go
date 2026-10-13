@@ -361,3 +361,63 @@ func TestComputeAffectedVersions_Chunking(t *testing.T) {
 		t.Errorf("computeAffectedVersions mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestComputeAffectedVersions_MatchName(t *testing.T) {
+	vuln := &osvschema.Vulnerability{
+		Id: "MATCH-NAME-1",
+		Affected: []*osvschema.Affected{
+			{
+				Package:  &osvschema.Package{Name: "Newtonsoft.Json", Ecosystem: "NuGet"},
+				Versions: []string{"12.0.1"},
+			},
+			{
+				Package: &osvschema.Package{Name: "serde_json", Ecosystem: "crates.io"},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_SEMVER,
+						Events: []*osvschema.Event{
+							{Introduced: "0"},
+							{Fixed: "1.0.1"},
+						},
+					},
+					{
+						Type: osvschema.Range_GIT,
+						Repo: "https://github.com/serde-rs/json",
+					},
+				},
+			},
+			{
+				Package:  &osvschema.Package{Name: "smallvec", Ecosystem: "crates.io"},
+				Versions: []string{"1.0.0"},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+
+	// Packages whose match name differs are also indexed under it, as
+	// MatchOnly rows. GIT rows are not copied.
+	gotRows := make([]string, 0, len(got))
+	for _, av := range got {
+		gotRows = append(gotRows, fmt.Sprintf("%s/%s/%t", av.Ecosystem, av.Name, av.MatchOnly))
+	}
+	wantRows := []string{
+		"NuGet/Newtonsoft.Json/false",
+		"NuGet/newtonsoft.json/true",
+		"crates.io/serde_json/false",
+		"crates.io/serde-json/true",
+		"GIT/github.com/serde-rs/json/false",
+		"crates.io/smallvec/false",
+	}
+	if diff := gocmp.Diff(wantRows, gotRows); diff != "" {
+		t.Fatalf("computeAffectedVersions rows mismatch (-want +got):\n%s", diff)
+	}
+
+	// The MatchOnly rows are otherwise copies of the package's rows.
+	ignore := cmpopts.IgnoreFields(AffectedVersions{}, "Name", "MatchOnly")
+	for _, i := range []int{0, 2} {
+		if diff := gocmp.Diff(got[i], got[i+1], ignore); diff != "" {
+			t.Errorf("match name row %d mismatch (-package +match):\n%s", i+1, diff)
+		}
+	}
+}

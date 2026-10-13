@@ -45,6 +45,14 @@ func (e nugetEcosystem) IsSemver() bool {
 	return false
 }
 
+// MatchPackageName lowercases a NuGet package ID, since NuGet treats IDs
+// case-insensitively. Only ASCII letters are folded, see asciiToLower.
+func (e nugetEcosystem) MatchPackageName(name string) string {
+	return asciiToLower(name)
+}
+
+var _ PackageNameMatcher = nugetEcosystem{}
+
 func nugetAPIURL(pkg string) string {
 	return fmt.Sprintf("https://api.nuget.org/v3/registration5-semver1/%s/index.json", url.PathEscape(strings.ToLower(pkg)))
 }

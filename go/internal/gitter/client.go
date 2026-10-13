@@ -36,4 +36,7 @@ type Client interface {
 
 	// GetFileContent retrieves the raw, uncompressed content of a single file path.
 	GetFileContent(ctx context.Context, req *pb.FileContentRequest) (*pb.FileContentResponse, error)
+
+	// GetCommitDiffs retrieves structured commit data and diff patches since a given last synced commit or timestamp.
+	GetCommitDiffs(ctx context.Context, req *pb.CommitDiffsRequest) (*pb.CommitDiffsResponse, error)
 }

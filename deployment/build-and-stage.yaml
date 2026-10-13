@@ -285,6 +285,23 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb-test/staging-api-test']
   waitFor: ['build-staging-api-test', 'cloud-build-queue']
 
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/ubuntu-binary-mapper:latest || exit 0']
+  id: 'pull-ubuntu-binary-mapper'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/ubuntu-binary-mapper:latest', '-t', 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA', '--target', 'ubuntubinarymapper', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/ubuntu-binary-mapper:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-ubuntu-binary-mapper'
+  waitFor: ['pull-ubuntu-binary-mapper', 'build-staging-api-test']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/ubuntu-binary-mapper']
+  waitFor: ['build-ubuntu-binary-mapper', 'cloud-build-queue']
+
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--build-context', 'bindings=../bindings', '-f', 'cmd/osv-linter-worker/Dockerfile', '.']
@@ -299,11 +316,19 @@ steps:
   waitFor: ['build-osv-linter', 'cloud-build-queue']
 
 # Build/push vanir-signatures images to gcr.io/oss-vdb.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/vanir-signatures:latest || exit 0']
+  id: 'pull-vanir-signatures'
+  waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/vanir-signatures:latest', '-t', 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA', '.']
-  dir: 'gcp/workers/vanir_signatures'
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/vanir-signatures:latest', '-t', 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA', '--target', 'vanir-signatures', '--build-context', 'bindings=../bindings', '--build-context', 'poetry=../docker/poetry', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/vanir-signatures:latest', '--pull', '.']
+  dir: 'go'
   id: 'build-vanir-signatures'
-  waitFor: ['build-worker']
+  waitFor: ['pull-vanir-signatures', 'build-staging-api-test']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-signatures']
   waitFor: ['build-vanir-signatures', 'cloud-build-queue']
@@ -425,8 +450,8 @@ steps:
 
 # Build/push Debian copyright mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '.']
-  dir: 'vulnfeeds/cmd/mirrors/debian-copyright-mirror'
+  args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '-f', 'cmd/mirrors/debian-copyright-mirror/Dockerfile', '.']
+  dir: 'vulnfeeds'
   id: 'build-debian-copyright-mirror'
   waitFor: ['setup']
 - name: gcr.io/cloud-builders/docker
@@ -462,13 +487,13 @@ steps:
     corepack enable pnpm
     pnpm install --frozen-lockfile --ignore-scripts
     pnpm run build:prod
-  dir: 'gcp/website/frontend3'
+  dir: 'website/frontend3'
   id: 'build-frontend3'
   waitFor: ['setup']
 
 - name: 'gcr.io/oss-vdb/ci'
   args: ['hugo', '--buildFuture', '-d', '../dist/static/blog']
-  dir: 'gcp/website/blog'
+  dir: 'website/blog'
   id: 'build-hugo'
   waitFor: ['setup']
 
@@ -483,7 +508,7 @@ steps:
          '-t', 'gcr.io/oss-vdb/osv-website:latest', '-t', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA',
          '--target', 'website',
          '--build-context', 'bindings=../bindings',
-         '--build-context', 'website-dist=../gcp/website/dist',
+         '--build-context', 'website-dist=../website/dist',
          '--build-context', 'docs=../docs',
          '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/osv-website:latest', '--pull', '.']
   dir: 'go'
@@ -543,6 +568,7 @@ steps:
      generatesitemap=gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA,\
      gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA,\
      vanir-signatures=gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA,\
+     ubuntu-binary-mapper=gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA,\
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
@@ -612,3 +638,4 @@ images:
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA'

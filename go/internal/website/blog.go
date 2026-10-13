@@ -12,7 +12,7 @@ import (
 	"github.com/google/osv.dev/go/logger"
 )
 
-var validBlogName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+var validBlogName = regexp.MustCompile(`^[a-zA-Z0-9_+-]+$`)
 
 func (s *Server) loadBlogContent(filePath string) (template.HTML, error) {
 	fullPath := path.Join("static", "blog", filePath)

@@ -2,6 +2,7 @@ resources:
 - ../../base
 - staging-api-test.yaml
 - osv-linter.yaml
+- monitoring
 patches:
 - path: workers.yaml
 - path: scaler.yaml
@@ -29,3 +30,4 @@ patches:
 - path: custommetrics.yaml
 - path: gitter.yaml
 - path: vanir-signatures.yaml
+- path: ubuntu-binary-mapper.yaml

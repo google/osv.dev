@@ -18,7 +18,8 @@ This repository (`google/osv.dev`) contains the backend services, database model
 It is structured as a multi-language monorepo:
 - `go/`: Go services and utilities (importers, exporter, internal libraries). **This is the primary target for active migrations from Python.**
 - `osv/`: Core Python library containing models, repository helpers, and ecosystem-specific logic. *Note: Some parts are deprecated as we migrate logic to Go.*
-- `gcp/`: GCP deployment configurations, Cloud Functions, API server, and workers. (Website frontend uses `pnpm` and Hugo).
+- `gcp/`: GCP deployment configurations, Cloud Functions, and workers.
+- `website/`: Frontend assets for the osv.dev website (`frontend3` using `pnpm`) and blog posts (`blog` using Hugo).
 - `vulnfeeds/`: Vulnerability feed utilities (*independent Go module*).
 - `bindings/`: API bindings (*contains an independent Go module under `bindings/go`*).
 
@@ -57,6 +58,11 @@ These models are defined in Python ([`osv/models.py`](osv/models.py)) and mirror
    * **Fields**: Contains summary, ecosystems, packages, severities, and search indices.
    * **Rule**: This entity is **only** used by the website and should not be used for API matching logic.
 
+5. **`UbuntuPackageMapping` (Kind: `UbuntuPackageMapping`)**
+   * **Purpose**: Used by the experimental `POST /v1experimental/ubuntu/binary-to-source` API endpoint to resolve Ubuntu binary package names to their corresponding source package names within an Ubuntu release ecosystem.
+   * **Fields**: Keyed by `<normalized_ecosystem>:<binary_name>` (e.g., `Ubuntu:24.04:libcurl4`); stores `source_names` (unindexed list of corresponding Ubuntu source package names).
+   * **Note**: Defined in Go ([`go/internal/database/datastore/ubuntu_package_mapping.go`](go/internal/database/datastore/ubuntu_package_mapping.go)) and populated by `ubuntubinarymapper`.
+
 ---
 
 ## Setup Commands
@@ -73,7 +79,7 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   ```
 - **Install Website Dependencies** (for frontend development):
   ```bash
-  cd gcp/website/frontend3 && pnpm install
+  cd website/frontend3 && pnpm install
   ```
 - **Initialize Git Submodules**:
   ```bash
@@ -125,7 +131,7 @@ Always format and lint your code before proposing changes. The repository provid
 - Linter: `golangci-lint`
 - **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
   ```bash
-  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0 run ./...
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run ./...
   ```
   *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
 - **Formatting Command**:
@@ -264,15 +270,28 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
-8. **`recoverer`**:
+10. **`recoverer`**:
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
+
+11. **`vanir_signatures`**:
+   - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
+
+12. **`ubuntubinarymapper`**:
+   - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
+   - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
+
+13. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+   - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
+   - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore.
+   - `repo-allowlist-sync`: CLI tool to synchronize repository allowlist YAML files (`repo_allowlist.yaml`) to `RepoAllowList` entities in Datastore.
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
+- **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
   - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
   - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
@@ -302,16 +321,15 @@ Contains deployment setups, workers running in GKE, Cloud Functions, and the use
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-api` deploying to `osv-grpc-backend`).
 - *Note*: Fully migrated from Python to Go. Protobuf definitions and descriptor files are located under `proto/v1/`.
 
-### 2. Website (`go/cmd/website/`, `gcp/website/`)
-- **Status**: **Active (Go / Python)**.
-- Migrated to Go backend under `go/cmd/website/` and `go/internal/website/`. Frontend assets (Hugo blog, pnpm frontend3) are located under `website/` (symlinked to `gcp/website/`).
+### 2. Website (`go/cmd/website/`, `website/`)
+- **Status**: **Active (Go)**.
+- Fully migrated to Go backend under `go/cmd/website/` and `go/internal/website/`. Frontend assets (Hugo blog, pnpm frontend3) are located under `website/`.
 - **Deployment Target**: **Google Cloud Run** (managed via Cloud Deploy pipeline `osv-website`).
 
 ### 3. Workers (`gcp/workers/`)
-- **`worker` (`gcp/workers/worker/`)**: **Base Environment**. Retains shared Poetry dependencies and base Dockerfile for Python workers (`vanir_signatures`); legacy worker daemon replaced by Go worker under `go/cmd/worker/`.
+- **`worker` (`gcp/workers/worker/`)**: **Base Environment**. Retains shared Poetry dependencies and base Dockerfile for legacy Python workers; legacy worker daemon replaced by Go worker under `go/cmd/worker/`.
 - **ClusterFuzz Worker (`gcp/workers/oss_fuzz_worker/`, `gcp/workers/oss_fuzz_importer/`)**: **Barely Maintained**. Siloed workloads for OSS-Fuzz integration.
   - **Deployment Target**: **GKE** (managed via Cloud Deploy pipeline `oss-fuzz-workers`).
-- **`vanir_signatures`**: **Active (Python)**. Used for signature generation/verification.
 
 ### 4. Indexer (`gcp/indexer/`)
 - **Status**: **Active (Go)**.

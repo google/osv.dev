@@ -25,13 +25,13 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, staging-api-test, website).
+# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website).
 # ====================================================================================
 
 # ========================================================
 # Shared Builder Stage
 # ========================================================
-FROM golang:1.27.1-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS builder
+FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS builder
 
 WORKDIR /workspace
 
@@ -50,7 +50,7 @@ RUN go mod download && go mod verify
 FROM builder AS importer-build
 RUN CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS importer
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS importer
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache git zstd tar
 COPY --from=importer-build /app/importer /
@@ -122,7 +122,7 @@ ENTRYPOINT ["/custommetrics"]
 FROM builder AS gitter-build
 RUN CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS gitter
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS gitter
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
 RUN apk add --no-cache bash git zstd tar
 # Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
@@ -136,7 +136,7 @@ ENTRYPOINT ["/gitter"]
 FROM builder AS first_package_finder-build
 RUN CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS first_package_finder
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS first_package_finder
 COPY --from=first_package_finder-build /app/first_package_finder /
 ENTRYPOINT ["/first_package_finder"]
 
@@ -181,3 +181,40 @@ RUN CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
 FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS website
 COPY --from=website-build /app/website /
 ENTRYPOINT ["/website"]
+
+# ========================================================
+# Target: Vanir Signatures
+# ========================================================
+FROM builder AS vanir-signatures-build
+RUN CGO_ENABLED=0 go build -o /app/vanir_signatures ./cmd/vanir_signatures/
+
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-python-deps
+ENV POETRY_HOME="/opt/poetry"
+COPY --from=poetry requirements.txt ./poetry-requirements.txt
+RUN python3 -m venv $POETRY_HOME && \
+    $POETRY_HOME/bin/pip install --no-cache-dir --require-hashes -r ./poetry-requirements.txt && \
+    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+WORKDIR /app
+COPY cmd/vanir_signatures/pyproject.toml cmd/vanir_signatures/poetry.lock ./
+COPY cmd/vanir_signatures/osv/pyproject.toml cmd/vanir_signatures/osv/README.md cmd/vanir_signatures/osv/vulnerability_pb2.py ./osv/
+RUN POETRY_VIRTUALENVS_IN_PROJECT=true poetry install --only main --no-interaction --no-ansi
+
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-signatures
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=vanir-python-deps /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+COPY --from=vanir-signatures-build /app/vanir_signatures /usr/local/bin/vanir_signatures
+COPY cmd/vanir_signatures/generate_signatures.py /usr/local/bin/generate_signatures.py
+RUN chmod 755 /usr/local/bin/generate_signatures.py
+ENTRYPOINT ["/usr/local/bin/vanir_signatures"]
+
+# ========================================================
+# Target: Ubuntu Binary Mapper
+# ========================================================
+FROM builder AS ubuntubinarymapper-build
+RUN CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
+
+FROM gcr.io/distroless/static-debian12@sha256:a9fcaedd4c9b59e12dd65d954f0b5044f19b0647a8a3712e77205df9e7b102cd AS ubuntubinarymapper
+COPY --from=ubuntubinarymapper-build /app/ubuntubinarymapper /
+ENTRYPOINT ["/ubuntubinarymapper"]
+

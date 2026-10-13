@@ -145,6 +145,20 @@ func UploadToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName stri
 	return nil
 }
 
+// ParseGCSPath parses a gs:// URI into bucket and object name components.
+func ParseGCSPath(gcsURI string) (bucket, object string, err error) {
+	if !strings.HasPrefix(gcsURI, "gs://") {
+		return "", "", fmt.Errorf("invalid GCS URI: %s (must start with gs://)", gcsURI)
+	}
+	trimmed := strings.TrimPrefix(gcsURI, "gs://")
+	parts := strings.SplitN(trimmed, "/", 2)
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid GCS URI format %q (expected gs://bucket/object)", gcsURI)
+	}
+
+	return parts[0], parts[1], nil
+}
+
 // UploadFile uploads a local file to a GCS bucket.
 func UploadFile(ctx context.Context, bkt *storage.BucketHandle, objectName string, filePath string) error {
 	f, err := os.Open(filePath)

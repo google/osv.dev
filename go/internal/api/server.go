@@ -23,11 +23,12 @@ type server struct {
 
 	verboseLogs bool
 
-	vulnStore           models.VulnerabilityStore
-	relationsStore      models.RelationsStore
-	importFindingsStore models.ImportFindingsStore
-	repoIndexStore      models.RepoIndexStore
-	recovererPublisher  clients.Publisher
+	vulnStore                 models.VulnerabilityStore
+	relationsStore            models.RelationsStore
+	importFindingsStore       models.ImportFindingsStore
+	repoIndexStore            models.RepoIndexStore
+	ubuntuPackageMappingStore models.UbuntuPackageMappingStore
+	recovererPublisher        clients.Publisher
 
 	singleQueryTimeout time.Duration
 	batchQueryTimeout  time.Duration
@@ -40,15 +41,29 @@ type ServerOptions struct {
 	Local bool
 	// VerboseLogs controls whether to log verbose information,
 	// including per-request data.
-	VerboseLogs         bool
-	VulnStore           models.VulnerabilityStore
-	RelationsStore      models.RelationsStore
-	ImportFindingsStore models.ImportFindingsStore
-	RepoIndexStore      models.RepoIndexStore
-	RecovererPublisher  clients.Publisher
+	VerboseLogs               bool
+	VulnStore                 models.VulnerabilityStore
+	RelationsStore            models.RelationsStore
+	ImportFindingsStore       models.ImportFindingsStore
+	RepoIndexStore            models.RepoIndexStore
+	UbuntuPackageMappingStore models.UbuntuPackageMappingStore
+	RecovererPublisher        clients.Publisher
 
 	HealthCheckInterval  time.Duration
 	HealthCheckThreshold int
+}
+
+// NewServer creates a new OSV gRPC server instance with the given options.
+func NewServer(opts ServerOptions) pb.OSVServer {
+	return &server{
+		vulnStore:                 opts.VulnStore,
+		relationsStore:            opts.RelationsStore,
+		importFindingsStore:       opts.ImportFindingsStore,
+		repoIndexStore:            opts.RepoIndexStore,
+		ubuntuPackageMappingStore: opts.UbuntuPackageMappingStore,
+		recovererPublisher:        opts.RecovererPublisher,
+		verboseLogs:               opts.VerboseLogs,
+	}
 }
 
 // RunServer starts the gRPC server and handles graceful shutdown.
@@ -56,20 +71,14 @@ func RunServer(ctx context.Context, opts ServerOptions) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.Port))
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to listen", "error", err)
+
 		return err
 	}
 
 	s := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
-	pb.RegisterOSVServer(s, &server{
-		vulnStore:           opts.VulnStore,
-		relationsStore:      opts.RelationsStore,
-		importFindingsStore: opts.ImportFindingsStore,
-		repoIndexStore:      opts.RepoIndexStore,
-		recovererPublisher:  opts.RecovererPublisher,
-		verboseLogs:         opts.VerboseLogs,
-	})
+	pb.RegisterOSVServer(s, NewServer(opts))
 
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("osv.v1.OSV", healthgrpc.HealthCheckResponse_SERVING)

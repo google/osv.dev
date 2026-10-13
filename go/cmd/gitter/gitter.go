@@ -33,6 +33,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 )
@@ -56,6 +57,7 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /affected-commits": affectedCommitsHandler,
 	"POST /file-diffs":       fileDiffsHandler,
 	"POST /file-content":     fileContentHandler,
+	"POST /commit-diffs":     commitDiffsHandler,
 }
 
 var (
@@ -79,11 +81,21 @@ var (
 	invalidRepoCacheMaxEntries int64
 
 	// gitMirrors lists more performant mirrors for large/popular repos.
+	// Keys are normalized as lowercase "<host><path>" without trailing slashes or ".git" suffix.
 	// TODO: Don't hardcode this.
 	gitMirrors = map[string]string{
-		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
-		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
-		"https://git.pengutronix.de/cgit/barebox":                            "https://github.com/barebox/barebox.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/stable/linux":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"git.pengutronix.de/cgit/barebox":                        "https://github.com/barebox/barebox.git",
+		"github.com/chromium/chromium":                           "https://chromium.googlesource.com/chromium/src.git",
+	}
+
+	// caseInsensitiveHosts lists Git hosts with case-insensitive repo paths.
+	// Other hosts (e.g. Gerrit/cgit-based) may have case-sensitive paths that will 404 if lowercased
+	// (e.g. https://android.googlesource.com/platform/packages/modules/Bluetooth).
+	caseInsensitiveHosts = map[string]bool{
+		"github.com": true,
+		"gitlab.com": true,
 	}
 )
 
@@ -269,8 +281,17 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
-	// Removing trailing slashes
-	u.Path = strings.TrimSuffix(u.Path, "/")
+	if !isLocalRequest(req) {
+		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
+		}
+	}
+
+	u.Host = strings.ToLower(u.Host)
+	u.Path = strings.TrimRight(u.Path, "/")
+	if caseInsensitiveHosts[u.Host] {
+		u.Path = strings.ToLower(u.Path)
+	}
 
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
@@ -282,20 +303,11 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	// normalize to https before checking for mirrors.
-	mirrorKey := u.String()
-	if u.Scheme == "http" {
-		mirrorKey = "https" + u.String()[4:]
-	}
+	// Normalize path before checking for mirrors.
+	mirrorKey := strings.TrimSuffix(strings.ToLower(u.Host+u.Path), ".git")
 	if mirror, ok := gitMirrors[mirrorKey]; ok {
 		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
 		return mirror, nil
-	}
-
-	if !isLocalRequest(req) {
-		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
-			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
-		}
 	}
 
 	logger.Debug("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
@@ -963,5 +975,112 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
+	}
+}
+
+func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := req.Context()
+	defer func() { logRequestCompletion(ctx, "/commit-diffs", start, statusCode) }()
+
+	body := &pb.CommitDiffsRequest{}
+	if err := unmarshalRequest(req, body); err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(req, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	lastSyncedCommit := strings.TrimSpace(body.GetLastSyncedCommit())
+	branch := strings.TrimSpace(body.GetBranch())
+	var lastSyncedTime time.Time
+	if body.GetLastSyncedTime() != nil {
+		lastSyncedTime = body.GetLastSyncedTime().AsTime()
+	}
+
+	// Require at least one boundary (last_synced_commit or last_synced_time).
+	if lastSyncedCommit == "" && lastSyncedTime.IsZero() {
+		statusCode = http.StatusBadRequest
+		http.Error(w, "missing last_synced_commit and last_synced_time (must provide at least one)", statusCode)
+
+		return
+	}
+
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	logger.DebugContext(ctx, "Received request: /commit-diffs",
+		slog.String("last_synced_commit", lastSyncedCommit),
+		slog.String("branch", branch),
+		slog.Time("last_synced_time", lastSyncedTime),
+		slog.Bool("newest_first", body.GetNewestFirst()),
+	)
+
+	// Always force update to get latest commits from the remote
+	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: false})
+	if err != nil {
+		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(repoURL, statusCode)
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	resolvedBranch, latestCommit, commits, err := repo.ListCommits(ctx, branch, lastSyncedCommit, lastSyncedTime, body.GetNewestFirst(), body.GetIncludePaths(), body.GetExcludePaths())
+	if err != nil {
+		// Distinguish missing refs - 404 Not Found (e.g. the commit hash is not a valid ancestor of HEAD - likely from git amend)
+		// From generic issues - 500
+		if isRefNotFoundError(err) || isCommitNotAncestorError(err) {
+			statusCode = http.StatusNotFound
+			http.Error(w, fmt.Sprintf("Commit or branch not found: %v", err), statusCode)
+
+			return
+		}
+		logger.ErrorContext(ctx, "Error listing commits", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error listing commits: %v", err), statusCode)
+
+		return
+	}
+
+	pbCommits := make([]*pb.CommitDiff, 0, len(commits))
+	for _, c := range commits {
+		filesChanged := make([]*pb.FileChange, 0, len(c.FilesChanged))
+		for _, f := range c.FilesChanged {
+			filesChanged = append(filesChanged, &pb.FileChange{
+				FromPath: f.From,
+				ToPath:   f.To,
+			})
+		}
+		pbCommits = append(pbCommits, &pb.CommitDiff{
+			Commit:         c.Commit,
+			Timestamp:      timestamppb.New(c.Timestamp),
+			Message:        c.Message,
+			Patch:          c.Patch,
+			FilesChanged:   filesChanged,
+			PatchTruncated: c.PatchTruncated,
+		})
+	}
+
+	resp := &pb.CommitDiffsResponse{
+		Url:          body.GetUrl(),
+		Branch:       resolvedBranch,
+		LatestCommit: latestCommit,
+		//nolint:gosec // G115: len(commits) should safely fit in int32 (max is 2.14 billion)
+		NumCommits: int32(len(commits)),
+		Commits:    pbCommits,
+	}
+
+	if err := writeResponse(w, req, resp); err != nil {
+		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error writing commit diffs response: %v", err), statusCode)
 	}
 }

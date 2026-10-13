@@ -19,10 +19,7 @@ lib-tests: ## Run core Python library tests
 	./run_tests.sh
 
 vanir-signatures-tests: ## Run Vanir signatures tests
-	cd gcp/workers/vanir_signatures && ./run_tests.sh
-
-website-tests: ## Run legacy Python website tests
-	cd gcp/website && ./run_tests.sh
+	cd go && go test ./internal/vanir/... ./cmd/vanir_signatures/...
 
 vulnfeed-tests: ## Run Go vulnfeeds tests
 	cd vulnfeeds && ./run_tests.sh
@@ -51,6 +48,7 @@ format: ## Automatically format files where supported
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
+	cd go/cmd/vanir_signatures/osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --proto_path=../../../../osv/osv-schema/proto vulnerability.proto
 
 build-api-protos:
 	cd proto/v1 && protoc \
@@ -118,7 +116,7 @@ run-api-server-test:
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 # TODO: API integration tests.
-all-tests: lib-tests website-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
+all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 
 reimport-tui: ## Run the reimport TUI tool
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)

@@ -516,3 +516,120 @@ func TestGetFileContent(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCommitDiffs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		req        *pb.CommitDiffsRequest
+		statusCode int
+		respProto  *pb.CommitDiffsResponse
+		wantResp   *pb.CommitDiffsResponse
+		wantErr    error
+	}{
+		{
+			name: "success",
+			req: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
+			},
+			statusCode: http.StatusOK,
+			respProto: &pb.CommitDiffsResponse{
+				Url:          "https://github.com/oliverchang/osv-test.git",
+				Branch:       "master",
+				LatestCommit: "c0ffee",
+				NumCommits:   1,
+				Commits: []*pb.CommitDiff{
+					{
+						Commit:  "c0ffee",
+						Message: "fix: something",
+						Patch:   "diff --git a/a b/b\n...",
+						FilesChanged: []*pb.FileChange{
+							{FromPath: "a", ToPath: "b"},
+						},
+					},
+				},
+			},
+			wantResp: &pb.CommitDiffsResponse{
+				Url:          "https://github.com/oliverchang/osv-test.git",
+				Branch:       "master",
+				LatestCommit: "c0ffee",
+				NumCommits:   1,
+				Commits: []*pb.CommitDiff{
+					{
+						Commit:  "c0ffee",
+						Message: "fix: something",
+						Patch:   "diff --git a/a b/b\n...",
+						FilesChanged: []*pb.FileChange{
+							{FromPath: "a", ToPath: "b"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not found error mapping",
+			req: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "nonexistent",
+			},
+			statusCode: http.StatusNotFound,
+			wantErr:    gitter.ErrRepoNotFound,
+		},
+		{
+			name: "forbidden error mapping",
+			req: &pb.CommitDiffsRequest{
+				Url:              "https://github.com/oliverchang/osv-test.git",
+				LastSyncedCommit: "b9b3fd4732695b83c3068b7b6a14bb372ec31f98",
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    gitter.ErrRepoInaccessible,
+		},
+		{
+			name: "bad request error mapping",
+			req: &pb.CommitDiffsRequest{
+				Url: "https://github.com/oliverchang/osv-test.git",
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    gitter.ErrInvalidInput,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				if tt.statusCode == http.StatusOK && tt.respProto != nil {
+					w.Header().Set("Content-Type", "application/x-protobuf")
+					payload, _ := proto.Marshal(tt.respProto)
+					_, _ = w.Write(payload)
+				}
+			}))
+			t.Cleanup(ts.Close)
+
+			client, err := gitter.NewClient(ts.URL, nil)
+			if err != nil {
+				t.Fatalf("failed to create client: %v", err)
+			}
+
+			resp, err := client.GetCommitDiffs(context.Background(), tt.req)
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("GetCommitDiffs() error = %v, wantErr = %v", err, tt.wantErr)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected GetCommitDiffs() error: %v", err)
+			}
+
+			if diff := cmp.Diff(tt.wantResp, resp, protocmp.Transform()); diff != "" {
+				t.Errorf("GetCommitDiffs() response mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

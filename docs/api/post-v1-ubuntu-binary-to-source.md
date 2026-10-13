@@ -40,14 +40,16 @@ package names.
 ## Parameters
 
 |---
-| Parameter      | Type  | Description                                                                   |
-| -------------- | ----- | ----------------------------------------------------------------------------- |
-| `binary_names` | array | A non-empty array of Ubuntu binary package names (maximum 1000 per request). |
+| Parameter      | Type   | Description                                                                                                          |
+| -------------- | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| `ecosystem`    | string | The Ubuntu release ecosystem (e.g. `Ubuntu:24.04`, `Ubuntu:24.04:LTS`, or `Ubuntu:Pro:24.04:LTS`).                   |
+| `binary_names` | array  | A non-empty array of Ubuntu binary package names (maximum 1000 per request).                                         |
 
 ## Payload
 
 ```json
 {
+  "ecosystem": "string",
   "binary_names": [
     "string"
   ]
@@ -59,6 +61,7 @@ package names.
 ```bash
 cat <<EOF | curl -d @- "https://api.osv.dev/v1experimental/ubuntu/binary-to-source"
 {
+  "ecosystem": "Ubuntu:24.04:LTS",
   "binary_names": [
     "libcurl4",
     "libglib2.0-0"
@@ -71,7 +74,7 @@ EOF
 
 The response `results` array is guaranteed to match the ordering of the input
 `binary_names` (with an empty object `{}` for binary package names that have no
-known source package mappings):
+known source package mappings in that Ubuntu release):
 
 ```json
 {

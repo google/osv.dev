@@ -6,13 +6,13 @@ replace osv.dev/bindings/go => ../bindings/go
 
 require (
 	charm.land/bubbles/v2 v2.2.1
-	charm.land/bubbletea/v2 v2.0.9
+	charm.land/bubbletea/v2 v2.0.10
 	charm.land/lipgloss/v2 v2.0.6
-	cloud.google.com/go/compute/metadata v0.9.1
-	cloud.google.com/go/datastore v1.26.0
-	cloud.google.com/go/monitoring v1.30.0
+	cloud.google.com/go/compute/metadata v0.10.0
+	cloud.google.com/go/datastore v1.27.0
+	cloud.google.com/go/monitoring v1.31.0
 	cloud.google.com/go/pubsub/v2 v2.7.0
-	cloud.google.com/go/storage v1.68.0
+	cloud.google.com/go/storage v1.69.0
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/dustin/go-humanize v1.1.0
@@ -20,9 +20,9 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scalibr v0.5.3
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/klauspost/compress v1.20.0
+	github.com/klauspost/compress v1.20.1
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/nikolalohinski/gonja/v2 v2.9.0
+	github.com/nikolalohinski/gonja/v2 v2.9.1
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20260902031056-b388a18021a3
 	github.com/package-url/packageurl-go v0.1.7
 	github.com/pandatix/go-cvss v0.6.4
@@ -42,9 +42,9 @@ require (
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/text v0.42.0
-	google.golang.org/api v0.298.0
+	google.golang.org/api v0.299.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260819154853-08b0e4226688
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.7
 	k8s.io/apimachinery v0.37.1
@@ -92,7 +92,7 @@ require (
 	github.com/google/s2a-go v0.1.10 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.22 // indirect
-	github.com/googleapis/gax-go/v2 v2.24.1 // indirect
+	github.com/googleapis/gax-go/v2 v2.26.2 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

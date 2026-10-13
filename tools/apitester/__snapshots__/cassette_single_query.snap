@@ -760,29 +760,19 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.17.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.17.0"
                 }
               ]
             },
@@ -833,29 +823,19 @@
                   "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.17.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -906,29 +886,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -979,29 +949,19 @@
                   "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.87.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1052,29 +1012,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1125,29 +1075,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1249,40 +1189,25 @@
                   "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1333,40 +1258,25 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1417,40 +1327,25 @@
                   "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1501,40 +1396,25 @@
                   "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1585,40 +1465,25 @@
                   "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1669,29 +1534,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1742,40 +1597,25 @@
                   "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1826,29 +1666,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1899,29 +1729,19 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1972,29 +1792,19 @@
                   "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.20.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2045,29 +1855,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2118,29 +1918,19 @@
                   "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.40.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2191,29 +1981,19 @@
                   "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2268,29 +2048,19 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2341,29 +2111,19 @@
                   "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2414,29 +2174,19 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2487,40 +2237,25 @@
                   "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2571,40 +2306,25 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2655,40 +2375,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2739,40 +2444,25 @@
                   "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2823,40 +2513,25 @@
                   "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2907,40 +2582,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2991,40 +2651,25 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3075,40 +2720,25 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3159,40 +2789,25 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -4100,7 +3715,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "11b991232fbcaa88e2b1faecac224416b0001e35"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
@@ -4209,7 +3824,7 @@
               ]
             }
           ],
-          "versions": 284,
+          "versions": 285,
           "database_specific": "<Any value>"
         }
       ],
@@ -4301,7 +3916,7 @@
               ]
             }
           ],
-          "versions": 213,
+          "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
@@ -4389,7 +4004,7 @@
               ]
             }
           ],
-          "versions": 63,
+          "versions": 64,
           "database_specific": "<Any value>"
         }
       ],
@@ -4481,7 +4096,7 @@
               ]
             }
           ],
-          "versions": 141,
+          "versions": 142,
           "database_specific": "<Any value>"
         }
       ],
@@ -4572,7 +4187,7 @@
               ]
             }
           ],
-          "versions": 142,
+          "versions": 143,
           "database_specific": "<Any value>"
         }
       ],
@@ -4706,7 +4321,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "3027611ca6d4cc5510d2d0fccc3e5a074e09a2fb"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4746,7 +4361,11 @@
       "aliases": ["CURL-CVE-2026-11856"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:31.661Z",
-      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
+      "related": [
+        "ALSA-2026:69125",
+        "ALSA-2026:80511",
+        "openSUSE-SU-2026:11230-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4782,7 +4401,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4868,7 +4487,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "801bd5138ce31aa0d906fa4e2eabfc599d74e793"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4975,7 +4594,7 @@
               ]
             }
           ],
-          "versions": 96,
+          "versions": 97,
           "database_specific": "<Any value>"
         }
       ],
@@ -5051,7 +4670,7 @@
               ]
             }
           ],
-          "versions": 210,
+          "versions": 211,
           "database_specific": "<Any value>"
         }
       ],
@@ -5139,7 +4758,7 @@
               ]
             }
           ],
-          "versions": 345,
+          "versions": 346,
           "database_specific": "<Any value>"
         }
       ],
@@ -5215,7 +4834,7 @@
               ]
             }
           ],
-          "versions": 146,
+          "versions": 147,
           "database_specific": "<Any value>"
         }
       ],
@@ -5308,7 +4927,7 @@
               ]
             }
           ],
-          "versions": 220,
+          "versions": 221,
           "database_specific": "<Any value>"
         }
       ],
@@ -5404,7 +5023,7 @@
               ]
             }
           ],
-          "versions": 402,
+          "versions": 403,
           "database_specific": "<Any value>"
         }
       ],
@@ -5494,7 +5113,7 @@
               ]
             }
           ],
-          "versions": 270,
+          "versions": 271,
           "database_specific": "<Any value>"
         }
       ],
@@ -5580,7 +5199,7 @@
               ]
             }
           ],
-          "versions": 351,
+          "versions": 352,
           "database_specific": "<Any value>"
         }
       ],
@@ -5671,7 +5290,7 @@
               ]
             }
           ],
-          "versions": 209,
+          "versions": 210,
           "database_specific": "<Any value>"
         }
       ],
@@ -5761,7 +5380,7 @@
               ]
             }
           ],
-          "versions": 322,
+          "versions": 323,
           "database_specific": "<Any value>"
         }
       ],
@@ -5851,7 +5470,7 @@
               ]
             }
           ],
-          "versions": 114,
+          "versions": 115,
           "database_specific": "<Any value>"
         }
       ],
@@ -5937,7 +5556,7 @@
               ]
             }
           ],
-          "versions": 324,
+          "versions": 325,
           "database_specific": "<Any value>"
         }
       ],
@@ -6027,7 +5646,7 @@
               ]
             }
           ],
-          "versions": 339,
+          "versions": 340,
           "database_specific": "<Any value>"
         }
       ],
@@ -6113,7 +5732,7 @@
               ]
             }
           ],
-          "versions": 208,
+          "versions": 209,
           "database_specific": "<Any value>"
         }
       ],
@@ -6188,7 +5807,7 @@
               ]
             }
           ],
-          "versions": 124,
+          "versions": 125,
           "database_specific": "<Any value>"
         }
       ],
@@ -6264,7 +5883,7 @@
               ]
             }
           ],
-          "versions": 206,
+          "versions": 207,
           "database_specific": "<Any value>"
         }
       ],
@@ -6332,7 +5951,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "80d241046e404233537ff35efabb703a0668c7d5"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6421,7 +6040,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
@@ -6463,6 +6082,7 @@
       "published": "2026-07-03T06:15:04.646Z",
       "related": [
         "ALSA-2026:69125",
+        "ALSA-2026:80511",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -6510,7 +6130,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6598,7 +6218,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "39626d8cfdd8f858d2fa67ec18204ebc5913d532"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6674,7 +6294,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6762,7 +6382,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"

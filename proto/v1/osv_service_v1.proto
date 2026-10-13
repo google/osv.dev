@@ -146,6 +146,7 @@ message VersionRepositoryInformation {
 // Parameters for QueryUbuntuPackageMapping.
 message UbuntuPackageMappingParameters {
   repeated string binary_names = 1 [json_name="binary_names"];
+  string ecosystem = 2;
 }
 
 // Source package names corresponding to a queried binary package name.

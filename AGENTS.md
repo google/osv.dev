@@ -59,8 +59,8 @@ These models are defined in Python ([`osv/models.py`](osv/models.py)) and mirror
    * **Rule**: This entity is **only** used by the website and should not be used for API matching logic.
 
 5. **`UbuntuPackageMapping` (Kind: `UbuntuPackageMapping`)**
-   * **Purpose**: Used by the experimental `POST /v1experimental/ubuntu/binary-to-source` API endpoint to resolve Ubuntu binary package names to their corresponding source package names.
-   * **Fields**: Keyed by binary package name; stores `source_names` (unindexed list of corresponding Ubuntu source package names).
+   * **Purpose**: Used by the experimental `POST /v1experimental/ubuntu/binary-to-source` API endpoint to resolve Ubuntu binary package names to their corresponding source package names within an Ubuntu release ecosystem.
+   * **Fields**: Keyed by `<normalized_ecosystem>:<binary_name>` (e.g., `Ubuntu:24.04:libcurl4`); stores `source_names` (unindexed list of corresponding Ubuntu source package names).
    * **Note**: Defined in Go ([`go/internal/database/datastore/ubuntu_package_mapping.go`](go/internal/database/datastore/ubuntu_package_mapping.go)) and populated by `ubuntubinarymapper`.
 
 ---

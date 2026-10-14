@@ -30,6 +30,10 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &DefaultVersionExtractor{
 			Strategies: strategies.MITRE(),
 		}
+	case "curl":
+		return &CurlVersionExtractor{
+			Strategies: strategies.Curl(),
+		}
 	default:
 		return &DefaultVersionExtractor{
 			Strategies: strategies.Default(),
@@ -50,6 +54,7 @@ func ExtractAffectedRanges(affected models.Affected, strategyList []strategies.V
 		prevCount := len(state.Ranges())
 		strategy.Extract(state, metrics)
 		if len(state.Ranges()) > prevCount {
+			state.SetStrategyFrom(prevCount, strategy.Name())
 			metrics.AddNotef("Strategy successful: %s", strategy.Name())
 		}
 	}

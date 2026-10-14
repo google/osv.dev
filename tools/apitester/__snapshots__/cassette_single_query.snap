@@ -163,7 +163,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 195,
+          "versions": 194,
           "database_specific": "<Any value>"
         }
       ],
@@ -760,29 +760,19 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.17.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.17.0"
                 }
               ]
             },
@@ -833,29 +823,19 @@
                   "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.17.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -906,29 +886,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -979,29 +949,19 @@
                   "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.87.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1052,29 +1012,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1125,29 +1075,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1249,40 +1189,25 @@
                   "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1333,40 +1258,25 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1417,40 +1327,25 @@
                   "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1501,40 +1396,25 @@
                   "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1585,40 +1465,25 @@
                   "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1669,29 +1534,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1742,40 +1597,25 @@
                   "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1826,29 +1666,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1899,29 +1729,19 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1972,29 +1792,19 @@
                   "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.20.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2045,29 +1855,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2118,29 +1918,19 @@
                   "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.40.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2191,29 +1981,19 @@
                   "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2268,29 +2048,19 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2341,29 +2111,19 @@
                   "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2414,29 +2174,19 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2487,40 +2237,25 @@
                   "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2571,40 +2306,25 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2655,40 +2375,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2739,40 +2444,25 @@
                   "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2823,40 +2513,25 @@
                   "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2907,40 +2582,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2991,40 +2651,25 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3075,40 +2720,25 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3159,40 +2789,25 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -4100,16 +3715,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "11b991232fbcaa88e2b1faecac224416b0001e35"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6773c7ca65cf2183295e56603f9b86a5ce816a06"
+                },
+                {
+                  "fixed": "b011e3fcfb06d6c0278595ee2ee297036fbe9793"
+                }
+              ]
             }
           ],
-          "versions": 54,
+          "versions": 106,
           "database_specific": "<Any value>"
         }
       ],
@@ -4183,9 +3810,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ccba0d10b6baf5c73cae8cf4fb3f29f0f55c5a34"
+                },
+                {
+                  "fixed": "39d1976b7f709a516e3243338ebc0443bdd8d56d"
+                }
+              ]
             }
           ],
-          "versions": 284,
+          "versions": 285,
           "database_specific": "<Any value>"
         }
       ],
@@ -4263,9 +3902,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "06c1bea72faabb6fad4b7ef818aafaa336c9a7aa"
+                },
+                {
+                  "fixed": "1a822275d333dc6da6043497160fd04c8fa48640"
+                }
+              ]
             }
           ],
-          "versions": 212,
+          "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
@@ -4339,9 +3990,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "3c16697ebd796f799227be293e8689aec5f8190d"
+                },
+                {
+                  "fixed": "cd046f6c93b39d673a58c18648d8906e954c4f5d"
+                }
+              ]
             }
           ],
-          "versions": 61,
+          "versions": 64,
           "database_specific": "<Any value>"
         }
       ],
@@ -4419,9 +4082,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "adca486c125d9a6d9565b9607a19dce803a8b479"
+                }
+              ]
             }
           ],
-          "versions": 139,
+          "versions": 142,
           "database_specific": "<Any value>"
         }
       ],
@@ -4498,9 +4173,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "c92d2e14cfb0db662f958effd2ac86f995cf1b5a"
+                },
+                {
+                  "fixed": "16d5f2a5660c61cc27bd5f1c7f512391d1c927aa"
+                }
+              ]
             }
           ],
-          "versions": 139,
+          "versions": 143,
           "database_specific": "<Any value>"
         }
       ],
@@ -4588,6 +4275,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:11:15.378Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4634,16 +4322,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "3027611ca6d4cc5510d2d0fccc3e5a074e09a2fb"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "71b7e0161032927cdfb4e75ea40f65b8898b3956"
+                },
+                {
+                  "fixed": "bfbff7852f050232edd3e5ca5c6bf2021c340f5a"
+                }
+              ]
             }
           ],
-          "versions": 37,
+          "versions": 78,
           "database_specific": "<Any value>"
         }
       ],
@@ -4662,7 +4362,11 @@
       "aliases": ["CURL-CVE-2026-11856"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:31.661Z",
-      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
+      "related": [
+        "ALSA-2026:69125",
+        "ALSA-2026:80511",
+        "openSUSE-SU-2026:11230-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4698,16 +4402,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "334d78cd18a7310144383929bdcef34ffbf6159b"
+                },
+                {
+                  "fixed": "5c6b4880357ab3e72967c1c45cae0f96ffabc535"
+                }
+              ]
             }
           ],
-          "versions": 176,
+          "versions": 357,
           "database_specific": "<Any value>"
         }
       ],
@@ -4772,16 +4488,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "801bd5138ce31aa0d906fa4e2eabfc599d74e793"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "18270893abdb19f0ca170c118f8a2847dbd304be"
+                },
+                {
+                  "fixed": "ab3bb8cd8be8f9d4acb97da0418abc279182041e"
+                }
+              ]
             }
           ],
-          "versions": 45,
+          "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
@@ -4803,6 +4531,7 @@
       "related": [
         "SUSE-SU-2026:23498-1",
         "SUSE-SU-2026:23521-1",
+        "SUSE-SU-2026:23638-1",
         "SUSE-SU-2026:3958-1",
         "SUSE-SU-2026:4047-1",
         "SUSE-SU-2026:4048-1",
@@ -4852,9 +4581,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "eeca818b1e8d1e61c2d4d833aed56ce4c510a9d4"
+                },
+                {
+                  "fixed": "ea71c3b6b60e563651ea8596a975aef0c8199519"
+                }
+              ]
             }
           ],
-          "versions": 90,
+          "versions": 97,
           "database_specific": "<Any value>"
         }
       ],
@@ -4916,9 +4657,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ea7134ac874a66107e54ff93657ac565cf2ec4aa"
+                },
+                {
+                  "fixed": "90325ff0444cbdff368bda5d26d6405a0bb6ee43"
+                }
+              ]
             }
           ],
-          "versions": 204,
+          "versions": 211,
           "database_specific": "<Any value>"
         }
       ],
@@ -4992,9 +4745,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e56ae1426cb7a0a4a427cf8d6099a821fdaae428"
+                },
+                {
+                  "fixed": "f1a39f221d57354990e3eeeddc3404aede2aff70"
+                }
+              ]
             }
           ],
-          "versions": 340,
+          "versions": 346,
           "database_specific": "<Any value>"
         }
       ],
@@ -5056,9 +4821,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "6c6035532383e300c712e4c1cd9fdd749ed5cf59"
+                },
+                {
+                  "fixed": "7103a93b05bc69ea98ed9d05d02fa9eeba533f2f"
+                }
+              ]
             }
           ],
-          "versions": 140,
+          "versions": 147,
           "database_specific": "<Any value>"
         }
       ],
@@ -5137,9 +4914,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "06c1bea72faabb6fad4b7ef818aafaa336c9a7aa"
+                },
+                {
+                  "fixed": "e3d7401a32a46516c9e5ee877e613e62ed35bddc"
+                }
+              ]
             }
           ],
-          "versions": 214,
+          "versions": 221,
           "database_specific": "<Any value>"
         }
       ],
@@ -5221,9 +5010,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1d6ad26100bc493c7b04f1301b1634b7f5aa8b4"
+                },
+                {
+                  "fixed": "5f13a7645e565c5c1a06f3ef86e97afb856fb364"
+                }
+              ]
             }
           ],
-          "versions": 390,
+          "versions": 403,
           "database_specific": "<Any value>"
         }
       ],
@@ -5299,9 +5100,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ec3bb8f727405642a471b4b1b9eb0118fc003104"
+                },
+                {
+                  "fixed": "507e7be573b0a76fca597b75ff7cb27a66e7d865"
+                }
+              ]
             }
           ],
-          "versions": 264,
+          "versions": 271,
           "database_specific": "<Any value>"
         }
       ],
@@ -5321,6 +5134,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:27:26.065Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5373,9 +5187,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e56ae1426cb7a0a4a427cf8d6099a821fdaae428"
+                },
+                {
+                  "fixed": "33e43985b8f3b9e66691d06e70be0395849856cd"
+                }
+              ]
             }
           ],
-          "versions": 345,
+          "versions": 352,
           "database_specific": "<Any value>"
         }
       ],
@@ -5398,6 +5224,7 @@
         "SUSE-SU-2026:23350-1",
         "SUSE-SU-2026:23361-1",
         "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:23638-1",
         "SUSE-SU-2026:2703-1",
         "SUSE-SU-2026:3798-1",
         "SUSE-SU-2026:3958-1",
@@ -5451,9 +5278,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "aec2e865f06669b9cb5d26cc1148d70bc418b163"
+                },
+                {
+                  "fixed": "74a169575d6412dc0ff532acdf94de35a6c2a571"
+                }
+              ]
             }
           ],
-          "versions": 203,
+          "versions": 210,
           "database_specific": "<Any value>"
         }
       ],
@@ -5473,6 +5312,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:28:03.004Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5529,9 +5369,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "3b60bb725913ce7339aefef0a14b12df4c24db60"
+                },
+                {
+                  "fixed": "188c2f166a20fa97c2325b2da7d0e5cecc13725f"
+                }
+              ]
             }
           ],
-          "versions": 316,
+          "versions": 323,
           "database_specific": "<Any value>"
         }
       ],
@@ -5607,9 +5459,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e15e51384a423be31318b3c9c7d612a1aae661fd"
+                },
+                {
+                  "fixed": "3a19987a87f393d9394fe5acc7643f6c263c92db"
+                }
+              ]
             }
           ],
-          "versions": 108,
+          "versions": 115,
           "database_specific": "<Any value>"
         }
       ],
@@ -5629,6 +5493,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:28:36.166Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5681,9 +5546,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "01165e08e0d131b399fba2190f17af67e66f0888"
+                },
+                {
+                  "fixed": "b4024bf808bd558026fdc6096e8457f199ace306"
+                }
+              ]
             }
           ],
-          "versions": 318,
+          "versions": 325,
           "database_specific": "<Any value>"
         }
       ],
@@ -5703,9 +5580,11 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:29:08.900Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:23350-1",
         "SUSE-SU-2026:23361-1",
         "SUSE-SU-2026:23498-1",
+        "SUSE-SU-2026:23638-1",
         "SUSE-SU-2026:3798-1",
         "SUSE-SU-2026:3814-1",
         "SUSE-SU-2026:3958-1",
@@ -5758,9 +5637,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "fc6eff13b5414caf6edf22d73a3239e074a04216"
+                },
+                {
+                  "fixed": "c1cfdf59acbaf9504c4578d4cf56cdd7c8594507"
+                }
+              ]
             }
           ],
-          "versions": 333,
+          "versions": 340,
           "database_specific": "<Any value>"
         }
       ],
@@ -5782,6 +5673,7 @@
       "related": [
         "SUSE-SU-2026:23498-1",
         "SUSE-SU-2026:23521-1",
+        "SUSE-SU-2026:23638-1",
         "SUSE-SU-2026:3958-1",
         "SUSE-SU-2026:4047-1",
         "SUSE-SU-2026:4048-1",
@@ -5831,9 +5723,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "8363656cb4e0c60a11d8531ead0ec43120b50591"
+                },
+                {
+                  "fixed": "5267ed859d545534d0c21675a2b70af5a3b6e3ef"
+                }
+              ]
             }
           ],
-          "versions": 202,
+          "versions": 209,
           "database_specific": "<Any value>"
         }
       ],
@@ -5894,9 +5798,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "148534db57dda611cf8516e92e4d6e35fc1e5074"
+                },
+                {
+                  "fixed": "7be1e70cb6bcd83e130ecfe8cb91b6a7dcdeff42"
+                }
+              ]
             }
           ],
-          "versions": 118,
+          "versions": 125,
           "database_specific": "<Any value>"
         }
       ],
@@ -5958,9 +5874,21 @@
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                },
+                {
+                  "fixed": "95c1e8915dce64606bd753fd47fc0bd236e31cd6"
+                }
+              ]
             }
           ],
-          "versions": 200,
+          "versions": 207,
           "database_specific": "<Any value>"
         }
       ],
@@ -6028,16 +5956,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "80d241046e404233537ff35efabb703a0668c7d5"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1701eea289fe7ea80651f801cf992838a491dde"
+                },
+                {
+                  "fixed": "a86efdd7ca5433de9231e650f18247de8319ad16"
+                }
+              ]
             }
           ],
-          "versions": 117,
+          "versions": 237,
           "database_specific": "<Any value>"
         }
       ],
@@ -6105,16 +6045,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "97c272e5d173ad5f706443e2477f0a84f0044edd"
+                },
+                {
+                  "fixed": "5e99b73cf441d9c369768b9cd48b5389b9a2503d"
+                }
+              ]
             }
           ],
-          "versions": 98,
+          "versions": 205,
           "database_specific": "<Any value>"
         }
       ],
@@ -6135,6 +6087,7 @@
       "published": "2026-07-03T06:15:04.646Z",
       "related": [
         "ALSA-2026:69125",
+        "ALSA-2026:80511",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -6182,16 +6135,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e77b5b7453c1e8ccd7ec0816890d98e2f392e465"
+                },
+                {
+                  "fixed": "51beed175dbfc37da3113f6acce60c630c070ce8"
+                }
+              ]
             }
           ],
-          "versions": 99,
+          "versions": 202,
           "database_specific": "<Any value>"
         }
       ],
@@ -6258,16 +6223,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "39626d8cfdd8f858d2fa67ec18204ebc5913d532"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "fc6eff13b5414caf6edf22d73a3239e074a04216"
+                },
+                {
+                  "fixed": "5c225384b8d52c67ce8259c6e4203bc57aacb567"
+                }
+              ]
             }
           ],
-          "versions": 170,
+          "versions": 345,
           "database_specific": "<Any value>"
         }
       ],
@@ -6322,16 +6299,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "a1d6ad26100bc493c7b04f1301b1634b7f5aa8b4"
+                },
+                {
+                  "fixed": "7541ae569d82fb308a5e2d94916027da4fa3ba3e"
+                }
+              ]
             }
           ],
-          "versions": 197,
+          "versions": 413,
           "database_specific": "<Any value>"
         }
       ],
@@ -6398,16 +6387,28 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
                 }
               ],
               "database_specific": "<Any value>"
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "507cf6a13db0375eadd4655b4c64710db29e9cf2"
+                },
+                {
+                  "fixed": "0b8dbbc63c98777e4584cb9fbd71df3464008ad1"
+                }
+              ]
             }
           ],
-          "versions": 61,
+          "versions": 126,
           "database_specific": "<Any value>"
         }
       ],

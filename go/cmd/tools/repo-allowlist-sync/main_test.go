@@ -190,7 +190,7 @@ func TestRun_InvalidFile(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	badYAMLPath := filepath.Join(tmpDir, "bad.yaml")
-	if err := os.WriteFile(badYAMLPath, []byte("invalid: yaml: ["), 0644); err != nil {
+	if err := os.WriteFile(badYAMLPath, []byte("invalid: yaml: ["), 0600); err != nil {
 		t.Fatalf("failed creating bad yaml file: %v", err)
 	}
 
@@ -205,7 +205,7 @@ func TestRun_Validate(t *testing.T) {
 
 	t.Run("Valid YAML", func(t *testing.T) {
 		validYAML := filepath.Join(tmpDir, "valid.yaml")
-		if err := os.WriteFile(validYAML, []byte("- type: url\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: 'github\\.com/google/.*'\n"), 0644); err != nil {
+		if err := os.WriteFile(validYAML, []byte("- type: url\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: 'github\\.com/google/.*'\n"), 0600); err != nil {
 			t.Fatalf("failed creating valid yaml file: %v", err)
 		}
 
@@ -217,7 +217,7 @@ func TestRun_Validate(t *testing.T) {
 
 	t.Run("Invalid YAML", func(t *testing.T) {
 		invalidYAML := filepath.Join(tmpDir, "invalid.yaml")
-		if err := os.WriteFile(invalidYAML, []byte("- type: unknown\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: '[invalid regex'\n"), 0644); err != nil {
+		if err := os.WriteFile(invalidYAML, []byte("- type: unknown\n  value: \"https://github.com/google/osv.dev\"\n- type: regex\n  value: '[invalid regex'\n"), 0600); err != nil {
 			t.Fatalf("failed creating invalid yaml file: %v", err)
 		}
 

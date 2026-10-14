@@ -67,6 +67,24 @@ func TestPrepareURL(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "GitHub mixed case host and path",
+			url:       "https://GitHub.com/Google/OSV.dev.git",
+			expected:  "https://github.com/google/osv.dev.git",
+			expectErr: false,
+		},
+		{
+			name:      "GitLab mixed case host and path",
+			url:       "https://GitLab.com/GitLab-Org/GitLab.git",
+			expected:  "https://gitlab.com/gitlab-org/gitlab.git",
+			expectErr: false,
+		},
+		{
+			name:      "Other host mixed case lowercases host only",
+			url:       "https://Example.com/Some/CaseSensitiveRepo.git",
+			expected:  "https://example.com/Some/CaseSensitiveRepo.git",
+			expectErr: false,
+		},
+		{
 			name:      "Non-github git protocol, no change",
 			url:       "git://code.qt.io/qt/qt5.git",
 			expected:  "git://code.qt.io/qt/qt5.git",
@@ -103,9 +121,27 @@ func TestPrepareURL(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "Linux kernel URL with git protocol and no .git, reroute to mirror",
+			url:       "git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux",
+			expected:  "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+			expectErr: false,
+		},
+		{
 			name:      "Linux kernel URL with trailing slash, reroute to mirror",
 			url:       "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/",
 			expected:  "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+			expectErr: false,
+		},
+		{
+			name:      "Chromium URL without .git and mixed case, reroute to mirror",
+			url:       "https://GitHub.com/Chromium/chromium",
+			expected:  "https://chromium.googlesource.com/chromium/src.git",
+			expectErr: false,
+		},
+		{
+			name:      "Barebox URL with .git, reroute to mirror",
+			url:       "https://git.pengutronix.de/cgit/barebox.git",
+			expected:  "https://github.com/barebox/barebox.git",
 			expectErr: false,
 		},
 		{

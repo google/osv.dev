@@ -45,6 +45,7 @@ func (r rawYAMLEntry) toEntity() models.RepoAllowList {
 	if r.CherrypicksLimit != nil {
 		limit = *r.CherrypicksLimit
 	}
+
 	return models.RepoAllowList{
 		Type:                  r.Type,
 		Value:                 r.Value,
@@ -90,7 +91,7 @@ func main() {
 func normalizeRepo(repoURL string) (string, error) {
 	repoURL = strings.TrimSpace(repoURL)
 	if repoURL == "" {
-		return "", fmt.Errorf("repository URL cannot be empty")
+		return "", errors.New("repository URL cannot be empty")
 	}
 
 	if strings.HasPrefix(repoURL, "git@") || strings.HasPrefix(repoURL, "ssh://") {
@@ -156,6 +157,7 @@ func parseYAMLEntries(data []byte, collectAllErrors bool) ([]models.RepoAllowLis
 				return nil, entryErr
 			}
 			validationErrs = append(validationErrs, entryErr)
+
 			continue
 		}
 

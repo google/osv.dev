@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/osv/ecosystem"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -45,7 +46,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			if normalized != pkgEcosystem {
 				allPkgEcosystems = append(allPkgEcosystems, normalized)
 			}
-			if v := removeVariants(pkgEcosystem); v != "" {
+			if v := models.NormalizeUbuntuEcosystem(pkgEcosystem); v != pkgEcosystem {
 				allPkgEcosystems = append(allPkgEcosystems, v)
 			}
 

@@ -48,6 +48,7 @@ format: ## Automatically format files where supported
 
 build-osv-protos:
 	cd osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --mypy_out=. --proto_path=. --proto_path=osv-schema/proto vulnerability.proto importfinding.proto
+	cd go/cmd/vanir_signatures/osv && $(run-cmd) python -m grpc_tools.protoc --python_out=. --proto_path=../../../../osv/osv-schema/proto vulnerability.proto
 
 build-api-protos:
 	cd proto/v1 && protoc \
@@ -113,6 +114,9 @@ run-api-server-test:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	docker inspect osv/esp:latest >/dev/null 2>&1 || docker build -f docker/esp/Dockerfile -t osv/esp:latest docker/esp
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
+
+run-grafana-local: ## Run local Grafana for testing
+	./tools/run_grafana_local.sh $(ARGS)
 
 # TODO: API integration tests.
 all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests

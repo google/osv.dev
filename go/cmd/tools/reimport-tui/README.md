@@ -36,10 +36,4 @@ Then, run the tool from the repository root:
 make reimport-tui
 ```
 
----
-
-## Development Notes
-
-This tool is defined as a nested Go module (`go/cmd/tools/reimport-tui`) to avoid polluting the main `go/go.mod` file with Bubble Tea and Lipgloss dependencies. It still imports shared `internal` datastore packages from the parent Go module using Go's import path inheritance rules.
-
 *This tool was entirely vibecoded by AI.*

@@ -81,11 +81,21 @@ var (
 	invalidRepoCacheMaxEntries int64
 
 	// gitMirrors lists more performant mirrors for large/popular repos.
+	// Keys are normalized as lowercase "<host><path>" without trailing slashes or ".git" suffix.
 	// TODO: Don't hardcode this.
 	gitMirrors = map[string]string{
-		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
-		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
-		"https://git.pengutronix.de/cgit/barebox":                            "https://github.com/barebox/barebox.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/stable/linux":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"git.pengutronix.de/cgit/barebox":                        "https://github.com/barebox/barebox.git",
+		"github.com/chromium/chromium":                           "https://chromium.googlesource.com/chromium/src.git",
+	}
+
+	// caseInsensitiveHosts lists Git hosts with case-insensitive repo paths.
+	// Other hosts (e.g. Gerrit/cgit-based) may have case-sensitive paths that will 404 if lowercased
+	// (e.g. https://android.googlesource.com/platform/packages/modules/Bluetooth).
+	caseInsensitiveHosts = map[string]bool{
+		"github.com": true,
+		"gitlab.com": true,
 	}
 )
 
@@ -271,8 +281,17 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
-	// Removing trailing slashes
-	u.Path = strings.TrimSuffix(u.Path, "/")
+	if !isLocalRequest(req) {
+		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
+		}
+	}
+
+	u.Host = strings.ToLower(u.Host)
+	u.Path = strings.TrimRight(u.Path, "/")
+	if caseInsensitiveHosts[u.Host] {
+		u.Path = strings.ToLower(u.Path)
+	}
 
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
@@ -284,20 +303,11 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	// normalize to https before checking for mirrors.
-	mirrorKey := u.String()
-	if u.Scheme == "http" {
-		mirrorKey = "https" + u.String()[4:]
-	}
+	// Normalize path before checking for mirrors.
+	mirrorKey := strings.TrimSuffix(strings.ToLower(u.Host+u.Path), ".git")
 	if mirror, ok := gitMirrors[mirrorKey]; ok {
 		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
 		return mirror, nil
-	}
-
-	if !isLocalRequest(req) {
-		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
-			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
-		}
 	}
 
 	logger.Debug("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))

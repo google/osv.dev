@@ -6,7 +6,7 @@ require (
 	github.com/gkampitakis/go-snaps v0.5.23
 	github.com/google/go-cmp v0.7.0
 	github.com/tidwall/gjson v1.19.0
-	github.com/tidwall/pretty v1.2.1
+	github.com/tidwall/pretty v1.2.2
 	github.com/tidwall/sjson v1.2.5
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.7
 )

@@ -703,7 +703,7 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 	//  - before/through/prior to/earlier than/up to/fixed in x.x.x
 	matches := textRangePattern.FindAllStringSubmatch(text, -1)
 	for _, match := range matches {
-		introduced := processExtractedVersion(strings.TrimPrefix(strings.TrimPrefix(match[1], "v"), "V"))
+		introduced := processExtractedVersion(strings.TrimLeft(match[1], "vV"))
 		target := processExtractedVersion(match[3])
 		if target == "" || isLikelyGitSHA(target) {
 			continue

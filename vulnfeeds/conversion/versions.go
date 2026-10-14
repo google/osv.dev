@@ -665,11 +665,13 @@ func isInclusiveKeyword(kw string) bool {
 	return kw == "through" || strings.HasPrefix(kw, "up to") || strings.HasSuffix(kw, "<=")
 }
 
+// isLikelyGitSHA checks whether a hex string is likely a Git commit hash.
 func isLikelyGitSHA(s string) bool {
 	if !isHexCommitPrefix(s) {
 		return false
 	}
 
+	// We guess it's a commit if it contains both at least one decimal digit and a hex letter.
 	return strings.ContainsAny(s, "0123456789") && strings.ContainsAny(strings.ToLower(s), "abcdef")
 }
 

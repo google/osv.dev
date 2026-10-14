@@ -59,7 +59,7 @@ You must install:
 1.  [Docker](https://www.docker.com/)
 1.  [Pylint](https://pypi.org/project/pylint)
 1.  [Yapf](https://github.com/google/yapf)
-1.  [Make](https://www.gnu.org/software/make/)
+1.  [Make](https://www.gnu.org/software/make/) <!-- markdown-link-check-disable-line -->
 1.  [Poetry](https://python-poetry.org/) >= 2.3.3
 1.  [Google Cloud SDK](https://cloud.google.com/sdk)
 1.  [Hugo](https://gohugo.io/installation/)

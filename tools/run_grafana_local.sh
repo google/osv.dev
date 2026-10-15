@@ -22,6 +22,7 @@ MONITORING_DIR="deployment/clouddeploy/gke-workers/environments/oss-vdb-test/mon
 
 # Create a temporary directory for local configuration
 TMP_DIR=$(mktemp -d)
+chmod 755 "$TMP_DIR"
 # Trap to cleanup on exit
 trap "rm -rf $TMP_DIR; docker stop grafana-local gmp-frontend-local 2>/dev/null || true; docker network rm grafana-local-net 2>/dev/null || true" EXIT
 
@@ -66,6 +67,7 @@ providers:
     options:
       path: /etc/grafana/dashboards
 EOF
+chmod 644 "$TMP_DIR/datasources.yaml" "$TMP_DIR/dashboards.yaml"
 
 echo "Starting GMP Frontend..."
 docker run -d --rm \

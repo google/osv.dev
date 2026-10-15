@@ -1803,6 +1803,10 @@
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2205,6 +2209,10 @@
         {
           "id": "GHSA-9f46-5r25-5wfm",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -2267,6 +2275,10 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -2656,7 +2668,16 @@
         },
         "version": "0.5.8-2.4"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "DEBIAN-CVE-2026-102473",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-102474",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -4774,6 +4795,14 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-35189",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-35191",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-42764",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4802,6 +4831,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-42772",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-45445",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -4814,7 +4847,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-54872",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-54873",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-54874",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-54875",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -4842,11 +4887,39 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-72897",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-7383",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "DEBIAN-CVE-2026-75803",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-75804",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-75805",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-75806",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-77696",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-84782",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-84784",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -8084,6 +8157,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-vxq7-64xx-v4gw",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-wqvq-5m8c-6g24",
           "modified": "<RFC3339 date with the year 2024>"
         },
@@ -8164,6 +8241,10 @@
         },
         {
           "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-vxq7-64xx-v4gw",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -9344,6 +9425,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-vxq7-64xx-v4gw",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-wqvq-5m8c-6g24",
           "modified": "<RFC3339 date with the year 2024>"
         },
@@ -9424,6 +9509,10 @@
         },
         {
           "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-vxq7-64xx-v4gw",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -9602,6 +9691,10 @@
       "vulns": [
         {
           "id": "GHSA-9f46-5r25-5wfm",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cxf4-7mrp-vvpr",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

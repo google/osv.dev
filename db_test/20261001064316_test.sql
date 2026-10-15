@@ -4,6 +4,9 @@ CREATE TABLE vulnerabilities (
   data JSONB NOT NULL,
   proto BYTEA NOT NULL
 );
+-- vuln_id does not reference vulnerabilities(id) because there is no index on (vuln_id)
+-- (to save space/writes), which would cause a full table scan on vulnerability deletes.
+-- Use vuln_commits to look up commits and delete by (commit_sha, vuln_id).
 CREATE TABLE affected_commits (
   commit_sha BYTEA NOT NULL,
   vuln_id TEXT NOT NULL,

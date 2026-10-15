@@ -176,11 +176,13 @@ func ComputeAffectedVersions(vuln *osvschema.Vulnerability) ([]AffectedVersionRo
 			if exists {
 				var allCoarse []string
 				for _, v := range versions {
-					if cm, err := eHelper.Coarse(v); err == nil {
-						allCoarse = append(allCoarse, cm)
+					cm, err := eHelper.Coarse(v)
+					if err != nil {
+						break
 					}
+					allCoarse = append(allCoarse, cm)
 				}
-				if len(allCoarse) > 0 {
+				if len(allCoarse) == len(versions) {
 					slices.Sort(allCoarse)
 					coarseMin = allCoarse[0]
 					coarseMax = allCoarse[len(allCoarse)-1]

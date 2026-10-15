@@ -15,19 +15,19 @@ import (
 )
 
 var (
-	wpPluginTracRegex = regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/]+)`)
-	wpPluginSvnRegex  = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/]+)`)
-	wpPluginOrgRegex  = regexp.MustCompile(`wordpress\.org/plugins/([^/]+)`)
-	wpThemeTracRegex  = regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/]+)`)
-	wpThemeSvnRegex   = regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/]+)`)
-	wpThemeOrgRegex   = regexp.MustCompile(`wordpress\.org/themes/([^/]+)`)
+	wpPluginTracRegex = regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/?#]+)`)
+	wpPluginSvnRegex  = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/?#]+)`)
+	wpPluginOrgRegex  = regexp.MustCompile(`wordpress\.org/plugins/([^/?#]+)`)
+	wpThemeTracRegex  = regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/?#]+)`)
+	wpThemeSvnRegex   = regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/?#]+)`)
+	wpThemeOrgRegex   = regexp.MustCompile(`wordpress\.org/themes/([^/?#]+)`)
 
-	wordfencePluginRegex = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/]+)`)
-	wordfenceThemeRegex  = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-themes/([^/]+)`)
+	wordfencePluginRegex = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/?#]+)`)
+	wordfenceThemeRegex  = regexp.MustCompile(`wordfence\.com/threat-intel/vulnerabilities/wordpress-themes/([^/?#]+)`)
 
-	patchstackVulnRegex   = regexp.MustCompile(`patchstack\.com/database/vulnerability/([^/]+)`)
-	patchstackPluginRegex = regexp.MustCompile(`patchstack\.com/database/wordpress/plugin/([^/]+)`)
-	patchstackThemeRegex  = regexp.MustCompile(`patchstack\.com/database/wordpress/theme/([^/]+)`)
+	patchstackVulnRegex   = regexp.MustCompile(`patchstack\.com/database/vulnerability/([^/?#]+)`)
+	patchstackPluginRegex = regexp.MustCompile(`patchstack\.com/database/wordpress/plugin/([^/?#]+)`)
+	patchstackThemeRegex  = regexp.MustCompile(`patchstack\.com/database/wordpress/theme/([^/?#]+)`)
 )
 
 // extractWordPressSlugAndEcosystem unifies the logic to extract the slug and determine

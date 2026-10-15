@@ -100,7 +100,7 @@ func (m *ConversionMetrics) AddNotef(format string, a ...any) {
 
 // SetOutcome sets the outcome of the conversion only if it's not already set, or has become successful.
 func (m *ConversionMetrics) SetOutcome(outcome ConversionOutcome) {
-	if m.Outcome == ConversionUnknown { // TODO DOUBLE CHECK
+	if m.Outcome == ConversionUnknown || outcome == Successful {
 		m.Outcome = outcome
 	}
 }

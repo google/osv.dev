@@ -171,35 +171,67 @@ type WordpressHandler interface {
 
 // WordpressExtractor handles version extraction for WordPress CVEs.
 type WordpressExtractor struct {
-	Strategies []strategies.VersionStrategy
-	Handler    WordpressHandler
+	DefaultVersionExtractor
+
+	Handler WordpressHandler
 }
 
 var _ VersionExtractor = &WordpressExtractor{}
 
-func (w *WordpressExtractor) getStrategies() []strategies.VersionStrategy {
-	if len(w.Strategies) > 0 {
-		return w.Strategies
-	}
-
-	return strategies.Default()
-}
-
-func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string, _ git.RepoTagsCache, _ *http.Client) {
+func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string, cache git.RepoTagsCache, httpClient *http.Client) {
 	if w.Handler != nil {
 		w.Handler.PreExtract(&cve)
 	}
 
-	// 1. Extract slug and determine ecosystem using shared helper
+	// 1. Run default extraction first
+	w.DefaultVersionExtractor.ExtractVersions(cve, v, metrics, repos, cache, httpClient)
+
+	// 2. Extract slug and determine ecosystem using shared helper
 	slug, ecosystem := extractWordPressSlugAndEcosystem(cve, v)
 
 	if w.Handler != nil {
 		w.Handler.PostExtract(v, metrics, slug, ecosystem)
 	}
 
+	// 3. Update affected packages with correct ecosystem and slug
+	if len(v.Affected) > 0 {
+		for _, aff := range v.Affected {
+			isGit := false
+			for _, r := range aff.GetRanges() {
+				if r.GetType() == osvschema.Range_GIT {
+					isGit = true
+					break
+				}
+			}
+			if isGit {
+				aff.Package = nil // Do not put package info on GIT ranges
+				continue
+			}
+
+			if slug == "" {
+				continue // Skip enriching if we have no slug
+			}
+
+			if aff.GetPackage() == nil {
+				aff.Package = &osvschema.Package{
+					Ecosystem: ecosystem,
+					Name:      slug,
+				}
+			} else {
+				// Update ecosystem if it was generic
+				if aff.GetPackage().GetEcosystem() == "WordPress" || aff.GetPackage().GetEcosystem() == "" {
+					aff.Package.Ecosystem = ecosystem
+				}
+				if aff.GetPackage().GetName() == "" {
+					aff.Package.Name = slug
+				}
+			}
+		}
+	}
+
 	if slug == "" {
 		metrics.AddNotef("No WordPress slug found to attempt generating ECOSYSTEM ranges")
-		if len(repos) == 0 {
+		if len(repos) == 0 && len(v.Affected) == 0 {
 			metrics.SetOutcome(models.NoRepos)
 		}
 
@@ -211,10 +243,13 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 	gotVersions := false
 	var allRanges []*osvschema.Range
 
-	// 2. CNA Affected
+	// 4. CNA Affected
 	for _, cveAff := range cve.Containers.CNA.Affected {
 		versionRanges := ExtractAffectedRanges(cveAff, w.getStrategies(), metrics)
 		for _, r := range versionRanges {
+			if r.Range.GetType() == osvschema.Range_GIT {
+				continue
+			}
 			r.Range.Type = osvschema.Range_ECOSYSTEM
 			allRanges = append(allRanges, r.Range)
 		}
@@ -225,7 +260,7 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 		metrics.AddSource(models.VersionSourceAffected)
 	}
 
-	// 3. Fallback: CPE
+	// 5. Fallback: CPE
 	if !gotVersions {
 		versionRanges, _ := strategies.CPEVersionExtraction(cve, metrics)
 		for _, r := range versionRanges {

@@ -40,6 +40,7 @@ func WPScan() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
+		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
@@ -52,6 +53,7 @@ func Wordfence() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
+		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}
@@ -64,6 +66,7 @@ func Patchstack() []VersionStrategy {
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
+		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 	}

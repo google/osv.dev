@@ -88,6 +88,7 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 
 	return &Attrs{
 		Generation: attrs.Generation,
+		Size:       attrs.Size,
 		CustomTime: attrs.CustomTime,
 		CRC32C:     attrs.CRC32C,
 		Updated:    attrs.Updated,
@@ -221,6 +222,7 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 				Name: attrs.Name,
 				Attrs: Attrs{
 					Generation: attrs.Generation,
+					Size:       attrs.Size,
 					CustomTime: attrs.CustomTime,
 					CRC32C:     attrs.CRC32C,
 					Updated:    attrs.Updated,

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
 )
@@ -511,10 +512,14 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 		// Log error but continue with the rest of the hashes if a commit hash is invalid
 		if err != nil {
 			logger.WarnContext(ctx, "Failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 		if len(hashBytes) != 20 {
 			logger.WarnContext(ctx, "Invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 
@@ -523,6 +528,7 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 			indices = append(indices, idx)
 		} else {
 			logger.WarnContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
 		}
 	}
 

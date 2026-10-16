@@ -279,12 +279,14 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	}
 
 	// Safety Check
+	dc := activeDeleterCounters.Load()
 	threshold := config.DeleteThreshold
 	if sourceRepo.REST.IgnoreDeletionThreshold {
 		threshold = 101.0
 	}
 	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
 	if percentage >= threshold {
+		dc.recordRefused(sourceRepo.Name, len(toDelete))
 		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
@@ -295,6 +297,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 
 		return errors.New("deletion threshold exceeded")
 	}
+	dc.recordWithdrawn(sourceRepo.Name, len(toDelete))
 
 	// Trigger deletions
 	for _, entry := range toDelete {

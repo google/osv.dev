@@ -774,6 +774,7 @@ func TestHandleGeneric(t *testing.T) {
 
 type mockSourceRepoStore struct {
 	models.SourceRepositoryStore
+
 	repos []*models.SourceRepository
 }
 
@@ -816,6 +817,7 @@ func (m *mockJobDataStore) Set(_ context.Context, key string, val any) error {
 
 type mockImportFindingsStore struct {
 	models.ImportFindingsStore
+
 	findings []*models.ImportFinding
 }
 
@@ -895,9 +897,9 @@ func TestCollectMetrics(t *testing.T) {
 	wantMetrics := []string{
 		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 2`,
 		`osv_recordchecker_invalid_records{source="ghsa"} 2`,
-		`osv_reconciler_records_reconciled_total{status="missing"} 5`,
-		`osv_deleter_refused_deletions_total{source="ghsa"} 42`,
-		`osv_data_quality_findings_total{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
+		`osv_reconciler_records_reconciled{status="missing"} 5`,
+		`osv_deleter_refused_deletions{source="ghsa"} 42`,
+		`osv_data_quality_findings{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
 		`osv_dataset_total_vulnerabilities{ecosystem="all"} 2`,
 		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
 		`osv_export_zip_size_bytes{ecosystem="all"} 15`,

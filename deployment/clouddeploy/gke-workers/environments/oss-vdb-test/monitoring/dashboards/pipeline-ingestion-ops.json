@@ -763,7 +763,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum by (status) (osv_reconciler_records_reconciled_total)",
+          "expr": "sum by (status) (osv_reconciler_records_reconciled)",
           "legendFormat": "Reconciled ({{status}})",
           "range": true,
           "refId": "A"
@@ -844,7 +844,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum by (source) (osv_deleter_refused_deletions_total)",
+          "expr": "sum by (source) (osv_deleter_refused_deletions)",
           "legendFormat": "Safety Refusals: {{source}}",
           "range": true,
           "refId": "B"

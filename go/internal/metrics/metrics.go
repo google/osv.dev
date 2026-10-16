@@ -58,7 +58,7 @@ var (
 	// DeleterRefusedDeletionsTotal tracks the number of deletions refused due to safety threshold limits.
 	DeleterRefusedDeletionsTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "osv_deleter_refused_deletions_total",
+			Name: "osv_deleter_refused_deletions",
 			Help: "Number of records refused for deletion due to safety threshold limits by source.",
 		},
 		[]string{"source"},
@@ -67,7 +67,7 @@ var (
 	// ReconcilerRecordsReconciledTotal tracks the latest importer-reconciler record counts by status.
 	ReconcilerRecordsReconciledTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "osv_reconciler_records_reconciled_total",
+			Name: "osv_reconciler_records_reconciled",
 			Help: "Number of records evaluated by importer-reconciler by status (up_to_date, missing, outdated).",
 		},
 		[]string{"status"},
@@ -139,7 +139,7 @@ var (
 	// DataQualityFindingsTotal tracks active osv-linter findings (ImportFinding entities) by source, rule code, and severity.
 	DataQualityFindingsTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "osv_data_quality_findings_total",
+			Name: "osv_data_quality_findings",
 			Help: "Active vulnerability data quality linter findings by upstream source, rule code, and severity.",
 		},
 		[]string{"source", "rule_code", "severity"},
@@ -230,7 +230,7 @@ const (
 	GitterErrorFetch      GitterErrorType = "fetch_error"
 )
 
-func init() {
+func initDefaultSeries() {
 	// Pre-initialize known counter label combinations to 0 so panels render 0 instead of "No data" when healthy.
 	for _, errType := range []WorkerErrorType{
 		WorkerErrorParse,

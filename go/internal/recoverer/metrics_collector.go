@@ -241,8 +241,8 @@ func (r *Recoverer) collectDatasetAndExportMetrics(ctx context.Context) {
 				continue
 			}
 			vulnID := pathOrID
-			if idx := strings.LastIndex(pathOrID, "/"); idx >= 0 {
-				vulnID = pathOrID[idx+1:]
+			if _, after, ok := strings.CutLast(pathOrID, "/"); ok {
+				vulnID = after
 			}
 			if vulnID != "" {
 				uniqueIDs[vulnID] = struct{}{}

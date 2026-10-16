@@ -513,11 +513,13 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 		if err != nil {
 			logger.WarnContext(ctx, "Failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
 			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 		if len(hashBytes) != 20 {
 			logger.WarnContext(ctx, "Invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
 			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 

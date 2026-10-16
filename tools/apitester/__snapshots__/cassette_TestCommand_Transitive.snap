@@ -2301,6 +2301,10 @@
         {
           "id": "PYSEC-2026-2320",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4312",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }

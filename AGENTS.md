@@ -272,7 +272,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 
 10. **`recoverer`**:
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
-   - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
+   - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), handles GCS generation mismatches, and runs a periodic collector exposing dataset, drift, reconciler, deleter, and linter state metrics for GMP/Grafana.
 
 11. **`vanir_signatures`**:
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
@@ -290,7 +290,8 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
-- **`recoverer/`**: Core engine and handlers for the Go recoverer.
+- **`recoverer/`**: Core engine, handlers, and periodic batch/dataset state metrics collector for the Go recoverer.
+- **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
 - **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
   - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).

@@ -180,6 +180,7 @@
         "type": "prometheus",
         "uid": "gmp"
       },
+      "description": "Current age of the single oldest unacknowledged message across Pub/Sub subscriptions (labeled with its subscription_id). Drops immediately once the message is acknowledged or expires.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -226,7 +227,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "pluginVersion": "11.5.0",
       "targets": [
@@ -236,9 +237,9 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "max(pubsub_googleapis_com:subscription_oldest_unacked_message_age)",
+          "expr": "topk(1, max by (subscription_id) (pubsub_googleapis_com:subscription_oldest_unacked_message_age))",
           "instant": true,
-          "legendFormat": "Oldest Unacked Msg Age",
+          "legendFormat": "{{subscription_id}}",
           "range": false,
           "refId": "A"
         }
@@ -430,7 +431,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum(rate(osv_importer_published_tasks_total[5m]))",
+          "expr": "sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
           "legendFormat": "Intake Rate (Tasks In)",
           "range": true,
           "refId": "A"
@@ -452,7 +453,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) - sum(rate(osv_importer_published_tasks_total[5m]))",
+          "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) - sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
           "legendFormat": "Net Drain Speed (Tasks/s)",
           "range": true,
           "refId": "C"
@@ -728,7 +729,7 @@
             "fillOpacity": 15,
             "lineWidth": 2
           },
-          "unit": "ops"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -762,13 +763,24 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum by (status) (rate(osv_reconciler_records_reconciled_total[5m]))",
+          "expr": "sum by (status) (osv_reconciler_records_reconciled_total)",
           "legendFormat": "Reconciled ({{status}})",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "sum by (status) (rate(osv_worker_tasks_processed_total{work_pool=\"reimport\"}[5m]))",
+          "legendFormat": "Reimport Pool / s ({{status}})",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Importer Reconciler Processing Rate",
+      "title": "Importer Reconciler & Reimport Pool Status",
       "type": "timeseries"
     },
     {
@@ -821,8 +833,8 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum by (source) (rate(osv_deleter_upstream_withdrawals_total[1h]))",
-          "legendFormat": "Withdrawals: {{source}}",
+          "expr": "sum by (source) (increase(osv_deleter_upstream_withdrawals_total[1h]))",
+          "legendFormat": "Withdrawals (1h): {{source}}",
           "range": true,
           "refId": "A"
         },
@@ -832,14 +844,63 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "rate(osv_deleter_refused_deletions_total[1h])",
-          "legendFormat": "Safety Refusals",
+          "expr": "sum by (source) (osv_deleter_refused_deletions_total)",
+          "legendFormat": "Safety Refusals: {{source}}",
           "range": true,
           "refId": "B"
         }
       ],
       "title": "Upstream Withdrawals & Safety Refusals",
       "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 104,
+      "title": "Failed Task & Pipeline Error Inspector (Cloud Logging)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "googlecloud-logging-datasource",
+        "uid": "cloud-logging"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 12,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "googlecloud-logging-datasource",
+            "uid": "cloud-logging"
+          },
+          "projectId": "oss-vdb-test",
+          "queryText": "resource.type=\"k8s_container\"\nresource.labels.container_name=~\"^(worker-private|workers-reimport|workers-cves|recoverer|importer|importer-deleter)$\"\nseverity>=ERROR",
+          "refId": "A"
+        }
+      ],
+      "title": "Failed Worker, Importer & Recoverer Error Logs",
+      "type": "logs"
     }
   ],
   "refresh": "30s",

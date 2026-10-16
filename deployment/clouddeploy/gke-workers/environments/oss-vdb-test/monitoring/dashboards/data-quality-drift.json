@@ -86,7 +86,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "sum(osv_dataset_total_vulnerabilities)",
+          "expr": "sum(osv_dataset_total_vulnerabilities{ecosystem=\"all\"}) or sum(osv_dataset_total_vulnerabilities)",
           "instant": true,
           "legendFormat": "Total Vulns",
           "range": false,
@@ -367,9 +367,20 @@
           "legendFormat": "Drift Type: {{type}}",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "sum by (reason, status) (increase(osv_recoverer_processed_records_total[1h]))",
+          "legendFormat": "Recoverer (1h): {{reason}} ({{status}})",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Datastore vs. GCS Drift Discrepancies by Drift Type",
+      "title": "Datastore vs. GCS Drift Discrepancies & Recoverer Activity",
       "type": "timeseries"
     },
     {

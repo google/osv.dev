@@ -28,7 +28,9 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/dustin/go-humanize"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -230,6 +232,9 @@ func checkInvalidRepoCache(ctx context.Context, repoURL string) (int, bool) {
 
 // cacheInvalidRepo records a negative response (404, 403, or 429) in the cache.
 func cacheInvalidRepo(repoURL string, statusCode int) {
+	if statusCode == http.StatusNotFound {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
+	}
 	if statusCode == http.StatusNotFound || statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
 		invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
 	}
@@ -273,16 +278,19 @@ func isLocalRequest(req *http.Request) bool {
 
 func prepareURL(req *http.Request, repoURL string) (string, error) {
 	if repoURL == "" {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 		return "", errors.New("missing url parameter")
 	}
 
 	u, err := url.Parse(repoURL)
 	if err != nil {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
 	if !isLocalRequest(req) {
 		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
 		}
 	}
@@ -316,11 +324,28 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 }
 
 func logRequestCompletion(ctx context.Context, endpoint string, start time.Time, statusCode int) {
+	duration := time.Since(start)
+	metrics.RecordGitterOperation(endpoint, fmt.Sprintf("%dxx", statusCode/100), duration)
 	logger.InfoContext(ctx, "Request completed",
 		slog.String("endpoint", endpoint),
 		slog.Int("status", statusCode),
-		slog.Duration("duration", time.Since(start)),
+		slog.Duration("duration", duration),
 	)
+}
+
+func updateDiskMetrics(dir string) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(dir, &stat); err != nil {
+		return
+	}
+	if stat.Bsize <= 0 || stat.Blocks == 0 {
+		return
+	}
+	blockSize := float64(stat.Bsize)
+	usedBytes := float64(stat.Blocks-stat.Bfree) * blockSize
+	totalBytes := float64(stat.Blocks) * blockSize
+	metrics.GitterDiskUsedBytes.Set(usedBytes)
+	metrics.GitterDiskTotalBytes.Set(totalBytes)
 }
 
 func getRepoDirName(repoURL string) string {
@@ -414,6 +439,24 @@ func main() {
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	metrics.StartMetricsServer(ctx, metricsPort)
+	http.Handle("GET /metrics", promhttp.Handler())
+
+	updateDiskMetrics(*workDir)
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				updateDiskMetrics(*workDir)
+			}
+		}
+	}()
 
 	for endpoint, handler := range endpointHandlers {
 		http.Handle(endpoint, otelhttp.NewHandler(handler, endpoint))
@@ -666,6 +709,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	default:
 		affectedCommits = repo.AffectedSingleBranch(ctx, se)
 	}
+	metrics.RecordGitterCommitsScanned(len(affectedCommits))
 
 	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))
 	for _, h := range cherrypicks.Introduced {
@@ -1049,6 +1093,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	metrics.RecordGitterCommitsScanned(len(commits))
 
 	pbCommits := make([]*pb.CommitDiff, 0, len(commits))
 	for _, c := range commits {

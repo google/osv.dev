@@ -35,6 +35,7 @@ import (
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/gitter"
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -54,6 +55,8 @@ type Stores struct {
 	DatastoreClient *datastore.Client
 	SourceRepo      models.SourceRepositoryStore
 	Relations       models.RelationsStore
+	JobData         models.JobDataStore
+	ImportFindings  models.ImportFindingsStore
 	GCS             clients.CloudStorage
 	GCSProvider     clients.CloudStorageProvider
 	Publisher       clients.Publisher
@@ -128,10 +131,16 @@ func (r *Recoverer) HandleMessage(ctx context.Context, m *pubsub.Message) {
 		err = r.HandleGeneric(taskCtx, m)
 	}
 
+	reason := taskType
+	if reason == "" {
+		reason = "generic"
+	}
 	if err != nil {
+		metrics.RecordRecovererTask(reason, metrics.TaskStatusError)
 		logger.ErrorContext(taskCtx, "Failed to process recovery task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
+		metrics.RecordRecovererTask(reason, metrics.TaskStatusSuccess)
 		m.Ack()
 	}
 }

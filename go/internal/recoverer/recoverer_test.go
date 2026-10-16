@@ -17,8 +17,11 @@ package recoverer_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"iter"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +36,7 @@ import (
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/testutils"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -765,5 +769,142 @@ func TestHandleGeneric(t *testing.T) {
 
 	if err := rec.HandleGeneric(ctx, msg); err != nil {
 		t.Fatalf("HandleGeneric returned error: %v", err)
+	}
+}
+
+type mockSourceRepoStore struct {
+	models.SourceRepositoryStore
+	repos []*models.SourceRepository
+}
+
+func (m *mockSourceRepoStore) All(_ context.Context) iter.Seq2[*models.SourceRepository, error] {
+	return func(yield func(*models.SourceRepository, error) bool) {
+		for _, r := range m.repos {
+			if !yield(r, nil) {
+				return
+			}
+		}
+	}
+}
+
+type mockJobDataStore struct {
+	data map[string]any
+}
+
+func (m *mockJobDataStore) Get(_ context.Context, key string, dst any) error {
+	val, ok := m.data[key]
+	if !ok {
+		return models.ErrNotFound
+	}
+	switch d := dst.(type) {
+	case *[]string:
+		*d = val.([]string)
+	case *models.ReconcilerSummary:
+		*d = val.(models.ReconcilerSummary)
+	case *models.DeleterSummary:
+		*d = val.(models.DeleterSummary)
+	}
+
+	return nil
+}
+
+func (m *mockJobDataStore) Set(_ context.Context, key string, val any) error {
+	m.data[key] = val
+
+	return nil
+}
+
+type mockImportFindingsStore struct {
+	models.ImportFindingsStore
+	findings []*models.ImportFinding
+}
+
+func (m *mockImportFindingsStore) ListAll(_ context.Context) ([]*models.ImportFinding, error) {
+	return m.findings, nil
+}
+
+func TestCollectMetrics(t *testing.T) {
+	ctx := context.Background()
+	gcsMock := testutils.NewMockStorage()
+
+	lastUpdated := time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC)
+	sourceRepoStore := &mockSourceRepoStore{
+		repos: []*models.SourceRepository{
+			{
+				Name:       "ghsa",
+				Type:       models.SourceRepositoryTypeBucket,
+				IDPrefixes: []string{"GHSA-"},
+				Bucket: &models.SourceRepoBucket{
+					Name:        "ghsa-bucket",
+					LastUpdated: &lastUpdated,
+				},
+			},
+		},
+	}
+
+	jobDataStore := &mockJobDataStore{
+		data: map[string]any{
+			models.JobDataRecordCheckerInvalidRecords: []string{"GHSA-1111", "GHSA-2222"},
+			models.JobDataReconcilerSummary: models.ReconcilerSummary{
+				UpToDateCount: 100,
+				MissingCount:  5,
+				OutdatedCount: 3,
+			},
+			models.JobDataDeleterSummary: models.DeleterSummary{
+				RefusedBySource: map[string]int64{"ghsa": 42},
+			},
+		},
+	}
+
+	importFindingsStore := &mockImportFindingsStore{
+		findings: []*models.ImportFinding{
+			{
+				BugID:    "GHSA-1111",
+				Source:   "ghsa",
+				Findings: []models.ImportFindings{models.ImportFindingsInvalidRange, models.ImportFindingsInvalidAliases},
+			},
+		},
+	}
+
+	_ = gcsMock.WriteObject(ctx, "all.zip", []byte("zip-bytes-12345"), nil)
+	_ = gcsMock.WriteObject(ctx, "modified_id.csv", []byte("2026-10-15T00:00:00Z,PyPI/GHSA-1111\n2026-10-15T00:00:00Z,npm/GHSA-1111\n2026-10-15T00:00:00Z,PyPI/GHSA-2222\n"), nil)
+	_ = gcsMock.WriteObject(ctx, "ecosystems.txt", []byte("PyPI\n"), nil)
+	_ = gcsMock.WriteObject(ctx, "PyPI/all.zip", []byte("pypi-zip"), nil)
+	_ = gcsMock.WriteObject(ctx, "PyPI/modified_id.csv", []byte("2026-10-15T00:00:00Z,GHSA-1111\n2026-10-15T00:00:00Z,GHSA-2222\n"), nil)
+
+	rec := recoverer.New(recoverer.Config{
+		Stores: recoverer.Stores{
+			SourceRepo:     sourceRepoStore,
+			JobData:        jobDataStore,
+			ImportFindings: importFindingsStore,
+			GCS:            gcsMock,
+		},
+	})
+
+	rec.CollectMetrics(ctx)
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	w := httptest.NewRecorder()
+	promhttp.Handler().ServeHTTP(w, req)
+	body, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		t.Fatalf("Failed to read /metrics body: %v", err)
+	}
+	metricsText := string(body)
+
+	wantMetrics := []string{
+		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 2`,
+		`osv_recordchecker_invalid_records{source="ghsa"} 2`,
+		`osv_reconciler_records_reconciled_total{status="missing"} 5`,
+		`osv_deleter_refused_deletions_total{source="ghsa"} 42`,
+		`osv_data_quality_findings_total{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
+		`osv_dataset_total_vulnerabilities{ecosystem="all"} 2`,
+		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
+		`osv_export_zip_size_bytes{ecosystem="all"} 15`,
+	}
+	for _, want := range wantMetrics {
+		if !strings.Contains(metricsText, want) {
+			t.Errorf("Expected /metrics output to contain %q, got:\n%s", want, metricsText)
+		}
 	}
 }

@@ -60,4 +60,7 @@ type ImportFindingsStore interface {
 
 	// ListAllFromSource lists all import findings for a given source.
 	ListAllFromSource(ctx context.Context, source string) ([]*ImportFinding, error)
+
+	// ListAll lists all import findings across all sources.
+	ListAll(ctx context.Context) ([]*ImportFinding, error)
 }

@@ -27,3 +27,11 @@ data:
         jsonData:
           authenticationType: gce
           defaultProject: oss-vdb-test
+      - name: Cloud Logging
+        uid: cloud-logging
+        type: googlecloud-logging-datasource
+        access: proxy
+        editable: false
+        jsonData:
+          authenticationType: gce
+          defaultProject: oss-vdb-test

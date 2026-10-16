@@ -26,6 +26,10 @@ chmod 755 "$TMP_DIR"
 # Trap to cleanup on exit
 trap "rm -rf $TMP_DIR; docker stop grafana-local gmp-frontend-local 2>/dev/null || true; docker network rm grafana-local-net 2>/dev/null || true" EXIT
 
+# Copy ADC with read permissions for the container user (grafana runs as UID 472)
+cp "$HOME/.config/gcloud/application_default_credentials.json" "$TMP_DIR/adc.json"
+chmod 644 "$TMP_DIR/adc.json"
+
 # Create a private Docker network
 docker network create grafana-local-net 2>/dev/null || true
 
@@ -52,6 +56,14 @@ datasources:
     jsonData:
       authenticationType: gce
       defaultProject: $GCP_PROJECT
+  - name: Cloud Logging
+    uid: cloud-logging
+    type: googlecloud-logging-datasource
+    access: proxy
+    editable: true
+    jsonData:
+      authenticationType: gce
+      defaultProject: $GCP_PROJECT
 EOF
 
 # Extract dashboards.yaml provider
@@ -73,7 +85,7 @@ echo "Starting GMP Frontend..."
 docker run -d --rm \
   --name gmp-frontend-local \
   --network grafana-local-net \
-  -v "$HOME/.config/gcloud/application_default_credentials.json:/tmp/keys/adc.json:ro" \
+  -v "$TMP_DIR/adc.json:/tmp/keys/adc.json:ro" \
   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
   gke.gcr.io/prometheus-engine/frontend:v0.18.2-gke.1@sha256:35ab356d969255dd7694ae371bf0991b97907451b4c7e1574b58a096d3be5977 \
   --web.listen-address=0.0.0.0:9090 \
@@ -111,6 +123,9 @@ docker run --rm \
   -p 127.0.0.1:3000:3000 \
   -e GF_AUTH_ANONYMOUS_ENABLED="true" \
   -e GF_AUTH_ANONYMOUS_ORG_ROLE="Admin" \
+  -e GF_INSTALL_PLUGINS="googlecloud-logging-datasource" \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
+  -v "$TMP_DIR/adc.json:/tmp/keys/adc.json:ro" \
   -v "$TMP_DIR/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro" \
   -v "$TMP_DIR/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro" \
   -v "$(pwd)/$MONITORING_DIR/dashboards:/etc/grafana/dashboards:ro" \

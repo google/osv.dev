@@ -575,6 +575,83 @@ func TestPickAffectedInformation(t *testing.T) {
 			},
 		},
 		{
+			name: "Merge references-only range with extracted_events source with CVE range",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+								},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStructValue(&structpb.Struct{
+												Fields: map[string]*structpb.Value{
+													"source": structpb.NewStringValue("REFERENCES"),
+												},
+											}),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"source": structpb.NewStringValue("AFFECTED_FIELD"),
+									"extracted_events": structpb.NewListValue(&structpb.ListValue{
+										Values: []*structpb.Value{
+											structpb.NewStructValue(&structpb.Struct{
+												Fields: map[string]*structpb.Value{
+													"source": structpb.NewStringValue("REFERENCES"),
+												},
+											}),
+										},
+									}),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Merge references-only range (CVE-2016-15012): single fixed in base, references adds patch fixed, replace base fixed",
 			cve5Affected: []*osvschema.Affected{
 				{

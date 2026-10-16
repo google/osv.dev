@@ -211,6 +211,8 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 			card.ResolvedRanges += m.ResolvedRangesCount
 			card.UnresolvedRanges += m.UnresolvedRangesCount
 			switch m.Outcome {
+			case models.ConversionUnknown:
+				// Tracked in card.Outcomes map above.
 			case models.Successful:
 				card.Successful++
 			case models.Rejected:

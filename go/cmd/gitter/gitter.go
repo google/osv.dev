@@ -90,6 +90,13 @@ var (
 		"github.com/chromium/chromium":                           "https://chromium.googlesource.com/chromium/src.git",
 	}
 
+	// gitMirrorPrefixes lists more performant mirrors for whole hosting sites.
+	// Keys are normalized like gitMirrors, and the rest of the path following the key is appended to the value.
+	gitMirrorPrefixes = map[string]string{
+		// All Apache Software Foundation repositories are mirrored to GitHub.
+		"gitbox.apache.org/repos/asf/": "https://github.com/apache/",
+	}
+
 	// caseInsensitiveHosts lists Git hosts with case-insensitive repo paths.
 	// Other hosts (e.g. Gerrit/cgit-based) may have case-sensitive paths that will 404 if lowercased
 	// (e.g. https://android.googlesource.com/platform/packages/modules/Bluetooth).
@@ -308,6 +315,15 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 	if mirror, ok := gitMirrors[mirrorKey]; ok {
 		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
 		return mirror, nil
+	}
+	for prefix, mirrorPrefix := range gitMirrorPrefixes {
+		rest, ok := strings.CutPrefix(mirrorKey, prefix)
+		if ok && rest != "" {
+			mirror := mirrorPrefix + rest + ".git"
+			logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
+
+			return mirror, nil
+		}
 	}
 
 	logger.Debug("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))

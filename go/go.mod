@@ -20,6 +20,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/osv-scalibr v0.5.3
 	github.com/hashicorp/go-retryablehttp v0.7.8
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/klauspost/compress v1.20.1
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/nikolalohinski/gonja/v2 v2.9.1
@@ -95,6 +96,8 @@ require (
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect

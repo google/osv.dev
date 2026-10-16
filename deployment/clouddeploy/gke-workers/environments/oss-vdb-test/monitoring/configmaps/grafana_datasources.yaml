@@ -35,3 +35,9 @@ data:
         jsonData:
           authenticationType: gce
           defaultProject: oss-vdb-test
+      - name: Infinity (GCS JSON)
+        uid: infinity
+        type: yesoreyeram-infinity-datasource
+        access: proxy
+        editable: false
+

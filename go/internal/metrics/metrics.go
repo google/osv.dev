@@ -192,6 +192,51 @@ var (
 			Help: "Total capacity in bytes of Gitter's persistent SSD cache disk.",
 		},
 	)
+
+	// CVEConversionOutcomesTotal tracks the latest CVE conversion outcome counts by converter (cve5, nvd) and outcome.
+	CVEConversionOutcomesTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "osv_cve_conversion_outcomes_total",
+			Help: "Number of CVEs evaluated by vulnfeeds converters by converter and conversion outcome.",
+		},
+		[]string{"converter", "outcome"},
+	)
+
+	// CVERangeSourcesTotal tracks the distribution of extracted version range sources across CVE conversions.
+	CVERangeSourcesTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "osv_cve_range_sources_total",
+			Help: "Number of CVEs using each version extraction source by converter.",
+		},
+		[]string{"converter", "source"},
+	)
+
+	// CVEReferenceTypesTotal tracks the count of classified OSV reference types across CVE conversions.
+	CVEReferenceTypesTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "osv_cve_reference_types_total",
+			Help: "Number of classified OSV references by converter and reference type.",
+		},
+		[]string{"converter", "ref_type"},
+	)
+
+	// CVEResolvedRangesTotal tracks resolved vs. unresolved version ranges across CVE conversions.
+	CVEResolvedRangesTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "osv_cve_resolved_ranges_total",
+			Help: "Number of resolved vs. unresolved version ranges extracted during CVE conversion by converter.",
+		},
+		[]string{"converter", "status"},
+	)
+
+	// CVECNAOutcomesTotal tracks per-CNA conversion outcomes for top Assigner CNAs.
+	CVECNAOutcomesTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "osv_cve_cna_outcomes_total",
+			Help: "Number of CVEs per Assigner CNA and conversion outcome.",
+		},
+		[]string{"cna", "outcome"},
+	)
 )
 
 // TaskStatus represents the outcome of processing a worker task.

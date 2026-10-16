@@ -25,9 +25,18 @@ import (
 	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/testutils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+type mockStorageProvider struct {
+	storage clients.CloudStorage
+}
+
+func (m *mockStorageProvider) Bucket(_ string) clients.CloudStorage {
+	return m.storage
+}
 
 type mockSourceRepoStore struct {
 	models.SourceRepositoryStore
@@ -157,11 +166,26 @@ func TestCollectMetrics(t *testing.T) {
 	_ = gcsMock.WriteObject(ctx, "PyPI/all.zip", []byte("pypi-zip"), nil)
 	_ = gcsMock.WriteObject(ctx, "PyPI/modified_id.csv", []byte("2026-10-15T00:00:00Z,GHSA-1111\n2026-10-15T00:00:00Z,GHSA-2222\n"), nil)
 
+	cveConversionMock := testutils.NewMockStorage()
+	_ = cveConversionMock.WriteObject(ctx, "metadata/cve5/outcomes/conversion-summary.json", []byte(`{
+		"converter": "cve5",
+		"outcome_counts": {"Successful": 120, "NoRepos": 30},
+		"version_sources": {"AFFECTED_FIELD": 95, "REFERENCES": 25},
+		"reference_types": {"FIX": 110, "ADVISORY": 80},
+		"resolved_ranges": 140,
+		"unresolved_ranges": 35,
+		"cna_scorecards": [
+			{"cna": "github_m", "total_cves": 100, "outcomes": {"Successful": 90, "NoRepos": 10}}
+		]
+	}`), nil)
+	_ = cveConversionMock.WriteObject(ctx, "metadata/nvd/outcomes/nvd-conversion-outcomes-all-2026-10-15T12:00.csv", []byte("CVEID,Outcome\nCVE-2026-0001,Successful\nCVE-2026-0002,NoCommitRanges\nCVE-2026-0003,Successful\n"), nil)
+
 	collector := NewCollector(Stores{
 		SourceRepo:     sourceRepoStore,
 		JobData:        jobDataStore,
 		ImportFindings: importFindingsStore,
 		GCS:            gcsMock,
+		GCSProvider:    &mockStorageProvider{storage: cveConversionMock},
 	})
 
 	collector.CollectMetrics(ctx)
@@ -189,6 +213,13 @@ func TestCollectMetrics(t *testing.T) {
 		`osv_dataset_total_vulnerabilities{ecosystem="all"} 3`,
 		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
 		`osv_export_zip_size_bytes{ecosystem="all"} 15`,
+		`osv_cve_conversion_outcomes{converter="cve5",outcome="Successful"} 120`,
+		`osv_cve_conversion_outcomes{converter="nvd",outcome="Successful"} 2`,
+		`osv_cve_conversion_outcomes{converter="nvd",outcome="NoCommitRanges"} 1`,
+		`osv_cve_range_sources{converter="cve5",source="AFFECTED_FIELD"} 95`,
+		`osv_cve_reference_types{converter="cve5",ref_type="FIX"} 110`,
+		`osv_cve_resolved_ranges{converter="cve5",status="resolved"} 140`,
+		`osv_cve_cna_outcomes{cna="github_m",outcome="Successful"} 90`,
 	}
 	for _, want := range wantMetrics {
 		if !strings.Contains(metricsText, want) {

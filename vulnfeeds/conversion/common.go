@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"maps"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -91,14 +92,34 @@ func ConductAnalysis(prefix string, year string, metricsDir string, csvDir strin
 	ConductAnalysisAndUpload(prefix, year, metricsDir, csvDir, nil, "")
 }
 
+func inferConverterName(prefix, gcsOutcomesPrefix string) string {
+	lowerPrefix := strings.ToLower(prefix)
+	lowerGCS := strings.ToLower(gcsOutcomesPrefix)
+	switch {
+	case strings.Contains(lowerPrefix, "cve5") || strings.Contains(lowerGCS, "cve5"):
+		return "cve5"
+	case strings.Contains(lowerPrefix, "nvd") || strings.Contains(lowerGCS, "nvd"):
+		return "nvd"
+	default:
+		name := strings.TrimSuffix(prefix, "-")
+		if name == "" {
+			return "unknown"
+		}
+
+		return name
+	}
+}
+
 // ConductAnalysisAndUpload conducts an analysis of the conversion results after completion by reading
-// all of the .metrics.json files, writing the outcomes CSV locally, and uploading it to GCS if a helper is provided.
+// all of the .metrics.json files, writing the outcomes CSV and JSON summary/scorecard artifacts locally,
+// and uploading them to GCS if a helper is provided.
 func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csvDir string, gcsHelper *gcs.Helper, gcsOutcomesPrefix string) string {
 	if csvDir == "" {
 		csvDir = metricsDir
 	}
 	// get the current time in minutes
-	currentTime := time.Now().Format("2006-01-02T15:04")
+	now := time.Now().UTC()
+	currentTime := now.Format("2006-01-02T15:04")
 	outcomesCSV := prefix + year + "-" + currentTime + ".csv"
 	csvPath := filepath.Join(csvDir, outcomesCSV)
 
@@ -119,29 +140,93 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 		logger.Fatal("Failed to write header to CSV", slog.Any("err", err))
 	}
 
-	err = filepath.WalkDir(metricsDir, func(path string, d fs.DirEntry, err error) error {
+	converterName := inferConverterName(prefix, gcsOutcomesPrefix)
+	summary := models.ConversionSummaryReport{
+		Converter:      converterName,
+		GeneratedAt:    now.Format(time.RFC3339),
+		OutcomeCounts:  make(map[string]int),
+		VersionSources: make(map[string]int),
+		ReferenceTypes: make(map[string]int),
+	}
+	cnaMap := make(map[string]*models.CNAScorecard)
+
+	err = filepath.WalkDir(metricsDir, func(filePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && strings.HasSuffix(d.Name(), ".metrics.json") {
-			data, err := os.ReadFile(path)
+			data, err := os.ReadFile(filePath)
 			if err != nil {
-				logger.Warn("Failed to read metrics file", slog.String("path", path), slog.Any("err", err))
+				logger.Warn("Failed to read metrics file", slog.String("path", filePath), slog.Any("err", err))
 				return nil // Continue
 			}
 
-			var metrics models.ConversionMetrics
-			if err := json.Unmarshal(data, &metrics); err != nil {
-				logger.Warn("Failed to unmarshal metrics JSON", slog.String("path", path), slog.Any("err", err))
+			var m models.ConversionMetrics
+			if err := json.Unmarshal(data, &m); err != nil {
+				logger.Warn("Failed to unmarshal metrics JSON", slog.String("path", filePath), slog.Any("err", err))
 				return nil // Continue
 			}
 
+			outcomeStr := m.Outcome.String()
 			record := []string{
-				string(metrics.CVEID),
-				metrics.Outcome.String(),
+				string(m.CVEID),
+				outcomeStr,
 			}
 			if err := csvWriter.Write(record); err != nil {
-				logger.Warn("Failed to write record to CSV", slog.String("cve", string(metrics.CVEID)), slog.Any("err", err))
+				logger.Warn("Failed to write record to CSV", slog.String("cve", string(m.CVEID)), slog.Any("err", err))
+			}
+
+			summary.TotalCVEs++
+			summary.OutcomeCounts[outcomeStr]++
+			summary.ResolvedRanges += m.ResolvedRangesCount
+			summary.UnresolvedRanges += m.UnresolvedRangesCount
+
+			seenSources := make(map[models.VersionSource]bool)
+			for _, src := range m.VersionSources {
+				if src != "" && !seenSources[src] {
+					seenSources[src] = true
+					summary.VersionSources[string(src)]++
+				}
+			}
+			for refType, cnt := range m.RefTypesCount {
+				if cnt > 0 {
+					summary.ReferenceTypes[refType.String()] += cnt
+				}
+			}
+
+			cna := m.CNA
+			if cna == "" {
+				cna = converterName
+			}
+			card, ok := cnaMap[cna]
+			if !ok {
+				card = &models.CNAScorecard{
+					CNA:      cna,
+					Outcomes: make(map[string]int),
+				}
+				cnaMap[cna] = card
+			}
+			card.TotalCVEs++
+			card.Outcomes[outcomeStr]++
+			card.ResolvedRanges += m.ResolvedRangesCount
+			card.UnresolvedRanges += m.UnresolvedRangesCount
+			switch m.Outcome {
+			case models.Successful:
+				card.Successful++
+			case models.Rejected:
+				card.Rejected++
+			case models.NoSoftware:
+				card.NoSoftware++
+			case models.NoRepos:
+				card.NoRepos++
+			case models.NoCommitRanges:
+				card.NoCommitRanges++
+			case models.NoRanges:
+				card.NoRanges++
+			case models.FixUnresolvable:
+				card.FixUnresolvable++
+			case models.Error:
+				card.Error++
 			}
 		}
 
@@ -155,6 +240,39 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 	csvWriter.Flush()
 	_ = csvFile.Sync()
 
+	scorecards := make([]models.CNAScorecard, 0, len(cnaMap))
+	for _, card := range cnaMap {
+		actionable := card.TotalCVEs - card.Rejected - card.NoSoftware
+		if actionable > 0 {
+			card.SuccessRatePct = math.Round((float64(card.Successful)/float64(actionable))*10000) / 100
+		} else if card.TotalCVEs > 0 {
+			card.SuccessRatePct = math.Round((float64(card.Successful)/float64(card.TotalCVEs))*10000) / 100
+		}
+		scorecards = append(scorecards, *card)
+	}
+	slices.SortFunc(scorecards, func(a, b models.CNAScorecard) int {
+		if a.TotalCVEs != b.TotalCVEs {
+			return cmp.Compare(b.TotalCVEs, a.TotalCVEs)
+		}
+
+		return cmp.Compare(a.CNA, b.CNA)
+	})
+	summary.CNAScorecards = scorecards
+
+	summaryData, marshalErr := json.MarshalIndent(summary, "", "  ")
+	if marshalErr != nil {
+		logger.Error("Failed to marshal conversion summary JSON", slog.Any("err", marshalErr))
+	} else {
+		summaryPath := filepath.Join(csvDir, "conversion-summary.json")
+		if writeErr := os.WriteFile(summaryPath, summaryData, 0600); writeErr != nil {
+			logger.Warn("Failed to write conversion summary JSON locally", slog.String("path", summaryPath), slog.Any("err", writeErr))
+		}
+		scorecardsPath := filepath.Join(csvDir, "cna-scorecards.json")
+		if writeErr := os.WriteFile(scorecardsPath, summaryData, 0600); writeErr != nil {
+			logger.Warn("Failed to write CNA scorecards JSON locally", slog.String("path", scorecardsPath), slog.Any("err", writeErr))
+		}
+	}
+
 	if gcsHelper != nil {
 		csvData, err := os.ReadFile(csvPath)
 		if err != nil {
@@ -166,6 +284,23 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 			}
 			gcsHelper.Upload(gcsObjName, bytes.NewReader(csvData), "", "text/csv")
 			logger.Info("Queued outcome CSV upload to GCS", slog.String("object", gcsObjName))
+		}
+
+		if marshalErr == nil {
+			summaryObjName := "conversion-summary.json"
+			scorecardsObjName := "cna-scorecards.json"
+			if gcsOutcomesPrefix != "" {
+				summaryObjName = path.Join(gcsOutcomesPrefix, "conversion-summary.json")
+				scorecardsObjName = path.Join(gcsOutcomesPrefix, "cna-scorecards.json")
+			}
+			gcsHelper.Upload(summaryObjName, bytes.NewReader(summaryData), "", "application/json")
+			gcsHelper.Upload(scorecardsObjName, bytes.NewReader(summaryData), "", "application/json")
+			if converterName == "cve5" && gcsOutcomesPrefix != "" {
+				gcsHelper.Upload("cna-scorecards.json", bytes.NewReader(summaryData), "", "application/json")
+			}
+			logger.Info("Queued conversion summary and CNA scorecards upload to GCS",
+				slog.String("summary_object", summaryObjName),
+				slog.String("scorecards_object", scorecardsObjName))
 		}
 	}
 

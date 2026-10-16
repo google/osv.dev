@@ -3681,6 +3681,18 @@
         },
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-212953.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2024-11053.html"
         },
         {
@@ -3774,6 +3786,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
         },
         {
           "type": "WEB",
@@ -3887,6 +3911,18 @@
         },
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2024-2398.html"
         },
         {
@@ -3987,6 +4023,18 @@
         },
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2024-2466.html"
         },
         {
@@ -4082,6 +4130,18 @@
         },
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-355557.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2024-7264.html"
         },
         {
@@ -4169,6 +4229,14 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
         },
         {
           "type": "WEB",
@@ -4354,6 +4422,14 @@
       "references": [
         {
           "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
           "url": "https://curl.se/docs/CVE-2025-0167.html"
         },
         {
@@ -4475,7 +4551,8 @@
                 {
                   "fixed": "b011e3fcfb06d6c0278595ee2ee297036fbe9793"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 106,
@@ -4563,7 +4640,8 @@
                 {
                   "fixed": "39d1976b7f709a516e3243338ebc0443bdd8d56d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 285,
@@ -4655,7 +4733,8 @@
                 {
                   "fixed": "1a822275d333dc6da6043497160fd04c8fa48640"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 214,
@@ -4836,7 +4915,8 @@
                 {
                   "fixed": "adca486c125d9a6d9565b9607a19dce803a8b479"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 142,
@@ -4927,7 +5007,8 @@
                 {
                   "fixed": "16d5f2a5660c61cc27bd5f1c7f512391d1c927aa"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 143,
@@ -5083,7 +5164,8 @@
                 {
                   "fixed": "bfbff7852f050232edd3e5ca5c6bf2021c340f5a"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 78,
@@ -5163,7 +5245,8 @@
                 {
                   "fixed": "5c6b4880357ab3e72967c1c45cae0f96ffabc535"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 357,
@@ -5249,7 +5332,8 @@
                 {
                   "fixed": "ab3bb8cd8be8f9d4acb97da0418abc279182041e"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 94,
@@ -5769,7 +5853,8 @@
                 {
                   "fixed": "5f13a7645e565c5c1a06f3ef86e97afb856fb364"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 403,
@@ -5859,7 +5944,8 @@
                 {
                   "fixed": "507e7be573b0a76fca597b75ff7cb27a66e7d865"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 271,
@@ -5946,7 +6032,8 @@
                 {
                   "fixed": "33e43985b8f3b9e66691d06e70be0395849856cd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 352,
@@ -6037,7 +6124,8 @@
                 {
                   "fixed": "74a169575d6412dc0ff532acdf94de35a6c2a571"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 210,
@@ -6128,7 +6216,8 @@
                 {
                   "fixed": "188c2f166a20fa97c2325b2da7d0e5cecc13725f"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 323,
@@ -6218,7 +6307,8 @@
                 {
                   "fixed": "3a19987a87f393d9394fe5acc7643f6c263c92db"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 115,
@@ -6305,7 +6395,8 @@
                 {
                   "fixed": "b4024bf808bd558026fdc6096e8457f199ace306"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 325,
@@ -6396,7 +6487,8 @@
                 {
                   "fixed": "c1cfdf59acbaf9504c4578d4cf56cdd7c8594507"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 340,
@@ -6482,7 +6574,8 @@
                 {
                   "fixed": "5267ed859d545534d0c21675a2b70af5a3b6e3ef"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 209,
@@ -6557,7 +6650,8 @@
                 {
                   "fixed": "7be1e70cb6bcd83e130ecfe8cb91b6a7dcdeff42"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 125,
@@ -6633,7 +6727,8 @@
                 {
                   "fixed": "95c1e8915dce64606bd753fd47fc0bd236e31cd6"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 207,
@@ -6722,7 +6817,8 @@
                 {
                   "fixed": "a86efdd7ca5433de9231e650f18247de8319ad16"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 237,
@@ -6811,7 +6907,8 @@
                 {
                   "fixed": "5e99b73cf441d9c369768b9cd48b5389b9a2503d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 205,
@@ -6901,7 +6998,8 @@
                 {
                   "fixed": "51beed175dbfc37da3113f6acce60c630c070ce8"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 202,
@@ -7066,7 +7164,8 @@
                 {
                   "fixed": "7541ae569d82fb308a5e2d94916027da4fa3ba3e"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 413,
@@ -7154,7 +7253,8 @@
                 {
                   "fixed": "0b8dbbc63c98777e4584cb9fbd71df3464008ad1"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 126,

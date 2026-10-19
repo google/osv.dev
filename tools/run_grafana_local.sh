@@ -123,7 +123,7 @@ docker run --rm \
   -p 127.0.0.1:3000:3000 \
   -e GF_AUTH_ANONYMOUS_ENABLED="true" \
   -e GF_AUTH_ANONYMOUS_ORG_ROLE="Admin" \
-  -e GF_INSTALL_PLUGINS="googlecloud-logging-datasource" \
+  -e GF_INSTALL_PLUGINS="googlecloud-logging-datasource 1.8.1" \
   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
   -v "$TMP_DIR/adc.json:/tmp/keys/adc.json:ro" \
   -v "$TMP_DIR/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro" \

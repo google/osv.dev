@@ -118,6 +118,7 @@ func (r *Recoverer) HandleMessage(ctx context.Context, m *pubsub.Message) {
 	defer span.End()
 
 	var err error
+	reason := taskType
 	switch taskType {
 	case "gcs_retry":
 		err = r.HandleGCSRetry(taskCtx, m)
@@ -126,12 +127,8 @@ func (r *Recoverer) HandleMessage(ctx context.Context, m *pubsub.Message) {
 	case "gcs_gen_mismatch":
 		err = r.HandleGCSGenMismatch(taskCtx, m)
 	default:
-		err = r.HandleGeneric(taskCtx, m)
-	}
-
-	reason := taskType
-	if reason == "" {
 		reason = "generic"
+		err = r.HandleGeneric(taskCtx, m)
 	}
 	if err != nil {
 		metrics.RecordRecovererTask(reason, metrics.TaskStatusError)

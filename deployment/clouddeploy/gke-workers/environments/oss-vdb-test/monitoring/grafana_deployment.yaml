@@ -55,7 +55,7 @@ spec:
         - name: GF_SERVER_ROOT_URL
           value: "https://monitoring.test.osv.dev"
         - name: GF_INSTALL_PLUGINS
-          value: "googlecloud-logging-datasource"
+          value: "googlecloud-logging-datasource 1.8.1"
         resources:
           requests:
             cpu: 250m

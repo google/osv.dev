@@ -21,7 +21,7 @@ module "osv_pipeline" {
   nat_name                                   = "osv-nat-config"
 
   default_pool_res_size = 1
-  highend_pool_res_size = 1
+  highend_pool_res_size = 2
 }
 
 

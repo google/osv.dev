@@ -115,6 +115,9 @@ run-api-server-test:
 	docker inspect osv/esp:latest >/dev/null 2>&1 || docker build -f docker/esp/Dockerfile -t osv/esp:latest docker/esp
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
+run-grafana-local: ## Run local Grafana for testing
+	./tools/run_grafana_local.sh $(ARGS)
+
 # TODO: API integration tests.
 all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 

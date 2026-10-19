@@ -512,8 +512,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/google/osv.dev/commit/cd4e934d0527e5010e373e7fed54ef5daefba2f5",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/google/osv.dev",
-				Fixed: "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+				Repo:   "https://github.com/google/osv.dev",
+				Fixed:  "cd4e934d0527e5010e373e7fed54ef5daefba2f5",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -527,8 +528,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/pimcore/customer-data-framework/commit/e3f333391582d9309115e6b94e875367d0ea7163.patch",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/pimcore/customer-data-framework",
-				Fixed: "e3f333391582d9309115e6b94e875367d0ea7163",
+				Repo:   "https://github.com/pimcore/customer-data-framework",
+				Fixed:  "e3f333391582d9309115e6b94e875367d0ea7163",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -542,8 +544,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://gitlab.freedesktop.org/virgl/virglrenderer",
-				Fixed: "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+				Repo:   "https://gitlab.freedesktop.org/virgl/virglrenderer",
+				Fixed:  "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -551,8 +554,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://gitlab.com/muttmua/mutt/-/commit/452ee330e094bfc7c9a68555e5152b1826534555.patch",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://gitlab.com/muttmua/mutt",
-				Fixed: "452ee330e094bfc7c9a68555e5152b1826534555",
+				Repo:   "https://gitlab.com/muttmua/mutt",
+				Fixed:  "452ee330e094bfc7c9a68555e5152b1826534555",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -560,8 +564,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://gitlab.com/mayan-edms/mayan-edms/commit/9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://gitlab.com/mayan-edms/mayan-edms",
-				Fixed: "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+				Repo:   "https://gitlab.com/mayan-edms/mayan-edms",
+				Fixed:  "9ebe80595afe4fdd1e2c74358d6a9421f4ce130e",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -569,8 +574,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://bitbucket.org/openpyxl/openpyxl",
-				Fixed: "3b4905f428e1",
+				Repo:   "https://bitbucket.org/openpyxl/openpyxl",
+				Fixed:  "3b4905f428e1",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -578,8 +584,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://bitbucket.org/utmandrew/pcrs",
-				Fixed: "5f18bcb",
+				Repo:   "https://bitbucket.org/utmandrew/pcrs",
+				Fixed:  "5f18bcb",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -587,8 +594,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://git.dpkg.org/cgit/dpkg/dpkg.git",
-				Fixed: "faa4c92debe45412bfcf8a44f26e827800bb24be",
+				Repo:   "https://git.dpkg.org/cgit/dpkg/dpkg.git",
+				Fixed:  "faa4c92debe45412bfcf8a44f26e827800bb24be",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -599,8 +607,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git&a=commit&h=f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "git://git.gnupg.org/libksba.git",
-				Fixed: "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+				Repo:   "git://git.gnupg.org/libksba.git",
+				Fixed:  "f61a5ea4e0f6a80fd4b28ef0174bee77793cf070",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -615,8 +624,10 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/google/osv.dev/releases/tag/v0.0.14",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/google/osv.dev",
-				Fixed: "8de7697b3b8a73e79a73ec34f17ef0fa842cfbb2",
+				Repo:        "https://github.com/google/osv.dev",
+				Fixed:       "8de7697b3b8a73e79a73ec34f17ef0fa842cfbb2",
+				Source:      models.VersionSourceRefsTag,
+				OriginalTag: "v0.0.14",
 			},
 			expectFailure: false,
 		},
@@ -632,8 +643,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
-				Fixed: "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+				Repo:   "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+				Fixed:  "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+				Source: models.VersionSourceRefsCommit,
 			},
 			skipOnCloudBuild: true, // observing indications of IP denylisting as at 2025-02-13
 		},
@@ -642,8 +654,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://git.ffmpeg.org/ffmpeg.git",
-				Fixed: "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+				Repo:   "https://git.ffmpeg.org/ffmpeg.git",
+				Fixed:  "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -651,8 +664,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/uWebSockets/uWebSockets/commit/37deefd01f0875e133ea967122e3a5e421b8fcd9",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/unetworking/uwebsockets",
-				Fixed: "37deefd01f0875e133ea967122e3a5e421b8fcd9",
+				Repo:   "https://github.com/unetworking/uwebsockets",
+				Fixed:  "37deefd01f0875e133ea967122e3a5e421b8fcd9",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -660,8 +674,9 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/eggjs/extend2/commit/aa332a59116c8398976434b57ea477c6823054f8",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/eggjs/extend2",
-				Fixed: "aa332a59116c8398976434b57ea477c6823054f8",
+				Repo:   "https://github.com/eggjs/extend2",
+				Fixed:  "aa332a59116c8398976434b57ea477c6823054f8",
+				Source: models.VersionSourceRefsCommit,
 			},
 		},
 		{
@@ -676,8 +691,10 @@ func TestExtractGitCommit(t *testing.T) {
 			inputLink:       "https://github.com/redis/redis/releases/tag/6.2.17",
 			inputCommitType: models.Fixed,
 			expectedAffectedCommit: models.AffectedCommit{
-				Repo:  "https://github.com/redis/redis",
-				Fixed: "441001a4e5e37a7a450c0929d2a94ba489941874",
+				Repo:        "https://github.com/redis/redis",
+				Fixed:       "441001a4e5e37a7a450c0929d2a94ba489941874",
+				Source:      models.VersionSourceRefsTag,
+				OriginalTag: "6.2.17",
 			},
 			expectFailure: false,
 		},
@@ -1129,6 +1146,8 @@ func TestCommit(t *testing.T) {
 		name              string
 		args              args
 		want              string
+		wantTag           string
+		wantSource        models.VersionSource
 		wantErr           bool
 		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
 	}{
@@ -1137,40 +1156,45 @@ func TestCommit(t *testing.T) {
 			args: args{
 				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3",
 			},
-			want:    "ee1fee900537b5d9560e9f937402de5ddc8412f3",
-			wantErr: false,
+			want:       "ee1fee900537b5d9560e9f937402de5ddc8412f3",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
 		},
 		{
 			name: "an unusual and technically valid GitHub commit URL based on a tag (with ancestry)",
 			args: args{
 				u: "https://github.com/curl/curl/commit/curl-7_50_2~32",
 			},
-			want:    "", // Ideally it would be 7700fcba64bf5806de28f6c1c7da3b4f0b38567d but this isn't `git rev-parse`
-			wantErr: true,
+			want:       "", // Ideally it would be 7700fcba64bf5806de28f6c1c7da3b4f0b38567d but this isn't `git rev-parse`
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
 		},
 		{
 			name: "Valid GitHub commit URL",
 			args: args{
 				u: "https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a",
 			},
-			want:    "b1351c15946349f9daa7e5297fb2ac6f3139e4a",
-			wantErr: false,
+			want:       "b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
 		},
 		{
 			name: "Valid FreeDesktop GitLab commit URL",
 			args: args{
 				u: "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129",
 			},
-			want:    "b05bb61f454eeb8a85164c8a31510aeb9d79129",
-			wantErr: false,
+			want:       "b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
 		},
 		{
 			name: "Valid GitLab commit URL with a shorter hash",
 			args: args{
 				u: "https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc",
 			},
-			want:    "4367a20cc",
-			wantErr: false,
+			want:       "4367a20cc",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
 		},
 	}
 	for _, tt := range tests {
@@ -1178,13 +1202,19 @@ func TestCommit(t *testing.T) {
 			if time.Now().Before(tt.disableExpiryDate) {
 				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
 			}
-			got, err := Commit(tt.args.u, r.GetDefaultClient())
+			got, gotTag, gotSource, err := Commit(tt.args.u, r.GetDefaultClient())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
 				t.Errorf("Commit() = %v, want %v", got, tt.want)
+			}
+			if gotSource != tt.wantSource {
+				t.Errorf("Commit() source = %v, want %v", gotSource, tt.wantSource)
+			}
+			if gotTag != tt.wantTag {
+				t.Errorf("Commit() tag = %v, want %v", gotTag, tt.wantTag)
 			}
 		})
 	}
@@ -1758,5 +1788,93 @@ func TestProcessRanges_DirectGitRange(t *testing.T) {
 	}
 	if resolved[0].Range.GetType().String() != "GIT" {
 		t.Errorf("expected range type to be GIT, got %s", resolved[0].Range.GetType().String())
+	}
+}
+
+func TestExtractVersionsFromText(t *testing.T) {
+	tests := []struct {
+		name         string
+		text         string
+		wantIntro    string
+		wantFixed    string
+		wantLastAff  string
+		wantRangeTyp string
+	}{
+		{
+			name:         "trailing and before (CVE-2026-26377)",
+			text:         "Cross Site Scripting vulnerability in Koha 25.11 and before allows a remote attacker to execute arbitrary code.",
+			wantIntro:    "0",
+			wantLastAff:  "25.11",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "versions up to (CVE-2026-26379)",
+			text:         "Koha versions up to 25.11 contain a Server-Side Request Forgery (SSRF) vulnerability.",
+			wantIntro:    "0",
+			wantLastAff:  "25.11",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "prior to version (CVE-2026-26399)",
+			text:         "A stack-use-after-return issue exists in the Arduino_Core_STM32 library prior to version 1.7.0.",
+			wantIntro:    "0",
+			wantFixed:    "1.7.0",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "trailing and earlier (CVE-2026-26483)",
+			text:         "Mettle SendPortal 3.0.1 and earlier contains a stored cross-site scripting (XSS) vulnerability.",
+			wantIntro:    "0",
+			wantLastAff:  "3.0.1",
+			wantRangeTyp: "UNSPECIFIED",
+		},
+		{
+			name:         "before commit short SHA (CVE-2026-26514)",
+			text:         "An Argument Injection vulnerability exists in bird-lg-go before commit 6187a4e.",
+			wantIntro:    "0",
+			wantFixed:    "6187a4e",
+			wantRangeTyp: "GIT",
+		},
+		{
+			name:         "vulnerable commit short SHA (CVE-2026-26445)",
+			text:         "stomper 5e2741e is vulnerable to Denial of Service.",
+			wantIntro:    "0",
+			wantLastAff:  "5e2741e",
+			wantRangeTyp: "GIT",
+		},
+		{
+			name:         "contains commit 40-char SHA (CVE-2026-26452)",
+			text:         "ccoap 77f55c4b466e99327c24ace8a2913d3ba7e2ccd5 lcontains a vulnerability in the option parsing logic.",
+			wantIntro:    "0",
+			wantLastAff:  "77f55c4b466e99327c24ace8a2913d3ba7e2ccd5",
+			wantRangeTyp: "GIT",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			metrics := &models.ConversionMetrics{}
+			got := ExtractVersionsFromText(nil, tc.text, metrics, models.VersionSourceDescription)
+			if len(got) == 0 {
+				t.Fatalf("ExtractVersionsFromText(%q) returned no ranges", tc.text)
+			}
+			r := got[0].Range
+			if r.GetType().String() != tc.wantRangeTyp {
+				t.Errorf("Range.Type = %s, want %s", r.GetType().String(), tc.wantRangeTyp)
+			}
+			events := r.GetEvents()
+			if len(events) < 2 {
+				t.Fatalf("expected at least 2 events, got %+v", events)
+			}
+			if events[0].GetIntroduced() != tc.wantIntro {
+				t.Errorf("Introduced = %q, want %q", events[0].GetIntroduced(), tc.wantIntro)
+			}
+			if events[1].GetFixed() != tc.wantFixed {
+				t.Errorf("Fixed = %q, want %q", events[1].GetFixed(), tc.wantFixed)
+			}
+			if events[1].GetLastAffected() != tc.wantLastAff {
+				t.Errorf("LastAffected = %q, want %q", events[1].GetLastAffected(), tc.wantLastAff)
+			}
+		})
 	}
 }

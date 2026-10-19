@@ -1,6 +1,5 @@
 resources:
 - worker_pod_monitoring.yaml
-- grafana_service_account.yaml
 - configmaps/grafana_datasources.yaml
 - configmaps/grafana_dashboards_prov.yaml
 - grafana_deployment.yaml

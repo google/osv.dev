@@ -55,8 +55,6 @@ type Stores struct {
 	DatastoreClient *datastore.Client
 	SourceRepo      models.SourceRepositoryStore
 	Relations       models.RelationsStore
-	JobData         models.JobDataStore
-	ImportFindings  models.ImportFindingsStore
 	GCS             clients.CloudStorage
 	GCSProvider     clients.CloudStorageProvider
 	Publisher       clients.Publisher

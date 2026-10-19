@@ -144,8 +144,6 @@ func run() error {
 			DatastoreClient: dsClient,
 			SourceRepo:      osvdatastore.NewSourceRepositoryStore(dsClient),
 			Relations:       osvdatastore.NewRelationsStore(dsClient),
-			JobData:         osvdatastore.NewJobDataStore(dsClient),
-			ImportFindings:  osvdatastore.NewImportFindingsStore(dsClient, gcsClient, "", ""),
 			GCS:             clients.NewGCSClient(gcsClient, vulnBucket),
 			GCSProvider:     clients.NewGCSStorageProvider(gcsClient),
 			Publisher:       &clients.GCPPublisher{Publisher: psClient.Publisher(tasksTopic)},
@@ -155,8 +153,6 @@ func run() error {
 		DefaultTaskPool:  defaultTaskPool,
 		ReimportTaskPool: reimportTaskPool,
 	})
-
-	rec.StartMetricsCollector(ctx, 5*time.Minute)
 
 	sub := psClient.Subscriber(pubsubSubscription)
 	sub.ReceiveSettings.MaxOutstandingMessages = *numWorkers

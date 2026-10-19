@@ -16,6 +16,7 @@ spec:
       - workers-cves
       - recoverer
       - gitter
+      - custommetrics
   endpoints:
   - port: metrics
     interval: 15s

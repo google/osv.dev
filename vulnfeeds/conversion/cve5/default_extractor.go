@@ -133,19 +133,39 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 			refs = append(refs, adp.References...)
 		}
 		refs = c.DeduplicateRefs(refs)
-		extractedCommits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
-		if err != nil {
-			metrics.AddNotef("Failed to extract commits from refs: %v", err)
-		}
-		if len(extractedCommits) > 0 {
-			commits = extractedCommits
-			metrics.AddNotef("Extracted commits from refs: %v", commits)
-			for _, commit := range commits {
-				successfulRepos[commit.Repo] = true
+
+		// Comparison URLs with version-like tags on both sides, e.g.
+		// https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
+		// carry an introduced..fixed version range, which is preferred
+		// over the fallback of treating any commit reference as a fix.
+		var compareRanges []models.RangeWithMetadata
+		for _, ref := range refs {
+			if rwm, err := c.ExtractVersionRangeFromCompareURL(ref.URL); err == nil {
+				compareRanges = append(compareRanges, rwm)
 			}
-			metrics.ResolvedRangesCount += len(commits)
-			metrics.SetOutcome(models.Successful)
-			metrics.AddSource(models.VersionSourceRefs)
+		}
+		if len(compareRanges) > 0 {
+			metrics.AddNotef("Extracted version ranges from comparison URLs: %v", compareRanges)
+			if processRanges(compareRanges) {
+				gotVersions = true
+			}
+		}
+
+		if !gotVersions {
+			extractedCommits, err := c.ExtractCommitsFromRefs(refs, httpClient, cache)
+			if err != nil {
+				metrics.AddNotef("Failed to extract commits from refs: %v", err)
+			}
+			if len(extractedCommits) > 0 {
+				commits = extractedCommits
+				metrics.AddNotef("Extracted commits from refs: %v", commits)
+				for _, commit := range commits {
+					successfulRepos[commit.Repo] = true
+				}
+				metrics.ResolvedRangesCount += len(commits)
+				metrics.SetOutcome(models.Successful)
+				metrics.AddSource(models.VersionSourceRefs)
+			}
 		}
 	}
 

@@ -56,7 +56,6 @@ _NO_UPDATE_MARKER = 'OSV-NO-UPDATE'
 _BUCKET_THREAD_COUNT = 20
 _HTTP_LAST_MODIFIED_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 _TIMEOUT_SECONDS = 60
-_NDB_PUT_BATCH_SIZE = 500
 
 _client_store = threading.local()
 
@@ -324,10 +323,10 @@ class Importer:
     exported = []
     for bug in osv.Bug.query(
         osv.Bug.source_of_truth == osv.SourceOfTruth.INTERNAL):
-      if bug.status != osv.BugStatus.PROCESSED:
+      if bug.status != osv.BugStatus.PROCESSED and not bug.withdrawn:
         continue
-
-      if not bug.public:
+      if not bug.public or not any(p.ranges or p.versions
+                                   for p in bug.affected_packages):
         continue
 
       # We don't index this as INTERNAL generally implies OSS-Fuzz anyway (at
@@ -338,10 +337,12 @@ class Importer:
 
       vulnerability_path = os.path.join(
           osv.repo_path(repo), osv.source_path(oss_fuzz_source, bug))
-      os.makedirs(os.path.dirname(vulnerability_path), exist_ok=True)
-      if os.path.exists(vulnerability_path):
+      # Write new PROCESSED bugs that don't exist in the repo yet, or update
+      # existing bugs in the repo that have been withdrawn.
+      if os.path.exists(vulnerability_path) != bool(bug.withdrawn):
         continue
 
+      os.makedirs(os.path.dirname(vulnerability_path), exist_ok=True)
       logging.info('Writing %s', bug.key.id())
       osv.write_vulnerability(bug.to_vulnerability(), vulnerability_path)
       # The source of truth is now this yaml file.
@@ -652,9 +653,6 @@ class Importer:
           (vuln, path, ts, original_sha256, changed_entry))
 
     if changed_entries_to_process:
-      put_if_newer_batch(
-          [(v, p) for v, p, _, _, _ in changed_entries_to_process],
-          source_repo.name)
       for vuln, path, ts, orig_sha256, entry in changed_entries_to_process:
         self._request_analysis_external(
             source_repo, orig_sha256, entry, source_timestamp=ts)
@@ -742,11 +740,9 @@ class Importer:
       for cv_result in converted_vulns:
         if not cv_result:
           continue
-        blob_hash, blob_name, source_timestamp, vulns = cv_result
+        blob_hash, blob_name, source_timestamp, _ = cv_result
         logging.info('Requesting analysis of bucket entry: %s/%s',
                      source_repo.bucket, blob_name)
-
-        put_if_newer_batch([(v, blob_name) for v in vulns], source_repo.name)
 
         self._request_analysis_external(
             source_repo,
@@ -1009,8 +1005,6 @@ class Importer:
         continue
 
     if vulns_to_process:
-      put_if_newer_batch([(v, p) for v, p, _, _ in vulns_to_process],
-                         source_repo.name)
       for v, path, ts, sha256 in vulns_to_process:
         self._request_analysis_external(
             source_repo, sha256, path, source_timestamp=ts)
@@ -1110,200 +1104,6 @@ class Importer:
         _, source_id = osv.parse_source_id(bug.source_id)
         executor.submit(export_oss_fuzz, bug.to_vulnerability(), source_id,
                         bug.issue_id)
-
-
-def preprocess_vuln(vuln: vulnerability_pb2.Vulnerability):
-  """Do preprocessing steps on vulnerability that the worker does."""
-  # Duplicating parts of _do_update() in worker.py
-  # maybe_normalize_package_names:
-  for affected in vuln.affected:
-    if not affected.package.ecosystem:
-      continue
-    affected.package.name = osv.ecosystems.maybe_normalize_package_names(
-        affected.package.name, affected.package.ecosystem)
-  # skipping fix_invalid_ghsa because I don't think it's a problem anymore.
-  # filter_unknown_ecoystems:
-  filtered = []
-  for affected in vuln.affected:
-    if not affected.HasField('package'):
-      filtered.append(affected)
-    elif osv.ecosystems.is_known(affected.package.ecosystem):
-      filtered.append(affected)
-    else:
-      logging.error('%s contains unknown ecosystem "%s"', vuln.id,
-                    affected.package.ecosystem)
-  del vuln.affected[:]
-  vuln.affected.extend(filtered)
-
-
-def new_bug_from_vuln(vuln: vulnerability_pb2.Vulnerability, source: str,
-                      path: str) -> osv.Bug:
-  """Create a new Bug entity from a vulnerability, following similar logic to
-  worker._do_update()"""
-  orig_modified = vuln.modified.ToDatetime(datetime.UTC)
-  bug = osv.Bug(
-      db_id=vuln.id,
-      timestamp=osv.utcnow(),
-      status=osv.BugStatus.PROCESSED,
-      source_of_truth=osv.SourceOfTruth.SOURCE_REPO)
-  bug.update_from_vulnerability(vuln)
-  bug.public = True
-  bug.import_last_modified = orig_modified
-  if source != 'oss-fuzz' or not bug.source_id:
-    bug.source_id = f'{source}:{path}'
-  if bug.withdrawn:
-    bug.status = osv.BugStatus.INVALID
-  else:
-    bug.status = osv.BugStatus.PROCESSED
-
-  if not vuln.affected:
-    logging.info('%s does not affect any packages. Marking as invalid.',
-                 vuln.id)
-    bug.status = osv.BugStatus.INVALID
-
-  bug.affected_checksum = compute_raw_affected_checksum(vuln)
-
-  return bug
-
-
-def update_bug_from_vuln(bug: osv.Bug, vuln: vulnerability_pb2.Vulnerability,
-                         source: str, path: str):
-  """Updates a Bug entity from a vulnerability, following similar logic to 
-  worker._do_update(), with special handling to check if the raw affected
-  packages has changed."""
-  import_modified = vuln.modified.ToDatetime(datetime.UTC)
-  prev_modified = bug.last_modified
-  prev_affected = bug.affected_packages
-  bug.update_from_vulnerability(vuln)
-  bug.public = True
-  bug.import_last_modified = import_modified
-  if source != 'oss-fuzz' or not bug.source_id:
-    bug.source_id = f'{source}:{path}'
-  if bug.withdrawn:
-    bug.status = osv.BugStatus.INVALID
-  else:
-    bug.status = osv.BugStatus.PROCESSED
-
-  if not vuln.affected:
-    logging.info('%s does not affect any packages. Marking as invalid.',
-                 vuln.id)
-    bug.status = osv.BugStatus.INVALID
-
-  if bug.last_modified < prev_modified:
-    # Prevent the modified date going backwards,
-    # e.g. if source updated the bug again before the worker finished
-    bug.last_modified = osv.utcnow()
-
-  new_checksum = compute_raw_affected_checksum(vuln)
-  if bug.affected_checksum == new_checksum:
-    # The checksum of the raw affected packages is unchanged (so no change has
-    # been made to the affected packages). Restore the previously enriched,
-    # affected_packages from the workers.
-    bug.affected_packages = prev_affected
-  bug.affected_checksum = new_checksum
-
-
-def compute_raw_affected_checksum(vuln: vulnerability_pb2.Vulnerability):
-  """Computes a checksum of the affected array from a vulnerability."""
-  # Grab the minimum information out of afftected and sort.
-  #TODO(michaelkedar): This should be in models.py
-  aff = []
-  # (ecocystem, package, [
-  #   (type, repo, [(introduced, fixed, last_affected, limit)])
-  # ], [versions])
-  for affected in vuln.affected:
-    ecosystem = affected.package.ecosystem
-    package = affected.package.name
-    versions = sorted(affected.versions)
-    ranges = []
-    for r in affected.ranges:
-      t = r.type
-      repo = r.repo
-      events = sorted(
-          (e.introduced, e.fixed, e.last_affected, e.limit) for e in r.events)
-      ranges.append((t, repo, events))
-    ranges.sort()
-    aff.append((ecosystem, package, ranges, versions))
-  aff.sort()
-  b = json.dumps(aff).encode()
-  return osv.sha256_bytes(b)
-
-
-def log_update_latency(bug: osv.Bug):
-  now = int(time.time())
-  source_time = int(bug.import_last_modified.timestamp())
-  logging.info(
-      'Importer put Bug',
-      extra={
-          'json_fields': {
-              'vuln_id': bug.db_id,
-              'latency': str(now - source_time),
-          }
-      })
-
-
-def put_if_newer(vuln: vulnerability_pb2.Vulnerability, source: str, path: str):
-  """Try to write vulnerability to datastore, keeping enumerated versions if
-  unchanged. Does not write if vuln's modified date is older than what's already
-  in datastore.
-  """
-  put_if_newer_batch([(vuln, path)], source)
-
-
-def put_if_newer_batch(
-    vulns_and_paths: list[tuple[vulnerability_pb2.Vulnerability,
-                                str]], source: str):
-  """Try to write vulnerabilities to datastore in batch, keeping enumerated
-  versions if unchanged. Does not write if vuln's modified date is older than
-  what's already in datastore.
-  """
-  # TODO(michaelkedar): Putting so many records is causing slowdowns on the
-  # importer, need to reconsider the approach.
-  return
-  # pylint: disable=unreachable
-  if not vulns_and_paths:
-    return
-
-  # Deduplicate by vuln.id, keeping the last one.
-  unique_vulns_and_paths = {}
-  for vuln, path in vulns_and_paths:
-    unique_vulns_and_paths[vuln.id] = (vuln, path)
-  vulns_and_paths = list(unique_vulns_and_paths.values())
-
-  for vuln, _ in vulns_and_paths:
-    preprocess_vuln(vuln)
-
-  keys = [ndb.Key(osv.Bug, v.id) for v, _ in vulns_and_paths]
-  existing_bugs = []
-  for i in range(0, len(keys), _NDB_PUT_BATCH_SIZE):
-    batch_keys = keys[i:i + _NDB_PUT_BATCH_SIZE]
-    existing_bugs.extend(ndb.get_multi(batch_keys))
-
-  bugs_to_put = []
-  for i, (vuln, path) in enumerate(vulns_and_paths):
-    bug = existing_bugs[i]
-    if bug is None:
-      bug = new_bug_from_vuln(vuln, source, path)
-      bugs_to_put.append(bug)
-      continue
-
-    # Only update if the incoming vulnerability is newer.
-    orig_modified = vuln.modified.ToDatetime(datetime.UTC)
-    if bug.import_last_modified and orig_modified <= bug.import_last_modified:
-      logging.info(
-          'Skipping update for %s because incoming modification time'
-          ' (%s) is not newer than existing record (%s)', vuln.id,
-          orig_modified, bug.import_last_modified)
-      continue
-    update_bug_from_vuln(bug, vuln, source, path)
-    bugs_to_put.append(bug)
-
-  if bugs_to_put:
-    for i in range(0, len(bugs_to_put), _NDB_PUT_BATCH_SIZE):
-      batch = bugs_to_put[i:i + _NDB_PUT_BATCH_SIZE]
-      ndb.put_multi(batch)
-      for bug in batch:
-        log_update_latency(bug)
 
 
 def main():

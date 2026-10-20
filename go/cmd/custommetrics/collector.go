@@ -48,16 +48,20 @@ func NewCollector(stores Stores) *Collector {
 
 // CollectMetrics performs a single collection pass of batch/state metrics from Datastore and GCS.
 func (c *Collector) CollectMetrics(ctx context.Context) {
-	prefixToSource := c.collectSourceFreshnessAndPrefixes(ctx)
+	prefixToSource, lastUpdatedTimes := c.sourcePrefixesAndLastUpdated(ctx)
+	for source, lastUpdated := range lastUpdatedTimes {
+		metrics.ImporterLastNewRecordTimestampSeconds.WithLabelValues(source).Set(float64(lastUpdated.Unix()))
+	}
 	c.collectJobDataMetrics(ctx, prefixToSource)
 	c.collectLinterFindingsMetrics(ctx, prefixToSource)
 	c.collectDatasetAndExportMetrics(ctx)
 }
 
-func (c *Collector) collectSourceFreshnessAndPrefixes(ctx context.Context) map[string]string {
+func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) (map[string]string, map[string]time.Time) {
 	prefixToSource := make(map[string]string)
+	lastUpdatedTimes := make(map[string]time.Time)
 	if c.stores.SourceRepo == nil {
-		return prefixToSource
+		return prefixToSource, lastUpdatedTimes
 	}
 
 	for source, err := range c.stores.SourceRepo.All(ctx) {
@@ -76,11 +80,11 @@ func (c *Collector) collectSourceFreshnessAndPrefixes(ctx context.Context) map[s
 			lastUpdated = *source.REST.LastUpdated
 		}
 		if !lastUpdated.IsZero() {
-			metrics.ImporterLastNewRecordTimestampSeconds.WithLabelValues(source.Name).Set(float64(lastUpdated.Unix()))
+			lastUpdatedTimes[source.Name] = lastUpdated
 		}
 	}
 
-	return prefixToSource
+	return prefixToSource, lastUpdatedTimes
 }
 
 func (c *Collector) collectJobDataMetrics(ctx context.Context, prefixToSource map[string]string) {

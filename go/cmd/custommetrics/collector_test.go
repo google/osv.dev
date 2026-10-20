@@ -150,6 +150,7 @@ func TestCollectMetrics(t *testing.T) {
 	metricsText := string(body)
 
 	wantMetrics := []string{
+		`osv_importer_last_new_record_timestamp_seconds{source="ghsa"} 1.7920656e+09`,
 		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 2`,
 		`osv_recordchecker_invalid_records{source="ghsa"} 2`,
 		`osv_reconciler_records_reconciled{status="missing"} 5`,

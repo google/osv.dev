@@ -59,18 +59,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 		if exists {
 			pkgName = ecosystem.NormalizePackageName(eHelper, pkgName)
 		}
-
-		// Also index the package under its match name when that differs, so other
-		// spellings the registry treats as the same package find it. pkgNames[0]
-		// is the package name and pkgNames[1], if present, is its match name. Rows
-		// for the match name are marked MatchOnly, so queries that do not fold the
-		// name, such as ones without an ecosystem, still only match pkgNames[0].
-		pkgNames := []string{pkgName}
-		if exists && pkgName != "" {
-			if matchName := ecosystem.NormalizeMatchName(eHelper, pkgName); matchName != pkgName {
-				pkgNames = append(pkgNames, matchName)
-			}
-		}
+		pkgStart := len(res)
 
 		// TODO(michaelkedar): Matching the current behavior of the API,
 		// where GIT tags match to the first git repo in the ranges list, even if
@@ -129,17 +118,14 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			}
 
 			for _, e := range allPkgEcosystems {
-				for i, name := range pkgNames {
-					res = append(res, AffectedVersions{
-						VulnID:    vuln.GetId(),
-						Ecosystem: e,
-						Name:      name,
-						Events:    rangeEvents,
-						CoarseMin: coarseMin,
-						CoarseMax: coarseMax,
-						MatchOnly: i > 0,
-					})
-				}
+				res = append(res, AffectedVersions{
+					VulnID:    vuln.GetId(),
+					Ecosystem: e,
+					Name:      pkgName,
+					Events:    rangeEvents,
+					CoarseMin: coarseMin,
+					CoarseMax: coarseMax,
+				})
 			}
 		}
 
@@ -168,17 +154,14 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 				}
 
 				for _, e := range allPkgEcosystems {
-					for i, name := range pkgNames {
-						res = append(res, AffectedVersions{
-							VulnID:    vuln.GetId(),
-							Ecosystem: e,
-							Name:      name,
-							Versions:  chunk,
-							CoarseMin: coarseMin,
-							CoarseMax: coarseMax,
-							MatchOnly: i > 0,
-						})
-					}
+					res = append(res, AffectedVersions{
+						VulnID:    vuln.GetId(),
+						Ecosystem: e,
+						Name:      pkgName,
+						Versions:  chunk,
+						CoarseMin: coarseMin,
+						CoarseMax: coarseMax,
+					})
 				}
 			}
 		}
@@ -189,15 +172,23 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 			// Add an empty AffectedVersions entry so that this vuln is returned when
 			// querying the API with no version specified.
 			for _, e := range allPkgEcosystems {
-				for i, name := range pkgNames {
-					res = append(res, AffectedVersions{
-						VulnID:    vuln.GetId(),
-						Ecosystem: e,
-						Name:      name,
-						CoarseMin: minCoarseVersion,
-						CoarseMax: maxCoarseVersion,
-						MatchOnly: i > 0,
-					})
+				res = append(res, AffectedVersions{
+					VulnID:    vuln.GetId(),
+					Ecosystem: e,
+					Name:      pkgName,
+					CoarseMin: minCoarseVersion,
+					CoarseMax: maxCoarseVersion,
+				})
+			}
+		}
+
+		// Also index the package under its match name when that differs, so that
+		// other spellings the registry treats as the same package find it.
+		if exists && pkgName != "" {
+			if matchName := ecosystem.NormalizeMatchName(eHelper, pkgName); matchName != pkgName {
+				for _, av := range res[pkgStart:] {
+					av.Name = matchName
+					res = append(res, av)
 				}
 			}
 		}

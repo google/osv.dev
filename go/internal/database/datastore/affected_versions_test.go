@@ -381,6 +381,13 @@ func TestComputeAffectedVersions_MatchName(t *testing.T) {
 						},
 					},
 					{
+						Type: osvschema.Range_SEMVER,
+						Events: []*osvschema.Event{
+							{Introduced: "1.0.5"},
+							{Fixed: "1.0.6"},
+						},
+					},
+					{
 						Type: osvschema.Range_GIT,
 						Repo: "https://github.com/serde-rs/json",
 					},
@@ -395,29 +402,31 @@ func TestComputeAffectedVersions_MatchName(t *testing.T) {
 
 	got := computeAffectedVersions(vuln)
 
-	// Packages whose match name differs are also indexed under it, as
-	// MatchOnly rows. GIT rows are not copied.
+	// Packages whose match name differs are also indexed under it. GIT rows are
+	// not copied.
 	gotRows := make([]string, 0, len(got))
 	for _, av := range got {
-		gotRows = append(gotRows, fmt.Sprintf("%s/%s/%t", av.Ecosystem, av.Name, av.MatchOnly))
+		gotRows = append(gotRows, fmt.Sprintf("%s/%s", av.Ecosystem, av.Name))
 	}
 	wantRows := []string{
-		"NuGet/Newtonsoft.Json/false",
-		"NuGet/newtonsoft.json/true",
-		"crates.io/serde_json/false",
-		"crates.io/serde-json/true",
-		"GIT/github.com/serde-rs/json/false",
-		"crates.io/smallvec/false",
+		"NuGet/Newtonsoft.Json",
+		"NuGet/newtonsoft.json",
+		"crates.io/serde_json",
+		"crates.io/serde_json",
+		"crates.io/serde-json",
+		"crates.io/serde-json",
+		"GIT/github.com/serde-rs/json",
+		"crates.io/smallvec",
 	}
 	if diff := gocmp.Diff(wantRows, gotRows); diff != "" {
 		t.Fatalf("computeAffectedVersions rows mismatch (-want +got):\n%s", diff)
 	}
 
-	// The MatchOnly rows are otherwise copies of the package's rows.
-	ignore := cmpopts.IgnoreFields(AffectedVersions{}, "Name", "MatchOnly")
-	for _, i := range []int{0, 2} {
-		if diff := gocmp.Diff(got[i], got[i+1], ignore); diff != "" {
-			t.Errorf("match name row %d mismatch (-package +match):\n%s", i+1, diff)
+	// The rows under the match name are otherwise copies of the package's rows.
+	ignore := cmpopts.IgnoreFields(AffectedVersions{}, "Name")
+	for _, pair := range [][2]int{{0, 1}, {2, 4}, {3, 5}} {
+		if diff := gocmp.Diff(got[pair[0]], got[pair[1]], ignore); diff != "" {
+			t.Errorf("match name row %d mismatch (-package +match):\n%s", pair[1], diff)
 		}
 	}
 }

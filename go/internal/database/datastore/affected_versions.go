@@ -67,7 +67,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 		// name, such as ones without an ecosystem, still only match pkgNames[0].
 		pkgNames := []string{pkgName}
 		if exists && pkgName != "" {
-			if matchName := ecosystem.MatchPackageName(eHelper, pkgName); matchName != pkgName {
+			if matchName := ecosystem.NormalizeMatchName(eHelper, pkgName); matchName != pkgName {
 				pkgNames = append(pkgNames, matchName)
 			}
 		}

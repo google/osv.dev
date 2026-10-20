@@ -84,7 +84,7 @@ func TestNormalizePackageName(t *testing.T) {
 	}
 }
 
-func TestMatchPackageName(t *testing.T) {
+func TestNormalizeMatchName(t *testing.T) {
 	tests := []struct {
 		ecosystem string
 		name      string
@@ -111,12 +111,12 @@ func TestMatchPackageName(t *testing.T) {
 			t.Fatalf("%s ecosystem not found", test.ecosystem)
 		}
 
-		actual := MatchPackageName(e, test.name)
+		actual := NormalizeMatchName(e, test.name)
 		if actual != test.expected {
-			t.Errorf("MatchPackageName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
+			t.Errorf("NormalizeMatchName(%s, %q) = %q, expected %q", test.ecosystem, test.name, actual, test.expected)
 		}
-		if again := MatchPackageName(e, actual); again != actual {
-			t.Errorf("MatchPackageName(%s, %q) is not idempotent: got %q", test.ecosystem, actual, again)
+		if again := NormalizeMatchName(e, actual); again != actual {
+			t.Errorf("NormalizeMatchName(%s, %q) is not idempotent: got %q", test.ecosystem, actual, again)
 		}
 	}
 }

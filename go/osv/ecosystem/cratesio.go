@@ -22,11 +22,11 @@ type cratesIOEcosystem struct {
 	semverEcosystem
 }
 
-// MatchPackageName lowercases a crate name and replaces '_' with '-', since
+// NormalizeMatchName lowercases a crate name and replaces '_' with '-', since
 // crates.io treats crate names case-insensitively and treats '-' and '_' as
 // equivalent. crates.io only accepts ASCII crate names.
-func (e cratesIOEcosystem) MatchPackageName(name string) string {
+func (e cratesIOEcosystem) NormalizeMatchName(name string) string {
 	return strings.ReplaceAll(asciiToLower(name), "_", "-")
 }
 
-var _ PackageNameMatcher = cratesIOEcosystem{}
+var _ MatchNameNormalizer = cratesIOEcosystem{}

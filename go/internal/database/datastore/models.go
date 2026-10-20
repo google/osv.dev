@@ -49,7 +49,7 @@ type AffectedVersions struct {
 	CoarseMin string          `datastore:"coarse_min"`
 	CoarseMax string          `datastore:"coarse_max"`
 	// MatchOnly marks a copy of a package's rows under its match name, see
-	// ecosystem.MatchPackageName. Only queries that fold the name use it.
+	// ecosystem.NormalizeMatchName. Only queries that fold the name use it.
 	MatchOnly bool `datastore:"match_only,noindex,omitempty"`
 }
 

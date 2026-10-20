@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl // dhi.go delegates to its lineage ecosystem the same way.
 package ecosystem
 
 import (
@@ -77,17 +78,4 @@ func (e tuxcareEcosystem) Coarse(version string) (string, error) {
 // the inner ecosystem's behavior.
 func (e tuxcareEcosystem) IsSemver() bool {
 	return false
-}
-
-// unwrap strips the wrapper added by Provider.Get, so callers can reach the
-// ecosystem's own methods and don't produce a doubly-wrapped Version.
-func unwrap(e Ecosystem) Ecosystem {
-	switch w := e.(type) {
-	case *ecosystemWrapper:
-		return w.Ecosystem
-	case *enumerableWrapper:
-		return w.Enumerable
-	}
-
-	return e
 }

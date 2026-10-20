@@ -12,3 +12,5 @@ spec:
           value: oss-vdb
         - name: OSV_VULNERABILITIES_BUCKET
           value: osv-vulnerabilities
+        - name: CLUSTER_LOCATION
+          value: us-west2-c

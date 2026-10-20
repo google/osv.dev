@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/datastore"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -85,8 +86,15 @@ func run() error {
 		GCS:            clients.NewGCSClient(gcsClient, vulnBucket),
 	})
 
-	logger.InfoContext(ctx, "custommetrics collector starting")
-	collectAll(ctx, collector, monitoringClient, project)
+	clusterLocation := getClusterLocation(ctx)
+	clusterName := envOrDefault("CLUSTER_NAME", "workers")
+
+	logger.InfoContext(ctx, "custommetrics collector starting",
+		slog.String("project", project),
+		slog.String("cluster_location", clusterLocation),
+		slog.String("cluster_name", clusterName),
+	)
+	collectAll(ctx, collector, monitoringClient, project, clusterLocation, clusterName)
 
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -97,12 +105,12 @@ func run() error {
 			logger.InfoContext(ctx, "custommetrics collector shutting down")
 			return nil
 		case <-ticker.C:
-			collectAll(ctx, collector, monitoringClient, project)
+			collectAll(ctx, collector, monitoringClient, project, clusterLocation, clusterName)
 		}
 	}
 }
 
-func collectAll(ctx context.Context, collector *Collector, cl *monitoring.MetricClient, project string) {
+func collectAll(ctx context.Context, collector *Collector, cl *monitoring.MetricClient, project, clusterLocation, clusterName string) {
 	collector.CollectMetrics(ctx)
 
 	if cl == nil {
@@ -115,10 +123,26 @@ func collectAll(ctx context.Context, collector *Collector, cl *monitoring.Metric
 			logger.WarnContext(ctx, "error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
 			continue
 		}
-		if err := writeCronFreshness(ctx, cl, project, cron, timeSince); err != nil {
+		if err := writeCronFreshness(ctx, cl, project, clusterLocation, clusterName, cron, timeSince); err != nil {
 			logger.WarnContext(ctx, "error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
 		}
 	}
+}
+
+func getClusterLocation(ctx context.Context) string {
+	if loc := os.Getenv("CLUSTER_LOCATION"); loc != "" {
+		return loc
+	}
+	if metadata.OnGCE() {
+		if loc, err := metadata.InstanceAttributeValueWithContext(ctx, "cluster-location"); err == nil && loc != "" {
+			return loc
+		}
+		if zone, err := metadata.ZoneWithContext(ctx); err == nil && zone != "" {
+			return zone
+		}
+	}
+
+	return "us-west2-c"
 }
 
 func envOrDefault(key, defaultValue string) string {
@@ -155,7 +179,7 @@ func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project 
 	return time.Now().Unix() - int64(val), nil
 }
 
-func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string, value int64) error {
+func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project, clusterLocation, clusterName, cronjob string, value int64) error {
 	now := timestamppb.Now()
 	req := &monitoringpb.CreateTimeSeriesRequest{
 		Name: "projects/" + project,
@@ -170,8 +194,8 @@ func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, projec
 				Type: "k8s_cluster",
 				Labels: map[string]string{
 					"project_id":   project,
-					"location":     "us-central1-f",
-					"cluster_name": "workers",
+					"location":     clusterLocation,
+					"cluster_name": clusterName,
 				},
 			},
 			Points: []*monitoringpb.Point{{

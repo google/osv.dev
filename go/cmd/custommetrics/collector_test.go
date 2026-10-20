@@ -98,12 +98,17 @@ func TestCollectMetrics(t *testing.T) {
 					LastUpdated: &lastUpdated,
 				},
 			},
+			{
+				Name:       "android",
+				Type:       models.SourceRepositoryTypeBucket,
+				IDPrefixes: []string{"A-", "ASB-A", "PUB-A"},
+			},
 		},
 	}
 
 	jobDataStore := &mockJobDataStore{
 		data: map[string]any{
-			models.JobDataRecordCheckerInvalidRecords: []string{"GHSA-1111", "GHSA-2222"},
+			models.JobDataRecordCheckerInvalidRecords: []string{"GHSA-1111", "GHSA-2222", "ASB-A-153358911"},
 			models.JobDataReconcilerSummary: models.ReconcilerSummary{
 				UpToDateCount: 100,
 				MissingCount:  5,
@@ -121,6 +126,10 @@ func TestCollectMetrics(t *testing.T) {
 				BugID:    "GHSA-1111",
 				Source:   "ghsa",
 				Findings: []models.ImportFindings{models.ImportFindingsInvalidRange, models.ImportFindingsInvalidAliases},
+			},
+			{
+				BugID:    "ASB-A-153358911",
+				Findings: []models.ImportFindings{models.ImportFindingsInvalidPackage},
 			},
 		},
 	}
@@ -151,11 +160,13 @@ func TestCollectMetrics(t *testing.T) {
 
 	wantMetrics := []string{
 		`osv_importer_last_new_record_timestamp_seconds{source="ghsa"} 1.7920656e+09`,
-		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 2`,
+		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 3`,
 		`osv_recordchecker_invalid_records{source="ghsa"} 2`,
+		`osv_recordchecker_invalid_records{source="android"} 1`,
 		`osv_reconciler_records_reconciled{status="missing"} 5`,
 		`osv_deleter_refused_deletions{source="ghsa"} 42`,
 		`osv_data_quality_findings{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
+		`osv_data_quality_findings{rule_code="PKG:001",severity="error",source="android"} 1`,
 		`osv_dataset_total_vulnerabilities{ecosystem="all"} 2`,
 		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
 		`osv_export_zip_size_bytes{ecosystem="all"} 15`,

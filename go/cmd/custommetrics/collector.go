@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,6 +27,23 @@ import (
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 )
+
+type sourcePrefixes struct {
+	name       string
+	idPrefixes []string
+}
+
+func matchSource(id string, sources []sourcePrefixes) string {
+	for _, s := range sources {
+		if slices.ContainsFunc(s.idPrefixes, func(prefix string) bool {
+			return strings.HasPrefix(id, prefix)
+		}) {
+			return s.name
+		}
+	}
+
+	return "unknown"
+}
 
 // Stores holds the storage interfaces required by the metrics collector.
 type Stores struct {
@@ -48,20 +66,20 @@ func NewCollector(stores Stores) *Collector {
 
 // CollectMetrics performs a single collection pass of batch/state metrics from Datastore and GCS.
 func (c *Collector) CollectMetrics(ctx context.Context) {
-	prefixToSource, lastUpdatedTimes := c.sourcePrefixesAndLastUpdated(ctx)
+	sources, lastUpdatedTimes := c.sourcePrefixesAndLastUpdated(ctx)
 	for source, lastUpdated := range lastUpdatedTimes {
 		metrics.ImporterLastNewRecordTimestampSeconds.WithLabelValues(source).Set(float64(lastUpdated.Unix()))
 	}
-	c.collectJobDataMetrics(ctx, prefixToSource)
-	c.collectLinterFindingsMetrics(ctx, prefixToSource)
+	c.collectJobDataMetrics(ctx, sources)
+	c.collectLinterFindingsMetrics(ctx, sources)
 	c.collectDatasetAndExportMetrics(ctx)
 }
 
-func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) (map[string]string, map[string]time.Time) {
-	prefixToSource := make(map[string]string)
+func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) ([]sourcePrefixes, map[string]time.Time) {
+	var sources []sourcePrefixes
 	lastUpdatedTimes := make(map[string]time.Time)
 	if c.stores.SourceRepo == nil {
-		return prefixToSource, lastUpdatedTimes
+		return sources, lastUpdatedTimes
 	}
 
 	for source, err := range c.stores.SourceRepo.All(ctx) {
@@ -69,9 +87,10 @@ func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) (map[strin
 			logger.WarnContext(ctx, "custommetrics: failed to iterate SourceRepository", slog.Any("error", err))
 			break
 		}
-		for _, p := range source.IDPrefixes {
-			prefixToSource[p] = source.Name
-		}
+		sources = append(sources, sourcePrefixes{
+			name:       source.Name,
+			idPrefixes: source.IDPrefixes,
+		})
 
 		var lastUpdated time.Time
 		if source.Bucket != nil && source.Bucket.LastUpdated != nil {
@@ -84,10 +103,10 @@ func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) (map[strin
 		}
 	}
 
-	return prefixToSource, lastUpdatedTimes
+	return sources, lastUpdatedTimes
 }
 
-func (c *Collector) collectJobDataMetrics(ctx context.Context, prefixToSource map[string]string) {
+func (c *Collector) collectJobDataMetrics(ctx context.Context, sources []sourcePrefixes) {
 	if c.stores.JobData == nil {
 		return
 	}
@@ -100,11 +119,7 @@ func (c *Collector) collectJobDataMetrics(ctx context.Context, prefixToSource ma
 		metrics.RecordCheckerDrift.WithLabelValues("gcs_missing_or_stale").Set(float64(len(invalidIDs)))
 		countsBySource := make(map[string]int)
 		for _, id := range invalidIDs {
-			prefix := strings.Split(id, "-")[0] + "-"
-			source := prefixToSource[prefix]
-			if source == "" {
-				source = "unknown"
-			}
+			source := matchSource(id, sources)
 			countsBySource[source]++
 		}
 		metrics.RecordCheckerInvalidRecords.Reset()
@@ -143,7 +158,7 @@ func (c *Collector) collectJobDataMetrics(ctx context.Context, prefixToSource ma
 	}
 }
 
-func (c *Collector) collectLinterFindingsMetrics(ctx context.Context, prefixToSource map[string]string) {
+func (c *Collector) collectLinterFindingsMetrics(ctx context.Context, sources []sourcePrefixes) {
 	if c.stores.ImportFindings == nil {
 		return
 	}
@@ -166,11 +181,7 @@ func (c *Collector) collectLinterFindingsMetrics(ctx context.Context, prefixToSo
 		}
 		source := f.Source
 		if source == "" {
-			prefix := strings.Split(f.BugID, "-")[0] + "-"
-			source = prefixToSource[prefix]
-			if source == "" {
-				source = "unknown"
-			}
+			source = matchSource(f.BugID, sources)
 		}
 		for _, code := range f.Findings {
 			if code == models.ImportFindingsNone {

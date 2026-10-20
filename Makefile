@@ -101,7 +101,6 @@ run-website-prod: stage-website-assets
 
 
 
-# Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 # Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 run-api-server: ## Run local Go API server with ESPv2 proxy
@@ -113,7 +112,16 @@ run-api-server: ## Run local Go API server with ESPv2 proxy
 run-api-server-test:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	docker inspect osv/esp:latest >/dev/null 2>&1 || docker build -f docker/esp/Dockerfile -t osv/esp:latest docker/esp
-	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
+	@cd go && go build -o ./api-devserver ./cmd/api-devserver && ( \
+		GOOGLE_CLOUD_PROJECT=oss-vdb-test \
+		OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities \
+		POSTGRES_SHADOW_RATE=$${POSTGRES_SHADOW_RATE:-1.0} \
+		POSTGRES_HOST=$${POSTGRES_HOST:-127.0.0.1} \
+		POSTGRES_PORT=$${POSTGRES_PORT:-5432} \
+		POSTGRES_USER=$${POSTGRES_USER:-$$(gcloud config get-value account)} \
+		POSTGRES_DB=$${POSTGRES_DB:-osv} \
+		POSTGRES_SSLMODE=$${POSTGRES_SSLMODE:-disable} \
+		./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 run-grafana-local: ## Run local Grafana for testing
 	./tools/run_grafana_local.sh $(ARGS)

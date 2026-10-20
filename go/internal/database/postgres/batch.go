@@ -8,6 +8,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -15,6 +16,100 @@ import (
 var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
+
+const getVulnerabilityModified = `-- name: GetVulnerabilityModified :batchone
+SELECT (data->>'modified')::timestamptz AS modified
+FROM vulnerabilities
+WHERE id = $1
+`
+
+type GetVulnerabilityModifiedBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+func (q *Queries) GetVulnerabilityModified(ctx context.Context, id []string) *GetVulnerabilityModifiedBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range id {
+		vals := []interface{}{
+			a,
+		}
+		batch.Queue(getVulnerabilityModified, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &GetVulnerabilityModifiedBatchResults{br, len(id), false}
+}
+
+func (b *GetVulnerabilityModifiedBatchResults) QueryRow(f func(int, time.Time, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		var modified time.Time
+		if b.closed {
+			if f != nil {
+				f(t, modified, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		row := b.br.QueryRow()
+		err := row.Scan(&modified)
+		if f != nil {
+			f(t, modified, err)
+		}
+	}
+}
+
+func (b *GetVulnerabilityModifiedBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const getVulnerabilityProtos = `-- name: GetVulnerabilityProtos :batchone
+SELECT proto
+FROM vulnerabilities
+WHERE id = $1
+`
+
+type GetVulnerabilityProtosBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+func (q *Queries) GetVulnerabilityProtos(ctx context.Context, id []string) *GetVulnerabilityProtosBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range id {
+		vals := []interface{}{
+			a,
+		}
+		batch.Queue(getVulnerabilityProtos, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &GetVulnerabilityProtosBatchResults{br, len(id), false}
+}
+
+func (b *GetVulnerabilityProtosBatchResults) QueryRow(f func(int, []byte, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		var proto []byte
+		if b.closed {
+			if f != nil {
+				f(t, proto, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		row := b.br.QueryRow()
+		err := row.Scan(&proto)
+		if f != nil {
+			f(t, proto, err)
+		}
+	}
+}
+
+func (b *GetVulnerabilityProtosBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
 
 const matchCommits = `-- name: MatchCommits :batchmany
 SELECT vuln_id

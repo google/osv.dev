@@ -7,6 +7,8 @@ spec:
     metadata:
       annotations:
         autoscaling.knative.dev/maxScale: '300'
+        run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
     spec:
       containers:
       - image: osv-server
@@ -22,6 +24,23 @@ spec:
           value: failed-tasks
         - name: OSV_VERBOSE_LOGGING
           value: "true"
+        - name: POSTGRES_SHADOW_RATE
+          value: "1.0"
+        - name: POSTGRES_HOST
+          value: "172.24.0.3"
+        - name: POSTGRES_PORT
+          value: "6432"
+        - name: POSTGRES_USER
+          value: "osv-readonly"
+        - name: POSTGRES_DB
+          value: "osv"
+        - name: POSTGRES_SSLMODE
+          value: "require"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-readonly-password
+              key: latest
         resources:
           limits:
             cpu: 2

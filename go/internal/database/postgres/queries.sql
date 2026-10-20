@@ -1,3 +1,13 @@
+-- name: GetVulnerabilityProtos :batchone
+SELECT proto
+FROM vulnerabilities
+WHERE id = @id;
+
+-- name: GetVulnerabilityModified :batchone
+SELECT (data->>'modified')::timestamptz AS modified
+FROM vulnerabilities
+WHERE id = @id;
+
 -- name: MatchPackageVersionedWithEcosystem :batchmany
 SELECT id, vuln_id, versions, events
 FROM affected_versions

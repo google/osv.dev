@@ -26,6 +26,11 @@
   "git-submodules": {
     "enabled": true
   },
+  "pip_requirements": {
+    "ignorePaths": [
+      "docker/poetry/requirements.txt"
+    ]
+  },
   "packageRules": [
     {
       "matchUpdateTypes": [
@@ -200,6 +205,8 @@
     },
     {
       "matchPackageNames": [
+        "osv-schema",
+        "osv/osv-schema",
         "ossf/osv-schema",
         "https://github.com/ossf/osv-schema",
         "https://github.com/ossf/osv-schema.git",
@@ -212,7 +219,8 @@
         "lockFileMaintenance"
       ],
       "matchManagers": [
-        "poetry"
+        "poetry",
+        "pip-compile"
       ],
       "groupName": "python",
       "commitMessageExtra": "(python)"
@@ -287,6 +295,5 @@
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver"
     }
-  ],
-  "ignorePaths": ["docker/poetry/requirements.txt"]
+  ]
 }

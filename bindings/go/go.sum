@@ -2,8 +2,8 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260902031056-b388a18021a3 h1:mNqW4tPTIPcx3KL5qZCByAHiTwGcwD/eCEfKOEvLA4g=
-github.com/ossf/osv-schema/bindings/go v0.0.0-20260902031056-b388a18021a3/go.mod h1:aW9XJyUJfg0r+HogMGMagTt4hF6ibBkH/FZenG/KiyE=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20261014235409-e1cced93dffb h1:16lITDLIijeaaN/g57ecVdr9gCQgzFwoETVaGnQTZqs=
+github.com/ossf/osv-schema/bindings/go v0.0.0-20261014235409-e1cced93dffb/go.mod h1:aW9XJyUJfg0r+HogMGMagTt4hF6ibBkH/FZenG/KiyE=
 golang.org/x/net v0.60.0 h1:79p50tfZlm0J9YfoDsSi639qSXNGVwEzOPLCxM2FsYU=
 golang.org/x/net v0.60.0/go.mod h1:2DA/G1UfVbCpQPeWTmMPGY7Cs2PkBkwu743bVX5PIVg=
 golang.org/x/sync v0.24.0 h1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=

@@ -10,6 +10,7 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 20,
   "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "labels": [
     "dependencies"
   ],
@@ -201,7 +202,8 @@
       "matchManagers": [
         "git-submodules"
       ],
-      "groupName": "osv-schema"
+      "groupName": "osv-schema",
+      "minimumReleaseAge": null
     },
     {
       "matchPackageNames": [
@@ -212,7 +214,8 @@
         "https://github.com/ossf/osv-schema.git",
         "github.com/ossf/osv-schema/**"
       ],
-      "groupName": "osv-schema"
+      "groupName": "osv-schema",
+      "minimumReleaseAge": null
     },
     {
       "matchUpdateTypes": [

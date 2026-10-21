@@ -34,8 +34,6 @@ from .ecosystems.ecosystems_base import (
     MAX_COARSE_PART,
     MAX_COARSE_EPOCH,
 )
-from . import gcs
-from . import pubsub
 from . import purl_helpers
 from . import semver_index
 from . import sources
@@ -903,14 +901,6 @@ class Bug(ndb.Model):
         vulnerability.modified.FromDatetime(modified_time)
     return vulnerability
 
-  def _post_put_hook(self: Self, future: ndb.Future):  # pylint: disable=arguments-differ
-    """Post-put hook for writing new entities for database migration."""
-    if future.exception():
-      logging.error("Not writing new entities for %s since Bug.put() failed",
-                    self.db_id)
-      return
-    populate_entities_from_bug(self)
-
 
 def _tokenize(value):
   """Tokenize value for indexing."""
@@ -1183,40 +1173,6 @@ class ListedVulnerability(ndb.Model):
         autocomplete_tags=autocomplete_tags,
         search_indices=search_indices,
     )
-
-
-def populate_entities_from_bug(entity: Bug):
-  """Puts entities (Vulnerability, ListedVulnerability, AffectedVersions) from
-  a given Bug entity, and writes completed OSV records to GCS bucket."""
-  if not entity.public or entity.status == bug.BugStatus.UNPROCESSED:
-    # OSS-Fuzz private Bugs
-    return
-
-  vuln_pb = entity.to_vulnerability(
-      include_source=True, include_alias=True, include_upstream=True)
-
-  def transaction():
-    vuln = Vulnerability.get_by_id(entity.db_id)
-    if vuln is None:
-      vuln = Vulnerability(id=entity.db_id)
-    if vuln.modified != vuln_pb.modified.ToDatetime(datetime.UTC):
-      vuln.source_id = entity.source_id
-      vuln.modified = vuln_pb.modified.ToDatetime(datetime.UTC)
-      vuln.is_withdrawn = entity.withdrawn is not None
-      vuln.modified_raw = entity.import_last_modified
-      vuln.alias_raw = entity.aliases
-      vuln.related_raw = entity.related
-      vuln.upstream_raw = entity.upstream_raw
-    put_entities(vuln, vuln_pb)
-
-  ndb.transaction(transaction)
-  try:
-    gcs.upload_vulnerability(vuln_pb)
-  except Exception:
-    # Writing to bucket failed for some reason. Send a pub/sub message to retry.
-    logging.error('Writing to bucket failed for %s', entity.db_id)
-    data = vuln_pb.SerializeToString(deterministic=True)
-    pubsub.publish_failure(data, type='gcs_retry')
 
 
 def put_entities(ds_vuln: Vulnerability,

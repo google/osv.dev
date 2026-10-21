@@ -47,10 +47,6 @@ TASK_SUBSCRIPTION = 'oss-fuzz-tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
 
-_ECOSYSTEM_PUSH_TOPICS = {
-    'PyPI': 'pypi-bridge',
-}
-
 _state = threading.local()
 _state.source_id = None
 _state.bug_id = None
@@ -162,11 +158,13 @@ def mark_bug_invalid(message):
   """Mark a bug as invalid."""
   source_id = get_source_id(message)
   for bug in osv.Bug.query(osv.Bug.source_id == source_id):
-    bug.withdrawn = datetime.datetime.now(datetime.UTC)
+    now = osv.utcnow()
+    bug.withdrawn = now
+    bug.last_modified = now
     bug.status = osv.BugStatus.INVALID
+    if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
+      bug.source_of_truth = osv.SourceOfTruth.INTERNAL
     bug.put()
-
-    osv.delete_affected_commits(bug.key.id())
 
 
 def get_source_id(message):
@@ -482,6 +480,9 @@ class TaskRunner:
     if not result.has_changes and not added_fix_info:
       return result
 
+    if added_fix_info and not result.has_changes:
+      vulnerability.modified.FromDatetime(osv.utcnow())
+
     if not source_repo.editable:
       return result
 
@@ -513,8 +514,8 @@ class TaskRunner:
 
     # Fully enrich the vulnerability object in memory.
     try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
+      self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                  relative_path, original_sha256)
     except UpdateConflictError:
       # Discard changes due to conflict.
       return
@@ -580,27 +581,7 @@ class TaskRunner:
       logging.exception('Unexpected exception while writing %s to Datastore',
                         vulnerability.id)
 
-    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
-    self._notify_ecosystem_bridge(vulnerability)
     self._maybe_remove_import_findings(bug)
-
-  def _notify_ecosystem_bridge(self, vulnerability):
-    """Notify ecosystem bridges."""
-    ecosystems = set()
-    for affected in vulnerability.affected:
-      if affected.package.ecosystem in ecosystems:
-        continue
-
-      ecosystems.add(affected.package.ecosystem)
-      ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
-          affected.package.ecosystem)
-      if ecosystem_push_topic:
-        publisher = pubsub_v1.PublisherClient()
-        cloud_project = os.environ['GOOGLE_CLOUD_PROJECT']
-        push_topic = publisher.topic_path(cloud_project, ecosystem_push_topic)
-        publisher.publish(
-            push_topic,
-            data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _maybe_remove_import_findings(self, vulnerability: osv.Bug):
     """Remove any stale import findings for a successfully processed Bug,"""

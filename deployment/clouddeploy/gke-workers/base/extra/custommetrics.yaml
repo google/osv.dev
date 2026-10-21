@@ -1,26 +1,28 @@
-apiVersion: batch/v1
-kind: CronJob
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: custommetrics
-  labels:
-    cronLastSuccessfulTimeMins: "15"
 spec:
-  timeZone: "Australia/Sydney"
-  schedule: "* * * * *"
-  concurrencyPolicy: Forbid
-  jobTemplate:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: custommetrics
+  template:
+    metadata:
+      labels:
+        name: custommetrics
     spec:
-      template:
-        spec:
-          containers:
-          - name: custommetrics
-            image: custommetrics
-            imagePullPolicy: Always
-            resources:
-              requests:
-                cpu: "1"
-                memory: "256Mi"
-              limits:
-                cpu: "2"
-                memory: "512Mi"
-          restartPolicy: Never
+      containers:
+      - name: custommetrics
+        image: custommetrics
+        imagePullPolicy: Always
+        ports:
+        - name: metrics
+          containerPort: 9090
+        resources:
+          requests:
+            cpu: "10m"
+            memory: "256Mi"
+          limits:
+            cpu: "200m"
+            memory: "512Mi"

@@ -10,3 +10,5 @@ configMapGenerator:
 - name: grafana-dashboards
   files:
   - executive-overview.json=dashboards/executive-overview.json
+  - pipeline-ingestion-ops.json=dashboards/pipeline-ingestion-ops.json
+  - data-quality-drift.json=dashboards/data-quality-drift.json

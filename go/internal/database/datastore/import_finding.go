@@ -177,6 +177,20 @@ func (s *ImportFindingsStore) ListAllFromSource(ctx context.Context, source stri
 	return findings, nil
 }
 
+func (s *ImportFindingsStore) ListAll(ctx context.Context) ([]*models.ImportFinding, error) {
+	query := datastore.NewQuery("ImportFinding")
+	var entities []*ImportFinding
+	if _, err := s.dsClient.GetAll(ctx, query, &entities); err != nil {
+		return nil, fmt.Errorf("failed to fetch all import findings: %w", err)
+	}
+	findings := make([]*models.ImportFinding, len(entities))
+	for i, entity := range entities {
+		findings[i] = entity.toModel()
+	}
+
+	return findings, nil
+}
+
 func (f *ImportFinding) toModel() *models.ImportFinding {
 	return &models.ImportFinding{
 		BugID:       f.BugID,

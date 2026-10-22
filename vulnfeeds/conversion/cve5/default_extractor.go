@@ -52,7 +52,7 @@ func (d *DefaultVersionExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vuln
 	var unresolvedRanges []models.RangeWithMetadata
 
 	processRanges := func(nr []models.RangeWithMetadata) bool {
-		r, un, sR := c.ProcessRanges(nr, repos, metrics, cache, httpClient)
+		r, un, sR := c.ProcessRanges(nr, repos, v.GetModified().AsTime(), metrics, cache, httpClient)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		for _, s := range sR {

@@ -7436,6 +7436,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-cg8m-r9f2-5wm2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "PYSEC-2026-2120",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -8767,6 +8771,10 @@
       "vulns": [
         {
           "id": "GHSA-3936-cmfr-pm3m",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-cg8m-r9f2-5wm2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

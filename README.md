@@ -33,11 +33,14 @@ The scanner is located in its [own repository](https://github.com/google/osv-sca
 
 This repository contains all the code for running https://osv.dev on GCP. This
 consists of:
-
+<!-- 本仓库包含了在 GCP 上运行 osv.dev 的所有代码，主要目录结构如下： -->
 | directory       | what |
 |-----------------|------|
+<!-- 目录名称 | 功能说明 -->
 | `bindings/`     | Language bindings for the [OSV API](https://google.github.io/osv.dev/api/) (currently Go only) |
+<!-- OSV API 的语言绑定库（目前仅支持 Go） -->
 | `deployment/`   | Terraform & Cloud Deploy config files <br /> A few Cloud Build config yamls |
+<!-- Terraform 和 Cloud Deploy 的配置文件 -->
 | `docker/`       | CI docker files (`ci`, `deployment`, `terraform`, `esp`) <br /> `worker-base` docker image for `gcp/workers/worker` |
 | `docs/`         | Jekyll files for https://google.github.io/osv.dev/ <br /> `build_swagger.sh` and `tools.go` |
 | `gcp/datastore` | The datastore index file (`index.yaml`) |
@@ -59,9 +62,9 @@ git submodule update --init --recursive
 ```
 
 ## Contributing
-
+<!-- 贡献指南 -->
 Contributions are welcome!
-
+<!-- 我们非常欢迎任何形式的贡献！ -->
 Learn more about [code](CONTRIBUTING.md#contributing-code), [data](CONTRIBUTING.md#contributing-data), and [documentation](CONTRIBUTING.md#contributing-documentation) contributions.
 We also have a [mailing list](https://groups.google.com/g/osv-discuss).
 

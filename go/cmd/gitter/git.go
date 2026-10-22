@@ -114,9 +114,13 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	return false
 }
 
-// fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
+// fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch.
+// --tags is needed because a plain fetch only follows tags that point into fetched branch
+// history, and some projects (e.g. php-src) tag each release on a commit no branch contains.
+// --force lets a tag that was moved upstream be updated rather than failing the fetch.
+// --prune and --prune-tags remove branches and tags that were deleted upstream.
 func fetchRepo(ctx context.Context, repoPath string) error {
-	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "origin")
+	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "--tags", "--prune", "--prune-tags", "--force", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
 	}

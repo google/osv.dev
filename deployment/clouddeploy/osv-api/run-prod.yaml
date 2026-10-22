@@ -6,7 +6,7 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/maxScale: '300'
+        autoscaling.knative.dev/maxScale: '200'
     spec:
       containers:
       - image: osv-server

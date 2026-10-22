@@ -19,6 +19,9 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/api"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/database/dualread"
+	"github.com/google/osv.dev/go/internal/database/postgres"
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 )
@@ -194,12 +197,39 @@ func runBackend(ctx context.Context, port int) {
 		}
 	}
 
-	vulnStore := db.NewVulnerabilityStore(db.VulnStoreConfig{
+	var vulnStore models.VulnerabilityStore = db.NewVulnerabilityStore(db.VulnStoreConfig{
 		Client:           dbClient,
 		GCS:              clients.NewGCSClient(gcsClient, vulnBucket),
 		BatchTimeout:     batchTimeout,
 		BatchMaxElements: batchMaxElements,
 	})
+
+	if shadowRateStr := os.Getenv("POSTGRES_SHADOW_RATE"); shadowRateStr != "" {
+		shadowRate, err := strconv.ParseFloat(shadowRateStr, 64)
+		if err != nil {
+			logger.ErrorContext(ctx, "Invalid POSTGRES_SHADOW_RATE, skipping postgres shadow reads", slog.Any("error", err))
+		} else if shadowRate > 0 {
+			pgPool, err := postgres.NewPoolFromEnv(ctx)
+			if err != nil {
+				logger.ErrorContext(ctx, "Failed to create postgres pool for shadow reads, continuing with datastore only", slog.Any("error", err))
+			} else {
+				defer pgPool.Close()
+				pgStore := postgres.NewVulnerabilityStore(postgres.VulnStoreConfig{
+					DB:               pgPool,
+					BatchTimeout:     batchTimeout,
+					BatchMaxElements: batchMaxElements,
+				})
+				dualStore := dualread.NewVulnerabilityStore(dualread.VulnStoreConfig{
+					Primary:    vulnStore,
+					Shadow:     pgStore,
+					ShadowRate: shadowRate,
+				})
+				defer dualStore.Wait()
+				vulnStore = dualStore
+				logger.InfoContext(ctx, "Enabled PostgreSQL shadow reads", slog.Float64("rate", shadowRate))
+			}
+		}
+	}
 	relationsStore := db.NewRelationsStore(dbClient)
 	importFindingsStore := db.NewImportFindingsStore(dbClient, nil, "", "")
 	repoIndexStore := db.NewRepoIndexStore(dbClient)

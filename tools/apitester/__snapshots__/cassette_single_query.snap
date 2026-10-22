@@ -2622,7 +2622,7 @@
     {
       "id": "CURL-CVE-2026-86409",
       "summary": "stale SigV4 headers sent unintended",
-      "details": "Setting `CURLOPT_AWS_SIGV4` to NULL but does not disable SigV4 authentication,\ncontrary to expectations and documentation. A subsequent transfer on the same\nhandle still sends an `Authorization: AWS4-HMAC-SHA256` header to whatever URL\nis set next, leaking state information.",
+      "details": "Setting `CURLOPT_AWS_SIGV4` to NULL does not disable SigV4 authentication,\ncontrary to expectations and documentation. A subsequent transfer on the same\nhandle still sends an `Authorization: AWS4-HMAC-SHA256` header to whatever URL\nis set next, leaking state information.",
       "aliases": ["CVE-2026-86409"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-10-14T08:00:00Z",
@@ -2635,6 +2635,24 @@
               "events": [
                 {
                   "introduced": "7.75.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
                 },
                 {
                   "fixed": "8.22.0"
@@ -2658,7 +2676,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.1",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",

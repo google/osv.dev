@@ -47,6 +47,8 @@ type WriteOptions struct {
 type Attrs struct {
 	// Generation is the generation of the object.
 	Generation int64
+	// Size is the length of the object's content in bytes.
+	Size int64
 	// CustomTime is the custom time metadata of the object.
 	CustomTime time.Time
 	// CRC32C is the CRC32 checksum of the object, using the Castagnoli93 polynomial.

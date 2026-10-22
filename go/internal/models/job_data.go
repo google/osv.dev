@@ -14,7 +14,34 @@
 
 package models
 
-import "context"
+import (
+	"context"
+	"time"
+)
+
+const (
+	// JobDataRecordCheckerInvalidRecords stores the list of invalid record IDs from the last recordchecker run.
+	JobDataRecordCheckerInvalidRecords = "record_checker_invalid_records"
+	// JobDataReconcilerSummary stores summary statistics from the last importer-reconciler run.
+	JobDataReconcilerSummary = "importer_reconciler_summary"
+	// JobDataDeleterSummary stores summary statistics from the last importer-deleter run.
+	JobDataDeleterSummary = "importer_deleter_summary"
+)
+
+// ReconcilerSummary holds metrics from an importer-reconciler execution.
+type ReconcilerSummary struct {
+	LastRun       time.Time `json:"last_run"`
+	UpToDateCount int64     `json:"up_to_date_count"`
+	MissingCount  int64     `json:"missing_count"`
+	OutdatedCount int64     `json:"outdated_count"`
+}
+
+// DeleterSummary holds metrics from an importer-deleter execution.
+type DeleterSummary struct {
+	LastRun           time.Time        `json:"last_run"`
+	WithdrawnBySource map[string]int64 `json:"withdrawn_by_source"`
+	RefusedBySource   map[string]int64 `json:"refused_by_source"`
+}
 
 // JobDataStore persists operational state (such as last run timestamps and retry lists) for background jobs.
 type JobDataStore interface {

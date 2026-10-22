@@ -1,4 +1,4 @@
-// Package main for custommetrics calculates and exports custom metrics to Google Cloud Monitoring.
+// Package main for custommetrics calculates and exposes state metrics for Prometheus/GMP and Google Cloud Monitoring.
 package main
 
 import (
@@ -7,12 +7,19 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
+	"cloud.google.com/go/datastore"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"cloud.google.com/go/storage"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
-	"go.opentelemetry.io/otel"
+	"github.com/google/osv.dev/go/osv/clients"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -25,33 +32,125 @@ const (
 )
 
 func main() {
+	if err := run(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	logger.InitGlobalLogger()
 	defer logger.Close()
 
-	ctx, span := otel.Tracer("custommetrics").Start(context.Background(), "custommetrics")
-	defer span.End()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	project := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if project == "" {
-		logger.FatalContext(ctx, "GOOGLE_CLOUD_PROJECT must be set")
+		logger.ErrorContext(ctx, "GOOGLE_CLOUD_PROJECT must be set")
+		return errors.New("GOOGLE_CLOUD_PROJECT must be set")
 	}
-	cl, err := monitoring.NewMetricClient(ctx)
-	if err != nil {
-		logger.FatalContext(ctx, "failed to create monitoring client", slog.Any("err", err))
-	}
-	defer cl.Close()
 
-	// cronjob seconds since last success
+	datastoreID := envOrDefault("DATASTORE_DATABASE_ID", "")
+	vulnBucket := envOrDefault("OSV_VULNERABILITIES_BUCKET", "osv-test-vulnerabilities")
+	metricsPort := envOrDefault("METRICS_PORT", "9090")
+
+	if metricsPort != "" {
+		metrics.StartMetricsServer(ctx, metricsPort)
+	}
+
+	dsClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to create datastore client", slog.Any("err", err))
+		return err
+	}
+	defer dsClient.Close()
+
+	gcsClient, err := storage.NewClient(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to create storage client", slog.Any("err", err))
+		return err
+	}
+	defer gcsClient.Close()
+
+	monitoringClient, err := monitoring.NewMetricClient(ctx)
+	if err != nil {
+		logger.WarnContext(ctx, "failed to create monitoring client; legacy cron freshness metric disabled", slog.Any("err", err))
+	} else {
+		defer monitoringClient.Close()
+	}
+
+	collector := NewCollector(Stores{
+		SourceRepo:     osvdatastore.NewSourceRepositoryStore(dsClient),
+		JobData:        osvdatastore.NewJobDataStore(dsClient),
+		ImportFindings: osvdatastore.NewImportFindingsStore(dsClient, gcsClient, "", ""),
+		GCS:            clients.NewGCSClient(gcsClient, vulnBucket),
+	})
+
+	clusterLocation := getClusterLocation(ctx)
+	clusterName := envOrDefault("CLUSTER_NAME", "workers")
+
+	logger.InfoContext(ctx, "custommetrics collector starting",
+		slog.String("project", project),
+		slog.String("cluster_location", clusterLocation),
+		slog.String("cluster_name", clusterName),
+	)
+	collectAll(ctx, collector, monitoringClient, project, clusterLocation, clusterName)
+
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.InfoContext(ctx, "custommetrics collector shutting down")
+			return nil
+		case <-ticker.C:
+			collectAll(ctx, collector, monitoringClient, project, clusterLocation, clusterName)
+		}
+	}
+}
+
+func collectAll(ctx context.Context, collector *Collector, cl *monitoring.MetricClient, project, clusterLocation, clusterName string) {
+	collector.CollectMetrics(ctx)
+
+	if cl == nil {
+		return
+	}
 	crons := []string{"exporter"}
 	for _, cron := range crons {
 		timeSince, err := getCronFreshness(ctx, cl, project, cron)
 		if err != nil {
-			logger.FatalContext(ctx, "error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
+			logger.WarnContext(ctx, "error getting freshness", slog.String("cronjob", cron), slog.Any("err", err))
+			continue
 		}
-		if err := writeCronFreshness(ctx, cl, project, cron, timeSince); err != nil {
-			logger.FatalContext(ctx, "error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
+		if err := writeCronFreshness(ctx, cl, project, clusterLocation, clusterName, cron, timeSince); err != nil {
+			logger.WarnContext(ctx, "error writing freshness", slog.String("cronjob", cron), slog.Any("err", err))
 		}
 	}
+}
+
+func getClusterLocation(ctx context.Context) string {
+	if loc := os.Getenv("CLUSTER_LOCATION"); loc != "" {
+		return loc
+	}
+	if metadata.OnGCE() {
+		if loc, err := metadata.InstanceAttributeValueWithContext(ctx, "cluster-location"); err == nil && loc != "" {
+			return loc
+		}
+		if zone, err := metadata.ZoneWithContext(ctx); err == nil && zone != "" {
+			return zone
+		}
+	}
+
+	return "us-west2-c"
+}
+
+func envOrDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+
+	return defaultValue
 }
 
 func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string) (int64, error) {
@@ -71,7 +170,7 @@ func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project 
 		return 0, err
 	}
 	points := ts.GetPoints()
-	if len(points) == 0 { // I'm pretty sure iterator.Done would be returned instead.
+	if len(points) == 0 {
 		logger.WarnContext(ctx, "time series has no points", slog.String("cronjob", cronjob))
 		return int64(lookbackDuration / time.Second), nil
 	}
@@ -80,7 +179,7 @@ func getCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project 
 	return time.Now().Unix() - int64(val), nil
 }
 
-func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project string, cronjob string, value int64) error {
+func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, project, clusterLocation, clusterName, cronjob string, value int64) error {
 	now := timestamppb.Now()
 	req := &monitoringpb.CreateTimeSeriesRequest{
 		Name: "projects/" + project,
@@ -94,10 +193,9 @@ func writeCronFreshness(ctx context.Context, cl *monitoring.MetricClient, projec
 			Resource: &monitoredres.MonitoredResource{
 				Type: "k8s_cluster",
 				Labels: map[string]string{
-					"project_id": project,
-					// hard-coded cluster not ideal, but this is the only cluster in the instance.
-					"location":     "us-central1-f",
-					"cluster_name": "workers",
+					"project_id":   project,
+					"location":     clusterLocation,
+					"cluster_name": clusterName,
 				},
 			},
 			Points: []*monitoringpb.Point{{

@@ -274,14 +274,17 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
 
-11. **`vanir_signatures`**:
+11. **`custommetrics`**:
+   - Long-running metrics collector daemon (`go/cmd/custommetrics/`) that periodically reads batch/dataset state from Datastore (`JobData`, `SourceRepository`, `ImportFindings`) and GCS (`all.zip`, `modified_id.csv`) and exposes dataset, drift, reconciler, deleter, and linter state metrics on `:9090/metrics` for GMP/Grafana.
+
+12. **`vanir_signatures`**:
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
 
-12. **`ubuntubinarymapper`**:
+13. **`ubuntubinarymapper`**:
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
    - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
-13. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+14. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
    - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
    - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore.
    - `repo-allowlist-sync`: CLI tool to synchronize repository allowlist YAML files (`repo_allowlist.yaml`) to `RepoAllowList` entities in Datastore.
@@ -291,6 +294,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
+- **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`, `custommetrics`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
 - **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `jsonstore/`).
   - **`datastore/`**: Cloud Datastore + GCS implementation of the domain interfaces ([`go/internal/database/datastore/`](go/internal/database/datastore/)).

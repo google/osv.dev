@@ -1,12 +1,12 @@
 module github.com/google/osv.dev/external
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/osv.dev/vulnfeeds v0.0.0-20260812014536-918f43604b8d
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20261014235409-e1cced93dffb
 	google.golang.org/protobuf v1.36.12
 )
 

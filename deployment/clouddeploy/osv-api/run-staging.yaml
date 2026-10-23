@@ -24,6 +24,8 @@ spec:
           value: failed-tasks
         - name: OSV_VERBOSE_LOGGING
           value: "true"
+        - name: OSV_NORMALIZE_MATCH_NAMES
+          value: "true"
         - name: POSTGRES_SHADOW_RATE
           value: "1.0"
         - name: POSTGRES_HOST

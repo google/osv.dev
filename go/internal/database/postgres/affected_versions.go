@@ -91,6 +91,7 @@ func ComputeAffectedVersions(vuln *osvschema.Vulnerability) ([]AffectedVersionRo
 		if exists {
 			pkgName = ecosystem.NormalizePackageName(eHelper, pkgName)
 		}
+		pkgStart := len(res)
 
 		var gitRepos []string
 		hasAffected := false
@@ -213,6 +214,17 @@ func ComputeAffectedVersions(vuln *osvschema.Vulnerability) ([]AffectedVersionRo
 				CoarseMin:     MinCoarseVersion,
 				CoarseMax:     MaxCoarseVersion,
 			})
+		}
+
+		// Also index the package under its match name when that differs, so that
+		// other spellings the registry treats as the same package find it.
+		if exists && pkgName != "" {
+			if matchName := ecosystem.NormalizeMatchName(eHelper, pkgName); matchName != pkgName {
+				for _, av := range res[pkgStart:] {
+					av.Name = matchName
+					res = append(res, av)
+				}
+			}
 		}
 
 		if len(gitRepos) > 0 {

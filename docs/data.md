@@ -56,14 +56,30 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY 4.0](https://github.com/psf/advisory-database/blob/main/LICENSE))
 -   [Bitnami Vulnerability Database](https://github.com/bitnami/vulndb)
     ([Apache 2.0](https://github.com/bitnami/vulndb/blob/main/LICENSE.md))
--   [Haskell Security Advisory DB](https://github.com/haskell/security-advisories)
-    ([CC0 1.0](https://github.com/haskell/security-advisories/blob/main/LICENSE.txt))
 -   [Ubuntu](https://github.com/canonical/ubuntu-security-notices)
     ([CC-BY-SA 4.0](https://github.com/canonical/ubuntu-security-notices/blob/main/LICENSE))
 -   [opam (OCaml package manager)](https://github.com/ocaml/security-advisories)
     ([CC0 1.0](https://github.com/ocaml/security-advisories/blob/main/LICENSE.txt))
 -   [Erlang Ecosystem Foundation CNA](https://cna.erlef.org/)
     ([CC-BY 4.0](https://cna.erlef.org/data-licensing/))
+-   [Android](https://source.android.com/docs/security/bulletin)
+    ([CC-BY 4.0](https://source.android.com/license))
+-   [Azure Linux](https://github.com/microsoft/AzureLinuxVulnerabilityData)
+    ([MIT](https://github.com/microsoft/AzureLinuxVulnerabilityData/blob/main/LICENSE))
+-   [BellSoft](https://github.com/bell-sw/osv-database)
+    ([MIT](https://github.com/bell-sw/osv-database/blob/master/LICENSE))
+-   [Chainguard / Wolfi](https://github.com/chainguard-dev/vulnerability-scanner-support/blob/main/docs/osv_v3_feed.md)
+    ([CC-BY-NC-ND 4.0](https://github.com/chainguard-dev/vulnerability-scanner-support/blob/main/docs/foundational_concepts.md#security-feeds))
+-   [CleanStart](https://github.com/cleanstart-dev/cleanstart-security-advisories)
+    ([Apache 2.0](https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/LICENSE))
+-   [Curl](https://curl.se/docs/security.html)
+    ([curl](https://curl.se/docs/copyright.html))
+-   [Julia Security Advisories](https://github.com/JuliaLang/SecurityAdvisories.jl)
+    ([CC-BY 4.0](https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/LICENSE.md))
+-   [Red Hat Security Data](https://security.access.redhat.com/data)
+    ([CC-BY 4.0](https://security.access.redhat.com/data))
+-   [V8 / Chromium](https://github.com/google/chromium-policy-vulnfeed)
+    ([Apache 2.0](https://github.com/google/chromium-policy-vulnfeed/blob/main/LICENSE))
 
 ## Converted data
 
@@ -72,7 +88,8 @@ Additionally, the OSV.dev team maintains a conversion pipeline for:
 -   [Debian Security Advisories](https://storage.googleapis.com/debian-osv/index.html),
     using the conversion tools
     [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/debian).
--   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/),
+-   [Alpine SecDB](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/)
+    ([CC-BY-SA 4.0](https://secdb.alpinelinux.org/license.txt)),
     using the conversion tools
     [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/alpine),
 -   [NVD CVEs for open source software](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output/) using the conversion tools [here](https://github.com/google/osv.dev/tree/master/vulnfeeds/cmd/converters/cve/nvd-cve-osv)
@@ -168,6 +185,6 @@ A list of all current ecosystems is available at
 OSV.dev has stopped exporting entries for ecosystems with prefixes (e.g. All `Alpine:.*`). Please refer only to the main ecosystem, the one without the `:.*` suffix, for all vulnerabilities of that ecosystem.
 
 ## Contributing Data
-If you work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps outlined in the [New Data Source](./new_source.md) page.
+If you work with a project such as a Linux distribution and would like to contribute your security advisories, please follow the steps and [data licensing requirements](./new_source.md#data-licensing) outlined in the [New Data Source](./new_source.md) page.
 
 Data can be supplied either through a public Git repository, to [REST API endpoints](./rest-api.md), or through a public GCS bucket.

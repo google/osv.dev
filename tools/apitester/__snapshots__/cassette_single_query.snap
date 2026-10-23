@@ -94,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -167,7 +167,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4219,7 +4219,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",

@@ -19,7 +19,7 @@ The step by step instructions are as follows:
         
 - [ ] Create a PR to [reserve an ID prefix and define a new ecosystem](https://ossf.github.io/osv-schema/#id-modified-fields) ([example](https://github.com/ossf/osv-schema/pull/351)). We review the records you start publishing for OSV Schema [correctness](https://github.com/ossf/osv-schema/tree/main/validation) and [quality](https://google.github.io/osv.dev/data_quality.html) as part of reviewing and merging this PR.
 
-- [ ] Prepare and publish your records via a public Git repository ([example](https://github.com/AlmaLinux/osv-database/tree/master)). If this method isn’t ideal, we also support publishing records through [REST API](./rest-api.md) or GCS buckets ([example](https://storage.googleapis.com/android-osv/)).  
+- [ ] Prepare and publish your records via a public Git repository ([example](https://github.com/AlmaLinux/osv-database/tree/master)). If this method isn’t ideal, we also support publishing records through [REST API](./rest-api.md) or GCS buckets ([example](https://storage.googleapis.com/android-osv/)). Ensure your data is published under a clearly documented license that meets our [data licensing requirements](#data-licensing).  
         
 - [ ] To support API querying, if you are contributing a new ecosystem, please create a PR to add PURL mappings in [go/purl](https://github.com/google/osv.dev/tree/master/go/purl) and register the ecosystem version logic in [go/osv/ecosystem](https://github.com/google/osv.dev/tree/master/go/osv/ecosystem) (see [ecosystem factories](https://github.com/google/osv.dev/blob/9d4d7192f3a2a5bb4aa62ff31bd803d63e0026fb/go/osv/ecosystem/ecosystem.go#L41)). You can refer to existing examples for [Semver](https://github.com/google/osv.dev/blob/master/go/osv/ecosystem/semver.go) and non-Semver (e.g. [Debian](https://github.com/google/osv.dev/blob/master/go/osv/ecosystem/debian.go)) ecosystems.  
   *Note: Many of our ecosystems rely on [osv-scalibr's semantic module](https://github.com/google/osv-scalibr/tree/main/semantic), which osv-scanner also uses to perform offline scanning. Consider adding it there if you wish to have the ecosystem fully supported in osv-scanner.*  
@@ -32,7 +32,17 @@ The step by step instructions are as follows:
   ```
   to identify and address any important record linting issues. Note that it may take up to 24 hours for new findings to populate. You can also view this information more interactively at [test.osv.dev/linter](https://test.osv.dev/linter).
 
-- [ ] Create a PR to start [importing the records you are publishing into our production environment](https://github.com/google/osv.dev/blob/master/source.yaml)
+- [ ] Create a PR to start [importing the records you are publishing into our production environment](https://github.com/google/osv.dev/blob/master/source.yaml) and document your data source and its license in [docs/data.md](https://github.com/google/osv.dev/blob/master/docs/data.md).
+
+## Data Licensing
+
+When OSV.dev ingests records from a data source, it does not simply host the raw files as-is:
+
+1. **Enrichment and Modification**: OSV.dev [enriches imported records](./faq.md#what-does-osvdev-do-to-the-records-it-imports) by enumerating affected package versions and Git commits, populating Package URLs (`purl`) and source attribution links (`database_specific.source`), and continuously computing transitive and reflective `aliases`, `upstream`, and `related` vulnerability relationships (which updates the record's `modified` timestamp).
+2. **Public Redistribution**: OSV.dev serves these enriched records via the [OSV.dev website](https://osv.dev), the [OSV API](./api/index.md), and bulk [GCS data dumps](./data.md#data-dumps) (`gs://osv-vulnerabilities`, including `all.zip` and per-ecosystem archives).
+3. **Downstream Consumption**: Records served by OSV.dev are consumed by open-source tools (such as [OSV-Scanner](https://github.com/google/osv-scanner)), security researchers, downstream vulnerability databases, and commercial software composition analysis (SCA) tools.
+
+Accordingly, the license for any contributed data source **must** at minimum permit OSV.dev to ingest, index, modify (enrich), and publicly redistribute the records across these channels. To ensure downstream users and tools can freely consume the aggregated dataset without legal friction, we strongly recommend publishing vulnerability data under a standard permissive license—such as **[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)**, **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)**, **[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)**, or **[MIT](https://opensource.org/license/mit)**.
 
 
 <details markdown="1">

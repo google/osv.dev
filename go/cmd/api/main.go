@@ -96,12 +96,15 @@ func run() error {
 			logger.ErrorContext(ctx, "Invalid OSV_DB_BATCH_MAX_SIZE, using default", slog.Any("error", err))
 		}
 	}
+	// See db.VulnStoreConfig.NormalizeMatchNames before enabling.
+	normalizeMatchNames := strings.EqualFold(os.Getenv("OSV_NORMALIZE_MATCH_NAMES"), "true")
 
 	var vulnStore models.VulnerabilityStore = db.NewVulnerabilityStore(db.VulnStoreConfig{
-		Client:           dbClient,
-		GCS:              clients.NewGCSClient(gcsClient, vulnBucket),
-		BatchTimeout:     batchTimeout,
-		BatchMaxElements: batchMaxElements,
+		Client:              dbClient,
+		GCS:                 clients.NewGCSClient(gcsClient, vulnBucket),
+		BatchTimeout:        batchTimeout,
+		BatchMaxElements:    batchMaxElements,
+		NormalizeMatchNames: normalizeMatchNames,
 	})
 
 	if shadowRateStr := os.Getenv("POSTGRES_SHADOW_RATE"); shadowRateStr != "" {

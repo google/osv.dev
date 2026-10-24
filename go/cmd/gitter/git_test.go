@@ -47,6 +47,63 @@ func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 	}
 }
 
+func TestFetchRepo_SyncsTagsAndBranches(t *testing.T) {
+	ctx := t.Context()
+	git := func(dir string, args ...string) string {
+		t.Helper()
+		args = append([]string{"-c", "user.name=Test", "-c", "user.email=test@example.com"}, args...)
+		out, err := runCmd(ctx, dir, nil, "git", args...)
+		if err != nil {
+			t.Fatalf("git %v failed: %v", args, err)
+		}
+
+		return strings.TrimSpace(string(out))
+	}
+	upstream := filepath.Join(t.TempDir(), "upstream")
+	clone := filepath.Join(t.TempDir(), "clone")
+	refExists := func(ref string) bool {
+		_, err := runCmd(ctx, clone, nil, "git", "rev-parse", "--verify", "--quiet", ref)
+		return err == nil
+	}
+
+	git("", "init", "-b", "main", upstream)
+	git(upstream, "commit", "--allow-empty", "-m", "initial commit")
+	git(upstream, "tag", "-a", "v1.0.0", "-m", "v1.0.0")
+	git(upstream, "tag", "-a", "v1.1.0", "-m", "v1.1.0")
+	git(upstream, "branch", "old")
+	if err := cloneRepo(ctx, upstream, clone); err != nil {
+		t.Fatalf("cloneRepo failed: %v", err)
+	}
+
+	// Tag a release on a commit that no branch contains, as php-src does.
+	git(upstream, "checkout", "-b", "release")
+	git(upstream, "commit", "--allow-empty", "-m", "release commit")
+	git(upstream, "tag", "-a", "v1.0.1", "-m", "v1.0.1")
+	git(upstream, "checkout", "main")
+	git(upstream, "branch", "-D", "release")
+	// Move a tag, delete a tag and delete a branch.
+	git(upstream, "commit", "--allow-empty", "-m", "second commit")
+	git(upstream, "tag", "-f", "-a", "v1.1.0", "-m", "v1.1.0")
+	git(upstream, "tag", "-d", "v1.0.0")
+	git(upstream, "branch", "-D", "old")
+
+	if err := fetchRepo(ctx, clone); err != nil {
+		t.Fatalf("fetchRepo failed: %v", err)
+	}
+	if !refExists("refs/tags/v1.0.1") {
+		t.Errorf("tag v1.0.1 was not fetched")
+	}
+	if got, want := git(clone, "rev-parse", "refs/tags/v1.1.0^{commit}"), git(upstream, "rev-parse", "main"); got != want {
+		t.Errorf("tag v1.1.0 points to %s, want %s", got, want)
+	}
+	if refExists("refs/tags/v1.0.0") {
+		t.Errorf("tag v1.0.0 was deleted upstream but not pruned")
+	}
+	if refExists("refs/remotes/origin/old") {
+		t.Errorf("branch old was deleted upstream but not pruned")
+	}
+}
+
 func TestRefreshRepo_DontRecloneOnRemoteError(t *testing.T) {
 	setupTest(t)
 	ctx := t.Context()

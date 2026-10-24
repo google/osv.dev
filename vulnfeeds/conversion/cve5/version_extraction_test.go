@@ -1,7 +1,10 @@
 package cve5
 
 import (
+	"errors"
+	"net/http"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -952,5 +955,103 @@ func TestExtractVersions_Curl_WithoutGitRanges(t *testing.T) {
 
 	if len(metrics.Notes) == 0 {
 		t.Errorf("expected notes to be populated from default extractor")
+	}
+}
+
+// offlineTransport fails every outgoing request, proving the tests below
+// resolve entirely from the pre-populated cache.
+type offlineTransport struct{}
+
+func (offlineTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected network access in test")
+}
+
+func cveWithRefs(refs ...models.Reference) models.CVE5 {
+	return models.CVE5{
+		Containers: struct {
+			CNA models.CNA   `json:"cna"`
+			ADP []models.CNA `json:"adp,omitempty"`
+		}{
+			CNA: models.CNA{
+				References: refs,
+			},
+		},
+	}
+}
+
+// A comparison URL with version tags on both sides should be preferred over
+// treating reference links as commits, yielding an introduced..fixed commit
+// range resolved via the repository's tags (#2924).
+func TestExtractVersionsFromCompareReference(t *testing.T) {
+	const (
+		repo             = "https://github.com/kovidgoyal/kitty"
+		introducedCommit = "85e86bab13d8c3b3c0f3a0d1a2b3c4d5e6f70809"
+		fixedCommit      = "9d09b76f4a1c2b3c4d5e6f7a8b9c0d1e2f304050"
+	)
+
+	cache := &git.InMemoryRepoTagsCache{}
+	cache.SetCanonicalLink(repo, repo)
+	cache.Set(repo, git.RepoTagsMap{
+		NormalizedTag: map[string]git.NormalizedTag{
+			"0-26-1": {OriginalTag: "v0.26.1", Commit: introducedCommit},
+			"0-26-2": {OriginalTag: "v0.26.2", Commit: fixedCommit},
+		},
+	})
+
+	cve := cveWithRefs(models.Reference{URL: "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2"})
+
+	v := &vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
+	metrics := &models.ConversionMetrics{}
+	extractor := &DefaultVersionExtractor{}
+	extractor.ExtractVersions(cve, v, metrics, []string{repo}, cache, &http.Client{Transport: offlineTransport{}})
+
+	if len(v.Affected) != 1 {
+		t.Fatalf("expected one affected entry, got %d (metrics: %+v)", len(v.Affected), metrics)
+	}
+	ranges := v.Affected[0].GetRanges()
+	if len(ranges) != 1 {
+		t.Fatalf("expected one range, got %+v", ranges)
+	}
+	r := ranges[0]
+	if r.GetRepo() != repo {
+		t.Errorf("Range.Repo = %q, want %q", r.GetRepo(), repo)
+	}
+	if r.GetType() != osvschema.Range_GIT {
+		t.Errorf("Range.Type = %v, want %v", r.GetType(), osvschema.Range_GIT)
+	}
+	events := r.GetEvents()
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %+v", events)
+	}
+	if events[0].GetIntroduced() != introducedCommit {
+		t.Errorf("Introduced = %q, want %q", events[0].GetIntroduced(), introducedCommit)
+	}
+	if events[1].GetFixed() != fixedCommit {
+		t.Errorf("Fixed = %q, want %q", events[1].GetFixed(), fixedCommit)
+	}
+	if !slices.Contains(metrics.VersionSources, models.VersionSourceRefsCompare) {
+		t.Errorf("VersionSources = %v, want to contain %q", metrics.VersionSources, models.VersionSourceRefsCompare)
+	}
+}
+
+// A branch comparison (no version-like sides) must not produce a range.
+func TestExtractVersionsFromBranchCompareReference(t *testing.T) {
+	const repo = "https://gitlab.com/mayan-edms/mayan-edms"
+
+	cache := &git.InMemoryRepoTagsCache{}
+	cache.SetCanonicalLink(repo, repo)
+
+	cve := cveWithRefs(models.Reference{URL: "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master"})
+
+	v := &vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{}}
+	metrics := &models.ConversionMetrics{}
+	extractor := &DefaultVersionExtractor{}
+	extractor.ExtractVersions(cve, v, metrics, []string{repo}, cache, &http.Client{Transport: offlineTransport{}})
+
+	if len(v.Affected) != 0 {
+		t.Errorf("expected no affected entries, got %+v", v.Affected)
+	}
+	if slices.Contains(metrics.VersionSources, models.VersionSourceRefsCompare) {
+		t.Errorf("VersionSources = %v, unexpectedly contains %q", metrics.VersionSources, models.VersionSourceRefsCompare)
 	}
 }

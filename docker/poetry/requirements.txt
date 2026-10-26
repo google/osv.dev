@@ -280,9 +280,9 @@ cryptography==50.0.0 \
     --hash=sha256:f89831ef99dd7dd169ab06d63a831adb9e20a87aac6d380266bbda5823349169 \
     --hash=sha256:fd9192b7b70c573d7f214eb1ae35e00d359f6f5e4b27c7e21e30de1fc6204645
     # via secretstorage
-distlib==0.4.0 \
-    --hash=sha256:9659f7d87e46584a30b5780e43ac7a2143098441670ff0a49d5f9034c54a6c16 \
-    --hash=sha256:feec40075be03a04501a973d81f633735b4b69f98b05450592310c0f401a4e0d
+distlib==0.4.4 \
+    --hash=sha256:ca4175b4ac7f71223cc30ed7248c45d2b38c2439d8ee6e498ab67ed63cf3508d \
+    --hash=sha256:cf09d55b1e85a89576b036aeb71550bfd68320f3f21761ca329eadadad918638
     # via virtualenv
 dulwich==1.2.9 \
     --hash=sha256:01357ee607bed532148cd57fa72ebd6994cbea262d4ef0498493fa4cfcec7235 \
@@ -462,13 +462,14 @@ msgpack==1.2.1 \
     --hash=sha256:f310233ef7fb9c14e201c93639fe5f5260b005f56f0b29048e999c30935596cc \
     --hash=sha256:f9389552ecf4784886345ead0647e4edc96bee37cbab05b75540f542f766c48c
     # via cachecontrol
-packaging==26.0 \
-    --hash=sha256:00243ae351a257117b6a241061796684b084ed1c516a08c48a3f7e147a9d80b4 \
-    --hash=sha256:b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529
+packaging==26.3 \
+    --hash=sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
     # via
     #   build
     #   findpython
     #   poetry
+    #   virtualenv
 pbs-installer[download,install]==2025.12.17 \
     --hash=sha256:1a899ac5af9ca4c59a7a7944ec3fcf7ad7e40d5684b12eadcfbeee7c59d44123 \
     --hash=sha256:cf32043fadd168c17a1b18c1c3f801090281bd5c9ce101e2deb7e0e51c8279dd
@@ -624,9 +625,9 @@ urllib3==2.8.0 \
     # via
     #   dulwich
     #   requests
-virtualenv==21.7.13 \
-    --hash=sha256:0355558b6f33619aab31347e43643b0ebc97f61ea3acf617b2b69e1f8a843d11 \
-    --hash=sha256:1bea5af7463f59c4719db48fe739579a2a4f569c96f26c086edda85c96da9f59
+virtualenv==21.14.13 \
+    --hash=sha256:5fbb04138a4861580b78ba9110d529a26bc48fcc93c8ec36bc0202eeed96a788 \
+    --hash=sha256:de5307ba4b9a0001d9c8ea02832d38f63ca432880f416c1bface61c4323fd905
     # via poetry
 zstandard==0.25.0 \
     --hash=sha256:011d388c76b11a0c165374ce660ce2c8efa8e5d87f34996aa80f9c0816698b64 \

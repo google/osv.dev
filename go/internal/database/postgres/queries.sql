@@ -1,12 +1,12 @@
--- name: GetVulnerabilityProtos :batchone
-SELECT proto
+-- name: GetVulnerabilityProtos :many
+SELECT id, proto
 FROM vulnerabilities
-WHERE id = @id;
+WHERE id = ANY(@ids::text[]);
 
--- name: GetVulnerabilityModified :batchone
-SELECT (data->>'modified')::timestamptz AS modified
+-- name: GetVulnerabilityModified :many
+SELECT id, (data->>'modified')::timestamptz AS modified
 FROM vulnerabilities
-WHERE id = @id;
+WHERE id = ANY(@ids::text[]);
 
 -- name: MatchPackageVersionedWithEcosystem :batchmany
 SELECT id, vuln_id, versions, events

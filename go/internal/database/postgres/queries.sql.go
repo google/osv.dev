@@ -4,3 +4,70 @@
 // source: queries.sql
 
 package postgres
+
+import (
+	"context"
+	"time"
+)
+
+const getVulnerabilityModified = `-- name: GetVulnerabilityModified :many
+SELECT id, (data->>'modified')::timestamptz AS modified
+FROM vulnerabilities
+WHERE id = ANY($1::text[])
+`
+
+type GetVulnerabilityModifiedRow struct {
+	ID       string
+	Modified time.Time
+}
+
+func (q *Queries) GetVulnerabilityModified(ctx context.Context, ids []string) ([]GetVulnerabilityModifiedRow, error) {
+	rows, err := q.db.Query(ctx, getVulnerabilityModified, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetVulnerabilityModifiedRow
+	for rows.Next() {
+		var i GetVulnerabilityModifiedRow
+		if err := rows.Scan(&i.ID, &i.Modified); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getVulnerabilityProtos = `-- name: GetVulnerabilityProtos :many
+SELECT id, proto
+FROM vulnerabilities
+WHERE id = ANY($1::text[])
+`
+
+type GetVulnerabilityProtosRow struct {
+	ID    string
+	Proto []byte
+}
+
+func (q *Queries) GetVulnerabilityProtos(ctx context.Context, ids []string) ([]GetVulnerabilityProtosRow, error) {
+	rows, err := q.db.Query(ctx, getVulnerabilityProtos, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetVulnerabilityProtosRow
+	for rows.Next() {
+		var i GetVulnerabilityProtosRow
+		if err := rows.Scan(&i.ID, &i.Proto); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

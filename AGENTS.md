@@ -304,7 +304,6 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
   - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)).
   - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background for latency comparison.
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
-- **`repos/`**: Shared Git repository management and utilities.
 
 ---
 

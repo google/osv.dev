@@ -219,9 +219,10 @@ func runBackend(ctx context.Context, port int) {
 			} else {
 				defer pgPool.Close()
 				pgStore := postgres.NewVulnerabilityStore(postgres.VulnStoreConfig{
-					DB:               pgPool,
-					BatchTimeout:     batchTimeout,
-					BatchMaxElements: batchMaxElements,
+					DB:                  pgPool,
+					BatchTimeout:        batchTimeout,
+					BatchMaxElements:    batchMaxElements,
+					NormalizeMatchNames: normalizeMatchNames,
 				})
 				dualStore := dualread.NewVulnerabilityStore(dualread.VulnStoreConfig{
 					Primary:    vulnStore,

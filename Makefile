@@ -115,6 +115,7 @@ run-api-server-test:
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && ( \
 		GOOGLE_CLOUD_PROJECT=oss-vdb-test \
 		OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities \
+		OSV_NORMALIZE_MATCH_NAMES=$${OSV_NORMALIZE_MATCH_NAMES:-true} \
 		POSTGRES_SHADOW_RATE=$${POSTGRES_SHADOW_RATE:-1.0} \
 		POSTGRES_HOST=$${POSTGRES_HOST:-127.0.0.1} \
 		POSTGRES_PORT=$${POSTGRES_PORT:-5432} \

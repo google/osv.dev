@@ -38,6 +38,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func TestMain(m *testing.M) {
+	testutils.RunWithDatastoreEmulator(m)
+}
+
 type mockGitterClient struct {
 	gitter.Client
 

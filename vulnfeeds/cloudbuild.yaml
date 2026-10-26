@@ -37,3 +37,5 @@ steps:
   waitFor: ['init']
 
 timeout: 7200s
+options:
+  machineType: E2_HIGHCPU_8

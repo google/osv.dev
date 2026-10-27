@@ -49,57 +49,50 @@ func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 
 func TestFetchRepo_SyncsTagsAndBranches(t *testing.T) {
 	ctx := t.Context()
-	git := func(dir string, args ...string) string {
-		t.Helper()
-		args = append([]string{"-c", "user.name=Test", "-c", "user.email=test@example.com"}, args...)
-		out, err := runCmd(ctx, dir, nil, "git", args...)
-		if err != nil {
-			t.Fatalf("git %v failed: %v", args, err)
-		}
-
-		return strings.TrimSpace(string(out))
-	}
-	upstream := filepath.Join(t.TempDir(), "upstream")
+	upstream := t.TempDir()
 	clone := filepath.Join(t.TempDir(), "clone")
-	refExists := func(ref string) bool {
-		_, err := runCmd(ctx, clone, nil, "git", "rev-parse", "--verify", "--quiet", ref)
-		return err == nil
+	revParse := func(dir, ref string) (string, bool) {
+		out, err := runCmd(ctx, dir, nil, "git", "rev-parse", "--verify", "--quiet", ref)
+		return strings.TrimSpace(string(out)), err == nil
 	}
 
-	git("", "init", "-b", "main", upstream)
-	git(upstream, "commit", "--allow-empty", "-m", "initial commit")
-	git(upstream, "tag", "-a", "v1.0.0", "-m", "v1.0.0")
-	git(upstream, "tag", "-a", "v1.1.0", "-m", "v1.1.0")
-	git(upstream, "branch", "old")
+	runGit(t, upstream, "init", "-b", "main")
+	runGit(t, upstream, "config", "user.email", "test@test.com")
+	runGit(t, upstream, "config", "user.name", "Test Name")
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "initial commit")
+	runGit(t, upstream, "tag", "-a", "v1.0.0", "-m", "v1.0.0")
+	runGit(t, upstream, "tag", "-a", "v1.1.0", "-m", "v1.1.0")
+	runGit(t, upstream, "branch", "old")
 	if err := cloneRepo(ctx, upstream, clone); err != nil {
 		t.Fatalf("cloneRepo failed: %v", err)
 	}
 
 	// Tag a release on a commit that no branch contains, as php-src does.
-	git(upstream, "checkout", "-b", "release")
-	git(upstream, "commit", "--allow-empty", "-m", "release commit")
-	git(upstream, "tag", "-a", "v1.0.1", "-m", "v1.0.1")
-	git(upstream, "checkout", "main")
-	git(upstream, "branch", "-D", "release")
+	runGit(t, upstream, "checkout", "-b", "release")
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "release commit")
+	runGit(t, upstream, "tag", "-a", "v1.0.1", "-m", "v1.0.1")
+	runGit(t, upstream, "checkout", "main")
+	runGit(t, upstream, "branch", "-D", "release")
 	// Move a tag, delete a tag and delete a branch.
-	git(upstream, "commit", "--allow-empty", "-m", "second commit")
-	git(upstream, "tag", "-f", "-a", "v1.1.0", "-m", "v1.1.0")
-	git(upstream, "tag", "-d", "v1.0.0")
-	git(upstream, "branch", "-D", "old")
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "second commit")
+	runGit(t, upstream, "tag", "-f", "-a", "v1.1.0", "-m", "v1.1.0")
+	runGit(t, upstream, "tag", "-d", "v1.0.0")
+	runGit(t, upstream, "branch", "-D", "old")
 
 	if err := fetchRepo(ctx, clone); err != nil {
 		t.Fatalf("fetchRepo failed: %v", err)
 	}
-	if !refExists("refs/tags/v1.0.1") {
+	if _, ok := revParse(clone, "refs/tags/v1.0.1"); !ok {
 		t.Errorf("tag v1.0.1 was not fetched")
 	}
-	if got, want := git(clone, "rev-parse", "refs/tags/v1.1.0^{commit}"), git(upstream, "rev-parse", "main"); got != want {
+	got, _ := revParse(clone, "refs/tags/v1.1.0^{commit}")
+	if want, _ := revParse(upstream, "main"); got != want {
 		t.Errorf("tag v1.1.0 points to %s, want %s", got, want)
 	}
-	if refExists("refs/tags/v1.0.0") {
+	if _, ok := revParse(clone, "refs/tags/v1.0.0"); ok {
 		t.Errorf("tag v1.0.0 was deleted upstream but not pruned")
 	}
-	if refExists("refs/remotes/origin/old") {
+	if _, ok := revParse(clone, "refs/remotes/origin/old"); ok {
 		t.Errorf("branch old was deleted upstream but not pruned")
 	}
 }

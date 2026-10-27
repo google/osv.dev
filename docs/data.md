@@ -78,6 +78,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([CC-BY 4.0](https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/LICENSE.md))
 -   [Red Hat Security Data](https://security.access.redhat.com/data)
     ([CC-BY 4.0](https://security.access.redhat.com/data))
+-   [Red Hat Lightwell](https://github.com/project-lightwell/lightwell-osv)
+    ([CC-BY 4.0](https://github.com/project-lightwell/lightwell-osv/blob/main/LICENSE))
 -   [V8 / Chromium](https://github.com/google/chromium-policy-vulnfeed)
     ([Apache 2.0](https://github.com/google/chromium-policy-vulnfeed/blob/main/LICENSE))
 

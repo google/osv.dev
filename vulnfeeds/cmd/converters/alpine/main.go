@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	alpineURLBase           = "https://secdb.alpinelinux.org/%s/main.json"
+	alpineURLBase           = "https://secdb.alpinelinux.org/%s/%s.json"
 	alpineIndexURL          = "https://secdb.alpinelinux.org/"
 	alpineOutputPathDefault = "alpine"
 	defaultCvePath          = "cve_jsons"
@@ -115,29 +115,31 @@ func getAlpineSecDBData() map[string][]VersionAndPkg {
 	allAlpineSecDb := make(map[string][]VersionAndPkg)
 	allAlpineVers := getAllAlpineVersions()
 	for _, alpineVer := range allAlpineVers {
-		secdb := downloadAlpine(alpineVer)
-		for _, pkg := range secdb.Packages {
-			for version, cveIDs := range pkg.Pkg.SecFixes {
-				for _, cveID := range cveIDs {
-					cveID = strings.Split(cveID, " ")[0]
+		for _, repo := range []string{"main", "community"} {
+			secdb := downloadAlpine(alpineVer, repo)
+			for _, pkg := range secdb.Packages {
+				for version, cveIDs := range pkg.Pkg.SecFixes {
+					for _, cveID := range cveIDs {
+						cveID = strings.Split(cveID, " ")[0]
 
-					if !validVersion(version) {
-						logger.Warn(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
-							cveID, version, pkg.Pkg.Name,
-							alpineVer), slog.String("version", version),
-							slog.String("package", pkg.Pkg.Name),
-							slog.String("alpine_version", alpineVer),
-						)
+						if !validVersion(version) {
+							logger.Warn(fmt.Sprintf("[%s] Invalid alpine version: '%s', on package: '%s', and alpine version: '%s'",
+								cveID, version, pkg.Pkg.Name,
+								alpineVer), slog.String("version", version),
+								slog.String("package", pkg.Pkg.Name),
+								slog.String("alpine_version", alpineVer),
+							)
 
-						continue
+							continue
+						}
+
+						allAlpineSecDb[cveID] = append(allAlpineSecDb[cveID],
+							VersionAndPkg{
+								Pkg:       pkg.Pkg.Name,
+								Ver:       version,
+								AlpineVer: alpineVer,
+							})
 					}
-
-					allAlpineSecDb[cveID] = append(allAlpineSecDb[cveID],
-						VersionAndPkg{
-							Pkg:       pkg.Pkg.Name,
-							Ver:       version,
-							AlpineVer: alpineVer,
-						})
 				}
 			}
 		}
@@ -283,14 +285,17 @@ func findIntroducedVersion(cve models.NVDCVE, alpinePkg string) string {
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API
-func downloadAlpine(version string) AlpineSecDB {
-	res, err := http.Get(fmt.Sprintf(alpineURLBase, version))
+func downloadAlpine(version, repo string) AlpineSecDB {
+	res, err := http.Get(fmt.Sprintf(alpineURLBase, version, repo))
 	if err != nil {
 		logger.Fatal("Failed to get alpine file", slog.String("version", version), slog.Any("err", err))
 	}
 	defer res.Body.Close()
 
 	var decodedSecdb AlpineSecDB
+	if res.StatusCode == http.StatusNotFound {
+		return decodedSecdb
+	}
 
 	if err := json.NewDecoder(res.Body).Decode(&decodedSecdb); err != nil {
 		logger.Fatal("Failed to parse alpine json", slog.Any("err", err))

@@ -22,6 +22,8 @@ spec:
           value: osv-vulnerabilities
         - name: FAILED_TASKS_TOPIC
           value: failed-tasks
+        - name: OSV_NORMALIZE_MATCH_NAMES
+          value: "true"
         - name: POSTGRES_SHADOW_RATE
           value: "0"
         - name: POSTGRES_HOST

@@ -14,7 +14,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
-	github.com/knqyf263/go-cpe v0.0.0-20230627041855-cb0794d06872
+	github.com/knqyf263/go-cpe v0.0.0-20261015082322-2cb8736448ff
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20261014235409-e1cced93dffb
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/sethvargo/go-retry v0.5.0
@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.43.0
-	google.golang.org/api v0.303.0
+	google.golang.org/api v0.306.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/dnaeon/go-vcr.v4 v4.0.7
@@ -123,6 +123,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

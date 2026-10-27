@@ -4,9 +4,9 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "google-auth-httplib2==0.4.4",
     "google-api-python-client==2.201.0",
-    "google-cloud-pubsub==2.42.0",
+    "google-cloud-pubsub==2.43.0",
     "google-cloud-ndb==2.7.1",
-    "google-cloud-storage==3.17.0",
+    "google-cloud-storage==3.17.1",
     "pyyaml==6.0.3",
     "redis==6.4.0",
     "packageurl-python==0.17.6",

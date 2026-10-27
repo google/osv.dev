@@ -678,14 +678,14 @@ redis = ">=3.0.0,<9.0.0"
 
 [[package]]
 name = "google-cloud-pubsub"
-version = "2.42.0"
+version = "2.43.0"
 description = "Google Cloud Pub/Sub API client library"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_pubsub-2.42.0-py3-none-any.whl", hash = "sha256:6eff5d2155b5f6967885b0e7f3da6fda91d2cfb15227fffeaef39b7339044a3d"},
-    {file = "google_cloud_pubsub-2.42.0.tar.gz", hash = "sha256:92ed998c41ce7d4f6b5b7c950df8291abd27c4d50116714e5c46fac47313e74d"},
+    {file = "google_cloud_pubsub-2.43.0-py3-none-any.whl", hash = "sha256:db5436dd2d99774171d13c1bf1fb960b6bf3aa23c15694c50090aa569316d19a"},
+    {file = "google_cloud_pubsub-2.43.0.tar.gz", hash = "sha256:9a0e01876024ecd5e101a3c41cd67fa50ef0c4e39aa56f53b81524599f90e346"},
 ]
 
 [package.dependencies]
@@ -704,14 +704,14 @@ libcst = ["libcst (>=0.3.10)"]
 
 [[package]]
 name = "google-cloud-storage"
-version = "3.17.0"
+version = "3.17.1"
 description = "Google Cloud Storage API client library"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_cloud_storage-3.17.0-py3-none-any.whl", hash = "sha256:0b89283fccf84745bae75bbefdbda8393e5323471071a2ba24ab437407141171"},
-    {file = "google_cloud_storage-3.17.0.tar.gz", hash = "sha256:4373aa6328e070c31c97aa236f1600a239dfd3c85e5870cdf3dc2a928dfe0bca"},
+    {file = "google_cloud_storage-3.17.1-py3-none-any.whl", hash = "sha256:287c7919d7bcda710eae6f6b60c756e89140475d9a4daec01b6174e737488ca8"},
+    {file = "google_cloud_storage-3.17.1.tar.gz", hash = "sha256:b24df37900f5e0a93518bd7d3a2a7b7b48d8a1e72add8eb57d53a38b8b2b0640"},
 ]
 
 [package.dependencies]
@@ -2236,4 +2236,4 @@ platformdirs = ">=3.5.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "860f20cc8dd2abdaa0bc4ea41bba18055d228b3ca64204a138dab0ec2b1e9164"
+content-hash = "ce11b708b0a2fbb474366c561f494c6f4834654b50f9e59f1bc8a2ae081be586"

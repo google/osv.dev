@@ -8,6 +8,22 @@
 #   value: 'github\.com/google/osv-.*'
 #   cherrypicks_fixed: true
 - type: url
-  value: 'https://github.com/apache/hadoop.git'
+  value: 'https://github.com/vim/vim'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/imagemagick/imagemagick6'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/radareorg/radare2'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/imagemagick/imagemagick'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/curl/curl'
   consider_all_branches: true
   cherrypicks: true

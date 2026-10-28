@@ -60,7 +60,7 @@ module "osv" {
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
-  esp_version    = "2.55.3"
+  esp_version    = "2.56.1"
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"

@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -126,9 +127,10 @@ func ConnConfigFromEnv() (ConnConfig, error) {
 }
 
 const (
-	defaultMinConns     int32 = 2
-	defaultMinIdleConns int32 = 4
-	defaultMaxConns     int32 = 20
+	defaultMinConns        int32 = 1
+	defaultMinIdleConns    int32 = 2
+	defaultMaxConns        int32 = 20
+	defaultMaxConnIdleTime       = 2 * time.Minute
 )
 
 // NewPool creates a new pgxpool.Pool from the given ConnConfig.
@@ -144,10 +146,13 @@ func NewPool(ctx context.Context, cfg ConnConfig) (*pgxpool.Pool, error) {
 	poolCfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheDescribe
 
 	// Pre-warm and maintain idle connections so concurrent batchers (e.g. during
-	// /v1/querybatch) do not block on new connection handshakes.
+	// /v1/querybatch) do not block on new connection handshakes, while closing
+	// burst connections after a short idle period to avoid exhausting PgBouncer's
+	// max_client_connections across many Cloud Run instances.
 	poolCfg.MinConns = defaultMinConns
 	poolCfg.MinIdleConns = defaultMinIdleConns
 	poolCfg.MaxConns = max(poolCfg.MaxConns, defaultMaxConns)
+	poolCfg.MaxConnIdleTime = defaultMaxConnIdleTime
 
 	return pgxpool.NewWithConfig(ctx, poolCfg)
 }

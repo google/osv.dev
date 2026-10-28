@@ -11,11 +11,20 @@ resource "google_sql_database_instance" "experiment" {
   region           = "us-west2"
 
   settings {
-    tier              = "db-perf-optimized-N-4"
+    tier              = "db-perf-optimized-N-16"
     availability_type = "ZONAL"
 
     connection_pool_config {
       connection_pooling_enabled = true
+
+      flags {
+        name  = "max_client_connections"
+        value = "8000"
+      }
+      flags {
+        name  = "query_wait_timeout"
+        value = "10"
+      }
     }
 
     ip_configuration {

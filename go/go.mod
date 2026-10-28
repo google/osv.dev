@@ -23,7 +23,7 @@ require (
 	github.com/klauspost/compress v1.20.3
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/nikolalohinski/gonja/v2 v2.9.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20261014235409-e1cced93dffb
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20261026052736-6410c13304f9
 	github.com/package-url/packageurl-go v0.1.7
 	github.com/pandatix/go-cvss v0.6.4
 	github.com/prometheus/client_golang v1.25.0

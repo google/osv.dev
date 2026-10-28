@@ -115,6 +115,7 @@ func TestOSVClient_QueryBatch(t *testing.T) {
 				},
 				{ // Commit
 					"CVE-2024-2002",
+					"CVE-2026-116732",
 					"OSV-2023-890",
 				},
 				// non-existent package
@@ -289,6 +290,7 @@ func TestOSVClient_Query(t *testing.T) {
 			},
 			wantIDs: []string{
 				"CVE-2024-2002",
+				"CVE-2026-116732",
 				"OSV-2023-890",
 			},
 		},

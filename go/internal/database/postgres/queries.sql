@@ -1,3 +1,13 @@
+-- name: GetVulnerabilityProtos :many
+SELECT id, proto
+FROM vulnerabilities
+WHERE id = ANY(@ids::text[]);
+
+-- name: GetVulnerabilityModified :many
+SELECT id, (data->>'modified')::timestamptz AS modified
+FROM vulnerabilities
+WHERE id = ANY(@ids::text[]);
+
 -- name: MatchPackageVersionedWithEcosystem :batchmany
 SELECT id, vuln_id, versions, events
 FROM affected_versions

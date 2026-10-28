@@ -1,12 +1,12 @@
 module github.com/google/osv.dev/external
 
-go 1.27.1
+go 1.27.2
 
 require (
 	github.com/aquasecurity/go-pep440-version v0.0.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/osv.dev/vulnfeeds v0.0.0-20260812014536-918f43604b8d
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20260806060209-f3f826310aec
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20261026052736-6410c13304f9
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -74,12 +74,12 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.291.0 // indirect

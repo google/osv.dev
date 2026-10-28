@@ -49,7 +49,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemChainguard:                 statelessFactory[apkEcosystem],
 	osvconstants.EcosystemCleanStart:                 statelessFactory[apkEcosystem],
 	osvconstants.EcosystemCRAN:                       func(p *Provider, _ string) Ecosystem { return cranEcosystem{p: p} },
-	osvconstants.EcosystemCratesIO:                   statelessFactory[semverEcosystem],
+	osvconstants.EcosystemCratesIO:                   statelessFactory[cratesIOEcosystem],
 	osvconstants.EcosystemDebian:                     debianFactory,
 	osvconstants.EcosystemDockerHardenedImages:       dhiFactory,
 	osvconstants.EcosystemEcho:                       echoFactory,
@@ -149,23 +149,80 @@ type Enumerable interface {
 }
 
 // PackageNameNormalizer is an ecosystem that can normalize its package names.
+// The worker writes the normalized name into published records, so it is only
+// for ecosystems whose OSV schema entry defines a normalized name, such as PyPI.
 type PackageNameNormalizer interface {
 	NormalizePackageName(_ string) string
 }
 
+// MatchNameNormalizer is an ecosystem whose registry treats different spellings
+// of a package name as the same package. Unlike PackageNameNormalizer, the
+// match name is only used to index and query affected packages, so published
+// records keep the name their source used.
+//
+// NormalizeMatchName receives the normalized name. It must be idempotent and
+// must only merge names that the registry treats as the same package. Changing
+// it requires rebuilding the AffectedVersions index.
+//
+// npm deliberately does not implement it. Some legacy npm packages differ only
+// by case from unrelated, even malicious, packages, such as jQuery-QueryBuilder
+// and jquery-querybuilder. See
+// https://github.com/google/osv.dev/issues/6039#issuecomment-5902175081.
+type MatchNameNormalizer interface {
+	NormalizeMatchName(_ string) string
+}
+
 // NormalizePackageName normalizes the package name for the given ecosystem.
 func NormalizePackageName(ecosystem Ecosystem, name string) string {
-	inner := ecosystem
-	switch w := ecosystem.(type) {
-	case *ecosystemWrapper:
-		inner = w.Ecosystem
-	case *enumerableWrapper:
-		inner = w.Enumerable
-	}
-
-	if normalizer, ok := inner.(PackageNameNormalizer); ok {
+	if normalizer, ok := unwrap(ecosystem).(PackageNameNormalizer); ok {
 		return normalizer.NormalizePackageName(name)
 	}
 
 	return name
+}
+
+// NormalizeMatchName returns the name used to index and query a package in the
+// given ecosystem: the normalized name, folded further for ecosystems that
+// implement MatchNameNormalizer.
+func NormalizeMatchName(ecosystem Ecosystem, name string) string {
+	name = NormalizePackageName(ecosystem, name)
+	if normalizer, ok := unwrap(ecosystem).(MatchNameNormalizer); ok {
+		return normalizer.NormalizeMatchName(name)
+	}
+
+	return name
+}
+
+// unwrap strips the wrapper added by Provider.Get, so callers can reach the
+// ecosystem's own methods and don't produce a doubly-wrapped Version.
+func unwrap(e Ecosystem) Ecosystem {
+	switch w := e.(type) {
+	case *ecosystemWrapper:
+		return w.Ecosystem
+	case *enumerableWrapper:
+		return w.Enumerable
+	}
+
+	return e
+}
+
+// asciiToLower lowercases the ASCII letters in s and leaves every other byte
+// as is. Unicode case folding would merge names that registries keep distinct,
+// such as ones containing U+0130 or U+212A, and strings.ToLower would also
+// rewrite invalid UTF-8.
+func asciiToLower(s string) string {
+	for i := range len(s) {
+		if 'A' <= s[i] && s[i] <= 'Z' {
+			b := []byte(s)
+			for j := i; j < len(b); j++ {
+				if 'A' <= b[j] && b[j] <= 'Z' {
+					b[j] += 'a' - 'A'
+				}
+			}
+
+			return string(b)
+		}
+	}
+
+	return s
 }

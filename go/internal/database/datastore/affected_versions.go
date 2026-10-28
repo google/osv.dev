@@ -59,6 +59,7 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 		if exists {
 			pkgName = ecosystem.NormalizePackageName(eHelper, pkgName)
 		}
+		pkgStart := len(res)
 
 		// TODO(michaelkedar): Matching the current behavior of the API,
 		// where GIT tags match to the first git repo in the ranges list, even if
@@ -178,6 +179,17 @@ func computeAffectedVersions(vuln *osvschema.Vulnerability) []AffectedVersions {
 					CoarseMin: minCoarseVersion,
 					CoarseMax: maxCoarseVersion,
 				})
+			}
+		}
+
+		// Also index the package under its match name when that differs, so that
+		// other spellings the registry treats as the same package find it.
+		if exists && pkgName != "" {
+			if matchName := ecosystem.NormalizeMatchName(eHelper, pkgName); matchName != pkgName {
+				for _, av := range res[pkgStart:] {
+					av.Name = matchName
+					res = append(res, av)
+				}
 			}
 		}
 

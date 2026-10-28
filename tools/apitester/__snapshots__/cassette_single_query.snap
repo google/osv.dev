@@ -94,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -167,7 +167,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -271,7 +271,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -322,7 +322,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -373,7 +373,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dan Fandrich",
@@ -424,7 +424,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "w0x42 on hackerone",
@@ -475,7 +475,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Frank Yueh",
@@ -526,11 +526,15 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dov Murik (Transmit Security)",
           "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
         },
         {
           "name": "Stefan Eissing",
@@ -577,7 +581,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -628,7 +632,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "newfunction",
@@ -679,7 +683,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Yihang Zhou",
@@ -730,7 +734,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "z2_",
@@ -793,7 +797,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -856,7 +860,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -919,7 +923,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "anonymous237 on hackerone",
@@ -982,7 +986,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1045,7 +1049,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1108,7 +1112,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1159,7 +1163,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -1228,7 +1232,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -1258,6 +1262,24 @@
                   "introduced": "7.86.0"
                 },
                 {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
                   "fixed": "8.23.0"
                 }
               ]
@@ -1279,7 +1301,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Luna with Claude",
@@ -1352,7 +1374,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "jjchuck on hackerone",
@@ -1421,7 +1443,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "alienowo on hackerone (AntAISecurityLab)",
@@ -1490,7 +1512,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Eunsoo Kim (Autonomous Code Security team at Microsoft)",
@@ -1559,7 +1581,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stephan Zeisberg (Security Research Labs)",
@@ -1622,7 +1644,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Zhicheng Chen",
@@ -1691,7 +1713,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Martin Dukek",
@@ -1754,7 +1776,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "spectreglobalsec on hackerone",
@@ -1817,7 +1839,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati (HackerOne: nobcoder)",
@@ -1880,7 +1902,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Arkadi Vainbrand",
@@ -1943,7 +1965,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Quac Tran and Ngoc Hieu",
@@ -2006,7 +2028,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Osama Hamad",
@@ -2069,7 +2091,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dwij Mehta (O2 Lab",
@@ -2136,7 +2158,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2199,7 +2221,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2262,7 +2284,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2331,7 +2353,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2400,7 +2422,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2469,7 +2491,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2538,7 +2560,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Andrew Nesbitt (powered by Mythos)",
@@ -2607,7 +2629,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2622,7 +2644,7 @@
     {
       "id": "CURL-CVE-2026-86409",
       "summary": "stale SigV4 headers sent unintended",
-      "details": "Setting `CURLOPT_AWS_SIGV4` to NULL but does not disable SigV4 authentication,\ncontrary to expectations and documentation. A subsequent transfer on the same\nhandle still sends an `Authorization: AWS4-HMAC-SHA256` header to whatever URL\nis set next, leaking state information.",
+      "details": "Setting `CURLOPT_AWS_SIGV4` to NULL does not disable SigV4 authentication,\ncontrary to expectations and documentation. A subsequent transfer on the same\nhandle still sends an `Authorization: AWS4-HMAC-SHA256` header to whatever URL\nis set next, leaking state information.",
       "aliases": ["CVE-2026-86409"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-10-14T08:00:00Z",
@@ -2635,6 +2657,24 @@
               "events": [
                 {
                   "introduced": "7.75.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
                 },
                 {
                   "fixed": "8.22.0"
@@ -2658,7 +2698,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2688,6 +2728,24 @@
                   "introduced": "7.10.8"
                 },
                 {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
                   "fixed": "8.23.0"
                 }
               ]
@@ -2709,7 +2767,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2778,7 +2836,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2847,7 +2905,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2916,7 +2974,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Bobbeh Rhino",
@@ -2985,7 +3043,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -3054,7 +3112,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "vegagent on hackerone",
@@ -3123,7 +3181,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Ady Elouej",
@@ -3192,7 +3250,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3222,6 +3280,24 @@
                   "introduced": "7.21.0"
                 },
                 {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
                   "fixed": "8.23.0"
                 }
               ]
@@ -3243,7 +3319,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3312,7 +3388,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3381,7 +3457,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3450,7 +3526,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3480,6 +3556,24 @@
                   "introduced": "7.62.0"
                 },
                 {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
                   "fixed": "8.23.0"
                 }
               ]
@@ -3501,7 +3595,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3570,7 +3664,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3646,7 +3740,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3745,7 +3839,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3865,7 +3959,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3987,7 +4081,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4095,7 +4189,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4201,7 +4295,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4288,7 +4382,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4396,7 +4490,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4474,7 +4568,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4559,7 +4653,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4648,7 +4742,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4741,7 +4835,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4830,7 +4924,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4923,7 +5017,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5015,7 +5109,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5083,7 +5177,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5172,7 +5266,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5253,7 +5347,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5340,7 +5434,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5427,7 +5521,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5504,7 +5598,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5593,7 +5687,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5670,7 +5764,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5764,7 +5858,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5861,7 +5955,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5952,7 +6046,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6040,7 +6134,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6132,7 +6226,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6224,7 +6318,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6315,7 +6409,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6403,7 +6497,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6495,7 +6589,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6582,7 +6676,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6658,7 +6752,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6735,7 +6829,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6825,7 +6919,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6915,7 +7009,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -7006,7 +7100,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -7095,7 +7189,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -7172,7 +7266,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -7261,7 +7355,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",

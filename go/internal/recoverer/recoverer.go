@@ -35,6 +35,7 @@ import (
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/gitter"
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -117,6 +118,7 @@ func (r *Recoverer) HandleMessage(ctx context.Context, m *pubsub.Message) {
 	defer span.End()
 
 	var err error
+	reason := taskType
 	switch taskType {
 	case "gcs_retry":
 		err = r.HandleGCSRetry(taskCtx, m)
@@ -125,13 +127,15 @@ func (r *Recoverer) HandleMessage(ctx context.Context, m *pubsub.Message) {
 	case "gcs_gen_mismatch":
 		err = r.HandleGCSGenMismatch(taskCtx, m)
 	default:
+		reason = "generic"
 		err = r.HandleGeneric(taskCtx, m)
 	}
-
 	if err != nil {
+		metrics.RecordRecovererTask(reason, metrics.TaskStatusError)
 		logger.ErrorContext(taskCtx, "Failed to process recovery task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
+		metrics.RecordRecovererTask(reason, metrics.TaskStatusSuccess)
 		m.Ack()
 	}
 }

@@ -60,7 +60,7 @@ module "osv" {
 
   website_domain = "osv.dev"
   api_url        = "api.osv.dev"
-  esp_version    = "2.55.3"
+  esp_version    = "2.56.1"
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"
@@ -140,11 +140,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.46.0"
+      version = "~> 8.7.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.46.0"
+      version = "~> 8.7.0"
     }
     external = {
       source  = "hashicorp/external"

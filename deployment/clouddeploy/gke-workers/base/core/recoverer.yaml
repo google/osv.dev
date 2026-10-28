@@ -33,6 +33,9 @@ spec:
         env:
           - name: GITTER_HOST
             value: http://gitter-service:8888
+        ports:
+        - name: metrics
+          containerPort: 9090
         resources:
           requests:
             cpu: "10m"

@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/pubsub/v2"
@@ -47,6 +48,7 @@ type Config struct {
 
 	SourceRepoStore    models.SourceRepositoryStore
 	VulnerabilityStore models.VulnerabilityStore
+	JobDataStore       models.JobDataStore
 	Publisher          clients.Publisher
 	GCSProvider        clients.CloudStorageProvider
 	HTTPClient         *http.Client
@@ -58,6 +60,48 @@ type Config struct {
 	DryRun                 bool
 	MaxCowardEntriesToShow int
 }
+
+type reconcilerCounters struct {
+	upToDate atomic.Int64
+	missing  atomic.Int64
+	outdated atomic.Int64
+}
+
+type deleterCounters struct {
+	mu        sync.Mutex
+	withdrawn map[string]int64
+	refused   map[string]int64
+}
+
+func newDeleterCounters() *deleterCounters {
+	return &deleterCounters{
+		withdrawn: make(map[string]int64),
+		refused:   make(map[string]int64),
+	}
+}
+
+func (d *deleterCounters) recordWithdrawn(source string, count int) {
+	if d == nil || count <= 0 {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.withdrawn[source] += int64(count)
+}
+
+func (d *deleterCounters) recordRefused(source string, count int) {
+	if d == nil || count <= 0 {
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.refused[source] += int64(count)
+}
+
+var (
+	activeReconcilerCounters atomic.Pointer[reconcilerCounters]
+	activeDeleterCounters    atomic.Pointer[deleterCounters]
+)
 
 type RetryableHTTPLeveledLogger struct{}
 
@@ -126,6 +170,9 @@ func Run(ctx context.Context, config Config) error {
 
 func RunDeletions(ctx context.Context, config Config) error {
 	logger.InfoContext(ctx, "Deletion reconciler started")
+	counters := newDeleterCounters()
+	activeDeleterCounters.Store(counters)
+	defer activeDeleterCounters.Store(nil)
 
 	workCh := make(chan WorkItem)
 	var workWg sync.WaitGroup
@@ -164,6 +211,19 @@ func RunDeletions(ctx context.Context, config Config) error {
 	close(workCh)
 	workWg.Wait()
 
+	if config.JobDataStore != nil && !config.DryRun {
+		counters.mu.Lock()
+		summary := models.DeleterSummary{
+			LastRun:           time.Now().UTC(),
+			WithdrawnBySource: counters.withdrawn,
+			RefusedBySource:   counters.refused,
+		}
+		counters.mu.Unlock()
+		if err := config.JobDataStore.Set(ctx, models.JobDataDeleterSummary, summary); err != nil {
+			logger.WarnContext(ctx, "Failed to save deleter summary to JobData", slog.Any("error", err))
+		}
+	}
+
 	return ctx.Err()
 }
 
@@ -196,6 +256,9 @@ const ReconcileLeniencyDuration = time.Hour * 6
 
 func RunReconcile(ctx context.Context, config Config) error {
 	logger.InfoContext(ctx, "Reconciler started")
+	counters := &reconcilerCounters{}
+	activeReconcilerCounters.Store(counters)
+	defer activeReconcilerCounters.Store(nil)
 
 	workCh := make(chan WorkItem)
 	var workWg sync.WaitGroup
@@ -276,6 +339,18 @@ func RunReconcile(ctx context.Context, config Config) error {
 	close(workCh)
 	workWg.Wait()
 
+	if config.JobDataStore != nil && !config.DryRun {
+		summary := models.ReconcilerSummary{
+			LastRun:       time.Now().UTC(),
+			UpToDateCount: counters.upToDate.Load(),
+			MissingCount:  counters.missing.Load(),
+			OutdatedCount: counters.outdated.Load(),
+		}
+		if err := config.JobDataStore.Set(ctx, models.JobDataReconcilerSummary, summary); err != nil {
+			logger.WarnContext(ctx, "Failed to save reconciler summary to JobData", slog.Any("error", err))
+		}
+	}
+
 	return ctx.Err()
 }
 
@@ -334,8 +409,12 @@ func checkReconcile(
 		IsReimport: false,
 	}
 
+	rc := activeReconcilerCounters.Load()
 	dbMod, exists := dbRecords[path]
 	if !exists {
+		if rc != nil {
+			rc.missing.Add(1)
+		}
 		if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
 			logger.InfoContext(ctx, "Found missing vulnerability in database during reconcile",
 				slog.String("source", recordTemplate.SourceRepository),
@@ -368,6 +447,9 @@ func checkReconcile(
 		}
 
 		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
+			if rc != nil {
+				rc.outdated.Add(1)
+			}
 			if reconcileWarningsAsInfo(recordTemplate.SourceRepository) {
 				logger.InfoContext(ctx, "Found outdated vulnerability in database during reconcile",
 					slog.String("source", recordTemplate.SourceRepository),
@@ -390,6 +472,8 @@ func checkReconcile(
 			case <-ctx.Done():
 			case ch <- recordTemplate:
 			}
+		} else if rc != nil {
+			rc.upToDate.Add(1)
 		}
 
 		return
@@ -616,13 +700,21 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 					return
 				}
 			case ActionReconcile:
+				rc := activeReconcilerCounters.Load()
 				// If the record is older than the last update time, skip it
 				// However, since we are reconciling, we want to add some leniency
 				// to account for the fact that the record might have been updated
 				// between the time we last imported it normally and now
 				// (e.g. the worker might still be working on it).
 				if dbModified.Add(ReconcileLeniencyDuration).After(modified) {
+					if rc != nil {
+						rc.upToDate.Add(1)
+					}
+
 					return
+				}
+				if rc != nil {
+					rc.outdated.Add(1)
 				}
 
 				if reconcileWarningsAsInfo(sourceRepoName) {

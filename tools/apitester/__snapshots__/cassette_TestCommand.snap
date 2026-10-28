@@ -448,6 +448,10 @@
         {
           "id": "GO-2026-6617",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }
@@ -787,6 +791,10 @@
         {
           "id": "GO-2026-6617",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1117,6 +1125,10 @@
         },
         {
           "id": "GO-2026-6617",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1456,6 +1468,10 @@
         },
         {
           "id": "GO-2026-6617",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -6267,6 +6283,10 @@
         {
           "id": "GO-2026-6617",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -7416,6 +7436,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-cg8m-r9f2-5wm2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "PYSEC-2026-2120",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -7433,7 +7457,16 @@
         },
         "version": "2025.10.5"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-6q48-6c7w-9gw2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -7443,7 +7476,16 @@
         },
         "version": "2025.10.5"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-6q48-6c7w-9gw2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -8732,6 +8774,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-cg8m-r9f2-5wm2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "PYSEC-2026-2120",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -8749,7 +8795,16 @@
         },
         "version": "2025.10.5"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-6q48-6c7w-9gw2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {
@@ -8759,7 +8814,16 @@
         },
         "version": "2025.10.5"
       },
-      "vulns": []
+      "vulns": [
+        {
+          "id": "GHSA-6q48-6c7w-9gw2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4320",
+          "modified": "<RFC3339 date with the year 2026>"
+        }
+      ]
     },
     {
       "query": {

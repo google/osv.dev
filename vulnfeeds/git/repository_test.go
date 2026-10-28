@@ -564,6 +564,128 @@ func TestValidRepoWithGitter(t *testing.T) {
 	}
 }
 
+func TestRefreshNormalizedRepoTags(t *testing.T) {
+	const repo = "https://github.com/example/test-repo"
+	const oldCommit = "1000000000000000000000000000000000000000"
+	const newCommit = "1010000000000000000000000000000000000000"
+
+	oldHash, _ := hex.DecodeString(oldCommit)
+	newHash, _ := hex.DecodeString(newCommit)
+	resp := GitterTagsResponse{Tags: []GitterRef{
+		{Label: "v1.0.0", Hash: base64.StdEncoding.EncodeToString(oldHash)},
+		{Label: "v1.0.1", Hash: base64.StdEncoding.EncodeToString(newHash)},
+	}}
+	var requests, responseStatus int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		if responseStatus != http.StatusOK {
+			w.WriteHeader(responseStatus)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer ts.Close()
+
+	t.Setenv("GITTER_HOST", ts.URL)
+
+	// The cached tags predate v1.0.1.
+	cachedTags := map[string]NormalizedTag{"1-0-0": {OriginalTag: "v1.0.0", Commit: oldCommit}}
+	refreshedTags := map[string]NormalizedTag{
+		"1-0-0": {OriginalTag: "v1.0.0", Commit: oldCommit},
+		"1-0-1": {OriginalTag: "v1.0.1", Commit: newCommit},
+	}
+
+	now := time.Now()
+	tests := []struct {
+		name           string
+		fetchedAt      time.Time
+		modified       time.Time
+		invalid        bool
+		responseStatus int
+		wantRequests   int
+		wantErr        bool
+		wantTags       map[string]NormalizedTag // In the cache afterwards, and returned unless wantErr.
+	}{
+		{
+			name:           "Tags fetched before the record was modified are fetched again",
+			fetchedAt:      now.Add(-24 * time.Hour),
+			modified:       now.Add(-time.Hour),
+			responseStatus: http.StatusOK,
+			wantRequests:   1,
+			wantTags:       refreshedTags,
+		},
+		{
+			name:           "Tags fetched after the record was modified are not",
+			fetchedAt:      now.Add(-time.Hour),
+			modified:       now.Add(-24 * time.Hour),
+			responseStatus: http.StatusOK,
+			wantRequests:   0,
+			wantTags:       cachedTags,
+		},
+		{
+			name:           "Tags cached without a fetch time are not",
+			modified:       now,
+			responseStatus: http.StatusOK,
+			wantRequests:   0,
+			wantTags:       cachedTags,
+		},
+		{
+			name:         "An invalid repo's tags are not",
+			fetchedAt:    now.Add(-24 * time.Hour),
+			modified:     now.Add(-time.Hour),
+			invalid:      true,
+			wantRequests: 0,
+			wantErr:      true,
+			wantTags:     cachedTags,
+		},
+		{
+			name:           "A failed fetch leaves the cached tags, and the repo valid",
+			fetchedAt:      now.Add(-24 * time.Hour),
+			modified:       now.Add(-time.Hour),
+			responseStatus: http.StatusInternalServerError,
+			wantRequests:   1,
+			wantErr:        true,
+			wantTags:       cachedTags,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			requests, responseStatus = 0, tc.responseStatus
+			cache := &InMemoryRepoTagsCache{}
+			cache.Set(repo, RepoTagsMap{
+				Tag:           map[string]Tag{"v1.0.0": {Tag: "v1.0.0", Commit: oldCommit}},
+				NormalizedTag: cachedTags,
+				FetchedAt:     tc.fetchedAt,
+			})
+			if tc.invalid {
+				cache.SetInvalid(repo)
+			}
+
+			got, err := RefreshNormalizedRepoTags(repo, tc.modified, cache, http.DefaultClient)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("RefreshNormalizedRepoTags(%q) error = %v, want error: %v", repo, err, tc.wantErr)
+			}
+			if requests != tc.wantRequests {
+				t.Errorf("RefreshNormalizedRepoTags(%q) made %d requests, want %d", repo, requests, tc.wantRequests)
+			}
+			if diff := cmp.Diff(tc.wantTags, got); !tc.wantErr && diff != "" {
+				t.Errorf("RefreshNormalizedRepoTags(%q) incorrect result (-want +got):\n%s", repo, diff)
+			}
+			cached, _ := cache.Get(repo)
+			if diff := cmp.Diff(tc.wantTags, cached.NormalizedTag); diff != "" {
+				t.Errorf("RefreshNormalizedRepoTags(%q) left incorrect cached tags (-want +got):\n%s", repo, diff)
+			}
+			if cache.IsInvalid(repo) != tc.invalid {
+				t.Errorf("RefreshNormalizedRepoTags(%q) left the repo invalid: %v, want %v", repo, cache.IsInvalid(repo), tc.invalid)
+			}
+		})
+	}
+}
+
 func TestInMemoryRepoTagsCache(t *testing.T) {
 	cache := &InMemoryRepoTagsCache{}
 	repo := "https://github.com/example/test-repo"

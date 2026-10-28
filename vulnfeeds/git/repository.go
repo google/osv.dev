@@ -112,6 +112,7 @@ type NormalizedTag struct {
 type RepoTagsMap struct {
 	Tag           map[string]Tag           `json:"tag"`            // The key is the original tag as seen on the repo.
 	NormalizedTag map[string]NormalizedTag `json:"normalized_tag"` // The key is the normalized (as by NormalizeRepoTags) original tag.
+	FetchedAt     time.Time                `json:"fetched_at"`     // When Tag was fetched from the repo.
 }
 
 // RepoTagsCache acts as a cache for RepoTags results, keyed on the repo's URL.
@@ -485,16 +486,22 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Clie
 		}
 	}
 	// Cache miss.
+	tags, err := fetchRepoTags(repoURL, repoTagsCache, httpClient)
+	if err != nil && repoTagsCache != nil {
+		if IsRateLimit(err) {
+			repoTagsCache.SetInvalidWithTTL(repoURL, 1*time.Hour)
+		} else {
+			repoTagsCache.SetInvalid(repoURL)
+		}
+	}
+
+	return tags, err
+}
+
+// fetchRepoTags is RepoTags on a cache miss, except that it doesn't mark the repo invalid if it fails.
+func fetchRepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Client) (tags Tags, e error) {
 	refs, err := getRepoRefs(repoURL, httpClient)
 	if err != nil {
-		if repoTagsCache != nil {
-			if IsRateLimit(err) {
-				repoTagsCache.SetInvalidWithTTL(repoURL, 1*time.Hour)
-			} else {
-				repoTagsCache.SetInvalid(repoURL)
-			}
-		}
-
 		return tags, err
 	}
 	tagsMap := make(map[string]Tag)
@@ -521,7 +528,7 @@ func RepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Clie
 	// Sort so that we get consistently ordered output for test validation purposes.
 	sort.Sort(tags)
 	if repoTagsCache != nil {
-		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: tagsMap, NormalizedTag: nil})
+		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: tagsMap, NormalizedTag: nil, FetchedAt: time.Now()})
 	}
 
 	return tags, nil
@@ -566,11 +573,40 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *
 		}
 	}
 	// Cache miss.
+	return fetchNormalizedRepoTags(repoURL, repoTagsCache, httpClient, false)
+}
+
+// RefreshNormalizedRepoTags is NormalizeRepoTags for when a version is missing from the tags it returned.
+// modified is when the record naming the version was last modified. If the cached tags were fetched before then,
+// the version may have been tagged since, so it fetches them again (and caches them). Tags cached without a
+// fetch time, or for a repo found to be invalid, are not fetched again.
+// If fetching them fails, the cache is left as it was.
+func RefreshNormalizedRepoTags(repoURL string, modified time.Time, repoTagsCache RepoTagsCache, httpClient *http.Client) (map[string]NormalizedTag, error) {
+	if repoTagsCache != nil {
+		tags, ok := repoTagsCache.Get(repoURL)
+		if ok && tags.NormalizedTag != nil && (tags.FetchedAt.IsZero() || !tags.FetchedAt.Before(modified)) {
+			return tags.NormalizedTag, nil
+		}
+		if repoTagsCache.IsInvalid(repoURL) {
+			return nil, errors.New("repo previously found to be invalid")
+		}
+	}
+
+	return fetchNormalizedRepoTags(repoURL, repoTagsCache, httpClient, true)
+}
+
+// fetchNormalizedRepoTags is NormalizeRepoTags on a cache miss. With refresh, it fetches the tags even if they're cached.
+func fetchNormalizedRepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *http.Client, refresh bool) (normalizedTags map[string]NormalizedTag, e error) {
 	assumedReponame, err := RepoName(repoURL)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := RepoTags(repoURL, repoTagsCache, httpClient)
+	var tags Tags
+	if refresh {
+		tags, err = fetchRepoTags(repoURL, repoTagsCache, httpClient)
+	} else {
+		tags, err = RepoTags(repoURL, repoTagsCache, httpClient)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -588,9 +624,10 @@ func NormalizeRepoTags(repoURL string, repoTagsCache RepoTagsCache, httpClient *
 		}
 	}
 	if repoTagsCache != nil {
-		// The RepoTags() call above will have cached the Tag map already
+		// The call above will have cached the Tag map already
 		repoTagsMap, _ := repoTagsCache.Get(repoURL)
-		repoTagsCache.Set(repoURL, RepoTagsMap{Tag: repoTagsMap.Tag, NormalizedTag: normalizedTags})
+		repoTagsMap.NormalizedTag = normalizedTags
+		repoTagsCache.Set(repoURL, repoTagsMap)
 	}
 
 	return normalizedTags, nil

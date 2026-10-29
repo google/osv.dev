@@ -37,6 +37,7 @@ import (
 	gitterpb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -336,6 +337,9 @@ func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath strin
 
 func parseVulnerability(raw []byte, extension, vulnPath, keyPath string) (*osvschema.Vulnerability, error) {
 	data := bytes.ToValidUTF8(raw, []byte("\uFFFD"))
+	if bytes.IndexByte(data, 0) >= 0 {
+		data = bytes.ReplaceAll(data, []byte{0}, []byte("\uFFFD"))
+	}
 	ext := strings.ToLower(extension)
 	if ext == ".yaml" || ext == ".yml" || strings.HasSuffix(strings.ToLower(vulnPath), ".yaml") || strings.HasSuffix(strings.ToLower(vulnPath), ".yml") {
 		jsonBytes, err := yaml.ToJSON(data)
@@ -352,6 +356,7 @@ func parseVulnerability(raw []byte, extension, vulnPath, keyPath string) (*osvsc
 		}
 		data = []byte(res.Raw)
 	}
+	data = schema.ReplaceJSONNullEscapes(data)
 
 	var vulnProto osvschema.Vulnerability
 	unmarshalOptions := protojson.UnmarshalOptions{DiscardUnknown: true}

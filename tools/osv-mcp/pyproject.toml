@@ -1,0 +1,24 @@
+[project]
+name = "osv-mcp"
+version = "0.1.0"
+description = "MCP server exposing the OSV.dev vulnerability API as tools for AI agents"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "mcp>=2.0.0,<3.0.0",
+    "requests>=2.33",
+]
+
+[project.scripts]
+osv-mcp = "osv_mcp.server:main"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+yapf = "*"
+pylint = "*"
+responses = "*"
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"

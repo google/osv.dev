@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go
 
-go 1.27.1
+go 1.27.3
 
 replace osv.dev/bindings/go => ../bindings/go
 

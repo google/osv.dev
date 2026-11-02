@@ -389,6 +389,7 @@ func writeResponse(w http.ResponseWriter, req *http.Request, msg proto.Message) 
 		out, err = proto.Marshal(msg)
 	}
 	if err != nil {
+		http.Error(w, fmt.Sprintf("Error marshaling response: %v", err), http.StatusInternalServerError)
 		return err
 	}
 
@@ -577,7 +578,6 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.ErrorContext(ctx, "Error copying file", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, "Error copying file", statusCode)
 
 		return
 	}
@@ -755,7 +755,6 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing affected commits response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing affected commits response: %v", err), statusCode)
 	}
 }
 
@@ -874,7 +873,6 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing tags response: %v", err), statusCode)
 	}
 }
 
@@ -949,7 +947,6 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing diff response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing diff response: %v", err), statusCode)
 	}
 }
 
@@ -1022,7 +1019,6 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
 	}
 }
 
@@ -1130,6 +1126,5 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing commit diffs response: %v", err), statusCode)
 	}
 }

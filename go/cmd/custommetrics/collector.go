@@ -66,13 +66,10 @@ func NewCollector(stores Stores) *Collector {
 
 // CollectMetrics performs a single collection pass of batch/state metrics from Datastore and GCS.
 func (c *Collector) CollectMetrics(ctx context.Context) {
-	sources, lastUpdatedTimes := c.sourcePrefixesAndLastUpdated(ctx)
-	for source, lastUpdated := range lastUpdatedTimes {
-		metrics.ImporterLastNewRecordTimestampSeconds.WithLabelValues(source).Set(float64(lastUpdated.Unix()))
-	}
+	sources, fallbackLastUpdated := c.sourcePrefixesAndLastUpdated(ctx)
 	c.collectJobDataMetrics(ctx, sources)
 	c.collectLinterFindingsMetrics(ctx, sources)
-	c.collectDatasetAndExportMetrics(ctx)
+	c.collectDatasetAndExportMetrics(ctx, sources, fallbackLastUpdated)
 }
 
 func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) ([]sourcePrefixes, map[string]time.Time) {
@@ -229,7 +226,22 @@ func mapImportFindingToRuleAndSeverity(code models.ImportFindings) (string, stri
 	}
 }
 
-func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context) {
+func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context, sources []sourcePrefixes, fallbackLastUpdated map[string]time.Time) {
+	latestBySource := make(map[string]time.Time)
+	defer func() {
+		for src, ts := range fallbackLastUpdated {
+			if _, ok := latestBySource[src]; !ok {
+				latestBySource[src] = ts
+			}
+		}
+		if len(latestBySource) > 0 {
+			metrics.ImporterLastNewRecordTimestampSeconds.Reset()
+			for src, ts := range latestBySource {
+				metrics.ImporterLastNewRecordTimestampSeconds.WithLabelValues(src).Set(float64(ts.Unix()))
+			}
+		}
+	}()
+
 	if c.stores.GCS == nil {
 		return
 	}
@@ -241,7 +253,7 @@ func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context) {
 		logger.WarnContext(ctx, "custommetrics: failed to stat all.zip", slog.Any("error", err))
 	}
 
-	// Root modified_id.csv unique vulnerability count
+	// Root modified_id.csv unique vulnerability count and per-source latest record timestamp
 	if csvBytes, err := c.stores.GCS.ReadObject(ctx, "modified_id.csv"); err == nil {
 		uniqueIDs := make(map[string]struct{})
 		for line := range strings.SplitSeq(string(csvBytes), "\n") {
@@ -249,7 +261,7 @@ func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context) {
 			if line == "" {
 				continue
 			}
-			_, pathOrID, ok := strings.Cut(line, ",")
+			modStr, pathOrID, ok := strings.Cut(line, ",")
 			if !ok {
 				continue
 			}
@@ -257,8 +269,17 @@ func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context) {
 			if _, after, ok := strings.CutLast(pathOrID, "/"); ok {
 				vulnID = after
 			}
-			if vulnID != "" {
-				uniqueIDs[vulnID] = struct{}{}
+			if vulnID == "" {
+				continue
+			}
+			if _, seen := uniqueIDs[vulnID]; seen {
+				continue
+			}
+			uniqueIDs[vulnID] = struct{}{}
+			if ts, err := time.Parse(time.RFC3339Nano, modStr); err == nil {
+				if src := matchSource(vulnID, sources); src != "unknown" && ts.After(latestBySource[src]) {
+					latestBySource[src] = ts
+				}
 			}
 		}
 		metrics.DatasetTotalVulnerabilities.WithLabelValues("all").Set(float64(len(uniqueIDs)))

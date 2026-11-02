@@ -130,3 +130,33 @@ func TestTuxCareEcosystem_ZeroVersion(t *testing.T) {
 		t.Errorf("Compare(0, 1.0.0-1) = (%d, %v), want (-1, nil)", c, err)
 	}
 }
+
+func TestTuxCareEcosystem_RPMInnerNames(t *testing.T) {
+	p := NewProvider(nil)
+
+	for _, ecosystem := range []string{"TuxCare:CentOS:7", "TuxCare:CentOS-Stream:8", "TuxCare:OracleLinux:7", "TuxCare:RHEL:8"} {
+		t.Run(ecosystem, func(t *testing.T) {
+			e, ok := p.Get(ecosystem)
+			if !ok {
+				t.Fatalf("Provider.Get(%q) = ok=false, want true", ecosystem)
+			}
+			// CLSA-2025-1751271968 fixes openssl in 1:1.0.2k-26.el7_9.tuxcare.els4.
+			affected, err := e.Parse("1:1.0.2k-19.el7")
+			if err != nil {
+				t.Fatalf("Parse(1:1.0.2k-19.el7): %v", err)
+			}
+			fixed, err := e.Parse("1:1.0.2k-26.el7_9.tuxcare.els4")
+			if err != nil {
+				t.Fatalf("Parse(1:1.0.2k-26.el7_9.tuxcare.els4): %v", err)
+			}
+			if c, err := affected.Compare(fixed); err != nil || c != -1 {
+				t.Errorf("Compare(affected, fixed) = (%d, %v), want (-1, nil)", c, err)
+			}
+		})
+	}
+
+	// Only inside TuxCare: CentOS is not an OSV ecosystem on its own.
+	if _, ok := p.Get("CentOS:7"); ok {
+		t.Errorf("Provider.Get(CentOS:7) = ok=true, want false")
+	}
+}

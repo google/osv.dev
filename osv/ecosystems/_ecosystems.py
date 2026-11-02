@@ -103,7 +103,7 @@ def is_known(ecosystem: str) -> bool:
   if name == _TUXCARE:
     if not TuxCareEcosystem.is_valid_suffix(suffix):
       return False
-    return is_known(suffix)
+    return is_known(suffix) or TuxCareEcosystem.rpm_inner(suffix)
   return name in _ecosystems
 
 
@@ -145,6 +145,8 @@ def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   if ecosys is None:
     return None
   if ecosys is TuxCareEcosystem:
+    if TuxCareEcosystem.rpm_inner(suffix):
+      return TuxCareEcosystem(suffix, inner=RPM(suffix.partition(':')[2]))
     return TuxCareEcosystem(suffix, inner=get(suffix))
   return ecosys(suffix)
 

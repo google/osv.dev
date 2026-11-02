@@ -144,6 +144,8 @@ func TestIsNotFoundError(t *testing.T) {
 	}{
 		{errors.New("remote: Repository not found"), true},
 		{errors.New("fatal: unable to access 'https://github.com/example/repo/': The requested URL returned error: 404"), true},
+		{errors.New("fatal: unable to update url base from redirection:\n  asked for: https://gitlab.example.com/group/project/-/issues/1/info/refs?service=git-upload-pack\n   redirect: https://gitlab.example.com/users/sign_in"), true},
+		{errors.New("fatal: https://example.com/group/project/-/merge_requests/12/info/refs not valid: is this a git repository?"), true},
 		{errors.New("fatal: unable to access 'https://github.com/example/repo/': The requested URL returned error: 403"), false},
 		{nil, false},
 	}

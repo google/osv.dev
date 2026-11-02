@@ -142,13 +142,21 @@ func isForbiddenError(err error) bool {
 	)
 }
 
-// isNotFoundError returns true if the requested repository does not exist (HTTP 404 or repository not found).
+// isNotFoundError returns true if the requested repository does not exist (HTTP 404 or repository not found)
+// or if the URL does not point to a valid git repository.
 func isNotFoundError(err error) bool {
 	if extractHTTPStatusCode(err) == 404 {
 		return true
 	}
 
-	return errContainsAll(err, "repository", "not found")
+	return errContainsAll(err, "repository", "not found") ||
+		errContainsAny(err,
+			// the repo url redirects to a non-git page (e.g. login or web page)
+			"unable to update url base from redirection",
+			// when the repo url is not a valid git repository
+			"is this a git repository",
+			"does not appear to be a git repository",
+		)
 }
 
 // isRefNotFoundError returns true if the requested branch, tag, or commit hash cannot be resolved.

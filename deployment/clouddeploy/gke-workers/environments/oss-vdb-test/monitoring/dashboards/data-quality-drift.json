@@ -651,7 +651,7 @@
             "uid": "gmp"
           },
           "editorMode": "code",
-          "expr": "(time() - osv_importer_last_new_record_timestamp_seconds) / 3600",
+          "expr": "(time() - max by (source) (osv_importer_last_new_record_timestamp_seconds)) / 3600",
           "legendFormat": "{{source}}",
           "range": true,
           "refId": "A"

@@ -19,7 +19,8 @@ func TestMetricsRecording(t *testing.T) {
 	metrics.RecordWorkerLatency(250 * time.Millisecond)
 	metrics.RecordWorkerFailedTask(metrics.WorkerErrorEnrich, true)
 	metrics.RecordUpstreamWithdrawal("ghsa")
-	metrics.RecordSourceRecordDiscovered("ghsa", time.Unix(1700000000, 0))
+	metrics.RecordSourceRecordDiscovered("ghsa")
+	metrics.RecordPublishedToAvailableLag("ghsa", 90*time.Minute)
 	metrics.RecordRecovererTask("gcs_missing", metrics.TaskStatusSuccess)
 	metrics.RecordGitterCommitsScanned(42)
 	metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
@@ -48,7 +49,7 @@ func TestMetricsRecording(t *testing.T) {
 		`osv_worker_failed_tasks_total{error_type="enrich_error",recoverable="true"}`,
 		`osv_deleter_upstream_withdrawals_total{source="ghsa"}`,
 		`osv_importer_records_discovered_total{source="ghsa"}`,
-		`osv_importer_last_new_record_timestamp_seconds{source="ghsa"}`,
+		`osv_worker_published_to_available_seconds_bucket{source="ghsa",le="7200"} 1`,
 		`osv_recoverer_processed_records_total{reason="gcs_missing",status="success"}`,
 		`osv_gitter_commits_scanned_total`,
 		`osv_gitter_data_errors_total{error_type="bad_hash"}`,

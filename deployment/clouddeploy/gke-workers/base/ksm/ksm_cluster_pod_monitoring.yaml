@@ -15,8 +15,8 @@ spec:
     interval: 5s
     metricRelabeling:
     - action: keep
-      # Curated subset of metrics to reduce costs, currently just targeting cronjob and pod resources.
-      regex: kube_(cronjob|pod)(_.+)?
+      # Curated subset of metrics to reduce costs, targeting cronjob, pod, job, and deployment resources.
+      regex: kube_(cronjob|pod|job|deployment)(_.+)?
       sourceLabels: [__name__]
   targetLabels:
     metadata: [] # explicitly empty so the metric labels are respected

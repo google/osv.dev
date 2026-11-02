@@ -6,6 +6,9 @@ resources:
 - grafana_service.yaml
 - grafana_ingress.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 configMapGenerator:
 - name: grafana-dashboards
   files:

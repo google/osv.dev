@@ -55,6 +55,36 @@ Use `terraform plan` and `terraform apply` to deploy any configuration changes.
 
 Terraform is automatically run on `oss-vdb-test` in `build-and-stage.yaml`
 
+### Cloud SQL PostgreSQL Passwords
+
+Because database user passwords are kept out of Terraform state (`ignore_changes = [password]`), Terraform initializes SQL users with a random bootstrap password (`uuid()`) and creates empty Secret Manager secrets. After the initial `terraform apply` creates `osv-db`, generate and store the real passwords once per project:
+
+```bash
+PROJECT_ID="oss-vdb-test" # or "oss-vdb" / "private-osv"
+
+# Set worker password (all environments: oss-vdb, oss-vdb-test, private-osv)
+PG_WORKER_PASS=$(openssl rand -hex 24)
+gcloud sql users set-password osv-worker \
+  --instance=osv-db \
+  --project="$PROJECT_ID" \
+  --password="$PG_WORKER_PASS"
+printf "%s" "$PG_WORKER_PASS" | gcloud secrets versions add osv-db-worker-password \
+  --project="$PROJECT_ID" \
+  --data-file=-
+unset PG_WORKER_PASS
+
+# Set read-only API password (public environments with osv_api: oss-vdb, oss-vdb-test)
+PG_RO_PASS=$(openssl rand -hex 24)
+gcloud sql users set-password osv-readonly \
+  --instance=osv-db \
+  --project="$PROJECT_ID" \
+  --password="$PG_RO_PASS"
+printf "%s" "$PG_RO_PASS" | gcloud secrets versions add osv-db-readonly-password \
+  --project="$PROJECT_ID" \
+  --data-file=-
+unset PG_RO_PASS
+```
+
 
 ## Setting up auto-scaler
 

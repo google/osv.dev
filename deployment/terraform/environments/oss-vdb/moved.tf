@@ -67,3 +67,40 @@ moved {
   from = module.osv.google_pubsub_subscription_iam_member.recovery_service_subscriber
   to   = module.osv_pipeline.google_pubsub_subscription_iam_member.recovery_service_subscriber
 }
+
+# Migration of API resources from module.osv to module.osv_api
+moved {
+  from = module.osv.google_cloud_run_service.api_backend
+  to   = module.osv_api.google_cloud_run_service.api_backend
+}
+
+moved {
+  from = module.osv.google_cloud_run_v2_service.api_backend_batch
+  to   = module.osv_api.google_cloud_run_v2_service.api_backend_batch
+}
+
+moved {
+  from = module.osv.google_endpoints_service.grpc_service
+  to   = module.osv_api.google_endpoints_service.grpc_service
+}
+
+moved {
+  from = module.osv.google_project_service.grpc_service_api
+  to   = module.osv_api.google_project_service.grpc_service_api
+}
+
+moved {
+  from = module.osv.null_resource.grpc_proxy_image
+  to   = module.osv_api.null_resource.grpc_proxy_image
+}
+
+moved {
+  from = module.osv.google_cloud_run_service.api
+  to   = module.osv_api.google_cloud_run_service.api
+}
+
+moved {
+  from = module.osv.google_cloud_run_domain_mapping.api
+  to   = module.osv_api.google_cloud_run_domain_mapping.api
+}
+

@@ -41,6 +41,9 @@ module "osv_pipeline" {
   ]
 
   cluster_location = "us-west2-b"
+
+  postgres_tier              = "db-perf-optimized-N-2"
+  postgres_availability_type = "ZONAL"
 }
 
 module "osv_test" {
@@ -56,14 +59,25 @@ module "osv_test" {
   osv_dev_sitemap_bucket        = "test-osv-dev-sitemap"
   backups_bucket                = "osv-test-backup"
   backups_bucket_retention_days = 5
-  gcs_log_dir                   = "gs://oss-vdb-tf/apply-logs"
 
   website_domain = "test.osv.dev"
-  api_url        = "api.test.osv.dev"
-  esp_version    = "2.56.1"
 
   indexer_configs_bucket = "osv-test-indexer-configs"
   indexer_repos_bucket   = "osv-test-indexer-repos"
+}
+
+module "osv_api" {
+  source = "../../modules/osv_api"
+
+  project_id  = "oss-vdb-test"
+  api_url     = "api.test.osv.dev"
+  esp_version = "2.56.1"
+  gcs_log_dir = "gs://oss-vdb-tf/apply-logs"
+
+  postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
+  postgres_region                = module.osv_pipeline.postgres_region
+  postgres_read_pool_tier        = "db-perf-optimized-N-2"
+  postgres_read_pool_node_count  = 1
 }
 
 # The test instance importer reads Android advisories from android-osv-test (configured in source_test.yaml)
@@ -87,9 +101,29 @@ import {
   id = "oss-vdb-test/(default)"
 }
 
+import {
+  to = module.osv_pipeline.google_compute_global_address.private_ip_address
+  id = "projects/oss-vdb-test/global/addresses/google-managed-services-default"
+}
+
+import {
+  to = module.osv_pipeline.google_service_networking_connection.private_vpc_connection
+  id = "projects/oss-vdb-test/global/networks/default:servicenetworking.googleapis.com"
+}
+
 output "website_dns_records" {
   description = "DNS records that need to be created for the osv.dev website"
   value       = module.osv_test.website_dns_records
+}
+
+output "postgres_primary_private_ip" {
+  description = "Private IP address of the primary Cloud SQL PostgreSQL instance"
+  value       = module.osv_pipeline.postgres_private_ip_address
+}
+
+output "postgres_read_pool_private_ip" {
+  description = "Private IP address of the Cloud SQL PostgreSQL read pool instance"
+  value       = module.osv_api.read_pool_private_ip_address
 }
 
 

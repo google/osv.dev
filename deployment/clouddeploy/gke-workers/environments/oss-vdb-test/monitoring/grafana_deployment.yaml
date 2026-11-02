@@ -8,7 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate
+    type: RollingUpdate
   selector:
     matchLabels:
       app.kubernetes.io/name: grafana
@@ -51,7 +51,7 @@ spec:
         - name: GF_USERS_AUTO_ASSIGN_ORG
           value: "true"
         - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
-          value: "Admin"
+          value: "Viewer"
         - name: GF_SERVER_ROOT_URL
           value: "https://monitoring.test.osv.dev"
         - name: GF_INSTALL_PLUGINS

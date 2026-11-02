@@ -11,7 +11,7 @@ resource "google_sql_database_instance" "experiment" {
   region           = "us-west2"
 
   settings {
-    tier              = "db-perf-optimized-N-16"
+    tier              = "db-perf-optimized-N-32"
     availability_type = "ZONAL"
 
     connection_pool_config {

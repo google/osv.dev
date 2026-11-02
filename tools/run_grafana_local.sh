@@ -50,7 +50,7 @@ datasources:
       timeInterval: 15s
   - name: Cloud Monitoring
     uid: cloud-monitoring
-    type: googlecloud-monitoring-datasource
+    type: stackdriver
     access: proxy
     editable: true
     jsonData:

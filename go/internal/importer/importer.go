@@ -616,9 +616,12 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	// Hash BEFORE editing the raw data from what is read from disk
 	hash := computeHash(data)
 
-	// protojson does not like invalid UTF-8,
-	// so replace invalid UTF-8 with U+FFFD (replacement character)
+	// protojson does not like invalid UTF-8, and PostgreSQL does not allow NUL bytes,
+	// so replace invalid UTF-8 and raw NUL bytes with U+FFFD (replacement character).
 	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
+	if bytes.IndexByte(data, 0) >= 0 {
+		data = bytes.ReplaceAll(data, []byte{0}, []byte("\uFFFD"))
+	}
 	var vulnProto osvschema.Vulnerability
 	switch item.Format {
 	case RecordFormatYAML:
@@ -649,6 +652,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			}
 			data = []byte(res.Raw)
 		}
+		data = schema.ReplaceJSONNullEscapes(data)
 
 		if strict {
 			if err := schema.Validate(data); err != nil {

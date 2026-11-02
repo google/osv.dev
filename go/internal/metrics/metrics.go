@@ -21,9 +21,14 @@ var (
 	// WorkerPublishedToAvailableSeconds tracks the lag between publication and availability.
 	WorkerPublishedToAvailableSeconds = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "osv_worker_published_to_available_seconds",
-			Help:    "Lag between publication and availability in seconds.",
-			Buckets: prometheus.ExponentialBuckets(1, 2, 15),
+			Name: "osv_worker_published_to_available_seconds",
+			Help: "Lag between publication and availability in seconds.",
+			// 10s to 7d, with fine resolution around the 2-hour (7200s) E2E freshness SLO.
+			Buckets: []float64{
+				10, 30, 60, 180, 300, 600, 1200, 1800, 2700,
+				3600, 5400, 7200, 10800, 14400, 21600, 43200,
+				86400, 172800, 604800,
+			},
 		},
 		[]string{"source"},
 	)
@@ -296,15 +301,12 @@ func RecordPublishedToAvailableLag(source string, lag time.Duration) {
 	WorkerPublishedToAvailableSeconds.WithLabelValues(source).Observe(lag.Seconds())
 }
 
-// RecordSourceRecordDiscovered updates the freshness timestamp and discovered counter for an upstream source.
-func RecordSourceRecordDiscovered(source string, ts time.Time) {
+// RecordSourceRecordDiscovered increments the discovered record counter for an upstream source.
+func RecordSourceRecordDiscovered(source string) {
 	if source == "" {
 		return
 	}
 	ImporterRecordsDiscoveredTotal.WithLabelValues(source).Inc()
-	if !ts.IsZero() {
-		ImporterLastNewRecordTimestampSeconds.WithLabelValues(source).Set(float64(ts.Unix()))
-	}
 }
 
 // RecordUpstreamWithdrawal increments the withdrawal counter for an upstream source.

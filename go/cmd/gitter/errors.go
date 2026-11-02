@@ -66,12 +66,15 @@ func isRefConflictError(err error) bool {
 	// conflicting ref names (e.g. branch vs directory name)
 	return errContainsAny(err, "refname conflict") ||
 		// stale local tracking branches that conflict with remote
-		errContainsAll(err, "some local refs could not be updated", "try running 'git remote prune origin'")
+		errContainsAll(err, "some local refs could not be updated", "git remote prune")
 }
 
 // isRateLimitError checks if an error indicates rate limiting (HTTP 429) or upstream load shedding by the git host.
 func isRateLimitError(err error) bool {
-	if extractHTTPStatusCode(err) == 429 {
+	code := extractHTTPStatusCode(err)
+	// HTTP 429 (Too Many Requests) is the standard
+	// HTTP 418 (I'm a teapot) is used by some git hosts like Alpine GitLab for bot/rate throttling)
+	if code == 429 || code == 418 {
 		return true
 	}
 
@@ -151,6 +154,8 @@ func isNotFoundError(err error) bool {
 
 	return errContainsAll(err, "repository", "not found") ||
 		errContainsAny(err,
+			// git:// protocol server error when the repository does not exist
+			"no such repository",
 			// the repo url redirects to a non-git page (e.g. login or web page)
 			"unable to update url base from redirection",
 			// when the repo url is not a valid git repository

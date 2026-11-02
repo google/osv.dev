@@ -1414,8 +1414,7 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 	commits := make([]*CommitDiff, 0, len(records))
 
 	for _, r := range records {
-		r = bytes.TrimSpace(r)
-		if len(r) == 0 {
+		if len(bytes.TrimSpace(r)) == 0 {
 			continue
 		}
 
@@ -1468,6 +1467,7 @@ func parseCommitMetadata(meta []byte) (*CommitDiff, error) {
 
 // parseCommitDiff parses raw file status entries and unified diff patch.
 func parseCommitDiff(diffContent []byte, maxPatchBytes int) ([]*FileChange, string, bool) {
+	diffContent = bytes.TrimSpace(diffContent)
 	var filesChanged []*FileChange
 	var patch string
 	var patchTruncated bool

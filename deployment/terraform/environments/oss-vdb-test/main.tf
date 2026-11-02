@@ -42,7 +42,7 @@ module "osv_pipeline" {
 
   cluster_location = "us-west2-b"
 
-  postgres_tier              = "db-perf-optimized-N-2"
+  postgres_tier              = "db-perf-optimized-N-4"
   postgres_availability_type = "ZONAL"
 }
 
@@ -76,7 +76,7 @@ module "osv_api" {
 
   postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
   postgres_region                = module.osv_pipeline.postgres_region
-  postgres_read_pool_tier        = "db-perf-optimized-N-2"
+  postgres_read_pool_tier        = "db-perf-optimized-N-4"
   postgres_read_pool_node_count  = 1
 }
 

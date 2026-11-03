@@ -54,7 +54,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('dhi', None),
     # GHC
     # GIT
-    # GitHub Actions
+    'GitHub Actions':
+        EcosystemPURL('github', None),
     'Go':
         EcosystemPURL('golang', None),
     'Hackage':
@@ -195,7 +196,7 @@ def parse_purl(purl_str: str) -> ParsedPURL | None:
       package = purl.namespace + '/' + purl.name
       if purl.subpath:
         package = package + '/' + purl.subpath
-    elif purl.type in ('composer', 'hex', 'npm', 'swift'):
+    elif purl.type in ('composer', 'github', 'hex', 'npm', 'swift'):
       package = purl.namespace + '/' + purl.name
     elif purl.type in ('maven', 'gradle'):
       package = purl.namespace + ':' + purl.name

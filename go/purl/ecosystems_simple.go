@@ -69,6 +69,7 @@ func init() {
 	registerSimple(osvconstants.EcosystemConanCenter, "conan", "", nil)
 	registerSimple(osvconstants.EcosystemHackage, "hackage", "", nil)
 	registerSlash(osvconstants.EcosystemHex, "hex")
+	registerSlash(osvconstants.EcosystemGitHubActions, "github")
 	registerSimple(osvconstants.EcosystemJulia, "julia", "", nil)
 	registerSimple(osvconstants.EcosystemNuGet, "nuget", "", nil)
 	registerSimple(osvconstants.EcosystemOSSFuzz, "generic", "", nil)

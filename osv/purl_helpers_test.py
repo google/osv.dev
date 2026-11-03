@@ -49,6 +49,10 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:conan/openssl',
                      purl_helpers.package_to_purl('ConanCenter', 'openssl'))
 
+    self.assertEqual('pkg:github/actions/checkout',
+                     purl_helpers.package_to_purl('GitHub Actions',
+                                                  'actions/checkout'))
+
     self.assertEqual('pkg:pypi/django',
                      purl_helpers.package_to_purl('PyPI', 'django'))
 
@@ -185,6 +189,9 @@ class PurlHelpersTest(unittest.TestCase):
 
   def test_parse_purl(self):
     """Test parse purl"""
+    self.assertEqual(('GitHub Actions', 'actions/checkout', None),
+                     purl_helpers.parse_purl('pkg:github/actions/checkout'))
+
     self.assertEqual(('AlmaLinux', 'libvpx', None),
                      purl_helpers.parse_purl('pkg:rpm/almalinux/libvpx'))
 

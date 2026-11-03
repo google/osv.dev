@@ -19,6 +19,7 @@ func TestGenerate(t *testing.T) {
 		{"Debian:99", "curl", "pkg:deb/debian/curl?arch=source&distro=99", false}, // fallback
 		{"Alpine:v2.23", "curl", "pkg:apk/alpine/curl?arch=source", false},
 		{"Go", "github.com/gorilla/mux", "pkg:golang/github.com/gorilla/mux", false},
+		{"GitHub Actions", "actions/checkout", "pkg:github/actions/checkout", false},
 		{"Go", "stdlib", "pkg:golang/stdlib", false},
 		{"Maven", "org.apache.commons:commons-lang3", "pkg:maven/org.apache.commons/commons-lang3", false},
 		{"Packagist", "drupal/colorbox", "pkg:composer/drupal/colorbox", false},
@@ -60,6 +61,7 @@ func TestParse(t *testing.T) {
 		{"pkg:deb/debian/curl@7.74.0-1.3+deb11u1?arch=source&distro=11", "Debian:11", "curl", "7.74.0-1.3+deb11u1", false},       // lenient
 		{"pkg:deb/debian/curl@7.74.0-1.3+deb11u1?arch=source&distro=Bullseye", "Debian:11", "curl", "7.74.0-1.3+deb11u1", false}, // case-insensitive
 		{"pkg:golang/github.com/gorilla/mux@v1.8.0", "Go", "github.com/gorilla/mux", "v1.8.0", false},
+		{"pkg:github/actions/checkout@v1.2.3", "GitHub Actions", "actions/checkout", "v1.2.3", false},
 		{"pkg:golang/stdlib@1.18", "Go", "stdlib", "1.18", false},
 		{"pkg:maven/org.apache.commons/commons-lang3@3.12.0", "Maven", "org.apache.commons:commons-lang3", "3.12.0", false},
 		{"pkg:gradle/org.apache.commons/commons-lang3@3.12.0", "Maven", "org.apache.commons:commons-lang3", "3.12.0", false}, // alias

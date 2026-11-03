@@ -46,6 +46,9 @@ resource "google_compute_router_nat" "nat_config" {
   nat_ip_allocate_option              = "AUTO_ONLY"
   region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
+  enable_dynamic_port_allocation      = true
+  min_ports_per_vm                    = 64
+  max_ports_per_vm                    = 4096
 
   subnetwork {
     name                    = google_compute_subnetwork.my_subnet_0.id

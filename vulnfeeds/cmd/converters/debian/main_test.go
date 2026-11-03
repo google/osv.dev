@@ -54,9 +54,10 @@ func loadTestMetadata(t *testing.T, cveName string) vulns.VulnerabilityMetadata 
 	for _, vulnerability := range nvdCves.Vulnerabilities {
 		if string(vulnerability.CVE.ID) == cveName {
 			return vulns.VulnerabilityMetadata{
-				Published: vulnerability.CVE.Published.Time,
-				Modified:  vulnerability.CVE.LastModified.Time,
-				Metrics:   vulnerability.CVE.Metrics,
+				Published:        vulnerability.CVE.Published.Time,
+				Modified:         vulnerability.CVE.LastModified.Time,
+				SourceIdentifier: vulnerability.CVE.SourceIdentifier,
+				Metrics:          vulnerability.CVE.Metrics,
 			}
 		}
 	}
@@ -148,7 +149,10 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 					},
 				},
 				References: []*osvschema.Reference{{Type: osvschema.Reference_ADVISORY, Url: "https://security-tracker.debian.org/tracker/CVE-2016-1585"}},
-				Severity:   []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}},
+				Severity: []*osvschema.Severity{
+					{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", Source: osvschema.Severity_NVD},
+					{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.0/AV:L/AC:H/PR:H/UI:N/S:U/C:L/I:L/A:L", Source: osvschema.Severity_CNA},
+				},
 			},
 		},
 		"CVE-2017-6507": {
@@ -197,7 +201,7 @@ func TestGenerateOSVFromDebianTracker(t *testing.T) {
 					},
 				},
 				References: []*osvschema.Reference{{Type: osvschema.Reference_ADVISORY, Url: "https://security-tracker.debian.org/tracker/CVE-2017-6507"}},
-				Severity:   []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"}},
+				Severity:   []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N", Source: osvschema.Severity_NVD}},
 			},
 		},
 	}

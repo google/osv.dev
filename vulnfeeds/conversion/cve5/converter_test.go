@@ -462,8 +462,9 @@ func TestFromCVE5(t *testing.T) {
 					},
 					Severity: []*osvschema.Severity{
 						{
-							Type:  osvschema.Severity_CVSS_V3,
-							Score: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+							Type:   osvschema.Severity_CVSS_V3,
+							Score:  "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+							Source: osvschema.Severity_CNA,
 						},
 					},
 				},
@@ -490,8 +491,9 @@ func TestFromCVE5(t *testing.T) {
 					},
 					Severity: []*osvschema.Severity{
 						{
-							Type:  osvschema.Severity_CVSS_V3,
-							Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+							Type:   osvschema.Severity_CVSS_V3,
+							Score:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+							Source: osvschema.Severity_CNA,
 						},
 					},
 					DatabaseSpecific: &structpb.Struct{
@@ -654,45 +656,92 @@ func TestFromCVE5_SourceLink(t *testing.T) {
 
 func TestFromCVE5_SeverityMerging(t *testing.T) {
 	t.Parallel()
-	cveWithCNAAndADP := models.CVE5{
-		Metadata: models.CVE5Metadata{
-			CVEID: "CVE-2025-5555",
-		},
-		Containers: struct {
-			CNA models.CNA   `json:"cna"`
-			ADP []models.CNA `json:"adp,omitempty"`
-		}{
-			CNA: models.CNA{
+
+	v4CNA := "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N"
+	v4ADP := "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
+	v31CNA := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+	v30ADP := "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H"
+
+	tests := []struct {
+		name string
+		cna  models.CNA
+		adp  []models.CNA
+		want []*osvschema.Severity
+	}{
+		{
+			name: "CNA CVSS_V3 takes precedence over ADP CVSS_V3 and sets Source CNA",
+			cna: models.CNA{
 				Metrics: []models.Metrics{
-					{
-						CVSSv3_1: models.BaseCVSS{
-							VectorString: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
-						},
+					{CVSSv3_1: models.BaseCVSS{VectorString: v31CNA}},
+				},
+			},
+			adp: []models.CNA{
+				{
+					Metrics: []models.Metrics{
+						{CVSSv3_0: models.BaseCVSS{VectorString: v30ADP}},
 					},
 				},
 			},
-			ADP: []models.CNA{
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name: "CNA with both CVSS_V4 and CVSS_V3 emits both with Source CNA",
+			cna: models.CNA{
+				Metrics: []models.Metrics{
+					{CVSSv4_0: models.BaseCVSS{VectorString: v4CNA}},
+					{CVSSv3_1: models.BaseCVSS{VectorString: v31CNA}},
+				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name: "ADP provides unattributed fallback only for CVSS versions missing from CNA",
+			cna: models.CNA{
+				Metrics: []models.Metrics{
+					{CVSSv3_1: models.BaseCVSS{VectorString: v31CNA}},
+				},
+			},
+			adp: []models.CNA{
 				{
 					Metrics: []models.Metrics{
-						{
-							CVSSv3_0: models.BaseCVSS{
-								VectorString: "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
-							},
-						},
+						{CVSSv4_0: models.BaseCVSS{VectorString: v4ADP}},
+						{CVSSv3_0: models.BaseCVSS{VectorString: v30ADP}},
 					},
 				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
 			},
 		},
 	}
 
-	metrics := &models.ConversionMetrics{}
-	vuln := FromCVE5(cveWithCNAAndADP, nil, metrics, "")
-	if len(vuln.Severity) == 0 {
-		t.Fatalf("Expected severity to be populated")
-	}
-	// CVSS v3.1 from CNA should take precedence over CVSS v3.0 from ADP
-	if vuln.Severity[0].GetScore() != "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N" {
-		t.Errorf("vuln.Severity[0].Score = %q, want CVSS 3.1 score", vuln.Severity[0].GetScore())
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cve := models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID: "CVE-2025-5555",
+				},
+				Containers: struct {
+					CNA models.CNA   `json:"cna"`
+					ADP []models.CNA `json:"adp,omitempty"`
+				}{
+					CNA: tc.cna,
+					ADP: tc.adp,
+				},
+			}
+
+			metrics := &models.ConversionMetrics{}
+			vuln := FromCVE5(cve, nil, metrics, "")
+			if diff := cmp.Diff(tc.want, vuln.Severity, protocmp.Transform()); diff != "" {
+				t.Errorf("FromCVE5() Severity mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -344,48 +344,197 @@ func (v *Vulnerability) AddPkgInfo(pkgInfo PackageInfo) {
 	}
 }
 
-// getBestSeverity finds the best CVSS severity vector from the provided metrics data.
-// It prioritizes newer CVSS versions and "Primary" sources.
-func getBestSeverity(metricsData *models.CVEItemMetrics) (string, string) {
-	// Define search passes. First pass for "Primary", second for any.
-	for _, primaryOnly := range []bool{true, false} {
-		// Inside each pass, prioritize v4.0 over v3.1 over v3.0.
-		for _, metric := range metricsData.CVSSMetricV40 {
-			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V4"
-			}
-		}
-		for _, metric := range metricsData.CVSSMetricV31 {
-			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V3"
-			}
-		}
-		for _, metric := range metricsData.CVSSMetricV30 {
-			if (!primaryOnly || metric.Type == "Primary") && metric.CVSSData.VectorString != "" {
-				return metric.CVSSData.VectorString, "CVSS_V3"
-			}
-		}
+const nvdSourceIdentifier = "nvd@nist.gov"
+
+func classifyNVDMetricSource(metricSource, cnaSource string) osvschema.Severity_Source {
+	if metricSource == nvdSourceIdentifier {
+		return osvschema.Severity_NVD
+	}
+	if cnaSource != "" && metricSource == cnaSource {
+		return osvschema.Severity_CNA
 	}
 
-	return "", ""
+	return osvschema.Severity_SOURCE_UNSPECIFIED
 }
 
-// AddSeverity adds CVSS severity information to the OSV vulnerability object.
-// It uses the highest available CVSS score from the underlying CVE record.
-func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics) {
+// pickBestNVDMetric finds the best CVSS vector string for targetSource across metricSlices.
+// It prioritizes "Primary" metrics over non-"Primary", and earlier slices (e.g. 3.1 over 3.0).
+func pickBestNVDMetric(metricSlices [][]models.BaseCVSSNVD, targetSource osvschema.Severity_Source, cnaSource string) string {
+	for _, primaryOnly := range []bool{true, false} {
+		for _, metrics := range metricSlices {
+			for _, metric := range metrics {
+				if metric.CVSSData.VectorString == "" {
+					continue
+				}
+				if primaryOnly && metric.Type != "Primary" {
+					continue
+				}
+				if classifyNVDMetricSource(metric.Source, cnaSource) == targetSource {
+					return metric.CVSSData.VectorString
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func extractNVDSeverities(metricsData *models.CVEItemMetrics, sourceIdentifier *string) []*osvschema.Severity {
 	if metricsData == nil {
-		return
-	}
-	bestVectorString, severityType := getBestSeverity(metricsData)
-
-	if bestVectorString == "" {
-		return
+		return nil
 	}
 
-	v.Severity = append(v.Severity, &osvschema.Severity{
-		Type:  osvschema.Severity_Type(osvschema.Severity_Type_value[severityType]),
-		Score: bestVectorString,
+	var cnaSource string
+	if sourceIdentifier != nil {
+		cnaSource = *sourceIdentifier
+	}
+
+	versionGroups := []struct {
+		sevType osvschema.Severity_Type
+		slices  [][]models.BaseCVSSNVD
+	}{
+		{osvschema.Severity_CVSS_V4, [][]models.BaseCVSSNVD{metricsData.CVSSMetricV40}},
+		{osvschema.Severity_CVSS_V3, [][]models.BaseCVSSNVD{metricsData.CVSSMetricV31, metricsData.CVSSMetricV30}},
+	}
+
+	var severities []*osvschema.Severity
+	for _, group := range versionGroups {
+		nvdVec := pickBestNVDMetric(group.slices, osvschema.Severity_NVD, cnaSource)
+		cnaVec := pickBestNVDMetric(group.slices, osvschema.Severity_CNA, cnaSource)
+
+		if nvdVec != "" {
+			severities = append(severities, &osvschema.Severity{
+				Type:   group.sevType,
+				Score:  nvdVec,
+				Source: osvschema.Severity_NVD,
+			})
+		}
+		if cnaVec != "" {
+			severities = append(severities, &osvschema.Severity{
+				Type:   group.sevType,
+				Score:  cnaVec,
+				Source: osvschema.Severity_CNA,
+			})
+		}
+		if nvdVec == "" && cnaVec == "" {
+			if fallbackVec := pickBestNVDMetric(group.slices, osvschema.Severity_SOURCE_UNSPECIFIED, cnaSource); fallbackVec != "" {
+				severities = append(severities, &osvschema.Severity{
+					Type:   group.sevType,
+					Score:  fallbackVec,
+					Source: osvschema.Severity_SOURCE_UNSPECIFIED,
+				})
+			}
+		}
+	}
+
+	return severities
+}
+
+func severityTypeRank(t osvschema.Severity_Type) int {
+	switch t {
+	case osvschema.Severity_CVSS_V4:
+		return 0
+	case osvschema.Severity_CVSS_V3:
+		return 1
+	case osvschema.Severity_CVSS_V2:
+		return 2
+	case osvschema.Severity_Ubuntu:
+		return 3
+	case osvschema.Severity_UNSPECIFIED:
+		return 4
+	default:
+		return 5 + int(t)
+	}
+}
+
+func severitySourceRank(s osvschema.Severity_Source) int {
+	switch s {
+	case osvschema.Severity_NVD:
+		return 0
+	case osvschema.Severity_CNA:
+		return 1
+	case osvschema.Severity_SELF:
+		return 2
+	case osvschema.Severity_SOURCE_UNSPECIFIED:
+		return 3
+	default:
+		return 4 + int(s)
+	}
+}
+
+func shouldReplaceSeverity(existing, candidate *osvschema.Severity) bool {
+	if existing.GetType() == osvschema.Severity_CVSS_V3 && candidate.GetType() == osvschema.Severity_CVSS_V3 {
+		if strings.HasPrefix(existing.GetScore(), "CVSS:3.0/") && strings.HasPrefix(candidate.GetScore(), "CVSS:3.1/") {
+			return true
+		}
+	}
+
+	return false
+}
+
+// MergeSeverities merges and deduplicates severity slices by (Type, Source),
+// dropping SOURCE_UNSPECIFIED fallbacks for any Type that has an NVD or CNA score,
+// and sorts deterministically (CVSS_V4 before CVSS_V3; NVD before CNA before SOURCE_UNSPECIFIED).
+func MergeSeverities(groups ...[]*osvschema.Severity) []*osvschema.Severity {
+	type sevKey struct {
+		sevType osvschema.Severity_Type
+		source  osvschema.Severity_Source
+	}
+
+	byKey := make(map[sevKey]*osvschema.Severity)
+	attributedTypes := make(map[osvschema.Severity_Type]bool)
+
+	for _, group := range groups {
+		for _, sev := range group {
+			if sev == nil || sev.GetScore() == "" || sev.GetType() == osvschema.Severity_UNSPECIFIED {
+				continue
+			}
+			key := sevKey{sevType: sev.GetType(), source: sev.GetSource()}
+			if key.source == osvschema.Severity_NVD || key.source == osvschema.Severity_CNA {
+				attributedTypes[key.sevType] = true
+			}
+			if existing, ok := byKey[key]; !ok || shouldReplaceSeverity(existing, sev) {
+				byKey[key] = &osvschema.Severity{
+					Type:   sev.GetType(),
+					Score:  sev.GetScore(),
+					Source: sev.GetSource(),
+				}
+			}
+		}
+	}
+
+	if len(byKey) == 0 {
+		return nil
+	}
+
+	result := make([]*osvschema.Severity, 0, len(byKey))
+	for key, sev := range byKey {
+		if key.source == osvschema.Severity_SOURCE_UNSPECIFIED && attributedTypes[key.sevType] {
+			continue
+		}
+		result = append(result, sev)
+	}
+
+	slices.SortFunc(result, func(a, b *osvschema.Severity) int {
+		return cmp.Or(
+			cmp.Compare(severityTypeRank(a.GetType()), severityTypeRank(b.GetType())),
+			cmp.Compare(severitySourceRank(a.GetSource()), severitySourceRank(b.GetSource())),
+			cmp.Compare(a.GetScore(), b.GetScore()),
+		)
 	})
+
+	return result
+}
+
+// AddSeverity extracts CVSS_V4 and CVSS_V3 severities per (Type, Source) from NVD metrics
+// and merges them into the OSV vulnerability object.
+func (v *Vulnerability) AddSeverity(metricsData *models.CVEItemMetrics, sourceIdentifier *string) {
+	extracted := extractNVDSeverities(metricsData, sourceIdentifier)
+	if len(extracted) == 0 {
+		return
+	}
+
+	v.Severity = MergeSeverities(v.Severity, extracted)
 }
 
 // ToJSON serializes the Vulnerability to JSON.
@@ -772,7 +921,7 @@ func FromNVDCVE(id models.CVEID, cve models.NVDCVE) *Vulnerability {
 			Withdrawn:  withdrawnTime,
 		},
 	}
-	v.AddSeverity(cve.Metrics)
+	v.AddSeverity(cve.Metrics, cve.SourceIdentifier)
 
 	return v
 }
@@ -871,19 +1020,21 @@ func CheckQuality(text string) QualityCheck {
 	return Success
 }
 
-// VulnerabilityMetadata contains lightweight metadata (publication time, last modified time, and severity metrics) for a CVE.
+// VulnerabilityMetadata contains lightweight metadata (publication time, last modified time, source identifier, and severity metrics) for a CVE.
 type VulnerabilityMetadata struct {
-	Published time.Time
-	Modified  time.Time
-	Metrics   *models.CVEItemMetrics
+	Published        time.Time
+	Modified         time.Time
+	SourceIdentifier *string
+	Metrics          *models.CVEItemMetrics
 }
 
 type lightNVDItem struct {
 	CVE struct {
-		ID           models.CVEID           `json:"id"`
-		Published    models.NVDTime         `json:"published"`
-		LastModified models.NVDTime         `json:"lastModified"`
-		Metrics      *models.CVEItemMetrics `json:"metrics"`
+		ID               models.CVEID           `json:"id"`
+		SourceIdentifier *string                `json:"sourceIdentifier"`
+		Published        models.NVDTime         `json:"published"`
+		LastModified     models.NVDTime         `json:"lastModified"`
+		Metrics          *models.CVEItemMetrics `json:"metrics"`
 	} `json:"cve"`
 }
 
@@ -933,9 +1084,10 @@ func LoadTargetCVEMetadata(cvePath string, targetCVEs map[string]bool) map[model
 					metaChan <- cveMeta{
 						id: item.CVE.ID,
 						meta: VulnerabilityMetadata{
-							Published: item.CVE.Published.Time,
-							Modified:  item.CVE.LastModified.Time,
-							Metrics:   item.CVE.Metrics,
+							Published:        item.CVE.Published.Time,
+							Modified:         item.CVE.LastModified.Time,
+							SourceIdentifier: item.CVE.SourceIdentifier,
+							Metrics:          item.CVE.Metrics,
 						},
 					}
 				}
@@ -1023,35 +1175,60 @@ func LoadTargetCVEs(cvePath string, targetCVEs map[string]bool) map[models.CVEID
 	return result
 }
 
-func FindSeverity(metricsData []models.Metrics) *osvschema.Severity {
-	bestVectorString, severityType := getBestCVE5Severity(metricsData)
-	if bestVectorString == "" {
-		return nil
+// FindSeverities extracts CVSS_V4 and CVSS_V3 severities from CVE 5.0 metrics.
+// Scores from cnaMetrics are attributed to Severity_CNA; for any CVSS version not
+// covered by cnaMetrics, adpMetrics are checked as a fallback with Severity_SOURCE_UNSPECIFIED.
+func FindSeverities(cnaMetrics, adpMetrics []models.Metrics) []*osvschema.Severity {
+	versionChecks := []struct {
+		sevType osvschema.Severity_Type
+		getters []func(models.Metrics) string
+	}{
+		{
+			sevType: osvschema.Severity_CVSS_V4,
+			getters: []func(models.Metrics) string{
+				func(m models.Metrics) string { return m.CVSSv4_0.VectorString },
+			},
+		},
+		{
+			sevType: osvschema.Severity_CVSS_V3,
+			getters: []func(models.Metrics) string{
+				func(m models.Metrics) string { return m.CVSSv3_1.VectorString },
+				func(m models.Metrics) string { return m.CVSSv3_0.VectorString },
+			},
+		},
 	}
 
-	return &osvschema.Severity{
-		Type:  severityType,
-		Score: bestVectorString,
+	var severities []*osvschema.Severity
+	for _, check := range versionChecks {
+		if vec := findBestCVE5Vector(cnaMetrics, check.getters); vec != "" {
+			severities = append(severities, &osvschema.Severity{
+				Type:   check.sevType,
+				Score:  vec,
+				Source: osvschema.Severity_CNA,
+			})
+
+			continue
+		}
+		if vec := findBestCVE5Vector(adpMetrics, check.getters); vec != "" {
+			severities = append(severities, &osvschema.Severity{
+				Type:   check.sevType,
+				Score:  vec,
+				Source: osvschema.Severity_SOURCE_UNSPECIFIED,
+			})
+		}
 	}
+
+	return MergeSeverities(severities)
 }
 
-func getBestCVE5Severity(metricsData []models.Metrics) (string, osvschema.Severity_Type) {
-	checks := []struct {
-		getVectorString func(models.Metrics) string
-		severityType    osvschema.Severity_Type
-	}{
-		{func(m models.Metrics) string { return m.CVSSv4_0.VectorString }, osvschema.Severity_CVSS_V4},
-		{func(m models.Metrics) string { return m.CVSSv3_1.VectorString }, osvschema.Severity_CVSS_V3},
-		{func(m models.Metrics) string { return m.CVSSv3_0.VectorString }, osvschema.Severity_CVSS_V3},
-	}
-
-	for _, check := range checks {
+func findBestCVE5Vector(metricsData []models.Metrics, getters []func(models.Metrics) string) string {
+	for _, getVector := range getters {
 		for _, m := range metricsData {
-			if vectorString := check.getVectorString(m); vectorString != "" {
-				return vectorString, check.severityType
+			if vec := getVector(m); vec != "" {
+				return vec
 			}
 		}
 	}
 
-	return "", osvschema.Severity_UNSPECIFIED
+	return ""
 }

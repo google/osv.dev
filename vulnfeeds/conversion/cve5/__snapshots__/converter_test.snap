@@ -2425,6 +2425,7 @@
   "severity": [
     {
       "score": "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ]
@@ -2495,6 +2496,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],
@@ -2577,6 +2579,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:L",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],
@@ -2695,6 +2698,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:L",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],
@@ -2800,6 +2804,7 @@
   "severity": [
     {
       "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N",
+      "source": "CNA",
       "type": "CVSS_V4"
     }
   ],
@@ -2877,6 +2882,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],
@@ -4487,6 +4493,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:A/AC:H/PR:H/UI:N/S:U/C:H/I:N/A:N",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],
@@ -4801,6 +4808,7 @@
   "severity": [
     {
       "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "source": "CNA",
       "type": "CVSS_V3"
     }
   ],

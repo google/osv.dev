@@ -1197,3 +1197,39 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 		}
 	}
 }
+
+func TestCombineTwoOSVRecords_SeverityMerging(t *testing.T) {
+	v4CNA := "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N"
+	v4ADP := "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
+	v31NVD := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+	v31CNA := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+	v31ADP := "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+
+	cve5 := &osvschema.Vulnerability{
+		Id: "CVE-2025-1234",
+		Severity: []*osvschema.Severity{
+			{Type: osvschema.Severity_CVSS_V4, Score: v4ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+			{Type: osvschema.Severity_CVSS_V3, Score: v31ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+		},
+	}
+
+	nvd := &osvschema.Vulnerability{
+		Id: "CVE-2025-1234",
+		Severity: []*osvschema.Severity{
+			{Type: osvschema.Severity_CVSS_V3, Score: v31NVD, Source: osvschema.Severity_NVD},
+			{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+		},
+	}
+
+	got := combineTwoOSVRecords(cve5, nvd)
+	want := []*osvschema.Severity{
+		{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+		{Type: osvschema.Severity_CVSS_V3, Score: v31NVD, Source: osvschema.Severity_NVD},
+		{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+	}
+
+	if diff := cmp.Diff(want, got.GetSeverity(), protocmp.Transform()); diff != "" {
+		t.Errorf("combineTwoOSVRecords() Severity mismatch (-want +got):\n%s", diff)
+	}
+}

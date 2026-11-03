@@ -25,6 +25,7 @@ import (
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/google/osv.dev/vulnfeeds/utility"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
+	"github.com/google/osv.dev/vulnfeeds/vulns"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -421,6 +422,10 @@ func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerab
 			aliasMap[alias] = true
 		}
 	}
+
+	// Merge severities across CVE5 and NVD, deduplicating by (Type, Source)
+	// and dropping unattributed fallbacks when NVD or CNA provides that CVSS version.
+	baseOSV.Severity = vulns.MergeSeverities(baseOSV.GetSeverity(), nvd.GetSeverity())
 
 	return baseOSV
 }

@@ -92,3 +92,18 @@ resource "google_pubsub_subscription_iam_member" "worker_recovery_subscriber" {
   role         = "roles/pubsub.subscriber"
   member       = "serviceAccount:${google_service_account.worker_sa.email}"
 }
+
+# Cloud SQL and Secret Manager permissions for the GKE worker service account
+resource "google_project_iam_member" "worker_cloudsql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "worker_postgres_secret_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.postgres_worker_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+

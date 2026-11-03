@@ -38,16 +38,6 @@ variable "osv_dev_sitemap_bucket" {
   description = "Name of bucket to store the osv.dev sitemap."
 }
 
-variable "api_url" {
-  type        = string
-  description = "URL to serve the OSV API on. Domain ownership and DNS settings has to be set up manually."
-}
-
-variable "esp_version" {
-  type        = string
-  description = "ESP version to use for OSV API frontend image."
-}
-
 variable "website_domain" {
   type        = string
   description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."

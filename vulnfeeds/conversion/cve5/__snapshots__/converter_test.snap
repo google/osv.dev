@@ -2656,9 +2656,6 @@
       ]
     }
   ],
-  "aliases": [
-    "GHSA-7rrj-xr53-82p7"
-  ],
   "database_specific": {
     "cna_assigner": "GitHub_M",
     "cwe_ids": [
@@ -2691,6 +2688,9 @@
       "type": "ADVISORY",
       "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-22466"
     }
+  ],
+  "related": [
+    "GHSA-7rrj-xr53-82p7"
   ],
   "severity": [
     {
@@ -2843,9 +2843,6 @@
       ]
     }
   ],
-  "aliases": [
-    "GHSA-j7xp-4mg9-x28r"
-  ],
   "database_specific": {
     "cna_assigner": "GitHub_M",
     "cwe_ids": [
@@ -2873,6 +2870,9 @@
       "type": "ADVISORY",
       "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-23522"
     }
+  ],
+  "related": [
+    "GHSA-j7xp-4mg9-x28r"
   ],
   "severity": [
     {
@@ -4237,9 +4237,6 @@
       ]
     }
   ],
-  "aliases": [
-    "GHSA-vfmv-f93v-37mw"
-  ],
   "database_specific": {
     "cna_assigner": "Gitea",
     "cwe_ids": [
@@ -4277,6 +4274,9 @@
       "type": "ADVISORY",
       "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-20912"
     }
+  ],
+  "related": [
+    "GHSA-vfmv-f93v-37mw"
   ],
   "severity": [
     {
@@ -4440,9 +4440,6 @@
       ]
     }
   ],
-  "aliases": [
-    "GHSA-g4mx-q9vg-27p4"
-  ],
   "database_specific": {
     "cna_assigner": "GitHub_M",
     "cwe_ids": [
@@ -4483,6 +4480,9 @@
       "type": "WEB",
       "url": "https://www.rfc-editor.org/rfc/rfc9110.html#name-get"
     }
+  ],
+  "related": [
+    "GHSA-g4mx-q9vg-27p4"
   ],
   "severity": [
     {
@@ -4545,9 +4545,6 @@
         "5.6.1"
       ]
     }
-  ],
-  "aliases": [
-    "GHSA-rxwq-x6h5-x525"
   ],
   "database_specific": {
     "cna_assigner": "redhat",
@@ -4797,6 +4794,9 @@
       "type": "WEB",
       "url": "https://xeiaso.net/notes/2024/xz-vuln/"
     }
+  ],
+  "related": [
+    "GHSA-rxwq-x6h5-x525"
   ],
   "severity": [
     {

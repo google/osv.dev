@@ -188,13 +188,13 @@ func TestExtractAliases(t *testing.T) {
 	// TODO: convert to table based test
 	cveItem := loadTestData2("CVE-2022-36037")
 	aliases, related := ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
-	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) || !utility.SliceEqual(related, []string{}) {
-		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
+	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqual(related, []string{"GHSA-3f89-869f-5w76"}) {
+		t.Errorf("Aliases not extracted, got aliases=%v related=%v, but expected aliases=[] related=%v.", aliases, related, []string{"GHSA-3f89-869f-5w76"})
 	}
 	cveItem = loadTestData2("CVE-2022-36749")
 	aliases, related = ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
 	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqual(related, []string{}) {
-		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
+		t.Errorf("Aliases not extracted, got aliases=%v related=%v, but expected aliases=[] related=[].", aliases, related)
 	}
 	cveItem = loadTestData2("CVE-2024-47177")
 	aliases, related = ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)

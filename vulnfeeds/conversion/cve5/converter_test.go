@@ -483,8 +483,8 @@ func TestFromCVE5(t *testing.T) {
 					Modified:      timestamppb.New(cve21634Mod),
 					Summary:       "Ion Java StackOverflow vulnerability",
 					Details:       "Amazon Ion is a Java implementation of the Ion data notation. Prior to version 1.10.5, a potential denial-of-service issue exists in\u00a0`ion-java`\u00a0for applications that use\u00a0`ion-java`\u00a0to deserialize Ion text encoded data, or deserialize Ion text or binary encoded data into the\u00a0`IonValue`\u00a0model and then invoke certain\u00a0`IonValue`\u00a0methods on that in-memory representation. An actor could craft Ion data that, when loaded by the affected application and/or processed using the\u00a0`IonValue`\u00a0model, results in a\u00a0`StackOverflowError`\u00a0originating from the\u00a0`ion-java`\u00a0library. The patch is included in `ion-java` 1.10.5. As a workaround, do not load data which originated from an untrusted source or that could have been tampered with.",
-					Aliases:       []string{"GHSA-264p-99wq-f4j6"},
-					Related:       nil,
+					Aliases:       nil,
+					Related:       []string{"GHSA-264p-99wq-f4j6"},
 					References: []*osvschema.Reference{
 						{Type: osvschema.Reference_ADVISORY, Url: "https://github.com/amazon-ion/ion-java/security/advisories/GHSA-264p-99wq-f4j6"},
 					},

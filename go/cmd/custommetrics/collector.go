@@ -30,6 +30,7 @@ import (
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type sourcePrefixes struct {
@@ -381,12 +382,16 @@ func (c *Collector) collectCVEConversionMetrics(ctx context.Context, discoveredB
 				continue
 			}
 
+			convLabels := prometheus.Labels{"converter": conv.name}
+			metrics.CVEConversionOutcomesTotal.DeletePartialMatch(convLabels)
 			for outcome, cnt := range summary.OutcomeCounts {
 				metrics.CVEConversionOutcomesTotal.WithLabelValues(conv.name, outcome).Set(float64(cnt))
 			}
+			metrics.CVERangeSourcesTotal.DeletePartialMatch(convLabels)
 			for src, cnt := range summary.VersionSources {
 				metrics.CVERangeSourcesTotal.WithLabelValues(conv.name, src).Set(float64(cnt))
 			}
+			metrics.CVEReferenceTypesTotal.DeletePartialMatch(convLabels)
 			for refType, cnt := range summary.ReferenceTypes {
 				metrics.CVEReferenceTypesTotal.WithLabelValues(conv.name, refType).Set(float64(cnt))
 			}
@@ -457,6 +462,7 @@ func (c *Collector) collectCVEOutcomesFromLatestCSV(ctx context.Context, bkt cli
 			counts[row[1]]++
 		}
 	}
+	metrics.CVEConversionOutcomesTotal.DeletePartialMatch(prometheus.Labels{"converter": converter})
 	for outcome, cnt := range counts {
 		metrics.CVEConversionOutcomesTotal.WithLabelValues(converter, outcome).Set(float64(cnt))
 	}

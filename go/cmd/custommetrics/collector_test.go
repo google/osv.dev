@@ -226,4 +226,26 @@ func TestCollectMetrics(t *testing.T) {
 			t.Errorf("Expected /metrics output to contain %q, got:\n%s", want, metricsText)
 		}
 	}
+
+	// Verify stale outcome series are cleared when a subsequent run omits a previous outcome.
+	_ = cveConversionMock.WriteObject(ctx, "metadata/cve5/outcomes/conversion-summary.json", []byte(`{
+		"converter": "cve5",
+		"outcome_counts": {"Successful": 150},
+		"version_sources": {"AFFECTED_FIELD": 150},
+		"reference_types": {"FIX": 150},
+		"resolved_ranges": 160,
+		"unresolved_ranges": 0
+	}`), nil)
+	collector.CollectMetrics(ctx)
+
+	w2 := httptest.NewRecorder()
+	promhttp.Handler().ServeHTTP(w2, req)
+	updatedBody, err := io.ReadAll(w2.Result().Body)
+	if err != nil {
+		t.Fatalf("Failed to read updated /metrics body: %v", err)
+	}
+	updatedText := string(updatedBody)
+	if strings.Contains(updatedText, `osv_cve_conversion_outcomes{converter="cve5",outcome="NoRepos"}`) {
+		t.Errorf("Expected stale cve5 NoRepos outcome series to be cleared, got:\n%s", updatedText)
+	}
 }

@@ -26,7 +26,6 @@ module "osv_pipeline" {
   postgres_region            = "us-west2"
   postgres_tier              = "db-perf-optimized-N-2"
   postgres_availability_type = "ZONAL"
-  postgres_ipv4_enabled      = false
 }
 
 

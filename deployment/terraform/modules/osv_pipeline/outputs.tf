@@ -74,6 +74,7 @@ output "postgres_instance_name" {
   depends_on = [
     google_sql_database.osv,
     google_sql_user.worker,
+    google_sql_user.deployment,
   ]
 }
 

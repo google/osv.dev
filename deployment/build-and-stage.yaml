@@ -541,6 +541,12 @@ steps:
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test
 
+# Apply PostgreSQL schema migrations to staging environment
+- name: gcr.io/oss-vdb/goose
+  env: ['CLOUDSQL_INSTANCE=oss-vdb-test:us-central1:osv-db']
+  args: ['up']
+  dir:  go/internal/database/postgres/migrations
+
 # Cloud Deploy
 # GKE Workers
 - name: 'gcr.io/cloud-builders/gcloud'

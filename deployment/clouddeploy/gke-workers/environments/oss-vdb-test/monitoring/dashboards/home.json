@@ -1,0 +1,419 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Landing page and directory for all OSV.dev infrastructure, ingestion pipeline, data quality, and feed conversion dashboards.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": {
+        "h": 13,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "## Welcome to OSV.dev Observability\n\nChoose the dashboard below that best matches what you are investigating:\n\n| Dashboard | Best For / Questions Answered | Key Signals |\n| :--- | :--- | :--- |\n| **[1. Executive Overview & SLAs](/d/osv-exec-overview)** | **Overall health & SLO status** — *Is the public API healthy and fast? Are advisories published within our 2-hour freshness target?* | Cloud Run API availability & p99 latency, E2E publish-to-available lag, worker success rate |\n| **[2. Ingestion & Worker Pipeline Operations](/d/osv-pipeline-ingestion-ops)** | **On-call pipeline triage** — *Is Pub/Sub backed up? Are worker pools scaling and draining fast enough? Which tasks recently failed?* | Queue depth (`default` / `reimport` / `cves`), intake vs. drain rate, live error logs, reconciler & deleter safety limits |\n| **[3. Vulnerability Data Quality & Ecosystem Health](/d/osv-data-quality-drift)** | **Dataset integrity & feed freshness** — *Are Datastore and GCS out of sync? Which upstream feeds are stale or triggering linter errors?* | `recordchecker` drift, `osv-linter` findings by source/rule, feed staleness, `all.zip` export sizes, Gitter SSD usage |\n| **[4. CVE & Feed Conversions](/d/osv-cve-feed-conversions)** | **`vulnfeeds/` & CNA conversion quality** — *Why are CVEs failing to convert? How are CVEListV5, NVD, Debian, and Alpine converters running?* | Conversion funnel & outcomes, range extraction sources, Assigner CNA scorecards, `vulnfeeds/` CronJob status |\n\n---\n**Planned Deep-Dive Dashboards (Upcoming):** *5. API Serving & Analytics* · *6. Gitter & Recoverer Deep-Dive* · *7. CronJobs & Storage Capacity*\n\n*Tip: Click **Home** in the top-left breadcrumb from any dashboard to return to this directory.*",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.5.10",
+      "title": "Where Should I Start?",
+      "type": "text"
+    },
+    {
+      "description": "Automatically lists every provisioned dashboard tagged with 'osv'. New dashboards appear here automatically.",
+      "gridPos": {
+        "h": 13,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "keepTime": false,
+        "includeVars": false,
+        "maxItems": 20,
+        "query": "",
+        "showFolderNames": false,
+        "showHeadings": false,
+        "showRecentlyViewed": false,
+        "showSearch": true,
+        "showStarred": false,
+        "tags": [
+          "osv"
+        ]
+      },
+      "pluginVersion": "11.5.10",
+      "title": "All OSV Dashboards (Auto-Updated)",
+      "type": "dashlist"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 100,
+      "title": "At-a-Glance System Pulse (Click any card to open its dashboard)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "gmp"
+      },
+      "description": "24-hour Cloud Run availability for osv-grpc-v1. Click to open Dashboard 1 (Executive Overview & SLAs).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 1. Executive Overview & SLAs",
+              "url": "/d/osv-exec-overview"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 14
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "(1 - (sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\",response_code_class=\"5xx\", monitored_resource=\"cloud_run_revision\"}[24h])) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[24h])))) * 100",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "1. Public API Availability (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "gmp"
+      },
+      "description": "Undelivered Pub/Sub messages waiting in the primary worker subscription. Click to open Dashboard 2 (Ingestion & Worker Pipeline Operations).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 2. Ingestion & Worker Pipeline Operations",
+              "url": "/d/osv-pipeline-ingestion-ops"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 10000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 14
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=\"default\"}) or vector(0)",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "2. Worker Queue Backlog (default)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "gmp"
+      },
+      "description": "Missing or stale GCS vulnerability blobs relative to Datastore detected by recordchecker. Click to open Dashboard 3 (Data Quality & Ecosystem Health).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 3. Vulnerability Data Quality & Ecosystem Health",
+              "url": "/d/osv-data-quality-drift"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 14
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "max(osv_recordchecker_drift{type=\"gcs_missing_or_stale\"}) or vector(0)",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "3. Datastore vs. GCS Drift",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "gmp"
+      },
+      "description": "Percentage of actionable CVEs successfully converted into OSV records across vulnfeeds/. Click to open Dashboard 4 (CVE & Feed Conversions).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 4. CVE & Feed Conversions",
+              "url": "/d/osv-cve-feed-conversions"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 14
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.5.10",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "gmp"
+          },
+          "editorMode": "code",
+          "expr": "100 * sum(osv_cve_conversion_outcomes{outcome=\"Successful\"}) / clamp_min(sum(osv_cve_conversion_outcomes{outcome!~\"Rejected|NoSoftware\"}), 1)",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "4. Actionable CVE Conversion Rate",
+      "type": "stat"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "directory",
+    "home"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true
+  },
+  "timezone": "browser",
+  "title": "OSV.dev Observability Directory",
+  "uid": "osv-home",
+  "version": 1,
+  "weekStart": ""
+}

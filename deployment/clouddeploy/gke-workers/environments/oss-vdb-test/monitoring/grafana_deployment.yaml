@@ -54,6 +54,8 @@ spec:
           value: "Viewer"
         - name: GF_SERVER_ROOT_URL
           value: "https://monitoring.test.osv.dev"
+        - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+          value: "/etc/grafana/dashboards/home.json"
         - name: GF_INSTALL_PLUGINS
           value: "googlecloud-logging-datasource 1.8.1"
         resources:

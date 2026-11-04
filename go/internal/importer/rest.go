@@ -365,7 +365,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 	return lastModTime, nil
 }
 
-func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository, timeOfRun time.Time) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST reconcile")
 	}
@@ -425,7 +425,7 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 			urlPath: pathValue,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON, config.ReimportTaskPool)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON, config.ReimportTaskPool, timeOfRun)
 
 		return true
 	})

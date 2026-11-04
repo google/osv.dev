@@ -250,12 +250,23 @@ func reconcileWarningsAsInfo(source string) bool {
 	return slices.Contains(reconcileWarningAsInfoSources, source)
 }
 
-// ReconcileLeniencyDuration specifies how long of a time difference before it would be considered an outdated record
-// This needs to be some time as importer detecting the change to worker importing it is not instant.
+// ReconcileLeniencyDuration specifies how long after an upstream record's modified time
+// we wait before considering a database mismatch to be outdated during reconciliation.
+// This gives the normal importer and worker pipeline time to process recent updates.
 const ReconcileLeniencyDuration = time.Hour * 6
+
+// isReconcileOutdated reports whether upstream's modified timestamp is newer than the
+// database's modified_raw timestamp (compared at whole-second precision to avoid false
+// positives when an index includes sub-second precision that individual records truncate)
+// and old enough relative to now that normal import should have completed.
+func isReconcileOutdated(now, modified, dbMod time.Time) bool {
+	return modified.Truncate(time.Second).After(dbMod.Truncate(time.Second)) &&
+		now.Sub(modified) > ReconcileLeniencyDuration
+}
 
 func RunReconcile(ctx context.Context, config Config) error {
 	logger.InfoContext(ctx, "Reconciler started")
+	timeOfRun := time.Now()
 	counters := &reconcilerCounters{}
 	activeReconcilerCounters.Store(counters)
 	defer activeReconcilerCounters.Store(nil)
@@ -307,7 +318,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 			defer span.End()
 			switch sourceRepo.Type {
 			case models.SourceRepositoryTypeGit:
-				if err := handleReconcileGit(ctx, workCh, config, sourceRepo); err != nil {
+				if err := handleReconcileGit(ctx, workCh, config, sourceRepo, timeOfRun); err != nil {
 					if errors.Is(err, context.Canceled) {
 						logger.WarnContext(ctx, "Cancelled reconciling git source repository", slog.String("source", sourceRepo.Name))
 					} else {
@@ -315,7 +326,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 					}
 				}
 			case models.SourceRepositoryTypeBucket:
-				if err := handleReconcileBucket(ctx, workCh, config, sourceRepo); err != nil {
+				if err := handleReconcileBucket(ctx, workCh, config, sourceRepo, timeOfRun); err != nil {
 					if errors.Is(err, context.Canceled) {
 						logger.WarnContext(ctx, "Cancelled reconciling bucket source repository", slog.String("source", sourceRepo.Name))
 					} else {
@@ -323,7 +334,7 @@ func RunReconcile(ctx context.Context, config Config) error {
 					}
 				}
 			case models.SourceRepositoryTypeREST:
-				if err := handleReconcileREST(ctx, workCh, config, sourceRepo); err != nil {
+				if err := handleReconcileREST(ctx, workCh, config, sourceRepo, timeOfRun); err != nil {
 					if errors.Is(err, context.Canceled) {
 						logger.WarnContext(ctx, "Cancelled reconciling REST source repository", slog.String("source", sourceRepo.Name))
 					} else {
@@ -384,6 +395,8 @@ func fetchDBRecords(ctx context.Context, config Config, sourceRepo *models.Sourc
 //   - parsed: A pointer to a pre-parsed gjson.Result if already available. If nil, sourceRecord is opened and parsed dynamically.
 //   - sourceRecord: The interface used to lazily retrieve file contents (from a bucket, git, or REST).
 //   - format: RecordFormat representing the format we expect to decode (JSON, YAML, etc.).
+//   - workPool: Target worker pool name.
+//   - timeOfRun: Start time of the reconciliation run, used for leniency window evaluation.
 func checkReconcile(
 	ctx context.Context,
 	ch chan<- WorkItem,
@@ -394,6 +407,7 @@ func checkReconcile(
 	sourceRecord SourceRecord,
 	format RecordFormat,
 	workPool string,
+	timeOfRun time.Time,
 ) {
 	recordTemplate := WorkItem{
 		Context:                ctx,
@@ -446,7 +460,7 @@ func checkReconcile(
 			return
 		}
 
-		if modified.After(dbMod.Add(ReconcileLeniencyDuration)) {
+		if isReconcileOutdated(timeOfRun, modified, dbMod) {
 			if rc != nil {
 				rc.outdated.Add(1)
 			}
@@ -466,7 +480,6 @@ func checkReconcile(
 
 			// We found that it is outdated, trigger a standard import
 			recordTemplate.Action = ActionImport
-			recordTemplate.CompareAgainstDatabase = false
 
 			select {
 			case <-ctx.Done():
@@ -482,6 +495,7 @@ func checkReconcile(
 	// Otherwise trigger a reconcile action to get the modified date from upstream
 	recordTemplate.Action = ActionReconcile
 	recordTemplate.CompareAgainstDatabase = true
+	recordTemplate.ReconcileTime = timeOfRun
 	select {
 	case <-ctx.Done():
 	case ch <- recordTemplate:
@@ -542,6 +556,7 @@ type WorkItem struct {
 	CompareAgainstDatabase bool
 	IsReimport             bool
 	WorkPool               string
+	ReconcileTime          time.Time
 }
 
 func importerWorker(ctx context.Context, ch <-chan WorkItem, config Config) {
@@ -705,12 +720,10 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 				}
 			case ActionReconcile:
 				rc := activeReconcilerCounters.Load()
-				// If the record is older than the last update time, skip it
-				// However, since we are reconciling, we want to add some leniency
-				// to account for the fact that the record might have been updated
-				// between the time we last imported it normally and now
+				// Skip if upstream is not newer than the database (at whole-second precision),
+				// or if the record was modified recently within the leniency window
 				// (e.g. the worker might still be working on it).
-				if dbModified.Add(ReconcileLeniencyDuration).After(modified) {
+				if !isReconcileOutdated(item.ReconcileTime, modified, dbModified) {
 					if rc != nil {
 						rc.upToDate.Add(1)
 					}

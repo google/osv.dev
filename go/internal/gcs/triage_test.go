@@ -3,8 +3,10 @@ package gcs_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"cloud.google.com/go/storage"
@@ -75,51 +77,57 @@ func TestTriageStore_GetFile_GCS(t *testing.T) {
 		{"prod-osv", "cve-osv-conversion", "osv-output/CVE-2024-1234.json"},
 	}
 
+	objects := make(map[string]string, len(tests)*2)
+	for _, tc := range tests {
+		path := "/b/" + tc.bucket + "/o/" + tc.object
+		objects[path] = fmt.Sprintf(`{"source":%q}`, tc.source)
+		// A separate CVE keeps missing reads independent of parallel successful reads.
+		objects[strings.Replace(path, "CVE-2024-1234", "CVE-2024-5678", 1)] = ""
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		content, ok := objects[r.URL.Path]
+		if !ok {
+			t.Errorf("unexpected GCS path %q", r.URL.Path)
+		}
+		if content == "" {
+			http.NotFound(w, r)
+
+			return
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Errorf("failed to write GCS response: %v", err)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := storage.NewClient(t.Context(), option.WithEndpoint(server.URL), option.WithoutAuthentication(), storage.WithJSONReads())
+	if err != nil {
+		t.Fatalf("failed to create storage client: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := client.Close(); err != nil {
+			t.Errorf("failed to close storage client: %v", err)
+		}
+	})
+	store := gcs.NewTriageStore(client)
+
 	for _, tc := range tests {
 		t.Run(tc.source, func(t *testing.T) {
 			t.Parallel()
 
 			for _, missing := range []bool{false, true} {
 				name := "found"
+				cveID := "cve-2024-1234"
 				if missing {
 					name = "missing"
+					cveID = "cve-2024-5678"
 				}
 
 				t.Run(name, func(t *testing.T) {
 					t.Parallel()
 
-					const content = `{"id":"CVE-2024-1234"}`
-					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						wantPath := "/b/" + tc.bucket + "/o/" + tc.object
-						if r.URL.Path != wantPath {
-							t.Errorf("requested GCS path %q, want %q", r.URL.Path, wantPath)
-							http.NotFound(w, r)
-
-							return
-						}
-						if missing {
-							http.NotFound(w, r)
-
-							return
-						}
-						if _, err := w.Write([]byte(content)); err != nil {
-							t.Errorf("failed to write GCS response: %v", err)
-						}
-					}))
-					t.Cleanup(server.Close)
-
-					client, err := storage.NewClient(t.Context(), option.WithEndpoint(server.URL), option.WithoutAuthentication(), storage.WithJSONReads())
-					if err != nil {
-						t.Fatalf("failed to create storage client: %v", err)
-					}
-					t.Cleanup(func() {
-						if err := client.Close(); err != nil {
-							t.Errorf("failed to close storage client: %v", err)
-						}
-					})
-
-					store := gcs.NewTriageStore(client)
-					data, err := store.GetFile(t.Context(), tc.source, "cve-2024-1234")
+					data, err := store.GetFile(t.Context(), tc.source, cveID)
 					if missing {
 						if !errors.Is(err, models.ErrNotFound) {
 							t.Errorf("expected ErrNotFound, got %v", err)
@@ -130,6 +138,7 @@ func TestTriageStore_GetFile_GCS(t *testing.T) {
 					if err != nil {
 						t.Fatalf("GetFile failed: %v", err)
 					}
+					content := fmt.Sprintf(`{"source":%q}`, tc.source)
 					if string(data) != content {
 						t.Errorf("GetFile returned %q, want %q", data, content)
 					}

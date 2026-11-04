@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN go build -o download-cves ./cmd/mirrors/download-cves/
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:786a1537df13c54289a46507b22a411f6c71154ae0293d12adce4b9358acca63
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:9040d28a6512f32c495322a3af6ea000f803a0ae001cec055937154efe5a2230
 
 WORKDIR /usr/local/bin
 COPY --from=GO_BUILD /src/download-cves ./

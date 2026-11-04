@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/google/osv.dev/go/internal/gitter"
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
@@ -169,7 +170,7 @@ func handleImportGit(ctx context.Context, ch chan<- WorkItem, config Config, sou
 	return nil
 }
 
-func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository, timeOfRun time.Time) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeGit || sourceRepo.Git == nil {
 		return errors.New("invalid SourceRepository for git reconcile")
 	}
@@ -217,7 +218,7 @@ func handleReconcileGit(ctx context.Context, ch chan<- WorkItem, config Config, 
 			path:    relPath,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format, config.ReimportTaskPool)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, relPath, nil, sourceRecord, format, config.ReimportTaskPool, timeOfRun)
 	}
 
 	logger.InfoContext(ctx, "Finished reconciling git source repository",

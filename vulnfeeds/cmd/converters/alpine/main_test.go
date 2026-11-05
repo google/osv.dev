@@ -68,16 +68,18 @@ func TestFindIntroducedVersion(t *testing.T) {
 	const pillowCPE = "cpe:2.3:a:python-pillow:pillow:*:*:*:*:*:python:*:*"
 
 	tests := []struct {
-		name      string
-		cve       models.NVDCVE
-		alpinePkg string
-		want      string
+		name         string
+		cve          models.NVDCVE
+		alpinePkg    string
+		fixedVersion string
+		want         string
 	}{
 		{
-			name:      "no configurations",
-			cve:       models.NVDCVE{},
-			alpinePkg: "xz",
-			want:      "0",
+			name:         "no configurations",
+			cve:          models.NVDCVE{},
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "0",
 		},
 		{
 			name: "match with VersionStartIncluding",
@@ -92,8 +94,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "5.6.0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "5.6.0",
 		},
 		{
 			name: "non-vulnerable CPE skipped",
@@ -108,8 +111,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "0",
 		},
 		{
 			name: "VersionStartIncluding nil returns 0",
@@ -123,8 +127,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "0",
 		},
 		{
 			// Known gap: VersionStartExcluding is not handled; falls back to "0".
@@ -140,8 +145,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "0",
 		},
 		{
 			name: "invalid CPE criteria skipped",
@@ -156,8 +162,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "0",
 		},
 		{
 			name: "match found in second node",
@@ -181,8 +188,9 @@ func TestFindIntroducedVersion(t *testing.T) {
 					},
 				}},
 			},
-			alpinePkg: "foo",
-			want:      "1.0.0",
+			alpinePkg:    "foo",
+			fixedVersion: "1.2.0-r0",
+			want:         "1.0.0",
 		},
 		{
 			name: "python package prefix match",
@@ -197,11 +205,14 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "py3-pillow",
-			want:      "9.0.0",
+			alpinePkg:    "py3-pillow",
+			fixedVersion: "9.1.0-r0",
+			want:         "9.0.0",
 		},
 		{
-			name: "first match wins when multiple CPEs match",
+			// Among multiple qualifying candidates, the one closest to (just
+			// below) the fixed version is preferred as the tightest bound.
+			name: "closest qualifying match wins when multiple CPEs match",
 			cve: models.NVDCVE{
 				Configurations: []models.Config{{
 					Nodes: []models.Node{{
@@ -220,16 +231,73 @@ func TestFindIntroducedVersion(t *testing.T) {
 					}},
 				}},
 			},
-			alpinePkg: "xz",
-			want:      "5.0.0",
+			alpinePkg:    "xz",
+			fixedVersion: "5.6.1-r0",
+			want:         "5.6.0",
+		},
+		{
+			// Regression test for https://github.com/google/osv.dev/issues/5634:
+			// NVD's CPE configuration for perl CVE-2018-18311 describes two
+			// independently fixed branches (< 5.26.3 and [5.28.0, 5.28.1)).
+			// Alpine's secfix is 5.26.3-r0, on the first branch, so the
+			// 5.28.0 VersionStartIncluding from the unrelated second branch
+			// must not be used as introduced: it would invert the range.
+			name: "unrelated higher branch is not used as introduced",
+			cve: models.NVDCVE{
+				Configurations: []models.Config{{
+					Nodes: []models.Node{{
+						CPEMatch: []models.CPEMatch{
+							{
+								Criteria:            "cpe:2.3:a:perl:perl:*:*:*:*:*:*:*:*",
+								Vulnerable:          true,
+								VersionEndExcluding: new("5.26.3"),
+							},
+							{
+								Criteria:              "cpe:2.3:a:perl:perl:*:*:*:*:*:*:*:*",
+								Vulnerable:            true,
+								VersionStartIncluding: new("5.28.0"),
+								VersionEndExcluding:   new("5.28.1"),
+							},
+						},
+					}},
+				}},
+			},
+			alpinePkg:    "perl",
+			fixedVersion: "5.26.3-r0",
+			want:         "0",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := findIntroducedVersion(tc.cve, tc.alpinePkg)
+			got := findIntroducedVersion(tc.cve, tc.alpinePkg, tc.fixedVersion)
 			if got != tc.want {
-				t.Errorf("findIntroducedVersion(..., %q) = %q, want %q", tc.alpinePkg, got, tc.want)
+				t.Errorf("findIntroducedVersion(..., %q, %q) = %q, want %q", tc.alpinePkg, tc.fixedVersion, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestVersionLess(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"5.28.0", "5.26.3-r0", false},
+		{"0", "5.26.3-r0", true},
+		{"5.0.0", "5.6.1-r0", true},
+		{"5.6.0", "5.6.1-r0", true},
+		{"5.6.1", "5.6.1-r0", false},
+		{"1.0.2", "1.0.2a", false},
+		{"9.0.0", "9.1.0-r0", true},
+		{"1.2.0", "1.2.0-r0", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.a+"_vs_"+tc.b, func(t *testing.T) {
+			got := versionLess(tc.a, tc.b)
+			if got != tc.want {
+				t.Errorf("versionLess(%q, %q) = %v, want %v", tc.a, tc.b, got, tc.want)
 			}
 		})
 	}

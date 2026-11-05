@@ -538,6 +538,116 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, ht
 	return "", "", errors.New("no tag found")
 }
 
+// compareURLVersionPattern matches the side of a Git compare URL that begins
+// like a version tag (an optional "v" prefix followed by a digit), as opposed
+// to a branch or tag name like "development" or "master".
+var compareURLVersionPattern = regexp.MustCompile(`(?i)^v?\d`)
+
+// compareURLWildcardSuffix matches a trailing wildcard component, which
+// projects like Drupal use for branches rather than versions, e.g. "3.x".
+var compareURLWildcardSuffix = regexp.MustCompile(`(?i)[.-]x$`)
+
+// ExtractVersionRangeFromCompareURL returns an introduced..fixed version
+// range when u is a Git repository comparison URL with version-like tags on
+// both sides, e.g.
+//
+//	https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0
+//	https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
+//
+// The left side is where the vulnerable range starts and the right side is
+// where it is fixed, consistent with the existing assumption that reference
+// links are fixes. Branch comparisons ("development...master"), commit
+// comparisons ("e5dd0a3...8b4f5c2") and wildcard branches ("7.x-3.x") are
+// rejected.
+func ExtractVersionRangeFromCompareURL(u string) (models.RangeWithMetadata, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	_, comparison, found := strings.Cut(parsedURL.Path, "/compare/")
+	if !found {
+		return models.RangeWithMetadata{}, fmt.Errorf("not a supported comparison URL: %s", u)
+	}
+
+	comparison, err = url.PathUnescape(strings.TrimSuffix(comparison, "/"))
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	base, head, err := splitCompareSides(comparison)
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	normalizedBase, err := validateCompareSide(base)
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	normalizedHead, err := validateCompareSide(head)
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	if normalizedBase == normalizedHead {
+		return models.RangeWithMetadata{}, fmt.Errorf("comparison of %q with itself in %s", base, u)
+	}
+
+	repo, err := Repo(u)
+	if err != nil {
+		return models.RangeWithMetadata{}, err
+	}
+
+	versionRange := BuildVersionRange(base, "", head)
+	versionRange.Repo = repo
+
+	return models.RangeWithMetadata{
+		Range: versionRange,
+		Metadata: models.Metadata{
+			Source:   models.VersionSourceRefsCompare,
+			Versions: []string{base, head},
+		},
+	}, nil
+}
+
+// splitCompareSides splits the comparison part of a compare URL into its two
+// sides. Three-dot comparisons are the norm; two-dot ones also occur.
+func splitCompareSides(comparison string) (string, string, error) {
+	if base, head, found := strings.Cut(comparison, "..."); found {
+		return base, head, nil
+	}
+	if base, head, found := strings.Cut(comparison, ".."); found {
+		return base, head, nil
+	}
+
+	return "", "", fmt.Errorf("unsupported comparison: %q", comparison)
+}
+
+// validateCompareSide checks that one side of a compare URL looks like a
+// version tag rather than a branch or commit, returning its normalized form.
+func validateCompareSide(side string) (string, error) {
+	switch {
+	case side == "":
+		return "", fmt.Errorf("empty side in comparison")
+	case strings.Contains(side, "/"):
+		return "", fmt.Errorf("side %q contains a path separator, so is not a version tag", side)
+	case isLikelyGitSHA(side):
+		return "", fmt.Errorf("side %q looks like a commit hash", side)
+	case !compareURLVersionPattern.MatchString(side):
+		return "", fmt.Errorf("side %q does not look like a version tag", side)
+	case compareURLWildcardSuffix.MatchString(side):
+		return "", fmt.Errorf("side %q looks like a wildcard branch", side)
+	}
+
+	normalized, err := git.NormalizeVersion(side)
+	if err != nil {
+		return "", fmt.Errorf("side %q is not a supported version: %w", side, err)
+	}
+
+	return normalized, nil
+}
+
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Client, cache git.RepoTagsCache) ([]models.AffectedCommit, error) {
 	var commits []models.AffectedCommit

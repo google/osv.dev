@@ -1772,7 +1772,7 @@ func TestProcessRanges_DirectGitRange(t *testing.T) {
 	}
 	repos := []string{"https://github.com/GeneralSandman/TinyWeb"}
 	httpClient := &http.Client{}
-	resolved, unresolved, successfulRepos := ProcessRanges([]models.RangeWithMetadata{gitRange}, repos, metrics, git.NewRepoTagsCache(), httpClient)
+	resolved, unresolved, successfulRepos := ProcessRanges([]models.RangeWithMetadata{gitRange}, repos, time.Time{}, metrics, git.NewRepoTagsCache(), httpClient)
 
 	if len(resolved) != 1 {
 		t.Fatalf("expected 1 resolved range, got %d", len(resolved))

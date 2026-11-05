@@ -124,6 +124,8 @@ type SourceRepoREST struct {
 	URL string
 	// Last date recurring updates were requested.
 	LastUpdated *time.Time
+	// Last-Modified HTTP header time from the previous REST response.
+	HTTPLastModified *time.Time
 	// Ignore last import time once.
 	IgnoreLastImportTime bool
 	// Ignore deletion threshold.

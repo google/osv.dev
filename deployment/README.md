@@ -103,7 +103,7 @@ To connect or run `goose` manually from your workstation via IAM authentication:
      --type=CLOUD_IAM_USER \
      --database-roles=cloudsqlsuperuser
    ```
-3. Start `cloud-sql-proxy` with automatic IAM authentication:
+3. Start `cloud-sql-proxy` with automatic IAM authentication (or via `make run-cloud-sql-proxy-staging` / `make run-cloud-sql-proxy`):
    ```bash
    # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
    cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
@@ -114,6 +114,8 @@ To connect or run `goose` manually from your workstation via IAM authentication:
      "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable options=-crole=cloudsqlsuperuser" \
      status
    ```
+
+> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, you can connect via `cloud-sql-proxy` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
 
 
 ## Setting up auto-scaler

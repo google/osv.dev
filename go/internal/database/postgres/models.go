@@ -59,8 +59,8 @@ type Vulnerability struct {
 	SourcePath     string
 	RawVulnID      pgtype.Int8
 	Modified       time.Time
-	SourceModified pgtype.Timestamptz
-	Withdrawn      pgtype.Timestamptz
+	SourceModified *time.Time
+	Withdrawn      *time.Time
 	AliasRaw       []string
 	RelatedRaw     []string
 	UpstreamRaw    []string

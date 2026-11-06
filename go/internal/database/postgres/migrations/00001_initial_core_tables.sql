@@ -15,7 +15,7 @@ CREATE TABLE raw_vulnerabilities (
 CREATE INDEX idx_raw_vuln_lookup ON raw_vulnerabilities (source_id, source_path, fetched_at DESC);
 
 CREATE TABLE vulnerabilities (
-    id TEXT COLLATE "C" PRIMARY KEY,
+    id TEXT COLLATE "C" NOT NULL,
     revision INT NOT NULL DEFAULT 1,
     source_id TEXT COLLATE "C" NOT NULL,
     source_path TEXT COLLATE "C" NOT NULL,
@@ -27,14 +27,12 @@ CREATE TABLE vulnerabilities (
     related_raw TEXT[] COLLATE "C",
     upstream_raw TEXT[] COLLATE "C",
     data JSONB NOT NULL,
-    proto BYTEA NOT NULL
+    proto BYTEA NOT NULL,
+    PRIMARY KEY (id) INCLUDE (modified)
 );
 
--- Covering index for GetVulnerabilityModified (index-only scan on id -> modified)
-CREATE INDEX idx_vulns_id_modified ON vulnerabilities (id) INCLUDE (modified);
-
--- Fast lookup by source and path for reconciliation
-CREATE INDEX idx_vulns_source ON vulnerabilities (source_id, source_path);
+-- Fast covering lookup by source and path for reconciliation and ListBySource
+CREATE INDEX idx_vulns_source ON vulnerabilities (source_id, source_path) INCLUDE (id, source_modified, withdrawn);
 
 -- Modified time index for feed sync and incremental exporters
 CREATE INDEX idx_vulns_modified ON vulnerabilities (modified DESC);
@@ -42,24 +40,21 @@ CREATE INDEX idx_vulns_modified ON vulnerabilities (modified DESC);
 -- Partial index for fast filtering of withdrawn records
 CREATE INDEX idx_vulns_withdrawn ON vulnerabilities (withdrawn) WHERE withdrawn IS NOT NULL;
 
--- Optimizes ListBySource(skipWithdrawn)
-CREATE INDEX idx_vulns_source_withdrawn ON vulnerabilities (source_id, withdrawn);
+-- Partial GIN indexes for relations computation (ignoring empty arrays and withdrawn records)
+CREATE INDEX idx_vulns_alias_raw ON vulnerabilities USING GIN (alias_raw) WHERE cardinality(alias_raw) > 0 AND withdrawn IS NULL;
+CREATE INDEX idx_vulns_related_raw ON vulnerabilities USING GIN (related_raw) WHERE cardinality(related_raw) > 0 AND withdrawn IS NULL;
+CREATE INDEX idx_vulns_upstream_raw ON vulnerabilities USING GIN (upstream_raw) WHERE cardinality(upstream_raw) > 0 AND withdrawn IS NULL;
 
--- Indexes for relations computation
-CREATE INDEX idx_vulns_alias_raw ON vulnerabilities USING GIN (alias_raw);
-CREATE INDEX idx_vulns_related_raw ON vulnerabilities USING GIN (related_raw);
-CREATE INDEX idx_vulns_upstream_raw ON vulnerabilities USING GIN (upstream_raw);
-
+-- vuln_id does not reference vulnerabilities(id) so that if a vulnerability row
+-- ever needs to be hard-deleted, its historical audit trail is preserved.
 CREATE TABLE historic_vulnerabilities (
-    vuln_id TEXT COLLATE "C" NOT NULL REFERENCES vulnerabilities(id),
+    vuln_id TEXT COLLATE "C" NOT NULL,
     revision INT NOT NULL,
     raw_vuln_id BIGINT REFERENCES raw_vulnerabilities(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     data JSONB NOT NULL,
     PRIMARY KEY (vuln_id, revision)
 );
-
-CREATE INDEX idx_historic_vulns_raw ON historic_vulnerabilities (raw_vuln_id);
 
 -- vuln_id does not reference vulnerabilities(id) because there is no index on (vuln_id)
 -- (to save space/writes), which would cause a full table scan on vulnerability deletes.

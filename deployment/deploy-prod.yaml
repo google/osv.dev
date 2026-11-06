@@ -16,9 +16,11 @@ steps:
 # Fetch PostgreSQL migrations at the release commit and apply to prod and private-osv
 - name: gcr.io/cloud-builders/git
   entrypoint: bash
+  env: ['COMMIT_SHA=$COMMIT_SHA']
   args:
   - '-c'
   - |
+    set -euo pipefail
     git clone --filter=blob:none --no-checkout https://github.com/google/osv.dev.git repo
     cd repo
     git sparse-checkout set go/internal/database/postgres/migrations

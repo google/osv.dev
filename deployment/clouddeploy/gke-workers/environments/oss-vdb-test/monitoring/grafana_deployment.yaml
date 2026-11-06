@@ -49,7 +49,7 @@ spec:
         - name: PL_USERS_AUTO_ASSIGN_ORG_ROLE
           value: "Viewer"
         - name: PL_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
-          value: "/etc/plutono/dashboards/executive-overview.json"
+          value: "/etc/plutono/dashboards/home.json"
         - name: PL_SERVER_ROOT_URL
           value: "https://monitoring.test.osv.dev"
         resources:

@@ -116,7 +116,7 @@ docker run --rm \
   -p 127.0.0.1:3000:3000 \
   -e PL_AUTH_ANONYMOUS_ENABLED="true" \
   -e PL_AUTH_ANONYMOUS_ORG_ROLE="Admin" \
-  -e PL_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH="/etc/plutono/dashboards/executive-overview.json" \
+  -e PL_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH="/etc/plutono/dashboards/home.json" \
   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
   -v "$TMP_DIR/adc.json:/tmp/keys/adc.json:ro" \
   -v "$TMP_DIR/datasources.yaml:/etc/plutono/provisioning/datasources/datasources.yaml:ro" \

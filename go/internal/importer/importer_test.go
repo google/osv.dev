@@ -315,3 +315,47 @@ func TestReconcileWarningsAsInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestIsReconcileOutdated(t *testing.T) {
+	now := time.Date(2026, 1, 10, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		modified time.Time
+		dbMod    time.Time
+		want     bool
+	}{
+		{
+			name:     "missed update within 6h of dbMod and past leniency window",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-22 * time.Hour),
+			want:     true,
+		},
+		{
+			name:     "sub-second precision difference only",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-24*time.Hour + 861*time.Millisecond),
+			want:     false,
+		},
+		{
+			name:     "recent update still within leniency window",
+			dbMod:    now.Add(-48 * time.Hour),
+			modified: now.Add(-2 * time.Hour),
+			want:     false,
+		},
+		{
+			name:     "upstream older or equal to dbMod",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-25 * time.Hour),
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isReconcileOutdated(now, tt.modified, tt.dbMod); got != tt.want {
+				t.Errorf("isReconcileOutdated() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

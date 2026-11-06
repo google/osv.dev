@@ -16,3 +16,5 @@ configMapGenerator:
   - executive-overview.json=dashboards/executive-overview.json
   - pipeline-ingestion-ops.json=dashboards/pipeline-ingestion-ops.json
   - data-quality-drift.json=dashboards/data-quality-drift.json
+  - cve-feed-conversions.json=dashboards/cve-feed-conversions.json
+

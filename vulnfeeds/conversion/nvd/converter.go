@@ -53,6 +53,12 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 
 	// Create basic OSV record
 	v := vulns.FromNVDCVE(cve.ID, cve)
+	refTypeCounts := make(map[osvschema.Reference_Type]int)
+	for _, ref := range v.References {
+		refTypeCounts[ref.GetType()]++
+	}
+	metrics.RefTypesCount = refTypeCounts
+
 	databaseSpecific, err := utility.NewStructpbFromMap(make(map[string]any))
 	if err != nil {
 		metrics.AddNotef("Failed to convert database specific: %v", err)

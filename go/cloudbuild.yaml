@@ -19,6 +19,8 @@
 # go/run_tests.sh
 # go/*.go
 # go/**/*.go
+# go/**/*.sql
+# go/internal/database/postgres/sqlc.yaml
 
 steps:
 - name: 'gcr.io/cloud-builders/git'

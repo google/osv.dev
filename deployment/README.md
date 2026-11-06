@@ -85,6 +85,38 @@ printf "%s" "$PG_RO_PASS" | gcloud secrets versions add osv-db-readonly-password
 unset PG_RO_PASS
 ```
 
+### Cloud SQL PostgreSQL Schema Migrations & IAM Access
+
+Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose).
+
+* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` using the `gcr.io/oss-vdb/goose` Cloud Builder image (see `docker/goose/`).
+* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` right before promoting the Cloud Deploy pipelines.
+
+To connect or run `goose` manually from your workstation via IAM authentication:
+
+1. Install `cloud-sql-proxy` (via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install)).
+2. Create a Cloud SQL IAM user for your Google account (once per instance):
+   ```bash
+   gcloud sql users create "$(gcloud config get-value account)" \
+     --instance=osv-db \
+     --project="$PROJECT_ID" \
+     --type=CLOUD_IAM_USER \
+     --database-roles=cloudsqlsuperuser
+   ```
+3. Start `cloud-sql-proxy` with automatic IAM authentication (or via `make run-cloud-sql-proxy-staging` / `make run-cloud-sql-proxy`):
+   ```bash
+   # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
+   cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
+   ```
+4. Run `goose` (if needed, setting `role=cloudsqlsuperuser` so any created/altered objects remain owned by `cloudsqlsuperuser`):
+   ```bash
+   goose -dir go/internal/database/postgres/migrations postgres \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable options=-crole=cloudsqlsuperuser" \
+     status
+   ```
+
+> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, you can connect via `cloud-sql-proxy` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
+
 
 ## Setting up auto-scaler
 

@@ -107,3 +107,15 @@ resource "google_secret_manager_secret_iam_member" "worker_postgres_secret_acces
   member    = "serviceAccount:${google_service_account.worker_sa.email}"
 }
 
+# Cloud SQL IAM authentication permissions for the Cloud Build deployment service account (goose migrations)
+resource "google_project_iam_member" "deployment_cloudsql_roles" {
+  for_each = toset([
+    "roles/cloudsql.client",
+    "roles/cloudsql.instanceUser",
+  ])
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+}
+

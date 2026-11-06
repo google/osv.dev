@@ -1172,6 +1172,37 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
     gap: 4px;
   }
 
+  .events-section {
+    >summary.events-header {
+      cursor: pointer;
+      padding: 8px 0;
+      font-family: $osv-heading-font-family;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $osv-accent-color;
+        outline-offset: 2px;
+      }
+    }
+
+    .events-show-less {
+      display: none;
+    }
+
+    &[open]>summary {
+      .events-show-more {
+        display: none;
+      }
+
+      .events-show-less {
+        display: inline;
+      }
+    }
+  }
+
   .specific {
     overflow: auto;
   }

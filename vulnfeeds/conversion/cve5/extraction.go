@@ -34,6 +34,9 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &CurlVersionExtractor{
 			Strategies: strategies.Curl(),
 		}
+	case "apache", "bcorg", "openjs":
+		// These CNAs identify the affected package with a purl, so also emit package ranges.
+		return &PackageVersionExtractor{}
 	default:
 		return &DefaultVersionExtractor{
 			Strategies: strategies.Default(),

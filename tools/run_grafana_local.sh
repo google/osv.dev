@@ -56,14 +56,6 @@ datasources:
     jsonData:
       authenticationType: gce
       defaultProject: $GCP_PROJECT
-  - name: Cloud Logging
-    uid: cloud-logging
-    type: googlecloud-logging-datasource
-    access: proxy
-    editable: true
-    jsonData:
-      authenticationType: gce
-      defaultProject: $GCP_PROJECT
 EOF
 
 # Extract dashboards.yaml provider
@@ -75,9 +67,10 @@ providers:
     folder: ''
     type: file
     disableDeletion: false
+    updateIntervalSeconds: 10
     editable: true # Allow editing locally
     options:
-      path: /etc/grafana/dashboards
+      path: /etc/plutono/dashboards
 EOF
 chmod 644 "$TMP_DIR/datasources.yaml" "$TMP_DIR/dashboards.yaml"
 
@@ -91,16 +84,16 @@ docker run -d --rm \
   --web.listen-address=0.0.0.0:9090 \
   --query.project-id=$GCP_PROJECT
 
-echo "Starting Grafana on http://localhost:3000"
+echo "Starting Plutono (Apache 2.0 Grafana 7.5 fork) on http://localhost:3000"
 echo "Login skipped (Anonymous access enabled as Admin)"
 echo "To save changes: Edit dashboard in UI -> Settings -> JSON Model -> Copy -> Save to file"
 
 # Open browser automatically in background
 (
-  # Wait for Grafana to be ready
+  # Wait for Plutono to be ready
   for i in {1..30}; do
     if curl -s -o /dev/null http://localhost:3000/api/health; then
-      echo "Grafana is ready! Opening browser..."
+      echo "Plutono is ready! Opening browser..."
       if command -v xdg-open > /dev/null; then
         xdg-open http://localhost:3000 > /dev/null 2>&1
       elif command -v open > /dev/null; then
@@ -114,19 +107,19 @@ echo "To save changes: Edit dashboard in UI -> Settings -> JSON Model -> Copy ->
   done
 ) &
 
-# Run Grafana
+# Run Plutono
 # Anonymous access is enabled as Admin for local development convenience ONLY.
 # Do NOT use these settings in production!
 docker run --rm \
   --name grafana-local \
   --network grafana-local-net \
   -p 127.0.0.1:3000:3000 \
-  -e GF_AUTH_ANONYMOUS_ENABLED="true" \
-  -e GF_AUTH_ANONYMOUS_ORG_ROLE="Admin" \
-  -e GF_INSTALL_PLUGINS="googlecloud-logging-datasource 1.8.1" \
+  -e PL_AUTH_ANONYMOUS_ENABLED="true" \
+  -e PL_AUTH_ANONYMOUS_ORG_ROLE="Admin" \
+  -e PL_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH="/etc/plutono/dashboards/executive-overview.json" \
   -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
   -v "$TMP_DIR/adc.json:/tmp/keys/adc.json:ro" \
-  -v "$TMP_DIR/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro" \
-  -v "$TMP_DIR/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro" \
-  -v "$(pwd)/$MONITORING_DIR/dashboards:/etc/grafana/dashboards:ro" \
-  grafana/grafana:11.5.10@sha256:4d1b2146de6488324c4e880be2028620259c414406e36a9ac2160485f8fd3259
+  -v "$TMP_DIR/datasources.yaml:/etc/plutono/provisioning/datasources/datasources.yaml:ro" \
+  -v "$TMP_DIR/dashboards.yaml:/etc/plutono/provisioning/dashboards/dashboards.yaml:ro" \
+  -v "$(pwd)/$MONITORING_DIR/dashboards:/etc/plutono/dashboards:ro" \
+  ghcr.io/credativ/plutono:v7.5.52@sha256:5e5c86066c5adc0e7fa06f33eeb3396ac6f98cf1f387253c681fb7783c610f5e

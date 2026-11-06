@@ -1,7 +1,7 @@
 apiVersion: monitoring.googleapis.com/v1
 kind: ClusterPodMonitoring
 metadata:
-  name: kube-state-metrics
+  name: osv-kube-state-metrics
   labels:
     app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/part-of: google-cloud-managed-prometheus
@@ -9,6 +9,7 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: kube-state-metrics
+      app.kubernetes.io/version: 2.14.0
   endpoints:
   - port: metrics
     # Customized from 30s to 5s.

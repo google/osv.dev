@@ -3,7 +3,7 @@ module github.com/google/apitester
 go 1.27.2
 
 require (
-	github.com/gkampitakis/go-snaps v0.5.23
+	github.com/gkampitakis/go-snaps v0.5.25
 	github.com/google/go-cmp v0.7.0
 	github.com/tidwall/gjson v1.20.0
 	github.com/tidwall/pretty v1.2.2

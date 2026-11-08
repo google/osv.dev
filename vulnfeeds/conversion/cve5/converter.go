@@ -135,20 +135,15 @@ func FromCVE5(cve models.CVE5, refs []models.Reference, metrics *models.Conversi
 		return v.References[i].GetType() < v.References[j].GetType()
 	})
 
-	// Combine severity metrics from both CNA and ADP containers.
-	var severity []models.Metrics
-	if len(cve.Containers.CNA.Metrics) != 0 {
-		severity = append(severity, cve.Containers.CNA.Metrics...)
-	}
+	// Extract severity metrics from CNA container, with ADP containers as unattributed fallback.
+	var adpMetrics []models.Metrics
 	for _, adp := range cve.Containers.ADP {
 		if len(adp.Metrics) != 0 {
-			severity = append(severity, adp.Metrics...)
+			adpMetrics = append(adpMetrics, adp.Metrics...)
 		}
 	}
-	if len(severity) > 0 {
-		if sev := vulns.FindSeverity(severity); sev != nil {
-			v.Severity = []*osvschema.Severity{sev}
-		}
+	if sevs := vulns.FindSeverities(cve.Containers.CNA.Metrics, adpMetrics); len(sevs) > 0 {
+		v.Severity = sevs
 	}
 
 	return &v

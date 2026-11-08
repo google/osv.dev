@@ -352,8 +352,9 @@ func TestAddSeverity(t *testing.T) {
 			inputCVE:    loadTestData2("CVE-2022-34668"),
 			expectedResult: []*osvschema.Severity{
 				{
-					Type:  osvschema.Severity_CVSS_V3,
-					Score: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Source: osvschema.Severity_CNA,
 				},
 			},
 		},
@@ -362,8 +363,25 @@ func TestAddSeverity(t *testing.T) {
 			inputCVE:    loadTestData2("CVE-2023-5341"),
 			expectedResult: []*osvschema.Severity{
 				{
-					Type:  osvschema.Severity_CVSS_V3,
-					Score: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+					Source: osvschema.Severity_CNA,
+				},
+			},
+		},
+		{
+			description: "CVE with both NVD and CNA CVSS_V3 scores",
+			inputCVE:    loadTestData2("CVE-2016-1585"),
+			expectedResult: []*osvschema.Severity{
+				{
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+					Source: osvschema.Severity_NVD,
+				},
+				{
+					Type:   osvschema.Severity_CVSS_V3,
+					Score:  "CVSS:3.0/AV:L/AC:H/PR:H/UI:N/S:U/C:L/I:L/A:L",
+					Source: osvschema.Severity_CNA,
 				},
 			},
 		},
@@ -377,6 +395,214 @@ func TestAddSeverity(t *testing.T) {
 		if diff := gocmp.Diff(tc.expectedResult, got, protocmp.Transform()); diff != "" {
 			t.Errorf("test %q: Incorrect result: %s", tc.description, diff)
 		}
+	}
+}
+
+func TestAddSeverity_Scenarios(t *testing.T) {
+	cnaEmail := "cna@example.com"
+	nvdEmail := "nvd@nist.gov"
+	adpEmail := "cisa-adp@example.com"
+
+	v4NVD := "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+	v4CNA := "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:N/VA:L/SC:N/SI:N/SA:N"
+	v4ADP := "CVSS:4.0/AV:L/AC:H/AT:P/PR:L/UI:A/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N"
+	v31NVDPrimary := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+	v31NVDSecondary := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L"
+	v31CNA := "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
+	v30CNA := "CVSS:3.0/AV:N/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N"
+	v31ADP := "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+
+	tests := []struct {
+		name             string
+		initial          []*osvschema.Severity
+		sourceIdentifier *string
+		metrics          *models.CVEItemMetrics
+		want             []*osvschema.Severity
+	}{
+		{
+			name:             "Both CVSS_V4 and CVSS_V3 with both NVD and CNA",
+			sourceIdentifier: &cnaEmail,
+			metrics: &models.CVEItemMetrics{
+				CVSSMetricV40: []models.BaseCVSSNVD{
+					{Source: cnaEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v4CNA}},
+					{Source: nvdEmail, Type: "Primary", CVSSData: models.CVSS{VectorString: v4NVD}},
+					{Source: adpEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v4ADP}},
+				},
+				CVSSMetricV31: []models.BaseCVSSNVD{
+					{Source: nvdEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v31NVDSecondary}},
+					{Source: nvdEmail, Type: "Primary", CVSSData: models.CVSS{VectorString: v31NVDPrimary}},
+					{Source: cnaEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v31CNA}},
+					{Source: adpEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v31ADP}},
+				},
+				CVSSMetricV30: []models.BaseCVSSNVD{
+					{Source: cnaEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v30CNA}},
+				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4NVD, Source: osvschema.Severity_NVD},
+				{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31NVDPrimary, Source: osvschema.Severity_NVD},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name:             "ADP fallback included with omitted source when neither NVD nor CNA provides that CVSS version",
+			sourceIdentifier: &cnaEmail,
+			metrics: &models.CVEItemMetrics{
+				CVSSMetricV40: []models.BaseCVSSNVD{
+					{Source: adpEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v4ADP}},
+				},
+				CVSSMetricV31: []models.BaseCVSSNVD{
+					{Source: cnaEmail, Type: "Primary", CVSSData: models.CVSS{VectorString: v31CNA}},
+					{Source: adpEmail, Type: "Secondary", CVSSData: models.CVSS{VectorString: v31ADP}},
+				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name:             "sourceIdentifier equal to nvd@nist.gov attributes to NVD not CNA",
+			sourceIdentifier: &nvdEmail,
+			metrics: &models.CVEItemMetrics{
+				CVSSMetricV31: []models.BaseCVSSNVD{
+					{Source: nvdEmail, Type: "Primary", CVSSData: models.CVSS{VectorString: v31NVDPrimary}},
+				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V3, Score: v31NVDPrimary, Source: osvschema.Severity_NVD},
+			},
+		},
+		{
+			name:    "Existing SOURCE_UNSPECIFIED fallback replaced when NVD score added for same version",
+			initial: []*osvschema.Severity{{Type: osvschema.Severity_CVSS_V3, Score: v31ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED}},
+			metrics: &models.CVEItemMetrics{
+				CVSSMetricV31: []models.BaseCVSSNVD{
+					{Source: nvdEmail, Type: "Primary", CVSSData: models.CVSS{VectorString: v31NVDPrimary}},
+				},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V3, Score: v31NVDPrimary, Source: osvschema.Severity_NVD},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			v := &Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{
+					Severity: tc.initial,
+				},
+			}
+			v.AddSeverity(tc.metrics, tc.sourceIdentifier)
+			if diff := gocmp.Diff(tc.want, v.Severity, protocmp.Transform()); diff != "" {
+				t.Errorf("AddSeverity() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindSeverities(t *testing.T) {
+	v4CNA := "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N"
+	v4ADP := "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
+	v31CNA := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+	v30CNA := "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N"
+	v31ADP := "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+
+	tests := []struct {
+		name       string
+		cnaMetrics []models.Metrics
+		adpMetrics []models.Metrics
+		want       []*osvschema.Severity
+	}{
+		{
+			name: "CNA has both CVSS_V4 and CVSS_V3 (3.1 preferred over 3.0)",
+			cnaMetrics: []models.Metrics{
+				{CVSSv3_0: models.BaseCVSS{VectorString: v30CNA}},
+				{CVSSv3_1: models.BaseCVSS{VectorString: v31CNA}},
+				{CVSSv4_0: models.BaseCVSS{VectorString: v4CNA}},
+			},
+			adpMetrics: []models.Metrics{
+				{CVSSv4_0: models.BaseCVSS{VectorString: v4ADP}},
+				{CVSSv3_1: models.BaseCVSS{VectorString: v31ADP}},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name: "CNA has CVSS_V3 only, ADP provides CVSS_V4 fallback and redundant CVSS_V3",
+			cnaMetrics: []models.Metrics{
+				{CVSSv3_1: models.BaseCVSS{VectorString: v31CNA}},
+			},
+			adpMetrics: []models.Metrics{
+				{CVSSv4_0: models.BaseCVSS{VectorString: v4ADP}},
+				{CVSSv3_1: models.BaseCVSS{VectorString: v31ADP}},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V4, Score: v4ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+				{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			},
+		},
+		{
+			name:       "CNA has no metrics, ADP provides CVSS_V3 fallback",
+			cnaMetrics: nil,
+			adpMetrics: []models.Metrics{
+				{CVSSv3_1: models.BaseCVSS{VectorString: v31ADP}},
+			},
+			want: []*osvschema.Severity{
+				{Type: osvschema.Severity_CVSS_V3, Score: v31ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+			},
+		},
+		{
+			name:       "Empty metrics returns nil",
+			cnaMetrics: nil,
+			adpMetrics: nil,
+			want:       nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := FindSeverities(tc.cnaMetrics, tc.adpMetrics)
+			if diff := gocmp.Diff(tc.want, got, protocmp.Transform()); diff != "" {
+				t.Errorf("FindSeverities() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeSeverities(t *testing.T) {
+	v4CNA := "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N"
+	v4ADP := "CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N"
+	v31NVD := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+	v30CNA := "CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N"
+	v31CNA := "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+	v31ADP := "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+
+	got := MergeSeverities(
+		[]*osvschema.Severity{
+			{Type: osvschema.Severity_CVSS_V4, Score: v4ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+			{Type: osvschema.Severity_CVSS_V3, Score: v31ADP, Source: osvschema.Severity_SOURCE_UNSPECIFIED},
+			{Type: osvschema.Severity_CVSS_V3, Score: v30CNA, Source: osvschema.Severity_CNA},
+		},
+		[]*osvschema.Severity{
+			{Type: osvschema.Severity_CVSS_V3, Score: v31NVD, Source: osvschema.Severity_NVD},
+			{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+			{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+		},
+	)
+
+	want := []*osvschema.Severity{
+		{Type: osvschema.Severity_CVSS_V4, Score: v4CNA, Source: osvschema.Severity_CNA},
+		{Type: osvschema.Severity_CVSS_V3, Score: v31NVD, Source: osvschema.Severity_NVD},
+		{Type: osvschema.Severity_CVSS_V3, Score: v31CNA, Source: osvschema.Severity_CNA},
+	}
+
+	if diff := gocmp.Diff(want, got, protocmp.Transform()); diff != "" {
+		t.Errorf("MergeSeverities() mismatch (-want +got):\n%s", diff)
 	}
 }
 

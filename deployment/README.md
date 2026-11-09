@@ -92,6 +92,19 @@ Database schema migrations live in `go/internal/database/postgres/migrations/` a
 * **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` using the `gcr.io/oss-vdb/goose` Cloud Builder image (see `docker/goose/`).
 * **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` right before promoting the Cloud Deploy pipelines.
 
+After the initial `terraform apply` creates the `deployment@oss-vdb.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
+
+```bash
+# In one terminal (use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv):
+cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" \
+  --auto-iam-authn \
+  --impersonate-service-account=deployment@oss-vdb.iam.gserviceaccount.com
+
+# In another terminal:
+psql "host=127.0.0.1 port=5432 user=deployment@oss-vdb.iam dbname=osv sslmode=disable" \
+  -c 'ALTER ROLE "deployment@oss-vdb.iam" SET role = '\''cloudsqlsuperuser'\'';'
+```
+
 To connect or run `goose` manually from your workstation via IAM authentication:
 
 1. Install `cloud-sql-proxy` (via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install)).
@@ -108,10 +121,15 @@ To connect or run `goose` manually from your workstation via IAM authentication:
    # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
    cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
    ```
-4. Run `goose` (if needed, setting `role=cloudsqlsuperuser` so any created/altered objects remain owned by `cloudsqlsuperuser`):
+4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance):
+   ```bash
+   psql "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+     -c "ALTER ROLE \"$(gcloud config get-value account)\" SET role = 'cloudsqlsuperuser';"
+   ```
+5. Run `goose`:
    ```bash
    goose -dir go/internal/database/postgres/migrations postgres \
-     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable options=-crole=cloudsqlsuperuser" \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
      status
    ```
 

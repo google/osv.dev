@@ -48,7 +48,7 @@ if [[ -n "${CLOUDSQL_INSTANCE:-}" ]]; then
   db_user="${PGUSER:-${active_account%.gserviceaccount.com}}"
   db_name="${PGDATABASE:-osv}"
   export GOOSE_DRIVER="${GOOSE_DRIVER:-postgres}"
-  export GOOSE_DBSTRING="${GOOSE_DBSTRING:-host=127.0.0.1 port=5432 user=${db_user} dbname=${db_name} sslmode=disable options=-crole=cloudsqlsuperuser}"
+  export GOOSE_DBSTRING="${GOOSE_DBSTRING:-host=127.0.0.1 port=5432 user=${db_user} dbname=${db_name} sslmode=disable}"
 fi
 
 echo "Running: goose $*"

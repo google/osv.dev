@@ -42,9 +42,9 @@ go run main.go [flags]
 The tool performs the following steps:
 1. Loads CVE5 OSVs from the specified path.
 2. Loads NVD OSVs from the specified path.
-3. Lists Debian and Alpine CVEs from GCS buckets to ensure mandatory CVEs are created.
-4. Combines the loaded data into OSV records.
-5. Uploads the results to GCS or writes them to the local filesystem.
+3. Combines the loaded data into OSV records (skipping records marked `withdrawn` in either source).
+4. Uploads the combined results to GCS or writes them to the local filesystem.
+5. Deletes any existing combined output records whose CVE5 or NVD input is marked `withdrawn` (unless a manual override exists in `osv-output-overrides/`).
 
 ### Overriding an OSV record
 

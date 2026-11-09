@@ -34,6 +34,16 @@ const (
 	vulnAliasesLimit    = 5
 )
 
+func markRemovedGroupMembers(oldIDs, newIDs []string, changedVulns map[string]*models.AliasGroup) {
+	for _, oldID := range oldIDs {
+		if !slices.Contains(newIDs, oldID) {
+			if _, ok := changedVulns[oldID]; !ok {
+				changedVulns[oldID] = nil
+			}
+		}
+	}
+}
+
 // updateAliasGroup updates the alias group in the datastore.
 func updateAliasGroup(
 	ctx context.Context,
@@ -45,6 +55,7 @@ func updateAliasGroup(
 ) error {
 	if len(vulnIDs) <= 1 {
 		logger.Info("Deleting alias group due to too few vulns", slog.Any("ids", vulnIDs))
+		markRemovedGroupMembers(group.VulnIDs, nil, changedVulns)
 		for _, vID := range vulnIDs {
 			changedVulns[vID] = nil
 		}
@@ -53,6 +64,7 @@ func updateAliasGroup(
 	}
 	if len(vulnIDs) > aliasGroupVulnLimit {
 		logger.Warn("Deleting alias group due to too many vulns", slog.Any("ids", vulnIDs))
+		markRemovedGroupMembers(group.VulnIDs, nil, changedVulns)
 		for _, vID := range vulnIDs {
 			changedVulns[vID] = nil
 		}
@@ -64,6 +76,7 @@ func updateAliasGroup(
 		return nil
 	}
 
+	markRemovedGroupMembers(group.VulnIDs, vulnIDs, changedVulns)
 	group.VulnIDs = vulnIDs
 	group.Modified = time.Now().UTC()
 	if _, err := cl.Put(ctx, key, &group); err != nil {

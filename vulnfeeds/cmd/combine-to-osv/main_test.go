@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -1195,5 +1199,80 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 		if diff := cmp.Diff(firstResult.GetReferences(), got.GetReferences(), protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestReadAndCombineWorker_Withdrawn(t *testing.T) {
+	dir := t.TempDir()
+	writeVulnFile := func(sub, name string, v *osvschema.Vulnerability) string {
+		t.Helper()
+		subDir := filepath.Join(dir, sub)
+		if err := os.MkdirAll(subDir, 0755); err != nil {
+			t.Fatalf("failed to mkdir %s: %v", subDir, err)
+		}
+		b, err := protojson.Marshal(v)
+		if err != nil {
+			t.Fatalf("failed to marshal %s: %v", name, err)
+		}
+		p := filepath.Join(subDir, name+".json")
+		if err := os.WriteFile(p, b, 0600); err != nil {
+			t.Fatalf("failed to write %s: %v", p, err)
+		}
+
+		return p
+	}
+
+	withdrawnAt := timestamppb.New(time.Date(2026, 11, 4, 18, 21, 29, 0, time.UTC))
+
+	cve1CVE5 := writeVulnFile("cve5", "CVE-2026-0001", &osvschema.Vulnerability{Id: "CVE-2026-0001", Details: "Valid CVE5"})
+	cve1NVD := writeVulnFile("nvd", "CVE-2026-0001", &osvschema.Vulnerability{Id: "CVE-2026-0001", Details: "Valid NVD"})
+
+	cve2CVE5 := writeVulnFile("cve5", "CVE-2026-0002", &osvschema.Vulnerability{Id: "CVE-2026-0002", Withdrawn: withdrawnAt})
+	cve2NVD := writeVulnFile("nvd", "CVE-2026-0002", &osvschema.Vulnerability{Id: "CVE-2026-0002", Details: "Stale NVD"})
+
+	cve3CVE5 := writeVulnFile("cve5", "CVE-2026-0003", &osvschema.Vulnerability{Id: "CVE-2026-0003", Details: "Stale CVE5"})
+	cve3NVD := writeVulnFile("nvd", "CVE-2026-0003", &osvschema.Vulnerability{Id: "CVE-2026-0003", Withdrawn: withdrawnAt})
+
+	cve4CVE5 := writeVulnFile("cve5", "CVE-2026-0004", &osvschema.Vulnerability{Id: "CVE-2026-0004", Withdrawn: withdrawnAt})
+
+	workItems := []*CVEWorkItem{
+		{ID: models.CVEID("CVE-2026-0001"), CVE5Path: cve1CVE5, NVDPath: cve1NVD},
+		{ID: models.CVEID("CVE-2026-0002"), CVE5Path: cve2CVE5, NVDPath: cve2NVD},
+		{ID: models.CVEID("CVE-2026-0003"), CVE5Path: cve3CVE5, NVDPath: cve3NVD},
+		{ID: models.CVEID("CVE-2026-0004"), CVE5Path: cve4CVE5},
+		{ID: models.CVEID("CVE-2026-0005"), CVE5Path: filepath.Join(dir, "missing.json")},
+	}
+
+	workChan := make(chan *CVEWorkItem, len(workItems))
+	vulnChan := make(chan *osvschema.Vulnerability, len(workItems))
+	withdrawnChan := make(chan string, len(workItems))
+
+	for _, item := range workItems {
+		workChan <- item
+	}
+	close(workChan)
+
+	readAndCombineWorker(context.Background(), nil, workChan, vulnChan, withdrawnChan)
+	close(vulnChan)
+	close(withdrawnChan)
+
+	var gotValid []string
+	for v := range vulnChan {
+		gotValid = append(gotValid, v.GetId())
+	}
+
+	var gotWithdrawn []string
+	for id := range withdrawnChan {
+		gotWithdrawn = append(gotWithdrawn, id)
+	}
+
+	wantValid := []string{"CVE-2026-0001"}
+	if diff := cmp.Diff(wantValid, gotValid, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("valid IDs mismatch (-want +got):\n%s", diff)
+	}
+
+	wantWithdrawn := []string{"CVE-2026-0002", "CVE-2026-0003", "CVE-2026-0004"}
+	if diff := cmp.Diff(wantWithdrawn, gotWithdrawn, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("withdrawn IDs mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -115,6 +115,16 @@ resource "google_sql_user" "worker" {
   depends_on = [google_sql_database.osv]
 }
 
+resource "google_sql_user" "deployment" {
+  project        = var.project_id
+  instance       = google_sql_database_instance.postgres.name
+  name           = "deployment@oss-vdb.iam"
+  type           = "CLOUD_IAM_SERVICE_ACCOUNT"
+  database_roles = ["cloudsqlsuperuser"]
+
+  depends_on = [google_sql_user.worker]
+}
+
 resource "google_secret_manager_secret" "postgres_worker_password" {
   project   = var.project_id
   secret_id = "osv-db-worker-password"

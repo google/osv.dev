@@ -20,14 +20,17 @@ const (
 type Task struct {
 	Type         TaskType
 	Vuln         *osvschema.Vulnerability
+	RawJSON      []byte
 	SourceID     string
 	PathInSource string
 	// ReceivedTime is when the importer requested the vuln to be processed.
 	ReceivedTime *time.Time
 	// SourceTime is the modified time according to the source
 	SourceTime *time.Time
-	// SHA256 is only used when Vuln is not provided
-	SHA256 string
+	// SHA256 is the hex-encoded SHA-256 hash of the raw upstream vulnerability record.
+	SHA256        string
+	GitCommitHash string
+	GCSGeneration *int64
 }
 
 type Stores struct {

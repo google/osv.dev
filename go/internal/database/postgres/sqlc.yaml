@@ -2,12 +2,13 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema: "migrations"
-    queries: "queries.sql"
+    queries: "queries"
     gen:
       go:
         package: "postgres"
         out: "."
         sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
         overrides:
           - db_type: "timestamptz"
             go_type: "time.Time"
@@ -17,5 +18,9 @@ sql:
               type: "time.Time"
               pointer: true
           - db_type: "jsonb"
+            go_type:
+              type: "[]byte"
+          - db_type: "jsonb"
+            nullable: true
             go_type:
               type: "[]byte"

@@ -9,6 +9,28 @@ Pipelines are uniquely identified by their `name` metadata field - if it's chang
 
 `targetId` needs to be different between pipelines, otherwise it gets overwritten.
 
+## Kubernetes Secrets
+
+GKE worker workloads (`workers`, `workers-cves`, `workers-reimport`, `relations`, `vanir-signatures`) read `POSTGRES_PASSWORD` from a Kubernetes `Secret` named `osv-db-worker-password` (key: `password`).
+
+Before deploying or after rotating the `osv-worker` Cloud SQL password in Secret Manager, sync the secret into the target GKE cluster:
+```bash
+PROJECT_ID="oss-vdb-test" # or "oss-vdb" / "private-osv"
+CLUSTER_ZONE="us-west2-b" # use "us-west2-c" for oss-vdb and private-osv
+
+gcloud container clusters get-credentials workers \
+  --zone="$CLUSTER_ZONE" \
+  --project="$PROJECT_ID"
+
+kubectl create secret generic osv-db-worker-password \
+  --from-literal="password=$(gcloud secrets versions access latest --secret=osv-db-worker-password --project="$PROJECT_ID")" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# When rotating the password, restart the long-running worker Deployments so pods pick up
+# the updated POSTGRES_PASSWORD env var (CronJobs pick it up automatically on their next run):
+kubectl rollout restart deployment workers workers-cves workers-reimport # (or just `workers` in private-osv)
+```
+
 ## Deletion
 To delete the pipeline:
 ```

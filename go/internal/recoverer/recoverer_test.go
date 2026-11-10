@@ -32,11 +32,37 @@ import (
 	"github.com/google/osv.dev/go/internal/recoverer"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/testutils"
+	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func decodePublishedVuln(t *testing.T, msg *pubsub.Message) *osvschema.Vulnerability {
+	t.Helper()
+	if msg.Attributes["format"] != "json" {
+		t.Errorf("Expected format=json, got %s", msg.Attributes["format"])
+	}
+	if msg.Attributes["content_encoding"] != "zstd" {
+		t.Errorf("Expected content_encoding=zstd, got %s", msg.Attributes["content_encoding"])
+	}
+	if msg.Attributes["original_sha256"] == "" {
+		t.Errorf("Expected non-empty original_sha256")
+	}
+	var rawJSON []byte
+	rawJSON, err := zstd.DecodeTo(rawJSON, msg.Data)
+	if err != nil {
+		t.Fatalf("Failed to decode zstd payload: %v", err)
+	}
+	var vuln osvschema.Vulnerability
+	if err := protojson.Unmarshal(rawJSON, &vuln); err != nil {
+		t.Fatalf("Failed to unmarshal published JSON: %v", err)
+	}
+
+	return &vuln
+}
 
 func TestMain(m *testing.M) {
 	testutils.RunWithDatastoreEmulator(m)
@@ -278,14 +304,11 @@ summary: "Git test summary"
 	if pubMsg.Attributes["path"] != "vulns/TEST-GIT-1.yaml" {
 		t.Errorf("Expected path vulns/TEST-GIT-1.yaml, got %s", pubMsg.Attributes["path"])
 	}
-	if pubMsg.Attributes["skip_hash_check"] != "true" {
-		t.Errorf("Expected skip_hash_check true, got %s", pubMsg.Attributes["skip_hash_check"])
+	if pubMsg.Attributes["git_commit"] != "abcdef123456" {
+		t.Errorf("Expected git_commit abcdef123456, got %s", pubMsg.Attributes["git_commit"])
 	}
 
-	var pubVuln osvschema.Vulnerability
-	if err := proto.Unmarshal(pubMsg.Data, &pubVuln); err != nil {
-		t.Fatalf("Failed to unmarshal published proto: %v", err)
-	}
+	pubVuln := decodePublishedVuln(t, pubMsg)
 	if pubVuln.GetId() != "TEST-GIT-1" {
 		t.Errorf("Expected vuln ID TEST-GIT-1, got %s", pubVuln.GetId())
 	}
@@ -353,10 +376,10 @@ func TestHandleGCSMissing_Bucket(t *testing.T) {
 		t.Fatalf("Expected 1 published message, got %d", len(publisherMock.Messages))
 	}
 	pubMsg := publisherMock.Messages[0]
-	var pubVuln osvschema.Vulnerability
-	if err := proto.Unmarshal(pubMsg.Data, &pubVuln); err != nil {
-		t.Fatalf("Failed to unmarshal published proto: %v", err)
+	if pubMsg.Attributes["gcs_generation"] != "1" {
+		t.Errorf("Expected gcs_generation=1, got %s", pubMsg.Attributes["gcs_generation"])
 	}
+	pubVuln := decodePublishedVuln(t, pubMsg)
 	if pubVuln.GetId() != "TEST-BUCKET-1" {
 		t.Errorf("Expected vuln ID TEST-BUCKET-1, got %s", pubVuln.GetId())
 	}
@@ -422,10 +445,7 @@ func TestHandleGCSMissing_REST(t *testing.T) {
 		t.Fatalf("Expected 1 published message, got %d", len(publisherMock.Messages))
 	}
 	pubMsg := publisherMock.Messages[0]
-	var pubVuln osvschema.Vulnerability
-	if err := proto.Unmarshal(pubMsg.Data, &pubVuln); err != nil {
-		t.Fatalf("Failed to unmarshal published proto: %v", err)
-	}
+	pubVuln := decodePublishedVuln(t, pubMsg)
 	if pubVuln.GetId() != "TEST-REST-1" {
 		t.Errorf("Expected vuln ID TEST-REST-1, got %s", pubVuln.GetId())
 	}

@@ -90,7 +90,7 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   make build-protos
   ```
 - **PostgreSQL Codegen (`sqlc`)**:
-  If you modify [`go/internal/database/postgres/queries.sql`](go/internal/database/postgres/queries.sql) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
+  If you modify [`go/internal/database/postgres/queries/`](go/internal/database/postgres/queries/) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
   ```bash
   cd go/internal/database/postgres && sqlc generate
   ```
@@ -301,13 +301,14 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
 - **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`, `custommetrics`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
-- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `jsonstore/`).
+- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `dualwrite/`, `jsonstore/`).
   - **`datastore/`**: Cloud Datastore + GCS implementation of the domain interfaces ([`go/internal/database/datastore/`](go/internal/database/datastore/)).
     - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
     - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
     - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
   - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via `gcr.io/oss-vdb/goose` ([`docker/goose/`](docker/goose/)).
   - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background for latency comparison.
+  - **`dualwrite/`**: Dual-writer wrapper ([`go/internal/database/dualwrite/`](go/internal/database/dualwrite/)) that serves reads and primary writes via Datastore/GCS while synchronously mirroring writes and mutations (`Write`, `Mutate`) to PostgreSQL (propagating secondary errors, except `models.ErrNotFound` on `Mutate` prior to backfill completion).
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
 
 ---

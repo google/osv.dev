@@ -16,6 +16,85 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const insertAffectedVersions = `-- name: InsertAffectedVersions :batchexec
+INSERT INTO affected_versions (
+    vuln_id,
+    name,
+    base_ecosystem,
+    ecosystems,
+    coarse_min,
+    coarse_max,
+    versions,
+    events
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`
+
+type InsertAffectedVersionsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertAffectedVersionsParams struct {
+	VulnID        string
+	Name          string
+	BaseEcosystem string
+	Ecosystems    []string
+	CoarseMin     string
+	CoarseMax     string
+	Versions      []string
+	Events        []byte
+}
+
+func (q *Queries) InsertAffectedVersions(ctx context.Context, arg []InsertAffectedVersionsParams) *InsertAffectedVersionsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.VulnID,
+			a.Name,
+			a.BaseEcosystem,
+			a.Ecosystems,
+			a.CoarseMin,
+			a.CoarseMax,
+			a.Versions,
+			a.Events,
+		}
+		batch.Queue(insertAffectedVersions, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertAffectedVersionsBatchResults{br, len(arg), false}
+}
+
+func (b *InsertAffectedVersionsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertAffectedVersionsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const matchCommits = `-- name: MatchCommits :batchmany
 SELECT vuln_id
 FROM affected_commits

@@ -16,5 +16,7 @@ spec:
               value: osv-test-vulnerabilities
             - name: OSV_FAILED_TASKS_TOPIC
               value: failed-tasks
+            - name: POSTGRES_HOST
+              value: "172.24.1.3"
             args:
             - --breakdown-prefixes=ALSA-,BIT-,CGA-{{0..9},{a..z}},CVE-,DLA-,DSA-,GHSA-,GO-,MAL-,MGASA-,OSV-,PYSEC-,RLSA-,RUSTSEC-,SUSE-,UBUNTU-

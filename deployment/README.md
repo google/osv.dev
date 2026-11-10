@@ -61,6 +61,7 @@ Because database user passwords are kept out of Terraform state (`ignore_changes
 
 ```bash
 PROJECT_ID="oss-vdb-test" # or "oss-vdb" / "private-osv"
+CLUSTER_ZONE="us-west2-b" # use "us-west2-c" for oss-vdb and private-osv
 
 # Set worker password (all environments: oss-vdb, oss-vdb-test, private-osv)
 PG_WORKER_PASS=$(openssl rand -hex 24)
@@ -71,6 +72,17 @@ gcloud sql users set-password osv-worker \
 printf "%s" "$PG_WORKER_PASS" | gcloud secrets versions add osv-db-worker-password \
   --project="$PROJECT_ID" \
   --data-file=-
+
+# Sync the worker password into the GKE workers cluster as a Kubernetes Secret
+gcloud container clusters get-credentials workers \
+  --zone="$CLUSTER_ZONE" \
+  --project="$PROJECT_ID"
+kubectl create secret generic osv-db-worker-password \
+  --from-literal="password=$PG_WORKER_PASS" \
+  --dry-run=client -o yaml | kubectl apply -f -
+# If rotating the password on an already-running cluster, restart the worker Deployments
+# so pods pick up the new POSTGRES_PASSWORD environment variable (CronJobs pick it up on next run):
+kubectl rollout restart deployment workers workers-cves workers-reimport # (or just `workers` in private-osv)
 unset PG_WORKER_PASS
 
 # Set read-only API password (public environments with osv_api: oss-vdb, oss-vdb-test)

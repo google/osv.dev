@@ -23,6 +23,20 @@ spec:
               limits:
                 cpu: "28"
                 memory: "220Gi"
+            env:
+              - name: POSTGRES_PORT
+                value: "6432"
+              - name: POSTGRES_USER
+                value: "osv-worker"
+              - name: POSTGRES_DB
+                value: "osv"
+              - name: POSTGRES_SSLMODE
+                value: "require"
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: osv-db-worker-password
+                    key: password
           nodeSelector:
             cloud.google.com/gke-nodepool: highend
           tolerations:

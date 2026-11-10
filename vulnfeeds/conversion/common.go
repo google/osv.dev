@@ -893,15 +893,9 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 	if len(unresolvedRanges) > 0 {
 		metrics.UnresolvedRangesCount += len(unresolvedRanges)
 		if len(resolvedRanges) == 0 {
-			hasRepo := len(repos) > 0
-			if !hasRepo {
-				for _, ra := range ranges {
-					if ra.Range.GetRepo() != "" {
-						hasRepo = true
-						break
-					}
-				}
-			}
+			hasRepo := len(repos) > 0 || slices.ContainsFunc(ranges, func(ra models.RangeWithMetadata) bool {
+				return ra.Range.GetRepo() != ""
+			})
 			if !hasRepo {
 				metrics.SetOutcome(models.NoRepos)
 			} else {

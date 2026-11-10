@@ -55,7 +55,7 @@ func Wordfence() []VersionStrategy {
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
-		&ZeroIntroducedSingleVersionStrategy{},
+		&StandaloneSingleVersionStrategy{},
 	}
 }
 
@@ -68,7 +68,7 @@ func Patchstack() []VersionStrategy {
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
-		&ZeroIntroducedSingleVersionStrategy{},
+		&StandaloneSingleVersionStrategy{},
 	}
 }
 

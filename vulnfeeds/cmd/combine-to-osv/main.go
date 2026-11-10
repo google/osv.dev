@@ -427,13 +427,9 @@ func combineTwoOSVRecords(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerab
 }
 
 func hasRepoRange(aff *osvschema.Affected) bool {
-	for _, r := range aff.GetRanges() {
-		if r.GetRepo() != "" {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(aff.GetRanges(), func(r *osvschema.Range) bool {
+		return r.GetRepo() != ""
+	})
 }
 
 func cloneAndCleanAffectedSlice(affected []*osvschema.Affected) []*osvschema.Affected {
@@ -447,6 +443,29 @@ func cloneAndCleanAffectedSlice(affected []*osvschema.Affected) []*osvschema.Aff
 	}
 
 	return out
+}
+
+func collectRepoRanges(affected []*osvschema.Affected, source string) map[string]*osvschema.Range {
+	rangesByRepo := make(map[string]*osvschema.Range)
+	for _, aff := range affected {
+		for _, r := range aff.GetRanges() {
+			if r.GetRepo() == "" {
+				continue
+			}
+			repo := strings.ToLower(r.GetRepo())
+			if _, exists := rangesByRepo[repo]; exists {
+				logger.Error("Duplicate range found for repository in affected ranges", slog.String("source", source), slog.String("repo", repo))
+			}
+			rangesByRepo[repo] = r
+		}
+	}
+
+	return rangesByRepo
+}
+
+type packageKey struct {
+	ecosystem string
+	name      string
 }
 
 // pickAffectedInformation merges information from nvdAffected into cve5Affected.
@@ -465,34 +484,11 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	}
 
 	// Group all repo-based ranges by repository URL
-	cve5Ranges := make(map[string]*osvschema.Range)
-	for _, aff := range cve5Affected {
-		for _, r := range aff.GetRanges() {
-			if r.GetRepo() != "" {
-				repo := strings.ToLower(r.GetRepo())
-				if _, exists := cve5Ranges[repo]; exists {
-					logger.Error("Duplicate range found for repository in CVE5 affected ranges", slog.String("repo", repo))
-				}
-				cve5Ranges[repo] = r
-			}
-		}
-	}
-
-	nvdRanges := make(map[string]*osvschema.Range)
-	for _, aff := range nvdAffected {
-		for _, r := range aff.GetRanges() {
-			if r.GetRepo() != "" {
-				repo := strings.ToLower(r.GetRepo())
-				if _, exists := nvdRanges[repo]; exists {
-					logger.Error("Duplicate range found for repository in NVD affected ranges", slog.String("repo", repo))
-				}
-				nvdRanges[repo] = r
-			}
-		}
-	}
+	cve5Ranges := collectRepoRanges(cve5Affected, "CVE5")
+	nvdRanges := collectRepoRanges(nvdAffected, "NVD")
 
 	// Collect all unique repo URLs
-	reposMap := make(map[string]bool)
+	reposMap := make(map[string]bool, len(cve5Ranges)+len(nvdRanges))
 	for repo := range cve5Ranges {
 		reposMap[repo] = true
 	}
@@ -502,8 +498,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 
 	var finalRanges []*osvschema.Range
 	for repo := range reposMap {
-		bestRange := pickBestRange(cve5Ranges[repo], nvdRanges[repo])
-		if bestRange != nil {
+		if bestRange := pickBestRange(cve5Ranges[repo], nvdRanges[repo]); bestRange != nil {
 			finalRanges = append(finalRanges, bestRange)
 		}
 	}
@@ -515,37 +510,30 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	var combinedAffected []*osvschema.Affected
 
 	if len(finalRanges) > 0 {
-		// Sort final ranges by repo for stability
 		slices.SortFunc(finalRanges, func(a, b *osvschema.Range) int {
 			return cmp.Compare(strings.ToLower(a.GetRepo()), strings.ToLower(b.GetRepo()))
 		})
 
-		// Find Package and EcosystemSpecific only from repo-ranged entries, and collect their versions.
+		// Collect Package, EcosystemSpecific, and Versions only from repo-ranged entries (preferring CVE5).
 		var pkg *osvschema.Package
 		var ecosystemSpecific *structpb.Struct
 		var versions []string
-		for _, aff := range cve5Affected {
-			if hasRepoRange(aff) {
+		collectRepoMeta := func(affectedList []*osvschema.Affected, overwrite bool) {
+			for _, aff := range affectedList {
+				if !hasRepoRange(aff) {
+					continue
+				}
 				versions = append(versions, aff.GetVersions()...)
-				if aff.GetPackage() != nil {
+				if aff.GetPackage() != nil && (overwrite || pkg == nil) {
 					pkg = aff.GetPackage()
 				}
-				if aff.GetEcosystemSpecific() != nil {
+				if aff.GetEcosystemSpecific() != nil && (overwrite || ecosystemSpecific == nil) {
 					ecosystemSpecific = aff.GetEcosystemSpecific()
 				}
 			}
 		}
-		for _, aff := range nvdAffected {
-			if hasRepoRange(aff) {
-				versions = append(versions, aff.GetVersions()...)
-				if pkg == nil && aff.GetPackage() != nil {
-					pkg = aff.GetPackage()
-				}
-				if ecosystemSpecific == nil && aff.GetEcosystemSpecific() != nil {
-					ecosystemSpecific = aff.GetEcosystemSpecific()
-				}
-			}
-		}
+		collectRepoMeta(cve5Affected, true)
+		collectRepoMeta(nvdAffected, false)
 
 		if len(versions) > 0 {
 			slices.Sort(versions)
@@ -563,7 +551,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	}
 
 	seenPackageNames := make(map[string]bool)
-	seenEcosystemPackages := make(map[string]bool)
+	seenEcosystemPackages := make(map[packageKey]bool)
 
 	addNonRepoRanged := func(affectedList []*osvschema.Affected) {
 		for _, aff := range affectedList {
@@ -582,14 +570,16 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				continue
 			}
 
-			pkgName := strings.ToLower(aff.GetPackage().GetName())
-			ecoKey := strings.ToLower(aff.GetPackage().GetEcosystem()) + "\x00" + pkgName
-			if seenEcosystemPackages[ecoKey] {
+			key := packageKey{
+				ecosystem: strings.ToLower(aff.GetPackage().GetEcosystem()),
+				name:      strings.ToLower(aff.GetPackage().GetName()),
+			}
+			if seenEcosystemPackages[key] {
 				continue
 			}
-			seenEcosystemPackages[ecoKey] = true
-			if pkgName != "" {
-				seenPackageNames[pkgName] = true
+			seenEcosystemPackages[key] = true
+			if key.name != "" {
+				seenPackageNames[key.name] = true
 			}
 
 			combinedAffected = append(combinedAffected, &osvschema.Affected{
@@ -612,21 +602,22 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			if len(aff.GetRanges()) != 0 || aff.GetPackage() == nil {
 				continue
 			}
-			eco := strings.ToLower(aff.GetPackage().GetEcosystem())
-			pkgName := strings.ToLower(aff.GetPackage().GetName())
-			ecoKey := eco + "\x00" + pkgName
+			key := packageKey{
+				ecosystem: strings.ToLower(aff.GetPackage().GetEcosystem()),
+				name:      strings.ToLower(aff.GetPackage().GetName()),
+			}
 
-			if eco == "" {
-				if seenPackageNames[pkgName] {
+			if key.ecosystem == "" {
+				if seenPackageNames[key.name] {
 					continue
 				}
-			} else if seenEcosystemPackages[ecoKey] {
+			} else if seenEcosystemPackages[key] {
 				continue
 			}
 
-			seenEcosystemPackages[ecoKey] = true
-			if pkgName != "" {
-				seenPackageNames[pkgName] = true
+			seenEcosystemPackages[key] = true
+			if key.name != "" {
+				seenPackageNames[key.name] = true
 			}
 			combinedAffected = append(combinedAffected, proto.Clone(aff).(*osvschema.Affected))
 		}

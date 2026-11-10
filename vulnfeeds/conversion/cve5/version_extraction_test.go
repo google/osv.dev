@@ -2,6 +2,7 @@ package cve5
 
 import (
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -463,7 +464,7 @@ func TestGetVersionExtractor(t *testing.T) {
 					AssignerShortName: "Wordfence",
 				},
 			},
-			expectedType: reflect.TypeFor[*WordpressExtractor](),
+			expectedType: reflect.TypeFor[*WordPressExtractor](),
 		},
 		{
 			name: "Default CVE",
@@ -1019,8 +1020,57 @@ func TestExtractVersions_Curl_WithoutGitRanges(t *testing.T) {
 	}
 }
 
-func TestWordpressExtractor(t *testing.T) {
+func TestWordPressExtractor(t *testing.T) {
 	t.Parallel()
+
+	t.Run("Single-version preset difference: WPScan uses 0..X while Wordfence and Patchstack use X..X", func(t *testing.T) {
+		t.Parallel()
+		makeSingleVersCVE := func(cna string) models.CVE5 {
+			cve := models.CVE5{
+				Metadata: models.CVE5Metadata{CVEID: "CVE-2025-7504", AssignerShortName: cna},
+			}
+			cve.Containers.CNA.Affected = []models.Affected{{
+				Product: "Friends",
+				Versions: []models.Versions{{
+					Status:  "affected",
+					Version: "3.5.1",
+				}},
+			}}
+
+			return cve
+		}
+		refs := vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/friends/"}})
+
+		// WPScan treats a single version as 0 up to X.
+		vWPScan := vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{Id: "CVE-2025-7504", References: slices.Clone(refs)}}
+		GetVersionExtractor("WPScan").ExtractVersions(makeSingleVersCVE("WPScan"), &vWPScan, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+		wantWPScan := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "friends"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "3.5.1"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantWPScan, vWPScan.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("WPScan single-version mismatch (-want +got):\n%s", diff)
+		}
+
+		// Wordfence and Patchstack treat a single version as X only.
+		for _, cna := range []string{"Wordfence", "Patchstack"} {
+			vCNA := vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{Id: "CVE-2025-7504", References: slices.Clone(refs)}}
+			GetVersionExtractor(cna).ExtractVersions(makeSingleVersCVE(cna), &vCNA, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+			wantExact := []*osvschema.Affected{{
+				Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "friends"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "3.5.1"}, {LastAffected: "3.5.1"}},
+				}},
+			}}
+			if diff := cmp.Diff(wantExact, vCNA.Affected, protocmp.Transform()); diff != "" {
+				t.Errorf("%s single-version mismatch (-want +got):\n%s", cna, diff)
+			}
+		}
+	})
 
 	t.Run("emits separate GIT and WordPress ECOSYSTEM affected blocks without unresolved_ranges", func(t *testing.T) {
 		t.Parallel()

@@ -1179,16 +1179,22 @@ func TestPickAffectedInformation(t *testing.T) {
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.
-	affectedSortKey := func(a *osvschema.Affected) string {
-		repo := ""
+	sorter := cmpopts.SortSlices(func(a, b *osvschema.Affected) bool {
+		var repoA, repoB string
 		if len(a.GetRanges()) > 0 {
-			repo = a.GetRanges()[0].GetRepo()
+			repoA = a.GetRanges()[0].GetRepo()
+		}
+		if len(b.GetRanges()) > 0 {
+			repoB = b.GetRanges()[0].GetRepo()
+		}
+		if repoA != repoB {
+			return repoA < repoB
+		}
+		if a.GetPackage().GetEcosystem() != b.GetPackage().GetEcosystem() {
+			return a.GetPackage().GetEcosystem() < b.GetPackage().GetEcosystem()
 		}
 
-		return repo + "\x00" + a.GetPackage().GetEcosystem() + "\x00" + a.GetPackage().GetName()
-	}
-	sorter := cmpopts.SortSlices(func(a, b *osvschema.Affected) bool {
-		return affectedSortKey(a) < affectedSortKey(b)
+		return a.GetPackage().GetName() < b.GetPackage().GetName()
 	})
 
 	for _, tc := range testCases {

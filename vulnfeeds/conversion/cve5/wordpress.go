@@ -1,12 +1,11 @@
 package cve5
 
 import (
-	"encoding/json"
+	"cmp"
 	"maps"
 	"net/http"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
@@ -35,31 +34,36 @@ const (
 	tierPatchstackVuln
 )
 
-var (
-	wpPluginTracRegexes = []*regexp.Regexp{
-		regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/?#]+)`),
-		regexp.MustCompile(`plugins\.trac\.wordpress\.org/log/([^/?#]+)`),
-		regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`),
-		regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`),
-	}
-	wpThemeTracRegexes = []*regexp.Regexp{
-		regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/?#]+)`),
-		regexp.MustCompile(`themes\.trac\.wordpress\.org/log/([^/?#]+)`),
-		regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`),
-		regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`),
-	}
+type wpURLMatcher struct {
+	regex     *regexp.Regexp
+	ecosystem string
+	tier      int
+}
 
-	wpPluginSvnRegex = regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/?#]+)`)
-	wpThemeSvnRegex  = regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/?#]+)`)
+var (
 	wpPluginOrgRegex = regexp.MustCompile(`wordpress\.org/plugins/([^/?#]+)`)
 	wpThemeOrgRegex  = regexp.MustCompile(`wordpress\.org/themes/([^/?#]+)`)
 
-	wordfencePluginRegex = regexp.MustCompile(`(?i)wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/?#]+)`)
-	wordfenceThemeRegex  = regexp.MustCompile(`(?i)wordfence\.com/threat-intel/vulnerabilities/wordpress-themes/([^/?#]+)`)
-
-	patchstackVulnRegex   = regexp.MustCompile(`(?i)patchstack\.com/database/vulnerability/([^/?#]+)`)
-	patchstackPluginRegex = regexp.MustCompile(`(?i)patchstack\.com/database/wordpress/plugin/([^/?#]+)`)
-	patchstackThemeRegex  = regexp.MustCompile(`(?i)patchstack\.com/database/wordpress/theme/([^/?#]+)`)
+	// wpURLMatchers defines the ordered priority table for extracting WordPress slugs from reference URLs.
+	wpURLMatchers = []wpURLMatcher{
+		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
+		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/log/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
+		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
+		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`), wpEcosystemPlugin, tierTrac},
+		{regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/?#]+)`), wpEcosystemTheme, tierTrac},
+		{regexp.MustCompile(`themes\.trac\.wordpress\.org/log/([^/?#]+)`), wpEcosystemTheme, tierTrac},
+		{regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`), wpEcosystemTheme, tierTrac},
+		{regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`), wpEcosystemTheme, tierTrac},
+		{regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/?#]+)`), wpEcosystemPlugin, tierSVN},
+		{regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/?#]+)`), wpEcosystemTheme, tierSVN},
+		{regexp.MustCompile(`(?i)wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/?#]+)`), wpEcosystemPlugin, tierWordfence},
+		{regexp.MustCompile(`(?i)wordfence\.com/threat-intel/vulnerabilities/wordpress-themes/([^/?#]+)`), wpEcosystemTheme, tierWordfence},
+		{wpPluginOrgRegex, wpEcosystemPlugin, tierWPOrg},
+		{wpThemeOrgRegex, wpEcosystemTheme, tierWPOrg},
+		{regexp.MustCompile(`(?i)patchstack\.com/database/wordpress/plugin/([^/?#]+)`), wpEcosystemPlugin, tierPatchstackTyped},
+		{regexp.MustCompile(`(?i)patchstack\.com/database/wordpress/theme/([^/?#]+)`), wpEcosystemTheme, tierPatchstackTyped},
+		{regexp.MustCompile(`(?i)patchstack\.com/database/vulnerability/([^/?#]+)`), "", tierPatchstackVuln},
+	}
 
 	nonSlugCharsRegex = regexp.MustCompile(`[^a-z0-9]+`)
 
@@ -97,17 +101,7 @@ func isValidWordPressSlug(s string) bool {
 	return true
 }
 
-func matchFirstRegex(url string, regexes []*regexp.Regexp) string {
-	for _, rx := range regexes {
-		if match := rx.FindStringSubmatch(url); match != nil && isValidWordPressSlug(match[1]) {
-			return match[1]
-		}
-	}
-
-	return ""
-}
-
-func matchSingleRegex(url string, rx *regexp.Regexp) string {
+func matchSlug(url string, rx *regexp.Regexp) string {
 	if match := rx.FindStringSubmatch(url); match != nil && isValidWordPressSlug(match[1]) {
 		return match[1]
 	}
@@ -174,29 +168,11 @@ func extractWordPressPackages(cve models.CVE5, v *vulns.Vulnerability) []wpPacka
 
 	for idx, ref := range v.References {
 		url := ref.GetUrl()
-
-		if s := matchFirstRegex(url, wpPluginTracRegexes); s != "" {
-			recordMatch(s, wpEcosystemPlugin, tierTrac, idx, url)
-		} else if s := matchFirstRegex(url, wpThemeTracRegexes); s != "" {
-			recordMatch(s, wpEcosystemTheme, tierTrac, idx, url)
-		} else if s := matchSingleRegex(url, wpPluginSvnRegex); s != "" {
-			recordMatch(s, wpEcosystemPlugin, tierSVN, idx, url)
-		} else if s := matchSingleRegex(url, wpThemeSvnRegex); s != "" {
-			recordMatch(s, wpEcosystemTheme, tierSVN, idx, url)
-		} else if s := matchSingleRegex(url, wordfencePluginRegex); s != "" {
-			recordMatch(s, wpEcosystemPlugin, tierWordfence, idx, url)
-		} else if s := matchSingleRegex(url, wordfenceThemeRegex); s != "" {
-			recordMatch(s, wpEcosystemTheme, tierWordfence, idx, url)
-		} else if s := matchSingleRegex(url, wpPluginOrgRegex); s != "" {
-			recordMatch(s, wpEcosystemPlugin, tierWPOrg, idx, url)
-		} else if s := matchSingleRegex(url, wpThemeOrgRegex); s != "" {
-			recordMatch(s, wpEcosystemTheme, tierWPOrg, idx, url)
-		} else if s := matchSingleRegex(url, patchstackPluginRegex); s != "" {
-			recordMatch(s, wpEcosystemPlugin, tierPatchstackTyped, idx, url)
-		} else if s := matchSingleRegex(url, patchstackThemeRegex); s != "" {
-			recordMatch(s, wpEcosystemTheme, tierPatchstackTyped, idx, url)
-		} else if s := matchSingleRegex(url, patchstackVulnRegex); s != "" {
-			recordMatch(s, "", tierPatchstackVuln, idx, url)
+		for _, m := range wpURLMatchers {
+			if s := matchSlug(url, m.regex); s != "" {
+				recordMatch(s, m.ecosystem, m.tier, idx, url)
+				break
+			}
 		}
 
 		if genericURLEco == "" {
@@ -214,10 +190,7 @@ func extractWordPressPackages(cve models.CVE5, v *vulns.Vulnerability) []wpPacka
 	}
 
 	// 4. Fallback ecosystem from collectionURL, generic URL keywords, or description/title.
-	fallbackEco := collectionEcosystem
-	if fallbackEco == "" {
-		fallbackEco = genericURLEco
-	}
+	fallbackEco := cmp.Or(collectionEcosystem, genericURLEco)
 	if fallbackEco == "" {
 		desc := strings.ToLower(models.EnglishDescription(cve.Containers.CNA.Descriptions))
 		title := strings.ToLower(cve.Containers.CNA.Title)
@@ -232,18 +205,15 @@ func extractWordPressPackages(cve models.CVE5, v *vulns.Vulnerability) []wpPacka
 
 	targets := make([]wpPackageTarget, 0, len(bySlug))
 	for _, t := range bySlug {
-		if t.ecosystem == "" {
-			t.ecosystem = fallbackEco
-		}
+		t.ecosystem = cmp.Or(t.ecosystem, fallbackEco)
 		targets = append(targets, *t)
 	}
 
 	slices.SortFunc(targets, func(a, b wpPackageTarget) int {
-		if a.bestTier != b.bestTier {
-			return a.bestTier - b.bestTier
-		}
-
-		return a.firstIdx - b.firstIdx
+		return cmp.Or(
+			cmp.Compare(a.bestTier, b.bestTier),
+			cmp.Compare(a.firstIdx, b.firstIdx),
+		)
 	})
 
 	return targets
@@ -288,11 +258,7 @@ func matchAffectedBlocksForTarget(affected []models.Affected, target wpPackageTa
 	var matched []models.Affected
 
 	for _, aff := range affected {
-		if strings.EqualFold(strings.TrimSpace(aff.PackageName), target.slug) {
-			matched = append(matched, aff)
-			continue
-		}
-		if slugifyWordPressProduct(aff.Product) == lowerSlug {
+		if strings.EqualFold(strings.TrimSpace(aff.PackageName), target.slug) || slugifyWordPressProduct(aff.Product) == lowerSlug {
 			matched = append(matched, aff)
 		}
 	}
@@ -304,19 +270,12 @@ func matchAffectedBlocksForTarget(affected []models.Affected, target wpPackageTa
 	var tagMatched []models.Affected
 	for _, aff := range affected {
 		tokens := affectedVersionTokens(aff)
-		matchedByTag := false
-		for _, u := range target.matchedURLs {
-			for _, tok := range tokens {
-				if strings.Contains(u, "/tags/"+tok+"/") || strings.Contains(u, "/tags/v"+tok+"/") {
-					matchedByTag = true
-					break
-				}
-			}
-			if matchedByTag {
-				break
-			}
-		}
-		if matchedByTag {
+		hasTag := slices.ContainsFunc(target.matchedURLs, func(u string) bool {
+			return slices.ContainsFunc(tokens, func(tok string) bool {
+				return strings.Contains(u, "/tags/"+tok+"/") || strings.Contains(u, "/tags/v"+tok+"/")
+			})
+		})
+		if hasTag {
 			tagMatched = append(tagMatched, aff)
 		}
 	}
@@ -335,15 +294,16 @@ func cloneCVEAffected(cve *models.CVE5) {
 	}
 	clonedAff := slices.Clone(cve.Containers.CNA.Affected)
 	for i := range clonedAff {
-		if len(clonedAff[i].Versions) > 0 {
-			clonedVers := slices.Clone(clonedAff[i].Versions)
-			for j := range clonedVers {
-				if len(clonedVers[j].Changes) > 0 {
-					clonedVers[j].Changes = slices.Clone(clonedVers[j].Changes)
-				}
-			}
-			clonedAff[i].Versions = clonedVers
+		if len(clonedAff[i].Versions) == 0 {
+			continue
 		}
+		clonedVers := slices.Clone(clonedAff[i].Versions)
+		for j := range clonedVers {
+			if len(clonedVers[j].Changes) > 0 {
+				clonedVers[j].Changes = slices.Clone(clonedVers[j].Changes)
+			}
+		}
+		clonedAff[i].Versions = clonedVers
 	}
 	cve.Containers.CNA.Affected = clonedAff
 }
@@ -381,80 +341,79 @@ func isLikelyVersionOrExpr(s string) bool {
 	return c.IsGitCommitSHA(s)
 }
 
+func sanitizeWordPressVersion(vers *models.Versions) {
+	vers.Version = strings.TrimSpace(vers.Version)
+	vers.LessThan = strings.TrimSpace(vers.LessThan)
+	vers.LessThanOrEqual = strings.TrimSpace(vers.LessThanOrEqual)
+
+	// Strip operator prefixes accidentally placed inside lessThanOrEqual / lessThan.
+	if after, ok := strings.CutPrefix(vers.LessThanOrEqual, "<="); ok {
+		vers.LessThanOrEqual = strings.TrimSpace(after)
+	} else if after, ok := strings.CutPrefix(vers.LessThanOrEqual, "<"); ok {
+		vers.LessThan = cmp.Or(vers.LessThan, strings.TrimSpace(after))
+		vers.LessThanOrEqual = ""
+	}
+
+	if after, ok := strings.CutPrefix(vers.LessThan, "<="); ok {
+		vers.LessThanOrEqual = cmp.Or(vers.LessThanOrEqual, strings.TrimSpace(after))
+		vers.LessThan = ""
+	} else if after, ok := strings.CutPrefix(vers.LessThan, "<"); ok {
+		vers.LessThan = strings.TrimSpace(after)
+	}
+
+	// Handle single-bound "<= X" or "< X" placed inside version.
+	if !strings.Contains(vers.Version, ",") {
+		if after, ok := strings.CutPrefix(vers.Version, "<="); ok {
+			if vers.LessThanOrEqual == "" && vers.LessThan == "" {
+				vers.LessThanOrEqual = strings.TrimSpace(after)
+			}
+			vers.Version = "0"
+		} else if after, ok := strings.CutPrefix(vers.Version, "<"); ok {
+			if vers.LessThan == "" && vers.LessThanOrEqual == "" {
+				vers.LessThan = strings.TrimSpace(after)
+			}
+			vers.Version = "0"
+		}
+	}
+
+	// Strip leading 'v'/'V' before digits across fields.
+	vers.Version = normalizeVersion(vers.Version)
+	vers.LessThan = normalizeVersion(vers.LessThan)
+	vers.LessThanOrEqual = normalizeVersion(vers.LessThanOrEqual)
+	for k := range vers.Changes {
+		vers.Changes[k].At = normalizeVersion(vers.Changes[k].At)
+	}
+
+	// Drop non-version filler text (e.g. "revision", "beta") in upper bounds, preserving "*".
+	if vers.LessThan != "" && vers.LessThan != "*" && !containsDigit(vers.LessThan) {
+		vers.LessThan = ""
+	}
+	if vers.LessThanOrEqual != "" && vers.LessThanOrEqual != "*" && !containsDigit(vers.LessThanOrEqual) {
+		vers.LessThanOrEqual = ""
+	}
+
+	hasFiniteUpperBound := (vers.LessThan != "" && vers.LessThan != "*") ||
+		(vers.LessThanOrEqual != "" && vers.LessThanOrEqual != "*") ||
+		len(vers.Changes) > 0
+
+	if hasFiniteUpperBound {
+		if vers.Version == "*" || (vers.Version != "" && vers.Version != "0" && !isLikelyVersionOrExpr(vers.Version)) {
+			vers.Version = "0"
+		}
+	}
+}
+
 func sanitizeWordPressCVE(cve *models.CVE5) {
 	for i := range cve.Containers.CNA.Affected {
 		for j := range cve.Containers.CNA.Affected[i].Versions {
-			vers := &cve.Containers.CNA.Affected[i].Versions[j]
-			vers.Version = strings.TrimSpace(vers.Version)
-			vers.LessThan = strings.TrimSpace(vers.LessThan)
-			vers.LessThanOrEqual = strings.TrimSpace(vers.LessThanOrEqual)
-
-			// Strip operator prefixes accidentally placed inside lessThanOrEqual / lessThan.
-			if after, ok := strings.CutPrefix(vers.LessThanOrEqual, "<="); ok {
-				vers.LessThanOrEqual = strings.TrimSpace(after)
-			} else if after, ok := strings.CutPrefix(vers.LessThanOrEqual, "<"); ok {
-				if vers.LessThan == "" {
-					vers.LessThan = strings.TrimSpace(after)
-				}
-				vers.LessThanOrEqual = ""
-			}
-
-			if after, ok := strings.CutPrefix(vers.LessThan, "<="); ok {
-				if vers.LessThanOrEqual == "" {
-					vers.LessThanOrEqual = strings.TrimSpace(after)
-				}
-				vers.LessThan = ""
-			} else if after, ok := strings.CutPrefix(vers.LessThan, "<"); ok {
-				vers.LessThan = strings.TrimSpace(after)
-			}
-
-			// Handle single-bound "<= X" or "< X" placed inside version.
-			if !strings.Contains(vers.Version, ",") {
-				if after, ok := strings.CutPrefix(vers.Version, "<="); ok {
-					if vers.LessThanOrEqual == "" && vers.LessThan == "" {
-						vers.LessThanOrEqual = strings.TrimSpace(after)
-					}
-					vers.Version = "0"
-				} else if after, ok := strings.CutPrefix(vers.Version, "<"); ok {
-					if vers.LessThan == "" && vers.LessThanOrEqual == "" {
-						vers.LessThan = strings.TrimSpace(after)
-					}
-					vers.Version = "0"
-				}
-			}
-
-			// Strip leading 'v'/'V' before digits across fields.
-			vers.Version = normalizeVersion(vers.Version)
-			vers.LessThan = normalizeVersion(vers.LessThan)
-			vers.LessThanOrEqual = normalizeVersion(vers.LessThanOrEqual)
-			for k := range vers.Changes {
-				vers.Changes[k].At = normalizeVersion(vers.Changes[k].At)
-			}
-
-			// Drop non-version filler text (e.g. "revision", "beta") in upper bounds, preserving "*".
-			if vers.LessThan != "" && vers.LessThan != "*" && !containsDigit(vers.LessThan) {
-				vers.LessThan = ""
-			}
-			if vers.LessThanOrEqual != "" && vers.LessThanOrEqual != "*" && !containsDigit(vers.LessThanOrEqual) {
-				vers.LessThanOrEqual = ""
-			}
-
-			hasFiniteUpperBound := (vers.LessThan != "" && vers.LessThan != "*") ||
-				(vers.LessThanOrEqual != "" && vers.LessThanOrEqual != "*") ||
-				len(vers.Changes) > 0
-
-			if hasFiniteUpperBound {
-				if vers.Version == "*" || (vers.Version != "" && vers.Version != "0" && !isLikelyVersionOrExpr(vers.Version)) {
-					vers.Version = "0"
-				}
-			}
+			sanitizeWordPressVersion(&cve.Containers.CNA.Affected[i].Versions[j])
 		}
 	}
 }
 
 // extractWPBlockRanges extracts ranges from a single models.Affected block, handling
 // open-ended wildcard ("*") entries before running the configured strategy pipeline.
-func (w *WordpressExtractor) extractWPBlockRanges(cveAff models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+func (w *WordPressExtractor) extractWPBlockRanges(cveAff models.Affected, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	var openEndedRanges []models.RangeWithMetadata
 	remainingVersions := make([]models.Versions, 0, len(cveAff.Versions))
 
@@ -481,8 +440,7 @@ func (w *WordpressExtractor) extractWPBlockRanges(cveAff models.Affected, metric
 		remainingVersions = append(remainingVersions, vers)
 	}
 
-	var extracted []models.RangeWithMetadata
-	extracted = append(extracted, openEndedRanges...)
+	extracted := openEndedRanges
 	if len(remainingVersions) > 0 {
 		filteredAff := cveAff
 		filteredAff.Versions = remainingVersions
@@ -493,6 +451,22 @@ func (w *WordpressExtractor) extractWPBlockRanges(cveAff models.Affected, metric
 	}
 
 	return extracted
+}
+
+func inspectRangeEvents(r *osvschema.Range) (intro string, hasFixed bool, hasLastAffected bool) {
+	for _, e := range r.GetEvents() {
+		if e.GetIntroduced() != "" {
+			intro = e.GetIntroduced()
+		}
+		if e.GetFixed() != "" {
+			hasFixed = true
+		}
+		if e.GetLastAffected() != "" {
+			hasLastAffected = true
+		}
+	}
+
+	return intro, hasFixed, hasLastAffected
 }
 
 // sanitizeEcosystemRanges converts non-Git ranges into Range_ECOSYSTEM ranges and ensures
@@ -511,17 +485,7 @@ func sanitizeEcosystemRanges(rawRanges []models.RangeWithMetadata, metrics *mode
 		ecoRange.Repo = ""
 		candidates = append(candidates, ecoRange)
 
-		var intro string
-		hasFixed := false
-		for _, e := range ecoRange.GetEvents() {
-			if e.GetIntroduced() != "" {
-				intro = e.GetIntroduced()
-			}
-			if e.GetFixed() != "" {
-				hasFixed = true
-			}
-		}
-		if hasFixed {
+		if intro, hasFixed, _ := inspectRangeEvents(ecoRange); hasFixed {
 			hasFixedByIntro[intro] = true
 		}
 
@@ -532,31 +496,14 @@ func sanitizeEcosystemRanges(rawRanges []models.RangeWithMetadata, metrics *mode
 
 	out := make([]*osvschema.Range, 0, len(candidates))
 	for _, r := range candidates {
-		var intro string
-		hasFixed := false
-		hasLastAffected := false
-		for _, e := range r.GetEvents() {
-			if e.GetIntroduced() != "" {
-				intro = e.GetIntroduced()
-			}
-			if e.GetFixed() != "" {
-				hasFixed = true
-			}
-			if e.GetLastAffected() != "" {
-				hasLastAffected = true
-			}
-		}
+		intro, hasFixed, hasLastAffected := inspectRangeEvents(r)
 		if hasFixedByIntro[intro] && hasLastAffected && !hasFixed {
 			continue
 		}
 		if hasFixed && hasLastAffected {
-			filtered := make([]*osvschema.Event, 0, len(r.GetEvents()))
-			for _, e := range r.GetEvents() {
-				if e.GetLastAffected() == "" {
-					filtered = append(filtered, e)
-				}
-			}
-			r.Events = filtered
+			r.Events = slices.DeleteFunc(r.GetEvents(), func(e *osvschema.Event) bool {
+				return e.GetLastAffected() != ""
+			})
 		}
 		out = append(out, r)
 	}
@@ -564,29 +511,51 @@ func sanitizeEcosystemRanges(rawRanges []models.RangeWithMetadata, metrics *mode
 	return out
 }
 
-func rangesEqualJSON(a, b []*osvschema.Range) bool {
-	ba, errA := json.Marshal(a)
-	bb, errB := json.Marshal(b)
-
-	return errA == nil && errB == nil && string(ba) == string(bb)
+func rangesEqual(a, b []*osvschema.Range) bool {
+	return slices.EqualFunc(a, b, func(x, y *osvschema.Range) bool {
+		return proto.Equal(x, y)
+	})
 }
 
-// WordpressHandler defines hooks for CNA-specific logic.
-type WordpressHandler interface {
+func cloneRangesWithMetadata(ranges []models.RangeWithMetadata) []models.RangeWithMetadata {
+	cloned := make([]models.RangeWithMetadata, 0, len(ranges))
+	for _, r := range ranges {
+		var rng *osvschema.Range
+		if r.Range != nil {
+			rng = proto.Clone(r.Range).(*osvschema.Range)
+		}
+		cloned = append(cloned, models.RangeWithMetadata{
+			Range:    rng,
+			Metadata: r.Metadata,
+		})
+	}
+
+	return cloned
+}
+
+// WordPressHandler defines hooks for CNA-specific logic.
+type WordPressHandler interface {
 	PreExtract(cve *models.CVE5)
 	PostExtract(v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string)
 }
 
-// WordpressExtractor handles version extraction for WordPress CVEs.
-type WordpressExtractor struct {
-	DefaultVersionExtractor
-
-	Handler WordpressHandler
+// WordPressExtractor handles version extraction for WordPress CVEs.
+type WordPressExtractor struct {
+	Strategies []strategies.VersionStrategy
+	Handler    WordPressHandler
 }
 
-var _ VersionExtractor = &WordpressExtractor{}
+var _ VersionExtractor = &WordPressExtractor{}
 
-func (w *WordpressExtractor) extractAllCandidateRanges(cve models.CVE5, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
+func (w *WordPressExtractor) getStrategies() []strategies.VersionStrategy {
+	if len(w.Strategies) > 0 {
+		return w.Strategies
+	}
+
+	return strategies.Default()
+}
+
+func (w *WordPressExtractor) extractAllCandidateRanges(cve models.CVE5, metrics *models.ConversionMetrics) []models.RangeWithMetadata {
 	ranges := make([]models.RangeWithMetadata, 0, len(cve.Containers.CNA.Affected))
 	for _, cveAff := range cve.Containers.CNA.Affected {
 		ranges = append(ranges, w.extractWPBlockRanges(cveAff, metrics)...)
@@ -610,33 +579,167 @@ func (w *WordpressExtractor) extractAllCandidateRanges(cve models.CVE5, metrics 
 	return textRanges
 }
 
-func cloneRangesWithMetadata(ranges []models.RangeWithMetadata) []models.RangeWithMetadata {
-	cloned := make([]models.RangeWithMetadata, 0, len(ranges))
-	for _, r := range ranges {
-		var rng *osvschema.Range
-		if r.Range != nil {
-			rng = proto.Clone(r.Range).(*osvschema.Range)
-		}
-		cloned = append(cloned, models.RangeWithMetadata{
-			Range:    rng,
-			Metadata: r.Metadata,
-		})
+func resolveGitAffected(
+	cve models.CVE5,
+	allRawRanges []models.RangeWithMetadata,
+	repos []string,
+	metrics *models.ConversionMetrics,
+	cache git.RepoTagsCache,
+	httpClient *http.Client,
+) ([]*osvschema.Affected, []models.RangeWithMetadata) {
+	if len(repos) == 0 && !slices.ContainsFunc(allRawRanges, c.IsDirectGitRange) {
+		return nil, nil
 	}
 
-	return cloned
+	successfulRepos := make(map[string]bool)
+	var resolvedGitRanges []models.RangeWithMetadata
+	var unresolvedGitRanges []models.RangeWithMetadata
+
+	if len(allRawRanges) > 0 {
+		r, un, sR := c.ProcessRanges(cloneRangesWithMetadata(allRawRanges), repos, metrics, cache, httpClient)
+		resolvedGitRanges = append(resolvedGitRanges, r...)
+		unresolvedGitRanges = append(unresolvedGitRanges, un...)
+		for _, repo := range sR {
+			successfulRepos[repo] = true
+		}
+		if len(r) == 0 {
+			metrics.AddNotef("Failed to convert git versions to commits")
+		}
+	}
+
+	var commits []models.AffectedCommit
+	if len(repos) > 0 && httpClient != nil {
+		references := c.DeduplicateRefs(identifyPossibleURLs(cve))
+		extractedCommits, err := c.ExtractCommitsFromRefs(references, httpClient, cache)
+		if err != nil {
+			metrics.AddNotef("Failed to extract commits from references: %v", err)
+		}
+		if len(extractedCommits) > 0 {
+			commits = extractedCommits
+			for _, commit := range commits {
+				successfulRepos[commit.Repo] = true
+			}
+			if len(resolvedGitRanges) == 0 {
+				metrics.AddSource(models.VersionSourceRefs)
+			}
+		}
+	}
+
+	if len(resolvedGitRanges) == 0 && len(commits) == 0 {
+		return nil, unresolvedGitRanges
+	}
+
+	keys := slices.Collect(maps.Keys(successfulRepos))
+	groupedRanges := c.GroupRanges(resolvedGitRanges)
+	gitAffected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
+	for _, aff := range gitAffected {
+		aff.Package = nil // Keep GIT ranges separate without WordPress package metadata.
+	}
+
+	return gitAffected, unresolvedGitRanges
 }
 
-func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string, cache git.RepoTagsCache, httpClient *http.Client) {
+func (w *WordPressExtractor) emitEcosystemAffected(
+	cve models.CVE5,
+	v *vulns.Vulnerability,
+	metrics *models.ConversionMetrics,
+	targets []wpPackageTarget,
+	allRawRanges []models.RangeWithMetadata,
+) bool {
+	if len(cve.Containers.CNA.Affected) <= 1 {
+		primary := targets[0]
+		if w.Handler != nil {
+			w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
+		}
+		ecoRanges := sanitizeEcosystemRanges(allRawRanges, metrics)
+		if len(ecoRanges) == 0 {
+			return false
+		}
+		c.AddAffected(v, &osvschema.Affected{
+			Package: &osvschema.Package{
+				Ecosystem: primary.ecosystem,
+				Name:      primary.slug,
+			},
+			Ranges: ecoRanges,
+		}, metrics)
+
+		return true
+	}
+
+	// Multi-product CVE: match each slug target to its corresponding CNA Affected block(s).
+	emitted := false
+	for _, target := range targets {
+		matchedBlocks := matchAffectedBlocksForTarget(cve.Containers.CNA.Affected, target)
+		if len(matchedBlocks) == 0 {
+			continue
+		}
+		var targetRaw []models.RangeWithMetadata
+		for _, blk := range matchedBlocks {
+			targetRaw = append(targetRaw, w.extractWPBlockRanges(blk, metrics)...)
+		}
+		ecoRanges := sanitizeEcosystemRanges(targetRaw, metrics)
+		if len(ecoRanges) == 0 {
+			continue
+		}
+		if w.Handler != nil {
+			w.Handler.PostExtract(v, metrics, target.slug, target.ecosystem)
+		}
+		v.Affected = append(v.Affected, &osvschema.Affected{
+			Package: &osvschema.Package{
+				Ecosystem: target.ecosystem,
+				Name:      target.slug,
+			},
+			Ranges: ecoRanges,
+		})
+		metrics.ResolvedRangesCount += len(ecoRanges)
+		emitted = true
+	}
+
+	if emitted || len(targets) != 1 {
+		return emitted
+	}
+
+	// Fallback when only 1 slug target exists and all CNA Affected blocks share identical ranges.
+	primary := targets[0]
+	var firstBlockRanges []*osvschema.Range
+	for i, blk := range cve.Containers.CNA.Affected {
+		blkEco := sanitizeEcosystemRanges(w.extractWPBlockRanges(blk, metrics), metrics)
+		if len(blkEco) == 0 {
+			return false
+		}
+		if i == 0 {
+			firstBlockRanges = blkEco
+		} else if !rangesEqual(firstBlockRanges, blkEco) {
+			return false
+		}
+	}
+	if len(firstBlockRanges) == 0 {
+		return false
+	}
+
+	if w.Handler != nil {
+		w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
+	}
+	c.AddAffected(v, &osvschema.Affected{
+		Package: &osvschema.Package{
+			Ecosystem: primary.ecosystem,
+			Name:      primary.slug,
+		},
+		Ranges: firstBlockRanges,
+	}, metrics)
+
+	return true
+}
+
+func (w *WordPressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, repos []string, cache git.RepoTagsCache, httpClient *http.Client) {
 	cloneCVEAffected(&cve)
 	if w.Handler != nil {
 		w.Handler.PreExtract(&cve)
 	}
 	sanitizeWordPressCVE(&cve)
 
-	// 1. Extract WordPress package targets (slug + ecosystem) from references/metadata.
 	targets := extractWordPressPackages(cve, v)
 
-	// 2. Extract candidate version ranges once for single-affected CVEs (and Git resolution).
 	var allRawRanges []models.RangeWithMetadata
 	if len(cve.Containers.CNA.Affected) <= 1 {
 		allRawRanges = w.extractAllCandidateRanges(cve, metrics)
@@ -646,65 +749,19 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 		}
 	}
 
-	// 3. Resolve GIT ranges when repositories or direct Git commit ranges are present.
 	prevUnresolvedCount := metrics.UnresolvedRangesCount
-	var unresolvedGitRanges []models.RangeWithMetadata
-	hasDirectGit := slices.ContainsFunc(allRawRanges, c.IsDirectGitRange)
-
-	if len(repos) > 0 || hasDirectGit {
-		successfulRepos := make(map[string]bool)
-		var resolvedGitRanges []models.RangeWithMetadata
-
-		if len(allRawRanges) > 0 {
-			r, un, sR := c.ProcessRanges(cloneRangesWithMetadata(allRawRanges), repos, metrics, cache, httpClient)
-			resolvedGitRanges = append(resolvedGitRanges, r...)
-			unresolvedGitRanges = append(unresolvedGitRanges, un...)
-			for _, repo := range sR {
-				successfulRepos[repo] = true
-			}
-			if len(r) == 0 {
-				metrics.AddNotef("Failed to convert git versions to commits")
-			}
-		}
-
-		var commits []models.AffectedCommit
-		if len(repos) > 0 && httpClient != nil {
-			references := c.DeduplicateRefs(identifyPossibleURLs(cve))
-			extractedCommits, err := c.ExtractCommitsFromRefs(references, httpClient, cache)
-			if err != nil {
-				metrics.AddNotef("Failed to extract commits from references: %v", err)
-			}
-			if len(extractedCommits) > 0 {
-				commits = extractedCommits
-				for _, commit := range commits {
-					successfulRepos[commit.Repo] = true
-				}
-				if len(resolvedGitRanges) == 0 {
-					metrics.AddSource(models.VersionSourceRefs)
-				}
-			}
-		}
-
-		if len(resolvedGitRanges) > 0 || len(commits) > 0 {
-			keys := slices.Collect(maps.Keys(successfulRepos))
-			groupedRanges := c.GroupRanges(resolvedGitRanges)
-			gitAffected := c.MergeRangesAndCreateAffected(groupedRanges, commits, keys, metrics)
-			for _, aff := range gitAffected {
-				aff.Package = nil // Keep GIT ranges separate without WordPress package metadata.
-			}
-			v.Affected = append(v.Affected, gitAffected...)
-			metrics.SetOutcome(models.Successful)
-		}
+	gitAffected, unresolvedGitRanges := resolveGitAffected(cve, allRawRanges, repos, metrics, cache, httpClient)
+	if len(gitAffected) > 0 {
+		v.Affected = append(v.Affected, gitAffected...)
+		metrics.SetOutcome(models.Successful)
 	}
 
-	// 4. Generate WordPress ECOSYSTEM ranges when valid slug target(s) are available.
 	if len(targets) == 0 {
 		metrics.AddNotef("No WordPress slug found to attempt generating ECOSYSTEM ranges")
 		if len(v.Affected) == 0 {
 			if len(unresolvedGitRanges) > 0 {
 				addUnresolvedRangesToVuln(v, unresolvedGitRanges)
 			} else if len(repos) == 0 {
-				metrics.SetOutcome(models.NoRepos)
 				metrics.Outcome = models.NoRepos
 				if len(allRawRanges) > 0 {
 					metrics.UnresolvedRangesCount += len(allRawRanges)
@@ -718,87 +775,7 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 
 	metrics.AddNotef("Attempting to generate ECOSYSTEM ranges for WordPress")
 
-	emittedEcosystem := false
-	if len(cve.Containers.CNA.Affected) <= 1 {
-		primary := targets[0]
-		if w.Handler != nil {
-			w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
-		}
-		ecoRanges := sanitizeEcosystemRanges(allRawRanges, metrics)
-		if len(ecoRanges) > 0 {
-			c.AddAffected(v, &osvschema.Affected{
-				Package: &osvschema.Package{
-					Ecosystem: primary.ecosystem,
-					Name:      primary.slug,
-				},
-				Ranges: ecoRanges,
-			}, metrics)
-			emittedEcosystem = true
-		}
-	} else {
-		// Multi-product CVE: match each slug target to its corresponding CNA Affected block(s).
-		for _, target := range targets {
-			matchedBlocks := matchAffectedBlocksForTarget(cve.Containers.CNA.Affected, target)
-			if len(matchedBlocks) == 0 {
-				continue
-			}
-			var targetRaw []models.RangeWithMetadata
-			for _, blk := range matchedBlocks {
-				targetRaw = append(targetRaw, w.extractWPBlockRanges(blk, metrics)...)
-			}
-			ecoRanges := sanitizeEcosystemRanges(targetRaw, metrics)
-			if len(ecoRanges) == 0 {
-				continue
-			}
-			if w.Handler != nil {
-				w.Handler.PostExtract(v, metrics, target.slug, target.ecosystem)
-			}
-			v.Affected = append(v.Affected, &osvschema.Affected{
-				Package: &osvschema.Package{
-					Ecosystem: target.ecosystem,
-					Name:      target.slug,
-				},
-				Ranges: ecoRanges,
-			})
-			metrics.ResolvedRangesCount += len(ecoRanges)
-			emittedEcosystem = true
-		}
-
-		// Fallback when only 1 slug target exists and all CNA Affected blocks share identical ranges.
-		if !emittedEcosystem && len(targets) == 1 {
-			primary := targets[0]
-			var firstBlockRanges []*osvschema.Range
-			allSame := true
-			for i, blk := range cve.Containers.CNA.Affected {
-				blkEco := sanitizeEcosystemRanges(w.extractWPBlockRanges(blk, metrics), metrics)
-				if len(blkEco) == 0 {
-					allSame = false
-					break
-				}
-				if i == 0 {
-					firstBlockRanges = blkEco
-				} else if !rangesEqualJSON(firstBlockRanges, blkEco) {
-					allSame = false
-					break
-				}
-			}
-			if allSame && len(firstBlockRanges) > 0 {
-				if w.Handler != nil {
-					w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
-				}
-				c.AddAffected(v, &osvschema.Affected{
-					Package: &osvschema.Package{
-						Ecosystem: primary.ecosystem,
-						Name:      primary.slug,
-					},
-					Ranges: firstBlockRanges,
-				}, metrics)
-				emittedEcosystem = true
-			}
-		}
-	}
-
-	if emittedEcosystem {
+	if w.emitEcosystemAffected(cve, v, metrics, targets, allRawRanges) {
 		if len(unresolvedGitRanges) > 0 {
 			metrics.UnresolvedRangesCount = prevUnresolvedCount
 		}
@@ -809,21 +786,16 @@ func (w *WordpressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 	}
 }
 
-// DefaultWordpressHandler provides empty implementations for the hooks.
-type DefaultWordpressHandler struct{}
+// DefaultWordPressHandler provides empty implementations for WordPressHandler hooks.
+type DefaultWordPressHandler struct{}
 
-func (d *DefaultWordpressHandler) PreExtract(_ *models.CVE5) {}
-func (d *DefaultWordpressHandler) PostExtract(_ *vulns.Vulnerability, _ *models.ConversionMetrics, _ string, _ string) {
+func (d *DefaultWordPressHandler) PreExtract(_ *models.CVE5) {}
+func (d *DefaultWordPressHandler) PostExtract(_ *vulns.Vulnerability, _ *models.ConversionMetrics, _ string, _ string) {
 }
 
-// WordfenceHandler implements Wordfence specific quirks.
-type WordfenceHandler struct {
-	DefaultWordpressHandler
-}
-
-// PatchstackHandler implements Patchstack specific quirks.
+// PatchstackHandler implements Patchstack-specific quirks.
 type PatchstackHandler struct {
-	DefaultWordpressHandler
+	DefaultWordPressHandler
 }
 
 func hasExistingWPOrgRef(refs []*osvschema.Reference, slug string, ecosystem string) bool {
@@ -831,13 +803,10 @@ func hasExistingWPOrgRef(refs []*osvschema.Reference, slug string, ecosystem str
 	if ecosystem == wpEcosystemTheme {
 		rx = wpThemeOrgRegex
 	}
-	for _, ref := range refs {
-		if matchedSlug := matchSingleRegex(ref.GetUrl(), rx); strings.EqualFold(matchedSlug, slug) {
-			return true
-		}
-	}
 
-	return false
+	return slices.ContainsFunc(refs, func(ref *osvschema.Reference) bool {
+		return strings.EqualFold(matchSlug(ref.GetUrl(), rx), slug)
+	})
 }
 
 func (p *PatchstackHandler) PostExtract(v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string) {
@@ -862,19 +831,18 @@ func (p *PatchstackHandler) PostExtract(v *vulns.Vulnerability, metrics *models.
 		Type: osvschema.Reference_WEB,
 		Url:  wpURL,
 	})
-	sort.Slice(v.References, func(i, j int) bool {
-		if v.References[i].GetUrl() != v.References[j].GetUrl() {
-			return v.References[i].GetUrl() < v.References[j].GetUrl()
-		}
-
-		return v.References[i].GetType() < v.References[j].GetType()
+	slices.SortFunc(v.References, func(a, b *osvschema.Reference) int {
+		return cmp.Or(
+			cmp.Compare(a.GetUrl(), b.GetUrl()),
+			cmp.Compare(a.GetType(), b.GetType()),
+		)
 	})
 	metrics.AddNotef("Added wordpress.org reference link: %s", wpURL)
 }
 
-// WPScanHandler implements WPScan specific quirks.
+// WPScanHandler implements WPScan-specific quirks.
 type WPScanHandler struct {
-	DefaultWordpressHandler
+	DefaultWordPressHandler
 }
 
 // PreExtract normalizes legacy V4-converted WPScan records where "< X" was encoded

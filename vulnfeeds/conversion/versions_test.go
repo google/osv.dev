@@ -1878,3 +1878,145 @@ func TestExtractVersionsFromText(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractVersionRangeFromCompareURL(t *testing.T) {
+	tests := []struct {
+		description string
+		inputURL    string
+		wantRepo    string
+		wantIntro   string
+		wantFixed   string
+		expectedOk  bool
+	}{
+		{
+			description: "GitHub v-prefixed tags",
+			inputURL:    "https://github.com/JSONPath-Plus/JSONPath/compare/v9.0.0...v10.1.0",
+			wantRepo:    "https://github.com/jsonpath-plus/jsonpath",
+			wantIntro:   "v9.0.0",
+			wantFixed:   "v10.1.0",
+			expectedOk:  true,
+		},
+		{
+			description: "GitHub v-prefixed tags (kitty, from the issue)",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2",
+			wantRepo:    "https://github.com/kovidgoyal/kitty",
+			wantIntro:   "v0.26.1",
+			wantFixed:   "v0.26.2",
+			expectedOk:  true,
+		},
+		{
+			description: "GitHub unprefixed tags",
+			inputURL:    "https://github.com/OWASP/threat-dragon/compare/1.0.0...1.1.0",
+			wantRepo:    "https://github.com/owasp/threat-dragon",
+			wantIntro:   "1.0.0",
+			wantFixed:   "1.1.0",
+			expectedOk:  true,
+		},
+		{
+			description: "GitHub two-dot comparison",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/v0.26.1..v0.26.2",
+			wantRepo:    "https://github.com/kovidgoyal/kitty",
+			wantIntro:   "v0.26.1",
+			wantFixed:   "v0.26.2",
+			expectedOk:  true,
+		},
+		{
+			description: "GitLab comparison with the /-/ path",
+			inputURL:    "https://gitlab.com/mayan-edms/mayan-edms/-/compare/v4.3.0...v4.3.1",
+			wantRepo:    "https://gitlab.com/mayan-edms/mayan-edms",
+			wantIntro:   "v4.3.0",
+			wantFixed:   "v4.3.1",
+			expectedOk:  true,
+		},
+		{
+			description: "trailing slash",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2/",
+			wantRepo:    "https://github.com/kovidgoyal/kitty",
+			wantIntro:   "v0.26.1",
+			wantFixed:   "v0.26.2",
+			expectedOk:  true,
+		},
+		{
+			description: "GitLab branch comparison",
+			inputURL:    "https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master",
+			expectedOk:  false,
+		},
+		{
+			description: "Drupal wildcard branch comparison",
+			inputURL:    "https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x",
+			expectedOk:  false,
+		},
+		{
+			description: "commit comparison",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/e5dd0a3f81...8b4f5c2c9a",
+			expectedOk:  false,
+		},
+		{
+			description: "comparison with itself",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.1",
+			expectedOk:  false,
+		},
+		{
+			description: "comparison with itself, mixed prefixes",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/v0.26.1...0.26.1",
+			expectedOk:  false,
+		},
+		{
+			description: "one side is a branch with a path",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/feature/fix...v0.26.2",
+			expectedOk:  false,
+		},
+		{
+			description: "one side missing",
+			inputURL:    "https://github.com/kovidgoyal/kitty/compare/...v0.26.2",
+			expectedOk:  false,
+		},
+		{
+			description: "commit URL is not a comparison",
+			inputURL:    "https://github.com/kovidgoyal/kitty/commit/e5dd0a3f81",
+			expectedOk:  false,
+		},
+		{
+			description: "release URL is not a comparison",
+			inputURL:    "https://github.com/kovidgoyal/kitty/releases/tag/v0.26.2",
+			expectedOk:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			got, err := ExtractVersionRangeFromCompareURL(tc.inputURL)
+			if tc.expectedOk && err != nil {
+				t.Fatalf("ExtractVersionRangeFromCompareURL(%q) unexpected error: %v", tc.inputURL, err)
+			}
+			if !tc.expectedOk {
+				if err == nil {
+					t.Fatalf("ExtractVersionRangeFromCompareURL(%q) unexpectedly succeeded: %+v", tc.inputURL, got)
+				}
+
+				return
+			}
+
+			if got.Range.GetRepo() != tc.wantRepo {
+				t.Errorf("Range.Repo = %q, want %q", got.Range.GetRepo(), tc.wantRepo)
+			}
+			events := got.Range.GetEvents()
+			if len(events) != 2 {
+				t.Fatalf("expected 2 events, got %+v", events)
+			}
+			if events[0].GetIntroduced() != tc.wantIntro {
+				t.Errorf("Introduced = %q, want %q", events[0].GetIntroduced(), tc.wantIntro)
+			}
+			if events[1].GetFixed() != tc.wantFixed {
+				t.Errorf("Fixed = %q, want %q", events[1].GetFixed(), tc.wantFixed)
+			}
+			if got.Metadata.Source != models.VersionSourceRefsCompare {
+				t.Errorf("Metadata.Source = %q, want %q", got.Metadata.Source, models.VersionSourceRefsCompare)
+			}
+			wantVersions := []string{tc.wantIntro, tc.wantFixed}
+			if !slices.Equal(got.Metadata.Versions, wantVersions) {
+				t.Errorf("Metadata.Versions = %v, want %v", got.Metadata.Versions, wantVersions)
+			}
+		})
+	}
+}

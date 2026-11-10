@@ -182,6 +182,14 @@ func main() {
 	logger.Info("CVE5 Conversion run complete")
 }
 
+func shouldSkipCVE(cve models.CVE5, deniedCNAs []string) bool {
+	if cve.Metadata.State != "PUBLISHED" && cve.Metadata.State != "REJECTED" {
+		return true
+	}
+
+	return cve.Metadata.State != "REJECTED" && slices.Contains(deniedCNAs, cve.Metadata.AssignerShortName)
+}
+
 // worker is a function that processes CVE files from the jobs channel.
 func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, metricsDir string, cnas []string, rejectFailed bool, outputMetrics bool, gcsMetricsPrefix string, cache git.RepoTagsCache) {
 	defer wg.Done()
@@ -198,7 +206,7 @@ func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDi
 			continue
 		}
 
-		if slices.Contains(cnas, cve.Metadata.AssignerShortName) || (cve.Metadata.State != "PUBLISHED" && cve.Metadata.State != "REJECTED") {
+		if shouldSkipCVE(cve, cnas) {
 			continue
 		}
 		cveID := cve.Metadata.CVEID

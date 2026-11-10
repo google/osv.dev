@@ -500,6 +500,68 @@ func TestFindIntroducedVersion(t *testing.T) {
 			fixedVersion: "8.1_p1-r0",
 			want:         "0",
 		},
+		{
+			// ISC BIND CVEs list both open-source BIND ([9.20.0, 9.20.24]) and
+			// Supported Preview Edition ([9.20.9, 9.20.24]) on the same branch;
+			// overlapping intervals must merge so 9.20.0..9.20.8 are not dropped.
+			name: "overlapping edition ranges merge to earliest introduced",
+			cve: models.NVDCVE{
+				Configurations: []models.Config{{
+					Nodes: []models.Node{{
+						CPEMatch: []models.CPEMatch{
+							{
+								Criteria:              "cpe:2.3:a:isc:bind:*:*:*:*:-:*:*:*",
+								Vulnerable:            true,
+								VersionStartIncluding: new("9.11.0"),
+								VersionEndIncluding:   new("9.18.50"),
+							},
+							{
+								Criteria:              "cpe:2.3:a:isc:bind:*:*:*:*:-:*:*:*",
+								Vulnerable:            true,
+								VersionStartIncluding: new("9.20.0"),
+								VersionEndIncluding:   new("9.20.24"),
+							},
+							{
+								Criteria:              "cpe:2.3:a:isc:bind:*:*:*:*:supported_preview:*:*:*",
+								Vulnerable:            true,
+								VersionStartIncluding: new("9.20.9"),
+								VersionEndIncluding:   new("9.20.24"),
+							},
+						},
+					}},
+				}},
+			},
+			alpinePkg:    "bind",
+			fixedVersion: "9.20.26-r0",
+			want:         "9.20.0",
+		},
+		{
+			// Firefox CVEs often list rapid-release (< 80.0) alongside ESR ([78.0, 78.2));
+			// [0, 80.0) overlaps [78.0, 78.2) and merges to [0, 80.0).
+			name: "unbounded lower range overlapping ESR range merges to 0",
+			cve: models.NVDCVE{
+				Configurations: []models.Config{{
+					Nodes: []models.Node{{
+						CPEMatch: []models.CPEMatch{
+							{
+								Criteria:            "cpe:2.3:a:mozilla:firefox:*:*:*:*:*:*:*:*",
+								Vulnerable:          true,
+								VersionEndExcluding: new("80.0"),
+							},
+							{
+								Criteria:              "cpe:2.3:a:mozilla:firefox:*:*:*:*:esr:*:*:*",
+								Vulnerable:            true,
+								VersionStartIncluding: new("78.0"),
+								VersionEndExcluding:   new("78.2"),
+							},
+						},
+					}},
+				}},
+			},
+			alpinePkg:    "firefox",
+			fixedVersion: "80.0-r0",
+			want:         "0",
+		},
 	}
 
 	for _, tc := range tests {

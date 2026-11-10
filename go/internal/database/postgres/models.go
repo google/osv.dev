@@ -6,8 +6,6 @@ package postgres
 
 import (
 	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AffectedCommit struct {
@@ -30,19 +28,19 @@ type AffectedVersion struct {
 type HistoricVulnerability struct {
 	VulnID    string
 	Revision  int32
-	RawVulnID pgtype.Int8
+	RawVulnID *int64
 	CreatedAt time.Time
 	Data      []byte
 }
 
 type RawVulnerability struct {
 	ID            int64
-	VulnID        pgtype.Text
+	VulnID        *string
 	SourceID      string
 	SourcePath    string
 	ContentSha256 []byte
-	GitCommitHash pgtype.Text
-	GcsGeneration pgtype.Int8
+	GitCommitHash *string
+	GcsGeneration *int64
 	RawData       []byte
 	FetchedAt     time.Time
 }
@@ -57,7 +55,7 @@ type Vulnerability struct {
 	Revision       int32
 	SourceID       string
 	SourcePath     string
-	RawVulnID      pgtype.Int8
+	RawVulnID      *int64
 	Modified       time.Time
 	SourceModified *time.Time
 	Withdrawn      *time.Time

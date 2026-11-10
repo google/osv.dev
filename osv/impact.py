@@ -13,18 +13,15 @@
 # limitations under the License.
 """Impact analysis."""
 
-import codecs
 from dataclasses import dataclass
 import logging
 import hashlib
 import os
 import subprocess
 import tempfile
-import time
 import traceback
 from typing import Optional
 
-from google.cloud import ndb
 import pygit2
 import pygit2.enums
 
@@ -38,14 +35,6 @@ from . import repository_pb2
 TAG_PREFIX = 'refs/tags/'
 BRANCH_PREFIX = 'refs/remotes/'
 
-# Limit for writing small entities.
-_DATASTORE_BATCH_SIZE = 5000
-# Limit for writing large entities that are close to the 1MiB max entity size.
-# There is additionally a request size limit of 10MiB for batched put()
-# requests. We conservatively set this to slightly under (8 as opposed to 10)
-# to leave some more breathing room.
-_DATASTORE_LARGE_BATCH_SIZE = 8
-_DATASTORE_BATCH_SLEEP = 10
 _MAX_BRANCHES = 500
 
 
@@ -501,68 +490,6 @@ def _branches_with_commit(repo, commit):
 
   # Ignore duplicate <remote>/HEAD branch.
   return [process_ref(branch) for branch in branches if '/HEAD' not in branch]
-
-
-def _batcher(entries, batch_size):
-  """Batcher."""
-  for i in range(0, len(entries), batch_size):
-    yield entries[i:i + batch_size], i + batch_size >= len(entries)
-
-
-def _throttled_put(to_put, batch_size=_DATASTORE_BATCH_SIZE):
-  """Throttled ndb put."""
-  for batch, is_last in _batcher(to_put, batch_size):
-    ndb.put_multi(batch)
-    if not is_last:
-      time.sleep(_DATASTORE_BATCH_SLEEP)
-
-
-def _throttled_delete(to_delete, batch_size=_DATASTORE_BATCH_SIZE):
-  """Throttled ndb delete."""
-  for batch, is_last in _batcher(to_delete, batch_size):
-    ndb.delete_multi(batch)
-    if not is_last:
-      time.sleep(_DATASTORE_BATCH_SLEEP)
-
-
-def update_affected_commits(bug_id, commits, public):
-  """Update affected commits."""
-  to_put = []
-  to_delete = []
-
-  # Write batched commit indexes.
-  # Sort the commits for ordering consistency in tests.
-  num_pages = 0
-  for batch, _ in _batcher(
-      sorted(commits), models.AffectedCommits.MAX_COMMITS_PER_ENTITY):
-    affected_commits = models.AffectedCommits(
-        id=f'{bug_id}-{num_pages}',
-        bug_id=bug_id,
-        public=public,
-        page=num_pages)
-    affected_commits.commits = [
-        commit if isinstance(commit, bytes) else codecs.decode(commit, 'hex')
-        for commit in batch
-    ]
-    to_put.append(affected_commits)
-    num_pages += 1
-
-  # Clear any previously written pages above our current page count.
-  for existing in models.AffectedCommits.query(
-      models.AffectedCommits.bug_id == bug_id):
-    if existing.page >= num_pages:
-      to_delete.append(existing.key)
-
-  _throttled_put(to_put, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
-  _throttled_delete(to_delete, batch_size=_DATASTORE_LARGE_BATCH_SIZE)
-
-
-def delete_affected_commits(bug_id):
-  """Delete affected commits."""
-  affected_commits = models.AffectedCommits.query(
-      models.AffectedCommits.bug_id == bug_id)
-  _throttled_delete([commit.key for commit in affected_commits],
-                    batch_size=_DATASTORE_LARGE_BATCH_SIZE)
 
 
 def enumerate_versions(package, ecosystem, affected_range):

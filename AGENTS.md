@@ -58,6 +58,11 @@ These models are defined in Python ([`osv/models.py`](osv/models.py)) and mirror
    * **Fields**: Contains summary, ecosystems, packages, severities, and search indices.
    * **Rule**: This entity is **only** used by the website and should not be used for API matching logic.
 
+5. **`UbuntuPackageMapping` (Kind: `UbuntuPackageMapping`)**
+   * **Purpose**: Used by the experimental `POST /v1experimental/ubuntu/binary-to-source` API endpoint to resolve Ubuntu binary package names to their corresponding source package names within an Ubuntu release ecosystem.
+   * **Fields**: Keyed by `<normalized_ecosystem>:<binary_name>` (e.g., `Ubuntu:24.04:libcurl4`); stores `source_names` (unindexed list of corresponding Ubuntu source package names).
+   * **Note**: Defined in Go ([`go/internal/database/datastore/ubuntu_package_mapping.go`](go/internal/database/datastore/ubuntu_package_mapping.go)) and populated by `ubuntubinarymapper`.
+
 ---
 
 ## Setup Commands
@@ -83,6 +88,11 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
 - **Build Protos**:
   ```bash
   make build-protos
+  ```
+- **PostgreSQL Codegen (`sqlc`)**:
+  If you modify [`go/internal/database/postgres/queries.sql`](go/internal/database/postgres/queries.sql) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
+  ```bash
+  cd go/internal/database/postgres && sqlc generate
   ```
 
 ---
@@ -126,7 +136,7 @@ Always format and lint your code before proposing changes. The repository provid
 - Linter: `golangci-lint`
 - **Running Go Linters**: Run `golangci-lint` using `go run` directly within the module directory (`go/`, `vulnfeeds/`, or `bindings/go/`), or run `tools/lint_and_format.sh` which automatically maps changed files to the enclosing module:
   ```bash
-  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.0 run ./...
+  cd go && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run ./...
   ```
   *(Note: Run outside the sandbox so `go run` can fetch the linter toolchain if not cached).*
 - **Formatting Command**:
@@ -269,21 +279,36 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
 
-11. **`vanir_signatures`**:
+11. **`custommetrics`**:
+   - Long-running metrics collector daemon (`go/cmd/custommetrics/`) that periodically reads batch/dataset state from Datastore (`JobData`, `SourceRepository`, `ImportFindings`) and GCS (`all.zip`, `modified_id.csv`) and exposes dataset, drift, reconciler, deleter, and linter state metrics on `:9090/metrics` for GMP/Grafana.
+
+12. **`vanir_signatures`**:
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
+
+13. **`ubuntubinarymapper`**:
+   - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
+   - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
+
+14. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+   - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
+   - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore.
+   - `repo-allowlist-sync`: CLI tool to synchronize repository allowlist YAML files (`repo_allowlist.yaml`) to `RepoAllowList` entities in Datastore.
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.
+- **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`, `custommetrics`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
-- **`database/`**: Shared Datastore client and repository models (specifically [`go/internal/database/datastore/`](go/internal/database/datastore/)).
-  - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
-  - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
-  - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
+- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `jsonstore/`).
+  - **`datastore/`**: Cloud Datastore + GCS implementation of the domain interfaces ([`go/internal/database/datastore/`](go/internal/database/datastore/)).
+    - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
+    - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
+    - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
+  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via `gcr.io/oss-vdb/goose` ([`docker/goose/`](docker/goose/)).
+  - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background for latency comparison.
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
-- **`repos/`**: Shared Git repository management and utilities.
 
 ---
 

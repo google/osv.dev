@@ -131,7 +131,6 @@ func TestComputeUpstreamGroups(t *testing.T) {
 	}
 	close(ch)
 
-	//nolint:revive // Drain channel
 	for range ch {
 	}
 

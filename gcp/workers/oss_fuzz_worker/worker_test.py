@@ -13,7 +13,6 @@
 # limitations under the License.
 """Worker tests."""
 # pylint: disable=line-too-long
-import codecs
 import datetime
 import hashlib
 import os
@@ -155,10 +154,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     )
     allocated_bug.put()
 
-    # This should be deleted and overwritten with the actual computed commits.
-    osv.AffectedCommits(
-        id='OSV-2020-1337-3', bug_id='OSV-2020-1337', page=3).put()
-
   def test_basic(self):
     """Basic test."""
     message = mock.Mock()
@@ -196,21 +191,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.expect_dict_equal('basic',
                            ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
 
   def test_range(self):
     """Test commit range."""
@@ -250,23 +230,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     oss_fuzz.process_impact_task('oss-fuzz:123', message)
     self.expect_dict_equal('range',
                            ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
 
   def test_fixed_range_too_long(self):
     """Test fixed range that's too long."""
@@ -313,25 +276,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict(),
     )
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
-            b'3ea6feea9bb853596c727abab309476cc07d1505',
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
   def test_zero_regression_range(self):
     """Test regression range with '0:X'."""
     message = mock.Mock()
@@ -370,21 +314,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal(
         'zero_regression_range',
         ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict(),
-    )
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
 
   def test_simplify_range(self):
@@ -457,27 +386,6 @@ class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('not_fixed',
                            ndb.Key(osv.Bug, 'OSV-2020-1337').get()._to_dict())
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'36f0bd9549298b44f9ff2496c9dd1326b3a9d0e2',
-            b'3ea6feea9bb853596c727abab309476cc07d1505',
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'88e5ae3c40c85b702ba89a34c29f233048abb12b',
-            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'b587c21c36a84e16cfc6b39eb68578d43b5281ad',
-            b'b9b3fd4732695b83c3068b7b6a14bb372ec31f98',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
 
 class EcosystemTest(unittest.TestCase):
   """Test getting ecosystem."""
@@ -514,9 +422,10 @@ class MarkBugInvalidTest(unittest.TestCase):
     """Test mark_bug_invalid."""
     osv.SourceRepository(
         id='oss-fuzz', name='oss-fuzz', db_prefix=['OSV-']).put()
-    osv.Bug(db_id='OSV-2021-1', source_id='oss-fuzz:1337').put()
-    osv.AffectedCommits(bug_id='OSV-2021-1').put()
-    osv.AffectedCommits(bug_id='OSV-2021-1').put()
+    osv.Bug(
+        db_id='OSV-2021-1',
+        source_id='oss-fuzz:1337',
+        source_of_truth=osv.SourceOfTruth.SOURCE_REPO).put()
 
     message = mock.Mock()
     message.attributes = {
@@ -528,9 +437,8 @@ class MarkBugInvalidTest(unittest.TestCase):
     worker.mark_bug_invalid(message)
     bug = ndb.Key(osv.Bug, 'OSV-2021-1').get()
     self.assertEqual(osv.BugStatus.INVALID, bug.status)
-
-    commits = list(osv.AffectedCommits.query())
-    self.assertEqual(0, len(commits))
+    self.assertIsNotNone(bug.withdrawn)
+    self.assertEqual(osv.SourceOfTruth.INTERNAL, bug.source_of_truth)
 
 
 class FindOssFuzzFixViaCommitTest(unittest.TestCase):
@@ -748,21 +656,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_equal('diff_update', diff.patch)
     self.expect_dict_equal('update', osv.Bug.get_by_id('OSV-123')._to_dict())
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
     self.mock_publish.assert_not_called()
 
   def test_update_limit(self):
@@ -789,20 +682,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_equal('diff_update_limit', diff.patch)
     self.expect_dict_equal('update_limit',
                            osv.Bug.get_by_id('OSV-128')._to_dict())
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
 
   def test_update_add_fix(self):
     """Test basic update adding a fix."""
@@ -835,21 +714,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_add_fix',
                            osv.Bug.get_by_id('OSV-124')._to_dict())
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
   def test_update_no_introduced(self):
     """Test update vulnerability with no introduced commit."""
     task_runner = worker.TaskRunner(ndb_client, None, self.tmp_dir.name, None,
@@ -875,31 +739,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_no_introduced',
                            osv.Bug.get_by_id('OSV-127')._to_dict())
     self.expect_equal('diff_update_no_introduced', diff.patch)
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'00514d6f244f696e750a37083163992c6a50cfd3',
-            b'25147a74d8aeb27b43665530ee121a2a1b19dc58',
-            b'3c5dcf6a5bec14baab3b247d369a7270232e1b83',
-            b'4c155795426727ea05575bd5904321def23c03f4',
-            b'57e58a5d7c2bb3ce0f04f17ec0648b92ee82531f',
-            b'90aa4127295b2c37b5f7fcf6a9772b12c99a5212',
-            b'949f182716f037e25394bbb98d39b3295d230a29',
-            b'a2ba949290915d445d34d0e8e9de2e7ce38198fc',
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'b1fa81a5d59e9b4d6e276d82fc17058f3cf139d9',
-            b'e1b045257bc5ca2a11d0476474f45ef77a0366c7',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'f0cc40d8c3dabb27c2cfe26f1764305abc91a0b9',
-            b'febfac1940086bc1f6d3dc33fda0a1d1ba336209',
-            b'ff8cc32ba60ad9cbb3b23f0a82aad96ebe9ff76b',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
 
   def test_update_new(self):
     """Test update with new vulnerability added."""
@@ -1080,19 +919,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal('update_pypi',
                            ndb.Key(osv.Bug, 'PYSEC-123').get()._to_dict())
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
-    self.expect_equal('pypi_pubsub_calls', self.mock_publish.mock_calls)
+    self.mock_publish.assert_not_called()
 
   def test_normalize_pypi(self):
     """Test a PyPI entry normalizes as expected."""
@@ -1129,20 +956,7 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         ndb.Key(osv.Bug, 'PYSEC-456').get()._to_dict(),
     )
 
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
-    )
-
-    self.expect_equal('normalized_pypi_pubsub_calls',
-                      self.mock_publish.mock_calls)
+    self.mock_publish.assert_not_called()
 
   def test_update_last_affected(self):
     """Test a PyPI entry."""
@@ -1251,18 +1065,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal(
         'update_linux',
         ndb.Key(osv.Bug, 'LINUX-123').get()._to_dict(),
-    )
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
 
   def test_update_bucket(self):
@@ -1536,19 +1338,6 @@ class UpdateTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     self.expect_dict_equal(
         'last_affected_git',
         ndb.Key(osv.Bug, 'OSV-TEST-last-affected-01').get()._to_dict(),
-    )
-
-    affected_commits = list(osv.AffectedCommits.query())
-    self.assertEqual(1, len(affected_commits))
-    affected_commits = affected_commits[0]
-
-    self.assertCountEqual(
-        [
-            b'b1c95a196f22d06fcf80df8c6691cd113d8fefff',
-            b'eefe8ec3f1f90d0e684890e810f3f21e8500a4cd',
-            b'8d8242f545e9cec3e6d0d2e3f5bde8be1c659735',
-        ],
-        [codecs.encode(commit, 'hex') for commit in affected_commits.commits],
     )
 
   def test_invalid_prefix(self):

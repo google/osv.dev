@@ -55,6 +55,86 @@ Use `terraform plan` and `terraform apply` to deploy any configuration changes.
 
 Terraform is automatically run on `oss-vdb-test` in `build-and-stage.yaml`
 
+### Cloud SQL PostgreSQL Passwords
+
+Because database user passwords are kept out of Terraform state (`ignore_changes = [password]`), Terraform initializes SQL users with a random bootstrap password (`uuid()`) and creates empty Secret Manager secrets. After the initial `terraform apply` creates `osv-db`, generate and store the real passwords once per project:
+
+```bash
+PROJECT_ID="oss-vdb-test" # or "oss-vdb" / "private-osv"
+
+# Set worker password (all environments: oss-vdb, oss-vdb-test, private-osv)
+PG_WORKER_PASS=$(openssl rand -hex 24)
+gcloud sql users set-password osv-worker \
+  --instance=osv-db \
+  --project="$PROJECT_ID" \
+  --password="$PG_WORKER_PASS"
+printf "%s" "$PG_WORKER_PASS" | gcloud secrets versions add osv-db-worker-password \
+  --project="$PROJECT_ID" \
+  --data-file=-
+unset PG_WORKER_PASS
+
+# Set read-only API password (public environments with osv_api: oss-vdb, oss-vdb-test)
+PG_RO_PASS=$(openssl rand -hex 24)
+gcloud sql users set-password osv-readonly \
+  --instance=osv-db \
+  --project="$PROJECT_ID" \
+  --password="$PG_RO_PASS"
+printf "%s" "$PG_RO_PASS" | gcloud secrets versions add osv-db-readonly-password \
+  --project="$PROJECT_ID" \
+  --data-file=-
+unset PG_RO_PASS
+```
+
+### Cloud SQL PostgreSQL Schema Migrations & IAM Access
+
+Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose).
+
+* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` using the `gcr.io/oss-vdb/goose` Cloud Builder image (see `docker/goose/`).
+* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` right before promoting the Cloud Deploy pipelines.
+
+After the initial `terraform apply` creates the `deployment@oss-vdb.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
+
+```bash
+# In one terminal (use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv):
+cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" \
+  --auto-iam-authn \
+  --impersonate-service-account=deployment@oss-vdb.iam.gserviceaccount.com
+
+# In another terminal:
+psql "host=127.0.0.1 port=5432 user=deployment@oss-vdb.iam dbname=osv sslmode=disable" \
+  -c 'ALTER ROLE "deployment@oss-vdb.iam" SET role = '\''cloudsqlsuperuser'\'';'
+```
+
+To connect or run `goose` manually from your workstation via IAM authentication:
+
+1. Install `cloud-sql-proxy` (via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install)).
+2. Create a Cloud SQL IAM user for your Google account (once per instance):
+   ```bash
+   gcloud sql users create "$(gcloud config get-value account)" \
+     --instance=osv-db \
+     --project="$PROJECT_ID" \
+     --type=CLOUD_IAM_USER \
+     --database-roles=cloudsqlsuperuser
+   ```
+3. Start `cloud-sql-proxy` with automatic IAM authentication (or via `make run-cloud-sql-proxy-staging` / `make run-cloud-sql-proxy`):
+   ```bash
+   # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
+   cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
+   ```
+4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance):
+   ```bash
+   psql "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+     -c "ALTER ROLE \"$(gcloud config get-value account)\" SET role = 'cloudsqlsuperuser';"
+   ```
+5. Run `goose`:
+   ```bash
+   goose -dir go/internal/database/postgres/migrations postgres \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+     status
+   ```
+
+> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, you can connect via `cloud-sql-proxy` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
+
 
 ## Setting up auto-scaler
 

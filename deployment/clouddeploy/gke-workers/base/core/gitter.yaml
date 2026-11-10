@@ -38,6 +38,9 @@ spec:
           value: "debug"
         - name: TRACE_SAMPLE_RATE
           value: "1.0"
+        ports:
+        - name: metrics
+          containerPort: 9090
         volumeMounts:
         - mountPath: /work
           name: disk-data

@@ -92,8 +92,9 @@ resource "google_compute_backend_bucket" "osv_dev_sitemap_backend" {
 
 # Load Balancer
 module "gclb" {
-  source  = "terraform-google-modules/lb-http/google//modules/serverless_negs"
-  version = "~> 14.0"
+  # TODO(https://github.com/terraform-google-modules/terraform-google-lb-http/issues/618):
+  # Switch back to registry source once v14.3.0+ is published on registry.terraform.io.
+  source = "git::https://github.com/terraform-google-modules/terraform-google-lb-http.git//modules/serverless_negs?ref=v14.3.0"
 
   name    = "website"
   project = var.project_id

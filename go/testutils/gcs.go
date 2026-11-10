@@ -76,6 +76,7 @@ func (c *MockStorage) ReadObjectAttrs(_ context.Context, path string) (*clients.
 
 	return &clients.Attrs{
 		Generation: obj.generation,
+		Size:       int64(len(obj.data)),
 		CustomTime: obj.customTime,
 		CRC32C:     obj.crc32c,
 		Updated:    obj.updated,
@@ -159,6 +160,7 @@ func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clien
 				Name: key,
 				Attrs: clients.Attrs{
 					Generation: obj.generation,
+					Size:       int64(len(obj.data)),
 					CustomTime: obj.customTime,
 					CRC32C:     obj.crc32c,
 					Updated:    obj.updated,

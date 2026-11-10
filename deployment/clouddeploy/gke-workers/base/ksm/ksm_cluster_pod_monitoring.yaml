@@ -9,14 +9,15 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: kube-state-metrics
+      app.kubernetes.io/version: 2.14.0
   endpoints:
   - port: metrics
     # Customized from 30s to 5s.
     interval: 5s
     metricRelabeling:
     - action: keep
-      # Curated subset of metrics to reduce costs, currently just targeting cronjob and pod resources.
-      regex: kube_(cronjob|pod)(_.+)?
+      # Curated subset of metrics to reduce costs, targeting cronjob, pod, job, and deployment resources.
+      regex: kube_(cronjob|pod|job|deployment)(_.+)?
       sourceLabels: [__name__]
   targetLabels:
     metadata: [] # explicitly empty so the metric labels are respected

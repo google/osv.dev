@@ -422,11 +422,12 @@ func repo(u string) (string, error) {
 	return "", fmt.Errorf("Repo(): unsupported URL: %s", u)
 }
 
-// Returns the commit ID from supported links.
-func Commit(u string, httpClient *http.Client) (string, error) {
+// Commit returns the commit ID, the original tag (if resolved from a release tag URL),
+// and the version source from supported links.
+func Commit(u string, httpClient *http.Client) (string, string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		return "", err
+		return "", "", models.VersionSourceNone, err
 	}
 
 	gitSHA1Regex := regexp.MustCompile("^[0-9a-f]{7,40}")
@@ -439,14 +440,14 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// Canonicalized git.kernel.org URLs lose /cgit in the path...
 	if parsedURL.Hostname() == "git.kernel.org" &&
 		strings.HasSuffix(parsedURL.Path, "commit/") &&
 		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], nil
+		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// GitWeb cgi-bin URLs are structured another way, e.g.
@@ -459,14 +460,14 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 				continue
 			}
 
-			return strings.Split(param, "=")[1], nil
+			return strings.Split(param, "=")[1], "", models.VersionSourceRefsCommit, nil
 		}
 	}
 
 	// FFMpeg's GitWeb seems to be it's own unique snowflake, e.g.
 	// https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/c94875471e3ba3dc396c6919ff3ec9b14539cd71
 	if strings.HasPrefix(parsedURL.Path, "/gitweb/") && len(strings.Split(parsedURL.Path, "/")) == 5 {
-		return strings.Split(parsedURL.Path, "/")[4], nil
+		return strings.Split(parsedURL.Path, "/")[4], "", models.VersionSourceRefsCommit, nil
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.
@@ -477,7 +478,7 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
 	if strings.HasSuffix(directory, "commit/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-		return strings.TrimSuffix(possibleCommitHash, ".patch"), nil
+		return strings.TrimSuffix(possibleCommitHash, ".patch"), "", models.VersionSourceRefsCommit, nil
 	}
 
 	// and Bitbucket.org commit URLs are similar yet slightly different:
@@ -489,7 +490,7 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 		directory, possibleCommitHash := path.Split(parsedURL.Path)
 		if strings.HasSuffix(directory, "commits/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-			return possibleCommitHash, nil
+			return possibleCommitHash, "", models.VersionSourceRefsCommit, nil
 		}
 	}
 
@@ -498,42 +499,43 @@ func Commit(u string, httpClient *http.Client) (string, error) {
 	// Support for resolving a Github tag to a commit hash
 	// example: https://github.com/redis/redis/releases/tag/6.2.17
 	if parsedURL.Host == "github.com" {
-		possibleCommitHash, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
+		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
 		if possibleCommitHash != "" && err == nil {
-			return possibleCommitHash, nil
+			return possibleCommitHash, originalTag, models.VersionSourceRefsTag, nil
 		}
 	}
 	// If we get to here, we've encountered an unsupported URL.
-	return "", fmt.Errorf("Commit(): unsupported URL: %s", u)
+	return "", "", models.VersionSourceNone, fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, error) {
+func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, string, error) {
 	directory, tag := path.Split(parsedURL.Path)
 	if !strings.HasSuffix(directory, "tag/") {
-		return "", errors.New("no tag found")
+		return "", "", errors.New("no tag found")
 	}
+	originalTag := tag
 	tag, err := git.NormalizeVersion(tag)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	maybeRepoURL, err := Repo(u)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	normalizedTags, err := git.NormalizeRepoTags(maybeRepoURL, nil, httpClient)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	for t, nTag := range normalizedTags {
 		if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
-			return nTag.Commit, nil
+			return nTag.Commit, originalTag, nil
 		}
 	}
 
-	return "", errors.New("no tag found")
+	return "", "", errors.New("no tag found")
 }
 
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
@@ -560,32 +562,34 @@ func ExtractCommitsFromRefs(references []models.Reference, httpClient *http.Clie
 // For URLs referencing commits in supported Git repository hosts, return a cloneable AffectedCommit.
 func extractGitAffectedCommit(link string, commitType models.CommitType, httpClient *http.Client, cache git.RepoTagsCache) (models.AffectedCommit, error) {
 	var ac models.AffectedCommit
-	c, r, err := ExtractGitCommit(link, httpClient, 0, cache)
+	c, r, tag, source, err := ExtractGitCommit(link, httpClient, 0, cache)
 	if err != nil {
 		return ac, err
 	}
 
 	ac.SetRepo(r)
+	ac.Source = source
+	ac.OriginalTag = tag
 
 	models.SetCommitByType(&ac, commitType, c)
 
 	return ac, nil
 }
 
-func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, error) {
+func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git.RepoTagsCache) (string, string, string, models.VersionSource, error) {
 	if depth > 10 {
-		return "", "", fmt.Errorf("max recursion depth exceeded for %s", link)
+		return "", "", "", models.VersionSourceNone, fmt.Errorf("max recursion depth exceeded for %s", link)
 	}
 
 	var commit string
 	r, err := Repo(link)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
-	c, err := Commit(link, httpClient)
+	c, tag, source, err := Commit(link, httpClient)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
 	commit = c
@@ -593,7 +597,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 	// If URL doesn't validate, treat it as linkrot.
 	possiblyDifferentLink, err := git.FindCanonicalLink(link, httpClient, cache)
 	if err != nil {
-		return "", "", err
+		return "", "", "", models.VersionSourceNone, err
 	}
 
 	// restart the entire extraction process when the URL changes (i.e. handle a
@@ -603,7 +607,7 @@ func ExtractGitCommit(link string, httpClient *http.Client, depth int, cache git
 		return ExtractGitCommit(possiblyDifferentLink, httpClient, depth+1, cache)
 	}
 
-	return commit, r, nil
+	return commit, r, tag, source, nil
 }
 
 func HasVersion(validVersions []string, version string) bool {
@@ -648,36 +652,79 @@ func processExtractedVersion(version string) string {
 	return version
 }
 
-func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
-	// Match:
-	//  - x.x.x before x.x.x
-	//  - x.x.x through x.x.x
-	//  - through x.x.x
-	//  - before x.x.x
-	pattern := regexp.MustCompile(`(?i)([\w.+\-]+)?\s+(through|before)\s+(?:version\s+)?([\w.+\-]+)`)
-	matches := pattern.FindAllStringSubmatch(text, -1)
-	if matches == nil {
-		metrics.AddNotef("Failed to parse versions from text")
-		return nil
+var (
+	textRangePattern             = regexp.MustCompile(`(?i)(?:([vV]?[0-9][\w.+\-]*)\s+)?(through|before|prior\s+to|earlier\s+than|up\s+to(?:\s+and\s+including)?|fixed\s+in|patched\s+in|resolved\s+in|versions?\s*<=?)\s+(?:versions?\s+)?[vV]?([0-9][\w.+\-]*)`)
+	textTrailingInclusivePattern = regexp.MustCompile(`(?i)\b[vV]?([0-9]+(?:\.[0-9a-zA-Z.+\-]+)+)\s+and\s+(?:earlier|before|below|prior|older)\b`)
+	textBeforeCommitPattern      = regexp.MustCompile(`(?i)\b(?:before|prior\s+to|fixed\s+in)\s+commits?\s+([0-9a-f]{7,40})\b`)
+	textThroughCommitPattern     = regexp.MustCompile(`(?i)\b(?:through|up\s+to|at|in)\s+commits?\s+([0-9a-f]{7,40})\b`)
+	textVulnerableCommitPattern  = regexp.MustCompile(`(?i)\b([0-9a-f]{7,40})\s+(?:is\s+vulnerable|l?contains\s+a\b|has\s+a\b)`)
+)
+
+func isInclusiveKeyword(kw string) bool {
+	kw = strings.ToLower(strings.TrimSpace(kw))
+	return kw == "through" || strings.HasPrefix(kw, "up to") || strings.HasSuffix(kw, "<=")
+}
+
+// isLikelyGitSHA checks whether a hex string is likely a Git commit hash.
+func isLikelyGitSHA(s string) bool {
+	if !isHexCommitPrefix(s) {
+		return false
 	}
 
-	versions := make([]models.RangeWithMetadata, 0, len(matches))
+	// We guess it's a commit if it contains both at least one decimal digit and a hex letter.
+	return strings.ContainsAny(s, "0123456789") && strings.ContainsAny(strings.ToLower(s), "abcdef")
+}
 
+func ExtractVersionsFromText(validVersions []string, text string, metrics *models.ConversionMetrics, source models.VersionSource) []models.RangeWithMetadata {
+	var versions []models.RangeWithMetadata
+
+	// 1. Check for explicit git commit references in prose (e.g., "before commit 6187a4e").
+	for _, m := range textBeforeCommitPattern.FindAllStringSubmatch(text, -1) {
+		sha := strings.Trim(m[1], ".")
+		if isLikelyGitSHA(sha) {
+			versions = append(versions, models.RangeWithMetadata{
+				Range:    BuildGitVersionRange("0", "", sha, ""),
+				Metadata: models.Metadata{Source: source},
+			})
+		}
+	}
+	for _, m := range textThroughCommitPattern.FindAllStringSubmatch(text, -1) {
+		sha := strings.Trim(m[1], ".")
+		if isLikelyGitSHA(sha) {
+			versions = append(versions, models.RangeWithMetadata{
+				Range:    BuildGitVersionRange("0", sha, "", ""),
+				Metadata: models.Metadata{Source: source},
+			})
+		}
+	}
+
+	// 2. Match leading/infix relative version phrases:
+	//  - x.x.x before/through x.x.x
+	//  - before/through/prior to/earlier than/up to/fixed in x.x.x
+	matches := textRangePattern.FindAllStringSubmatch(text, -1)
 	for _, match := range matches {
-		// Trim periods that are part of sentences.
-		introduced := processExtractedVersion(match[1])
-		fixed := processExtractedVersion(match[3])
+		introduced := processExtractedVersion(strings.TrimLeft(match[1], "vV"))
+		target := processExtractedVersion(match[3])
+		if target == "" || isLikelyGitSHA(target) {
+			continue
+		}
+
+		fixed := ""
 		lastaffected := ""
-		if match[2] == "through" && validVersions != nil {
-			// "Through" implies inclusive range, so the fixed version is the one that comes after.
-			var err error
-			fixed, err = nextVersion(validVersions, fixed)
-			if err != nil {
-				metrics.AddNotef("Failed to determine next version after %s: %s", fixed, err.Error())
-				// if that inference failed, we know this version was definitely still vulnerable.
-				lastaffected = cleanVersion(match[3])
-				metrics.AddNotef("Using %s as last_affected version instead", cleanVersion(match[3]))
+		if isInclusiveKeyword(match[2]) {
+			if validVersions != nil {
+				var err error
+				fixed, err = nextVersion(validVersions, target)
+				if err != nil {
+					metrics.AddNotef("Failed to determine next version after %s: %s", target, err.Error())
+					lastaffected = cleanVersion(target)
+					metrics.AddNotef("Using %s as last_affected version instead", lastaffected)
+				}
+			} else {
+				lastaffected = cleanVersion(target)
 			}
+		} else {
+			fixed = cleanVersion(target)
 		}
 
 		if introduced == "" && fixed == "" && lastaffected == "" {
@@ -694,7 +741,6 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 		if lastaffected != "" && !HasVersion(validVersions, lastaffected) {
 			metrics.AddNotef("Extracted last_affected version %s is not a valid version", lastaffected)
 		}
-		// Favour fixed over last_affected for schema compliance.
 		if fixed != "" && lastaffected != "" {
 			lastaffected = ""
 		}
@@ -705,8 +751,45 @@ func ExtractVersionsFromText(validVersions []string, text string, metrics *model
 			Metadata: models.Metadata{
 				Source: source,
 			},
-		},
-		)
+		})
+	}
+
+	// 3. Match trailing inclusive bounds (e.g., "25.11 and before", "3.0.1 and earlier").
+	for _, match := range textTrailingInclusivePattern.FindAllStringSubmatch(text, -1) {
+		target := cleanVersion(processExtractedVersion(match[1]))
+		if target == "" {
+			continue
+		}
+		fixed := ""
+		lastaffected := target
+		if validVersions != nil {
+			if nextVer, err := nextVersion(validVersions, target); err == nil {
+				fixed = nextVer
+				lastaffected = ""
+			}
+		}
+		versions = append(versions, models.RangeWithMetadata{
+			Range:    BuildVersionRange("0", lastaffected, fixed),
+			Metadata: models.Metadata{Source: source},
+		})
+	}
+
+	// 4. Fallback: commit hash immediately preceding "is vulnerable" / "contains a" (e.g. "stomper 5e2741e is vulnerable").
+	if len(versions) == 0 {
+		for _, m := range textVulnerableCommitPattern.FindAllStringSubmatch(text, -1) {
+			sha := strings.Trim(m[1], ".")
+			if isLikelyGitSHA(sha) {
+				versions = append(versions, models.RangeWithMetadata{
+					Range:    BuildGitVersionRange("0", sha, "", ""),
+					Metadata: models.Metadata{Source: source},
+				})
+			}
+		}
+	}
+
+	if len(versions) == 0 {
+		metrics.AddNotef("Failed to parse versions from text")
+		return nil
 	}
 
 	return versions
@@ -1249,7 +1332,7 @@ func ReposFromReferences(cache *VPRepoCache, vp *VendorProduct, refs []models.Re
 			continue
 		}
 		// If the reference is a commit URL, the repo is inherently useful (but only if the repo still ultimately works).
-		_, err = Commit(ref.URL, httpClient)
+		_, _, _, err = Commit(ref.URL, httpClient)
 		// Check if it was previously found to be bad:
 		if repoTagsCache != nil && repoTagsCache.IsInvalid(repo) {
 			continue

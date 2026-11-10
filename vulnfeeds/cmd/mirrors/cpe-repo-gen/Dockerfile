@@ -24,7 +24,7 @@ RUN go mod download
 COPY ./ /src/
 RUN CGO_ENABLED=0 go build -o cpe-repo-gen ./cmd/mirrors/cpe-repo-gen
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:be40864452bd6d7be21632a1dc18adf03d423de0bf2595f4a287c22400c484bb
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:9040d28a6512f32c495322a3af6ea000f803a0ae001cec055937154efe5a2230
 
 RUN apk add --no-cache unzip
 

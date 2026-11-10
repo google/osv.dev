@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
 	"github.com/google/osv.dev/go/internal/models"
@@ -258,7 +259,7 @@ func TestHandleReconcileGit(t *testing.T) {
 	}
 
 	ch := make(chan WorkItem, 10)
-	err := handleReconcileGit(t.Context(), ch, config, sourceRepo)
+	err := handleReconcileGit(t.Context(), ch, config, sourceRepo, time.Now())
 	if err != nil {
 		t.Fatalf("handleReconcileGit failed: %v", err)
 	}
@@ -309,7 +310,7 @@ func TestHandleReconcileGit_GitterError(t *testing.T) {
 	}
 
 	ch := make(chan WorkItem, 10)
-	err := handleReconcileGit(t.Context(), ch, config, sourceRepo)
+	err := handleReconcileGit(t.Context(), ch, config, sourceRepo, time.Now())
 	if err == nil {
 		t.Fatalf("Expected error from handleReconcileGit, got nil")
 	}

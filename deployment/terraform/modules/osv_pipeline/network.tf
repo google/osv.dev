@@ -46,6 +46,9 @@ resource "google_compute_router_nat" "nat_config" {
   nat_ip_allocate_option              = "AUTO_ONLY"
   region                              = google_compute_router.router.region
   enable_endpoint_independent_mapping = false
+  enable_dynamic_port_allocation      = true
+  min_ports_per_vm                    = 64
+  max_ports_per_vm                    = 4096
 
   subnetwork {
     name                    = google_compute_subnetwork.my_subnet_0.id
@@ -57,3 +60,33 @@ resource "google_compute_router_nat" "nat_config" {
     filter = "ALL"
   }
 }
+
+# Private Service Access VPC peering for Cloud SQL PostgreSQL
+resource "google_project_service" "service_networking" {
+  project            = var.project_id
+  service            = "servicenetworking.googleapis.com"
+  disable_on_destroy = false
+}
+
+data "google_compute_network" "default" {
+  project = var.project_id
+  name    = "default"
+}
+
+resource "google_compute_global_address" "private_ip_address" {
+  project       = var.project_id
+  name          = "google-managed-services-default"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = data.google_compute_network.default.id
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  network                 = data.google_compute_network.default.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+
+  depends_on = [google_project_service.service_networking]
+}
+

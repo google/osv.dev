@@ -152,6 +152,9 @@ def main() -> None:
   local_sourcerepos_names = {repo['name'] for repo in local_sourcerepos}
   # If the source repo is not in the local yaml, delete it
   for ds_repo in ds_repos:
+    if ds_repo['name'] == 'oss-fuzz':
+      # oss-fuzz is still used by the legacy oss-fuzz-importer/worker
+      continue
     if ds_repo['name'] not in local_sourcerepos_names:
       if args.verbose:
         print(f'Deleting source repository {ds_repo["name"]}')

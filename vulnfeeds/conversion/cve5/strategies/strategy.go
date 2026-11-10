@@ -111,6 +111,15 @@ func (s *ExtractionState) Ranges() []models.RangeWithMetadata {
 	return s.ranges
 }
 
+// SetStrategyFrom assigns strategyName to the Metadata.Strategy field for all ranges starting from startIdx.
+func (s *ExtractionState) SetStrategyFrom(startIdx int, strategyName string) {
+	for i := startIdx; i < len(s.ranges); i++ {
+		if s.ranges[i].Metadata.Strategy == "" {
+			s.ranges[i].Metadata.Strategy = strategyName
+		}
+	}
+}
+
 // VersionStrategy defines the contract for an Affected-level version extraction strategy.
 // Strategies are evaluated in the sequential order they appear in the configured slice.
 type VersionStrategy interface {

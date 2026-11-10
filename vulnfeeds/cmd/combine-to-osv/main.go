@@ -263,7 +263,12 @@ func main() {
 		}
 	}
 
-	logger.Info("Total CVE Work Items to process", slog.Int("count", len(workItems)))
+	// Release cve5Files and nvdFiles slices to free memory
+	cve5Files = nil
+	nvdFiles = nil
+
+	totalWork := len(workItems)
+	logger.Info("Total CVE Work Items to process", slog.Int("count", totalWork))
 
 	// Start Upload Pool
 	var outBkt, overridesBkt *storage.BucketHandle
@@ -302,16 +307,20 @@ func main() {
 
 	// Interpose Collector to gather valid IDs
 	var validIDs []string
+	if *syncDeletions && *uploadToGCS {
+		validIDs = make([]string, 0, totalWork)
+	}
+	var validCount atomic.Uint64
 	var collectValidIDsWg sync.WaitGroup
-	collectValidIDsWg.Add(1)
-	totalWork := len(workItems)
-	go func() {
-		defer collectValidIDsWg.Done()
+	collectValidIDsWg.Go(func() {
 		count := 0
 		for v := range vulnChan {
 			count++
 			if len(v.GetAffected()) > 0 {
-				validIDs = append(validIDs, v.GetId())
+				if *syncDeletions && *uploadToGCS {
+					validIDs = append(validIDs, v.GetId())
+				}
+				validCount.Add(1)
 			}
 			uploadVulnsChan <- v
 			if count%1000 == 0 {
@@ -319,7 +328,7 @@ func main() {
 			}
 		}
 		close(uploadVulnsChan)
-	}()
+	})
 
 	// Start ReadAndCombineWorkers (Read side)
 	var readAndCombineWg sync.WaitGroup
@@ -331,9 +340,11 @@ func main() {
 
 	// Feed Work
 	go func() {
-		for _, work := range workItems {
+		for id, work := range workItems {
 			workChan <- work
+			delete(workItems, id)
 		}
+		workItems = nil
 		close(workChan)
 	}()
 
@@ -345,7 +356,7 @@ func main() {
 	collectValidIDsWg.Wait()
 	uploadVulnsWg.Wait()
 
-	logger.Info("Successfully processed OSV files", slog.Int("count", len(validIDs)))
+	logger.Info("Successfully processed OSV files", slog.Uint64("count", validCount.Load()))
 	if outBkt == nil && gcsHelper == nil {
 		logger.Info("Successfully wrote records to disk", slog.Uint64("count", successCount.Load()))
 	}
@@ -607,12 +618,41 @@ func getExtractedEvents(r *osvschema.Range) []*structpb.Value {
 	return val.GetListValue().GetValues()
 }
 
-func parseExtractedEvent(v *structpb.Value) ExtractedEvent {
+func parseExtractedEvent(v *structpb.Value) []ExtractedEvent {
 	s := v.GetStructValue()
 	if s == nil {
-		return ExtractedEvent{}
+		return nil
 	}
 	fields := s.GetFields()
+
+	if rangeVal, ok := fields["range"]; ok && rangeVal.GetListValue() != nil {
+		var events []ExtractedEvent
+		for _, evVal := range rangeVal.GetListValue().GetValues() {
+			evS := evVal.GetStructValue()
+			if evS == nil {
+				continue
+			}
+			evFields := evS.GetFields()
+			var ev ExtractedEvent
+			if intro, ok := evFields["introduced"]; ok {
+				ev.Introduced = intro.GetStringValue()
+			}
+			if fixed, ok := evFields["fixed"]; ok {
+				ev.Fixed = fixed.GetStringValue()
+			}
+			if la, ok := evFields["last_affected"]; ok {
+				ev.LastAffected = la.GetStringValue()
+			}
+			if lim, ok := evFields["limit"]; ok {
+				ev.Limit = lim.GetStringValue()
+			}
+			events = append(events, ev)
+		}
+
+		return events
+	}
+
+	// Fallback to old flat structure (single event)
 	var ev ExtractedEvent
 	if intro, ok := fields["introduced"]; ok {
 		ev.Introduced = intro.GetStringValue()
@@ -627,7 +667,11 @@ func parseExtractedEvent(v *structpb.Value) ExtractedEvent {
 		ev.Limit = lim.GetStringValue()
 	}
 
-	return ev
+	if ev != (ExtractedEvent{}) {
+		return []ExtractedEvent{ev}
+	}
+
+	return nil
 }
 
 func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
@@ -635,9 +679,9 @@ func parseExtractedEvents(r *osvschema.Range) []ExtractedEvent {
 	if len(rawValues) == 0 {
 		return nil
 	}
-	events := make([]ExtractedEvent, 0, len(rawValues))
+	var events []ExtractedEvent
 	for _, val := range rawValues {
-		events = append(events, parseExtractedEvent(val))
+		events = append(events, parseExtractedEvent(val)...)
 	}
 
 	return events
@@ -688,6 +732,29 @@ func isCPERange(r *osvschema.Range) bool {
 	if fields == nil {
 		return false
 	}
+
+	// Check new location inside extracted_events first
+	if extractedEventsVal, ok := fields["extracted_events"]; ok && extractedEventsVal.GetListValue() != nil {
+		for _, groupVal := range extractedEventsVal.GetListValue().GetValues() {
+			groupS := groupVal.GetStructValue()
+			if groupS == nil {
+				continue
+			}
+			groupFields := groupS.GetFields()
+			if sourceVal, ok := groupFields["source"]; ok {
+				if sourceVal.GetStringValue() == "CPE_RANGE" {
+					return true
+				}
+			}
+			if strategyVal, ok := groupFields["strategy"]; ok {
+				if strategyVal.GetStringValue() == "CPEApplicability" {
+					return true
+				}
+			}
+		}
+	}
+
+	// Fallback to old location
 	val, ok := fields["source"]
 	if !ok {
 		return false
@@ -766,7 +833,7 @@ func cleanLastAffectedIfFixedExists(r *osvschema.Range) {
 }
 
 // isReferencesOnly checks if the range 'source' field is only "REFERENCES"
-// or ["REFERENCES"].
+// or ["REFERENCES"], either in extracted_events or at the top level.
 func isReferencesOnly(r *osvschema.Range) bool {
 	if r.GetDatabaseSpecific() == nil {
 		return false
@@ -775,6 +842,31 @@ func isReferencesOnly(r *osvschema.Range) bool {
 	if fields == nil {
 		return false
 	}
+
+	// Check new location inside extracted_events first
+	if extractedEventsVal, ok := fields["extracted_events"]; ok && extractedEventsVal.GetListValue() != nil {
+		groups := extractedEventsVal.GetListValue().GetValues()
+		if len(groups) > 0 {
+			allRefs := true
+			for _, groupVal := range groups {
+				groupS := groupVal.GetStructValue()
+				if groupS == nil {
+					allRefs = false
+					break
+				}
+				groupFields := groupS.GetFields()
+				sourceVal, ok := groupFields["source"]
+				if !ok || sourceVal.GetStringValue() != "REFERENCES" {
+					allRefs = false
+					break
+				}
+			}
+			if allRefs {
+				return true
+			}
+		}
+	}
+
 	val, ok := fields["source"]
 	if !ok {
 		return false

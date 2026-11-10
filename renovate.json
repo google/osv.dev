@@ -10,6 +10,7 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 20,
   "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "labels": [
     "dependencies"
   ],
@@ -21,11 +22,15 @@
     "enabled": true,
     "schedule": [
       "before 6am on wednesday"
-    ],
-    "groupName": "lockfile maintenance"
+    ]
   },
   "git-submodules": {
     "enabled": true
+  },
+  "pip_requirements": {
+    "ignorePaths": [
+      "docker/poetry/requirements.txt"
+    ]
   },
   "packageRules": [
     {
@@ -40,9 +45,18 @@
       "allowedVersions": "< 7.0.0"
     },
     {
+      "matchPackageNames": ["protobuf"],
+      "matchCategories": ["python"],
+      "allowedVersions": "< 7.0.0"
+    },
+    {
       "matchDepNames": [
         "gcp/workers/oss_fuzz_worker/osv-test"
       ],
+      "enabled": false
+    },
+    {
+      "matchDepTypes": ["uses-with"],
       "enabled": false
     },
     {
@@ -68,26 +82,11 @@
     },
     {
       "matchFileNames": [
-        "vulnfeeds/**"
-      ],
-      "matchCategories": ["python"],
-      "groupName": "vulnfeeds-python"
-    },
-    {
-      "matchFileNames": [
-        "vulnfeeds/**"
+        "vulnfeeds/**",
+        "external/**"
       ],
       "matchCategories": ["golang"],
-      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "vulnfeeds-go"
-    },
-    {
-      "matchFileNames": [
-        "vulnfeeds/**"
-      ],
-      "matchCategories": ["golang"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "vulnfeeds-go major"
     },
     {
       "matchFileNames": [
@@ -99,7 +98,19 @@
       "matchFileNames": [
         "tools/**"
       ],
-      "groupName": "tools"
+      "matchCategories": [
+        "python"
+      ],
+      "groupName": "tools-python"
+    },
+    {
+      "matchFileNames": [
+        "tools/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
+      "groupName": "tools-go"
     },
     {
       "matchFileNames": [
@@ -109,15 +120,31 @@
     },
     {
       "matchFileNames": [
-        ".github/**"
+        ".github/**",
+        "actions/**"
       ],
       "groupName": "workflows"
     },
     {
       "matchFileNames": [
-        "pyproject.toml"
+        "pyproject.toml",
+        "go/cmd/vanir_signatures/**"
+      ],
+      "matchCategories": [
+        "python"
       ],
       "groupName": "osv-lib"
+    },
+    {
+      "matchFileNames": [
+        "bindings/**",
+        "go/**",
+        "tools/repo-allowlist-sync/**"
+      ],
+      "matchCategories": [
+        "golang"
+      ],
+      "groupName": "go-libraries"
     },
     {
       "matchDatasources": [
@@ -144,6 +171,9 @@
       "matchDatasources": [
         "docker"
       ],
+      "matchManagers": [
+        "dockerfile"
+      ],
       "groupName": "docker"
     },
     {
@@ -153,35 +183,80 @@
       "groupName": "docker"
     },
     {
-      "matchManagers": [
-        "git-submodules"
+      "matchDatasources": [
+        "golang-version"
       ],
-      "groupName": "submodules"
+      "rangeStrategy": "bump",
+      "groupName": "golang-version"
     },
     {
       "matchDatasources": [
-        "git-refs",
-        "github-tags"
+        "docker"
       ],
-      "groupName": "submodules"
-    },
-    {
-      "matchFileNames": [
-        "bindings/**",
-        "go/**"
-      ],
-      "matchCategories": [
+      "matchPackageNames": [
         "golang"
       ],
-      "groupName": "go-libraries"
+      "groupName": "golang-version"
     },
     {
-      "matchDepTypes": ["uses-with"],
-      "enabled": false
+      "matchManagers": [
+        "git-submodules"
+      ],
+      "groupName": "osv-schema",
+      "minimumReleaseAge": null
     },
     {
-      "matchDatasources": ["golang-version"],
-      "rangeStrategy": "bump"
+      "matchPackageNames": [
+        "osv-schema",
+        "osv/osv-schema",
+        "ossf/osv-schema",
+        "https://github.com/ossf/osv-schema",
+        "https://github.com/ossf/osv-schema.git",
+        "github.com/ossf/osv-schema/**"
+      ],
+      "groupName": "osv-schema",
+      "minimumReleaseAge": null
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchManagers": [
+        "poetry",
+        "pip-compile"
+      ],
+      "groupName": "python",
+      "commitMessageExtra": "(python)"
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "npm",
+      "commitMessageExtra": "(npm)"
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchManagers": [
+        "bundler"
+      ],
+      "groupName": "bundler",
+      "commitMessageExtra": "(bundler)"
+    },
+    {
+      "matchUpdateTypes": [
+        "lockFileMaintenance"
+      ],
+      "matchManagers": [
+        "terraform"
+      ],
+      "groupName": "terraform",
+      "commitMessageExtra": "(terraform)"
     }
   ],
   "customManagers": [
@@ -200,7 +275,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "gcp/workers/linter/Dockerfile"
+        "go/cmd/osv-linter-worker/Dockerfile"
       ],
       "matchStrings": [
         "git clone https://github\\.com/ossf/osv-schema\\.git.*checkout (?<currentDigest>[a-f0-9]{40})"
@@ -223,6 +298,5 @@
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver"
     }
-  ],
-  "ignorePaths": ["docker/poetry/requirements.txt"]
+  ]
 }

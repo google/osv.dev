@@ -13,6 +13,27 @@
 # limitations under the License.
 
 steps:
+# Fetch PostgreSQL migrations at the release commit and apply to prod and private-osv
+- name: gcr.io/cloud-builders/git
+  entrypoint: bash
+  env: ['COMMIT_SHA=$COMMIT_SHA']
+  args:
+  - '-c'
+  - |
+    set -euo pipefail
+    git clone --filter=blob:none --no-checkout https://github.com/google/osv.dev.git repo
+    cd repo
+    git sparse-checkout set go/internal/database/postgres/migrations
+    git checkout "$COMMIT_SHA"
+- name: gcr.io/oss-vdb/goose
+  env: ['CLOUDSQL_INSTANCE=oss-vdb:us-central1:osv-db']
+  args: ['up']
+  dir:  repo/go/internal/database/postgres/migrations
+- name: gcr.io/oss-vdb/goose
+  env: ['CLOUDSQL_INSTANCE=private-osv:us-west2:osv-db']
+  args: ['up']
+  dir:  repo/go/internal/database/postgres/migrations
+
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=production-workers', '--annotations=tag=$TAG_NAME']

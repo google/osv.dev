@@ -93,29 +93,29 @@ resource "google_pubsub_subscription_iam_member" "worker_recovery_subscriber" {
   member       = "serviceAccount:${google_service_account.worker_sa.email}"
 }
 
-# Dedicated GKE Monitoring Service Account (Grafana)
-resource "google_service_account" "monitoring_sa" {
-  project      = var.project_id
-  account_id   = "osv-monitoring-sa"
-  display_name = "OSV Monitoring Service Account"
+# Cloud SQL and Secret Manager permissions for the GKE worker service account
+resource "google_project_iam_member" "worker_cloudsql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.worker_sa.email}"
 }
 
-# Read-only telemetry roles for monitoring dashboards
-resource "google_project_iam_member" "monitoring_sa_roles" {
+resource "google_secret_manager_secret_iam_member" "worker_postgres_secret_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.postgres_worker_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.worker_sa.email}"
+}
+
+# Cloud SQL IAM authentication permissions for the Cloud Build deployment service account (goose migrations)
+resource "google_project_iam_member" "deployment_cloudsql_roles" {
   for_each = toset([
-    "roles/monitoring.viewer",
-    "roles/logging.viewer"
+    "roles/cloudsql.client",
+    "roles/cloudsql.instanceUser",
   ])
 
   project = var.project_id
   role    = each.value
-  member  = "serviceAccount:${google_service_account.monitoring_sa.email}"
-}
-
-# Workload Identity binding for Grafana K8s ServiceAccount
-resource "google_service_account_iam_member" "grafana_workload_identity" {
-  service_account_id = google_service_account.monitoring_sa.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[default/grafana-sa]"
+  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
 }
 

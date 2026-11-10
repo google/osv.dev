@@ -17,6 +17,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/vulnfeeds/utility/logger"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 )
 
@@ -123,6 +124,7 @@ func (g *Helper) CloseAndWait() {
 func UploadToGCS(ctx context.Context, bkt *storage.BucketHandle, objectName string, data io.Reader, contentType string, metadata map[string]string) error {
 	obj := bkt.Object(objectName)
 	wc := obj.NewWriter(ctx)
+	wc.ChunkSize = googleapi.MinUploadChunkSize
 	if contentType != "" {
 		wc.ContentType = contentType
 	}

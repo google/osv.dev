@@ -41,6 +41,9 @@ module "osv_pipeline" {
   ]
 
   create_oss_fuzz_subnet = true
+
+  postgres_tier              = "db-perf-optimized-N-4"
+  postgres_availability_type = "ZONAL"
 }
 
 module "osv" {
@@ -56,14 +59,25 @@ module "osv" {
   osv_dev_sitemap_bucket        = "osv-dev-sitemap"
   backups_bucket                = "osv-backup"
   backups_bucket_retention_days = 60
-  gcs_log_dir                   = "gs://oss-vdb-tf/apply-logs"
 
   website_domain = "osv.dev"
-  api_url        = "api.osv.dev"
-  esp_version    = "2.55.3"
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"
+}
+
+module "osv_api" {
+  source = "../../modules/osv_api"
+
+  project_id  = "oss-vdb"
+  api_url     = "api.osv.dev"
+  esp_version = "2.57.1"
+  gcs_log_dir = "gs://oss-vdb-tf/apply-logs"
+
+  postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
+  postgres_region                = module.osv_pipeline.postgres_region
+  postgres_read_pool_tier        = "db-perf-optimized-N-16"
+  postgres_read_pool_node_count  = 2
 }
 
 module "oss_fuzz" {
@@ -127,9 +141,29 @@ import {
   id = "projects/oss-vdb/regions/us-central1/routers/router/nat-config"
 }
 
+import {
+  to = module.osv_pipeline.google_compute_global_address.private_ip_address
+  id = "projects/oss-vdb/global/addresses/google-managed-services-default"
+}
+
+import {
+  to = module.osv_pipeline.google_service_networking_connection.private_vpc_connection
+  id = "projects/oss-vdb/global/networks/default:servicenetworking.googleapis.com"
+}
+
 output "website_dns_records" {
   description = "DNS records that need to be created for the osv.dev website"
   value       = module.osv.website_dns_records
+}
+
+output "postgres_primary_private_ip" {
+  description = "Private IP address of the primary Cloud SQL PostgreSQL instance"
+  value       = module.osv_pipeline.postgres_private_ip_address
+}
+
+output "postgres_read_pool_private_ip" {
+  description = "Private IP address of the Cloud SQL PostgreSQL read pool instance"
+  value       = module.osv_api.read_pool_private_ip_address
 }
 
 terraform {
@@ -140,11 +174,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.46.0"
+      version = "~> 8.9.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.46.0"
+      version = "~> 8.9.0"
     }
     external = {
       source  = "hashicorp/external"

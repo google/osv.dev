@@ -34,6 +34,18 @@ func TestEnricher_Enrich(t *testing.T) {
 					Name:      "Flask",
 				},
 			},
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "NuGet",
+					Name:      "Newtonsoft.Json",
+				},
+			},
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "crates.io",
+					Name:      "serde_json",
+				},
+			},
 		},
 	}
 
@@ -57,5 +69,15 @@ func TestEnricher_Enrich(t *testing.T) {
 
 	if affected[2].GetPackage().GetName() != "Flask" {
 		t.Errorf("Expected Flask, got %s", affected[2].GetPackage().GetName())
+	}
+
+	// NuGet and crates.io names are only folded for matching, so the published
+	// names stay as the source wrote them.
+	if affected[3].GetPackage().GetName() != "Newtonsoft.Json" {
+		t.Errorf("Expected Newtonsoft.Json, got %s", affected[3].GetPackage().GetName())
+	}
+
+	if affected[4].GetPackage().GetName() != "serde_json" {
+		t.Errorf("Expected serde_json, got %s", affected[4].GetPackage().GetName())
 	}
 }

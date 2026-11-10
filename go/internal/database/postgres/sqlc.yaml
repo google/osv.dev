@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "migrations"
+    queries: "queries.sql"
+    gen:
+      go:
+        package: "postgres"
+        out: "."
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "timestamptz"
+            go_type: "time.Time"
+          - db_type: "timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+          - db_type: "jsonb"
+            go_type:
+              type: "[]byte"

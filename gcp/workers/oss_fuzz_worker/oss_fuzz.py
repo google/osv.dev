@@ -302,9 +302,7 @@ def process_impact_task(source_id, message):
     logging.warning('Bug %s already marked as invalid.', existing_bug.key.id())
     return
 
-  if existing_bug:
-    public = existing_bug.public
-  else:
+  if not existing_bug:
     raise osv.ImpactError('Task requested without Bug allocated.')
 
   repo_url = regress_result.repo_url or fix_result.repo_url
@@ -377,7 +375,6 @@ def process_impact_task(source_id, message):
 
   project = fix_result.project or regress_result.project
   ecosystem = fix_result.ecosystem or regress_result.ecosystem
-  osv.update_affected_commits(allocated_bug_id, result.commits, public)
 
   affected_tags = sorted(list(result.tags))
   existing_bug.fixed = fix_commit

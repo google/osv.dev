@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -103,6 +104,7 @@ func uploadIfChanged(ctx context.Context, v *osvschema.Vulnerability, hexHash st
 	logger.Info("Uploading vulnerability record to GCS", slog.String("id", vulnID), slog.String("object", objName))
 
 	wc := obj.NewWriter(ctx)
+	wc.ChunkSize = googleapi.MinUploadChunkSize
 	wc.Metadata = map[string]string{
 		hashMetadataKey: hexHash,
 	}

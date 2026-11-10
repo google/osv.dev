@@ -28,7 +28,9 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/dustin/go-humanize"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -81,11 +83,21 @@ var (
 	invalidRepoCacheMaxEntries int64
 
 	// gitMirrors lists more performant mirrors for large/popular repos.
+	// Keys are normalized as lowercase "<host><path>" without trailing slashes or ".git" suffix.
 	// TODO: Don't hardcode this.
 	gitMirrors = map[string]string{
-		"https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
-		"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
-		"https://git.pengutronix.de/cgit/barebox":                            "https://github.com/barebox/barebox.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/stable/linux":   "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux.git",
+		"git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"git.pengutronix.de/cgit/barebox":                        "https://github.com/barebox/barebox.git",
+		"github.com/chromium/chromium":                           "https://chromium.googlesource.com/chromium/src.git",
+	}
+
+	// caseInsensitiveHosts lists Git hosts with case-insensitive repo paths.
+	// Other hosts (e.g. Gerrit/cgit-based) may have case-sensitive paths that will 404 if lowercased
+	// (e.g. https://android.googlesource.com/platform/packages/modules/Bluetooth).
+	caseInsensitiveHosts = map[string]bool{
+		"github.com": true,
+		"gitlab.com": true,
 	}
 )
 
@@ -219,8 +231,15 @@ func checkInvalidRepoCache(ctx context.Context, repoURL string) (int, bool) {
 }
 
 // cacheInvalidRepo records a negative response (404, 403, or 429) in the cache.
-func cacheInvalidRepo(repoURL string, statusCode int) {
+func cacheInvalidRepo(ctx context.Context, repoURL string, statusCode int, err error) {
+	if statusCode == http.StatusNotFound {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
+	}
 	if statusCode == http.StatusNotFound || statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
+		logger.WarnContext(ctx, "Caching invalid repository",
+			slog.Int("status", statusCode),
+			slog.Any("error", err),
+		)
 		invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
 	}
 }
@@ -263,16 +282,28 @@ func isLocalRequest(req *http.Request) bool {
 
 func prepareURL(req *http.Request, repoURL string) (string, error) {
 	if repoURL == "" {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 		return "", errors.New("missing url parameter")
 	}
 
 	u, err := url.Parse(repoURL)
 	if err != nil {
+		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 		return "", fmt.Errorf("error parsing url: %w", err)
 	}
 
-	// Removing trailing slashes
-	u.Path = strings.TrimSuffix(u.Path, "/")
+	if !isLocalRequest(req) {
+		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
+			metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
+			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
+		}
+	}
+
+	u.Host = strings.ToLower(u.Host)
+	u.Path = strings.TrimRight(u.Path, "/")
+	if caseInsensitiveHosts[u.Host] {
+		u.Path = strings.ToLower(u.Path)
+	}
 
 	// Convert git://github.com to https://github.com because it times out for some reason
 	// git protocol on non-github urls works fine
@@ -284,20 +315,11 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	// normalize to https before checking for mirrors.
-	mirrorKey := u.String()
-	if u.Scheme == "http" {
-		mirrorKey = "https" + u.String()[4:]
-	}
+	// Normalize path before checking for mirrors.
+	mirrorKey := strings.TrimSuffix(strings.ToLower(u.Host+u.Path), ".git")
 	if mirror, ok := gitMirrors[mirrorKey]; ok {
 		logger.Debug("Using mirror URL", slog.String("from", repoURL), slog.String("to", mirror))
 		return mirror, nil
-	}
-
-	if !isLocalRequest(req) {
-		if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "git" {
-			return "", fmt.Errorf("unsupported protocol: %s", u.Scheme)
-		}
 	}
 
 	logger.Debug("Prepared URL", slog.String("from", repoURL), slog.String("to", u.String()))
@@ -306,11 +328,28 @@ func prepareURL(req *http.Request, repoURL string) (string, error) {
 }
 
 func logRequestCompletion(ctx context.Context, endpoint string, start time.Time, statusCode int) {
+	duration := time.Since(start)
+	metrics.RecordGitterOperation(endpoint, fmt.Sprintf("%dxx", statusCode/100), duration)
 	logger.InfoContext(ctx, "Request completed",
 		slog.String("endpoint", endpoint),
 		slog.Int("status", statusCode),
-		slog.Duration("duration", time.Since(start)),
+		slog.Duration("duration", duration),
 	)
+}
+
+func updateDiskMetrics(dir string) {
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(dir, &stat); err != nil {
+		return
+	}
+	if stat.Bsize <= 0 || stat.Blocks == 0 {
+		return
+	}
+	blockSize := float64(stat.Bsize)
+	usedBytes := float64(stat.Blocks-stat.Bfree) * blockSize
+	totalBytes := float64(stat.Blocks) * blockSize
+	metrics.GitterDiskUsedBytes.Set(usedBytes)
+	metrics.GitterDiskTotalBytes.Set(totalBytes)
 }
 
 func getRepoDirName(repoURL string) string {
@@ -350,6 +389,7 @@ func writeResponse(w http.ResponseWriter, req *http.Request, msg proto.Message) 
 		out, err = proto.Marshal(msg)
 	}
 	if err != nil {
+		http.Error(w, fmt.Sprintf("Error marshaling response: %v", err), http.StatusInternalServerError)
 		return err
 	}
 
@@ -404,6 +444,24 @@ func main() {
 	// Create a context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	metrics.StartMetricsServer(ctx, metricsPort)
+	http.Handle("GET /metrics", promhttp.Handler())
+
+	updateDiskMetrics(*workDir)
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				updateDiskMetrics(*workDir)
+			}
+		}
+	}()
 
 	for endpoint, handler := range endpointHandlers {
 		http.Handle(endpoint, otelhttp.NewHandler(handler, endpoint))
@@ -489,7 +547,7 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	// Fetch repo first
 	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
 
 		return
@@ -520,7 +578,6 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.ErrorContext(ctx, "Error copying file", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, "Error copying file", statusCode)
 
 		return
 	}
@@ -564,7 +621,7 @@ func cacheHandler(w http.ResponseWriter, req *http.Request) {
 
 	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -639,7 +696,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -656,6 +713,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	default:
 		affectedCommits = repo.AffectedSingleBranch(ctx, se)
 	}
+	metrics.RecordGitterCommitsScanned(len(affectedCommits))
 
 	cherryPickedEvents := make([]*pb.Event, 0, len(cherrypicks.Introduced)+len(cherrypicks.Fixed)+len(cherrypicks.Limit))
 	for _, h := range cherrypicks.Introduced {
@@ -697,7 +755,6 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing affected commits response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing affected commits response: %v", err), statusCode)
 	}
 }
 
@@ -760,7 +817,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
 				statusCode = errorToHTTPStatusCode(errFetch)
-				cacheInvalidRepo(repoURL, statusCode)
+				cacheInvalidRepo(ctx, repoURL, statusCode, errFetch)
 				http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
 
 				return
@@ -794,7 +851,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			})
 			if errLsRemote != nil {
 				statusCode = errorToHTTPStatusCode(errLsRemote)
-				cacheInvalidRepo(repoURL, statusCode)
+				cacheInvalidRepo(ctx, repoURL, statusCode, errLsRemote)
 				http.Error(w, fmt.Sprintf("Error listing remote tags: %v", errLsRemote), statusCode)
 
 				return
@@ -816,7 +873,6 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing tags response: %v", err), statusCode)
 	}
 }
 
@@ -854,7 +910,7 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -891,7 +947,6 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing diff response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing diff response: %v", err), statusCode)
 	}
 }
 
@@ -935,7 +990,7 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -964,7 +1019,6 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
 	}
 }
 
@@ -1017,7 +1071,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -1039,6 +1093,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 
 		return
 	}
+	metrics.RecordGitterCommitsScanned(len(commits))
 
 	pbCommits := make([]*pb.CommitDiff, 0, len(commits))
 	for _, c := range commits {
@@ -1071,6 +1126,5 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing commit diffs response: %v", err), statusCode)
 	}
 }

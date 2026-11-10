@@ -15,6 +15,7 @@ func Default() []VersionStrategy {
 		&CPEVersionStringStrategy{},
 		&VersionTextExtractionStrategy{},
 		&StandaloneSingleVersionStrategy{},
+		&InverseAffectedRangesStrategy{},
 	}
 }
 
@@ -23,7 +24,6 @@ func Default() []VersionStrategy {
 // test_data/cvelistV5/cves/2024/21xxx/CVE-2024-21634.json
 func GitHub() []VersionStrategy {
 	return []VersionStrategy{
-		&SplitRangeStrategy{},
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
@@ -77,14 +77,15 @@ func Patchstack() []VersionStrategy {
 // test_data/cve5/CVE-2016-1897.json
 func MITRE() []VersionStrategy {
 	return []VersionStrategy{
-		&SplitRangeStrategy{},
 		&ChangesAtStrategy{},
 		&StandardRangeStrategy{},
 		&StringRangeExpressionStrategy{},
 		&GitCommitStrategy{},
 		&CPEVersionStringStrategy{},
+		&VersionTextExtractionStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
 		&StandaloneSingleVersionStrategy{},
+		&InverseAffectedRangesStrategy{},
 	}
 }
 
@@ -97,5 +98,18 @@ func Linux() []VersionStrategy {
 		&StandardRangeStrategy{},
 		&GitCommitIntroducedOnlyStrategy{},
 		&ZeroIntroducedSingleVersionStrategy{},
+	}
+}
+
+// Curl returns the strategy pipeline for curl advisories.
+// Example: test_data/cve5/CVE-2024-7264.json
+func Curl() []VersionStrategy {
+	return []VersionStrategy{
+		&ChangesAtStrategy{},
+		&StandardRangeStrategy{},
+		&StringRangeExpressionStrategy{},
+		&GitCommitStrategy{},
+		&CPEVersionStringStrategy{},
+		&StandaloneSingleVersionStrategy{},
 	}
 }

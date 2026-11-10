@@ -94,7 +94,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -163,11 +163,11 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 195,
+          "versions": 194,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -271,7 +271,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -322,7 +322,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -373,7 +373,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dan Fandrich",
@@ -424,7 +424,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "w0x42 on hackerone",
@@ -475,7 +475,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Frank Yueh",
@@ -526,11 +526,15 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dov Murik (Transmit Security)",
           "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
         },
         {
           "name": "Stefan Eissing",
@@ -577,7 +581,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -628,7 +632,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "newfunction",
@@ -679,7 +683,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Yihang Zhou",
@@ -730,7 +734,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "z2_",
@@ -760,29 +764,19 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.17.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.17.0"
                 }
               ]
             },
@@ -803,7 +797,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -833,29 +827,19 @@
                   "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.17.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.17.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -876,7 +860,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -906,29 +890,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -949,7 +923,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "anonymous237 on hackerone",
@@ -979,29 +953,19 @@
                   "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.87.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.87.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1022,7 +986,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -1052,29 +1016,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1095,7 +1049,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1125,29 +1079,19 @@
                   "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.18.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.58.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.58.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.18.0"
                 }
               ]
             },
@@ -1168,7 +1112,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Harry Sintonen",
@@ -1219,7 +1163,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.7.5",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Hiroki Kurosawa",
@@ -1249,40 +1193,25 @@
                   "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.88.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1303,10 +1232,83 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-107928",
+      "summary": "info leak uploading over WebSockets with GnuTLS",
+      "details": "When curl is built with GnuTLS, a malicious WebSocket server can make curl\nsend memory past its send buffer. This is due to an out of bounds read\nfollowing when `gnutls_record_send()` returns a number of bytes sent **greater\nthan the number of bytes it was given to send**. GnuTLS does that after a\nblocked send.",
+      "aliases": ["CVE-2026-107928"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.86.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "664249d095275ec532f55dd1752d80c8c1093a77"
+                },
+                {
+                  "fixed": "64fb3e7a7b116f690966054f281624152d4a7651"
+                }
+              ]
+            }
+          ],
+          "versions": 93,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Luna with Claude",
+          "type": "FINDER"
+        },
+        {
+          "name": "Anthropic",
           "type": "FINDER"
         },
         {
@@ -1333,40 +1335,25 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1387,7 +1374,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "jjchuck on hackerone",
@@ -1417,40 +1404,25 @@
                   "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.81.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -1471,7 +1443,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "alienowo on hackerone (AntAISecurityLab)",
@@ -1501,40 +1473,25 @@
                   "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.82.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1555,7 +1512,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Eunsoo Kim (Autonomous Code Security team at Microsoft)",
@@ -1585,40 +1542,25 @@
                   "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.44.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1639,7 +1581,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stephan Zeisberg (Security Research Labs)",
@@ -1669,29 +1611,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1712,7 +1644,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Zhicheng Chen",
@@ -1742,40 +1674,25 @@
                   "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.64.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -1796,7 +1713,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Martin Dukek",
@@ -1826,29 +1743,19 @@
                   "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.33.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.33.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1869,7 +1776,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "spectreglobalsec on hackerone",
@@ -1899,29 +1806,19 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.19.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.19.0"
                 }
               ]
             },
@@ -1942,7 +1839,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati (HackerOne: nobcoder)",
@@ -1972,29 +1869,19 @@
                   "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.20.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.20.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2015,7 +1902,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Arkadi Vainbrand",
@@ -2045,29 +1932,19 @@
                   "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.10.6"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.10.6"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2088,7 +1965,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Quac Tran and Ngoc Hieu",
@@ -2118,29 +1995,19 @@
                   "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.40.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.40.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2161,7 +2028,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Osama Hamad",
@@ -2191,29 +2058,19 @@
                   "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.1"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.1"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2234,7 +2091,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Dwij Mehta (O2 Lab",
@@ -2268,29 +2125,19 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2311,7 +2158,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2341,29 +2188,19 @@
                   "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.14.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.14.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2384,7 +2221,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2414,29 +2251,19 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.20.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
+                  "fixed": "8.14.2"
+                },
                 {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.0"
                 }
               ]
             },
@@ -2457,7 +2284,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2487,40 +2314,25 @@
                   "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.45.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2541,7 +2353,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2571,40 +2383,25 @@
                   "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.71.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2625,7 +2422,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2655,40 +2452,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.22.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
                 }
               ]
             },
@@ -2709,7 +2491,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Stanislav Fort (Aisle Research)",
@@ -2739,40 +2521,25 @@
                   "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.30.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2793,7 +2560,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Andrew Nesbitt (powered by Mythos)",
@@ -2823,40 +2590,25 @@
                   "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.43.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2877,7 +2629,421 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Muhamad Arga Reksapati",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-86409",
+      "summary": "stale SigV4 headers sent unintended",
+      "details": "Setting `CURLOPT_AWS_SIGV4` to NULL does not disable SigV4 authentication,\ncontrary to expectations and documentation. A subsequent transfer on the same\nhandle still sends an `Authorization: AWS4-HMAC-SHA256` header to whatever URL\nis set next, leaking state information.",
+      "aliases": ["CVE-2026-86409"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.75.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "08e8455dddc5e48e58a12ade3815c01ae3da3b64"
+                },
+                {
+                  "fixed": "c3c70440e8d9938c0bb732595751e8aebc614f24"
+                }
+              ]
+            }
+          ],
+          "versions": 116,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Viktor Szakats",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-86414",
+      "summary": "leaking host credentials to HTTP proxy",
+      "details": "An HTTP proxy can trick libcurl into sending the origin's credentials (Basic\npassword, or a Negotiate/Kerberos ticket) to the proxy itself, by answering\nthe `CONNECT` tunnel request with 401 `WWW-Authenticate:` instead of the\nexpected 407 `Proxy-Authenticate:`.",
+      "aliases": ["CVE-2026-86414"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.10.8"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "52ceab5e41a01b4d1227876d51a3680a3ce5a841"
+                },
+                {
+                  "fixed": "2956af6c7451029fb12c12f8166dff211f930d52"
+                }
+              ]
+            }
+          ],
+          "versions": 364,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-87863",
+      "summary": "HSTS response erases persisted entries",
+      "details": "An authenticated HTTPS origin can supply an HSTS `max-age` value that the\nparser accepts, but time serialization later fails to process. On 64-bit\nsystems, extreme max-age values compute an absolute expiry within standard\ntime integer limits that exceeds calendar time structure bounds. During cache\nsaves, the original HSTS file is truncated before writing a temporary\nreplacement; when serialization fails, the temporary file is deleted, leaving\nan empty or partial cache. Because the save error is silently ignored during\ncleanup, curl exits successfully despite the data loss.",
+      "aliases": ["CVE-2026-87863"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "0c667188e0c6cda615a036b8a2b4125f2c404dde"
+                },
+                {
+                  "fixed": "08d50a791b3197a3d0a4fc2f778e243f5501c67e"
+                }
+              ]
+            }
+          ],
+          "versions": 72,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-87864",
+      "summary": "IMAP APPEND plus CRLF conversion command injection",
+      "details": "Enabling `CURLOPT_CRLF` causes curl to advertise the raw input byte count in\nthe `IMAP APPEND {N}` literal while transmitting line-ending expanded data.\nThe server reads only $N$ bytes for the payload, causing the remaining\noverflow bytes to be interpreted and executed as pipelined IMAP commands\nwithin the authenticated session.",
+      "aliases": ["CVE-2026-87864"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.30.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.22.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "f8c8c76d39ac2fa825481ba42ab2247cd122f963"
+                },
+                {
+                  "fixed": "3b547de301342b347fb3c6ea6ae7979070793a66"
+                }
+              ]
+            }
+          ],
+          "versions": 245,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Stefan Eissing",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-87865",
+      "summary": "knownhost callback mismatches key as missing",
+      "details": "When libcurl uses libssh2 with a hashed `known_hosts` file, an unrelated\ninitial entry can cause host key validation to report a key *mismatch* as a\n*missing* key to the `CURLOPT_SSH_KEYFUNCTION` callback.",
+      "aliases": ["CVE-2026-87865"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.69.1"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "e96fe70cabcb3a5a009821dbb453dc0160ddc3f5"
+                },
+                {
+                  "fixed": "323c184b6bdf5b1988a10c0a61560666e1588149"
+                }
+              ]
+            }
+          ],
+          "versions": 133,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Bobbeh Rhino",
+          "type": "FINDER"
+        },
+        {
+          "name": "Bobbeh Rhino",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-87866",
+      "summary": "wolfSSL public-key pinning bypass",
+      "details": "When built with wolfSSL, curl can successfully validate a pinned public key\nhash against a key the TLS peer does not possess. During the TLS handshake,\nwolfSSL validates the connection, but curl's subsequent re-parsing of the same\ncertificate - tricked by a manipulated validity length field - extracts and\nmatches a different embedded key, incorrectly authorizing the pinned public\nkey.",
+      "aliases": ["CVE-2026-87866"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.43.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "0675abbc7572ff6d711a1f325d9b812f98bce78f"
+                },
+                {
+                  "fixed": "ed131747c1a3dc7f816d26724c44537ac8acba44"
+                }
+              ]
+            }
+          ],
+          "versions": 217,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Muhamad Arga Reksapati",
@@ -2907,40 +3073,25 @@
                   "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.46.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -2961,7 +3112,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "vegagent on hackerone",
@@ -2991,40 +3142,25 @@
                   "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.12.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3045,7 +3181,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Ady Elouej",
@@ -3075,40 +3211,25 @@
                   "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.7"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3129,7 +3250,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3137,6 +3258,351 @@
         },
         {
           "name": "Joshua Rogers (Aisle Research)",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-92388",
+      "summary": "FTP wildcard write callback mixup",
+      "details": "When an FTP wildcard `LIST` operation fails, libcurl omits the restoration\npath meant for successful listings, leaving the write callback set to the\ninternal listing parser and the write callback data pointing directly to the\neasy handle. Subsequent reuse of this handle triggers an immediate crash, and\ncloning it via `curl_easy_duphandle()` copies this corrupted state into the\nduplicate. If the original handle is subsequently freed, executing a transfer\non the cloned handle causes a heap use-after-free read against the dangling\nhandle reference; alternatively, reusing the original or cloned handle while\nchanging only `CURLOPT_WRITEDATA` (and omitting `CURLOPT_WRITEFUNCTION`)\nresults in type confusion, forcing the internal parser to interpret incoming\nserver response bytes into memory at the application-supplied write data\npointer.",
+      "aliases": ["CVE-2026-92388"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.21.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "0825cd80a62c21725fb3615f1fdd3aa6cc5f0f34"
+                },
+                {
+                  "fixed": "ba8f8a7f27a5c5e19e4ef212b90b35a93559163e"
+                }
+              ]
+            }
+          ],
+          "versions": 283,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-92389",
+      "summary": "TFTP direction confusion",
+      "details": "libcurl's TFTP state machine fails to validate state transitions against the\nrequested transfer direction, accepting opening server responses for both\nreads and writes interchangeably. A malicious TFTP server can respond to a\ndownload request in a way that forces the client into transmit mode, prompting\nlibcurl to consume and transmit data from the handle's persistent\n`CURLOPT_READDATA` pointer - including data remaining from unrelated prior\noperations, such as an HTTP POST request executed on a reused handle.",
+      "aliases": ["CVE-2026-92389"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.15.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "56d9624b566ac15ffb4b4b6eef220a5000b767e0"
+                },
+                {
+                  "fixed": "63dd390fab905a239a97e2700532929343ebc4e9"
+                }
+              ]
+            }
+          ],
+          "versions": 337,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-92390",
+      "summary": "-J no-clobber guarantee bypassed with 103 early hints",
+      "details": "When invoked with `--remote-header-name` (`-J`), curl fails to preserve its\ndocumented anti-clobbering protection if an intermediate 103 Early Hints\nresponse precedes the final HTTP response, or if an `ETag` header is processed\nbefore `Content-Disposition` under `--etag-save`. This flaw allows an HTTP(S)\nserver to overwrite an existing local file specified in the\n`Content-Disposition` header despite the presence of the `-J` non-overwrite\nconstraint.",
+      "aliases": ["CVE-2026-92390"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.20.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "80675818e0417be8c991513b328c5507e93b47e5"
+                },
+                {
+                  "fixed": "c24a69d8cd368de4e25e3540bf0b7b000a31d5a7"
+                }
+              ]
+            }
+          ],
+          "versions": 287,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-92391",
+      "summary": "curl_mime_free stack overflow by recursion",
+      "details": "A deeply nested multipart MIME structure constructed via the public API causes\na stack overflow in libcurl during normal cleanup operations. An excessive\nrecursion depth within `curl_mime_free` leads to unbounded stack frame\nallocation during structure traversal, ultimately crashing the host process.",
+      "aliases": ["CVE-2026-92391"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.56.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "ce0881edee3c78609eae49665fb70264d8786d29"
+                },
+                {
+                  "fixed": "d7546809d5bd548b69ec49fca26565c8f6f0d344"
+                }
+              ]
+            }
+          ],
+          "versions": 173,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
+      "id": "CURL-CVE-2026-94266",
+      "summary": "password leak in CURLINFO_EFFECTIVE_URL",
+      "details": "libcurl could accidentally return a URL for `curl_easy_getinfo()`'s\n`CURLINFO_EFFECTIVE_URL` option containing credentials, even though neither\nthe URL provided to libcurl nor the redirected URL did.",
+      "aliases": ["CVE-2026-94266"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.62.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "46e164069d1a5230e4e64cbd2ff46c46cce056bb"
+                },
+                {
+                  "fixed": "7a6bd027d0de2b6857472d35da090ef60cc29f19"
+                }
+              ]
+            }
+          ],
+          "versions": 158,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Joshua Rogers (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
           "type": "REMEDIATION_DEVELOPER"
         }
       ]
@@ -3159,40 +3625,25 @@
                   "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.21.0"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "fixed": "8.14.2"
                 },
                 {
-                  "fixed": "8.20.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
+                  "introduced": "8.15.0"
                 },
                 {
                   "fixed": "8.16.1"
-                }
-              ]
-            },
-            {
-              "type": "SEMVER",
-              "events": [
-                {
-                  "introduced": "7.69.0"
                 },
                 {
-                  "fixed": "8.14.2"
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.1"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.21.0"
                 }
               ]
             },
@@ -3213,7 +3664,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "credits": [
         {
           "name": "Joshua Rogers (Aisle Research)",
@@ -3289,7 +3740,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3321,6 +3772,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/12/11/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-212953.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
         },
         {
           "type": "WEB",
@@ -3376,7 +3839,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3417,6 +3880,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
         },
         {
           "type": "WEB",
@@ -3484,7 +3959,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3527,6 +4002,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
         },
         {
           "type": "WEB",
@@ -3594,7 +4081,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3627,6 +4114,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/03/27/4"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-331112.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-417159.html"
         },
         {
           "type": "WEB",
@@ -3690,7 +4189,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3722,6 +4221,18 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/07/31/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-355557.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
         },
         {
           "type": "WEB",
@@ -3784,7 +4295,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3812,6 +4323,14 @@
         {
           "type": "WEB",
           "url": "http://www.openwall.com/lists/oss-security/2024/09/11/1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
         },
         {
           "type": "WEB",
@@ -3863,7 +4382,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3971,7 +4490,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -3995,6 +4514,14 @@
       ],
       "database_specific": "<Any value>",
       "references": [
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-089022.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
         {
           "type": "WEB",
           "url": "https://curl.se/docs/CVE-2025-0167.html"
@@ -4041,7 +4568,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4100,7 +4627,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "11b991232fbcaa88e2b1faecac224416b0001e35"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "400fffa90f30c7a2dc762fa33009d24851bd2016"
@@ -4118,14 +4645,15 @@
                 {
                   "fixed": "b011e3fcfb06d6c0278595ee2ee297036fbe9793"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 106,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4188,7 +4716,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                  "introduced": "3bc11344deca01726522fadd54927a9f5f3db68f"
                 },
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
@@ -4206,14 +4734,15 @@
                 {
                   "fixed": "39d1976b7f709a516e3243338ebc0443bdd8d56d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 284,
+          "versions": 288,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4298,14 +4827,15 @@
                 {
                   "fixed": "1a822275d333dc6da6043497160fd04c8fa48640"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 213,
+          "versions": 214,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4386,14 +4916,15 @@
                 {
                   "fixed": "cd046f6c93b39d673a58c18648d8906e954c4f5d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 63,
+          "versions": 64,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4478,14 +5009,15 @@
                 {
                   "fixed": "adca486c125d9a6d9565b9607a19dce803a8b479"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 141,
+          "versions": 142,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4569,14 +5101,15 @@
                 {
                   "fixed": "16d5f2a5660c61cc27bd5f1c7f512391d1c927aa"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 142,
+          "versions": 143,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4644,7 +5177,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4660,6 +5193,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:11:15.378Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -4706,7 +5240,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "3027611ca6d4cc5510d2d0fccc3e5a074e09a2fb"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4724,14 +5258,15 @@
                 {
                   "fixed": "bfbff7852f050232edd3e5ca5c6bf2021c340f5a"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 78,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4746,7 +5281,16 @@
       "aliases": ["CURL-CVE-2026-11856"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:13:31.661Z",
-      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
+      "related": [
+        "ALSA-2026:69125",
+        "ALSA-2026:80511",
+        "ALSA-2026:92368",
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
+        "openSUSE-SU-2026:11230-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -4782,7 +5326,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "bdb5e5a25037a585e0ec6b83d29b25961c6823f8"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4800,14 +5344,15 @@
                 {
                   "fixed": "5c6b4880357ab3e72967c1c45cae0f96ffabc535"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 357,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4830,6 +5375,9 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -4868,7 +5416,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "801bd5138ce31aa0d906fa4e2eabfc599d74e793"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -4886,14 +5434,15 @@
                 {
                   "fixed": "ab3bb8cd8be8f9d4acb97da0418abc279182041e"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 94,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4972,14 +5521,15 @@
                 {
                   "fixed": "ea71c3b6b60e563651ea8596a975aef0c8199519"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 96,
+          "versions": 97,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -4994,7 +5544,12 @@
       "aliases": ["CURL-CVE-2026-18924"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:47:27.820Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -5048,14 +5603,15 @@
                 {
                   "fixed": "90325ff0444cbdff368bda5d26d6405a0bb6ee43"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 210,
+          "versions": 211,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5136,14 +5692,15 @@
                 {
                   "fixed": "f1a39f221d57354990e3eeeddc3404aede2aff70"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 345,
+          "versions": 346,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5158,7 +5715,13 @@
       "aliases": ["CURL-CVE-2026-19931"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:47:43.523Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -5212,14 +5775,15 @@
                 {
                   "fixed": "7103a93b05bc69ea98ed9d05d02fa9eeba533f2f"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 146,
+          "versions": 147,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5305,14 +5869,15 @@
                 {
                   "fixed": "e3d7401a32a46516c9e5ee877e613e62ed35bddc"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 220,
+          "versions": 221,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5401,14 +5966,15 @@
                 {
                   "fixed": "5f13a7645e565c5c1a06f3ef86e97afb856fb364"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 402,
+          "versions": 403,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5491,14 +6057,15 @@
                 {
                   "fixed": "507e7be573b0a76fca597b75ff7cb27a66e7d865"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 270,
+          "versions": 271,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5514,6 +6081,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:27:26.065Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5577,14 +6145,15 @@
                 {
                   "fixed": "33e43985b8f3b9e66691d06e70be0395849856cd"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 351,
+          "versions": 352,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5668,14 +6237,15 @@
                 {
                   "fixed": "74a169575d6412dc0ff532acdf94de35a6c2a571"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 209,
+          "versions": 210,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5691,6 +6261,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:28:03.004Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5758,14 +6329,15 @@
                 {
                   "fixed": "188c2f166a20fa97c2325b2da7d0e5cecc13725f"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 322,
+          "versions": 323,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5848,14 +6420,15 @@
                 {
                   "fixed": "3a19987a87f393d9394fe5acc7643f6c263c92db"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 114,
+          "versions": 115,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5871,6 +6444,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:28:36.166Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:1717-1",
         "SUSE-SU-2026:1940-1",
         "SUSE-SU-2026:21452-1",
@@ -5934,14 +6508,15 @@
                 {
                   "fixed": "b4024bf808bd558026fdc6096e8457f199ace306"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 324,
+          "versions": 325,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -5957,6 +6532,7 @@
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-05-13T08:29:08.900Z",
       "related": [
+        "ALSA-2026:80512",
         "SUSE-SU-2026:23350-1",
         "SUSE-SU-2026:23361-1",
         "SUSE-SU-2026:23498-1",
@@ -6024,14 +6600,15 @@
                 {
                   "fixed": "c1cfdf59acbaf9504c4578d4cf56cdd7c8594507"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 339,
+          "versions": 340,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6110,14 +6687,15 @@
                 {
                   "fixed": "5267ed859d545534d0c21675a2b70af5a3b6e3ef"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 208,
+          "versions": 209,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6185,14 +6763,15 @@
                 {
                   "fixed": "7be1e70cb6bcd83e130ecfe8cb91b6a7dcdeff42"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 124,
+          "versions": 125,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6207,7 +6786,12 @@
       "aliases": ["CURL-CVE-2026-82209"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:49:35.050Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -6261,14 +6845,15 @@
                 {
                   "fixed": "95c1e8915dce64606bd753fd47fc0bd236e31cd6"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
-          "versions": 206,
+          "versions": 207,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6332,7 +6917,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "80d241046e404233537ff35efabb703a0668c7d5"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6350,14 +6935,15 @@
                 {
                   "fixed": "a86efdd7ca5433de9231e650f18247de8319ad16"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 237,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6375,6 +6961,7 @@
       "related": [
         "ALSA-2026:69125",
         "ALSA-2026:69126",
+        "ALSA-2026:92368",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -6383,6 +6970,7 @@
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
         "SUSE-SU-2026:3814-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -6421,7 +7009,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
@@ -6439,14 +7027,15 @@
                 {
                   "fixed": "5e99b73cf441d9c369768b9cd48b5389b9a2503d"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 205,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6463,6 +7052,8 @@
       "published": "2026-07-03T06:15:04.646Z",
       "related": [
         "ALSA-2026:69125",
+        "ALSA-2026:80511",
+        "ALSA-2026:92368",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -6510,7 +7101,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "e2ae32ff5f3ab6f0819590f61f248f17df12987f"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6528,14 +7119,15 @@
                 {
                   "fixed": "51beed175dbfc37da3113f6acce60c630c070ce8"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 202,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6553,6 +7145,7 @@
       "related": [
         "ALSA-2026:55432",
         "ALSA-2026:69126",
+        "ALSA-2026:92368",
         "SUSE-SU-2026:22553-1",
         "SUSE-SU-2026:22582-1",
         "SUSE-SU-2026:22709-1",
@@ -6598,7 +7191,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "39626d8cfdd8f858d2fa67ec18204ebc5913d532"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6616,14 +7209,15 @@
                 {
                   "fixed": "5c225384b8d52c67ce8259c6e4203bc57aacb567"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 345,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6638,7 +7232,16 @@
       "aliases": ["CURL-CVE-2026-8932"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-07-03T06:16:30.485Z",
-      "related": ["ALSA-2026:69125", "openSUSE-SU-2026:11230-1"],
+      "related": [
+        "ALSA-2026:69125",
+        "ALSA-2026:92368",
+        "ALSA-2026:92907",
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
+        "openSUSE-SU-2026:11230-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -6674,7 +7277,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "546572da0457f37c698c02d0a08d90fdfcbeedec"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6692,14 +7295,15 @@
                 {
                   "fixed": "7541ae569d82fb308a5e2d94916027da4fa3ba3e"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 413,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",
@@ -6762,7 +7366,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "a05f34973e6c4bb629d018f7cb51487be1c904d8"
+                  "introduced": "b8d1366852fd0034374c5de1e4968c7a224f77cc"
                 },
                 {
                   "fixed": "68720b4837284335b2d63cb358f8f6ce65f5bc55"
@@ -6780,14 +7384,15 @@
                 {
                   "fixed": "0b8dbbc63c98777e4584cb9fbd71df3464008ad1"
                 }
-              ]
+              ],
+              "database_specific": "<Any value>"
             }
           ],
           "versions": 126,
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V3",

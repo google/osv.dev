@@ -24,15 +24,6 @@ import osv
 import osv.logs
 
 
-def make_affected_commits_public(bug):
-  """Make related AffectedCommits entities public."""
-  query = osv.AffectedCommits.query(osv.AffectedCommits.bug_id == bug.key.id())
-  for affected_commits in query:
-    affected_commits.public = True
-    # Write entities individually as they can be large.
-    affected_commits.put()
-
-
 def main():
   """Mark bugs public."""
   tracker = issue_tracker.IssueTracker(client.build())
@@ -57,7 +48,6 @@ def main():
       bug.public = True
       logging.info('Marking %s as public.', bug.key.id())
       to_mark_public.append(bug)
-      make_affected_commits_public(bug)
 
   if to_mark_public:
     ndb.put_multi(to_mark_public)

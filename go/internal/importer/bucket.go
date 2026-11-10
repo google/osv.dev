@@ -151,12 +151,14 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 	}
 
 	// Safety Check
+	dc := activeDeleterCounters.Load()
 	threshold := config.DeleteThreshold
 	if sourceRepo.Bucket.IgnoreDeletionThreshold {
 		threshold = 101.0
 	}
 	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
 	if percentage >= threshold {
+		dc.recordRefused(sourceRepo.Name, len(toDelete))
 		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
@@ -167,6 +169,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 
 		return errors.New("deletion threshold exceeded")
 	}
+	dc.recordWithdrawn(sourceRepo.Name, len(toDelete))
 
 	// Trigger deletions
 	for _, entry := range toDelete {
@@ -190,7 +193,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 	return nil
 }
 
-func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository, timeOfRun time.Time) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket reconcile")
 	}
@@ -227,7 +230,7 @@ func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Confi
 			objectPath: obj.Name,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format, config.ReimportTaskPool)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format, config.ReimportTaskPool, timeOfRun)
 	}
 
 	logger.InfoContext(ctx, "Finished reconciling bucket source repository",

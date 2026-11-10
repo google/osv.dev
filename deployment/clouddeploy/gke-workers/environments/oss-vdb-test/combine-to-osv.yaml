@@ -17,4 +17,4 @@ spec:
             - name: OUTPUT_GCS_BUCKET
               value: osv-test-cve-osv-conversion
             - name: NUM_WORKERS
-              value: "1000"
+              value: "100"

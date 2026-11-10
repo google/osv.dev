@@ -27,9 +27,19 @@ func (s *Subscriber) Run(ctx context.Context) error {
 }
 
 func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
+	start := time.Now()
+	defer func() {
+		metrics.RecordWorkerLatency(time.Since(start))
+	}()
+
+	workPool := m.Attributes["work_pool"]
+	if workPool == "" {
+		workPool = "default"
+	}
+
 	if taskType := m.Attributes["type"]; taskType != "update" {
 		logger.InfoContext(ctx, "Skipping message, not an update", slog.Any("task_type", taskType))
-		metrics.RecordTaskProcessed(metrics.TaskStatusSkipped)
+		metrics.RecordWorkerTask(metrics.TaskStatusSkipped, metrics.TaskActionUnknown, workPool)
 		m.Ack()
 
 		return
@@ -52,7 +62,8 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	task.Vuln, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
-		metrics.RecordTaskProcessed(metrics.TaskStatusError)
+		metrics.RecordWorkerTask(metrics.TaskStatusError, metrics.TaskActionUnknown, workPool)
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorParse, false)
 		m.Nack()
 
 		return
@@ -63,8 +74,10 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		logger.ErrorContext(taskCtx, "Failed to parse deleted attribute, defaulting to false", append(logInfo, slog.Any("error", err))...)
 		deleted = false
 	}
+	action := metrics.TaskActionUpdate
 	if deleted {
 		task.Type = TaskDelete
+		action = metrics.TaskActionDelete
 	} else {
 		task.Type = TaskUpdate
 	}
@@ -87,12 +100,17 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	}
 
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
-		metrics.RecordTaskProcessed(metrics.TaskStatusError)
+		metrics.RecordWorkerTask(metrics.TaskStatusError, action, workPool)
 		logger.ErrorContext(taskCtx, "Failed to process task", append(logInfo, slog.Any("error", err))...)
 		m.Nack()
 	} else {
-		metrics.RecordTaskProcessed(metrics.TaskStatusSuccess)
-		logTaskLatency(taskCtx, task)
+		metrics.RecordWorkerTask(metrics.TaskStatusSuccess, action, workPool)
+		if deleted {
+			metrics.RecordUpstreamWithdrawal(task.SourceID)
+		} else if workPool != "reimport" {
+			metrics.RecordSourceRecordDiscovered(task.SourceID)
+		}
+		logTaskLatency(taskCtx, task, workPool)
 		m.Ack()
 	}
 }
@@ -136,7 +154,7 @@ func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {
 	return &ts, nil
 }
 
-func logTaskLatency(ctx context.Context, task Task) {
+func logTaskLatency(ctx context.Context, task Task, workPool string) {
 	if task.ReceivedTime == nil {
 		return
 	}
@@ -151,6 +169,9 @@ func logTaskLatency(ctx context.Context, task Task) {
 	if task.SourceTime != nil {
 		srcLatency := now.Sub(*task.SourceTime)
 		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
+		if workPool != "reimport" {
+			metrics.RecordPublishedToAvailableLag(task.SourceID, srcLatency)
+		}
 	}
 	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)
 }

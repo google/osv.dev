@@ -1,0 +1,8 @@
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+reason = """
+  Transitive devDependency of webpack-dev-server (via http-proxy-middleware -> micromatch).
+  Unreachable because http-proxy-middleware is only loaded if devServer.proxy is configured (which is unused here), and dev dependencies are never included in production builds.
+  No fixed version is currently available for braces <= 3.0.3.
+  Tracking issue: https://github.com/micromatch/braces/issues/73
+  """

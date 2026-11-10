@@ -17,6 +17,7 @@ import (
 	"time"
 
 	pb "github.com/google/osv.dev/go/internal/gitter/pb/repository"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
 )
@@ -75,10 +76,9 @@ const (
 	// Delimiters for metadata/diff extraction in ListCommits.
 	commitMetadataMarker = "\x1e" + commitMetadataTag + "\n"
 	commitDiffMarker     = "\x00" + commitDiffTag + "\n"
+	// Maximum number of concurrent workers for patch ID calculation.
+	maxPatchIDWorkers = 16
 )
-
-// Number of workers for patch ID calculation
-var workers = 16
 
 // NewRepository initializes a new Repository struct from a URL.
 // If the repository is cloned locally, repoPath is set. Otherwise it remains empty.
@@ -325,24 +325,24 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []int) error {
+	if len(commits) == 0 {
+		return nil
+	}
+
 	logger.DebugContext(ctx, "Starting patch ID calculation")
 	start := time.Now()
 
-	// Number of workers
-	if len(commits) < workers {
-		workers = len(commits)
-	}
-
-	chunkSize := len(commits) / workers
+	numWorkers := min(len(commits), maxPatchIDWorkers)
+	chunkSize := len(commits) / numWorkers
 
 	errg, ctx := errgroup.WithContext(ctx)
 
 	// Splitting the commits into chunks for parallel processing while maintaining commit order
-	for i := range workers {
+	for i := range numWorkers {
 		start := i * chunkSize
 		end := start + chunkSize
 		// Last worker takes the remainder
-		if i == workers-1 {
+		if i == numWorkers-1 {
 			end = len(commits)
 		}
 
@@ -511,10 +511,14 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 		// Log error but continue with the rest of the hashes if a commit hash is invalid
 		if err != nil {
 			logger.WarnContext(ctx, "Failed to decode commit hash", slog.String("hash", hash), slog.Any("err", err))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 		if len(hashBytes) != 20 {
 			logger.WarnContext(ctx, "Invalid hash length", slog.String("hash", hash), slog.Int("len", len(hashBytes)))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
+
 			continue
 		}
 
@@ -523,6 +527,7 @@ func (r *Repository) parseHashes(ctx context.Context, hashesStr []string) []int 
 			indices = append(indices, idx)
 		} else {
 			logger.WarnContext(ctx, "commit hash not found in repository", slog.String("hash", hash))
+			metrics.RecordGitterDataError(metrics.GitterErrorBadHash)
 		}
 	}
 
@@ -799,21 +804,47 @@ func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypi
 	return affectedCommits, resEvents.cherrypicked
 }
 
-// walkRevFirstParent walks backward from the walkFrom commits following the first parent until it hits an introduced commit.
-// If a path does not encounter an introduced, it is discarded.
-// Returns a list of affected commits
-func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Commit {
+// walkRevFirstParent walks backward from fixed/limit commits (exclusive) and lastAffected commits (inclusive) following the first parent until it hits an introduced commit.
+// If a path does not encounter an introduced, or if it encounters a fix boundary before hitting an introduced commit, it is discarded.
+// Returns a list of affected commits.
+func (r *Repository) walkRevFirstParent(introduced, fixed, lastAffected []int) []*Commit {
 	introMap := make([]bool, len(r.commits))
 	for _, idx := range introduced {
 		introMap[idx] = true
 	}
 
+	fixBoundMap := make([]bool, len(r.commits))
+	walkFrom := make([]int, 0, len(fixed)+len(lastAffected))
+
+	// Fixed and Limit commits are the fix boundaries
+	// Start walk from the parent of fixed/limit commits
+	for _, idx := range fixed {
+		fixBoundMap[idx] = true
+		if commit := r.commits[idx]; len(commit.Parents) > 0 {
+			walkFrom = append(walkFrom, commit.Parents[0])
+		}
+	}
+	// Children of lastAffected commits are fix boundaries
+	// Start walk from lastAffected commits
+	for _, idx := range lastAffected {
+		walkFrom = append(walkFrom, idx)
+		if idx < len(r.commitGraph) {
+			for _, childIdx := range r.commitGraph[idx] {
+				fixBoundMap[childIdx] = true
+			}
+		}
+	}
+
 	affectedMap := make([]bool, len(r.commits))
+	var affectedPath []int
 
 	// DFS to walk from walkFrom to introduced (follow first parent)
 	for _, fromIdx := range walkFrom {
+		if fixBoundMap[fromIdx] {
+			continue
+		}
 		stack := []int{fromIdx}
-		var affectedPath []int
+		affectedPath = affectedPath[:0]
 		pathValid := false
 
 		for len(stack) > 0 {
@@ -830,10 +861,11 @@ func (r *Repository) walkRevFirstParent(introduced []int, walkFrom []int) []*Com
 				break
 			}
 
-			commit := r.commits[curr]
-			// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into)
-			if len(commit.Parents) > 0 {
-				stack = append(stack, commit.Parents[0])
+			currCommit := r.commits[curr]
+			// In git merge, first parent is the HEAD commit at the time of merge (on the branch that gets merged into).
+			// Stop traversal and don't treat path as valid if the parent hits a fix boundary.
+			if len(currCommit.Parents) > 0 && !fixBoundMap[currCommit.Parents[0]] {
+				stack = append(stack, currCommit.Parents[0])
 			}
 		}
 
@@ -876,18 +908,9 @@ func (r *Repository) Limit(ctx context.Context, se *SeparatedEvents, cherrypickI
 		cherrypickedLimitHashes = r.hexHashes(newLimit)
 		limit = append(limit, newLimit...)
 	}
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("limit", limit))
 
-	// Walk from the first parent of limit, as limit commits are exclusive from affected range
-	walkFrom := make([]int, 0, len(limit))
-	for _, idx := range limit {
-		commit := r.commits[idx]
-		if len(commit.Parents) > 0 {
-			walkFrom = append(walkFrom, commit.Parents[0])
-		}
-	}
-	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
-
-	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	affectedCommits := r.walkRevFirstParent(introduced, limit, nil)
 	logger.DebugContext(ctx, "Limit walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits, cherrypickedHashes{
@@ -904,19 +927,9 @@ func (r *Repository) AffectedSingleBranch(ctx context.Context, se *SeparatedEven
 	introduced := r.parseHashes(ctx, se.Introduced)
 	fixed := r.parseHashes(ctx, se.Fixed)
 	lastAffected := r.parseHashes(ctx, se.LastAffected)
+	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("fixed", fixed), slog.Any("lastAffected", lastAffected))
 
-	// Walk from the parent of fixed commits and lastAffected commits
-	walkFrom := make([]int, 0, len(fixed)+len(lastAffected))
-	for _, idx := range fixed {
-		commit := r.commits[idx]
-		if len(commit.Parents) > 0 {
-			walkFrom = append(walkFrom, commit.Parents[0])
-		}
-	}
-	walkFrom = append(walkFrom, lastAffected...)
-	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("walkFrom", walkFrom))
-
-	affectedCommits := r.walkRevFirstParent(introduced, walkFrom)
+	affectedCommits := r.walkRevFirstParent(introduced, fixed, lastAffected)
 	logger.DebugContext(ctx, "Affected commits (single branch) walking completed", slog.Duration("duration", time.Since(start)), slog.Int("commit_count", len(affectedCommits)))
 
 	return affectedCommits
@@ -1400,8 +1413,7 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 	commits := make([]*CommitDiff, 0, len(records))
 
 	for _, r := range records {
-		r = bytes.TrimSpace(r)
-		if len(r) == 0 {
+		if len(bytes.TrimSpace(r)) == 0 {
 			continue
 		}
 
@@ -1454,6 +1466,7 @@ func parseCommitMetadata(meta []byte) (*CommitDiff, error) {
 
 // parseCommitDiff parses raw file status entries and unified diff patch.
 func parseCommitDiff(diffContent []byte, maxPatchBytes int) ([]*FileChange, string, bool) {
+	diffContent = bytes.TrimSpace(diffContent)
 	var filesChanged []*FileChange
 	var patch string
 	var patchTruncated bool

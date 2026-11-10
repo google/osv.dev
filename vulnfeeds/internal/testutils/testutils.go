@@ -23,7 +23,10 @@ func SetupVCR(t *testing.T) *recorder.Recorder {
 	for _, c := range illegalChars {
 		cassetteName = strings.ReplaceAll(cassetteName, string(c), "_")
 	}
-	r, err := recorder.New(filepath.Join("testdata", cassetteName))
+	r, err := recorder.New(
+		filepath.Join("testdata", cassetteName),
+		recorder.WithSkipRequestLatency(true),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

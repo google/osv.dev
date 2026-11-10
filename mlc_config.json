@@ -4,5 +4,13 @@
     200, 201, 202, 203, 204, 206,
     301, 302, 303, 307, 308,
     401, 403, 405, 429
+  ],
+  "ignorePatterns": [
+    {
+      "pattern": "^https?://(www\\.)?gnu\\.org"
+    },
+    {
+      "pattern": "^https?://(www\\.)?debian\\.org"
+    }
   ]
 }

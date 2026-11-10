@@ -239,13 +239,23 @@ func TestImporterWorker(t *testing.T) {
 		SourceRepository:       "repo4",
 		SourcePath:             "4.json",
 	}
+	// Test 7: Replace raw NUL bytes and escaped \u0000 (while preserving \\u0000)
+	ch <- WorkItem{
+		Context: ctx,
+		SourceRecord: mockSourceRecord{
+			DataToRead: []byte("{\"id\": \"CVE-2023-1238\", \"modified\": \"2023-01-07T00:00:00Z\", \"summary\": \"nul\x00byte\", \"details\": \"esc\\u0000and\\\\u0000\"}"),
+		},
+		Format:           RecordFormatJSON,
+		SourceRepository: "repo5",
+		SourcePath:       "5.json",
+	}
 	close(ch)
 
 	importerWorker(ctx, ch, config)
 
-	// Since Test 4&5 are skipped (modified before last update), we expect only 4 messages
-	if len(mockPublisher.Messages) != 4 {
-		t.Fatalf("Expected 4 messages published, got %d", len(mockPublisher.Messages))
+	// Since Test 4&5 are skipped (modified before last update), we expect 5 messages
+	if len(mockPublisher.Messages) != 5 {
+		t.Fatalf("Expected 5 messages published, got %d", len(mockPublisher.Messages))
 	}
 
 	// Message 1 verification
@@ -267,6 +277,23 @@ func TestImporterWorker(t *testing.T) {
 	if mockPublisher.Messages[3].Attributes["path"] != "4.json" {
 		t.Errorf("Expected path 4.json, got %s", mockPublisher.Messages[3].Attributes["path"])
 	}
+
+	// Message 5 verification (NUL byte replaced with U+FFFD)
+	var decoded5 []byte
+	decoded5, err := zstd.DecodeTo(decoded5, mockPublisher.Messages[4].Data)
+	if err != nil {
+		t.Fatalf("Failed to decode message 5: %v", err)
+	}
+	var vuln5 osvschema.Vulnerability
+	if err := proto.Unmarshal(decoded5, &vuln5); err != nil {
+		t.Fatalf("Failed to unmarshal message 5: %v", err)
+	}
+	if vuln5.GetSummary() != "nul\uFFFDbyte" {
+		t.Errorf("Expected summary %q, got %q", "nul\uFFFDbyte", vuln5.GetSummary())
+	}
+	if vuln5.GetDetails() != `esc`+"\uFFFD"+`and\u0000` {
+		t.Errorf("Expected details %q, got %q", `esc`+"\uFFFD"+`and\u0000`, vuln5.GetDetails())
+	}
 }
 
 func TestReconcileWarningsAsInfo(t *testing.T) {
@@ -284,6 +311,50 @@ func TestReconcileWarningsAsInfo(t *testing.T) {
 		t.Run(tt.source, func(t *testing.T) {
 			if got := reconcileWarningsAsInfo(tt.source); got != tt.want {
 				t.Errorf("reconcileWarningsAsInfo(%q) = %v, want %v", tt.source, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsReconcileOutdated(t *testing.T) {
+	now := time.Date(2026, 1, 10, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		modified time.Time
+		dbMod    time.Time
+		want     bool
+	}{
+		{
+			name:     "missed update within 6h of dbMod and past leniency window",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-22 * time.Hour),
+			want:     true,
+		},
+		{
+			name:     "sub-second precision difference only",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-24*time.Hour + 861*time.Millisecond),
+			want:     false,
+		},
+		{
+			name:     "recent update still within leniency window",
+			dbMod:    now.Add(-48 * time.Hour),
+			modified: now.Add(-2 * time.Hour),
+			want:     false,
+		},
+		{
+			name:     "upstream older or equal to dbMod",
+			dbMod:    now.Add(-24 * time.Hour),
+			modified: now.Add(-25 * time.Hour),
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isReconcileOutdated(now, tt.modified, tt.dbMod); got != tt.want {
+				t.Errorf("isReconcileOutdated() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ubuntu-binary-mapper
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ubuntu-binary-mapper
+            env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: oss-vdb-test
+            - name: OSV_VULNERABILITIES_BUCKET
+              value: osv-test-vulnerabilities

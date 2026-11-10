@@ -68,8 +68,28 @@ output "affected_commits_backups_bucket_name" {
   description = "The name of the AffectedCommits backups bucket"
 }
 
-output "monitoring_service_account_email" {
-  value       = google_service_account.monitoring_sa.email
-  description = "The email of the GKE monitoring service account"
+output "postgres_instance_name" {
+  value       = google_sql_database_instance.postgres.name
+  description = "The name of the primary Cloud SQL PostgreSQL instance"
+  depends_on = [
+    google_sql_database.osv,
+    google_sql_user.worker,
+    google_sql_user.deployment,
+  ]
+}
+
+output "postgres_region" {
+  value       = google_sql_database_instance.postgres.region
+  description = "The GCP region of the primary Cloud SQL PostgreSQL instance"
+}
+
+output "postgres_private_ip_address" {
+  value       = google_sql_database_instance.postgres.private_ip_address
+  description = "The private IP address of the primary Cloud SQL PostgreSQL instance"
+}
+
+output "postgres_connection_name" {
+  value       = google_sql_database_instance.postgres.connection_name
+  description = "The connection name of the primary Cloud SQL PostgreSQL instance"
 }
 

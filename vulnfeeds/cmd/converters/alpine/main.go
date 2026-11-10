@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv-scalibr/semantic"
 	"github.com/google/osv.dev/vulnfeeds/conversion"
 	"github.com/google/osv.dev/vulnfeeds/conversion/writer"
 	"github.com/google/osv.dev/vulnfeeds/models"
@@ -204,7 +205,7 @@ func generateAlpineOSV(allAlpineSecDb map[string][]VersionAndPkg, allCVEs map[mo
 				continue
 			}
 
-			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg)
+			introduced := findIntroducedVersion(cve.CVE, verPkg.Pkg, verPkg.Ver)
 			pkgInfo := vulns.PackageInfo{
 				PkgName: verPkg.Pkg,
 				VersionInfo: models.VersionInfo{
@@ -260,28 +261,77 @@ func cpeMatchesAlpinePackage(parsed *models.CPEString, alpinePkg string) bool {
 	return rewritten == alpinePkg
 }
 
+// apkVersionLess reports whether Alpine version a sorts strictly before b
+// according to osv-scalibr's APK version comparator.
+func apkVersionLess(a, b string) bool {
+	if !validVersion(a) || !validVersion(b) {
+		return false
+	}
+	av, err := semantic.ParseAlpineVersion(a)
+	if err != nil {
+		return false
+	}
+	cmp, err := av.CompareStr(b)
+	if err != nil {
+		return false
+	}
+
+	return cmp < 0
+}
+
 // findIntroducedVersion searches NVD CPE configurations for the introduced
-// version corresponding to the given Alpine package. Returns "0" if no
-// VersionStartIncluding match is found.
-func findIntroducedVersion(cve models.NVDCVE, alpinePkg string) string {
+// version corresponding to the given Alpine package on the branch fixed at
+// fixedVersion. A CVE's CPE configuration can describe several independently
+// vulnerable branches (e.g. < 5.26.3 and [5.28.0, 5.28.1)), so a candidate
+// lower bound is only considered when it is a valid APK version that sorts
+// strictly before fixedVersion. When several branches qualify, the one closest
+// to fixedVersion is selected; if that branch uses an exclusive start bound,
+// "0" is returned because OSV ECOSYSTEM ranges only support inclusive starts.
+func findIntroducedVersion(cve models.NVDCVE, alpinePkg, fixedVersion string) string {
+	bestBound := ""
+	bestIntroduced := "0"
+
 	for _, config := range cve.Configurations {
+		if config.Negate {
+			continue
+		}
 		for _, node := range config.Nodes {
+			if node.Negate {
+				continue
+			}
 			for _, match := range node.CPEMatch {
-				if !match.Vulnerable || match.VersionStartIncluding == nil {
+				if !match.Vulnerable {
+					continue
+				}
+				var bound, introduced string
+				switch {
+				case match.VersionStartIncluding != nil:
+					bound = *match.VersionStartIncluding
+					introduced = bound
+				case match.VersionStartExcluding != nil:
+					bound = *match.VersionStartExcluding
+					introduced = "0"
+				default:
+					continue
+				}
+				if bound == "0" || !validAPKVersion(bound) || !apkVersionLess(bound, fixedVersion) {
 					continue
 				}
 				parsed, err := conversion.ParseCPE(match.Criteria)
-				if err != nil {
+				if err != nil || !cpeMatchesAlpinePackage(parsed, alpinePkg) {
 					continue
 				}
-				if cpeMatchesAlpinePackage(parsed, alpinePkg) {
-					return *match.VersionStartIncluding
+				if bestBound == "" || apkVersionLess(bestBound, bound) {
+					bestBound = bound
+					bestIntroduced = introduced
+				} else if !apkVersionLess(bound, bestBound) && introduced == "0" {
+					bestIntroduced = "0"
 				}
 			}
 		}
 	}
 
-	return "0"
+	return bestIntroduced
 }
 
 // downloadAlpine downloads Alpine SecDB data from their API

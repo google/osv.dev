@@ -18,12 +18,13 @@ import (
 type bucketSourceRecord struct {
 	bucket     clients.CloudStorage
 	objectPath string
+	generation int64
 }
 
 var _ SourceRecord = bucketSourceRecord{}
 
 func (b bucketSourceRecord) Open(ctx context.Context) (io.ReadCloser, error) {
-	data, err := b.bucket.ReadObject(ctx, b.objectPath)
+	data, err := b.bucket.ReadObjectGeneration(ctx, b.objectPath, b.generation)
 	if err != nil {
 		return nil, err
 	}
@@ -76,6 +77,7 @@ func handleImportBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 			SourceRecord: bucketSourceRecord{
 				bucket:     bucket,
 				objectPath: obj.Name,
+				generation: obj.Attrs.Generation,
 			},
 			SourceRepository:       sourceRepo.Name,
 			SourcePath:             obj.Name,
@@ -228,6 +230,7 @@ func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Confi
 		sourceRecord := bucketSourceRecord{
 			bucket:     bucket,
 			objectPath: obj.Name,
+			generation: obj.Attrs.Generation,
 		}
 
 		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format, config.ReimportTaskPool, timeOfRun)

@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -751,7 +750,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			}
 		}
 	}
-	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
+	if err := sendToWorker(ctx, config, item, hash, modified, data); err != nil {
 		logger.ErrorContext(ctx, "Failed to send to worker",
 			slog.Any("error", err),
 			slog.String("source", sourceRepoName),
@@ -771,23 +770,37 @@ func computeHash(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time, vuln *osvschema.Vulnerability) error {
+func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time, rawJSON []byte) error {
 	var srcTimestamp *time.Time
 	if !item.IsReimport {
 		// Only track the update latency if we're not doing a reimport of the data
 		srcTimestamp = &modifiedTime
 	}
 
-	args := publishArgs{
-		source:       item.SourceRepository,
-		path:         item.SourcePath,
-		hash:         hash,
-		deleted:      false,
-		srcTimestamp: srcTimestamp,
-		workPool:     item.WorkPool,
+	var gitCommit string
+	var gcsGeneration *int64
+	switch sr := item.SourceRecord.(type) {
+	case gitSourceRecord:
+		gitCommit = sr.commit
+	case bucketSourceRecord:
+		if sr.generation != 0 {
+			gen := sr.generation
+			gcsGeneration = &gen
+		}
 	}
 
-	return publishUpdate(ctx, config, args, vuln)
+	args := publishArgs{
+		source:        item.SourceRepository,
+		path:          item.SourcePath,
+		hash:          hash,
+		deleted:       false,
+		srcTimestamp:  srcTimestamp,
+		workPool:      item.WorkPool,
+		gitCommit:     gitCommit,
+		gcsGeneration: gcsGeneration,
+	}
+
+	return publishUpdate(ctx, config, args, rawJSON)
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
@@ -804,15 +817,17 @@ func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) err
 }
 
 type publishArgs struct {
-	source       string
-	path         string
-	hash         string
-	deleted      bool
-	srcTimestamp *time.Time
-	workPool     string
+	source        string
+	path          string
+	hash          string
+	deleted       bool
+	srcTimestamp  *time.Time
+	workPool      string
+	gitCommit     string
+	gcsGeneration *int64
 }
 
-func publishUpdate(ctx context.Context, config Config, args publishArgs, vuln *osvschema.Vulnerability) error {
+func publishUpdate(ctx context.Context, config Config, args publishArgs, rawJSON []byte) error {
 	if config.DryRun {
 		logger.DebugContext(ctx, "Running in dry-run mode, skipping publish",
 			slog.String("source", args.source),
@@ -823,22 +838,17 @@ func publishUpdate(ctx context.Context, config Config, args publishArgs, vuln *o
 		return nil
 	}
 
-	// Send the vulnerability proto in the message data
+	// Send the raw vulnerability JSON in the message data
 	var data []byte
 	contentEncoding := ""
-	if vuln != nil {
-		var err error
-		data, err = proto.Marshal(vuln)
-		if err != nil {
-			return err
-		}
+	if len(rawJSON) > 0 {
 		// make sure we have enough capacity for the compressed data
 		// to avoid reallocations
-		buf := make([]byte, 0, len(data))
-		data = zstd.EncodeTo(buf, data)
+		buf := make([]byte, 0, len(rawJSON))
+		data = zstd.EncodeTo(buf, rawJSON)
 		contentEncoding = "zstd"
 		if len(data) > maxPubSubMessageSize {
-			logger.WarnContext(ctx, "Vulnerability proto is too large",
+			logger.WarnContext(ctx, "Vulnerability JSON is too large",
 				slog.String("source", args.source),
 				slog.String("path", args.path),
 				slog.Int("size", len(data)))
@@ -862,8 +872,15 @@ func publishUpdate(ctx context.Context, config Config, args publishArgs, vuln *o
 			"deleted":          strconv.FormatBool(args.deleted),
 			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
 			"content_encoding": contentEncoding,
+			"format":           "json",
 			"work_pool":        pool,
 		},
+	}
+	if args.gitCommit != "" {
+		msg.Attributes["git_commit"] = args.gitCommit
+	}
+	if args.gcsGeneration != nil {
+		msg.Attributes["gcs_generation"] = strconv.FormatInt(*args.gcsGeneration, 10)
 	}
 	if args.srcTimestamp != nil {
 		msg.Attributes["src_timestamp"] = strconv.FormatInt(args.srcTimestamp.Unix(), 10)

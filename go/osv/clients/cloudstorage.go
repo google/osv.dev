@@ -69,6 +69,11 @@ type CloudStorage interface {
 	// It must return ErrNotFound if the object does not exist.
 	ReadObject(ctx context.Context, path string) ([]byte, error)
 
+	// ReadObjectGeneration reads the raw contents of a specific generation of an object.
+	// If generation <= 0, it reads the latest generation.
+	// It must return ErrNotFound if the object or generation does not exist.
+	ReadObjectGeneration(ctx context.Context, path string, generation int64) ([]byte, error)
+
 	// ReadObjectAttrs reads the attributes of an object.
 	// It must return ErrNotFound if the object does not exist.
 	ReadObjectAttrs(ctx context.Context, path string) (*Attrs, error)

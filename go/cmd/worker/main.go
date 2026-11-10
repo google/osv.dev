@@ -17,7 +17,10 @@ import (
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/database/dualwrite"
+	"github.com/google/osv.dev/go/internal/database/postgres"
 	"github.com/google/osv.dev/go/internal/metrics"
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/worker"
 	"github.com/google/osv.dev/go/internal/worker/pipeline/registry"
 	"github.com/google/osv.dev/go/logger"
@@ -87,14 +90,31 @@ func run() error {
 	}
 	defer psClient.Close()
 
+	var vulnStore models.VulnerabilityStore = db.NewVulnerabilityStore(db.VulnStoreConfig{
+		Client:               dsClient,
+		GCS:                  clients.NewGCSClient(gcsClient, vulnBucket),
+		FailedWritePublisher: &clients.GCPPublisher{Publisher: psClient.Publisher(failTasksTopic)},
+	})
+
+	if os.Getenv("POSTGRES_HOST") != "" {
+		pgPool, err := postgres.NewPoolFromEnv(ctx)
+		if err != nil {
+			logger.ErrorContext(ctx, "Failed to create postgres pool", slog.Any("error", err))
+			return err
+		}
+		defer pgPool.Close()
+
+		pgVulnStore := postgres.NewVulnerabilityStore(postgres.VulnStoreConfig{
+			DB: pgPool,
+		})
+		vulnStore = dualwrite.NewVulnerabilityStore(vulnStore, pgVulnStore)
+		logger.InfoContext(ctx, "Enabled PostgreSQL dual-write for VulnerabilityStore")
+	}
+
 	stores := worker.Stores{
-		SourceRepo:    db.NewSourceRepositoryStore(dsClient),
-		RepoAllowList: db.NewRepoAllowListStore(dsClient),
-		Vulnerability: db.NewVulnerabilityStore(db.VulnStoreConfig{
-			Client:               dsClient,
-			GCS:                  clients.NewGCSClient(gcsClient, vulnBucket),
-			FailedWritePublisher: &clients.GCPPublisher{Publisher: psClient.Publisher(failTasksTopic)},
-		}),
+		SourceRepo:     db.NewSourceRepositoryStore(dsClient),
+		RepoAllowList:  db.NewRepoAllowListStore(dsClient),
+		Vulnerability:  vulnStore,
 		Relations:      db.NewRelationsStore(dsClient),
 		ImportFindings: db.NewImportFindingsStore(dsClient, nil, "", ""),
 	}

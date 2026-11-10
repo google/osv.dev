@@ -26,4 +26,17 @@ spec:
             env:
               - name: TRACE_SAMPLE_RATE
                 value: "1.0"
+              - name: POSTGRES_PORT
+                value: "6432"
+              - name: POSTGRES_USER
+                value: "osv-worker"
+              - name: POSTGRES_DB
+                value: "osv"
+              - name: POSTGRES_SSLMODE
+                value: "require"
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: osv-db-worker-password
+                    key: password
           restartPolicy: Never

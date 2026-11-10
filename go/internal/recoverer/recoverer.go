@@ -18,7 +18,9 @@ package recoverer
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -40,6 +42,7 @@ import (
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
@@ -51,6 +54,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
+
+const maxPubSubMessageSize = 10 * 1000 * 1000 // 10MB
 
 type Stores struct {
 	DatastoreClient *datastore.Client
@@ -218,11 +223,27 @@ func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) err
 
 	logger.InfoContext(ctx, "gcs_missing: triggering re-import", slog.String("id", vulnID), slog.String("source_id", vuln.SourceID))
 
-	data, err := r.DownloadVulnData(ctx, source, path)
+	downloaded, err := r.DownloadVulnData(ctx, source, path)
 	if err != nil {
 		logger.ErrorContext(ctx, "gcs_missing: failed to download vuln data", slog.String("id", vulnID), slog.String("source_id", vuln.SourceID), slog.Any("error", err))
 
 		return err
+	}
+
+	var data []byte
+	contentEncoding := ""
+	if len(downloaded.JSON) > 0 {
+		buf := make([]byte, 0, len(downloaded.JSON))
+		data = zstd.EncodeTo(buf, downloaded.JSON)
+		contentEncoding = "zstd"
+		if len(data) > maxPubSubMessageSize {
+			logger.WarnContext(ctx, "gcs_missing: Vulnerability JSON is too large",
+				slog.String("source", source),
+				slog.String("path", path),
+				slog.Int("size", len(data)))
+			data = nil
+			contentEncoding = ""
+		}
 	}
 
 	msg := &pubsub.Message{
@@ -231,13 +252,19 @@ func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) err
 			"type":             "update",
 			"source":           source,
 			"path":             path,
-			"original_sha256":  "",
+			"original_sha256":  downloaded.OriginalSHA256,
 			"deleted":          "false",
-			"skip_hash_check":  "true",
 			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
-			"content_encoding": "",
+			"content_encoding": contentEncoding,
+			"format":           "json",
 			"work_pool":        r.reimportTaskPool,
 		},
+	}
+	if downloaded.GitCommit != "" {
+		msg.Attributes["git_commit"] = downloaded.GitCommit
+	}
+	if downloaded.GCSGeneration != nil {
+		msg.Attributes["gcs_generation"] = strconv.FormatInt(*downloaded.GCSGeneration, 10)
 	}
 	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
 
@@ -251,14 +278,24 @@ func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) err
 	return nil
 }
 
+// DownloadedVulnData holds the parsed JSON and source provenance of a recovered vulnerability.
+type DownloadedVulnData struct {
+	JSON           []byte
+	OriginalSHA256 string
+	GitCommit      string
+	GCSGeneration  *int64
+}
+
 // DownloadVulnData downloads and parses vulnerability data from the source repository.
-func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath string) ([]byte, error) {
+func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath string) (*DownloadedVulnData, error) {
 	sourceRepo, err := r.stores.SourceRepo.Get(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source repository %s: %w", source, err)
 	}
 
 	var rawData []byte
+	var gitCommit string
+	var gcsGeneration *int64
 	switch sourceRepo.Type {
 	case models.SourceRepositoryTypeREST:
 		if sourceRepo.Link == "" {
@@ -293,9 +330,17 @@ func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath strin
 			return nil, errors.New("GCSProvider is not configured")
 		}
 		bucketStorage := r.stores.GCSProvider.Bucket(sourceRepo.Bucket.Name)
-		rawData, err = bucketStorage.ReadObject(ctx, vulnPath)
+		attrs, err := bucketStorage.ReadObjectAttrs(ctx, vulnPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read object attrs %s from bucket %s: %w", vulnPath, sourceRepo.Bucket.Name, err)
+		}
+		rawData, err = bucketStorage.ReadObjectGeneration(ctx, vulnPath, attrs.Generation)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read object %s from bucket %s: %w", vulnPath, sourceRepo.Bucket.Name, err)
+		}
+		if attrs.Generation != 0 {
+			gen := attrs.Generation
+			gcsGeneration = &gen
 		}
 
 	case models.SourceRepositoryTypeGit:
@@ -306,7 +351,9 @@ func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath strin
 			return nil, errors.New("gitter client is not configured")
 		}
 		ref := sourceRepo.Git.LastSyncedCommit
-		if ref == "" {
+		if ref != "" {
+			gitCommit = ref
+		} else {
 			ref = sourceRepo.Git.Branch
 		}
 		if ref == "" {
@@ -327,15 +374,23 @@ func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath strin
 		return nil, fmt.Errorf("unhandled source repository type: %v", sourceRepo.Type)
 	}
 
-	vulnProto, err := parseVulnerability(rawData, sourceRepo.Extension, vulnPath, sourceRepo.KeyPath)
+	sum := sha256.Sum256(rawData)
+	originalSHA256 := hex.EncodeToString(sum[:])
+
+	jsonData, err := parseVulnerabilityJSON(rawData, sourceRepo.Extension, vulnPath, sourceRepo.KeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse vulnerability data for %s:%s: %w", source, vulnPath, err)
 	}
 
-	return proto.Marshal(vulnProto)
+	return &DownloadedVulnData{
+		JSON:           jsonData,
+		OriginalSHA256: originalSHA256,
+		GitCommit:      gitCommit,
+		GCSGeneration:  gcsGeneration,
+	}, nil
 }
 
-func parseVulnerability(raw []byte, extension, vulnPath, keyPath string) (*osvschema.Vulnerability, error) {
+func parseVulnerabilityJSON(raw []byte, extension, vulnPath, keyPath string) ([]byte, error) {
 	data := bytes.ToValidUTF8(raw, []byte("\uFFFD"))
 	if bytes.IndexByte(data, 0) >= 0 {
 		data = bytes.ReplaceAll(data, []byte{0}, []byte("\uFFFD"))
@@ -364,7 +419,7 @@ func parseVulnerability(raw []byte, extension, vulnPath, keyPath string) (*osvsc
 		return nil, fmt.Errorf("failed to unmarshal OSV proto: %w", err)
 	}
 
-	return &vulnProto, nil
+	return data, nil
 }
 
 // HandleGCSGenMismatch handles a generation mismatch when attempting to update a part of a record.

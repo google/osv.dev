@@ -16,6 +16,8 @@ spec:
             value: "default"
           - name: FAILED_TASKS_TOPIC
             value: "failed-osv-work"
+          - name: POSTGRES_HOST
+            value: "10.77.0.3"
         resources:
           requests:
             cpu: "0.9"

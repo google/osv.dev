@@ -1495,4 +1495,163 @@ func TestWordPressExtractor(t *testing.T) {
 			t.Errorf("Outcome = %v, want NoRanges", metricsNoVers.Outcome)
 		}
 	})
+
+	t.Run("Legacy V4 version == lessThanOrEqual, hyphen ranges, and release-date parentheticals", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2022-0210",
+				AssignerShortName: "Wordfence",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Random Banner",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "4.1.4", LessThanOrEqual: "4.1.4"},
+					{Status: "affected", Version: "5.0.0 - 5.2.3"},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://plugins.trac.wordpress.org/browser/random-banner/tags/4.1.4/model.php"},
+		}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2022-0210",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+		GetVersionExtractor("Wordfence").ExtractVersions(cve, &v, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "random-banner"},
+			Ranges: []*osvschema.Range{
+				{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "4.1.4"}},
+				},
+				{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "5.0.0"}, {LastAffected: "5.2.3"}},
+				},
+			},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+
+		// Patchstack release-date parenthetical and non-wordpress.org collectionURL (no wordpress.org link added).
+		cvePS := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2025-31100",
+				AssignerShortName: "Patchstack",
+			},
+		}
+		cvePS.Containers.CNA.Affected = []models.Affected{
+			{
+				CollectionURL: "https://codecanyon.net",
+				PackageName:   "school-management",
+				Product:       "School Management",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "n/a", LessThanOrEqual: "1.93.1 (02-07-2025)"},
+				},
+			},
+		}
+		psRefs := []models.Reference{
+			{URL: "https://patchstack.com/database/wordpress/plugin/school-management/vulnerability/vuln"},
+		}
+		vPS := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2025-31100",
+				References: vulns.ClassifyReferences(psRefs),
+			},
+		}
+		GetVersionExtractor("Patchstack").ExtractVersions(cvePS, &vPS, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantPS := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "school-management"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "1.93.1"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantPS, vPS.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Patchstack Affected mismatch (-want +got):\n%s", diff)
+		}
+		if len(vPS.References) != 1 {
+			t.Errorf("expected codecanyon.net plugin not to synthesize wordpress.org link, got refs: %+v", vPS.References)
+		}
+	})
+
+	t.Run("WPScan legacy V4 wildcard-suffixed lessThan quirks", func(t *testing.T) {
+		t.Parallel()
+		// 1. Single-entry {version: X, lessThan: "X*", changes: [{at: X, status: "unaffected"}]} -> 0..X (CVE-2022-1281).
+		cveSingle := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2022-1281", AssignerShortName: "WPScan"},
+		}
+		cveSingle.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Photo Gallery",
+				Versions: []models.Versions{
+					{
+						Status:   "affected",
+						Version:  "1.6.3",
+						LessThan: "1.6.3*",
+						Changes:  []models.Change{{At: "1.6.3", Status: "unaffected"}},
+					},
+				},
+			},
+		}
+		vSingle := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2022-1281",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://plugins.trac.wordpress.org/changeset/2706797/photo-gallery/trunk/file.php"}}),
+			},
+		}
+		GetVersionExtractor("WPScan").ExtractVersions(cveSingle, &vSingle, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantSingle := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "photo-gallery"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "1.6.3"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantSingle, vSingle.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("CVE-2022-1281 mismatch (-want +got):\n%s", diff)
+		}
+
+		// 2. Paired {version: A, lessThan: "A*"} + {version: B, lessThan: B} -> A..B fixed (CVE-2021-25118).
+		cvePaired := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2021-25118", AssignerShortName: "WPScan"},
+		}
+		cvePaired.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Yoast SEO",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "16.7", LessThan: "16.7*"},
+					{Status: "affected", Version: "17.3", LessThan: "17.3"},
+				},
+			},
+		}
+		vPaired := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2021-25118",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/wordpress-seo/"}}),
+			},
+		}
+		GetVersionExtractor("WPScan").ExtractVersions(cvePaired, &vPaired, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantPaired := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "wordpress-seo"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "16.7"}, {Fixed: "17.3"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantPaired, vPaired.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("CVE-2021-25118 mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

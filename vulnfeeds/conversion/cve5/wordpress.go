@@ -66,6 +66,7 @@ var (
 	}
 
 	nonSlugCharsRegex = regexp.MustCompile(`[^a-z0-9]+`)
+	hyphenRangeRegex  = regexp.MustCompile(`^([0-9][0-9a-zA-Z._-]*)\s+-\s+[vV]?([0-9][0-9a-zA-Z._-]*)(?:\s+([0-9][0-9a-zA-Z._-]*))?$`)
 
 	reservedWPSlugs = []string{
 		"trunk",
@@ -311,7 +312,12 @@ func cloneCVEAffected(cve *models.CVE5) {
 func normalizeVersion(v string) string {
 	v = strings.TrimSpace(v)
 	if len(v) >= 2 && (v[0] == 'v' || v[0] == 'V') && v[1] >= '0' && v[1] <= '9' {
-		return v[1:]
+		v = v[1:]
+	}
+	if len(v) > 0 && v[0] >= '0' && v[0] <= '9' {
+		if before, _, ok := strings.Cut(v, " ("); ok {
+			v = strings.TrimSpace(before)
+		}
 	}
 
 	return v
@@ -376,12 +382,25 @@ func sanitizeWordPressVersion(vers *models.Versions) {
 		}
 	}
 
-	// Strip leading 'v'/'V' before digits across fields.
+	// Handle hyphenated ranges like "3.0.0 - 3.3.9" placed inside version.
+	if vers.LessThan == "" && vers.LessThanOrEqual == "" && len(vers.Changes) == 0 {
+		if m := hyphenRangeRegex.FindStringSubmatch(vers.Version); m != nil && (m[3] == "" || m[3] == m[2]) {
+			vers.Version = m[1]
+			vers.LessThanOrEqual = m[2]
+		}
+	}
+
+	// Strip leading 'v'/'V' before digits and trailing release-date parentheticals across fields.
 	vers.Version = normalizeVersion(vers.Version)
 	vers.LessThan = normalizeVersion(vers.LessThan)
 	vers.LessThanOrEqual = normalizeVersion(vers.LessThanOrEqual)
 	for k := range vers.Changes {
 		vers.Changes[k].At = normalizeVersion(vers.Changes[k].At)
+	}
+
+	// Legacy V4-upconverted "<= X" records set both version and lessThanOrEqual to X.
+	if vers.LessThanOrEqual != "" && vers.LessThanOrEqual != "*" && vers.LessThan == "" && vers.Version == vers.LessThanOrEqual {
+		vers.Version = "0"
 	}
 
 	// Drop non-version filler text (e.g. "revision", "beta") in upper bounds, preserving "*".
@@ -469,6 +488,16 @@ func inspectRangeEvents(r *osvschema.Range) (intro string, hasFixed bool, hasLas
 	return intro, hasFixed, hasLastAffected
 }
 
+func hasContradictoryFixed(r *osvschema.Range, intro string) bool {
+	if intro == "" {
+		return false
+	}
+
+	return slices.ContainsFunc(r.GetEvents(), func(e *osvschema.Event) bool {
+		return e.GetFixed() == intro
+	})
+}
+
 // sanitizeEcosystemRanges converts non-Git ranges into Range_ECOSYSTEM ranges and ensures
 // that ranges sharing the same introduced version never mix fixed and last_affected events
 // (which are mutually exclusive in the OSV schema when grouped by GroupAffectedRanges).
@@ -483,9 +512,13 @@ func sanitizeEcosystemRanges(rawRanges []models.RangeWithMetadata, metrics *mode
 		ecoRange := proto.Clone(r.Range).(*osvschema.Range)
 		ecoRange.Type = osvschema.Range_ECOSYSTEM
 		ecoRange.Repo = ""
+		intro, hasFixed, _ := inspectRangeEvents(ecoRange)
+		if hasContradictoryFixed(ecoRange, intro) {
+			continue
+		}
 		candidates = append(candidates, ecoRange)
 
-		if intro, hasFixed, _ := inspectRangeEvents(ecoRange); hasFixed {
+		if hasFixed {
 			hasFixedByIntro[intro] = true
 		}
 
@@ -505,7 +538,11 @@ func sanitizeEcosystemRanges(rawRanges []models.RangeWithMetadata, metrics *mode
 				return e.GetLastAffected() != ""
 			})
 		}
-		out = append(out, r)
+		if !slices.ContainsFunc(out, func(existing *osvschema.Range) bool {
+			return proto.Equal(existing, r)
+		}) {
+			out = append(out, r)
+		}
 	}
 
 	return out
@@ -536,7 +573,7 @@ func cloneRangesWithMetadata(ranges []models.RangeWithMetadata) []models.RangeWi
 // WordPressHandler defines hooks for CNA-specific logic.
 type WordPressHandler interface {
 	PreExtract(cve *models.CVE5)
-	PostExtract(v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string)
+	PostExtract(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string)
 }
 
 // WordPressExtractor handles version extraction for WordPress CVEs.
@@ -649,7 +686,7 @@ func (w *WordPressExtractor) emitEcosystemAffected(
 	if len(cve.Containers.CNA.Affected) <= 1 {
 		primary := targets[0]
 		if w.Handler != nil {
-			w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
+			w.Handler.PostExtract(cve, v, metrics, primary.slug, primary.ecosystem)
 		}
 		ecoRanges := sanitizeEcosystemRanges(allRawRanges, metrics)
 		if len(ecoRanges) == 0 {
@@ -682,7 +719,7 @@ func (w *WordPressExtractor) emitEcosystemAffected(
 			continue
 		}
 		if w.Handler != nil {
-			w.Handler.PostExtract(v, metrics, target.slug, target.ecosystem)
+			w.Handler.PostExtract(cve, v, metrics, target.slug, target.ecosystem)
 		}
 		v.Affected = append(v.Affected, &osvschema.Affected{
 			Package: &osvschema.Package{
@@ -718,7 +755,7 @@ func (w *WordPressExtractor) emitEcosystemAffected(
 	}
 
 	if w.Handler != nil {
-		w.Handler.PostExtract(v, metrics, primary.slug, primary.ecosystem)
+		w.Handler.PostExtract(cve, v, metrics, primary.slug, primary.ecosystem)
 	}
 	c.AddAffected(v, &osvschema.Affected{
 		Package: &osvschema.Package{
@@ -790,7 +827,7 @@ func (w *WordPressExtractor) ExtractVersions(cve models.CVE5, v *vulns.Vulnerabi
 type DefaultWordPressHandler struct{}
 
 func (d *DefaultWordPressHandler) PreExtract(_ *models.CVE5) {}
-func (d *DefaultWordPressHandler) PostExtract(_ *vulns.Vulnerability, _ *models.ConversionMetrics, _ string, _ string) {
+func (d *DefaultWordPressHandler) PostExtract(_ models.CVE5, _ *vulns.Vulnerability, _ *models.ConversionMetrics, _ string, _ string) {
 }
 
 // PatchstackHandler implements Patchstack-specific quirks.
@@ -809,8 +846,26 @@ func hasExistingWPOrgRef(refs []*osvschema.Reference, slug string, ecosystem str
 	})
 }
 
-func (p *PatchstackHandler) PostExtract(v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string) {
-	if slug == "" {
+func hasNonWPOrgCollectionURL(cve models.CVE5, slug string) bool {
+	for _, aff := range cve.Containers.CNA.Affected {
+		if aff.CollectionURL == "" {
+			continue
+		}
+		if len(cve.Containers.CNA.Affected) > 1 &&
+			!strings.EqualFold(strings.TrimSpace(aff.PackageName), slug) &&
+			slugifyWordPressProduct(aff.Product) != strings.ToLower(slug) {
+			continue
+		}
+		if !strings.Contains(strings.ToLower(aff.CollectionURL), "wordpress.org") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *PatchstackHandler) PostExtract(cve models.CVE5, v *vulns.Vulnerability, metrics *models.ConversionMetrics, slug string, ecosystem string) {
+	if slug == "" || hasNonWPOrgCollectionURL(cve, slug) {
 		return
 	}
 
@@ -845,15 +900,51 @@ type WPScanHandler struct {
 	DefaultWordPressHandler
 }
 
-// PreExtract normalizes legacy V4-converted WPScan records where "< X" was encoded
-// with both version and lessThan set to X (e.g. version: "2.52", lessThan: "2.52").
+// PreExtract normalizes legacy V4-converted WPScan version structures:
+//   - "< X" encoded with version == lessThan (e.g. version: "2.52", lessThan: "2.52")
+//   - "<= X" encoded as {version: X, lessThan: "X*", changes: [{at: X, status: "unaffected"}]}
+//   - ">= A, < B" split across {version: A, lessThan: "A*"} followed by {version: B, lessThan: B}
 func (w *WPScanHandler) PreExtract(cve *models.CVE5) {
 	for i := range cve.Containers.CNA.Affected {
-		for j := range cve.Containers.CNA.Affected[i].Versions {
-			vers := &cve.Containers.CNA.Affected[i].Versions[j]
-			if vers.LessThan != "" && vers.Version == vers.LessThan {
+		versions := cve.Containers.CNA.Affected[i].Versions
+		normalized := make([]models.Versions, 0, len(versions))
+		for j := 0; j < len(versions); j++ {
+			vers := versions[j]
+			ver := strings.TrimSpace(vers.Version)
+			lt := strings.TrimSpace(vers.LessThan)
+
+			if ver != "" && lt == ver+"*" {
+				if len(vers.Changes) == 1 && vers.Changes[0].Status == "unaffected" && strings.TrimSpace(vers.Changes[0].At) == ver {
+					vers.Version = "0"
+					vers.LessThan = ""
+					vers.LessThanOrEqual = ver
+					vers.Changes = nil
+					normalized = append(normalized, vers)
+
+					continue
+				}
+				if j+1 < len(versions) {
+					next := versions[j+1]
+					nextVer := strings.TrimSpace(next.Version)
+					if nextVer != "" && (nextVer == strings.TrimSpace(next.LessThan) || nextVer == strings.TrimSpace(next.LessThanOrEqual)) {
+						next.Version = ver
+						normalized = append(normalized, next)
+						j++
+
+						continue
+					}
+				}
+				vers.LessThan = "*"
+				normalized = append(normalized, vers)
+
+				continue
+			}
+
+			if lt != "" && ver == lt {
 				vers.Version = "0"
 			}
+			normalized = append(normalized, vers)
 		}
+		cve.Containers.CNA.Affected[i].Versions = normalized
 	}
 }

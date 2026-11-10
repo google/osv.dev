@@ -190,3 +190,17 @@ terraform {
     }
   }
 }
+
+variable "impersonate_service_account" {
+  type        = string
+  description = "Service account to impersonate for local runs (pass empty string in CI where Cloud Build already runs as terraform-plan)."
+  default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
+}
+
+provider "google" {
+  impersonate_service_account = var.impersonate_service_account != "" ? var.impersonate_service_account : null
+}
+
+provider "google-beta" {
+  impersonate_service_account = var.impersonate_service_account != "" ? var.impersonate_service_account : null
+}

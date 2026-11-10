@@ -1113,6 +1113,69 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Skip non-repo range with nil Package and keep distinct ecosystems with same package name",
+			cve5Affected: []*osvschema.Affected{
+				{
+					// Malformed non-repo range without Package should be skipped.
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.0"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "shared-slug",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2.0.0"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Theme",
+						Name:      "shared-slug",
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "shared-slug",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2.0.0"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Theme",
+						Name:      "shared-slug",
+					},
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.

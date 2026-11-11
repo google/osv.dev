@@ -2,6 +2,7 @@ package cve5
 
 import (
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -457,6 +458,15 @@ func TestGetVersionExtractor(t *testing.T) {
 			expectedType: reflect.TypeFor[*LinuxVersionExtractor](),
 		},
 		{
+			name: "Wordfence CVE",
+			cve: models.CVE5{
+				Metadata: models.CVE5Metadata{
+					AssignerShortName: "Wordfence",
+				},
+			},
+			expectedType: reflect.TypeFor[*WordPressExtractor](),
+		},
+		{
 			name: "Default CVE",
 			cve: models.CVE5{
 				Metadata: models.CVE5Metadata{
@@ -537,11 +547,12 @@ func mustParseDBSpecific(t *testing.T, jsonStr string) *structpb.Struct {
 
 func TestExtractVersions(t *testing.T) {
 	testCases := []struct {
-		name             string
-		cve              models.CVE5
-		cnaAssigner      string
-		repos            []string
-		expectedAffected []*osvschema.Affected
+		name               string
+		cve                models.CVE5
+		cnaAssigner        string
+		repos              []string
+		expectedAffected   []*osvschema.Affected
+		expectNoUnresolved bool
 	}{
 		{
 			name:  "CVE-2023-45803",
@@ -721,6 +732,53 @@ func TestExtractVersions(t *testing.T) {
 				}},
 			}},
 		},
+		{
+			name:               "CVE-2026-1293",
+			cve:                loadTestData(t, "CVE-2026-1293"),
+			cnaAssigner:        "Wordfence",
+			repos:              []string{},
+			expectNoUnresolved: true,
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "wordpress-seo",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "26.8"},
+					},
+				}},
+			}},
+		},
+		{
+			name:               "CVE-2021-23209",
+			cve:                loadTestData(t, "CVE-2021-23209"),
+			cnaAssigner:        "Patchstack",
+			repos:              []string{},
+			expectNoUnresolved: true,
+			expectedAffected: []*osvschema.Affected{{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "accelerated-mobile-pages",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{Fixed: "1.0.77.33"},
+					},
+				}},
+			}},
+		},
+		{
+			name:             "CVE-2015-10001",
+			cve:              loadTestData(t, "CVE-2015-10001"),
+			cnaAssigner:      "WPScan",
+			repos:            []string{},
+			expectedAffected: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -728,7 +786,9 @@ func TestExtractVersions(t *testing.T) {
 			r := testutils.SetupGitVCR(t)
 			metrics := &models.ConversionMetrics{}
 			v := vulns.Vulnerability{
-				Vulnerability: &osvschema.Vulnerability{},
+				Vulnerability: &osvschema.Vulnerability{
+					References: vulns.ClassifyReferences(identifyPossibleURLs(tc.cve)),
+				},
 			}
 			extractor := GetVersionExtractor(tc.cnaAssigner)
 			cache := &git.InMemoryRepoTagsCache{}
@@ -736,6 +796,11 @@ func TestExtractVersions(t *testing.T) {
 
 			if diff := cmp.Diff(tc.expectedAffected, v.Affected, protocmp.Transform()); diff != "" {
 				t.Errorf("ExtractVersions() mismatch (-want +got):\n%s", diff)
+			}
+			if tc.expectNoUnresolved && v.DatabaseSpecific != nil {
+				if _, ok := v.DatabaseSpecific.GetFields()["unresolved_ranges"]; ok {
+					t.Errorf("unexpected unresolved_ranges in DatabaseSpecific when ranges resolved: %v", v.DatabaseSpecific)
+				}
 			}
 		})
 	}
@@ -953,4 +1018,640 @@ func TestExtractVersions_Curl_WithoutGitRanges(t *testing.T) {
 	if len(metrics.Notes) == 0 {
 		t.Errorf("expected notes to be populated from default extractor")
 	}
+}
+
+func TestWordPressExtractor(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Single-version preset difference: WPScan uses 0..X while Wordfence and Patchstack use X..X", func(t *testing.T) {
+		t.Parallel()
+		makeSingleVersCVE := func(cna string) models.CVE5 {
+			cve := models.CVE5{
+				Metadata: models.CVE5Metadata{CVEID: "CVE-2025-7504", AssignerShortName: cna},
+			}
+			cve.Containers.CNA.Affected = []models.Affected{{
+				Product: "Friends",
+				Versions: []models.Versions{{
+					Status:  "affected",
+					Version: "3.5.1",
+				}},
+			}}
+
+			return cve
+		}
+		refs := vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/friends/"}})
+
+		// WPScan treats a single version as 0 up to X.
+		vWPScan := vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{Id: "CVE-2025-7504", References: slices.Clone(refs)}}
+		GetVersionExtractor("WPScan").ExtractVersions(makeSingleVersCVE("WPScan"), &vWPScan, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+		wantWPScan := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "friends"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "3.5.1"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantWPScan, vWPScan.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("WPScan single-version mismatch (-want +got):\n%s", diff)
+		}
+
+		// Wordfence and Patchstack treat a single version as X only.
+		for _, cna := range []string{"Wordfence", "Patchstack"} {
+			vCNA := vulns.Vulnerability{Vulnerability: &osvschema.Vulnerability{Id: "CVE-2025-7504", References: slices.Clone(refs)}}
+			GetVersionExtractor(cna).ExtractVersions(makeSingleVersCVE(cna), &vCNA, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+			wantExact := []*osvschema.Affected{{
+				Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "friends"},
+				Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "3.5.1"}, {LastAffected: "3.5.1"}},
+				}},
+			}}
+			if diff := cmp.Diff(wantExact, vCNA.Affected, protocmp.Transform()); diff != "" {
+				t.Errorf("%s single-version mismatch (-want +got):\n%s", cna, diff)
+			}
+		}
+	})
+
+	t.Run("emits separate GIT and WordPress ECOSYSTEM affected blocks without unresolved_ranges", func(t *testing.T) {
+		t.Parallel()
+		repoURL := "https://github.com/yoast/wordpress-seo"
+		cve := loadTestData(t, "CVE-2026-1293")
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2026-1293", CNA: "Wordfence"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2026-1293",
+				References: vulns.ClassifyReferences(identifyPossibleURLs(cve)),
+			},
+		}
+
+		cache := &git.InMemoryRepoTagsCache{}
+		cache.SetCanonicalLink(repoURL, repoURL)
+		cache.Set(repoURL, git.RepoTagsMap{
+			NormalizedTag: map[string]git.NormalizedTag{
+				"26-8": {
+					OriginalTag: "26.8",
+					Commit:      "1111111111111111111111111111111111111111",
+				},
+			},
+		})
+
+		extractor := GetVersionExtractor("Wordfence")
+		extractor.ExtractVersions(cve, &v, metrics, []string{repoURL}, cache, nil)
+
+		if metrics.Outcome != models.Successful {
+			t.Errorf("Outcome = %v, want Successful", metrics.Outcome)
+		}
+		if metrics.UnresolvedRangesCount != 0 {
+			t.Errorf("UnresolvedRangesCount = %d, want 0", metrics.UnresolvedRangesCount)
+		}
+		if v.DatabaseSpecific != nil {
+			if _, ok := v.DatabaseSpecific.GetFields()["unresolved_ranges"]; ok {
+				t.Errorf("unexpected unresolved_ranges in DatabaseSpecific: %v", v.DatabaseSpecific)
+			}
+		}
+
+		wantAffected := []*osvschema.Affected{
+			{
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_GIT,
+					Repo: repoURL,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "1111111111111111111111111111111111111111"},
+					},
+					DatabaseSpecific: mustParseDBSpecific(t, `{
+						"extracted_events": [
+							{
+								"source": "AFFECTED_FIELD",
+								"strategy": "StandardRange",
+								"range": [
+									{"introduced": "0"},
+									{"last_affected": "26.8"}
+								]
+							}
+						]
+					}`),
+				}},
+			},
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "wordpress-seo",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "26.8"},
+					},
+				}},
+			},
+		}
+
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("Wordfence trac changeset query slug, safe v-prefix normalization, and no caller slice mutation", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2025-7327",
+				AssignerShortName: "Wordfence",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Widget for Google Reviews",
+				Versions: []models.Versions{
+					{
+						Status:          "affected",
+						Version:         "various", // Non-version word should normalize to "0" without mutating caller slice
+						LessThanOrEqual: "v3.1.2",
+						Changes: []models.Change{
+							{At: "V3.1.3", Status: "unaffected"},
+						},
+					},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://plugins.trac.wordpress.org/changeset?sfp_email=&new=3316262%40business-reviews-wp%2Ftrunk&old=3201057%40business-reviews-wp%2Ftrunk"},
+		}
+
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2025-7327", CNA: "Wordfence"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2025-7327",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+
+		GetVersionExtractor("Wordfence").ExtractVersions(cve, &v, metrics, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		if cve.Containers.CNA.Affected[0].Versions[0].Version != "various" || cve.Containers.CNA.Affected[0].Versions[0].LessThanOrEqual != "v3.1.2" {
+			t.Errorf("caller CVE slice was mutated in place: %+v", cve.Containers.CNA.Affected[0].Versions[0])
+		}
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{
+				Ecosystem: "WordPress:Plugin",
+				Name:      "business-reviews-wp",
+			},
+			Ranges: []*osvschema.Range{{
+				Type: osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{
+					{Introduced: "0"},
+					{Fixed: "3.1.3"},
+				},
+			}},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("Multi-product CVE maps each slug to its own Affected block and skips unmatched Pro edition", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2025-7654",
+				AssignerShortName: "Wordfence",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Amela",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "*", LessThanOrEqual: "1.0.13"},
+				},
+			},
+			{
+				Product: "Amela Pro",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "*", LessThanOrEqual: "9.9.9"},
+				},
+			},
+			{
+				Product: "FunnelKit Automations – Email Marketing Automation",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "0", LessThanOrEqual: "3.6.3"},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://themes.trac.wordpress.org/changeset?old=196757%40amela&new=196757%40amela"},
+			{URL: "https://plugins.trac.wordpress.org/browser/wp-marketing-automations/tags/3.6.3/file.php"},
+		}
+
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2025-7654", CNA: "Wordfence"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2025-7654",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+
+		GetVersionExtractor("Wordfence").ExtractVersions(cve, &v, metrics, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Plugin",
+					Name:      "wp-marketing-automations",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "3.6.3"},
+					},
+				}},
+			},
+			{
+				Package: &osvschema.Package{
+					Ecosystem: "WordPress:Theme",
+					Name:      "amela",
+				},
+				Ranges: []*osvschema.Range{{
+					Type: osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{
+						{Introduced: "0"},
+						{LastAffected: "1.0.13"},
+					},
+				}},
+			},
+		}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("Wildcard all-versions, operator-prefixed bounds, and Patchstack near-duplicate reference suppression", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2026-32567",
+				AssignerShortName: "Patchstack",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Sample Plugin",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "n/a", LessThanOrEqual: "< 5.3.0"},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://patchstack.com/database/Wordpress/Plugin/sample-plugin/vulnerability/vuln"},
+			{URL: "https://wordpress.org/plugins/sample-plugin/#developers"},
+		}
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2026-32567", CNA: "Patchstack"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2026-32567",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+
+		GetVersionExtractor("Patchstack").ExtractVersions(cve, &v, metrics, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{
+				Ecosystem: "WordPress:Plugin",
+				Name:      "sample-plugin",
+			},
+			Ranges: []*osvschema.Range{{
+				Type: osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{
+					{Introduced: "0"},
+					{Fixed: "5.3.0"},
+				},
+			}},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+		if len(v.References) != 2 {
+			t.Errorf("expected existing wordpress.org/#developers reference not to be duplicated, got %d refs: %+v", len(v.References), v.References)
+		}
+
+		// Verify WPScan wildcard lessThanOrEqual: "*" produces open-ended introduced: "0".
+		cveWildcard := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2026-15413", AssignerShortName: "WPScan"},
+		}
+		cveWildcard.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Link Factory",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "0", LessThanOrEqual: "*"},
+				},
+			},
+		}
+		vWild := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2026-15413",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/link-factory/"}}),
+			},
+		}
+		GetVersionExtractor("WPScan").ExtractVersions(cveWildcard, &vWild, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+		wantWild := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "link-factory"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantWild, vWild.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Wildcard Affected mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("Patchstack mixed-case URL overrides mismatched collectionURL and keeps references sorted", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2025-53586",
+				AssignerShortName: "Patchstack",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				CollectionURL: "https://wordpress.org/plugins/",
+				Product:       "WeMusic",
+				Versions: []models.Versions{
+					{
+						Status:   "affected",
+						Version:  "0",
+						LessThan: "1.9.2",
+					},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://patchstack.com/database/Wordpress/Theme/noo-wemusic/vulnerability/wordpress-wemusic-theme-1-9-1-vuln?_s_id=cve"},
+			{URL: "https://z-example.com/advisory"},
+		}
+
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2025-53586", CNA: "Patchstack"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2025-53586",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+
+		GetVersionExtractor("Patchstack").ExtractVersions(cve, &v, metrics, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{
+				Ecosystem: "WordPress:Theme",
+				Name:      "noo-wemusic",
+			},
+			Ranges: []*osvschema.Range{{
+				Type: osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{
+					{Introduced: "0"},
+					{Fixed: "1.9.2"},
+				},
+			}},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+
+		if len(v.References) != 3 || v.References[1].GetUrl() != "https://wordpress.org/themes/noo-wemusic/" {
+			t.Errorf("expected sorted references containing wordpress.org/themes/noo-wemusic/, got: %+v", v.References)
+		}
+	})
+
+	t.Run("WPScan legacy version == lessThan normalized to 0..fixed and NoRanges outcome when versions missing", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2020-36510",
+				AssignerShortName: "WPScan",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "WP-Stats",
+				Versions: []models.Versions{
+					{
+						Status:   "affected",
+						Version:  "2.52",
+						LessThan: "2.52",
+					},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://wordpress.org/plugins/wp-stats/"},
+		}
+
+		metrics := &models.ConversionMetrics{CVEID: "CVE-2020-36510", CNA: "WPScan"}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2020-36510",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+
+		GetVersionExtractor("WPScan").ExtractVersions(cve, &v, metrics, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{
+				Ecosystem: "WordPress:Plugin",
+				Name:      "wp-stats",
+			},
+			Ranges: []*osvschema.Range{{
+				Type: osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{
+					{Introduced: "0"},
+					{Fixed: "2.52"},
+				},
+			}},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+
+		// Also verify NoRanges outcome when slug exists cleanly, repos is empty, and no versions can be extracted.
+		cveNoVers := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2026-9999", AssignerShortName: "Wordfence"},
+		}
+		metricsNoVers := &models.ConversionMetrics{CVEID: "CVE-2026-9999", CNA: "Wordfence"}
+		vNoVers := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2026-9999",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+		GetVersionExtractor("Wordfence").ExtractVersions(cveNoVers, &vNoVers, metricsNoVers, nil, &git.InMemoryRepoTagsCache{}, nil)
+		models.DetermineOutcome(metricsNoVers)
+		if metricsNoVers.Outcome != models.NoRanges {
+			t.Errorf("Outcome = %v, want NoRanges", metricsNoVers.Outcome)
+		}
+	})
+
+	t.Run("Legacy V4 version == lessThanOrEqual, hyphen ranges, and release-date parentheticals", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2022-0210",
+				AssignerShortName: "Wordfence",
+			},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Random Banner",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "4.1.4", LessThanOrEqual: "4.1.4"},
+					{Status: "affected", Version: "5.0.0 - 5.2.3"},
+				},
+			},
+		}
+		refs := []models.Reference{
+			{URL: "https://plugins.trac.wordpress.org/browser/random-banner/tags/4.1.4/model.php"},
+		}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2022-0210",
+				References: vulns.ClassifyReferences(refs),
+			},
+		}
+		GetVersionExtractor("Wordfence").ExtractVersions(cve, &v, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantAffected := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "random-banner"},
+			Ranges: []*osvschema.Range{
+				{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "4.1.4"}},
+				},
+				{
+					Type:   osvschema.Range_ECOSYSTEM,
+					Events: []*osvschema.Event{{Introduced: "5.0.0"}, {LastAffected: "5.2.3"}},
+				},
+			},
+		}}
+		if diff := cmp.Diff(wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+
+		// Patchstack release-date parenthetical and non-wordpress.org collectionURL (no wordpress.org link added).
+		cvePS := models.CVE5{
+			Metadata: models.CVE5Metadata{
+				CVEID:             "CVE-2025-31100",
+				AssignerShortName: "Patchstack",
+			},
+		}
+		cvePS.Containers.CNA.Affected = []models.Affected{
+			{
+				CollectionURL: "https://codecanyon.net",
+				PackageName:   "school-management",
+				Product:       "School Management",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "n/a", LessThanOrEqual: "1.93.1 (02-07-2025)"},
+				},
+			},
+		}
+		psRefs := []models.Reference{
+			{URL: "https://patchstack.com/database/wordpress/plugin/school-management/vulnerability/vuln"},
+		}
+		vPS := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2025-31100",
+				References: vulns.ClassifyReferences(psRefs),
+			},
+		}
+		GetVersionExtractor("Patchstack").ExtractVersions(cvePS, &vPS, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantPS := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "school-management"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "1.93.1"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantPS, vPS.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Patchstack Affected mismatch (-want +got):\n%s", diff)
+		}
+		if len(vPS.References) != 1 {
+			t.Errorf("expected codecanyon.net plugin not to synthesize wordpress.org link, got refs: %+v", vPS.References)
+		}
+	})
+
+	t.Run("WPScan legacy V4 wildcard-suffixed lessThan quirks", func(t *testing.T) {
+		t.Parallel()
+		// 1. Single-entry {version: X, lessThan: "X*", changes: [{at: X, status: "unaffected"}]} -> 0..X (CVE-2022-1281).
+		cveSingle := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2022-1281", AssignerShortName: "WPScan"},
+		}
+		cveSingle.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Photo Gallery",
+				Versions: []models.Versions{
+					{
+						Status:   "affected",
+						Version:  "1.6.3",
+						LessThan: "1.6.3*",
+						Changes:  []models.Change{{At: "1.6.3", Status: "unaffected"}},
+					},
+				},
+			},
+		}
+		vSingle := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2022-1281",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://plugins.trac.wordpress.org/changeset/2706797/photo-gallery/trunk/file.php"}}),
+			},
+		}
+		GetVersionExtractor("WPScan").ExtractVersions(cveSingle, &vSingle, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantSingle := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "photo-gallery"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {LastAffected: "1.6.3"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantSingle, vSingle.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("CVE-2022-1281 mismatch (-want +got):\n%s", diff)
+		}
+
+		// 2. Paired {version: A, lessThan: "A*"} + {version: B, lessThan: B} -> A..B fixed (CVE-2021-25118).
+		cvePaired := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2021-25118", AssignerShortName: "WPScan"},
+		}
+		cvePaired.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Yoast SEO",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "16.7", LessThan: "16.7*"},
+					{Status: "affected", Version: "17.3", LessThan: "17.3"},
+				},
+			},
+		}
+		vPaired := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2021-25118",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/wordpress-seo/"}}),
+			},
+		}
+		GetVersionExtractor("WPScan").ExtractVersions(cvePaired, &vPaired, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		wantPaired := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "wordpress-seo"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "16.7"}, {Fixed: "17.3"}},
+			}},
+		}}
+		if diff := cmp.Diff(wantPaired, vPaired.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("CVE-2021-25118 mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

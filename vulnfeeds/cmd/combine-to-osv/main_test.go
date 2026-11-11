@@ -988,18 +988,217 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Preserve CVE5 ECOSYSTEM ranges separately from GIT ranges without attaching Package to GIT",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "deadbeef"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "wordpress-seo",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "26.8"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "cafebabe"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Name: "wordpress-seo",
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "deadbeef"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "wordpress-seo",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{LastAffected: "26.8"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Preserve CVE5 ECOSYSTEM ranges when neither CVE5 nor NVD has GIT ranges",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "accelerated-mobile-pages",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.77.33"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Name: "accelerated_mobile_pages",
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "accelerated-mobile-pages",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.77.33"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Name: "accelerated_mobile_pages",
+					},
+				},
+			},
+		},
+		{
+			name: "Skip non-repo range with nil Package and keep distinct ecosystems with same package name",
+			cve5Affected: []*osvschema.Affected{
+				{
+					// Malformed non-repo range without Package should be skipped.
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "1.0.0"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "shared-slug",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2.0.0"},
+							},
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Theme",
+						Name:      "shared-slug",
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "shared-slug",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2.0.0"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Theme",
+						Name:      "shared-slug",
+					},
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.
 	sorter := cmpopts.SortSlices(func(a, b *osvschema.Affected) bool {
-		if len(a.GetRanges()) == 0 || len(a.GetRanges()[0].GetRepo()) == 0 {
-			return true
+		var repoA, repoB string
+		if len(a.GetRanges()) > 0 {
+			repoA = a.GetRanges()[0].GetRepo()
 		}
-		if len(b.GetRanges()) == 0 || len(b.GetRanges()[0].GetRepo()) == 0 {
-			return false
+		if len(b.GetRanges()) > 0 {
+			repoB = b.GetRanges()[0].GetRepo()
+		}
+		if repoA != repoB {
+			return repoA < repoB
+		}
+		if a.GetPackage().GetEcosystem() != b.GetPackage().GetEcosystem() {
+			return a.GetPackage().GetEcosystem() < b.GetPackage().GetEcosystem()
 		}
 
-		return a.GetRanges()[0].GetRepo() < b.GetRanges()[0].GetRepo()
+		return a.GetPackage().GetName() < b.GetPackage().GetName()
 	})
 
 	for _, tc := range testCases {

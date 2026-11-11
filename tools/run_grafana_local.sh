@@ -30,6 +30,9 @@ trap "rm -rf $TMP_DIR; docker stop grafana-local gmp-frontend-local 2>/dev/null 
 cp "$HOME/.config/gcloud/application_default_credentials.json" "$TMP_DIR/adc.json"
 chmod 644 "$TMP_DIR/adc.json"
 
+# Stop any existing local containers from a previous run
+docker stop grafana-local gmp-frontend-local 2>/dev/null || true
+
 # Create a private Docker network
 docker network create grafana-local-net 2>/dev/null || true
 

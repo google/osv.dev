@@ -500,12 +500,20 @@ func TestConductAnalysisAndUpload(t *testing.T) {
 	}
 
 	metrics1 := models.ConversionMetrics{
-		CVEID:   "CVE-2024-0001",
-		Outcome: models.Successful,
+		CVEID:               "CVE-2024-0001",
+		CNA:                 "github_m",
+		Outcome:             models.Successful,
+		VersionSources:      []models.VersionSource{models.VersionSourceAffected, models.VersionSourceRefs},
+		RefTypesCount:       map[osvschema.Reference_Type]int{osvschema.Reference_FIX: 2, osvschema.Reference_ADVISORY: 1},
+		ResolvedRangesCount: 1,
 	}
 	metrics2 := models.ConversionMetrics{
-		CVEID:   "CVE-2024-0002",
-		Outcome: models.NoCommitRanges,
+		CVEID:                 "CVE-2024-0002",
+		CNA:                   "mitre",
+		Outcome:               models.NoCommitRanges,
+		VersionSources:        []models.VersionSource{models.VersionSourceCPERange},
+		RefTypesCount:         map[osvschema.Reference_Type]int{osvschema.Reference_WEB: 1},
+		UnresolvedRangesCount: 2,
 	}
 
 	data1, err := json.Marshal(metrics1)
@@ -560,6 +568,30 @@ func TestConductAnalysisAndUpload(t *testing.T) {
 		if outcomes["CVE-2024-0002"] != models.NoCommitRanges.String() {
 			t.Errorf("Expected NoCommitRanges for CVE-2024-0002, got %s", outcomes["CVE-2024-0002"])
 		}
+
+		summaryBytes, err := os.ReadFile(filepath.Join(csvDir, "conversion-summary.json"))
+		if err != nil {
+			t.Fatalf("Failed to read conversion-summary.json: %v", err)
+		}
+		var summary models.ConversionSummaryReport
+		if err := json.Unmarshal(summaryBytes, &summary); err != nil {
+			t.Fatalf("Failed to unmarshal conversion-summary.json: %v", err)
+		}
+		if summary.TotalCVEs != 2 {
+			t.Errorf("Expected TotalCVEs = 2, got %d", summary.TotalCVEs)
+		}
+		if summary.OutcomeCounts["Successful"] != 1 || summary.OutcomeCounts["NoCommitRanges"] != 1 {
+			t.Errorf("Unexpected OutcomeCounts: %+v", summary.OutcomeCounts)
+		}
+		if summary.VersionSources["AFFECTED_FIELD"] != 1 || summary.VersionSources["CPE_RANGE"] != 1 {
+			t.Errorf("Unexpected VersionSources: %+v", summary.VersionSources)
+		}
+		if summary.ReferenceTypes["FIX"] != 2 || summary.ReferenceTypes["ADVISORY"] != 1 || summary.ReferenceTypes["WEB"] != 1 {
+			t.Errorf("Unexpected ReferenceTypes: %+v", summary.ReferenceTypes)
+		}
+		if len(summary.CNAScorecards) != 2 {
+			t.Fatalf("Expected 2 CNAScorecards, got %d", len(summary.CNAScorecards))
+		}
 	})
 
 	t.Run("Default csvDir to metricsDir when empty", func(t *testing.T) {
@@ -602,6 +634,15 @@ func TestConductAnalysisAndUpload(t *testing.T) {
 		_, err = bkt.Object(objName).Attrs(ctx)
 		if err != nil {
 			t.Fatalf("Expected outcomes CSV %q to exist on GCS, got error: %v", objName, err)
+		}
+		for _, expectedJSON := range []string{
+			path.Join(outcomesPrefix, "conversion-summary.json"),
+			path.Join(outcomesPrefix, "cna-scorecards.json"),
+			"cna-scorecards.json",
+		} {
+			if _, err := bkt.Object(expectedJSON).Attrs(ctx); err != nil {
+				t.Fatalf("Expected JSON artifact %q to exist on GCS, got error: %v", expectedJSON, err)
+			}
 		}
 	})
 }

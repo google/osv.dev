@@ -151,3 +151,35 @@ func DetermineOutcome(metrics *ConversionMetrics) {
 		metrics.SetOutcome(NoRanges)
 	}
 }
+
+// CNAScorecard summarizes conversion outcomes and range statistics for a single Assigner CNA.
+type CNAScorecard struct {
+	CNA              string         `json:"cna"`
+	TotalCVEs        int            `json:"total_cves"`
+	Successful       int            `json:"successful"`
+	Rejected         int            `json:"rejected"`
+	NoSoftware       int            `json:"no_software"`
+	NoRepos          int            `json:"no_repos"`
+	NoCommitRanges   int            `json:"no_commit_ranges"`
+	NoRanges         int            `json:"no_ranges"`
+	FixUnresolvable  int            `json:"fix_unresolvable"`
+	Error            int            `json:"error"`
+	SuccessRatePct   float64        `json:"success_rate_pct"`
+	ResolvedRanges   int            `json:"resolved_ranges"`
+	UnresolvedRanges int            `json:"unresolved_ranges"`
+	Outcomes         map[string]int `json:"outcomes,omitempty"`
+}
+
+// ConversionSummaryReport aggregates conversion outcomes, range extraction sources,
+// reference types, and per-CNA scorecards across a bulk conversion run.
+type ConversionSummaryReport struct {
+	Converter        string         `json:"converter"`
+	GeneratedAt      string         `json:"generated_at"`
+	TotalCVEs        int            `json:"total_cves"`
+	OutcomeCounts    map[string]int `json:"outcome_counts"`
+	VersionSources   map[string]int `json:"version_sources"`
+	ReferenceTypes   map[string]int `json:"reference_types"`
+	ResolvedRanges   int            `json:"resolved_ranges"`
+	UnresolvedRanges int            `json:"unresolved_ranges"`
+	CNAScorecards    []CNAScorecard `json:"cna_scorecards"`
+}

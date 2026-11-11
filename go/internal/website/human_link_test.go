@@ -1,7 +1,6 @@
 package website
 
 import (
-	"context"
 	"testing"
 
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -79,17 +78,16 @@ func TestRenderHumanLink(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// TODO(michaelkedar): Remove once the jinja fallback is removed.
-			name: "legacy jinja fallback",
-			tmpl: `https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}`,
-			vuln: &osvschema.Vulnerability{Id: "UBUNTU-CVE-2024-1234"},
-			want: "https://ubuntu.com/security/CVE-2024-1234",
+			name:    "jinja is not supported",
+			tmpl:    `https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}`,
+			vuln:    &osvschema.Vulnerability{Id: "UBUNTU-CVE-2024-1234"},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := RenderHumanLink(context.Background(), tt.tmpl, tt.vuln)
+			got, err := RenderHumanLink(tt.tmpl, tt.vuln)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("RenderHumanLink() error = %v, wantErr %v", err, tt.wantErr)
 			}

@@ -31,8 +31,8 @@ flowchart LR
   Its `ClusterPodMonitoring` keeps only `kube_(cronjob|pod|job|deployment)*` series to keep
   costs down.
 - **Grafana**: [`grafana_deployment.yaml`](grafana_deployment.yaml) runs
-  [Plutono](https://github.com/credativ/plutono), an Apache 2.0 fork of Grafana 7.5. It
-  replaced upstream Grafana in #6311. Configuration uses `PL_*` environment variables and
+  [Plutono](https://github.com/credativ/plutono), an Apache 2.0 fork of Grafana 7.5.
+  Configuration uses `PL_*` environment variables and
   `/etc/plutono/...` paths. A `gmp-frontend` sidecar proxies PromQL queries to Cloud Monitoring
   for project `oss-vdb-test`.
 - **Access**: [`grafana_ingress.yaml`](grafana_ingress.yaml) puts the service behind IAP with a
@@ -46,15 +46,6 @@ flowchart LR
   - [`kustomization.yaml`](kustomization.yaml) generates the `grafana-dashboards` ConfigMap from
     `dashboards/*.json` with `disableNameSuffixHash: true`. Dashboard changes therefore sync in
     place without restarting the pod.
-
-## Dashboard inventory
-
-| File | Title (uid) | Purpose |
-| :--- | :--- | :--- |
-| [`home.json`](dashboards/home.json) | OSV.dev Observability Directory (`osv-home`) | Default home page. It links to the other dashboards and shows four at-a-glance stats. |
-| [`executive-overview.json`](dashboards/executive-overview.json) | 1. Executive Overview & SLAs (`osv-exec-overview`) | SLOs and KPIs: worker success rate, API availability and p99 latency (Cloud Run), throughput, and published-to-available lag. |
-| [`pipeline-ingestion-ops.json`](dashboards/pipeline-ingestion-ops.json) | 2. Ingestion & Worker Pipeline Operations (`osv-pipeline-ingestion-ops`) | Pub/Sub backlog, worker replicas (KSM), task latency and failures, reconciler and deleter health. |
-| [`data-quality-drift.json`](dashboards/data-quality-drift.json) | 3. Vulnerability Data Quality & Ecosystem Health (`osv-data-quality-drift`) | Dataset size, Datastore vs. GCS drift, linter findings, feed freshness, Gitter activity, and export `all.zip` size. |
 
 ## Adding a new metric
 
